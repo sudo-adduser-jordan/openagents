@@ -2757,17 +2757,18 @@ html.sidebar-reordering * {
 /* Delivery-stage identity: the composer frame carries the workflow tone so the
    current mode is visible without reading a label. Every session, orchestrators
    included, reads by its stage. Declared after the light-theme frame so `:root`
-   raises the specificity past it. */
-:root .cursor-chat-composer[data-workflow="planning"] {
-	--composer-border: color-mix(in oklch, var(--color-status-planning) 60%, transparent);
-	--composer-border-hover: var(--color-status-planning);
-	--composer-border-focus: var(--color-status-planning);
-}
+   raises the specificity past it.
 
+   The colored frame belongs to the executing (building) stage — the default
+   mode in which tasks are created and work happens. It is painted pink (the
+   review token) so the executing frame reads against the neutral canvas.
+   Planning — where the orchestrator produces a plan without creating tasks —
+   keeps the neutral frame, so the colored border no longer advertises a mode
+   that is not executing. */
 :root .cursor-chat-composer[data-workflow="building"] {
-	--composer-border: color-mix(in oklch, var(--color-status-working) 60%, transparent);
-	--composer-border-hover: var(--color-status-working);
-	--composer-border-focus: var(--color-status-working);
+	--composer-border: color-mix(in oklch, var(--color-status-review) 60%, transparent);
+	--composer-border-hover: var(--color-status-review);
+	--composer-border-focus: var(--color-status-review);
 }
 
 /* Light theme collapses the surface stack the dark bubble relies on: `--card`
