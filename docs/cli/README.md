@@ -55,6 +55,8 @@ Every product command resolves to a daemon HTTP route. Run `ao <command>
 | `ao session rename <id> <name>`     | `PATCH /api/v1/sessions/{id}`                  |
 | `ao session cleanup`                | `POST /api/v1/sessions/cleanup`                |
 | `ao session claim-pr [<id>] <pr-ref>` | `POST /api/v1/sessions/{id}/pr/claim`        |
+| `ao plan <id>`                        | `PATCH /api/v1/sessions/{id}/workflow-mode`  |
+| `ao build <id>`                       | `PATCH /api/v1/sessions/{id}/workflow-mode`  |
 | `ao orchestrator ls`                | `GET /api/v1/orchestrators`                    |
 | `ao send`                           | `POST /api/v1/sessions/{id}/send`              |
 | `ao preview [url]`                  | `POST /api/v1/sessions/{id}/preview`           |
@@ -80,6 +82,11 @@ branch, issue, or PR-claim options.
 `AO_SESSION_ID`. From an orchestrator or external shell, pass the target
 explicitly with `ao session claim-pr <session-id> <pr-ref>`. The explicit form
 remains supported for backward compatibility and cross-session coordination.
+
+`ao plan <id>` and `ao build <id>` move a session between its delivery stages
+(planning → building) by setting `workflow_mode` on the daemon. Setting either
+stage is also one of the kanban review lock's release paths: a card frozen in
+the review column is released so it can move with its PR facts again.
 
 If `--agent` / `--harness` is omitted, `ao spawn` uses the resolved project's
 `worker.agent` config. Before spawning, the CLI performs one targeted launch

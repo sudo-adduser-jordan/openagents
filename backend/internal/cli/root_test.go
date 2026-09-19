@@ -51,6 +51,8 @@ func TestCommandsRejectUnexpectedArgs(t *testing.T) {
 		{"stop", "extra"},
 		{"status", "extra"},
 		{"doctor", "extra"},
+		{"plan", "one", "two"},
+		{"build", "one", "two"},
 		{"version", "extra"},
 	} {
 		t.Run(strings.Join(args, " "), func(t *testing.T) {
