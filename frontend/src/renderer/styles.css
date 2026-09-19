@@ -2771,6 +2771,12 @@ html.sidebar-reordering * {
 	--composer-border-focus: var(--color-status-review);
 }
 
+:root .cursor-chat-composer[data-workflow="planning"] {
+	--composer-border: color-mix(in oklch, var(--color-status-planning) 60%, transparent);
+	--composer-border-hover: var(--color-status-planning);
+	--composer-border-focus: var(--color-status-planning);
+}
+
 /* Light theme collapses the surface stack the dark bubble relies on: `--card`
    and `--background` are the same near-white, so `--color-bg-secondary` cannot
    sit above the canvas. Take the unwashed tertiary step and paint the hairline
