@@ -1344,6 +1344,7 @@ func TestSpawn_InheritsChatOrchestratorPermissions(t *testing.T) {
 	m, st, rt, _ := newManager()
 	st.sessions["mer-0"] = domain.SessionRecord{
 		ID: "mer-0", ProjectID: "mer", Kind: domain.KindOrchestrator,
+		WorkflowMode: domain.WorkflowModeBuilding,
 	}
 	st.conversations["mer-0"] = domain.ConversationRecord{
 		SessionID: "mer-0", Settings: domain.ConversationSettings{ApprovalMode: domain.PermissionModeBypassPermissions},
@@ -1418,20 +1419,41 @@ func TestSpawn_InheritsBuildingFromOrchestrator(t *testing.T) {
 	}
 }
 
-func TestSpawn_PlanningOrchestratorSpawnsPlanning(t *testing.T) {
+// A planning-mode orchestrator creates no tasks: it plans without executing,
+// so a worker spawn it requests (via `ao spawn` from its own shell) is refused
+// before any durable state, harness use, or worktree exists.
+func TestSpawn_PlanningOrchestratorCannotCreateTask(t *testing.T) {
+	m, st, rt, _ := newManager()
+	st.sessions["mer-0"] = domain.SessionRecord{
+		ID: "mer-0", ProjectID: "mer", Kind: domain.KindOrchestrator,
+		WorkflowMode: domain.WorkflowModePlanning,
+	}
+	_, _, _, err := m.Spawn(ctx, ports.SpawnConfig{
+		ProjectID: "mer", Kind: domain.KindWorker, ParentSessionID: "mer-0",
+	})
+	if !errors.Is(err, ErrPlanningOrchestratorNoTasks) {
+		t.Fatalf("Spawn error = %v, want ErrPlanningOrchestratorNoTasks", err)
+	}
+	if rt.created != 0 {
+		t.Fatal("runtime was created for a task a planning orchestrator may not create")
+	}
+	if _, ok := st.sessions["mer-1"]; ok {
+		t.Fatal("a task session was created for a planning orchestrator")
+	}
+}
+
+// A plan-mode orchestrator may still spawn a coordinator (orchestrator) child:
+// the gate targets worker tasks, not nested coordination roles.
+func TestSpawn_PlanningOrchestratorCanSpawnOrchestratorChild(t *testing.T) {
 	m, st, _, _ := newManager()
 	st.sessions["mer-0"] = domain.SessionRecord{
 		ID: "mer-0", ProjectID: "mer", Kind: domain.KindOrchestrator,
 		WorkflowMode: domain.WorkflowModePlanning,
 	}
-	rec, _, _, err := m.Spawn(ctx, ports.SpawnConfig{
-		ProjectID: "mer", Kind: domain.KindWorker, ParentSessionID: "mer-0",
-	})
-	if err != nil {
-		t.Fatal(err)
-	}
-	if rec.WorkflowMode != domain.WorkflowModePlanning {
-		t.Fatalf("worker workflow mode = %q, want planning", rec.WorkflowMode)
+	if _, _, _, err := m.Spawn(ctx, ports.SpawnConfig{
+		ProjectID: "mer", Kind: domain.KindOrchestrator, ParentSessionID: "mer-0",
+	}); err != nil {
+		t.Fatalf("orchestrator child spawn failed: %v", err)
 	}
 }
 

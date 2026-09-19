@@ -1077,6 +1077,8 @@ func mapSessionError(err error) error {
 		return apierr.Invalid("UNSUPPORTED_MODEL", err.Error(), nil)
 	case errors.Is(err, sessionmanager.ErrScratchBranchUnsupported):
 		return apierr.Invalid("SCRATCH_BRANCH_UNSUPPORTED", err.Error(), nil)
+	case errors.Is(err, sessionmanager.ErrPlanningOrchestratorNoTasks):
+		return apierr.Conflict("PLANNING_ORCHESTRATOR_NO_TASKS", err.Error(), nil)
 	case errors.Is(err, ports.ErrWorkspaceBranchCheckedOutElsewhere):
 		return apierr.Conflict("BRANCH_CHECKED_OUT_ELSEWHERE", err.Error(), nil)
 	case errors.Is(err, ports.ErrWorkspaceDefaultBranchUnresolved):

@@ -57,6 +57,11 @@ var (
 	// ErrScratchBranchUnsupported means a caller tried to force git branch
 	// semantics onto a scratch project.
 	ErrScratchBranchUnsupported = errors.New("session: scratch projects do not support branches")
+	// ErrPlanningOrchestratorNoTasks means a planning-mode orchestrator tried to
+	// create a worker task. Orchestrators plan without executing: worker tasks
+	// may only be created once the orchestrator has been switched to building
+	// with a plan/build toggle. The API maps it to a 409.
+	ErrPlanningOrchestratorNoTasks = errors.New("session: planning orchestrator cannot create tasks")
 	// ErrNotResumable means a terminated session cannot be relaunched: its adapter
 	// cannot natively resume it AND it has no prompt to fresh-launch from, and it is
 	// not an orchestrator (orchestrators are promptless by design and relaunch fresh
@@ -755,9 +760,15 @@ func (m *Manager) Spawn(ctx context.Context, cfg ports.SpawnConfig) (domain.Sess
 	}
 	// A worker inherits its starting delivery stage from the orchestrator that
 	// requested it: a build-mode orchestrator drops the task straight into the
-	// board's Building lane, while every other spawn starts in Planning.
+	// board's Building lane, while every other spawn starts in Planning. A
+	// planning-mode orchestrator cannot create tasks at all — it plans without
+	// executing — so the spawn is refused here, before any durable state,
+	// harness, or worktree exists.
 	workflowMode := domain.DefaultWorkflowMode
 	if cfg.ParentSessionID != "" {
+		if err := m.gateOrchestratorTaskCreation(ctx, cfg.ProjectID, cfg.ParentSessionID, cfg.Kind); err != nil {
+			return domain.SessionRecord{}, 0, 0, err
+		}
 		workflowMode = m.inheritedSpawnWorkflowMode(ctx, cfg.ProjectID, cfg.ParentSessionID)
 	}
 	// A per-project role override picks the harness when the spawn names none,
@@ -1063,6 +1074,36 @@ func (m *Manager) inheritedSpawnPermissions(ctx context.Context, projectID domai
 		return "", fmt.Errorf("load parent conversation %s: %w", parentID, err)
 	}
 	return conversation.Settings.ApprovalMode, nil
+}
+
+// gateOrchestratorTaskCreation refuses a worker task spawned by a
+// planning-mode orchestrator: "the orchestrator creates no tasks in plan
+// mode". An orchestrator delegates by invoking `ao spawn` from its own shell,
+// where AO_SESSION_ID names the orchestrator as the parent, so this gate is
+// the daemon's enforcement point. Only worker children of a same-project
+// orchestrator are gated; worker parents, cross-project parents, unknown
+// sessions, and non-worker children spawn as before. Like the inheritance
+// below this is a board behavior, but the refusal is a hard rule, so a
+// transient store error falls back permissively (log + allow) rather than
+// lying about the orchestrator's stage.
+func (m *Manager) gateOrchestratorTaskCreation(ctx context.Context, projectID domain.ProjectID, parentID domain.SessionID, kind domain.SessionKind) error {
+	if kind != domain.KindWorker {
+		return nil
+	}
+	parent, ok, err := m.store.GetSession(ctx, parentID)
+	if err != nil {
+		m.logger.Warn("spawn: load parent for orchestrator task gate",
+			"parent", parentID, "error", err)
+		return nil
+	}
+	if !ok || parent.ProjectID != projectID || parent.Kind != domain.KindOrchestrator {
+		return nil
+	}
+	if normalized := domain.NormalizeWorkflowMode(parent.WorkflowMode); normalized == domain.WorkflowModePlanning {
+		return fmt.Errorf("spawn: %w: %s is still planning; switch it to building with `ao build %s` before it creates tasks",
+			ErrPlanningOrchestratorNoTasks, parentID, parentID)
+	}
+	return nil
 }
 
 // inheritedSpawnWorkflowMode derives a worker's starting delivery stage from its
