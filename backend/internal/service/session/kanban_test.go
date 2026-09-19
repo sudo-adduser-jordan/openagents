@@ -275,6 +275,77 @@ func TestSessionGetUsesLatestCurrentHeadRunPerHarness(t *testing.T) {
 	}
 }
 
+// A card that first lands in needs_review is latched: the durable review lock
+// is engaged on the read that observes the entry, so later PR facts cannot move
+// the card until an explicit user action releases it. The latch fires at most
+// once per review episode.
+func TestSessionKanbanLatchesReviewLockOnFirstNeedsReviewRead(t *testing.T) {
+	st := newFakeStore()
+	st.sessions["mer-1"] = domain.SessionRecord{ID: "mer-1", ProjectID: "mer"}
+	st.pr["mer-1"] = domain.PRFacts{
+		URL: "pr1", HeadSHA: "head1", ReviewComments: true, ExternalComments: true,
+	}
+
+	list, err := (&Service{store: st}).List(context.Background(), ListFilter{ProjectID: "mer"})
+	if err != nil {
+		t.Fatal(err)
+	}
+	if len(list) != 1 || list[0].KanbanColumn != domain.KanbanNeedsReview {
+		t.Fatalf("kanban column = %+v, want needs_review", list)
+	}
+	if !st.sessions["mer-1"].ReviewLocked {
+		t.Fatal("review lock was not latched on first needs_review read")
+	}
+	// A second read must not write again: the durable flag is already set.
+	updatedAt := st.sessions["mer-1"].UpdatedAt
+	if _, err := (&Service{store: st}).Get(context.Background(), "mer-1"); err != nil {
+		t.Fatal(err)
+	}
+	if st.sessions["mer-1"].UpdatedAt != updatedAt {
+		t.Fatalf("latched read wrote again: updated_at changed %v -> %v", updatedAt, st.sessions["mer-1"].UpdatedAt)
+	}
+}
+
+// Once the review lock is latched, the derivation freezes the card in
+// needs_review no matter what the PR facts now say: a running auto review pass
+// (validating) cannot move it.
+func TestSessionKanbanReviewLockFreezesCard(t *testing.T) {
+	st := newFakeStore()
+	st.sessions["mer-1"] = domain.SessionRecord{
+		ID: "mer-1", ProjectID: "mer", ReviewLocked: true,
+	}
+	st.pr["mer-1"] = domain.PRFacts{URL: "pr1", HeadSHA: "head1"}
+	st.reviewRuns["mer-1"] = []domain.CurrentHeadReviewRun{
+		{PRURL: "pr1", Status: domain.ReviewRunRunning},
+	}
+
+	got, err := (&Service{store: st}).Get(context.Background(), "mer-1")
+	if err != nil {
+		t.Fatal(err)
+	}
+	if got.KanbanColumn != domain.KanbanNeedsReview {
+		t.Fatalf("kanban column = %q, want %q for a locked card with a running pass", got.KanbanColumn, domain.KanbanNeedsReview)
+	}
+}
+
+// A terminated session still archives even while the review lock is latched:
+// the lock freezes the delivery columns, never the archive.
+func TestSessionKanbanReviewLockStillArchivesTerminated(t *testing.T) {
+	st := newFakeStore()
+	st.sessions["mer-1"] = domain.SessionRecord{
+		ID: "mer-1", ProjectID: "mer", ReviewLocked: true, IsTerminated: true,
+	}
+	st.pr["mer-1"] = domain.PRFacts{URL: "pr1", HeadSHA: "head1"}
+
+	got, err := (&Service{store: st}).Get(context.Background(), "mer-1")
+	if err != nil {
+		t.Fatal(err)
+	}
+	if got.KanbanColumn != domain.KanbanArchive {
+		t.Fatalf("kanban column = %q, want %q for a terminated locked session", got.KanbanColumn, domain.KanbanArchive)
+	}
+}
+
 func newSQLiteKanbanTestStore(t *testing.T) *sqlite.Store {
 	t.Helper()
 	return sqlitetest.MustOpen(t)

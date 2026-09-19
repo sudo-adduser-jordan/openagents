@@ -239,7 +239,9 @@ func (s *Store) SetSessionTerminateOnPRMerge(ctx context.Context, id domain.Sess
 	return rows > 0, nil
 }
 
-// SetSessionWorkflowMode moves a session between delivery stages. It returns
+// SetSessionWorkflowMode moves a session between delivery stages. A plan/build
+// command is also one of the review lock's release paths, so the frozen
+// review_locked flag is cleared together with the mode change. It returns
 // ok=false when the session id does not exist.
 func (s *Store) SetSessionWorkflowMode(ctx context.Context, id domain.SessionID, mode domain.WorkflowMode, updatedAt time.Time) (bool, error) {
 	s.writeMu.Lock()
@@ -251,6 +253,22 @@ func (s *Store) SetSessionWorkflowMode(ctx context.Context, id domain.SessionID,
 	})
 	if err != nil {
 		return false, fmt.Errorf("set workflow mode for session %s: %w", id, err)
+	}
+	return rows > 0, nil
+}
+
+// SetSessionReviewLocked latches or releases a session's review column freeze.
+// It returns ok=false when the session id does not exist.
+func (s *Store) SetSessionReviewLocked(ctx context.Context, id domain.SessionID, locked bool, updatedAt time.Time) (bool, error) {
+	s.writeMu.Lock()
+	defer s.writeMu.Unlock()
+	rows, err := s.qw.SetSessionReviewLocked(ctx, gen.SetSessionReviewLockedParams{
+		ID:           id,
+		ReviewLocked: locked,
+		UpdatedAt:    updatedAt,
+	})
+	if err != nil {
+		return false, fmt.Errorf("set review lock for session %s: %w", id, err)
 	}
 	return rows > 0, nil
 }
@@ -492,6 +510,7 @@ func rowToRecord(row gen.GetSessionRow) domain.SessionRecord {
 		PinnedAt:           nullTimeToTimePtr(row.PinnedAt),
 		TerminateOnPRMerge: row.TerminateOnPRMerge,
 		WorkflowMode:       domain.NormalizeWorkflowMode(domain.WorkflowMode(row.WorkflowMode)),
+		ReviewLocked:       row.ReviewLocked,
 		AutoInjectReview:   row.AutoInjectReview,
 		AutoInjectCI:       row.AutoInjectCI,
 		Metadata: domain.SessionMetadata{
@@ -588,6 +607,7 @@ func recordToInsert(rec domain.SessionRecord, num int64) gen.InsertSessionParams
 		PreviewRevision:                  rec.Metadata.PreviewRevision,
 		TerminateOnPRMerge:               rec.TerminateOnPRMerge,
 		WorkflowMode:                     string(domain.NormalizeWorkflowMode(rec.WorkflowMode)),
+		ReviewLocked:                     rec.ReviewLocked,
 		AutoInjectReview:                 rec.AutoInjectReview,
 		AutoInjectCI:                     rec.AutoInjectCI,
 		CleanupGeneration:                rec.CleanupGeneration,
@@ -647,6 +667,7 @@ func recordToUpdate(rec domain.SessionRecord) gen.UpdateSessionParams {
 		PreviewRevision:                  rec.Metadata.PreviewRevision,
 		TerminateOnPRMerge:               rec.TerminateOnPRMerge,
 		WorkflowMode:                     string(domain.NormalizeWorkflowMode(rec.WorkflowMode)),
+		ReviewLocked:                     rec.ReviewLocked,
 		AutoInjectReview:                 rec.AutoInjectReview,
 		AutoInjectCI:                     rec.AutoInjectCI,
 		CleanupGeneration:                rec.CleanupGeneration,

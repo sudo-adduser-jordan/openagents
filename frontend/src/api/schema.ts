@@ -2499,6 +2499,7 @@ export interface components {
             previewUrl?: string;
             projectId?: string;
             prs: components["schemas"]["SessionPRFacts"][];
+            reviewLocked: boolean;
             reviewerConfig?: components["schemas"]["AgentConfig"];
             /** @enum {string} */
             reviewerHarness?: "opencode";

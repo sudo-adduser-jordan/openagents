@@ -28,6 +28,7 @@ func toContractKanbanSessionFacts(rec domain.SessionRecord, signalCapable bool) 
 		AutoReview:       rec.AutoReviewEnabled,
 		AutoInjectReview: rec.AutoInjectReview,
 		AutoInjectCI:     rec.AutoInjectCI,
+		ReviewLocked:     rec.ReviewLocked,
 	}
 }
 

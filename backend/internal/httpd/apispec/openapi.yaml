@@ -7232,6 +7232,8 @@ components:
           items:
             $ref: '#/components/schemas/SessionPRFacts'
           type: array
+        reviewLocked:
+          type: boolean
         reviewerConfig:
           $ref: '#/components/schemas/AgentConfig'
         reviewerHarness:
@@ -7295,6 +7297,7 @@ components:
       - isTerminated
       - terminateOnPrMerge
       - workflowMode
+      - reviewLocked
       - autoInjectReview
       - autoInjectCI
       - createdAt

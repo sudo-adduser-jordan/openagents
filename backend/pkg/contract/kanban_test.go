@@ -249,6 +249,83 @@ func TestDeriveKanbanColumnStaleReviewRunStartsANewCycle(t *testing.T) {
 	}
 }
 
+// A card that has entered the review-feedback loop is frozen in needs_review
+// while the ReviewLocked latch is set: no PR fact — a new auto review pass, an
+// approval, mergeability, even a merge — may move it until an explicit
+// plan/build command or a user message releases the latch. Terminated sessions
+// still archive.
+func TestDeriveKanbanColumnReviewLockFreezesCard(t *testing.T) {
+	t.Parallel()
+	tests := []struct {
+		name    string
+		session contract.KanbanSessionFacts
+		pr      contract.KanbanPRFacts
+	}{
+		{
+			name:    "a running review pass cannot move it",
+			session: contract.KanbanSessionFacts{ReviewLocked: true},
+			pr: contract.KanbanPRFacts{
+				URL:       "pr/1",
+				ReviewRun: contract.KanbanReviewRunFacts{Present: true, Running: true},
+			},
+		},
+		{
+			name:    "ao's auto review pass cannot move it",
+			session: contract.KanbanSessionFacts{ReviewLocked: true, AutoReview: true},
+			pr:      contract.KanbanPRFacts{URL: "pr/1"},
+		},
+		{
+			name:    "an approval cannot move it",
+			session: contract.KanbanSessionFacts{ReviewLocked: true},
+			pr: contract.KanbanPRFacts{
+				URL:            "pr/1",
+				Review:         contract.ReviewApproved,
+				Mergeability:   contract.MergeBlocked,
+				ExternalReview: contract.KanbanExternalReviewFacts{Approved: true},
+			},
+		},
+		{
+			name:    "mergeability cannot move it",
+			session: contract.KanbanSessionFacts{ReviewLocked: true},
+			pr:      contract.KanbanPRFacts{URL: "pr/1", Mergeability: contract.MergeMergeable},
+		},
+		{
+			name:    "a draft label cannot move it",
+			session: contract.KanbanSessionFacts{ReviewLocked: true},
+			pr:      contract.KanbanPRFacts{URL: "pr/1", Draft: true},
+		},
+		{
+			name:    "a merge cannot move it",
+			session: contract.KanbanSessionFacts{ReviewLocked: true},
+			pr:      contract.KanbanPRFacts{URL: "pr/1", Merged: true},
+		},
+		{
+			name:    "a close cannot move it",
+			session: contract.KanbanSessionFacts{ReviewLocked: true},
+			pr:      contract.KanbanPRFacts{URL: "pr/1", Closed: true},
+		},
+		{
+			name:    "unlocked facts rule again",
+			session: contract.KanbanSessionFacts{},
+			pr:      contract.KanbanPRFacts{URL: "pr/1", Mergeability: contract.MergeMergeable},
+		},
+	}
+	for _, tc := range tests {
+		t.Run(tc.name, func(t *testing.T) {
+			t.Parallel()
+			want := contract.KanbanNeedsReview
+			if !tc.session.ReviewLocked {
+				// The contrast case: with the latch released, the same facts rule
+				// again (here: a mergeable PR is ready).
+				want = contract.KanbanReady
+			}
+			if got := deriveColumn(tc.session, []contract.KanbanPRFacts{tc.pr}); got != want {
+				t.Fatalf("column = %q, want %q", got, want)
+			}
+		})
+	}
+}
+
 func TestDeriveKanbanColumnMultiplePRs(t *testing.T) {
 	t.Parallel()
 	older := time.Date(2026, 1, 1, 0, 0, 0, 0, time.UTC)

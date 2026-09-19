@@ -246,6 +246,19 @@ func (f *fakeStore) SetSessionWorkflowMode(_ context.Context, id domain.SessionI
 		return false, nil
 	}
 	r.WorkflowMode = mode
+	// A plan/build command is one of the review lock's release paths.
+	r.ReviewLocked = false
+	r.UpdatedAt = updatedAt
+	f.sessions[id] = r
+	return true, nil
+}
+
+func (f *fakeStore) SetSessionReviewLocked(_ context.Context, id domain.SessionID, locked bool, updatedAt time.Time) (bool, error) {
+	r, ok := f.sessions[id]
+	if !ok {
+		return false, nil
+	}
+	r.ReviewLocked = locked
 	r.UpdatedAt = updatedAt
 	f.sessions[id] = r
 	return true, nil
@@ -534,6 +547,50 @@ func TestSessionSetWorkflowModeRejectsUnknownMode(t *testing.T) {
 	}
 	if st.sessions["mer-1"].WorkflowMode == domain.WorkflowMode("review") {
 		t.Fatal("invalid workflow mode reached the store")
+	}
+}
+
+// A plan/build command is one of the review lock's release paths: the user has
+// taken their turn, so a plan command (planning) must clear a latched review
+// freeze. This session has no PR, so the refreshed read does not re-latch.
+func TestSessionSetWorkflowModeReleasesReviewLock(t *testing.T) {
+	for _, mode := range []domain.WorkflowMode{domain.WorkflowModePlanning, domain.WorkflowModeBuilding} {
+		t.Run(string(mode), func(t *testing.T) {
+			st := newFakeStore()
+			st.sessions["mer-1"] = domain.SessionRecord{
+				ID: "mer-1", ProjectID: "mer", Kind: domain.KindWorker,
+				WorkflowMode: domain.WorkflowModePlanning, ReviewLocked: true,
+			}
+
+			sess, err := (&Service{store: st}).SetWorkflowMode(context.Background(), "mer-1", mode)
+			if err != nil {
+				t.Fatal(err)
+			}
+			if sess.ReviewLocked || st.sessions["mer-1"].ReviewLocked {
+				t.Fatalf("review lock was not released by workflow mode %q: session=%+v stored=%+v", mode, sess, st.sessions["mer-1"])
+			}
+			if st.sessions["mer-1"].WorkflowMode != mode {
+				t.Fatalf("workflow mode was not persisted: stored=%+v", st.sessions["mer-1"])
+			}
+		})
+	}
+}
+
+// A user message is the commit-forward review lock release path: the human has
+// taken their turn on the card, so the freeze is released (here via Send, which
+// is how the UI's "commit forward to wait for PR" action works).
+func TestSessionSendReleasesReviewLock(t *testing.T) {
+	st := newFakeStore()
+	st.sessions["mer-1"] = domain.SessionRecord{
+		ID: "mer-1", ProjectID: "mer", Kind: domain.KindWorker, ReviewLocked: true,
+	}
+	svc := &Service{store: st, manager: &fakeCommander{}}
+
+	if err := svc.Send(context.Background(), "mer-1", "Commit the changes and wait for PR approval.", nil); err != nil {
+		t.Fatal(err)
+	}
+	if st.sessions["mer-1"].ReviewLocked {
+		t.Fatal("review lock was not released by a user message")
 	}
 }
 

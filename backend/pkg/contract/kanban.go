@@ -39,6 +39,12 @@ type KanbanSessionFacts struct {
 	AutoReview       bool
 	AutoInjectReview bool
 	AutoInjectCI     bool
+	// ReviewLocked freezes the card in KanbanNeedsReview once it has entered
+	// the review-feedback loop. While set, PR facts cannot move the card, so a
+	// person's owed review decision cannot be preempted by a new auto review
+	// pass, an approval, or mergeability. Only an explicit plan/build command or
+	// a user message to the session releases the latch.
+	ReviewLocked bool
 }
 
 // KanbanReviewRunFacts summarize AO's own review passes against one PR's
@@ -89,6 +95,13 @@ type KanbanPRFacts struct {
 
 func derivePRKanbanColumn(session KanbanSessionFacts, pr KanbanPRFacts) KanbanColumn {
 	switch {
+	// A frozen review card stays in needs_review no matter what the PR facts
+	// now say. The person whose turn the review loop is on has been asked for a
+	// decision, and only an explicit plan/build command or a user message
+	// releases the card. Terminated sessions still archive (checked before the
+	// per-PR reduction in DeriveKanbanPresentation).
+	case session.ReviewLocked:
+		return KanbanNeedsReview
 	case pr.Merged || pr.Closed:
 		return KanbanReady
 	case pr.Draft:

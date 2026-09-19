@@ -465,6 +465,7 @@ type Session struct {
 	LatestAssistantUpdateAt          sql.NullTime
 	NativeIdentityObservedAt         sql.NullTime
 	WorkflowMode                     string
+	ReviewLocked                     bool
 }
 
 type SessionCleanupFact struct {

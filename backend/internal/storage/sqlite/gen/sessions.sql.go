@@ -138,7 +138,7 @@ SELECT id, project_id, num, issue_id, kind, harness,
     runtime_handle_id, agent_session_id, agent_session_id_launch_id, native_identity_observed_at, prompt,
     created_at, updated_at, revision, display_name, first_signal_at, preview_url,
     preview_revision, cleanup_generation, runtime_launch_id,
-    workspace_repo_path, terminate_on_pr_merge, diff_base_sha, diff_base_ref, workflow_mode,
+    workspace_repo_path, terminate_on_pr_merge, diff_base_sha, diff_base_ref, workflow_mode, review_locked,
     reviewer_harness, reviewer_agent_config, is_pinned, pinned_at,
     session_mode, provider_conversation_id, controller_generation, browser_capability_verifier,
     latest_user_prompt, latest_user_prompt_at, latest_assistant_update, latest_assistant_update_at,
@@ -179,6 +179,7 @@ type GetSessionRow struct {
 	DiffBaseSha                      string
 	DiffBaseRef                      string
 	WorkflowMode                     string
+	ReviewLocked                     bool
 	ReviewerHarness                  domain.ReviewerHarness
 	ReviewerAgentConfig              string
 	IsPinned                         bool
@@ -239,6 +240,7 @@ func (q *Queries) GetSession(ctx context.Context, id domain.SessionID) (GetSessi
 		&i.DiffBaseSha,
 		&i.DiffBaseRef,
 		&i.WorkflowMode,
+		&i.ReviewLocked,
 		&i.ReviewerHarness,
 		&i.ReviewerAgentConfig,
 		&i.IsPinned,
@@ -279,9 +281,9 @@ INSERT INTO sessions (
     native_transcript_path,
     preview_url, preview_revision, terminate_on_pr_merge, cleanup_generation, browser_capability_verifier,
     session_mode, provider_conversation_id, controller_generation, model, session_permissions,
-    created_at, updated_at, is_pinned, pinned_at, auto_inject_review, auto_inject_ci, workflow_mode
+    created_at, updated_at, is_pinned, pinned_at, auto_inject_review, auto_inject_ci, workflow_mode, review_locked
 ) VALUES (
-    ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?
+    ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?
 )
 `
 
@@ -339,6 +341,7 @@ type InsertSessionParams struct {
 	AutoInjectReview                 bool
 	AutoInjectCI                     bool
 	WorkflowMode                     string
+	ReviewLocked                     bool
 }
 
 func (q *Queries) InsertSession(ctx context.Context, arg InsertSessionParams) error {
@@ -396,6 +399,7 @@ func (q *Queries) InsertSession(ctx context.Context, arg InsertSessionParams) er
 		arg.AutoInjectReview,
 		arg.AutoInjectCI,
 		arg.WorkflowMode,
+		arg.ReviewLocked,
 	)
 	return err
 }
@@ -406,7 +410,7 @@ SELECT id, project_id, num, issue_id, kind, harness,
     runtime_handle_id, agent_session_id, agent_session_id_launch_id, native_identity_observed_at, prompt,
     created_at, updated_at, revision, display_name, first_signal_at, preview_url,
     preview_revision, cleanup_generation, runtime_launch_id,
-    workspace_repo_path, terminate_on_pr_merge, diff_base_sha, diff_base_ref, workflow_mode,
+    workspace_repo_path, terminate_on_pr_merge, diff_base_sha, diff_base_ref, workflow_mode, review_locked,
     reviewer_harness, reviewer_agent_config, is_pinned, pinned_at,
     session_mode, provider_conversation_id, controller_generation, browser_capability_verifier,
     latest_user_prompt, latest_user_prompt_at, latest_assistant_update, latest_assistant_update_at,
@@ -447,6 +451,7 @@ type ListAllSessionsRow struct {
 	DiffBaseSha                      string
 	DiffBaseRef                      string
 	WorkflowMode                     string
+	ReviewLocked                     bool
 	ReviewerHarness                  domain.ReviewerHarness
 	ReviewerAgentConfig              string
 	IsPinned                         bool
@@ -513,6 +518,7 @@ func (q *Queries) ListAllSessions(ctx context.Context) ([]ListAllSessionsRow, er
 			&i.DiffBaseSha,
 			&i.DiffBaseRef,
 			&i.WorkflowMode,
+			&i.ReviewLocked,
 			&i.ReviewerHarness,
 			&i.ReviewerAgentConfig,
 			&i.IsPinned,
@@ -557,7 +563,7 @@ SELECT id, project_id, num, issue_id, kind, harness,
     runtime_handle_id, agent_session_id, agent_session_id_launch_id, native_identity_observed_at, prompt,
     created_at, updated_at, revision, display_name, first_signal_at, preview_url,
     preview_revision, cleanup_generation, runtime_launch_id,
-    workspace_repo_path, terminate_on_pr_merge, diff_base_sha, diff_base_ref, workflow_mode,
+    workspace_repo_path, terminate_on_pr_merge, diff_base_sha, diff_base_ref, workflow_mode, review_locked,
     reviewer_harness, reviewer_agent_config, is_pinned, pinned_at,
     session_mode, provider_conversation_id, controller_generation, browser_capability_verifier,
     latest_user_prompt, latest_user_prompt_at, latest_assistant_update, latest_assistant_update_at,
@@ -598,6 +604,7 @@ type ListSessionsByProjectRow struct {
 	DiffBaseSha                      string
 	DiffBaseRef                      string
 	WorkflowMode                     string
+	ReviewLocked                     bool
 	ReviewerHarness                  domain.ReviewerHarness
 	ReviewerAgentConfig              string
 	IsPinned                         bool
@@ -664,6 +671,7 @@ func (q *Queries) ListSessionsByProject(ctx context.Context, projectID *domain.P
 			&i.DiffBaseSha,
 			&i.DiffBaseRef,
 			&i.WorkflowMode,
+			&i.ReviewLocked,
 			&i.ReviewerHarness,
 			&i.ReviewerAgentConfig,
 			&i.IsPinned,
@@ -985,6 +993,28 @@ func (q *Queries) SetSessionPreviewURL(ctx context.Context, arg SetSessionPrevie
 	return result.RowsAffected()
 }
 
+const setSessionReviewLocked = `-- name: SetSessionReviewLocked :execrows
+UPDATE sessions SET review_locked = ?, updated_at = ? WHERE id = ?
+`
+
+type SetSessionReviewLockedParams struct {
+	ReviewLocked bool
+	UpdatedAt    time.Time
+	ID           domain.SessionID
+}
+
+// SetSessionReviewLocked latches or releases the review column freeze. The
+// service engages it when a card first lands in needs_review and releases it
+// on plan/build commands and on user messages (the commit-forward path). It
+// returns ok=false when the id does not exist.
+func (q *Queries) SetSessionReviewLocked(ctx context.Context, arg SetSessionReviewLockedParams) (int64, error) {
+	result, err := q.db.ExecContext(ctx, setSessionReviewLocked, arg.ReviewLocked, arg.UpdatedAt, arg.ID)
+	if err != nil {
+		return 0, err
+	}
+	return result.RowsAffected()
+}
+
 const setSessionReviewerConfig = `-- name: SetSessionReviewerConfig :execrows
 UPDATE sessions SET reviewer_harness = ?, reviewer_agent_config = ?, updated_at = ? WHERE id = ?
 `
@@ -1028,7 +1058,7 @@ func (q *Queries) SetSessionTerminateOnPRMerge(ctx context.Context, arg SetSessi
 }
 
 const setSessionWorkflowMode = `-- name: SetSessionWorkflowMode :execrows
-UPDATE sessions SET workflow_mode = ?, updated_at = ? WHERE id = ?
+UPDATE sessions SET workflow_mode = ?, review_locked = 0, updated_at = ? WHERE id = ?
 `
 
 type SetSessionWorkflowModeParams struct {
@@ -1038,7 +1068,10 @@ type SetSessionWorkflowModeParams struct {
 }
 
 // SetSessionWorkflowMode moves a session between its delivery stages
-// ("planning" and "building"). It returns ok=false when the id does not exist.
+// ("planning" and "building"). A plan/build command is also one of the review
+// lock's release paths: the user has taken their turn, so any review freeze is
+// cleared together with the mode change. It returns ok=false when the id does
+// not exist.
 func (q *Queries) SetSessionWorkflowMode(ctx context.Context, arg SetSessionWorkflowModeParams) (int64, error) {
 	result, err := q.db.ExecContext(ctx, setSessionWorkflowMode, arg.WorkflowMode, arg.UpdatedAt, arg.ID)
 	if err != nil {
@@ -1109,7 +1142,7 @@ UPDATE sessions SET
     preview_url = ?, preview_revision = ?, terminate_on_pr_merge = ?,
     cleanup_generation = ?, browser_capability_verifier = ?,
     provider_conversation_id = ?, controller_generation = ?, model = ?, updated_at = ?,
-    is_pinned = ?, pinned_at = ?, auto_inject_review = ?, auto_inject_ci = ?, workflow_mode = ?
+    is_pinned = ?, pinned_at = ?, auto_inject_review = ?, auto_inject_ci = ?, workflow_mode = ?, review_locked = ?
 WHERE id = ?
 `
 
@@ -1161,6 +1194,7 @@ type UpdateSessionParams struct {
 	AutoInjectReview                 bool
 	AutoInjectCI                     bool
 	WorkflowMode                     string
+	ReviewLocked                     bool
 	ID                               domain.SessionID
 }
 
@@ -1213,6 +1247,7 @@ func (q *Queries) UpdateSession(ctx context.Context, arg UpdateSessionParams) er
 		arg.AutoInjectReview,
 		arg.AutoInjectCI,
 		arg.WorkflowMode,
+		arg.ReviewLocked,
 		arg.ID,
 	)
 	return err

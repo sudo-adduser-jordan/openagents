@@ -26,6 +26,7 @@ type Store interface {
 	SetSessionPreviewURL(ctx context.Context, id domain.SessionID, previewURL string, updatedAt time.Time) (bool, error)
 	SetSessionTerminateOnPRMerge(ctx context.Context, id domain.SessionID, terminate bool, updatedAt time.Time) (bool, error)
 	SetSessionWorkflowMode(ctx context.Context, id domain.SessionID, mode domain.WorkflowMode, updatedAt time.Time) (bool, error)
+	SetSessionReviewLocked(ctx context.Context, id domain.SessionID, locked bool, updatedAt time.Time) (bool, error)
 	SetSessionAutoInjectReview(ctx context.Context, id domain.SessionID, autoInject bool, updatedAt time.Time) (bool, error)
 	SetSessionAutoInjectCI(ctx context.Context, id domain.SessionID, autoInject bool, updatedAt time.Time) (bool, error)
 	SetSessionPinned(ctx context.Context, id domain.SessionID, isPinned bool, pinnedAt *time.Time, updatedAt time.Time) (bool, error)
@@ -632,7 +633,15 @@ func (s *Service) RollbackSpawn(ctx context.Context, id domain.SessionID) (Rollb
 // optional inline image (e.g. a browser-annotation snapshot) written into the
 // session worktree and referenced from the delivered message.
 func (s *Service) Send(ctx context.Context, id domain.SessionID, message string, attachment *ports.SpawnAttachment) error {
-	return toAPIError(s.manager.Send(ctx, id, message, attachment))
+	if err := toAPIError(s.manager.Send(ctx, id, message, attachment)); err != nil {
+		return err
+	}
+	// A user message is one of the review lock's release paths: the human has
+	// taken their turn on the card (the commit-forward path sends the worker
+	// "commit and wait for PR approval"), so any review freeze is released and
+	// the card may move with its PR facts again.
+	s.releaseReviewLock(ctx, id)
+	return nil
 }
 
 // Rename updates the user-facing session display name.
@@ -869,6 +878,7 @@ func (s *Service) List(ctx context.Context, filter ListFilter) ([]domain.Session
 		if err != nil {
 			return nil, err
 		}
+		s.latchReviewLock(ctx, rec, sess.KanbanColumn)
 		out = append(out, sess)
 	}
 	if s.statusRecoveryRevision() != recoveryRevision {
@@ -929,6 +939,7 @@ func (s *Service) Get(ctx context.Context, id domain.SessionID) (domain.Session,
 	if err != nil {
 		return domain.Session{}, err
 	}
+	s.latchReviewLock(ctx, rec, sess.KanbanColumn)
 	if s.statusRecoveryRevision() != recoveryRevision {
 		sess.StatusReadiness = "checking"
 	}
@@ -961,6 +972,33 @@ func (s *Service) toSessionWithFacts(rec domain.SessionRecord, prs []domain.PRFa
 		TerminalHandleID: rec.Metadata.RuntimeHandleID,
 		PRs:              prs,
 	}, nil
+}
+
+// latchReviewLock engages the review freeze the first time a card lands in
+// needs_review. The person whose turn the review-feedback loop is on has been
+// asked for a decision, so PR facts must not silently move the card (a new auto
+// review pass, an approval, or mergeability) until the human acts. It is
+// idempotent: it fires at most once per review episode — the read path checks
+// the durable flag first, and the store's UPDATE is a no-op once latched — so a
+// board refresh never writes. Only an explicit plan/build command or a user
+// message releases the latch.
+func (s *Service) latchReviewLock(ctx context.Context, rec domain.SessionRecord, column domain.KanbanColumn) {
+	if rec.ReviewLocked || rec.IsTerminated || column != domain.KanbanNeedsReview {
+		return
+	}
+	if _, err := s.store.SetSessionReviewLocked(ctx, rec.ID, true, s.now()); err != nil {
+		s.logger.Warn("latch review lock", "sessionId", rec.ID, "error", err)
+	}
+}
+
+// releaseReviewLock clears a session's review freeze (plan/build commands do
+// this through SetSessionWorkflowMode; user messages go through Send). The
+// store UPDATE is idempotent, so when the freeze is already released no row
+// changes and no CDC event fires.
+func (s *Service) releaseReviewLock(ctx context.Context, id domain.SessionID) {
+	if _, err := s.store.SetSessionReviewLocked(ctx, id, false, s.now()); err != nil {
+		s.logger.Warn("release review lock", "sessionId", id, "error", err)
+	}
 }
 
 // toAPIError maps the session engine's sentinel errors to their REST API
