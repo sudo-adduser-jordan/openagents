@@ -183,17 +183,6 @@ vi.mock("./ShellTopbar", () => ({
 vi.mock("./NotificationCenter", () => ({
 	NotificationCenter: () => <button type="button">Notifications</button>,
 }));
-vi.mock("../hooks/useSessionHandoffMenu", () => ({
-	useSessionHandoffMenu: () => ({
-		agentSwitch: undefined,
-		switchControlPresentation: undefined,
-		switchError: null,
-	}),
-}));
-vi.mock("./TerminalSwitchAgentButton", () => ({
-	TerminalSwitchAgentButton: ({ variant }: { variant?: "icon" | "menu-item" }) =>
-		variant === "menu-item" ? null : <button aria-label="Switch agent" type="button" />,
-}));
 vi.mock("./chat/SessionChatSurface", async () => {
 	const { memo } = await vi.importActual<typeof import("react")>("react");
 	return { SessionChatSurface: memo(({
