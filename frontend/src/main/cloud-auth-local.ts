@@ -23,7 +23,8 @@ import {
 	type StoredSession,
 	withAuthMutation,
 	writeAuthStore,
-} from "./cloud-auth";
+	revokeLocalSession,
+} from "./cloud-shared";
 
 const LOCAL_AUTH_PREFIX = "/api/cloud/v1/auth/local";
 /** Opaque tokens the local CP mints all carry this prefix (never a JWT). */
