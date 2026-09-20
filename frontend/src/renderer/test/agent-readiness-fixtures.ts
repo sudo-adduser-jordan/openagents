@@ -1,6 +1,5 @@
 import type { components } from "../../api/schema";
-
-export type AgentReadinessSnapshot = components["schemas"]["AgentReadinessSnapshot"];
+import type { AgentReadinessSnapshot } from "../hooks/useAgentReadinessQuery";
 
 export function agentReadiness(
 	id: string,
