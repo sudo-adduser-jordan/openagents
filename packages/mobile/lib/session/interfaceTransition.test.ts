@@ -14,7 +14,7 @@ import {
 import { isSessionGone } from "../connectionError";
 
 const daemonReason =
-	"session: native conversation id is not confirmed for the current terminal launch for claude-code";
+	"session: native conversation id is not confirmed for the current terminal launch for codex";
 
 describe("mobile interface transition polling", () => {
 	it("keeps an unconfirmed target fenced without polling indefinitely", () => {

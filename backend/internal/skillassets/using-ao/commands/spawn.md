@@ -25,7 +25,7 @@ ao spawn [flags]
 
 `--agent` is an alias for `--harness`.
 
-Available harnesses: `claude-code`, `codex`, `aider`, `opencode`, `grok`, `droid`, `amp`, `agy`, `crush`, `cursor`, `qwen`, `copilot`, `goose`, `auggie`, `continue`, `devin`, `cline`, `kimi`, `kiro`, `kilocode`, `vibe`, `pi`, `autohand`.
+Available harnesses: `codex`, `aider`, `opencode`, `grok`, `droid`, `amp`, `agy`, `crush`, `cursor`, `qwen`, `copilot`, `goose`, `auggie`, `continue`, `devin`, `cline`, `kimi`, `kiro`, `kilocode`, `vibe`, `pi`, `autohand`.
 
 ## Examples
 
@@ -36,5 +36,5 @@ ao spawn --project agent-orchestrator --issue 142 --name "fix-session-leak" --pr
 
 ```bash
 # Spawn a worker and immediately claim an open PR
-ao spawn --project agent-orchestrator --name "review-pr-88" --claim-pr 88 --harness claude-code
+ao spawn --project agent-orchestrator --name "review-pr-88" --claim-pr 88 --harness codex
 ```

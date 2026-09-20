@@ -84,7 +84,7 @@ function viewProps(overrides: Partial<TaskComposerViewProps> = {}): TaskComposer
 			onSubmit: vi.fn(),
 		},
 		renderAgentControl: (control) => (
-			<button type="button" aria-label={control.label} onClick={() => control.onChange("claude-code")}>
+			<button type="button" aria-label={control.label} onClick={() => control.onChange("codex")}>
 				{control.value}
 			</button>
 		),
@@ -115,7 +115,7 @@ describe("TaskComposerView", () => {
 		expect(props.onPromptChange).toHaveBeenCalledWith("Investigate the failure");
 
 		fireEvent.click(screen.getByRole("button", { name: "Agent" }));
-		expect(props.agent.onChange).toHaveBeenCalledWith("claude-code");
+		expect(props.agent.onChange).toHaveBeenCalledWith("codex");
 		fireEvent.change(screen.getByRole("textbox", { name: "Model" }), { target: { value: "gpt-5.1" } });
 		expect(props.model.onModelChange).toHaveBeenCalledWith("gpt-5.1");
 		expect(screen.getByRole("group", { name: "Runs with" })).toHaveClass("composer-run-controls");

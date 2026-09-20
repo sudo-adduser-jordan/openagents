@@ -195,7 +195,7 @@ function NewTaskModal({ scene }: { scene: ProjectAgentsScene }) {
 	}, [scene.id, scene.typing, targetChars]);
 
 	const taskText = TASK_TEXT_FULL.slice(0, charCount);
-	const selectedAgent = scene.selectedAgent ?? "claude-code";
+	const selectedAgent = scene.selectedAgent ?? "codex";
 	const agent = agentById(selectedAgent);
 	const showCaret = charCount < TASK_TEXT_FULL.length && scene.phase === "modal";
 

@@ -1081,12 +1081,12 @@ type SetActivityRequest struct {
 	Usage                        *UsageHookMetadata                  `json:"usage,omitempty" description:"Provider transcript metadata used by the local usage pipeline."`
 }
 
-// UsageHookMetadata is the transcript metadata carried by supported Claude
-// Code and Codex hooks. It contains paths and identifiers only, never prompt or
+// UsageHookMetadata is the transcript metadata carried by supported agent
+// hooks. It contains paths and identifiers only, never prompt or
 // response content.
 type UsageHookMetadata struct {
 	Harness                domain.AgentHarness `json:"harness" enum:"opencode"`
-	ProviderID             string              `json:"providerId,omitempty" description:"Canonical provider routing hint derived by the trusted local Claude hook."`
+	ProviderID             string              `json:"providerId,omitempty" description:"Canonical provider routing hint derived by the trusted local agent hook."`
 	TranscriptPath         string              `json:"transcriptPath,omitempty"`
 	ModelID                string              `json:"modelId,omitempty"`
 	SubagentID             string              `json:"subagentId,omitempty"`

@@ -3,9 +3,9 @@ import path from "node:path";
 import { describe, expect, it } from "vitest";
 import { backdropFor, harnessInitial, hasLogo, LOGO_KEYS } from "./harnessLogo";
 
-// The 24 harnesses the daemon accepts — backend/internal/domain/harness.go.
+// The harnesses the daemon accepts — backend/internal/domain/harness.go.
 const ALL_HARNESSES = [
-	"claude-code", "codex", "aider", "opencode", "grok", "droid", "amp", "agy",
+	"codex", "aider", "opencode", "grok", "droid", "amp", "agy",
 	"crush", "cursor", "qwen", "copilot", "goose", "auggie", "continue", "devin",
 	"cline", "kimi", "muse", "kiro", "kilocode", "vibe", "pi", "autohand",
 	"kimchi", "prime-agent",
@@ -36,7 +36,7 @@ describe("logo registry", () => {
 	});
 
 	it("is case- and whitespace-insensitive", () => {
-		expect(hasLogo("Claude-Code")).toBe(true);
+		expect(hasLogo("Cursor")).toBe(true);
 		expect(hasLogo(" codex ")).toBe(true);
 	});
 
@@ -74,7 +74,7 @@ describe("backdropFor", () => {
 
 	// A chip behind every mark would turn a row of logos into a row of boxes.
 	it("leaves colourful marks bare", () => {
-	for (const h of ["claude-code", "codex", "amp", "qwen", "vibe", "aider", "crush", "muse", "kiro"]) {
+	for (const h of ["codex", "amp", "qwen", "vibe", "aider", "crush", "muse", "kiro"]) {
 			expect(backdropFor(h), h).toBe("neutral");
 		}
 	});

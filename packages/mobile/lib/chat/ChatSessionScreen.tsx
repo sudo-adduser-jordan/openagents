@@ -567,7 +567,7 @@ function interfacePhaseLabel(phase?: string): string {
 		default: return "preparing native handoff";
 	}
 }
-function signInCommand(harness: string): string | undefined { return harness === "codex" ? "codex login" : harness === "claude-code" || harness === "claude" ? "claude auth login" : undefined; }
+function signInCommand(harness: string): string | undefined { return harness === "codex" ? "codex login" : undefined; }
 
 const makeStyles = (t: Theme) => StyleSheet.create({
 	screen: { flex: 1, backgroundColor: t.bgBase },

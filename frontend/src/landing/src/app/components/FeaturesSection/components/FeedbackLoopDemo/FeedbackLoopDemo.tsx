@@ -516,7 +516,7 @@ function SessionTopbar({ phase }: { phase: Phase }) {
 					<div className="flex min-w-0 flex-1 self-stretch items-center">
 						<span className="relative inline-flex min-w-0 shrink-0 self-stretch items-center gap-1.5 border-r border-[var(--preview-border)] bg-[var(--preview-overlay)] px-2.5 after:absolute after:inset-x-0 after:-bottom-px after:h-px after:bg-[#fafafa]">
 							<img
-								src="/app-icons/agents/claude-code.svg"
+								src="/app-icons/agents/opencode.svg"
 								alt=""
 								aria-hidden="true"
 								className="size-[13px] shrink-0 object-contain"
@@ -580,10 +580,10 @@ function TerminalPane({ lines, typingText, streamingText }: { lines: DisplayLine
 			className="flex min-h-0 min-w-0 flex-1 flex-col justify-end overflow-hidden bg-[var(--preview-terminal)] px-3 py-2.5 font-mono"
 			style={{ fontFamily: "var(--font-geist-mono), ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, Liberation Mono, monospace", fontVariantEmoji: "text" }}
 		>
-			{/* Claude Code header */}
+			{/* OpenCode header */}
 			<div className="mb-2 flex items-start gap-2">
 				<img
-					src="/app-icons/agents/claude-code.svg"
+					src="/app-icons/agents/opencode.svg"
 					alt=""
 					aria-hidden="true"
 					className="mt-0.5 size-[22px] shrink-0"
@@ -593,11 +593,11 @@ function TerminalPane({ lines, typingText, streamingText }: { lines: DisplayLine
 				/>
 				<div className="min-w-0 text-[10px] leading-[1.5]">
 					<div>
-						<span className="font-bold text-[var(--preview-terminal-fg)]">Claude Code</span>
+						<span className="font-bold text-[var(--preview-terminal-fg)]">OpenCode</span>
 						<span className="text-[var(--preview-terminal-dim)]"> v2.1.204</span>
 					</div>
 					<div className="text-[var(--preview-terminal-dim)]">
-						Opus 4.8 (1M context) · Claude Team
+						Default model · Full tools
 					</div>
 					<div className="text-[var(--preview-terminal-dim)]">
 						~/ao/solkit-ui/orchestrator

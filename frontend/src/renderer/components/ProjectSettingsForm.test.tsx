@@ -200,7 +200,7 @@ describe("ProjectSettingsForm", () => {
 			defaultBranch: "main",
 			config: {
 				worker: { agent: "codex" },
-				orchestrator: { agent: "claude-code" },
+				orchestrator: { agent: "opencode" },
 			},
 		});
 
@@ -209,7 +209,7 @@ describe("ProjectSettingsForm", () => {
 		await waitFor(() =>
 			expect(ensureAgentReadinessMock).toHaveBeenCalledWith(
 				expect.objectContaining({
-					agentIds: ["codex", "claude-code", ""],
+					agentIds: ["codex", "opencode", ""],
 					enabled: true,
 				}),
 			),
@@ -231,7 +231,7 @@ describe("ProjectSettingsForm", () => {
 			defaultBranch: "main",
 			config: {
 				worker: { agent: "codex" },
-				orchestrator: { agent: "claude-code" },
+				orchestrator: { agent: "codex" },
 			},
 		});
 
@@ -253,7 +253,7 @@ describe("ProjectSettingsForm", () => {
 			defaultBranch: "main",
 			config: {
 				worker: { agent: "codex" },
-				orchestrator: { agent: "claude-code" },
+				orchestrator: { agent: "codex" },
 			},
 		});
 
@@ -281,7 +281,7 @@ describe("ProjectSettingsForm", () => {
 			defaultBranch: "main",
 			config: {
 				worker: { agent: "codex" },
-				orchestrator: { agent: "claude-code" },
+				orchestrator: { agent: "codex" },
 			},
 		});
 
@@ -304,7 +304,7 @@ describe("ProjectSettingsForm", () => {
 			defaultBranch: "main",
 			config: {
 				worker: { agent: "codex" },
-				orchestrator: { agent: "claude-code" },
+				orchestrator: { agent: "codex" },
 			},
 		});
 
@@ -333,7 +333,7 @@ describe("ProjectSettingsForm", () => {
 			defaultBranch: "main",
 			config: {
 				worker: { agent: "codex" },
-				orchestrator: { agent: "claude-code" },
+				orchestrator: { agent: "codex" },
 			},
 		});
 
@@ -353,7 +353,7 @@ describe("ProjectSettingsForm", () => {
 			defaultBranch: "main",
 			config: {
 				worker: { agent: "codex" },
-				orchestrator: { agent: "claude-code" },
+				orchestrator: { agent: "codex" },
 			},
 		});
 
@@ -375,7 +375,7 @@ describe("ProjectSettingsForm", () => {
 			defaultBranch: "main",
 			config: {
 				worker: { agent: "codex" },
-				orchestrator: { agent: "claude-code" },
+				orchestrator: { agent: "codex" },
 			},
 		});
 
@@ -396,7 +396,7 @@ describe("ProjectSettingsForm", () => {
 				id: "proj-1", name: "Project One", kind: "single_repo", path: "/repo/project-one",
 				repo: "", defaultBranch: "main", config: {
 					worker: { agent: "codex", agentConfig: { model: "gpt-test", effort: "high" } },
-					orchestrator: { agent: "claude-code" },
+					orchestrator: { agent: "codex" },
 				},
 			} } };
 		});
@@ -436,7 +436,7 @@ describe("ProjectSettingsForm", () => {
 				},
 				orchestrator: { agent: "opencode" },
 				agentConfig: {
-					model: "claude-opus-4-5",
+					model: "gpt-5.6",
 					permissions: "auto",
 				},
 				reviewers: [{ harness: "opencode" }],
@@ -447,7 +447,7 @@ describe("ProjectSettingsForm", () => {
 
 		expect(screen.queryByLabelText("Default branch")).not.toBeInTheDocument();
 		expect(await screen.findByRole("button", { name: "Worker model" })).toHaveTextContent("worker-model");
-		expect(screen.getByRole("button", { name: "Orchestrator model" })).toHaveTextContent("claude-opus-4-5");
+		expect(screen.getByRole("button", { name: "Orchestrator model" })).toHaveTextContent("gpt-5.6");
 
 		const workerAgent = screen.getByRole("button", { name: "Default worker agent" });
 		const orchestratorAgent = screen.getByRole("button", { name: "Default orchestrator agent" });
@@ -461,7 +461,7 @@ describe("ProjectSettingsForm", () => {
 		await chooseOption(workerAgent, "OpenCode");
 		await chooseOption(orchestratorAgent, "OpenCode");
 		await chooseCustomModel("Worker model", "openai/gpt-5.4");
-		await chooseCustomModel("Orchestrator model", "anthropic/claude-sonnet");
+		await chooseCustomModel("Orchestrator model", "openai/gpt-5.4");
 		await userEvent.click(permissionMode);
 		await userEvent.click(await screen.findByRole("menuitem", { name: "Bypass permissions" }));
 
@@ -478,7 +478,7 @@ describe("ProjectSettingsForm", () => {
 					defaultBranch: "develop",
 					sessionPrefix: "po",
 					env: { FOO: "bar" },
-					reviewers: [{ harness: "opencode", agentConfig: { model: "claude-opus-4-5", permissions: "auto" } }],
+					reviewers: [{ harness: "opencode", agentConfig: { model: "gpt-5.6", permissions: "auto" } }],
 					// Agents changes applied
 					worker: {
 						agent: "opencode",
@@ -486,7 +486,7 @@ describe("ProjectSettingsForm", () => {
 					},
 					orchestrator: {
 						agent: "opencode",
-						agentConfig: { model: "anthropic/claude-sonnet", permissions: "auto" },
+						agentConfig: { model: "openai/gpt-5.4", permissions: "auto" },
 					},
 					agentConfig: undefined,
 				}),
@@ -510,8 +510,8 @@ describe("ProjectSettingsForm", () => {
 				defaultBranch: "develop",
 				sessionPrefix: "po",
 				worker: { agent: "codex" },
-				orchestrator: { agent: "claude-code" },
-				reviewers: [{ harness: "claude-code" }],
+				orchestrator: { agent: "codex" },
+				reviewers: [{ harness: "codex" }],
 			},
 		});
 
@@ -532,7 +532,7 @@ describe("ProjectSettingsForm", () => {
 			defaultBranch: "main",
 			config: {
 				worker: { agent: "codex" },
-				orchestrator: { agent: "claude-code" },
+				orchestrator: { agent: "codex" },
 				autoReview: true,
 			},
 		});
@@ -562,7 +562,7 @@ describe("ProjectSettingsForm", () => {
 			defaultBranch: "trunk",
 			config: {
 				worker: { agent: "codex" },
-				orchestrator: { agent: "claude-code" },
+				orchestrator: { agent: "codex" },
 			},
 		});
 
@@ -693,7 +693,7 @@ describe("ProjectSettingsForm", () => {
 						defaultBranch: "main",
 						config: {
 							worker: { agent: "codex" },
-							orchestrator: { agent: "claude-code" },
+							orchestrator: { agent: "codex" },
 							reviewers: [
 								{ harness: "codex", agentConfig: { model: "gpt-5", permissions: "bypass-permissions" } },
 							],
@@ -901,7 +901,7 @@ describe("ProjectSettingsForm", () => {
 			defaultBranch: "main",
 			config: {
 				worker: { agent: "codex" },
-				orchestrator: { agent: "claude-code" },
+				orchestrator: { agent: "codex" },
 			},
 		});
 		putMock.mockResolvedValue({
@@ -931,7 +931,7 @@ describe("ProjectSettingsForm", () => {
 			defaultBranch: "main",
 			config: {
 				worker: { agent: "codex" },
-				orchestrator: { agent: "claude-code" },
+				orchestrator: { agent: "codex" },
 			},
 		});
 
@@ -981,7 +981,7 @@ describe("ProjectSettingsForm", () => {
 			defaultBranch: "main",
 			config: {
 				worker: { agent: "codex" },
-				orchestrator: { agent: "claude-code" },
+				orchestrator: { agent: "codex" },
 			},
 		});
 
@@ -1011,7 +1011,7 @@ describe("ProjectSettingsForm", () => {
 						defaultBranch: "main",
 						config: {
 							worker: { agent: "codex" },
-							orchestrator: { agent: "claude-code" },
+							orchestrator: { agent: "codex" },
 						},
 					},
 				},
@@ -1129,7 +1129,7 @@ describe("ProjectSettingsForm", () => {
 				postCreate: ["npm install"],
 				agentRules: "keep work small",
 				worker: { agent: "codex" },
-				orchestrator: { agent: "claude-code" },
+				orchestrator: { agent: "codex" },
 				agentConfig: {
 					model: "gpt-5-codex",
 					permissions: "auto",
@@ -1164,7 +1164,7 @@ describe("ProjectSettingsForm", () => {
 					postCreate: ["npm install"],
 					agentRules: "keep work small",
 					worker: { agent: "codex", agentConfig: { model: "gpt-5-codex", permissions: "auto" } },
-					orchestrator: { agent: "claude-code", agentConfig: { model: "gpt-5-codex", permissions: "auto" } },
+					orchestrator: { agent: "codex", agentConfig: { model: "gpt-5-codex", permissions: "auto" } },
 					agentConfig: undefined,
 				},
 			},
@@ -1185,7 +1185,7 @@ describe("ProjectSettingsForm", () => {
 					defaultBranch: "main",
 					config: {
 						worker: { agent: "codex" },
-						orchestrator: { agent: "claude-code" },
+						orchestrator: { agent: "codex" },
 					},
 				},
 			},
@@ -1227,7 +1227,7 @@ describe("ProjectSettingsForm", () => {
 					defaultBranch: "main",
 					config: {
 						worker: { agent: "codex" },
-						orchestrator: { agent: "claude-code" },
+						orchestrator: { agent: "codex" },
 						trackerIntake: {
 							enabled: true,
 							provider: "gitlab",
@@ -1269,7 +1269,7 @@ describe("ProjectSettingsForm", () => {
 					defaultBranch: "main",
 					config: {
 						worker: { agent: "codex" },
-						orchestrator: { agent: "claude-code" },
+						orchestrator: { agent: "codex" },
 					},
 				},
 			},
@@ -1293,14 +1293,14 @@ describe("ProjectSettingsForm", () => {
 		// A pre-strip orchestrator session may still be running under a
 		// different provider; saving the project replaces it. The provider
 		// vocabulary only admits opencode now, so the legacy value rides raw.
-		orchestratorAgent: "claude-code" as unknown as WorkspaceSummary["orchestratorAgent"],
+		orchestratorAgent: "codex" as unknown as WorkspaceSummary["orchestratorAgent"],
 		sessions: [
 			{
 				id: "proj-1-orchestrator",
 				workspaceId: "proj-1",
 				workspaceName: "Project One",
 				title: "Orchestrator",
-				provider: "claude-code" as unknown as WorkspaceSummary["sessions"][number]["provider"],
+				provider: "codex" as unknown as WorkspaceSummary["sessions"][number]["provider"],
 				kind: "orchestrator",
 				branch: "ao/proj-1-orchestrator",
 				status: "working",
@@ -1371,7 +1371,7 @@ it("restarts the running orchestrator when its provider differs from the saved a
 			data: undefined,
 			error: {
 				code: "ORCHESTRATOR_SPAWN_FAILED",
-				message: "missing claude-code binary",
+				message: "missing codex binary",
 				requestId: "request-42",
 			},
 			response: { status: 500 },
@@ -1387,13 +1387,13 @@ it("restarts the running orchestrator when its provider differs from the saved a
 		await waitFor(() => expect(putMock).toHaveBeenCalledTimes(1));
 		await waitFor(() => expect(postMock).toHaveBeenCalledTimes(1));
 		expect(await screen.findByText("Saved")).toBeInTheDocument();
-		expect(await screen.findByText("Orchestrator restart failed: missing claude-code binary")).toBeInTheDocument();
+		expect(await screen.findByText("Orchestrator restart failed: missing codex binary")).toBeInTheDocument();
 		expect(screen.queryByText("Save failed")).not.toBeInTheDocument();
 		expect(invalidateSpy).toHaveBeenCalledWith({ queryKey: ["project", "proj-1"] });
 		expect(invalidateSpy).toHaveBeenCalledWith({ queryKey: workspaceQueryKey });
 		expect(closeSettingsMock).toHaveBeenCalledTimes(1);
 		expect(setOrchestratorReplacementErrorMock).toHaveBeenCalledWith("proj-1", {
-			message: "missing claude-code binary",
+			message: "missing codex binary",
 			code: "ORCHESTRATOR_SPAWN_FAILED",
 			requestId: "request-42",
 		});

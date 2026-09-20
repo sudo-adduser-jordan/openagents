@@ -1,5 +1,5 @@
 // Package hooksjson implements the matcher-group hooks file that several agents
-// (claude-code, goose, qwen, agy, droid, kimchi) share byte-for-byte in shape.
+// (goose, qwen, agy, droid, kimchi) share byte-for-byte in shape.
 // Each file is a JSON object with a "hooks" sub-map keyed by native event name,
 // whose values are matcher groups ({matcher?, hooks:[{type,command,timeout}]}). The
 // adapters differed only in the file path, the AO command prefix, the per-hook
@@ -32,7 +32,7 @@ type HookEntry struct {
 }
 
 // MatcherGroup is a set of hooks sharing one matcher. Matcher is a pointer so it
-// round-trips exactly: events that require a matcher (e.g. claude SessionStart's
+// round-trips exactly: events that require a matcher (e.g. a hook entry's
 // "startup") carry one; events that omit it serialize without the key.
 type MatcherGroup struct {
 	Matcher *string                    `json:"matcher,omitempty"`
@@ -162,7 +162,7 @@ type HookSpec struct {
 // hooks file. Construct one per adapter with its file path, command prefix,
 // per-hook timeout, and managed hook set.
 type Manager struct {
-	// Label prefixes error messages, e.g. "claude-code" or "goose", so the
+	// Label prefixes error messages, e.g. "codex" or "goose", so the
 	// wrapped error reads "<label>.GetAgentHooks: ...".
 	Label string
 	// CommandPrefix identifies AO-owned hook commands, e.g. "ao hooks goose ".

@@ -79,7 +79,7 @@ Examples the ingestion rule should cover:
 | --- | --- | --- | --- |
 | `ao.cli.invoked` | `ao hooks` | `agent` | Drop |
 | `ao.cli.invoked` | `AO  HOOKS` | `user` | Drop |
-| `ao.cli.invoked` | `ao hooks claude-code post-tool-use` | `user` | Drop |
+| `ao.cli.invoked` | `ao hooks codex post-tool-use` | `user` | Drop |
 | `ao.app.active` (`channel = cli`) | `ao session get sess-123` | `user` | Drop |
 | `ao.cli.invoked` | `ao spawn` | `user` | Keep |
 | `ao.app.active` (`channel = renderer`) | n/a | `renderer` | Keep |
@@ -352,5 +352,5 @@ ORDER BY events DESC
 If routine CLI commands still appear in `ao.cli.invoked`, `ao.app.active`,
 `ao.v2.cli.invoked`, or CLI-channel `ao.v2.app.active` after the rules are
 enabled, the drop rule is not broad enough. Check both exact and prefixed shapes
-such as `ao hooks`, `AO  HOOKS`, `ao hooks claude-code post-tool-use`, and
+such as `ao hooks`, `AO  HOOKS`, `ao hooks codex post-tool-use`, and
 `ao session get sess-123`.

@@ -494,8 +494,8 @@ const MAX_EXTERNAL_TEXT_BYTES = 1 << 20;
 // Annotation submit must never feel laggy: capture is best-effort and bounded
 // so a slow/hung capturePage() can't delay the send past this ceiling.
 const ANNOTATION_SNAPSHOT_TIMEOUT_MS = 200;
-// Caps the longest edge so the encoded image stays small and matches Claude
-// vision's effective resolution — larger just costs more tokens for no gain.
+// Caps the longest edge so the encoded image stays small and matches the
+// provider's effective vision resolution — larger just costs more tokens for no gain.
 const ANNOTATION_SNAPSHOT_MAX_DIMENSION = 1568;
 const UNTRUSTED_BEGIN = "<<<BEGIN UNTRUSTED EXTERNAL CONTENT>>>";
 const UNTRUSTED_END = "<<<END UNTRUSTED EXTERNAL CONTENT>>>";

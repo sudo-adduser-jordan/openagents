@@ -861,8 +861,8 @@ func (r *Runtime) Attach(ctx context.Context, handle ports.RuntimeHandle, rows, 
 // client makes tmux's tty_check_codeset (tty.c) replace any character it
 // can't map through the legacy ACS table with underscores matching the
 // glyph's display width. Box-drawing glyphs are in that ACS table so they
-// still looked fine; agent CLI status icons outside it (e.g. Claude Code's
-// spinner "✻" U+273B, its "⎿" U+23BF continuation marker) were silently
+// still looked fine; agent CLI status icons outside it (e.g. the "✻" U+273B
+// spinner, the "⎿" U+23BF continuation marker) were silently
 // rewritten to "_", which is the underscore corruption reported in #2484.
 // Confirmed byte-for-byte: attaching with a stripped, locale-less env
 // reproduces "_ _ _" for those glyphs; adding -u fixes it, with no observable

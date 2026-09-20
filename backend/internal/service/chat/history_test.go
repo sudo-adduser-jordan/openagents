@@ -615,7 +615,7 @@ func newEditHarnessWithOptions(
 	initial := ports.ChatConversation(source)
 	if supportsPromptReplay {
 		// Use the plain conversation for this scenario: historyRecorder implements
-		// native fork, while the real Claude path does not.
+		// native fork, while the real provider path does not.
 		initial = source.fakeConversation
 	}
 	driver := fakeDriver{conv: initial}

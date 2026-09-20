@@ -87,7 +87,7 @@ func (f *fakeAgentCatalog) RevalidateModels(_ context.Context, agentID, projectI
 func TestListAgents(t *testing.T) {
 	log := slog.New(slog.NewTextHandler(io.Discard, nil))
 	catalog := &fakeAgentCatalog{inventory: agentsvc.Inventory{
-		Supported:  []agentsvc.Info{{ID: "claude-code", Label: "Claude Code"}, {ID: "codex", Label: "Codex"}},
+		Supported:  []agentsvc.Info{{ID: "codex", Label: "Codex"}},
 		Installed:  []agentsvc.Info{{ID: "codex", Label: "Codex"}},
 		Authorized: []agentsvc.Info{{ID: "codex", Label: "Codex"}},
 	}}

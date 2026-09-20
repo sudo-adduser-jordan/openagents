@@ -18,7 +18,7 @@ const CAL_URL = "https://cal.com/agentwrapper/ao-design-partner";
 const MAILTO_HREF = `mailto:${CONTACT_EMAIL}?subject=${encodeURIComponent(
   "AO Design Partner Program",
 )}&body=${encodeURIComponent(
-  "Hi Prateek,\n\nWe're interested in the AO design partner program.\n\nCompany:\nEngineering team size:\nAgent harnesses we use today (Claude Code / Codex / Cursor / ...):\nWhat we want out of AO:\n",
+  "Hi Prateek,\n\nWe're interested in the AO design partner program.\n\nCompany:\nEngineering team size:\nAgent harnesses we use today (Codex / Cursor / OpenCode / ...):\nWhat we want out of AO:\n",
 )}`;
 const HERO_IMAGE = "/optimized/design-partners/hero-car-engine-olive.webp";
 const SHARED_WORKSPACE_IMAGE =
@@ -95,7 +95,7 @@ const phases: RoadmapPhase[] = [
     theme:
       "The single-player engine. Free, open source, already on your machine.",
     unlocks: [
-      "23 harnesses behind one board - Claude Code, Codex, Cursor, and whatever comes next",
+      "23 harnesses behind one board - Codex, Cursor, OpenCode, and whatever comes next",
       "Every session in its own git worktree; branches never collide",
       "CI failures and review comments route back to the agent that owns the branch",
       "An orchestrator plans the work and spawns the workers",

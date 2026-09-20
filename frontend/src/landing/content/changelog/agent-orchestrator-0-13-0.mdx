@@ -20,7 +20,7 @@ The private control plane — a separate Go service with a 28-table PostgreSQL s
 
 ### Chat is first-class, and it survives restarts
 
-The composer was redesigned around resolved agent and model defaults, with a queued message dock that supports editing, cancel, drag-to-reorder and attachments that survive restarts. Queued turns can be promoted to steer the active turn. Claude Code conversations gained message editing, failed turns retry without retyping the prompt, and tool calls render as readable cards instead of raw dumps.
+The composer was redesigned around resolved agent and model defaults, with a queued message dock that supports editing, cancel, drag-to-reorder and attachments that survive restarts. Queued turns can be promoted to steer the active turn. OpenCode conversations gained message editing, failed turns retry without retyping the prompt, and tool calls render as readable cards instead of raw dumps.
 
 Under it all, Codex and the ACP chat providers are owned by authenticated detached hosts now: close the desktop app, restart the daemon, and the provider is re-adopted with its conversation snapshot, pending approvals and in-flight turn intact. (#3657, #4649, #4684, #4715, #3838, #3858, #4256, #5027, #4529, #4766)
 

@@ -26,8 +26,8 @@ describe("ConversationTitle", () => {
 	it("shows the active harness logo beside the worker title", () => {
 		const element = ConversationTitle({
 			title: "Say hi",
-			subtitle: "meetyou · claude-code",
-			harness: "claude-code",
+			subtitle: "meetyou · codex",
+			harness: "codex",
 			state: "ready",
 		});
 
@@ -35,6 +35,6 @@ describe("ConversationTitle", () => {
 			? element.props.children
 			: [element.props.children];
 		expect(children[0].type).toBe(AgentLogo);
-		expect(children[0].props).toMatchObject({ harness: "claude-code", size: 22 });
+		expect(children[0].props).toMatchObject({ harness: "codex", size: 22 });
 	});
 });

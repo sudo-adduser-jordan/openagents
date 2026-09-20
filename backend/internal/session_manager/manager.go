@@ -2097,7 +2097,7 @@ func (m *Manager) RestoreWithMode(ctx context.Context, id domain.SessionID) (Res
 	}
 	// Resumability is decided inside restoreArgv, not here. A promptless session
 	// can still be fully resumable when the harness pins a deterministic session id
-	// (Claude Code). restoreArgv returns ErrNotResumable only for a promptless,
+	// (opencode). restoreArgv returns ErrNotResumable only for a promptless,
 	// unresumable non-orchestrator (a worker with no task and no native id to resume).
 	// Orchestrators always relaunch fresh with the system prompt only.
 
@@ -3459,7 +3459,7 @@ func (m *Manager) applyWorkspaceProjectPreserved(ctx context.Context, rows []por
 // those refusals surface as typed sentinels so the API reports why instead of
 // silently dropping the message. AO has no delivery ack: the messenger returns
 // nil the moment the runtime paste + Enter commands exit 0, and for a large
-// multiline prompt a single Enter may not submit (claude-code leaves it as an
+// multiline prompt a single Enter may not submit (codex leaves it as an
 // unsubmitted draft). confirmActive observes the durable Activity.State
 // (flipped to active by the user-prompt-submit hook) and re-sends Enter until
 // the session is active or the budget is exhausted. Confirmation never fails
@@ -3538,7 +3538,7 @@ func (m *Manager) send(ctx context.Context, id domain.SessionID, message, client
 	// both a prompt-submit signal (so the loop can observe active) and a
 	// blocked signal it can clear mid-turn (so it can tell an unsubmitted
 	// draft from a pending permission dialog and never Enter into the latter).
-	// Only claude-code and its hook-delegators (grok/continueagent/devin)
+	// Only hook-delegating harnesses (grok/continueagent/devin)
 	// satisfy both; every other harness opts out via EmitsBlockedActivity —
 	// see ports.BlockedActivitySignaler.
 	rec, ok, err := m.store.GetSession(ctx, id)
@@ -4591,7 +4591,8 @@ func runPostCreate(ctx context.Context, workspacePath string, commands []string)
 }
 
 // preLauncher is an optional Agent capability: a step the manager runs before
-// launch. Claude Code implements it to record workspace trust in ~/.claude.json
+// launch. An agent implements it to record workspace trust (for example in
+// its own config file)
 // so its interactive "do you trust this folder?" dialog can't block the headless
 // pane. Adapters that don't need it simply omit the method.
 type preLauncher interface {
@@ -4942,7 +4943,7 @@ func freshLaunchArgv(ctx context.Context, agent ports.Agent, id domain.SessionID
 // lookPath (exec.LookPath in prod) before any runtime work happens. Adapters
 // that can't resolve their binary now return ports.ErrAgentBinaryNotFound from
 // GetLaunchCommand directly; this guard is a defense-in-depth for adapters
-// that return an argv[0] like "claude" without verifying. Some adapters prefix
+// that return an argv[0] like "codex" without verifying. Some adapters prefix
 // their command with `env KEY=value`; in that case validate the first real
 // executable after the environment assignments.
 func (m *Manager) validateAgentBinary(argv []string) error {

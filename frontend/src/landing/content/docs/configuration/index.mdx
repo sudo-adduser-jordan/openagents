@@ -20,7 +20,7 @@ To set the default agents while registering the project:
 ```bash
 ao project add --path /absolute/path/to/repo \
   --worker-agent codex \
-  --orchestrator-agent claude-code
+  --orchestrator-agent opencode
 ```
 
 AO also supports workspace projects, which contain a root repository and direct child repositories:
@@ -67,7 +67,7 @@ Every session commits to one interface at a time:
 - **Chat** uses a structured, runtime-less provider controller with durable messages, activities, approvals, and usage.
 - **Terminal UI** runs the agent's native terminal interface through AO's terminal runtime.
 
-Choose the default for new sessions in project settings. You can also select it explicitly from the new-session flow or with `ao spawn --mode chat|tui`. Compatible Claude Code and Codex sessions can switch interfaces later without changing the AO session or worktree.
+Choose the default for new sessions in project settings. You can also select it explicitly from the new-session flow or with `ao spawn --mode chat|tui`. Compatible Codex and OpenCode sessions can switch interfaces later without changing the AO session or worktree.
 
 <Cards>
 	<Card title="Projects" href="/docs/configuration/projects" description="Configure one project and its session roles." />

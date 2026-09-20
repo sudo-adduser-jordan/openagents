@@ -74,8 +74,8 @@ describe("buildDaemonEnv", () => {
 	});
 
 	it("keeps a credential present only in the shell env", () => {
-		const env = buildDaemonEnv(minimalProcessEnv, { PATH: "/opt/homebrew/bin", ANTHROPIC_API_KEY: "sk-ant" }, {});
-		expect(env.ANTHROPIC_API_KEY).toBe("sk-ant");
+		const env = buildDaemonEnv(minimalProcessEnv, { PATH: "/opt/homebrew/bin", OPENAI_API_KEY: "sk-openai" }, {});
+		expect(env.OPENAI_API_KEY).toBe("sk-openai");
 	});
 
 	it("takes PATH from the shell env (with floor) over a minimal process PATH", () => {

@@ -17,7 +17,7 @@ const status = getSessionStatusView(session.status, (key) => t(key));
 
 <AgentAvatar
 	provider={session.provider}
-	logoSources={{ "claude-code": claudeLogo }}
+	logoSources={{ codex: codexLogo }}
 />;
 ```
 

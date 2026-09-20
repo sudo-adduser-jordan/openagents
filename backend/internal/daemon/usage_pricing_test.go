@@ -16,12 +16,6 @@ import (
 func TestUsagePricingRuntimePublishesLKGBeforeStartReturnsAndWaitsOnShutdown(t *testing.T) {
 	dataDir := t.TempDir()
 	_, err := catalogsync.Sync(dataDir, []byte(`{
-  "anthropic/claude-test": {
-    "litellm_provider": "anthropic",
-    "mode": "chat",
-    "input_cost_per_token": 0,
-    "output_cost_per_token": 0
-  },
   "openai/gpt-test": {
     "litellm_provider": "openai",
     "mode": "responses",

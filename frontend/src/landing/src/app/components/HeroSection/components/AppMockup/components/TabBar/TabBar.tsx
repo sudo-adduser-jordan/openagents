@@ -27,14 +27,14 @@ export function TabBar({ activeDemo }: TabBarProps) {
 					<LuTerminal className="size-3.5 text-muted-foreground/75" />
 				) : (
 					<Image
-						src="/app-icons/claude.svg"
-						alt="Claude"
+						src="/app-icons/opencode.svg"
+						alt="OpenCode"
 						width={12}
 						height={12}
 						style={{ width: "auto", height: 12 }}
 					/>
 				)}
-				<span>{isSetup ? "setup" : "claude"}</span>
+				<span>{isSetup ? "setup" : "opencode"}</span>
 				<LuX className="size-3 text-muted-foreground/35" />
 				<span className="absolute inset-x-2 -bottom-px h-[2px] bg-brand" />
 			</div>

@@ -1,4 +1,4 @@
-# Interface handoff: patterns from Superset, ACP, Claude, and Codex
+# Interface handoff: patterns from Superset, ACP, and Codex
 
 Research snapshot: 2026-08-14. Sources are pinned to commits so the cited line numbers remain stable.
 
@@ -42,12 +42,6 @@ ACP v2 points toward the right model, but it is experimental: explicit `running`
 
 ## First-party connector evidence
 
-### Claude Agent ACP
-
-The official Claude connector receives permissions through the Claude Agent SDK's typed `canUseTool` callback, ensures the referenced tool call is emitted before requesting permission, and propagates cancellation with an `AbortSignal` ([`src/acp-agent.ts:5274-5353`](https://github.com/agentclientprotocol/claude-agent-acp/blob/e4dba808eaf280379a1218280081fdf0346632e1/src/acp-agent.ts#L5274-L5353), [`5356-5578`](https://github.com/agentclientprotocol/claude-agent-acp/blob/e4dba808eaf280379a1218280081fdf0346632e1/src/acp-agent.ts#L5356-L5578)). It does not scan text such as “Do you want to proceed?”.
-
-For output, it associates partial chunks with a replay-stable provider message ID and reconciles them against the final consolidated assistant message so only missing content is forwarded ([`src/acp-agent.ts:4147-4275`](https://github.com/agentclientprotocol/claude-agent-acp/blob/e4dba808eaf280379a1218280081fdf0346632e1/src/acp-agent.ts#L4147-L4275), [`7695-7740`](https://github.com/agentclientprotocol/claude-agent-acp/blob/e4dba808eaf280379a1218280081fdf0346632e1/src/acp-agent.ts#L7695-L7740)). `loadSession` replays SDK-maintained history; `resumeSession` does not ([`1828-1848`](https://github.com/agentclientprotocol/claude-agent-acp/blob/e4dba808eaf280379a1218280081fdf0346632e1/src/acp-agent.ts#L1828-L1848), [`5204-5261`](https://github.com/agentclientprotocol/claude-agent-acp/blob/e4dba808eaf280379a1218280081fdf0346632e1/src/acp-agent.ts#L5204-L5261)).
-
 ### Codex app-server and Codex ACP
 
 Codex exposes approval as an explicit active flag, independently of whether work is running ([`codex-rs/app-server-protocol/src/protocol/v2/thread.rs:1600-1621`](https://github.com/openai/codex/blob/636e505c5cd809bdce37314f77130ffb4e45c46b/codex-rs/app-server-protocol/src/protocol/v2/thread.rs#L1600-L1621), [`codex-rs/app-server/src/thread_status.rs:429-459`](https://github.com/openai/codex/blob/636e505c5cd809bdce37314f77130ffb4e45c46b/codex-rs/app-server/src/thread_status.rs#L429-L459)). Approval requests carry thread, turn, item, and optional distinct approval IDs ([`item.rs:1444-1488`](https://github.com/openai/codex/blob/636e505c5cd809bdce37314f77130ffb4e45c46b/codex-rs/app-server-protocol/src/protocol/v2/item.rs#L1444-L1488)); the documented lifecycle ends with `serverRequest/resolved` and an authoritative completed item ([`codex-rs/app-server/README.md:1679-1706`](https://github.com/openai/codex/blob/636e505c5cd809bdce37314f77130ffb4e45c46b/codex-rs/app-server/README.md#L1679-L1706)).
@@ -62,7 +56,10 @@ Google's Gemini CLI independently uses the same design: native confirmation deta
 
 ### 1. Approval is not a draft
 
-AO's Claude inspector already has independent work and composer facts, but its confirmation recognizer is tied to one exact question and one exact footer (`backend/internal/adapters/agent/claudecode/terminal_surface.go:99-118`). More importantly, handoff currently returns `errDrainDraftPresent` before it evaluates `WorkBlocked` (`backend/internal/session_manager/interface_transition.go:599-618`). Therefore even a correctly recognized approval can lose to a false draft.
+AO's native TUI inspector already has independent work and composer facts, but
+its confirmation recognizer is tied to one exact question and one exact footer.
+More importantly, handoff currently returns `errDrainDraftPresent` before it
+evaluates `WorkBlocked` (`backend/internal/session_manager/interface_transition.go:599-618`). Therefore even a correctly recognized approval can lose to a false draft.
 
 Required behavior:
 
@@ -103,4 +100,4 @@ PTY scrollback should remain a display/reattachment artifact. It contains redraw
 
 ## Design boundary
 
-The “once and for all” architecture is one daemon-owned normalized conversation stream with TUI and Chat as replaceable projections. Superset, Claude Agent ACP, Codex ACP, and Gemini all converge on typed interactions plus replayable provider history; none treats terminal text as the source of truth. Until AO's native TUI controllers can feed that same structured stream, the honest guarantee is **lossless at settled provider boundaries**, with explicit interruption semantics for everything else.
+The “once and for all” architecture is one daemon-owned normalized conversation stream with TUI and Chat as replaceable projections. Superset, Codex ACP, and Gemini all converge on typed interactions plus replayable provider history; none treats terminal text as the source of truth. Until AO's native TUI controllers can feed that same structured stream, the honest guarantee is **lossless at settled provider boundaries**, with explicit interruption semantics for everything else.

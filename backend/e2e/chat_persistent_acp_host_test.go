@@ -22,20 +22,6 @@ func TestOpenCodeACPTurnSurvivesDaemonSIGKILL(t *testing.T) {
 	runACPTurnSurvivesDaemonRestart(t, "opencode", "opencode", "OPENCODE-DAEMON-SURVIVED", false)
 }
 
-func TestClaudeACPTurnSurvivesDaemonSIGKILL(t *testing.T) {
-	if os.Getenv("AO_LIVE_CLAUDE_ACP") != "1" {
-		t.Skip("set AO_LIVE_CLAUDE_ACP=1 to run the real Claude restart E2E")
-	}
-	runACPTurnSurvivesDaemonRestart(t, "claude-code", "claude", "CLAUDE-DAEMON-SURVIVED", false)
-}
-
-func TestClaudeACPTurnSurvivesGracefulDaemonRestart(t *testing.T) {
-	if os.Getenv("AO_LIVE_CLAUDE_ACP") != "1" {
-		t.Skip("set AO_LIVE_CLAUDE_ACP=1 to run the real Claude restart E2E")
-	}
-	runACPTurnSurvivesDaemonRestart(t, "claude-code", "claude", "CLAUDE-GRACEFUL-DAEMON-SURVIVED", true)
-}
-
 func TestOpenCodeACPTurnSurvivesGracefulDaemonRestart(t *testing.T) {
 	if os.Getenv("AO_LIVE_OPENCODE_ACP") != "1" {
 		t.Skip("set AO_LIVE_OPENCODE_ACP=1 to run the real OpenCode restart E2E")

@@ -17,7 +17,7 @@ Open the project settings in the desktop app and choose the worker and orchestra
 ```bash
 ao project add --path /absolute/path/to/repo \
   --worker-agent codex \
-  --orchestrator-agent claude-code
+  --orchestrator-agent opencode
 ```
 
 For a full configuration replacement, the stored JSON shape is:
@@ -32,9 +32,9 @@ For a full configuration replacement, the stored JSON shape is:
     }
   },
   "orchestrator": {
-    "agent": "claude-code",
+    "agent": "opencode",
     "agentConfig": {
-      "model": "claude-opus-4"
+      "model": "gpt-5"
     }
   }
 }
@@ -58,10 +58,10 @@ ao spawn --project my-project --kind worker \
 
 ## Choose Chat or Terminal UI
 
-- Use **Chat** for structured messages, provider activity, approvals, plans, changed files, usage, compaction, and rollback. Current native drivers cover Codex, Claude Code, OpenCode, and Droid.
+- Use **Chat** for structured messages, provider activity, approvals, plans, changed files, usage, compaction, and rollback. Current native drivers cover Codex, OpenCode, and Droid.
 - Use **Terminal UI** when you want the agent's native interface or a harness without native Chat support.
 
-Compatible Claude Code and Codex sessions expose **Open Chat** or **Open Terminal UI**. Idle sessions switch directly. When work is active, AO asks whether to finish and drain it or stop and interrupt it before switching controllers.
+Compatible Codex and OpenCode sessions expose **Open Chat** or **Open Terminal UI**. Idle sessions switch directly. When work is active, AO asks whether to finish and drain it or stop and interrupt it before switching controllers.
 
 ## Project rules
 

@@ -71,7 +71,7 @@ next-env.d.ts
 .refs/
 examples
 
-# Claude binaries - downloaded at build time
+# Agent binaries - downloaded at build time
 apps/desktop/resources/bin/
 
 # Streams data

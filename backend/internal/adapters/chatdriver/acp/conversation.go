@@ -527,8 +527,8 @@ func (c *conversation) runTurn(ctx context.Context, sessionID string, turn prepa
 	c.emit(ports.ChatEvent{Kind: ports.ChatEventControllerState, ControllerState: ports.ChatControllerBusy})
 	// ACP message ids are opaque idempotency/correlation keys. Preserve AO's
 	// durable client id when possible so an agent that echoes it from session/load
-	// can be reconciled without provider-specific knowledge. Some agents (notably
-	// claude-agent-acp) assign their own persisted user uuid; the service's history
+	// can be reconciled without provider-specific knowledge. Some agents assign
+	// their own persisted user uuid; the service's history
 	// reconciliation is the fallback for those conforming-but-different agents.
 	messageID := strings.TrimSpace(turn.clientMessageID)
 	if messageID == "" {

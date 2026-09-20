@@ -12,12 +12,6 @@ const POLL_MS = 100;
 
 const harnesses = [
 	{
-		id: "claude-code",
-		label: "Claude Code",
-		icon: "/app-icons/coverage-claude-code.svg",
-		status: "Authorized",
-	},
-	{
 		id: "codex",
 		label: "Codex",
 		icon: "/app-icons/coverage-codex.svg",

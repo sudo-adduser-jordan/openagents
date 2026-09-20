@@ -15,7 +15,7 @@ import type { VoiceCallbacks, VoiceMode, VoiceProvider } from "./types";
 // Bias the recogniser toward words that show up constantly in agent prompts and
 // would otherwise come back mangled ("get" for "git", "MPM" for "npm"). iOS maps
 // this to SFSpeechRecognitionRequest.contextualStrings, Android to
-// EXTRA_BIASING_STRINGS. Same trick Claude Code applies to its own dictation.
+// EXTRA_BIASING_STRINGS.
 const CODING_VOCABULARY = [
 	"git",
 	"npm",

@@ -882,7 +882,7 @@ export function XtermTerminal(props: XtermTerminalProps) {
 				setSearchOpen(true);
 				return false;
 			}
-			// Shift+Enter → newline without submitting, matching Claude Code / Codex.
+			// Shift+Enter → newline without submitting, matching Codex.
 			// A terminal normally sends the same CR for Enter and Shift+Enter, so the
 			// agent can't distinguish them; emit the meta-return (ESC+CR) that
 			// readline/Ink-based TUIs interpret as "insert a newline" rather than
@@ -1194,7 +1194,7 @@ export function XtermTerminal(props: XtermTerminalProps) {
 		shell.addEventListener("compositionend", compositionInput, true);
 
 		// A file dropped on the pane inserts its path, mirroring a native terminal
-		// so an agent (e.g. Claude Code) attaches it. The sandboxed renderer cannot
+		// so an agent (e.g. Codex) attaches it. The sandboxed renderer cannot
 		// read a dropped file's original path on macOS, so the bytes are stashed to
 		// a temp file by the main process and that path is inserted instead.
 		const isFileDrag = (event: DragEvent) => Array.from(event.dataTransfer?.types ?? []).includes("Files");

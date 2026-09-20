@@ -941,7 +941,7 @@ func TestCancelKeepsRunsRunningWhenReviewerCancelFailsAndHandleIsAlive(t *testin
 func TestRestoreReviewerUsesSelectedHarnessSessionAndKillsOtherActivePane(t *testing.T) {
 	// A review row written before the opencode-only strip can still carry a
 	// harness AO no longer selects; restoring must destroy its stale terminal.
-	legacyHarness := domain.ReviewerHarness("claude-code")
+	legacyHarness := domain.ReviewerHarness("codex")
 	store := &fakeStore{
 		review: &domain.Review{ID: "rev-1", SessionID: "mer-1", Harness: legacyHarness, ReviewerHandleID: "codex-pane", AgentSessionID: "codex-native"},
 		reviews: map[domain.ReviewerHarness]domain.Review{
@@ -1020,18 +1020,18 @@ func TestSwitchReviewerKeepsDefaultReviewerInheritanceWhenSavingConfig(t *testin
 	}}}}
 	eng := newEngineForTest(store, fakeSessions{rec: worker, ok: true}, prAt("sha1"), projects, launcher)
 
-	res, err := eng.SwitchReviewer(context.Background(), "mer-1", "", domain.AgentConfig{Model: "claude-3.7"})
+	res, err := eng.SwitchReviewer(context.Background(), "mer-1", "", domain.AgentConfig{Model: "gpt-5.6"})
 	if err != nil {
 		t.Fatalf("SwitchReviewer: %v", err)
 	}
 	if len(store.reviewerConfigUpdates) != 1 {
 		t.Fatalf("reviewer config updates = %+v, want one", store.reviewerConfigUpdates)
 	}
-	if got := store.reviewerConfigUpdates[0]; got.harness != "" || got.config.Model != "claude-3.7" {
+	if got := store.reviewerConfigUpdates[0]; got.harness != "" || got.config.Model != "gpt-5.6" {
 		t.Fatalf("persisted reviewer config = %+v, want default reviewer + model", got)
 	}
 	if res.ReviewerHarness != domain.ReviewerOpenCode {
-		t.Fatalf("result reviewer harness = %q, want claude-code", res.ReviewerHarness)
+		t.Fatalf("result reviewer harness = %q, want opencode", res.ReviewerHarness)
 	}
 	worker.ReviewerHarness = store.reviewerConfigUpdates[0].harness
 	worker.ReviewerConfig = store.reviewerConfigUpdates[0].config
@@ -1042,7 +1042,7 @@ func TestSwitchReviewerKeepsDefaultReviewerInheritanceWhenSavingConfig(t *testin
 	if err != nil {
 		t.Fatalf("reviewerSelection after project change: %v", err)
 	}
-	if selected != domain.ReviewerOpenCode || selectedConfig.Model != "claude-3.7" {
+	if selected != domain.ReviewerOpenCode || selectedConfig.Model != "gpt-5.6" {
 		t.Fatalf("selection after project reviewer change = (%q, %+v), want inherited opencode config", selected, selectedConfig)
 	}
 }
@@ -1388,11 +1388,11 @@ func TestTriggerConfigOnlyOverrideUsesResolvedHarnessAndConfig(t *testing.T) {
 	launcher := &fakeLauncher{handle: "review-mer-2"}
 	projects := fakeProjects{cfg: domain.ProjectConfig{Reviewers: []domain.ReviewerConfig{{
 		Harness:     domain.ReviewerOpenCode,
-		AgentConfig: domain.AgentConfig{Model: "claude-old"},
+		AgentConfig: domain.AgentConfig{Model: "gpt-old"},
 	}}}}
 	eng := newEngineForTest(store, fakeSessions{rec: liveWorker(), ok: true}, prAt("sha1"), projects, launcher)
 
-	res, err := eng.Trigger(context.Background(), "mer-1", "", domain.AgentConfig{Model: "claude-new"})
+	res, err := eng.Trigger(context.Background(), "mer-1", "", domain.AgentConfig{Model: "gpt-new"})
 	if err != nil {
 		t.Fatalf("Trigger: %v", err)
 	}
@@ -1400,9 +1400,9 @@ func TestTriggerConfigOnlyOverrideUsesResolvedHarnessAndConfig(t *testing.T) {
 		t.Fatalf("config-only override should force a new pass: %+v", res)
 	}
 	if res.Run.Harness != domain.ReviewerOpenCode {
-		t.Fatalf("run harness = %q, want resolved claude-code", res.Run.Harness)
+		t.Fatalf("run harness = %q, want resolved opencode", res.Run.Harness)
 	}
-	if got := launcher.gotSpec.AgentConfig; got.Model != "claude-new" {
+	if got := launcher.gotSpec.AgentConfig; got.Model != "gpt-new" {
 		t.Fatalf("spawn config = %+v, want model override preserved", got)
 	}
 }
@@ -1418,14 +1418,14 @@ func TestTriggerConfigOnlyOverrideMergesResolvedConfig(t *testing.T) {
 	launcher := &fakeLauncher{handle: "review-mer-2"}
 	projects := fakeProjects{cfg: domain.ProjectConfig{Reviewers: []domain.ReviewerConfig{{
 		Harness:     domain.ReviewerOpenCode,
-		AgentConfig: domain.AgentConfig{Model: "claude-old", Permissions: domain.PermissionModeBypassPermissions},
+		AgentConfig: domain.AgentConfig{Model: "gpt-old", Permissions: domain.PermissionModeBypassPermissions},
 	}}}}
 	eng := newEngineForTest(store, fakeSessions{rec: liveWorker(), ok: true}, prAt("sha1"), projects, launcher)
 
-	if _, err := eng.Trigger(context.Background(), "mer-1", "", domain.AgentConfig{Model: "claude-new"}); err != nil {
+	if _, err := eng.Trigger(context.Background(), "mer-1", "", domain.AgentConfig{Model: "gpt-new"}); err != nil {
 		t.Fatalf("Trigger: %v", err)
 	}
-	if got := launcher.gotSpec.AgentConfig; got.Model != "claude-new" || got.Permissions != domain.PermissionModeBypassPermissions {
+	if got := launcher.gotSpec.AgentConfig; got.Model != "gpt-new" || got.Permissions != domain.PermissionModeBypassPermissions {
 		t.Fatalf("spawn config = %+v, want merged override plus inherited permissions", got)
 	}
 }
@@ -1441,14 +1441,14 @@ func TestTriggerSameHarnessOverrideMergesResolvedConfig(t *testing.T) {
 	launcher := &fakeLauncher{handle: "review-mer-2"}
 	projects := fakeProjects{cfg: domain.ProjectConfig{Reviewers: []domain.ReviewerConfig{{
 		Harness:     domain.ReviewerOpenCode,
-		AgentConfig: domain.AgentConfig{Model: "claude-old", Permissions: domain.PermissionModeBypassPermissions},
+		AgentConfig: domain.AgentConfig{Model: "gpt-old", Permissions: domain.PermissionModeBypassPermissions},
 	}}}}
 	eng := newEngineForTest(store, fakeSessions{rec: liveWorker(), ok: true}, prAt("sha1"), projects, launcher)
 
-	if _, err := eng.Trigger(context.Background(), "mer-1", domain.ReviewerOpenCode, domain.AgentConfig{Model: "claude-new"}); err != nil {
+	if _, err := eng.Trigger(context.Background(), "mer-1", domain.ReviewerOpenCode, domain.AgentConfig{Model: "gpt-new"}); err != nil {
 		t.Fatalf("Trigger: %v", err)
 	}
-	if got := launcher.gotSpec.AgentConfig; got.Model != "claude-new" || got.Permissions != domain.PermissionModeBypassPermissions {
+	if got := launcher.gotSpec.AgentConfig; got.Model != "gpt-new" || got.Permissions != domain.PermissionModeBypassPermissions {
 		t.Fatalf("spawn config = %+v, want explicit same-harness override merged with inherited permissions", got)
 	}
 }
@@ -1466,7 +1466,7 @@ func TestReviewerSelectionMergesSessionConfigWithProjectReviewerConfig(t *testin
 		t.Fatalf("reviewerSelection: %v", err)
 	}
 	if harness != domain.ReviewerOpenCode {
-		t.Fatalf("harness = %q, want claude-code", harness)
+		t.Fatalf("harness = %q, want opencode", harness)
 	}
 	if config.Model != "gpt-5" || config.Effort != "high" || config.Permissions != domain.PermissionModeBypassPermissions {
 		t.Fatalf("config = %+v, want merged session override + project permissions", config)
@@ -1881,15 +1881,16 @@ func TestTriggerRespawnsLivePaneWithoutReviewerAgentSession(t *testing.T) {
 
 // A live reviewer pane launched under a previous harness must be respawned under
 // the newly-resolved harness, not reused via Notify: the pane's sandbox/
-// permissions/env are fixed at Spawn, so reusing a codex pane to serve a
-// claude-code review (or vice versa) would run under the wrong profile.
+// permissions/env are fixed at Spawn, so reusing a pane launched under a
+// previous harness to serve the newly-resolved harness (or vice versa) would
+// run under the wrong profile.
 func TestTriggerRespawnsWhenReviewerHarnessChanged(t *testing.T) {
 	store := &fakeStore{
 		review: &domain.Review{ID: "rev-1", SessionID: "mer-1", Harness: domain.ReviewerOpenCode, ReviewerHandleID: "review-mer-1"},
 		runs:   []domain.ReviewRun{{ID: "run-0", SessionID: "mer-1", PRURL: "https://github.com/o/r/pull/1", TargetSHA: "sha0", Status: domain.ReviewRunComplete}},
 	}
-	// Live pane exists (alive), but the worker/project now resolves to claude-code
-	// while the pane was launched under codex.
+	// Live pane exists (alive), but the worker/project now resolves to a
+	// different harness than the one the pane was launched under.
 	launcher := &fakeLauncher{alive: true, handle: "review-mer-1"}
 	eng := newEngineForTest(store, fakeSessions{rec: liveWorker(), ok: true}, prAt("sha1"), fakeProjects{}, launcher)
 
@@ -1901,10 +1902,10 @@ func TestTriggerRespawnsWhenReviewerHarnessChanged(t *testing.T) {
 		t.Fatalf("expected respawn under the new harness, not reuse via notify: %+v", launcher)
 	}
 	if launcher.gotSpec.Harness != domain.ReviewerOpenCode {
-		t.Fatalf("respawn harness = %q, want claude-code", launcher.gotSpec.Harness)
+		t.Fatalf("respawn harness = %q, want opencode", launcher.gotSpec.Harness)
 	}
 	if res.Run.Harness != domain.ReviewerOpenCode {
-		t.Fatalf("run harness = %q, want claude-code", res.Run.Harness)
+		t.Fatalf("run harness = %q, want opencode", res.Run.Harness)
 	}
 }
 
@@ -1921,7 +1922,7 @@ func TestTriggerRespawnsOnNextCommitAfterHarnessSwitchWithNoRun(t *testing.T) {
 		}},
 	}
 	// Trigger 1: current commit sha1 is already reviewed → no run created, while
-	// the worker now resolves to claude-code but the live pane is still codex.
+	// the worker now resolves to a different harness but the live pane is still the old one.
 	l1 := &fakeLauncher{alive: true, handle: "review-mer-1"}
 	eng1 := newEngineForTest(store, fakeSessions{rec: liveWorker(), ok: true}, prAt("sha1"), fakeProjects{}, l1)
 	if _, err := eng1.Trigger(context.Background(), "mer-1", "", domain.AgentConfig{}); err != nil {
@@ -1932,7 +1933,7 @@ func TestTriggerRespawnsOnNextCommitAfterHarnessSwitchWithNoRun(t *testing.T) {
 	}
 
 	// Trigger 2: a new commit arrives → a run is created. The reviewer must
-	// respawn under claude-code, not Notify the stale codex pane.
+	// respawn under the new harness, not Notify the stale old-harness pane.
 	l2 := &fakeLauncher{alive: true, handle: "review-mer-1"}
 	eng2 := newEngineForTest(store, fakeSessions{rec: liveWorker(), ok: true}, prAt("sha2"), fakeProjects{}, l2)
 	res, err := eng2.Trigger(context.Background(), "mer-1", "", domain.AgentConfig{})
@@ -1943,13 +1944,13 @@ func TestTriggerRespawnsOnNextCommitAfterHarnessSwitchWithNoRun(t *testing.T) {
 		t.Fatalf("trigger 2 must respawn under the new harness, not reuse the stale pane: res=%+v launcher=%+v", res, l2)
 	}
 	if l2.gotSpec.Harness != domain.ReviewerOpenCode {
-		t.Fatalf("respawn harness = %q, want claude-code", l2.gotSpec.Harness)
+		t.Fatalf("respawn harness = %q, want opencode", l2.gotSpec.Harness)
 	}
 }
 
 func TestTriggerLaunchFailureRecordsFailedRun(t *testing.T) {
 	store := &fakeStore{}
-	launcher := &fakeLauncher{spawnErr: fmt.Errorf("claude: %w", ports.ErrAgentBinaryNotFound)}
+	launcher := &fakeLauncher{spawnErr: fmt.Errorf("codex: %w", ports.ErrAgentBinaryNotFound)}
 	eng := newEngineForTest(store, fakeSessions{rec: liveWorker(), ok: true}, prAt("sha1"), fakeProjects{}, launcher)
 
 	if _, err := eng.Trigger(context.Background(), "mer-1", "", domain.AgentConfig{}); !errors.Is(err, ports.ErrAgentBinaryNotFound) {
@@ -1962,7 +1963,7 @@ func TestTriggerLaunchFailureRecordsFailedRun(t *testing.T) {
 	if run.Status != domain.ReviewRunFailed || run.Verdict != domain.VerdictNone {
 		t.Fatalf("run = %+v, want failed with no verdict", run)
 	}
-	if !strings.Contains(run.Body, "claude") || !strings.Contains(run.Body, ports.ErrAgentBinaryNotFound.Error()) {
+	if !strings.Contains(run.Body, "codex") || !strings.Contains(run.Body, ports.ErrAgentBinaryNotFound.Error()) {
 		t.Fatalf("run body = %q, want launch cause", run.Body)
 	}
 }

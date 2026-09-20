@@ -71,7 +71,7 @@ func TestSessionsAPI_ActivityForwardsUsageMetadataWithoutChangingActivity(t *tes
 			"harness":"opencode",
 			"providerId":"zai",
 			"transcriptPath":"/tmp/main.jsonl",
-			"modelId":"claude-sonnet",
+			"modelId":"gpt-5.4",
 			"subagentId":"sub-1",
 			"subagentTranscriptPath":"/tmp/sub.jsonl"
 		}
@@ -126,7 +126,7 @@ func TestSessionsAPI_ActivitySanitizesAndBoundsUsageMetadata(t *testing.T) {
 		"usage":{
 			"harness":"open\u001bcode",
 			"transcriptPath":"/tmp/\u001bmain.jsonl",
-			"modelId":"claude-\u001bsonnet",
+			"modelId":"gpt-\u001b5.4",
 			"subagentId":"sub-\u001b1",
 			"subagentTranscriptPath":"`+overlongPath+`"
 		}
@@ -139,7 +139,7 @@ func TestSessionsAPI_ActivitySanitizesAndBoundsUsageMetadata(t *testing.T) {
 	}
 	if usage.gotSignal.Harness != domain.HarnessOpenCode ||
 		usage.gotSignal.TranscriptPath != "/tmp/main.jsonl" ||
-		usage.gotSignal.ModelID != "claude-sonnet" ||
+		usage.gotSignal.ModelID != "gpt-5.4" ||
 		usage.gotSignal.SubagentID != "sub-1" ||
 		usage.gotSignal.SubagentTranscriptPath != "" {
 		t.Fatalf("sanitized usage signal = %+v", usage.gotSignal)

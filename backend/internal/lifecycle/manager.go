@@ -1089,7 +1089,7 @@ func (m *Manager) applyToolPrecedenceLocked(id domain.SessionID, cur domain.Acti
 		// (fail-closed).
 		f := ensure()
 		f.cursorPending = nil
-		// Recompute only when this signal identifies a dialog. Claude can emit an
+		// Recompute only when this signal identifies a dialog. An agent can emit an
 		// identity-less Notification duplicate after permission-request; that
 		// duplicate must not erase the candidate captured by the first signal.
 		if s.ToolUseID != "" || s.ToolName != "" {

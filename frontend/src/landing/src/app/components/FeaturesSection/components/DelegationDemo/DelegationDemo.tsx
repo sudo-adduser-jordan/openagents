@@ -50,7 +50,7 @@ const status = {
 } as const;
 
 type ProjectId = "solkit-ui" | "metrics-api" | "northstar-web";
-type SessionId = "orc" | "claude" | "codex" | "cursor";
+type SessionId = "orc" | "opencode" | "codex" | "cursor";
 type WorkerId = Exclude<SessionId, "orc">;
 type LineTone = "fg" | "dim" | "error" | "success" | "working";
 
@@ -118,10 +118,10 @@ const projects: Project[] = [
 const projectById = Object.fromEntries(projects.map((project) => [project.id, project])) as Record<ProjectId, Project>;
 const workersByProject: Record<ProjectId, Record<WorkerId, Worker>> = {
 	"solkit-ui": {
-		claude: {
-			id: "claude",
+		opencode: {
+			id: "opencode",
 			task: "Build callback route",
-			provider: "claude-code",
+			provider: "opencode",
 			branch: "ao/ao-12/auth-callback",
 			path: "~/ao/ao-12/auth-callback",
 			statusLabel: "Working",
@@ -156,10 +156,10 @@ const workersByProject: Record<ProjectId, Record<WorkerId, Worker>> = {
 		},
 	},
 	"metrics-api": {
-		claude: {
-			id: "claude",
+		opencode: {
+			id: "opencode",
 			task: "Fix digest retries",
-			provider: "claude-code",
+			provider: "opencode",
 			branch: "ao/ao-14/digest-retries",
 			path: "~/ao/ao-14/digest-retries",
 			statusLabel: "Working",
@@ -194,10 +194,10 @@ const workersByProject: Record<ProjectId, Record<WorkerId, Worker>> = {
 		},
 	},
 	"northstar-web": {
-		claude: {
-			id: "claude",
+		opencode: {
+			id: "opencode",
 			task: "Refresh pricing cards",
-			provider: "claude-code",
+			provider: "opencode",
 			branch: "ao/ao-16/pricing-cards",
 			path: "~/ao/ao-16/pricing-cards",
 			statusLabel: "Working",
@@ -238,18 +238,18 @@ const sessionMeta: Record<
 	{ icon: string; title: string; version: string; subtitle: string; path: string; tabLabel: string }
 > = {
 	orc: {
-		icon: "/app-icons/agents/claude-code.svg",
-		title: "Claude Code",
-		version: "v2.1.204",
-		subtitle: "Opus 4.8 (1M context) · Claude Team",
+		icon: "/app-icons/agents/opencode.svg",
+		title: "OpenCode",
+		version: "1.0.0",
+		subtitle: "Default model · Full tools",
 		path: "~/ao/solkit-ui/orchestrator",
 		tabLabel: "orchestrator",
 	},
-	claude: {
-		icon: "/app-icons/agents/claude-code.svg",
-		title: "Claude Code",
-		version: "v2.1.204",
-		subtitle: "Opus 4.8 (1M context) · Claude Team",
+	opencode: {
+		icon: "/app-icons/agents/opencode.svg",
+		title: "OpenCode",
+		version: "1.0.0",
+		subtitle: "Default model · Full tools",
 		path: "",
 		tabLabel: "",
 	},
@@ -300,7 +300,7 @@ type Step =
 	| { type: "reset" };
 
 const TYPING_MS = 26;
-const workerOrder: WorkerId[] = ["claude", "codex", "cursor"];
+const workerOrder: WorkerId[] = ["opencode", "codex", "cursor"];
 
 const SCRIPT: Step[] = [
 	{ type: "pause", ms: 900 },
@@ -313,8 +313,8 @@ const SCRIPT: Step[] = [
 	{ type: "pause", ms: 240 },
 	{ type: "blank", session: "orc" },
 	{ type: "line", session: "orc", tone: "fg", text: "Bash(ao spawn --name \"callback route\")", marker: "⏺" },
-	{ type: "spawn", session: "claude" },
-	{ type: "sessionStatus", session: "claude", label: "Working", tone: status.working, breathe: true },
+	{ type: "spawn", session: "opencode" },
+	{ type: "sessionStatus", session: "opencode", label: "Working", tone: status.working, breathe: true },
 	{ type: "pause", ms: 150 },
 	{ type: "line", session: "orc", tone: "dim", text: "Started session ao-12/auth-callback", marker: "⎿" },
 	{ type: "pause", ms: 180 },
@@ -332,21 +332,21 @@ const SCRIPT: Step[] = [
 	{ type: "pause", ms: 250 },
 	{ type: "stream", session: "orc", text: "Workers are live. Opening each terminal directly instead of waiting for any loading state." },
 	{ type: "pause", ms: 180 },
-	{ type: "line", session: "claude", tone: "working", text: "delegated from orchestrator: build the GitHub callback route", marker: "❯" },
+	{ type: "line", session: "opencode", tone: "working", text: "delegated from orchestrator: build the GitHub callback route", marker: "❯" },
 	{ type: "pause", ms: 90 },
-	{ type: "line", session: "claude", tone: "fg", text: "Read(src/auth/index.ts)", marker: "⏺" },
+	{ type: "line", session: "opencode", tone: "fg", text: "Read(src/auth/index.ts)", marker: "⏺" },
 	{ type: "pause", ms: 80 },
-	{ type: "line", session: "claude", tone: "dim", text: "Found existing state validation in login entrypoint", marker: "⎿" },
+	{ type: "line", session: "opencode", tone: "dim", text: "Found existing state validation in login entrypoint", marker: "⎿" },
 	{ type: "pause", ms: 130 },
-	{ type: "stream", session: "claude", text: "Tracing the callback entrypoint and collecting the redirect + state validation branches first." },
+	{ type: "stream", session: "opencode", text: "Tracing the callback entrypoint and collecting the redirect + state validation branches first." },
 	{ type: "pause", ms: 120 },
-	{ type: "line", session: "claude", tone: "fg", text: "Read(src/auth/state.ts)", marker: "⏺" },
+	{ type: "line", session: "opencode", tone: "fg", text: "Read(src/auth/state.ts)", marker: "⏺" },
 	{ type: "pause", ms: 80 },
-	{ type: "line", session: "claude", tone: "dim", text: "Need to reject stale state before token exchange", marker: "⎿" },
+	{ type: "line", session: "opencode", tone: "dim", text: "Need to reject stale state before token exchange", marker: "⎿" },
 	{ type: "pause", ms: 90 },
-	{ type: "line", session: "claude", tone: "fg", text: "Edit(src/auth/callback.ts)", marker: "⏺" },
+	{ type: "line", session: "opencode", tone: "fg", text: "Edit(src/auth/callback.ts)", marker: "⏺" },
 	{ type: "pause", ms: 100 },
-	{ type: "line", session: "claude", tone: "dim", text: "+48 -2 lines", marker: "⎿" },
+	{ type: "line", session: "opencode", tone: "dim", text: "+48 -2 lines", marker: "⎿" },
 	{ type: "pause", ms: 260 },
 	{ type: "line", session: "codex", tone: "working", text: "delegated from orchestrator: cover the callback flow with integration tests", marker: "❯" },
 	{ type: "pause", ms: 90 },
@@ -380,22 +380,22 @@ const SCRIPT: Step[] = [
 	{ type: "pause", ms: 80 },
 	{ type: "line", session: "cursor", tone: "dim", text: "One section title still too vague", marker: "⎿" },
 	{ type: "pause", ms: 500 },
-	{ type: "cursor", target: "session-claude", click: true },
-	{ type: "switch", session: "claude" },
+	{ type: "cursor", target: "session-opencode", click: true },
+	{ type: "switch", session: "opencode" },
 	{ type: "pause", ms: 1100 },
-	{ type: "blank", session: "claude" },
-	{ type: "line", session: "claude", tone: "fg", text: "Bash(npm run typecheck)", marker: "⏺" },
+	{ type: "blank", session: "opencode" },
+	{ type: "line", session: "opencode", tone: "fg", text: "Bash(npm run typecheck)", marker: "⏺" },
 	{ type: "pause", ms: 160 },
-	{ type: "line", session: "claude", tone: "dim", text: "typecheck clean after callback route changes", marker: "⎿" },
+	{ type: "line", session: "opencode", tone: "dim", text: "typecheck clean after callback route changes", marker: "⎿" },
 	{ type: "pause", ms: 120 },
-	{ type: "line", session: "claude", tone: "fg", text: "Edit(src/auth/callback.ts)", marker: "⏺" },
+	{ type: "line", session: "opencode", tone: "fg", text: "Edit(src/auth/callback.ts)", marker: "⏺" },
 	{ type: "pause", ms: 200 },
-	{ type: "stream", session: "claude", text: "Wiring the redirect, validating the state param, and returning 401 before the token exchange runs." },
+	{ type: "stream", session: "opencode", text: "Wiring the redirect, validating the state param, and returning 401 before the token exchange runs." },
 	{ type: "pause", ms: 220 },
-	{ type: "line", session: "claude", tone: "fg", text: "Bash(npm test -- auth/callback)", marker: "⏺" },
+	{ type: "line", session: "opencode", tone: "fg", text: "Bash(npm test -- auth/callback)", marker: "⏺" },
 	{ type: "pause", ms: 160 },
-	{ type: "line", session: "claude", tone: "success", text: "Tests  6 passed (6)", marker: "⎿" },
-	{ type: "sessionStatus", session: "claude", label: "Ready", tone: status.ready, breathe: false },
+	{ type: "line", session: "opencode", tone: "success", text: "Tests  6 passed (6)", marker: "⎿" },
+	{ type: "sessionStatus", session: "opencode", label: "Ready", tone: status.ready, breathe: false },
 	{ type: "pause", ms: 520 },
 	{ type: "cursor", target: "session-codex", click: true },
 	{ type: "switch", session: "codex" },
@@ -444,8 +444,8 @@ const SCRIPT: Step[] = [
 	{ type: "stream", session: "orc", text: "Splitting delivery retries, query coverage, and the runbook so the API work and docs can move in parallel." },
 	{ type: "pause", ms: 220 },
 	{ type: "line", session: "orc", tone: "fg", text: "Bash(ao spawn --name \"digest retries\")", marker: "⏺" },
-	{ type: "spawn", session: "claude" },
-	{ type: "sessionStatus", session: "claude", label: "Working", tone: status.working, breathe: true },
+	{ type: "spawn", session: "opencode" },
+	{ type: "sessionStatus", session: "opencode", label: "Working", tone: status.working, breathe: true },
 	{ type: "pause", ms: 140 },
 	{ type: "line", session: "orc", tone: "dim", text: "Started session ao-14/digest-retries", marker: "⎿" },
 	{ type: "pause", ms: 170 },
@@ -461,17 +461,17 @@ const SCRIPT: Step[] = [
 	{ type: "pause", ms: 140 },
 	{ type: "line", session: "orc", tone: "dim", text: "Started session ao-14/digest-runbook", marker: "⎿" },
 	{ type: "pause", ms: 180 },
-	{ type: "line", session: "claude", tone: "working", text: "delegated from orchestrator: fix alert digest retry behavior", marker: "❯" },
+	{ type: "line", session: "opencode", tone: "working", text: "delegated from orchestrator: fix alert digest retry behavior", marker: "❯" },
 	{ type: "pause", ms: 90 },
-	{ type: "line", session: "claude", tone: "fg", text: "Edit(internal/alerts/retry.go)", marker: "⏺" },
+	{ type: "line", session: "opencode", tone: "fg", text: "Edit(internal/alerts/retry.go)", marker: "⏺" },
 	{ type: "pause", ms: 80 },
-	{ type: "line", session: "claude", tone: "dim", text: "Retry loop currently double-sends after reconnect", marker: "⎿" },
+	{ type: "line", session: "opencode", tone: "dim", text: "Retry loop currently double-sends after reconnect", marker: "⎿" },
 	{ type: "pause", ms: 160 },
-	{ type: "stream", session: "claude", text: "Tightening the backoff path and making duplicate deliveries idempotent before I run the alert retry suite." },
+	{ type: "stream", session: "opencode", text: "Tightening the backoff path and making duplicate deliveries idempotent before I run the alert retry suite." },
 	{ type: "pause", ms: 90 },
-	{ type: "line", session: "claude", tone: "fg", text: "Read(internal/alerts/delivery_store.go)", marker: "⏺" },
+	{ type: "line", session: "opencode", tone: "fg", text: "Read(internal/alerts/delivery_store.go)", marker: "⏺" },
 	{ type: "pause", ms: 80 },
-	{ type: "line", session: "claude", tone: "dim", text: "Need persisted attempt token for dedupe", marker: "⎿" },
+	{ type: "line", session: "opencode", tone: "dim", text: "Need persisted attempt token for dedupe", marker: "⎿" },
 	{ type: "pause", ms: 180 },
 	{ type: "line", session: "codex", tone: "working", text: "delegated from orchestrator: add digest query coverage", marker: "❯" },
 	{ type: "pause", ms: 90 },
@@ -497,14 +497,14 @@ const SCRIPT: Step[] = [
 	{ type: "pause", ms: 80 },
 	{ type: "line", session: "cursor", tone: "dim", text: "Linking the generic incident drilldown page", marker: "⎿" },
 	{ type: "pause", ms: 420 },
-	{ type: "cursor", target: "session-claude", click: true },
-	{ type: "switch", session: "claude" },
+	{ type: "cursor", target: "session-opencode", click: true },
+	{ type: "switch", session: "opencode" },
 	{ type: "pause", ms: 980 },
-	{ type: "blank", session: "claude" },
-	{ type: "line", session: "claude", tone: "fg", text: "Bash(go test ./internal/alerts/...)", marker: "⏺" },
+	{ type: "blank", session: "opencode" },
+	{ type: "line", session: "opencode", tone: "fg", text: "Bash(go test ./internal/alerts/...)", marker: "⏺" },
 	{ type: "pause", ms: 180 },
-	{ type: "line", session: "claude", tone: "success", text: "ok  internal/alerts  0.41s", marker: "⎿" },
-	{ type: "sessionStatus", session: "claude", label: "Ready", tone: status.ready, breathe: false },
+	{ type: "line", session: "opencode", tone: "success", text: "ok  internal/alerts  0.41s", marker: "⎿" },
+	{ type: "sessionStatus", session: "opencode", label: "Ready", tone: status.ready, breathe: false },
 	{ type: "pause", ms: 480 },
 	{ type: "cursor", target: "session-codex", click: true },
 	{ type: "switch", session: "codex" },
@@ -535,8 +535,8 @@ const SCRIPT: Step[] = [
 	{ type: "stream", session: "orc", text: "Splitting the pricing launch into cards, mobile QA, and launch docs so the final polish lands faster." },
 	{ type: "pause", ms: 220 },
 	{ type: "line", session: "orc", tone: "fg", text: "Bash(ao spawn --name \"pricing cards\")", marker: "⏺" },
-	{ type: "spawn", session: "claude" },
-	{ type: "sessionStatus", session: "claude", label: "Working", tone: status.working, breathe: true },
+	{ type: "spawn", session: "opencode" },
+	{ type: "sessionStatus", session: "opencode", label: "Working", tone: status.working, breathe: true },
 	{ type: "pause", ms: 140 },
 	{ type: "line", session: "orc", tone: "dim", text: "Started session ao-16/pricing-cards", marker: "⎿" },
 	{ type: "pause", ms: 170 },
@@ -552,17 +552,17 @@ const SCRIPT: Step[] = [
 	{ type: "pause", ms: 140 },
 	{ type: "line", session: "orc", tone: "dim", text: "Started session ao-16/launch-docs", marker: "⎿" },
 	{ type: "pause", ms: 180 },
-	{ type: "line", session: "claude", tone: "working", text: "delegated from orchestrator: refresh the pricing cards", marker: "❯" },
+	{ type: "line", session: "opencode", tone: "working", text: "delegated from orchestrator: refresh the pricing cards", marker: "❯" },
 	{ type: "pause", ms: 90 },
-	{ type: "line", session: "claude", tone: "fg", text: "Edit(app/pricing/cards.tsx)", marker: "⏺" },
+	{ type: "line", session: "opencode", tone: "fg", text: "Edit(app/pricing/cards.tsx)", marker: "⏺" },
 	{ type: "pause", ms: 80 },
-	{ type: "line", session: "claude", tone: "dim", text: "Rebalancing enterprise card hierarchy and CTA weights", marker: "⎿" },
+	{ type: "line", session: "opencode", tone: "dim", text: "Rebalancing enterprise card hierarchy and CTA weights", marker: "⎿" },
 	{ type: "pause", ms: 160 },
-	{ type: "stream", session: "claude", text: "Retuning the tier hierarchy and spacing so the comparison table reads cleanly on first scan." },
+	{ type: "stream", session: "opencode", text: "Retuning the tier hierarchy and spacing so the comparison table reads cleanly on first scan." },
 	{ type: "pause", ms: 90 },
-	{ type: "line", session: "claude", tone: "fg", text: "Read(app/pricing/comparison-table.tsx)", marker: "⏺" },
+	{ type: "line", session: "opencode", tone: "fg", text: "Read(app/pricing/comparison-table.tsx)", marker: "⏺" },
 	{ type: "pause", ms: 80 },
-	{ type: "line", session: "claude", tone: "dim", text: "Need consistent vertical rhythm with new cards", marker: "⎿" },
+	{ type: "line", session: "opencode", tone: "dim", text: "Need consistent vertical rhythm with new cards", marker: "⎿" },
 	{ type: "pause", ms: 180 },
 	{ type: "line", session: "codex", tone: "working", text: "delegated from orchestrator: run mobile QA for pricing", marker: "❯" },
 	{ type: "pause", ms: 90 },
@@ -584,12 +584,12 @@ const SCRIPT: Step[] = [
 	{ type: "pause", ms: 160 },
 	{ type: "stream", session: "cursor", text: "Updating the launch checklist, rollout note, and screenshot handoff while QA keeps running." },
 	{ type: "pause", ms: 420 },
-	{ type: "cursor", target: "session-claude", click: true },
-	{ type: "switch", session: "claude" },
+	{ type: "cursor", target: "session-opencode", click: true },
+	{ type: "switch", session: "opencode" },
 	{ type: "pause", ms: 1120 },
-	{ type: "blank", session: "claude" },
-	{ type: "line", session: "claude", tone: "success", text: "Visual diff looks good at desktop + tablet", marker: "⎿" },
-	{ type: "sessionStatus", session: "claude", label: "Ready", tone: status.ready, breathe: false },
+	{ type: "blank", session: "opencode" },
+	{ type: "line", session: "opencode", tone: "success", text: "Visual diff looks good at desktop + tablet", marker: "⎿" },
+	{ type: "sessionStatus", session: "opencode", label: "Ready", tone: status.ready, breathe: false },
 	{ type: "pause", ms: 480 },
 	{ type: "cursor", target: "session-codex", click: true },
 	{ type: "switch", session: "codex" },
@@ -622,17 +622,17 @@ const initialLines = (): Record<string, DisplayLine[]> => {
 
 const initialStatuses = (): Record<ProjectId, Record<WorkerId, SessionStatusState>> => ({
 	"solkit-ui": {
-		claude: { label: "Idle", tone: status.idle, breathe: false },
+		opencode: { label: "Idle", tone: status.idle, breathe: false },
 		codex: { label: "Idle", tone: status.idle, breathe: false },
 		cursor: { label: "Idle", tone: status.idle, breathe: false },
 	},
 	"metrics-api": {
-		claude: { label: "Idle", tone: status.idle, breathe: false },
+		opencode: { label: "Idle", tone: status.idle, breathe: false },
 		codex: { label: "Idle", tone: status.idle, breathe: false },
 		cursor: { label: "Idle", tone: status.idle, breathe: false },
 	},
 	"northstar-web": {
-		claude: { label: "Idle", tone: status.idle, breathe: false },
+		opencode: { label: "Idle", tone: status.idle, breathe: false },
 		codex: { label: "Idle", tone: status.idle, breathe: false },
 		cursor: { label: "Idle", tone: status.idle, breathe: false },
 	},
@@ -819,21 +819,21 @@ export function DelegationDemo() {
 		const reduce = typeof window !== "undefined" && window.matchMedia("(prefers-reduced-motion: reduce)").matches;
 		if (reduce) {
 			setActiveProject("solkit-ui");
-			setSpawned(["orc", "claude", "codex", "cursor"]);
-			setActive("claude");
+			setSpawned(["orc", "opencode", "codex", "cursor"]);
+			setActive("opencode");
 			setStatusesByProject({
 				"solkit-ui": {
-					claude: { label: "Ready", tone: status.ready, breathe: false },
+					opencode: { label: "Ready", tone: status.ready, breathe: false },
 					codex: { label: "In review", tone: "#facc15", breathe: true },
 					cursor: { label: "Needs input", tone: status.needsYou, breathe: true },
 				},
 				"metrics-api": {
-					claude: { label: "Ready", tone: status.ready, breathe: false },
+					opencode: { label: "Ready", tone: status.ready, breathe: false },
 					codex: { label: "In review", tone: "#facc15", breathe: true },
 					cursor: { label: "Ready", tone: status.ready, breathe: false },
 				},
 				"northstar-web": {
-					claude: { label: "Ready", tone: status.ready, breathe: false },
+					opencode: { label: "Ready", tone: status.ready, breathe: false },
 					codex: { label: "Needs input", tone: status.needsYou, breathe: true },
 					cursor: { label: "In review", tone: "#facc15", breathe: true },
 				},
@@ -845,7 +845,7 @@ export function DelegationDemo() {
 					{ id: "r3", tone: "fg", text: "Bash(ao spawn --name \"integration tests\")", marker: "⏺" },
 					{ id: "r4", tone: "fg", text: "Bash(ao spawn --name \"setup guide\")", marker: "⏺" },
 				],
-				[sessionKey("solkit-ui", "claude")]: [
+				[sessionKey("solkit-ui", "opencode")]: [
 					{ id: "r5", tone: "fg", text: "Build the GitHub callback route.", marker: "❯" },
 					{ id: "r6", tone: "fg", text: "Edit(src/auth/callback.ts)", marker: "⏺" },
 					{ id: "r7", tone: "success", text: "Tests  6 passed (6)", marker: "⎿" },
@@ -859,11 +859,11 @@ export function DelegationDemo() {
 					{ id: "r11", tone: "error", text: "Decision needed: PKCE or implicit flow?", marker: "⏺" },
 				],
 				[sessionKey("metrics-api", "orc")]: [{ id: "r12", tone: "fg", text: projectById["metrics-api"].orchestratorPrompt, marker: "❯" }],
-				[sessionKey("metrics-api", "claude")]: [{ id: "r13", tone: "fg", text: "Fix alert digest retry behavior.", marker: "❯" }],
+				[sessionKey("metrics-api", "opencode")]: [{ id: "r13", tone: "fg", text: "Fix alert digest retry behavior.", marker: "❯" }],
 				[sessionKey("metrics-api", "codex")]: [{ id: "r14", tone: "fg", text: "Add digest query coverage.", marker: "❯" }],
 				[sessionKey("metrics-api", "cursor")]: [{ id: "r15", tone: "fg", text: "Update the alert digest runbook.", marker: "❯" }],
 				[sessionKey("northstar-web", "orc")]: [{ id: "r16", tone: "fg", text: projectById["northstar-web"].orchestratorPrompt, marker: "❯" }],
-				[sessionKey("northstar-web", "claude")]: [{ id: "r17", tone: "fg", text: "Refresh the pricing cards.", marker: "❯" }],
+				[sessionKey("northstar-web", "opencode")]: [{ id: "r17", tone: "fg", text: "Refresh the pricing cards.", marker: "❯" }],
 				[sessionKey("northstar-web", "codex")]: [{ id: "r18", tone: "error", text: "Decision needed: stack CTA buttons at 390px?", marker: "⏺" }],
 				[sessionKey("northstar-web", "cursor")]: [{ id: "r19", tone: "dim", text: "Docs branch ready for review", marker: "⎿" }],
 			});

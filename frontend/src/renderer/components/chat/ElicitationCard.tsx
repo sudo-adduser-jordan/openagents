@@ -150,7 +150,7 @@ function FormRequest({
 }) {
 	const schema = activity.detail?.schema;
 	const properties = useMemo(() => Object.entries(schema?.properties ?? {}), [schema?.properties]);
-	const questionGroups = useMemo(() => claudeQuestionGroups(properties), [properties]);
+	const questionGroups = useMemo(() => elicitationQuestionGroups(properties), [properties]);
 	const required = useMemo(() => new Set(schema?.required ?? []), [schema?.required]);
 	const [values, setValues] = useState<Record<string, InputValue>>(() => initialValues(properties));
 	const [missing, setMissing] = useState<Set<string>>(new Set());
@@ -369,7 +369,7 @@ function enumOptions(property: Record<string, unknown>): Array<{ value: string; 
 	});
 }
 
-function claudeQuestionGroups(properties: PropertyEntry[]): PropertyEntry[][] | undefined {
+function elicitationQuestionGroups(properties: PropertyEntry[]): PropertyEntry[][] | undefined {
 	if (properties.length === 0) return undefined;
 
 	const groups = new Map<number, { question?: PropertyEntry; custom?: PropertyEntry }>();

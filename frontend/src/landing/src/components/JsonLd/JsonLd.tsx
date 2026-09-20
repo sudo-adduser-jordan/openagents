@@ -252,7 +252,7 @@ export function ServiceJsonLd() {
 		name: `${COMPANY.NAME} agent orchestration`,
 		serviceType: "AI coding agent orchestration platform",
 		description:
-			"Run and orchestrate parallel AI coding agents (Claude Code, Codex, OpenCode, and any CLI agent) in isolated Git worktrees, with diff review, persistent terminals, scheduled automations, and an MCP server for programmatic control.",
+			"Run and orchestrate parallel AI coding agents (Codex, OpenCode, and any CLI agent) in isolated Git worktrees, with diff review, persistent terminals, scheduled automations, and an MCP server for programmatic control.",
 		provider: {
 			"@type": "Organization",
 			"@id": ORGANIZATION_ID,

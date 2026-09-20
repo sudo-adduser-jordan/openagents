@@ -11,7 +11,7 @@ describe("SettingsOptionMenu", () => {
 				value=""
 				searchable
 				options={[
-					{ value: "anthropic/claude-sonnet", label: "Claude Sonnet" },
+					{ value: "zai/sonnet", label: "ZAI Sonnet" },
 					{ value: "openai/gpt-5.5", label: "GPT Five" },
 				]}
 				onChange={() => {}}
@@ -22,12 +22,12 @@ describe("SettingsOptionMenu", () => {
 		const search = screen.getByRole("searchbox", { name: "Search worker model" });
 
 		await userEvent.type(search, "sonnet");
-		expect(screen.getByRole("menuitem", { name: "Claude Sonnet" })).toBeInTheDocument();
+		expect(screen.getByRole("menuitem", { name: "ZAI Sonnet" })).toBeInTheDocument();
 		expect(screen.queryByRole("menuitem", { name: "GPT Five" })).not.toBeInTheDocument();
 
 		await userEvent.clear(search);
 		await userEvent.type(search, "openai/gpt");
 		expect(screen.getByRole("menuitem", { name: "GPT Five" })).toBeInTheDocument();
-		expect(screen.queryByRole("menuitem", { name: "Claude Sonnet" })).not.toBeInTheDocument();
+		expect(screen.queryByRole("menuitem", { name: "ZAI Sonnet" })).not.toBeInTheDocument();
 	});
 });

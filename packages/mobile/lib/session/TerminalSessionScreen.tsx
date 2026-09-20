@@ -243,7 +243,7 @@ const TERMINAL_ENHANCE_JS = `
   }
 
   // ---- App-driven scrolling (harness-agnostic) ------------------------------
-  // Full-screen TUIs (Claude Code, Codex, Gemini, aider, vim, less, ...) run in
+  // Full-screen TUIs (Codex, Gemini, aider, vim, less, ...) run in
   // the terminal's ALTERNATE screen buffer, which by design keeps NO xterm
   // scrollback — so .xterm-viewport has nothing to scroll and a drag "does
   // nothing". Rather than hand-encode scroll bytes per harness, we synthesize the
@@ -431,7 +431,7 @@ const TERMINAL_ENHANCE_JS = `
   // Two regimes, mirroring the drag handler above:
   //  • normal buffer  -> xterm owns the scrollback; scrollToTop() is a true jump,
   //    and viewportY tells us whether there's anything above (hide at the top).
-  //  • alt buffer / mouse-tracking (Claude Code, Codex, aider, vim, less, ...) ->
+  //  • alt buffer / mouse-tracking (Codex, aider, vim, less, ...) ->
   //    the APP owns its scrollback, so scrollToTop() can't reach it. Send the same
   //    wheel notches a drag produces. We can't query the app's scroll position, so
   //    the button always shows there and the jump is a generous burst.
@@ -1010,7 +1010,7 @@ export default function TerminalScreen({ session: resolved }: { session?: RouteS
 
 	// Push-to-talk dictation, captured on the PHONE rather than by the harness.
 	//
-	// Driving a harness's own voice mode from here (Claude Code's /voice) looks
+	// Driving a harness's own voice mode from here looks
 	// easy — the key row already sends arbitrary bytes to the PTY — but it records
 	// through the *daemon host's* microphone, which is a machine the user is not
 	// sitting at. It would also only ever work for the harnesses that ship a voice
@@ -1028,7 +1028,7 @@ export default function TerminalScreen({ session: resolved }: { session?: RouteS
 			// nothing focuses the field either, which would pop the keyboard over the
 			// terminal mid-phrase.
 			// Append, so several held phrases build one prompt (the same way holding
-			// the key again appends in Claude Code's own dictation).
+			// the key again appends in an agent's own dictation).
 			setMsg((m) => (m ? `${m} ${text}` : text));
 			haptics.success();
 		}, []),

@@ -459,14 +459,15 @@ func (d *Driver) initialize(
 			Version: "0.1.0",
 		},
 		ClientCapabilities: acpsdk.ClientCapabilities{
-			// These two Claude bridge extensions enrich the transcript. They do
+			// These transcript-enrichment extensions enrich the transcript. They do
 			// not grant the agent access to AO's terminal or filesystem APIs.
 			Meta: map[string]any{
 				"subagent-transcript": true,
 				"terminal_output":     true,
-				// claude-agent-acp publishes retryable API/transport failures only
-				// when the client opts into this namespaced metadata extension. It is
-				// observational: AO receives status, but grants no new capability.
+				// Agents supporting the JetBrains AIR extension publish retryable
+				// API/transport failures only when the client opts into this
+				// namespaced metadata extension. It is observational: AO receives
+				// status, but grants no new capability.
 				"jetbrains": map[string]any{
 					"air": map[string]any{
 						"version":      1,

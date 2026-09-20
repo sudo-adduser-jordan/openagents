@@ -43,7 +43,7 @@ vi.mock("./CreateProjectAgentSheet", () => ({
 				data-testid="agent-field"
 				data-value={value}
 				disabled={disabled}
-				onClick={() => onChange(value === "codex" ? "claude-code" : "codex")}
+				onClick={() => onChange(value === "codex" ? "opencode" : "codex")}
 			/>
 		);
 	},
@@ -664,7 +664,7 @@ describe("TaskComposer", () => {
 				return { data: { agent: "codex", selectionMode: "text", models: [], allowCustom: true } };
 			}
 			return {
-				data: { status: "ok", project: { agent: "claude-code", config: { worker: { agent: "codex" } } } },
+				data: { status: "ok", project: { agent: "opencode", config: { worker: { agent: "codex" } } } },
 			};
 		});
 		h.post.mockResolvedValueOnce({ data: { workerId: "sess-3" } });
@@ -718,9 +718,9 @@ describe("TaskComposer", () => {
 	it("falls back to the global default agent when the project sets no worker agent", async () => {
 		h.get.mockImplementation(async (path: string) => {
 			if (path.includes("/models")) {
-				return { data: { agent: "claude-code", selectionMode: "text", models: [], allowCustom: true } };
+				return { data: { agent: "codex", selectionMode: "text", models: [], allowCustom: true } };
 			}
-			return { data: { status: "ok", project: { agent: "claude-code", config: {} } } };
+			return { data: { status: "ok", project: { agent: "codex", config: {} } } };
 		});
 
 		render(
@@ -729,27 +729,27 @@ describe("TaskComposer", () => {
 			</Wrap>,
 		);
 
-		await waitFor(() => expect(screen.getByTestId("agent-field")).toHaveAttribute("data-value", "claude-code"));
+		await waitFor(() => expect(screen.getByTestId("agent-field")).toHaveAttribute("data-value", "codex"));
 	});
 
-	it("does not expose Codex effort controls for Claude Code", async () => {
+	it("does not expose Codex effort controls for OpenCode", async () => {
 		h.get.mockImplementation(async (path: string) => {
 			if (path.includes("/models")) {
 				return {
 					data: {
-						agent: "claude-code",
+						agent: "opencode",
 						selectionMode: "catalog",
 						models: [{ id: "sonnet", label: "Sonnet", isDefault: true, efforts: ["low", "high"] }],
 						allowCustom: true,
 					},
 				};
 			}
-			return { data: { status: "ok", project: { agent: "claude-code", config: {} } } };
+			return { data: { status: "ok", project: { agent: "opencode", config: {} } } };
 		});
 
 		render(<Wrap><TaskComposer projectId="proj-1" onCreated={vi.fn()} /></Wrap>);
 
-		await waitFor(() => expect(screen.getByTestId("agent-field")).toHaveAttribute("data-value", "claude-code"));
+		await waitFor(() => expect(screen.getByTestId("agent-field")).toHaveAttribute("data-value", "opencode"));
 		expect(await screen.findByRole("button", { name: "Model" })).toHaveTextContent("Sonnet");
 		expect(screen.queryByRole("button", { name: "Effort" })).not.toBeInTheDocument();
 	});
@@ -782,7 +782,7 @@ describe("TaskComposer", () => {
 	});
 
 	it("clears a stale model while the newly selected agent catalog resolves", async () => {
-		let resolveClaudeCatalog!: (value: {
+		let resolveOpencodeCatalog!: (value: {
 			data: {
 				agent: string;
 				selectionMode: "text";
@@ -792,9 +792,9 @@ describe("TaskComposer", () => {
 		}) => void;
 		h.get.mockImplementation(async (path: string, request?: { params?: { path?: { agent?: string } } }) => {
 			if (path.includes("/models")) {
-				if (request?.params?.path?.agent === "claude-code") {
+				if (request?.params?.path?.agent === "opencode") {
 					return new Promise((resolve) => {
-						resolveClaudeCatalog = resolve;
+						resolveOpencodeCatalog = resolve;
 					});
 				}
 				return {
@@ -822,16 +822,16 @@ describe("TaskComposer", () => {
 		expect(screen.getByRole("status", { name: "Loading models…" })).toBeInTheDocument();
 
 		await act(async () => {
-			resolveClaudeCatalog({
+			resolveOpencodeCatalog({
 				data: {
-					agent: "claude-code",
+					agent: "opencode",
 					selectionMode: "text",
-					models: [{ id: "opus[1m]", label: "opus[1m]", isDefault: true }],
+					models: [{ id: "atlas[1m]", label: "atlas[1m]", isDefault: true }],
 					allowCustom: true,
 				},
 			});
 		});
-		expect(await screen.findByRole("button", { name: "Model" })).toHaveTextContent("opus[1m]");
+		expect(await screen.findByRole("button", { name: "Model" })).toHaveTextContent("atlas[1m]");
 	});
 
 	it("shows the same no-override label on the trigger and in the menu", async () => {

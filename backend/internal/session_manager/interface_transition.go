@@ -571,7 +571,7 @@ func (m *Manager) runInterfaceTransition(
 }
 
 // handoffNativeConversationID is the readiness check shared by status and
-// start. A reserved native id alone is not enough for a handoff: Claude Code
+// start. A reserved native id alone is not enough for a handoff: the agent
 // only writes its transcript after the first prompt, so the id must also have
 // durable provider history behind it (or positive fresh-start proof).
 func (m *Manager) handoffNativeConversationID(

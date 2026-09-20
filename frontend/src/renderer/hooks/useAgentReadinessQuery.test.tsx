@@ -56,13 +56,13 @@ describe("agent readiness query", () => {
 	it("ensures normalized relevant harness ids and updates the display copy", async () => {
 		const queryClient = new QueryClient();
 		renderHook(
-			() => useEnsureAgentReadiness({ agentIds: ["codex", "claude-code", "codex"] }),
+			() => useEnsureAgentReadiness({ agentIds: ["codex", "opencode", "codex"] }),
 			{ wrapper: wrapper(queryClient) },
 		);
 
 		await waitFor(() =>
 			expect(postMock).toHaveBeenCalledWith("/api/v1/agents/readiness/ensure", {
-				body: { agentIds: ["claude-code", "codex"], purpose: "display" },
+				body: { agentIds: ["codex", "opencode"], purpose: "display" },
 			}),
 		);
 		expect(queryClient.getQueryData(agentReadinessQueryKey)).toEqual({
@@ -71,12 +71,12 @@ describe("agent readiness query", () => {
 	});
 
 	it("merges targeted ensures without discarding other harness snapshots", () => {
-		const claude = agentReadiness("claude-code", "Claude Code");
+		const opencode = agentReadiness("opencode", "OpenCode");
 		const staleCodex = agentReadiness("codex", "Codex", { freshness: "stale" });
 		const freshCodex = agentReadiness("codex", "Codex");
 
-		expect(mergeAgentReadiness({ agents: [claude, staleCodex] }, { agents: [freshCodex] })).toEqual({
-			agents: [claude, freshCodex],
+		expect(mergeAgentReadiness({ agents: [opencode, staleCodex] }, { agents: [freshCodex] })).toEqual({
+			agents: [freshCodex, opencode],
 		});
 	});
 });

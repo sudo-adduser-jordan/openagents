@@ -430,7 +430,7 @@ func parameterizedModelAliases(value string) ([]string, bool) {
 		return []string{base + "-thinking" + fastSuffix}, true
 	}
 	// Cursor has shipped both thinking-effort and effort-thinking alias orders
-	// across Claude model families. Both retain the same advertised semantics;
+	// across model families. Both retain the same advertised semantics;
 	// the caller still rejects any alias shared by multiple advertised choices.
 	return []string{
 		base + "-thinking-" + effort + fastSuffix,

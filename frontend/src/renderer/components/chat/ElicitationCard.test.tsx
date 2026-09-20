@@ -21,7 +21,7 @@ function activity(detail: ConversationActivity["detail"]): ConversationActivity 
 }
 
 describe("ElicitationCard", () => {
-	const claudeQuestions = {
+	const formQuestions = {
 		type: "object" as const,
 		required: ["question_0", "question_1"],
 		properties: {
@@ -46,10 +46,10 @@ describe("ElicitationCard", () => {
 		},
 	};
 
-	it("shows one Claude question and its Other field at a time", () => {
+	it("shows one form question and its Other field at a time", () => {
 		render(
 			<ElicitationCard
-				activity={activity({ inputMode: "form", schema: claudeQuestions })}
+				activity={activity({ inputMode: "form", schema: formQuestions })}
 				onResolve={vi.fn()}
 			/>,
 		);
@@ -60,11 +60,11 @@ describe("ElicitationCard", () => {
 		expect(screen.queryByLabelText("Other language")).not.toBeInTheDocument();
 	});
 
-	it("validates the active Claude question before moving forward", async () => {
+	it("validates the active form question before moving forward", async () => {
 		const user = userEvent.setup();
 		render(
 			<ElicitationCard
-				activity={activity({ inputMode: "form", schema: claudeQuestions })}
+				activity={activity({ inputMode: "form", schema: formQuestions })}
 				onResolve={vi.fn()}
 			/>,
 		);
@@ -75,11 +75,11 @@ describe("ElicitationCard", () => {
 		expect(screen.queryByRole("group", { name: /Language/ })).not.toBeInTheDocument();
 	});
 
-	it("navigates Claude questions and preserves answers when going back", async () => {
+	it("navigates form questions and preserves answers when going back", async () => {
 		const user = userEvent.setup();
 		render(
 			<ElicitationCard
-				activity={activity({ inputMode: "form", schema: claudeQuestions })}
+				activity={activity({ inputMode: "form", schema: formQuestions })}
 				onResolve={vi.fn()}
 			/>,
 		);
@@ -94,7 +94,7 @@ describe("ElicitationCard", () => {
 		expect(screen.getByLabelText("Other approach")).toHaveValue("Hybrid");
 	});
 
-	it("submits all Claude answers together from the final question", async () => {
+	it("submits all form answers together from the final question", async () => {
 		const user = userEvent.setup();
 		const onResolve = vi.fn().mockResolvedValue(undefined);
 		render(
@@ -102,7 +102,7 @@ describe("ElicitationCard", () => {
 				activity={activity({
 					inputMode: "form",
 					message: "Which implementation should we use?",
-					schema: claudeQuestions,
+					schema: formQuestions,
 				})}
 				onResolve={onResolve}
 			/>,
@@ -172,14 +172,14 @@ describe("ElicitationCard", () => {
 		const onResolve = vi.fn().mockResolvedValue(undefined);
 		render(
 			<ElicitationCard
-				activity={activity({ inputMode: "url", url: "https://console.anthropic.com/oauth", message: "Sign in" })}
+				activity={activity({ inputMode: "url", url: "https://example.com/oauth", message: "Sign in" })}
 				onResolve={onResolve}
 			/>,
 		);
 		expect(openExternal).not.toHaveBeenCalled();
-		expect(screen.getByText("https://console.anthropic.com/oauth")).toBeInTheDocument();
-		await user.click(screen.getByRole("button", { name: "Open console.anthropic.com" }));
-		expect(openExternal).toHaveBeenCalledWith("https://console.anthropic.com/oauth");
+		expect(screen.getByText("https://example.com/oauth")).toBeInTheDocument();
+		await user.click(screen.getByRole("button", { name: "Open example.com" }));
+		expect(openExternal).toHaveBeenCalledWith("https://example.com/oauth");
 		expect(onResolve).toHaveBeenCalledWith("request-1", "accept", undefined);
 	});
 

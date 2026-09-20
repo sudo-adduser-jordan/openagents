@@ -3911,7 +3911,7 @@ export interface components {
             /** @enum {string} */
             harness: "opencode";
             modelId?: string;
-            /** @description Canonical provider routing hint derived by the trusted local Claude hook. */
+            /** @description Canonical provider routing hint derived by the trusted local agent hook. */
             providerId?: string;
             subagentId?: string;
             subagentTranscriptPath?: string;

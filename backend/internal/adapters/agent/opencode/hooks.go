@@ -63,7 +63,7 @@ const (
 // inside the binary and is written verbatim into a session's worktree on hook
 // install. It is a real, lintable source file under assets/ rather than a Go
 // string literal because it is opencode plugin source code, not a data
-// structure AO assembles (the way it builds Codex/Claude hook JSON).
+// structure AO assembles (the way it builds Codex hook JSON).
 //
 //go:embed assets/ao-activity.ts
 var opencodePluginSource string
@@ -76,7 +76,7 @@ var opencodeManagedEvents = []string{"session-start", "user-prompt-submit", "act
 // GetAgentHooks installs AO's opencode activity plugin into the worktree-local
 // .opencode/plugins/ directory, and materializes the using-ao skill into
 // .opencode/skills/using-ao/ so opencode's native `skill` tool can discover it.
-// Unlike Claude Code and Codex, opencode has no native command-hook config to
+// Unlike Codex, opencode has no native command-hook config to
 // merge into; its only lifecycle-extensibility surface is a JS/TS plugin. AO
 // therefore writes a dedicated, AO-owned plugin file. The write is atomic and
 // idempotent: re-installing overwrites AO's own file with identical content. It

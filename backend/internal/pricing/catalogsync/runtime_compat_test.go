@@ -18,7 +18,6 @@ import (
 func TestGeneratedFractionalRatesLoadInRuntime(t *testing.T) {
 	root := t.TempDir()
 	upstream := []byte(`{
-"anthropic/a":{"litellm_provider":"anthropic","mode":"chat","input_cost_per_token":1,"output_cost_per_token":1},
 "openai/o":{"litellm_provider":"openai","mode":"chat","input_cost_per_token":0.0010,"output_cost_per_token":1.2300e-3},
 "zai/z":{"litellm_provider":"zai","mode":"chat","input_cost_per_token":1,"output_cost_per_token":1}
 }`)
@@ -72,7 +71,6 @@ func TestGeneratedCatalogLoadsThroughRuntimeFetcherAndCache(t *testing.T) {
 	if root == "" {
 		root = t.TempDir()
 		upstream := []byte(`{
-"anthropic/claude-sonnet-4":{"litellm_provider":"anthropic","mode":"chat","input_cost_per_token":0.000003,"output_cost_per_token":0.000015,"cache_read_input_token_cost":0.0000003,"cache_creation_input_token_cost":0.00000375},
 "openai/gpt-5":{"litellm_provider":"openai","mode":"chat","input_cost_per_token":0.00000125,"output_cost_per_token":0.00001},
 "zai/glm-4.6":{"litellm_provider":"zai","mode":"chat","input_cost_per_token":0.0000006,"output_cost_per_token":0.0000022}
 }`)

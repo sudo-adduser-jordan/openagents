@@ -64,7 +64,7 @@ export type DashboardSession = {
 	displayStatus?: string | null;
 	attentionLevel?: AttentionLevel | string | null;
 	activity?: string | null;
-	// Which agent CLI drives this session (claude-code, codex, …). Parsed off the
+	// Which agent CLI drives this session (codex, …). Parsed off the
 	// wire but discarded until the orchestrator tab needed it for brand marks.
 	harness?: string | null;
 	/** Controller currently committed for this AO session. */

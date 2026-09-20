@@ -96,7 +96,7 @@ connection-scoped ACP state that a replacement SDK client cannot infer:
   in causal order. A replacement daemon can therefore finish the original
   provider response and project the resolution exactly once even if its
   predecessor died between host acceptance and the SQLite commit.
-- Persistence is the shared ACP session default: Claude Code, Cursor, OpenCode,
+- Persistence is the shared ACP session default: Cursor, OpenCode,
   Droid, Kimi, Kimchi, Pi, and OMP use the same owner without per-provider flags.
   Short-lived configuration discovery remains explicitly ephemeral and cannot
   masquerade as a durable session. Provider-specific launch

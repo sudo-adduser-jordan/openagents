@@ -17,7 +17,7 @@ test("untouched Chat reports interface refusal and can dismiss and retry @T0", a
 		if (pathname === "/api/v1/agents/readiness" || pathname === "/api/v1/agents/readiness/ensure") {
 			await route.fulfill({
 				json: {
-					agents: [agentReadiness("claude-code", "Claude Code"), agentReadiness("codex", "Codex")],
+					agents: [agentReadiness("opencode", "OpenCode"), agentReadiness("codex", "Codex")],
 				},
 			});
 			return;
@@ -74,10 +74,10 @@ test("untouched Chat reports interface refusal and can dismiss and retry @T0", a
 			}
 			return;
 		}
-		if (pathname === "/api/v1/agents/claude-code/models") {
+		if (pathname === "/api/v1/agents/opencode/models") {
 			await route.fulfill({
 				json: {
-					agentId: "claude-code",
+					agentId: "opencode",
 					allowCustom: true,
 					fetchedAt: "2026-08-18T00:00:00Z",
 					models: [],

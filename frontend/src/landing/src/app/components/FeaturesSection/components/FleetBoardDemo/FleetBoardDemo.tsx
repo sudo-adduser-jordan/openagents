@@ -122,7 +122,7 @@ const INITIAL_CARDS: Card[] = [
 	},
 	{
 		id: "c2", title: "Port Figma board mock into the hero preview",
-		branch: "landing/figma-board", icon: "/app-icons/coverage-claude-code.svg",
+		branch: "landing/figma-board", icon: "/app-icons/coverage-opencode.svg",
 		column: "working", activity: "Editing component", activityState: "running",
 		pr: "PR #318", time: "8m ago",
 	},
@@ -142,7 +142,7 @@ const INITIAL_CARDS: Card[] = [
 	},
 	{
 		id: "c5", title: "Preload GitHub stars before hydration",
-		branch: "landing/preload-stars", icon: "/app-icons/coverage-claude-code.svg",
+		branch: "landing/preload-stars", icon: "/app-icons/coverage-opencode.svg",
 		column: "in_review", activity: "Awaiting review", activityState: "reviewing",
 		pr: "PR #324", time: "1h ago",
 		prComments: 2,
@@ -485,10 +485,10 @@ export function FleetBoardDemo() {
 				if (workingCount < 2 && next.filter((c) => !c.merging).length < 8) {
 					const newId = `spawned-${++incomingIdx.current}`;
 					const templates = [
-						{ title: "Throttle agent spawn rate under load",      branch: "backend/spawn-throttle",      icon: "/app-icons/coverage-claude-code.svg" },
+						{ title: "Throttle agent spawn rate under load",      branch: "backend/spawn-throttle",      icon: "/app-icons/coverage-opencode.svg" },
 						{ title: "Add keyboard shortcut for session focus",    branch: "feat/session-focus-shortcut", icon: "/app-icons/coverage-codex.svg"       },
 						{ title: "Lazy-load session terminal on first open",   branch: "perf/lazy-terminal",          icon: "/app-icons/agents/cursor.svg"               },
-						{ title: "Fix memory leak in terminal resize handler", branch: "fix/terminal-resize-leak",    icon: "/app-icons/coverage-claude-code.svg" },
+						{ title: "Fix memory leak in terminal resize handler", branch: "fix/terminal-resize-leak",    icon: "/app-icons/coverage-opencode.svg" },
 						{ title: "Migrate auth tokens to short-lived JWTs",   branch: "auth/jwt-rotation",           icon: "/app-icons/opencode.svg"             },
 					];
 					const t = templates[incomingIdx.current % templates.length]!;

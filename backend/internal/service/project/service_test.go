@@ -711,7 +711,7 @@ func TestManager_UpdateSettings(t *testing.T) {
 		Env:               map[string]string{"FOO": "bar"},
 		AgentRules:        "Run focused tests.",
 		OrchestratorRules: "Delegate implementation.",
-		AgentConfig:       domain.AgentConfig{Model: "claude-opus-4-5"},
+		AgentConfig:       domain.AgentConfig{Model: "gpt-5.6"},
 	}
 	proj, err := m.UpdateSettings(ctx, "ao", project.UpdateSettingsInput{
 		DisplayName: "  AO Project  ",
@@ -720,7 +720,7 @@ func TestManager_UpdateSettings(t *testing.T) {
 	if err != nil {
 		t.Fatalf("UpdateSettings: %v", err)
 	}
-	if proj.Name != "AO Project" || proj.Config == nil || proj.Config.AgentConfig.Model != "claude-opus-4-5" {
+	if proj.Name != "AO Project" || proj.Config == nil || proj.Config.AgentConfig.Model != "gpt-5.6" {
 		t.Fatalf("returned project = %#v", proj)
 	}
 	if proj.DefaultBranch != "develop" {
@@ -749,7 +749,7 @@ func TestManager_UpdateSettings(t *testing.T) {
 	if err != nil {
 		t.Fatalf("Get after rejected update: %v", err)
 	}
-	if got.Project == nil || got.Project.Name != "AO Project" || got.Project.Config == nil || got.Project.Config.AgentConfig.Model != "claude-opus-4-5" {
+	if got.Project == nil || got.Project.Name != "AO Project" || got.Project.Config == nil || got.Project.Config.AgentConfig.Model != "gpt-5.6" {
 		t.Fatalf("project changed after rejected update = %#v", got.Project)
 	}
 	_, err = m.UpdateSettings(ctx, "ao", project.UpdateSettingsInput{DisplayName: "  ", Config: cfg})

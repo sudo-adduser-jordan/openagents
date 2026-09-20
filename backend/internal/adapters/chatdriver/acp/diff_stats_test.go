@@ -54,7 +54,7 @@ func TestLineDeltaAppendOnly(t *testing.T) {
 }
 
 func TestTurnDiffReplacesExpandedContextForSameTool(t *testing.T) {
-	// Claude ACP often re-sends the same edit with a wider old/new window.
+	// An ACP agent often re-sends the same edit with a wider old/new window.
 	// Combining the first narrow oldText with the later expanded newText inflates
 	// the count (live: +1000 then +1002 / −2). Replacement keeps +1000.
 	const appended = 1000

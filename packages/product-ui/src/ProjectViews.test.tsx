@@ -46,7 +46,7 @@ describe("project models", () => {
 			validateProjectSettings({
 				displayName: "Project",
 				workerAgent: "codex",
-				orchestratorAgent: "claude-code",
+				orchestratorAgent: "codex",
 				intakeEnabled: true,
 				intakeAssignee: "",
 			}),
@@ -54,11 +54,11 @@ describe("project models", () => {
 	});
 
 	it("gates project setup on agents and intake eligibility", () => {
-		expect(canSubmitProjectSetup({ workerAgent: "codex", orchestratorAgent: "claude-code" })).toBe(true);
+		expect(canSubmitProjectSetup({ workerAgent: "codex", orchestratorAgent: "codex" })).toBe(true);
 		expect(
 			canSubmitProjectSetup({
 				workerAgent: "codex",
-				orchestratorAgent: "claude-code",
+				orchestratorAgent: "codex",
 				intakeEnabled: true,
 			}),
 		).toBe(false);

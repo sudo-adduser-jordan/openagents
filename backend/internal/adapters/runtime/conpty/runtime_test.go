@@ -373,7 +373,7 @@ func TestCreate_RegistersSession(t *testing.T) {
 	handle, err := rt.Create(ctx, ports.RuntimeConfig{
 		SessionID:     domain.SessionID("sess-abc"),
 		WorkspacePath: "/tmp/workspace",
-		Argv:          []string{"claude-code"},
+		Argv:          []string{"codex"},
 	})
 	if err != nil {
 		t.Fatalf("Create: %v", err)
@@ -426,7 +426,7 @@ func TestCreate_RunFilePathScopesRegistryToInstanceDir(t *testing.T) {
 	handle, err := rt.Create(context.Background(), ports.RuntimeConfig{
 		SessionID:     domain.SessionID("sess-scoped"),
 		WorkspacePath: "/tmp/workspace",
-		Argv:          []string{"claude-code"},
+		Argv:          []string{"codex"},
 	})
 	if err != nil {
 		t.Fatalf("Create: %v", err)

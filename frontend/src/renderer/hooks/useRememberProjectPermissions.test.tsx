@@ -71,6 +71,6 @@ it("keeps saved-mode feedback scoped to its project and source harness", async (
 	await waitFor(() => expect(result.current.savedMode).toBe("default"));
 	rerender({ projectId: "project-two", harness: "codex" });
 	expect(result.current.savedMode).toBeUndefined();
-	rerender({ projectId: "project-one", harness: "claude-code" });
+	rerender({ projectId: "project-one", harness: "opencode" });
 	expect(result.current.savedMode).toBeUndefined();
 });

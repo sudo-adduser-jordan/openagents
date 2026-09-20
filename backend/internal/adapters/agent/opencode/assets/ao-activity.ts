@@ -23,7 +23,7 @@ import type { Plugin } from "@opencode-ai/plugin"
 
 export const aoActivity: Plugin = async ({ directory, client }) => {
   // ao hooks must never be able to hang opencode: cap each invocation, matching
-  // the 30s timeout the claude-code and codex hook entries use.
+  // the 30s timeout the codex hook entries use.
   const HOOK_TIMEOUT_MS = 30_000
   // A user message is reported at most twice (see reportUserPrompt): an optional
   // early empty report, then an upgrade carrying the prompt text. Maps a message

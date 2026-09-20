@@ -68,7 +68,7 @@ func TestMigration0013DedupesExistingDuplicates(t *testing.T) {
 	for _, r := range seed {
 		if _, err := db.Exec(
 			`INSERT INTO review_run (id, review_id, session_id, harness, pr_url, target_sha, status, verdict, body, created_at)
-			 VALUES (?, 'rev-1', 's1', 'claude-code', '', ?, ?, '', '', ?)`,
+			 VALUES (?, 'rev-1', 's1', 'codex', '', ?, ?, '', '', ?)`,
 			r.id, r.sha, r.status, r.createdAt,
 		); err != nil {
 			t.Fatalf("seed %s: %v", r.id, err)
@@ -109,7 +109,7 @@ func TestMigration0013DedupesExistingDuplicates(t *testing.T) {
 	// The index is live and now rejects a fresh duplicate.
 	if _, err := db.Exec(
 		`INSERT INTO review_run (id, review_id, session_id, harness, pr_url, target_sha, status, verdict, body, created_at)
-		 VALUES ('dup', 'rev-1', 's1', 'claude-code', '', 'shaA', 'running', '', '', '2026-06-04T00:00:00Z')`,
+		 VALUES ('dup', 'rev-1', 's1', 'codex', '', 'shaA', 'running', '', '', '2026-06-04T00:00:00Z')`,
 	); err == nil {
 		t.Fatal("expected unique-index violation inserting a duplicate (session_id, target_sha)")
 	}
@@ -128,7 +128,7 @@ func TestMigration0044BackfillsBatchlessReviewRuns(t *testing.T) {
 	}
 	if _, err := db.Exec(
 		`INSERT INTO review_run (id, review_id, session_id, harness, pr_url, target_sha, status, verdict, body, created_at)
-		 VALUES ('run-1', 'review-1', 'session-1', 'claude-code', 'pr1', 'sha1', 'running', '', '', '2026-06-01T00:00:00Z')`,
+		 VALUES ('run-1', 'review-1', 'session-1', 'codex', 'pr1', 'sha1', 'running', '', '', '2026-06-01T00:00:00Z')`,
 	); err != nil {
 		t.Fatalf("seed batchless review run: %v", err)
 	}

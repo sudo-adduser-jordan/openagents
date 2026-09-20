@@ -896,11 +896,11 @@ func (a *fakeAgent) NewSession(ctx context.Context, params acpsdk.NewSessionRequ
 	updates := append([]acpsdk.SessionUpdate(nil), a.newSessionUpdates...)
 	a.mu.Unlock()
 	for _, update := range updates {
-		if err := a.conn.SessionUpdate(ctx, acpsdk.SessionNotification{SessionId: "claude-session-1", Update: update}); err != nil {
+		if err := a.conn.SessionUpdate(ctx, acpsdk.SessionNotification{SessionId: "agent-session-1", Update: update}); err != nil {
 			return acpsdk.NewSessionResponse{}, err
 		}
 	}
-	return acpsdk.NewSessionResponse{SessionId: "claude-session-1", ConfigOptions: a.newConfig}, nil
+	return acpsdk.NewSessionResponse{SessionId: "agent-session-1", ConfigOptions: a.newConfig}, nil
 }
 func (a *fakeAgent) ResumeSession(_ context.Context, params acpsdk.ResumeSessionRequest) (acpsdk.ResumeSessionResponse, error) {
 	a.mu.Lock()
@@ -1079,7 +1079,7 @@ func TestACPDriverDefersPromptUntilDurableTurnBinding(t *testing.T) {
 		t.Fatalf("Start: %v", err)
 	}
 	defer conversation.Close()
-	if got := conversation.ProviderConversationID(); got != "claude-session-1" {
+	if got := conversation.ProviderConversationID(); got != "agent-session-1" {
 		t.Fatalf("provider conversation id = %q", got)
 	}
 	agent.mu.Lock()
@@ -1974,7 +1974,7 @@ func TestValidateInputResponseRejectsValuesOutsideTheProviderSchema(t *testing.T
 	}
 }
 
-func TestACPDriverPreservesNestedToolAndTerminalMetadata(t *testing.T) {
+func TestACPDriverPreservesToolAndTerminalMetadata(t *testing.T) {
 	agent := &fakeAgent{}
 	driver := New(Config{
 		Harness:      domain.HarnessOpenCode,
@@ -2000,7 +2000,6 @@ func TestACPDriverPreservesNestedToolAndTerminalMetadata(t *testing.T) {
 			SessionUpdate: "tool_call", ToolCallId: "child-tool", Title: "Run tests",
 			Kind: acpsdk.ToolKindExecute, Status: acpsdk.ToolCallStatusPending,
 			Meta: map[string]any{
-				"claudeCode":    map[string]any{"toolName": "Bash", "parentToolUseId": "agent-tool"},
 				"terminal_info": map[string]any{"terminal_id": "child-tool"},
 			},
 		}},
@@ -2034,7 +2033,7 @@ func TestACPDriverPreservesNestedToolAndTerminalMetadata(t *testing.T) {
 	if err := json.Unmarshal(completed.Detail, &detail); err != nil {
 		t.Fatalf("detail: %v", err)
 	}
-	if detail["parentProviderItemId"] != "agent-tool" || detail["terminalId"] != "child-tool" || detail["output"] != "ok\n" {
+	if detail["terminalId"] != "child-tool" || detail["output"] != "ok\n" {
 		t.Fatalf("tool detail = %#v", detail)
 	}
 }
@@ -2043,7 +2042,6 @@ func TestACPDriverNamespacesOpaqueItemIDsByProviderScope(t *testing.T) {
 	type observed struct {
 		messageID string
 		toolID    string
-		parentID  string
 	}
 	open := func(t *testing.T, providerScopeID string) observed {
 		t.Helper()
@@ -2084,39 +2082,30 @@ func TestACPDriverNamespacesOpaqueItemIDsByProviderScope(t *testing.T) {
 			Update: acpsdk.SessionUpdate{ToolCall: &acpsdk.SessionUpdateToolCall{
 				SessionUpdate: "tool_call", ToolCallId: "reused-tool", Title: "Run tests",
 				Kind: acpsdk.ToolKindExecute, Status: acpsdk.ToolCallStatusPending,
-				Meta: map[string]any{"claudeCode": map[string]any{"parentToolUseId": "reused-parent"}},
 			}},
 		}); err != nil {
 			t.Fatalf("tool update: %v", err)
 		}
 		toolEvent := nextEvent(t, opened.Events())
-		var detail map[string]any
-		if err := json.Unmarshal(toolEvent.Detail, &detail); err != nil {
-			t.Fatalf("tool detail: %v", err)
-		}
-		parentID, _ := detail["parentProviderItemId"].(string)
 		return observed{
 			messageID: messageEvent.ProviderItemID,
 			toolID:    toolEvent.ProviderItemID,
-			parentID:  parentID,
 		}
 	}
 
 	first := open(t, "scope-one")
 	second := open(t, "scope-two")
-	if first.messageID == second.messageID || first.toolID == second.toolID || first.parentID == second.parentID {
+	if first.messageID == second.messageID || first.toolID == second.toolID {
 		t.Fatalf("provider scopes reused opaque ids: first=%+v second=%+v", first, second)
 	}
 	firstScope := &conversation{providerScopeID: "scope-one"}
 	if first.messageID != firstScope.providerItemID("reused-message") ||
-		first.toolID != firstScope.providerItemID("reused-tool") ||
-		first.parentID != firstScope.providerItemID("reused-parent") {
+		first.toolID != firstScope.providerItemID("reused-tool") {
 		t.Fatalf("first scoped ids = %+v", first)
 	}
 	secondScope := &conversation{providerScopeID: "scope-two"}
 	if second.messageID != secondScope.providerItemID("reused-message") ||
-		second.toolID != secondScope.providerItemID("reused-tool") ||
-		second.parentID != secondScope.providerItemID("reused-parent") {
+		second.toolID != secondScope.providerItemID("reused-tool") {
 		t.Fatalf("second scoped ids = %+v", second)
 	}
 }
@@ -2200,7 +2189,7 @@ func TestACPDriverExtractsCommandFromExecuteToolInput(t *testing.T) {
 	conv.activeTurn = "turn-1"
 	conv.mu.Unlock()
 
-	// claude-code's Bash tool reports rawInput as {"command": "..."} — exactly
+	// A Bash-style tool call reports rawInput as {"command": "..."} — exactly
 	// the shape the neutral `detail.command` contract must be filled from.
 	rawInput := map[string]any{"command": "/bin/zsh -lc 'ao session ls'"}
 	if err := agent.conn.SessionUpdate(context.Background(), acpsdk.SessionNotification{
@@ -2241,7 +2230,7 @@ func TestRawCommandFromInput(t *testing.T) {
 		{name: "nil", raw: nil, want: ""},
 		{name: "string passthrough is not an object", raw: "go test ./...", want: ""},
 		{
-			name: "claude-code bash",
+			name: "command-key bash",
 			raw:  map[string]any{"command": "rg -n pattern src/", "description": "search"},
 			want: "rg -n pattern src/",
 		},
@@ -2303,7 +2292,7 @@ func TestToolOutputTextNormalizesProviderDefinedRawOutput(t *testing.T) {
 	}
 }
 
-func TestACPDriverMapsCostRateLimitsAndAuthRecovery(t *testing.T) {
+func TestACPDriverMapsCostAndAuthRecovery(t *testing.T) {
 	agent := &fakeAgent{promptNoPermission: true}
 	driver := New(Config{
 		Harness:      domain.HarnessOpenCode,
@@ -2323,21 +2312,13 @@ func TestACPDriverMapsCostRateLimitsAndAuthRecovery(t *testing.T) {
 		SessionId: acpsdk.SessionId(opened.ProviderConversationID()),
 		Update: acpsdk.SessionUpdate{UsageUpdate: &acpsdk.SessionUsageUpdate{
 			SessionUpdate: "usage_update", Used: 25, Size: 100, Cost: &acpsdk.Cost{Amount: 1.25, Currency: "USD"},
-			Meta: map[string]any{"_claude/rateLimit": map[string]any{
-				"utilization": 0.8, "resetsAt": float64(time.Now().Add(time.Hour).Unix()),
-				"rateLimitType": "five_hour",
-			}},
 		}},
 	}); err != nil {
 		t.Fatalf("usage update: %v", err)
 	}
 	usageEvent := nextEvent(t, opened.Events())
-	limitEvent := nextEvent(t, opened.Events())
 	if usageEvent.Usage == nil || usageEvent.Usage.Cost == nil || *usageEvent.Usage.Cost != 1.25 || usageEvent.Usage.Currency != "USD" {
 		t.Fatalf("usage event = %#v", usageEvent)
-	}
-	if limitEvent.RateLimits == nil || limitEvent.RateLimits.PrimaryUsedPercent != 80 || limitEvent.RateLimits.PrimaryResetsInSeconds < 3500 {
-		t.Fatalf("rate-limit event = %#v", limitEvent)
 	}
 
 	agent.mu.Lock()
@@ -2368,7 +2349,7 @@ func TestACPDriverMapsCostRateLimitsAndAuthRecovery(t *testing.T) {
 	}
 }
 
-func TestACPDriverNormalizesClaudeRetryStatus(t *testing.T) {
+func TestACPDriverNormalizesRetryStatus(t *testing.T) {
 	agent := &fakeAgent{
 		promptBlock:   true,
 		promptStarted: make(chan struct{}, 1),
@@ -2423,11 +2404,11 @@ func TestACPDriverNormalizesClaudeRetryStatus(t *testing.T) {
 					"air": map[string]any{
 						"version": float64(1),
 						"sessionFailure": map[string]any{
-							"id":       "claude-turn:error",
+							"id":       "agent-turn:error",
 							"revision": float64(2),
 							"category": "connection",
 							"severity": "warning",
-							"title":    "Reconnecting to Claude, attempt 2 of 10.",
+							"title":    "Reconnecting to agent, attempt 2 of 10.",
 							"details":  "The API request failed. Trying again in 4s.",
 							"actions":  []any{"new_session"},
 						},
@@ -2449,7 +2430,7 @@ func TestACPDriverNormalizesClaudeRetryStatus(t *testing.T) {
 	if retry.ProviderTurnID != ref.ProviderTurnID ||
 		retry.ActivityKind != domain.ActivityKindSystem ||
 		retry.ActivityStatus != domain.ActivityStatusRunning ||
-		retry.Summary != "Reconnecting to Claude, attempt 2 of 10." {
+		retry.Summary != "Reconnecting to agent, attempt 2 of 10." {
 		t.Fatalf("retry event = %#v", retry)
 	}
 	var detail map[string]any
@@ -2463,7 +2444,7 @@ func TestACPDriverNormalizesClaudeRetryStatus(t *testing.T) {
 		t.Fatalf("retry detail = %#v", detail)
 	}
 
-	// Claude can use a new extension incident id for each attempt before its
+	// The provider can use a new extension incident id for each attempt before its
 	// provider turn id is available. AO must still update one active-episode row.
 	if err := agent.conn.SessionUpdate(context.Background(), acpsdk.SessionNotification{
 		SessionId: acpsdk.SessionId(opened.ProviderConversationID()),
@@ -2478,7 +2459,7 @@ func TestACPDriverNormalizesClaudeRetryStatus(t *testing.T) {
 							"revision": float64(1),
 							"category": "connection",
 							"severity": "warning",
-							"title":    "Reconnecting to Claude, attempt 3 of 10.",
+							"title":    "Reconnecting to agent, attempt 3 of 10.",
 							"details":  "Connection error. Trying again in 8s.",
 						},
 					},
@@ -2491,7 +2472,7 @@ func TestACPDriverNormalizesClaudeRetryStatus(t *testing.T) {
 	nextRetry := nextEvent(t, opened.Events())
 	if nextRetry.Kind != ports.ChatEventActivityStarted ||
 		nextRetry.ProviderItemID != retry.ProviderItemID ||
-		nextRetry.Summary != "Reconnecting to Claude, attempt 3 of 10." {
+		nextRetry.Summary != "Reconnecting to agent, attempt 3 of 10." {
 		t.Fatalf("next retry event = %#v", nextRetry)
 	}
 
@@ -2740,18 +2721,18 @@ func TestResolveLegacyModelChoiceDerivesParameterizedCursorAliases(t *testing.T)
 		},
 		{
 			name:      "thinking with effort",
-			requested: "claude-opus-5-thinking-high",
-			choice:    "claude-opus-5[thinking=true,context=300k,effort=high,fast=false]",
+			requested: "gpt-oss-120b-thinking-high",
+			choice:    "gpt-oss-120b[thinking=true,context=300k,effort=high,fast=false]",
 		},
 		{
 			name:      "thinking after effort",
-			requested: "claude-4.6-sonnet-medium-thinking",
-			choice:    "claude-4.6-sonnet[thinking=true,context=1m,effort=medium,fast=false]",
+			requested: "gpt-5.6-medium-thinking",
+			choice:    "gpt-5.6[thinking=true,context=1m,effort=medium,fast=false]",
 		},
 		{
 			name:      "thinking without effort",
-			requested: "claude-4.5-sonnet-thinking",
-			choice:    "claude-4.5-sonnet[thinking=true,context=200k]",
+			requested: "gpt-5.5-thinking",
+			choice:    "gpt-5.5[thinking=true,context=200k]",
 		},
 		{
 			name:      "cursor-prefixed grok",
@@ -2783,13 +2764,13 @@ func TestResolveLegacyModelChoiceRejectsDroppedParameterizedSemantics(t *testing
 	}{
 		{
 			name:      "thinking variant is not non-thinking alias",
-			requested: "claude-opus-5-high",
-			choice:    "claude-opus-5[thinking=true,context=300k,effort=high,fast=false]",
+			requested: "gpt-oss-120b-high",
+			choice:    "gpt-oss-120b[thinking=true,context=300k,effort=high,fast=false]",
 		},
 		{
 			name:      "thinking without effort has no known alias",
-			requested: "claude-opus-5",
-			choice:    "claude-opus-5[thinking=true,context=300k,fast=false]",
+			requested: "gpt-oss-120b",
+			choice:    "gpt-oss-120b[thinking=true,context=300k,fast=false]",
 		},
 		{
 			name:      "unknown semantic parameter",
@@ -2814,19 +2795,19 @@ func TestResolveLegacyModelChoiceRejectsDroppedParameterizedSemantics(t *testing
 
 func TestResolveLegacyModelChoiceDistinguishesThinkingVariants(t *testing.T) {
 	choices := []ports.ChatConfigOptionChoice{
-		{Value: "claude-opus-5[thinking=false,context=300k,effort=high,fast=false]"},
-		{Value: "claude-opus-5[thinking=true,context=300k,effort=high,fast=false]"},
+		{Value: "gpt-oss-120b[thinking=false,context=300k,effort=high,fast=false]"},
+		{Value: "gpt-oss-120b[thinking=true,context=300k,effort=high,fast=false]"},
 	}
 	tests := []struct {
 		requested string
 		want      string
 	}{
 		{
-			requested: "claude-opus-5-high",
+			requested: "gpt-oss-120b-high",
 			want:      choices[0].Value,
 		},
 		{
-			requested: "claude-opus-5-thinking-high",
+			requested: "gpt-oss-120b-thinking-high",
 			want:      choices[1].Value,
 		},
 	}

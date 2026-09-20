@@ -211,9 +211,9 @@ describe("mobile Chat API boundaries", () => {
 
 	it("uses daemon-advertised Chat harnesses and preserves workspace truncation", async () => {
 		vi.mocked(fetch)
-			.mockResolvedValueOnce(response({ defaultSessionMode: "tui", chatHarnesses: ["codex", "claude-code", 42] }))
+			.mockResolvedValueOnce(response({ defaultSessionMode: "tui", chatHarnesses: ["codex", "cursor", 42] }))
 			.mockResolvedValueOnce(response({ files: [{ path: "src/app.ts", status: "modified" }, { path: "old.ts", status: "deleted" }], truncated: true }));
-		expect(await getSettings(cfg)).toEqual({ defaultSessionMode: "tui", chatHarnesses: ["codex", "claude-code"] });
+		expect(await getSettings(cfg)).toEqual({ defaultSessionMode: "tui", chatHarnesses: ["codex", "cursor"] });
 		expect(await getWorkspacePaths(cfg, "w-1")).toEqual({ paths: ["src/app.ts"], truncated: true });
 	});
 
@@ -237,7 +237,7 @@ describe("mobile Chat API boundaries", () => {
 
 	it("maps the provider-neutral conversation wire model without inventing protocol state", async () => {
 		vi.mocked(fetch).mockResolvedValue(response({
-			conversationId: "c-1", sessionId: "w-1", harness: "claude-code", mode: "chat", controller: "busy",
+			conversationId: "c-1", sessionId: "w-1", harness: "codex", mode: "chat", controller: "busy",
 			latestSequence: 2, oldestSequence: 1, hasMoreBefore: false, settings: {}, turns: [], messages: [],
 			capabilities: ["config_options", "steer"],
 			activities: [{ kind: "activity", id: "a-1", sequence: 2, revision: 1, activityKind: "approval", status: "pending", summary: "Run command", requestId: "req-1", detail: { output: { text: "legacy" }, decisions: [{ id: "accept" }] }, createdAt: "2026-08-05T00:00:00Z" }],

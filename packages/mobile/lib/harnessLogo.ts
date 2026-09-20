@@ -13,7 +13,7 @@ export type BackdropPolarity = "neutral" | "needs-dark" | "needs-light";
 // Node cannot require a PNG. `harnessLogo.test.ts` checks the two against the
 // real asset directory, so they cannot drift apart silently.
 export const LOGO_KEYS: ReadonlySet<string> = new Set([
-	"agy", "aider", "amp", "auggie", "autohand", "claude-code", "cline", "codex",
+	"agy", "aider", "amp", "auggie", "autohand", "cline", "codex",
 	"continue", "copilot", "crush", "cursor", "devin", "droid", "goose", "grok",
 	"kilocode", "kimi", "kiro", "muse", "opencode", "pi", "qwen", "vibe",
 	"kimchi",

@@ -832,6 +832,8 @@ func TestMigrateRepairsSkippedMuseHarnessConstraintWithLegacyQM(t *testing.T) {
 	if _, err := db.Exec(`PRAGMA writable_schema = ON`); err != nil {
 		t.Fatalf("enable writable_schema: %v", err)
 	}
+	// The seeded text must match the migration-built schema at this revision,
+	// which still carries 'claude-code' (0152 narrows it at the very end).
 	if _, err := db.Exec(
 		`UPDATE sqlite_master
 SET sql = replace(sql, ?, ?)
@@ -884,6 +886,8 @@ func TestMigration0054AddsKimchiToLegacyQMConstraint(t *testing.T) {
 
 	// Simulate a legacy QM-variant database: swap the constraint from the
 	// post-0053 state (muse, no qm) to the QM variant (muse, qm, no kimchi).
+	// The seeded text must match the migration-built schema, which still
+	// carries 'claude-code' here (0152 narrows it at the very end).
 	if _, err := db.Exec(`PRAGMA writable_schema = ON`); err != nil {
 		t.Fatalf("enable writable_schema: %v", err)
 	}
@@ -891,8 +895,8 @@ func TestMigration0054AddsKimchiToLegacyQMConstraint(t *testing.T) {
 		`UPDATE sqlite_master
 SET sql = replace(sql, ?, ?)
 WHERE type = 'table' AND name = 'sessions'`,
-		sessionsHarnessCheckWithMuse,
-		sessionsHarnessCheckWithMuseQM,
+		`CHECK (harness IN ('', 'claude-code', 'codex', 'aider', 'opencode', 'grok', 'droid', 'amp', 'agy', 'crush', 'cursor', 'qwen', 'copilot', 'goose', 'auggie', 'continue', 'devin', 'cline', 'kimi', 'muse', 'kiro', 'kilocode', 'vibe', 'pi', 'autohand', 'fake'))`,
+		`CHECK (harness IN ('', 'claude-code', 'codex', 'aider', 'opencode', 'grok', 'droid', 'amp', 'agy', 'crush', 'cursor', 'qwen', 'copilot', 'goose', 'auggie', 'continue', 'devin', 'cline', 'kimi', 'muse', 'kiro', 'kilocode', 'vibe', 'pi', 'autohand', 'qm', 'fake'))`,
 	); err != nil {
 		t.Fatalf("seed legacy qm harness constraint: %v", err)
 	}
@@ -934,11 +938,15 @@ func TestMigrateRepairsKimchiConstraintWithPrimeAgentAndLegacyQM(t *testing.T) {
 	if _, err := db.Exec(`PRAGMA writable_schema = ON`); err != nil {
 		t.Fatalf("enable writable_schema: %v", err)
 	}
+	// The seed source must match the migration-built schema at this revision,
+	// which still carries 'claude-code' (0152 narrows it at the very end).
+	// The claude-free sessionsHarnessCheckWithMuseKimchi constant cannot serve
+	// as the replace source here, so spell the historical text out.
 	if _, err := db.Exec(
 		`UPDATE sqlite_master
 SET sql = replace(sql, ?, ?)
 WHERE type = 'table' AND name = 'sessions'`,
-		sessionsHarnessCheckWithMuseKimchi,
+		`CHECK (harness IN ('', 'claude-code', 'codex', 'aider', 'opencode', 'grok', 'droid', 'amp', 'agy', 'crush', 'cursor', 'qwen', 'copilot', 'goose', 'auggie', 'continue', 'devin', 'cline', 'kimi', 'muse', 'kiro', 'kilocode', 'vibe', 'pi', 'kimchi', 'autohand', 'fake'))`,
 		primeAgentQMConstraint,
 	); err != nil {
 		t.Fatalf("seed prime-agent qm harness constraint: %v", err)
@@ -1026,6 +1034,64 @@ INSERT INTO sessions (id, project_id, num, harness, activity_last_at, created_at
 VALUES ('agent-orchestrator-1', 'agent-orchestrator', 1, 'omp', ?, ?, ?);
 `, time.Unix(100, 0).UTC(), time.Unix(101, 0).UTC(), time.Unix(101, 0).UTC(), time.Unix(101, 0).UTC()); err != nil {
 		t.Fatalf("insert omp session after repair: %v", err)
+	}
+}
+
+// TestMigration0152RemovesClaudeCodeHarness narrows the sessions.harness
+// constraint, which every historical variant carries. After the migration the
+// constraint must no longer admit 'claude-code' while still admitting
+// surviving harnesses, and a legacy pre-0152 database must converge.
+func TestMigration0152RemovesClaudeCodeHarness(t *testing.T) {
+	db, err := sql.Open("sqlite", "file:"+filepath.Join(t.TempDir(), "ao.db")+pragmas)
+	if err != nil {
+		t.Fatalf("open sqlite: %v", err)
+	}
+	db.SetMaxOpenConns(1)
+	t.Cleanup(func() { _ = db.Close() })
+	upTo(t, db, 151)
+
+	// The pre-0152 schema still allows claude-code (from migration 0007 and
+	// every later widening); record a historical session under it.
+	if _, err := db.Exec(`
+INSERT INTO projects (id, path, registered_at, config)
+VALUES ('agent-orchestrator', '/repo/agent-orchestrator', ?, '{}');
+INSERT INTO sessions (id, project_id, num, harness, activity_last_at, created_at, updated_at)
+VALUES ('agent-orchestrator-1', 'agent-orchestrator', 1, 'claude-code', ?, ?, ?);
+`, time.Unix(100, 0).UTC(), time.Unix(101, 0).UTC(), time.Unix(101, 0).UTC(), time.Unix(101, 0).UTC()); err != nil {
+		t.Fatalf("seed historical claude-code session: %v", err)
+	}
+
+	// upTo(151) stops short of 0152, so the full migrate below applies the
+	// narrowing migration on top of the legacy profile.
+	if err := migrate(db); err != nil {
+		t.Fatalf("migrate legacy pre-0152 profile: %v", err)
+	}
+
+	var schema string
+	if err := db.QueryRow(
+		"SELECT sql FROM sqlite_master WHERE type='table' AND name='sessions'",
+	).Scan(&schema); err != nil {
+		t.Fatalf("read sessions schema: %v", err)
+	}
+	if strings.Contains(schema, "claude-code") {
+		t.Fatalf("sessions.harness CHECK still contains claude-code after 0152:\n%s", schema)
+	}
+
+	// Surviving harnesses must remain admissible.
+	if _, err := db.Exec(`
+INSERT INTO sessions (id, project_id, num, harness, activity_last_at, created_at, updated_at)
+VALUES ('agent-orchestrator-2', 'agent-orchestrator', 2, 'codex', ?, ?, ?);
+`, time.Unix(102, 0).UTC(), time.Unix(102, 0).UTC(), time.Unix(102, 0).UTC()); err != nil {
+		t.Fatalf("insert codex session after 0152: %v", err)
+	}
+
+	// New claude-code writes must now be rejected by the narrowed CHECK.
+	if _, err := db.Exec(`
+INSERT INTO sessions (id, project_id, num, harness, activity_last_at, created_at, updated_at)
+VALUES ('agent-orchestrator-3', 'agent-orchestrator', 3, 'claude-code', ?, ?, ?);
+`, time.Unix(103, 0).UTC(), time.Unix(103, 0).UTC(), time.Unix(103, 0).UTC()); err == nil ||
+		!strings.Contains(err.Error(), "CHECK constraint failed") {
+		t.Fatalf("claude-code session after 0152: err = %v, want CHECK failure", err)
 	}
 }
 

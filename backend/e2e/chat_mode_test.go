@@ -86,9 +86,9 @@ func TestChatSpawnForUnsupportedAgentLeavesNothingBehind(t *testing.T) {
 	}
 	d.mustCall("GET", "/sessions", http.StatusOK, nil, &before)
 
-	// Asked of the daemon rather than hardcoded. Chat drivers get added — codex
-	// first, then claude-code — and a test naming one by hand quietly stops testing
-	// anything the day that agent gains a driver.
+	// Asked of the daemon rather than hardcoded. Chat drivers get added over
+	// time, and a test naming one by hand quietly stops testing anything the
+	// day that agent gains a driver.
 	harness := harnessWithoutChatDriver(t, d)
 
 	status, body := d.callExpectingError("POST", "/sessions", map[string]any{

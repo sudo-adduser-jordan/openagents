@@ -44,7 +44,7 @@ const (
 	AgentAuthStatusUnknown AgentAuthStatus = "unknown"
 )
 
-// Agent is the contract every CLI coding agent adapter (claude-code, codex, …)
+// Agent is the contract every CLI coding agent adapter (codex, …)
 // must satisfy. It supplies the argv and process configuration the Session
 // Manager needs to launch, restore, and read back a native agent session.
 type Agent interface {
@@ -347,13 +347,10 @@ type SubmitActivitySignaler interface {
 // loop unable to tell an unsubmitted draft from a pending permission dialog,
 // so an Enter meant to resubmit the draft could instead answer the dialog.
 //
-// Two adapters satisfy this today:
+// One adapter satisfies this today:
 //
-//   - claude-code installs the pre/post-tool-use trio that lets lifecycle
-//     correlate the approved tool's post with the dialog and clear blocked
-//     before the turn ends.
 //   - kimchi installs the same trio and maps Notification(permission_prompt)
-//     to ActivityBlocked. Unlike claude-code, kimchi has no separate
+//     to ActivityBlocked. kimchi has no separate
 //     permission-request hook — the blocked signal arrives via a Notification
 //     event whose payload carries tool_use_id, which the lifecycle correlator
 //     matches against the inflight map populated by PreToolUse.

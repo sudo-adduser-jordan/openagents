@@ -570,7 +570,7 @@ func TestRefreshReportsInstalledAgentsAndIgnoresDetectorErrors(t *testing.T) {
 func TestRefreshReportsAuthorizedInstalledAgents(t *testing.T) {
 	svc := NewWithAgents([]agentregistry.HarnessAgent{
 		harnessAuthAgent("codex", "Codex", ports.AgentAuthStatusAuthorized, nil),
-		harnessAuthAgent("claude-code", "Claude Code", ports.AgentAuthStatusUnauthorized, nil),
+		harnessAuthAgent("goose", "Goose", ports.AgentAuthStatusUnauthorized, nil),
 		harnessAgent("opencode", "OpenCode", nil),
 		harnessAuthAgent("broken-auth", "Broken Auth", ports.AgentAuthStatusAuthorized, errors.New("probe failed")),
 	})
@@ -593,8 +593,8 @@ func TestRefreshReportsAuthorizedInstalledAgents(t *testing.T) {
 	if byID["codex"].AuthStatus != ports.AgentAuthStatusAuthorized {
 		t.Fatalf("codex authStatus = %q", byID["codex"].AuthStatus)
 	}
-	if byID["claude-code"].AuthStatus != ports.AgentAuthStatusUnauthorized {
-		t.Fatalf("claude-code authStatus = %q", byID["claude-code"].AuthStatus)
+	if byID["goose"].AuthStatus != ports.AgentAuthStatusUnauthorized {
+		t.Fatalf("goose authStatus = %q", byID["goose"].AuthStatus)
 	}
 	if byID["opencode"].AuthStatus != ports.AgentAuthStatusUnknown {
 		t.Fatalf("opencode authStatus = %q", byID["opencode"].AuthStatus)
@@ -638,12 +638,12 @@ func TestListRanksAgentsByRetainedSessionUsage(t *testing.T) {
 	older := time.Date(2026, time.August, 18, 10, 0, 0, 0, time.UTC)
 	newer := older.Add(24 * time.Hour)
 	svc := NewWithAgents([]agentregistry.HarnessAgent{
-		harnessAgent("claude-code", "Claude Code", nil),
+		harnessAgent("droid", "Droid", nil),
 		harnessAgent("codex", "Codex", nil),
 		harnessAgent("goose", "Goose", nil),
 	})
 	svc.sessions = fakeSessionUsageLookup{records: []domain.SessionRecord{
-		{Harness: domain.AgentHarness("claude-code"), CreatedAt: newer},
+		{Harness: domain.AgentHarness("droid"), CreatedAt: newer},
 		{Harness: domain.AgentHarness("codex"), CreatedAt: older},
 		{Harness: domain.AgentHarness("codex"), CreatedAt: newer},
 	}}
@@ -652,7 +652,7 @@ func TestListRanksAgentsByRetainedSessionUsage(t *testing.T) {
 	if err != nil {
 		t.Fatalf("List: %v", err)
 	}
-	if ids := []string{got.Supported[0].ID, got.Supported[1].ID, got.Supported[2].ID}; !reflect.DeepEqual(ids, []string{"codex", "claude-code", "goose"}) {
+	if ids := []string{got.Supported[0].ID, got.Supported[1].ID, got.Supported[2].ID}; !reflect.DeepEqual(ids, []string{"codex", "droid", "goose"}) {
 		t.Fatalf("supported order = %v, want frequency then unused fallback", ids)
 	}
 	if got.Supported[0].UsageCount != 2 || got.Supported[0].LastUsedAt == nil || !got.Supported[0].LastUsedAt.Equal(newer) {
@@ -676,10 +676,10 @@ func TestListReturnsSessionUsageReadFailure(t *testing.T) {
 func TestRefreshUsesSeparateTimeoutForAuthProbe(t *testing.T) {
 	svc := NewWithAgents([]agentregistry.HarnessAgent{
 		{
-			Harness: domain.AgentHarness("claude-code"),
+			Harness: domain.AgentHarness("codex"),
 			Manifest: adapters.Manifest{
-				ID:   "claude-code",
-				Name: "Claude Code",
+				ID:   "codex",
+				Name: "Codex",
 			},
 			Agent: fakeAuthAgent{
 				fakeAgent: fakeAgent{},
@@ -695,8 +695,8 @@ func TestRefreshUsesSeparateTimeoutForAuthProbe(t *testing.T) {
 	if err != nil {
 		t.Fatalf("Refresh: %v", err)
 	}
-	if len(got.Authorized) != 1 || got.Authorized[0].ID != "claude-code" {
-		t.Fatalf("authorized = %#v, want claude-code", got.Authorized)
+	if len(got.Authorized) != 1 || got.Authorized[0].ID != "codex" {
+		t.Fatalf("authorized = %#v, want codex", got.Authorized)
 	}
 }
 
@@ -1294,7 +1294,7 @@ func TestModelsFingerprintsTheSameInputsDiscoveryReads(t *testing.T) {
 		"proj-1": {
 			ID:     "proj-1",
 			Path:   "/work/project",
-			Config: domain.ProjectConfig{Env: map[string]string{"ANTHROPIC_MODEL": "opus"}},
+			Config: domain.ProjectConfig{Env: map[string]string{"AO_TEST_MODEL": "opus"}},
 		},
 	}}
 	discoverer := &fakeModelDiscoverer{version: "v1", catalog: ports.AgentModelCatalog{
@@ -1303,10 +1303,10 @@ func TestModelsFingerprintsTheSameInputsDiscoveryReads(t *testing.T) {
 		Source:        "official-aliases",
 	}}
 	svc := newService([]agentregistry.HarnessAgent{
-		harnessAgent("claude-code", "Claude Code", nil),
+		harnessAgent("codex", "Codex", nil),
 	}, &fakeModelCache{}, projects, discoverer)
 
-	if _, err := svc.Models(context.Background(), "claude-code", "proj-1", false); err != nil {
+	if _, err := svc.Models(context.Background(), "codex", "proj-1", false); err != nil {
 		t.Fatal(err)
 	}
 	// The cache decision runs before discovery, so it must be able to see the
@@ -1319,7 +1319,7 @@ func TestModelsFingerprintsTheSameInputsDiscoveryReads(t *testing.T) {
 	if !reflect.DeepEqual(*fingerprinted, discoverer.lastRequest) {
 		t.Fatalf("fingerprint request = %#v, want the discovery request %#v", *fingerprinted, discoverer.lastRequest)
 	}
-	if fingerprinted.WorkingDir != "/work/project" || fingerprinted.Env["ANTHROPIC_MODEL"] != "opus" {
+	if fingerprinted.WorkingDir != "/work/project" || fingerprinted.Env["AO_TEST_MODEL"] != "opus" {
 		t.Fatalf("fingerprint request = %#v, want the project working dir and env", *fingerprinted)
 	}
 }

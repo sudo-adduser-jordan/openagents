@@ -847,7 +847,7 @@ function partitionConfigOptions(options: ChatConfigOption[]): {
 			continue;
 		}
 		if (isModeOption(option) && !mode) {
-			// Classify before synthesizing Claude's Agent choice so it cannot promote approval choices.
+			// Classify before synthesizing the provider's Agent choice so it cannot promote approval choices.
 			const executionValues = executionChoiceValues(option.choices);
 			const permissionChoices = option.choices.filter((choice) => !executionValues.has(choice.value));
 			const executionChoices = addAgentModeChoice(
@@ -896,7 +896,7 @@ function choiceMatches(
 }
 
 /**
- * Claude currently sends Plan as an execution mode but describes its ordinary
+ * Some providers send Plan as an execution mode but describe their ordinary
  * interactive posture as Manual. Present the latter as Agent Mode next to Plan,
  * without inventing a value: choosing it still sends the provider's own Manual
  * value. Other harnesses that advertise Agent Mode explicitly stay untouched.

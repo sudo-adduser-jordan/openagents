@@ -15,7 +15,7 @@ import (
 
 // Use the production lifecycle and reopen SQLite: the fake lifecycle copies
 // metadata wholesale and cannot catch fields dropped by the real reducer.
-func TestClaudeSessionModelSurvivesRestore(t *testing.T) {
+func TestAgentSessionModelSurvivesRestore(t *testing.T) {
 	for _, kind := range []domain.SessionKind{domain.KindWorker, domain.KindOrchestrator} {
 		for _, selection := range []struct {
 			name         string
@@ -25,12 +25,12 @@ func TestClaudeSessionModelSurvivesRestore(t *testing.T) {
 			wantModel    string
 			legacy       bool
 		}{
-			{name: "spawn_override", projectModel: "opus", roleModel: "sonnet", spawnModel: "haiku", wantModel: "haiku"},
-			{name: "role_default", projectModel: "opus", roleModel: "sonnet", wantModel: "sonnet"},
-			{name: "project_default", projectModel: "opus", wantModel: "opus"},
-			{name: "custom_provider_model", projectModel: "opus", spawnModel: "provider/model-vNext", wantModel: "provider/model-vNext"},
+			{name: "spawn_override", projectModel: "alpha", roleModel: "beta", spawnModel: "gamma", wantModel: "gamma"},
+			{name: "role_default", projectModel: "alpha", roleModel: "beta", wantModel: "beta"},
+			{name: "project_default", projectModel: "alpha", wantModel: "alpha"},
+			{name: "custom_provider_model", projectModel: "alpha", spawnModel: "provider/model-vNext", wantModel: "provider/model-vNext"},
 			{name: "agent_default"},
-			{name: "legacy_unknown", spawnModel: "haiku", wantModel: "haiku", legacy: true},
+			{name: "legacy_unknown", spawnModel: "gamma", wantModel: "gamma", legacy: true},
 		} {
 			for _, operation := range []string{"restore", "native_resume", "restore_all", "saved_prompt", "chat_restore", "chat_resume"} {
 				t.Run(string(kind)+"/"+selection.name+"/"+operation, func(t *testing.T) {

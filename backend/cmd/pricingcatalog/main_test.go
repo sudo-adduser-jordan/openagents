@@ -14,7 +14,6 @@ func TestRunSyncThenValidate(t *testing.T) {
 	root := t.TempDir()
 	sourcePath := filepath.Join(t.TempDir(), "model_prices_and_context_window.json")
 	if err := os.WriteFile(sourcePath, []byte(`{
-"anthropic/a":{"litellm_provider":"anthropic","mode":"chat","input_cost_per_token":1,"output_cost_per_token":1},
 "openai/o":{"litellm_provider":"openai","mode":"chat","input_cost_per_token":1,"output_cost_per_token":1},
 "zai/z":{"litellm_provider":"zai","mode":"chat","input_cost_per_token":1,"output_cost_per_token":1}
 }`), 0o600); err != nil {

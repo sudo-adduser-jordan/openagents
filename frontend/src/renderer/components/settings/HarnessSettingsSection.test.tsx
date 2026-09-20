@@ -24,11 +24,6 @@ const catalog = catalogWithInstalled("opencode");
 const plans = {
 	agents: [
 		{
-			agentId: "claude-code", available: true, automatic: true, method: "homebrew",
-			command: "brew install --cask claude-code", documentationUrl: "https://code.claude.com/docs/en/installation",
-			methods: [{ id: "homebrew", label: "Homebrew", available: true, recommended: true, command: "brew install --cask claude-code", reinstallAvailable: true, reinstallCommand: "brew reinstall --cask claude-code" }],
-		},
-		{
 			agentId: "codex", available: true, automatic: true, method: "homebrew",
 			command: "brew install --cask codex", documentationUrl: "https://github.com/openai/codex",
 			methods: [

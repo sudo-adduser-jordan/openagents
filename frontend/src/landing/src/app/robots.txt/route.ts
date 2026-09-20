@@ -28,14 +28,6 @@ User-Agent: GPTBot
 Allow: /
 Content-Signal: search=yes, ai-input=yes, ai-train=yes
 
-User-Agent: Claude-User
-Allow: /
-Content-Signal: search=yes, ai-input=yes, ai-train=yes
-
-User-Agent: Claude-SearchBot
-Allow: /
-Content-Signal: search=yes, ai-input=yes, ai-train=yes
-
 User-Agent: PerplexityBot
 Allow: /
 Content-Signal: search=yes, ai-input=yes, ai-train=yes

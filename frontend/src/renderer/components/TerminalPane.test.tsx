@@ -926,7 +926,7 @@ describe("providerScrollsByKeyboard", () => {
 
 	it("is false for mouse-report/native-scroll providers", () => {
 		expect(providerScrollsByKeyboard("codex")).toBe(false);
-		expect(providerScrollsByKeyboard("claude-code")).toBe(false);
+		expect(providerScrollsByKeyboard("cursor")).toBe(false);
 		expect(providerScrollsByKeyboard("kilocode")).toBe(false);
 		expect(providerScrollsByKeyboard("grok")).toBe(false);
 		// Muse writes its transcript to the normal buffer. PageUp is ignored by

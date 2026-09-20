@@ -4,8 +4,6 @@ import (
 	"context"
 	"encoding/json"
 	"errors"
-	"os"
-	"path/filepath"
 	"reflect"
 	"strings"
 	"testing"
@@ -98,7 +96,6 @@ func TestBaseClassifiesStaticTextAndModeAgents(t *testing.T) {
 		mode  ports.ModelSelectionMode
 		count int
 	}{
-		{agent: "claude-code", mode: ports.ModelSelectionCatalog},
 		{agent: "codex", mode: ports.ModelSelectionCatalog},
 		{agent: "amp", mode: ports.ModelSelectionModeList, count: 4},
 		{agent: "muse", mode: ports.ModelSelectionCatalog, count: 3},
@@ -141,42 +138,12 @@ func TestMuseReturnsStaticCatalogWithoutStartingAgent(t *testing.T) {
 	}
 }
 
-func TestClaudeReturnsStaticCatalogWithConfiguredFallback(t *testing.T) {
-	t.Setenv("ANTHROPIC_MODEL", "")
-	t.Setenv("HOME", t.TempDir())
-	got, err := (Discoverer{}).Discover(context.Background(), ports.AgentModelDiscoveryRequest{
-		AgentID: "claude-code",
-		Binary:  "/missing/claude",
-		Env:     map[string]string{"ANTHROPIC_MODEL": "claude-opus-4-5-20251101"},
-	})
-	if err != nil {
-		t.Fatal(err)
-	}
-	wantLabels := map[string]string{
-		"sonnet": "Sonnet", "fable": "Fable 5.1", "opus": "Opus",
-		"haiku": "Haiku", "opus[1m]": "Opus (1M context)",
-		"claude-opus-4-5-20251101": "claude-opus-4-5-20251101",
-	}
-	if got.Source != "catalog" || len(got.Models) != len(wantLabels) {
-		t.Fatalf("catalog = %#v", got)
-	}
-	for _, item := range got.Models {
-		if wantLabels[item.ID] != item.Label {
-			t.Fatalf("unexpected model %#v", item)
-		}
-		if item.IsDefault != (item.ID == "claude-opus-4-5-20251101") {
-			t.Fatalf("default marker = %#v", item)
-		}
-	}
-}
-
 func TestCustomModelEntryPolicy(t *testing.T) {
 	tests := []struct {
 		agent         string
 		wantEntryMode string
 		wantSelection ports.ModelSelectionMode
 	}{
-		{agent: "claude-code", wantEntryMode: "direct", wantSelection: ports.ModelSelectionCatalog},
 		{agent: "codex", wantEntryMode: "direct", wantSelection: ports.ModelSelectionCatalog},
 		{agent: "opencode", wantEntryMode: "direct", wantSelection: ports.ModelSelectionCatalog},
 		{agent: "grok", wantEntryMode: "direct", wantSelection: ports.ModelSelectionCatalog},
@@ -242,14 +209,14 @@ func TestPrimeAgentDiscoveryUsesDocumentedModelCommand(t *testing.T) {
 
 func TestParsePrimeAgentModelsBuildsProviderQualifiedIDs(t *testing.T) {
 	got, err := parsePiModels([]byte(`provider   model                 context  max-out  thinking  images
-anthropic  claude-opus-4-8       200K     64K      yes       yes
 openai     gpt-5.6-sol           400K     128K     yes       yes
+zai        glm-5.2               1M       128K     yes       yes
 `))
 	if err != nil {
 		t.Fatal(err)
 	}
 	want := []ports.AgentModelInfo{
-		{ID: "anthropic/claude-opus-4-8", Label: "claude-opus-4-8", Provider: "anthropic"},
+		{ID: "zai/glm-5.2", Label: "glm-5.2", Provider: "zai"},
 		{ID: "openai/gpt-5.6-sol", Label: "gpt-5.6-sol", Provider: "openai"},
 	}
 	if !reflect.DeepEqual(got, want) {
@@ -258,7 +225,7 @@ openai     gpt-5.6-sol           400K     128K     yes       yes
 }
 
 func TestBaseDynamicCatalogsContainNoAOOwnedModelIDs(t *testing.T) {
-	for _, agentID := range []string{"claude-code", "codex"} {
+	for _, agentID := range []string{"codex"} {
 		t.Run(agentID, func(t *testing.T) {
 			got := Base(agentID)
 			if got.SelectionMode != ports.ModelSelectionCatalog || !got.AllowCustom || got.Source != "cli" {
@@ -296,9 +263,9 @@ func TestClineDiscoveryUsesACPModelOptions(t *testing.T) {
 		return []ports.ChatConfigOption{
 			{
 				ID: "model", Name: "Model", Category: "model", Type: ports.ChatConfigOptionSelect,
-				Current: ports.ChatConfigOptionValue{Select: "anthropic/claude-sonnet-4-6"},
+				Current: ports.ChatConfigOptionValue{Select: "zai/glm-4.6"},
 				Choices: []ports.ChatConfigOptionChoice{
-					{Value: "anthropic/claude-sonnet-4-6", Name: "Claude Sonnet 4.6", Group: "anthropic", GroupName: "Anthropic"},
+					{Value: "zai/glm-4.6", Name: "GLM 4.6", Group: "zai", GroupName: "Z.ai"},
 					{Value: "openai/gpt-5.4", Name: "GPT-5.4", Group: "openai", GroupName: "OpenAI"},
 				},
 			},
@@ -310,7 +277,7 @@ func TestClineDiscoveryUsesACPModelOptions(t *testing.T) {
 		t.Fatal(err)
 	}
 	want := []ports.AgentModelInfo{
-		{ID: "anthropic/claude-sonnet-4-6", Label: "Claude Sonnet 4.6", Provider: "anthropic", IsDefault: true},
+		{ID: "zai/glm-4.6", Label: "GLM 4.6", Provider: "zai", IsDefault: true},
 		{ID: "openai/gpt-5.4", Label: "GPT-5.4", Provider: "openai"},
 	}
 	if !reflect.DeepEqual(got.Models, want) || got.Source != "acp" {
@@ -319,27 +286,27 @@ func TestClineDiscoveryUsesACPModelOptions(t *testing.T) {
 }
 
 func TestParseIDLinesAcceptsOnlyWholeModelIDs(t *testing.T) {
-	got, err := parseIDLines([]byte("\x1b[32mModels\x1b[0m\nanthropic/claude-sonnet\nopenai/gpt-5.4\nTip: use --model <id>\nopenai/gpt-5.4 duplicate\n"))
+	got, err := parseIDLines([]byte("\x1b[32mModels\x1b[0m\nzai/glm-4.6\nopenai/gpt-5.4\nTip: use --model <id>\nopenai/gpt-5.4 duplicate\n"))
 	if err != nil {
 		t.Fatal(err)
 	}
-	if len(got) != 2 || got[0].ID != "anthropic/claude-sonnet" || got[1].ID != "openai/gpt-5.4" {
+	if len(got) != 2 || got[0].ID != "openai/gpt-5.4" || got[1].ID != "zai/glm-4.6" {
 		t.Fatalf("models = %#v", got)
 	}
 }
 
 func TestParseAgyModelsUsesFirstColumnAsModelID(t *testing.T) {
 	got, err := parseAgyModels([]byte(`gemini-3.7-flash-high  Gemini 3.7 Flash (High)
-claude-sonnet-4-6  Claude Sonnet 4.6 (Thinking)
+kimi-for-coding  Kimi For Coding
 gpt-oss-120b-medium  GPT-OSS 120B (Medium)
 `))
 	if err != nil {
 		t.Fatal(err)
 	}
 	want := []ports.AgentModelInfo{
-		{ID: "claude-sonnet-4-6", Label: "Claude Sonnet 4.6 (Thinking)"},
 		{ID: "gemini-3.7-flash-high", Label: "Gemini 3.7 Flash (High)"},
 		{ID: "gpt-oss-120b-medium", Label: "GPT-OSS 120B (Medium)"},
+		{ID: "kimi-for-coding", Label: "Kimi For Coding"},
 	}
 	if !reflect.DeepEqual(got, want) {
 		t.Fatalf("models = %#v, want %#v", got, want)
@@ -395,8 +362,8 @@ func TestParseKimchiModelsBuildsProviderQualifiedIDs(t *testing.T) {
 	got, err := parsePiModels([]byte(`provider              model                 context  max-out  thinking  images
 kimchi-dev            deepseek-v4-flash     1.0M     1.0M     yes       no
 kimchi-dev            glm-5.2-fp8           1.0M     1.0M     yes       no
-kimchi-dev/anthropic  claude-sonnet-5       1M       128K     yes       yes
-kimchi-dev/anthropic  claude-opus-4-8       1M       128K     yes       yes
+kimchi-dev/openai     gpt-5.5               272K     128K     yes       yes
+kimchi-dev/zai        glm-5.3               1M       128K     yes       yes
 `))
 	if err != nil {
 		t.Fatal(err)
@@ -405,10 +372,10 @@ kimchi-dev/anthropic  claude-opus-4-8       1M       128K     yes       yes
 		t.Fatalf("models = %#v, want 4", got)
 	}
 	want := map[string]bool{
-		"kimchi-dev/deepseek-v4-flash":         true,
-		"kimchi-dev/glm-5.2-fp8":               true,
-		"kimchi-dev/anthropic/claude-sonnet-5": true,
-		"kimchi-dev/anthropic/claude-opus-4-8": true,
+		"kimchi-dev/deepseek-v4-flash": true,
+		"kimchi-dev/glm-5.2-fp8":       true,
+		"kimchi-dev/openai/gpt-5.5":    true,
+		"kimchi-dev/zai/glm-5.3":       true,
 	}
 	for _, m := range got {
 		delete(want, m.ID)
@@ -423,19 +390,19 @@ kimchi-dev/anthropic  claude-opus-4-8       1M       128K     yes       yes
 
 func TestParsePiModelsBuildsProviderQualifiedIDs(t *testing.T) {
 	got, err := parsePiModels([]byte(`provider   model                       context  max-out  thinking  images
-anthropic  claude-sonnet-4-6           1M       64K      yes       yes
+zai        glm-4.6                     1M       128K     yes       yes
 openai     gpt-5.5                     272K     128K     yes       yes
 `))
 	if err != nil {
 		t.Fatal(err)
 	}
-	if len(got) != 2 || got[0].ID != "anthropic/claude-sonnet-4-6" || got[1].ID != "openai/gpt-5.5" {
+	if len(got) != 2 || got[0].ID != "zai/glm-4.6" || got[1].ID != "openai/gpt-5.5" {
 		t.Fatalf("models = %#v", got)
 	}
 }
 
 func TestParseJSONModelsFindsNestedModels(t *testing.T) {
-	got, err := parseJSONModels([]byte(`{"providers":[{"id":"anthropic","models":[{"modelId":"claude-sonnet","displayName":"Claude Sonnet","isDefault":true}]}]}`))
+	got, err := parseJSONModels([]byte(`{"providers":[{"id":"openai","models":[{"modelId":"gpt-5.4","displayName":"GPT-5.4","isDefault":true}]}]}`))
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -444,44 +411,44 @@ func TestParseJSONModelsFindsNestedModels(t *testing.T) {
 	}
 	var found bool
 	for _, model := range got {
-		if model.ID == "claude-sonnet" && model.Label == "Claude Sonnet" && model.IsDefault {
+		if model.ID == "gpt-5.4" && model.Label == "GPT-5.4" && model.IsDefault {
 			found = true
 		}
 	}
 	if !found {
-		t.Fatalf("models = %#v, want nested claude-sonnet", got)
+		t.Fatalf("models = %#v, want nested gpt-5.4", got)
 	}
 }
 
 func TestParseOMPModelsUsesSelectorAsLaunchID(t *testing.T) {
-	got, err := parseJSONModels([]byte(`{"models":[{"provider":"anthropic","id":"claude-opus-5","selector":"anthropic/claude-opus-5","name":"Claude Opus 5"}]}`))
+	got, err := parseJSONModels([]byte(`{"models":[{"provider":"openai","id":"gpt-5.5","selector":"openai/gpt-5.5","name":"GPT-5.5"}]}`))
 	if err != nil {
 		t.Fatal(err)
 	}
-	want := []ports.AgentModelInfo{{ID: "anthropic/claude-opus-5", Label: "Claude Opus 5", Provider: "anthropic"}}
+	want := []ports.AgentModelInfo{{ID: "openai/gpt-5.5", Label: "GPT-5.5", Provider: "openai"}}
 	if !reflect.DeepEqual(got, want) {
 		t.Fatalf("models = %#v, want %#v", got, want)
 	}
 }
 
 func TestParseCopilotConfigModels(t *testing.T) {
-	got, err := parseCopilotConfigModels([]byte("`model`: AI model to use.\n  - \"claude-fable-5\"\n  - \"gpt-5.6-sol\"\n`contextTier`: context tier.\n  - ignored\n"))
+	got, err := parseCopilotConfigModels([]byte("`model`: AI model to use.\n  - \"glm-5.2\"\n  - \"gpt-5.6-sol\"\n`contextTier`: context tier.\n  - ignored\n"))
 	if err != nil {
 		t.Fatal(err)
 	}
-	want := []ports.AgentModelInfo{{ID: "claude-fable-5", Label: "claude-fable-5"}, {ID: "gpt-5.6-sol", Label: "gpt-5.6-sol"}}
+	want := []ports.AgentModelInfo{{ID: "glm-5.2", Label: "glm-5.2"}, {ID: "gpt-5.6-sol", Label: "gpt-5.6-sol"}}
 	if !reflect.DeepEqual(got, want) {
 		t.Fatalf("models = %#v, want %#v", got, want)
 	}
 }
 
 func TestParseDroidHelpModels(t *testing.T) {
-	got, err := parseDroidHelpModels([]byte("Available Models:\n  auto                    Auto Model\n  claude-opus-5           Opus 5 (default)\n  gpt-5.6-sol             GPT-5.6 Sol\n\nTool Controls:\n  --list-tools            List tools\n"))
+	got, err := parseDroidHelpModels([]byte("Available Models:\n  auto                    Auto Model\n  grok-4.5                Grok 4.5 (default)\n  gpt-5.6-sol             GPT-5.6 Sol\n\nTool Controls:\n  --list-tools            List tools\n"))
 	if err != nil {
 		t.Fatal(err)
 	}
 	want := []ports.AgentModelInfo{
-		{ID: "claude-opus-5", Label: "Opus 5", IsDefault: true},
+		{ID: "grok-4.5", Label: "Grok 4.5", IsDefault: true},
 		{ID: "auto", Label: "Auto Model"},
 		{ID: "gpt-5.6-sol", Label: "GPT-5.6 Sol"},
 	}
@@ -511,31 +478,31 @@ func TestParseJSONModelsUsesModelMapKeysAsSelectableIDs(t *testing.T) {
 func TestParseJSONModelsWalksGroupedModelsMaps(t *testing.T) {
 	got, err := parseJSONModels([]byte(`{
 		"models": {
-			"available": [{"modelId": "claude-sonnet", "displayName": "Claude Sonnet"}]
+			"available": [{"modelId": "gpt-5.4", "displayName": "GPT-5.4"}]
 		}
 	}`))
 	if err != nil {
 		t.Fatal(err)
 	}
-	if len(got) != 1 || got[0].ID != "claude-sonnet" || got[0].Label != "Claude Sonnet" {
-		t.Fatalf("models = %#v, want recursively discovered claude-sonnet", got)
+	if len(got) != 1 || got[0].ID != "gpt-5.4" || got[0].Label != "GPT-5.4" {
+		t.Fatalf("models = %#v, want recursively discovered gpt-5.4", got)
 	}
 }
 
 func TestParseJSONModelsWalksProviderGroupsWithNestedModels(t *testing.T) {
 	got, err := parseJSONModels([]byte(`{
 		"models": {
-			"anthropic": {
-				"provider": "anthropic",
-				"models": [{"modelId": "claude-sonnet", "displayName": "Claude Sonnet"}]
+			"openai": {
+				"provider": "openai",
+				"models": [{"modelId": "gpt-5.4", "displayName": "GPT-5.4"}]
 			}
 		}
 	}`))
 	if err != nil {
 		t.Fatal(err)
 	}
-	if len(got) != 1 || got[0].ID != "claude-sonnet" || got[0].Label != "Claude Sonnet" {
-		t.Fatalf("models = %#v, want nested claude-sonnet without provider-group alias", got)
+	if len(got) != 1 || got[0].ID != "gpt-5.4" || got[0].Label != "GPT-5.4" {
+		t.Fatalf("models = %#v, want nested gpt-5.4 without provider-group alias", got)
 	}
 }
 
@@ -543,18 +510,18 @@ func TestParseJSONModelsSupportsKiroAndDevinFields(t *testing.T) {
 	got, err := parseJSONModels([]byte(`{
 		"models": [{"model_name": "Auto", "model_id": "auto"}],
 		"families": [{
-			"slug": "claude-opus-5",
-			"family_label": "Claude Opus 5",
-			"variants": [{"model_uid": "claude-opus-5-high", "label": "Claude Opus 5 High"}]
+			"slug": "gpt-oss-120b",
+			"family_label": "GPT-OSS 120B",
+			"variants": [{"model_uid": "gpt-oss-120b-high", "label": "GPT-OSS 120B High"}]
 		}]
 	}`))
 	if err != nil {
 		t.Fatal(err)
 	}
 	want := map[string]bool{
-		"auto":               true,
-		"claude-opus-5":      true,
-		"claude-opus-5-high": true,
+		"auto":              true,
+		"gpt-oss-120b":      true,
+		"gpt-oss-120b-high": true,
 	}
 	for _, item := range got {
 		delete(want, item.ID)
@@ -564,66 +531,12 @@ func TestParseJSONModelsSupportsKiroAndDevinFields(t *testing.T) {
 	}
 }
 
-func writeClaudeSettings(t *testing.T, dir, model string) {
-	t.Helper()
-	settingsDir := filepath.Join(dir, ".claude")
-	if err := os.MkdirAll(settingsDir, 0o755); err != nil {
-		t.Fatal(err)
-	}
-	body := "{}"
-	if model != "" {
-		body = `{"model": "` + model + `"}`
-	}
-	if err := os.WriteFile(filepath.Join(settingsDir, "settings.json"), []byte(body), 0o600); err != nil {
-		t.Fatal(err)
-	}
-}
-
-func TestCatalogFingerprintTracksTheConfiguredClaudeCodeModel(t *testing.T) {
-	t.Setenv("ANTHROPIC_MODEL", "")
-	dir := t.TempDir()
-	writeClaudeSettings(t, dir, "opus")
-
-	first := CatalogFingerprint(context.Background(), "claude-code", "", dir, nil)
-	if first == "" {
-		t.Fatal("fingerprint is empty for a configured model")
-	}
-
-	// A settings edit changes the catalog, so it has to change the fingerprint —
-	// otherwise the cached catalog stays authoritative forever.
-	writeClaudeSettings(t, dir, "haiku")
-	second := CatalogFingerprint(context.Background(), "claude-code", "", dir, nil)
-	if second == first {
-		t.Fatalf("fingerprint unchanged (%q) after the configured model changed", second)
-	}
-
-	writeClaudeSettings(t, dir, "opus")
-	if again := CatalogFingerprint(context.Background(), "claude-code", "", dir, nil); again != first {
-		t.Fatalf("fingerprint = %q, want %q for identical inputs", again, first)
-	}
-}
-
 func TestCatalogFingerprintKeepsTheExecutableOnlyValueForConfiglessAgents(t *testing.T) {
 	dir := t.TempDir()
-	writeClaudeSettings(t, dir, "opus")
 	// codex reads no configuration, so its fingerprint must stay byte-identical
 	// to the executable fingerprint earlier daemons cached under.
 	got := CatalogFingerprint(context.Background(), "codex", "codex", dir, nil)
 	if want := BinaryVersion(context.Background(), "codex"); got != want {
 		t.Fatalf("fingerprint = %q, want the executable fingerprint %q", got, want)
-	}
-}
-
-func TestCatalogFingerprintDistinguishesConfiguredFromUnconfigured(t *testing.T) {
-	t.Setenv("ANTHROPIC_MODEL", "")
-	t.Setenv("HOME", t.TempDir())
-	unset := t.TempDir()
-	writeClaudeSettings(t, unset, "")
-	configured := t.TempDir()
-	writeClaudeSettings(t, configured, "opus")
-
-	if CatalogFingerprint(context.Background(), "claude-code", "", unset, nil) ==
-		CatalogFingerprint(context.Background(), "claude-code", "", configured, nil) {
-		t.Fatal("configuring a model must change the fingerprint")
 	}
 }

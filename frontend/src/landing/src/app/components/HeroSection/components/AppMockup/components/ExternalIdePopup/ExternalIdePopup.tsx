@@ -83,7 +83,7 @@ export function ExternalIdePopup({ activeDemo }: ExternalIdePopupProps) {
 						</div>
 						<div className="pl-4">
 							<span className="text-foreground/75">model:</span>{" "}
-							<span className="text-emerald-300/85">"claude-4"</span>,
+							<span className="text-emerald-300/85">"gpt-5"</span>,
 						</div>
 						<div className="pl-4">
 							<span className="text-foreground/75">tools:</span> [tools.read,

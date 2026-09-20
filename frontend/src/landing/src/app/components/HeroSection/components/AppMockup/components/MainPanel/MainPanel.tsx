@@ -32,11 +32,11 @@ export function MainPanel({ activeDemo }: MainPanelProps) {
 							<div className="text-[11px] text-muted-foreground">
 								<div>
 									<span className="font-medium text-foreground">
-										Claude Code
+										OpenCode
 									</span>{" "}
 									v2.0.74
 								</div>
-								<div>Opus 4.5 · Claude Max</div>
+								<div>Default model · Full tools</div>
 								<div className="text-muted-foreground/65">
 									~/.ao-agents/worktrees/main/feature-ws
 								</div>
@@ -74,7 +74,7 @@ export function MainPanel({ activeDemo }: MainPanelProps) {
 						<div className="flex items-center gap-3 border border-border bg-card/60 px-3 py-2.5">
 							<span className="text-muted-foreground/55">❯</span>
 							<span className="flex-1 text-[11px] text-muted-foreground/55">
-								Type a task for Claude…
+								Type a task for OpenCode…
 							</span>
 							<div className="flex size-5 items-center justify-center rounded-xl bg-brand/15 text-[11px] text-brand-light">
 								<LuArrowUp className="size-3" />

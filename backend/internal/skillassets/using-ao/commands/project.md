@@ -144,7 +144,7 @@ ao project set-config <id> [flags]
 | `--default-branch string` | Base branch new session worktrees are created from | - |
 | `--env stringArray` | Env var `KEY=VALUE` forwarded into sessions (repeatable) | - |
 | `--json` | Output the updated project as JSON | - |
-| `--model string` | Agent model override (e.g. `claude-opus-4-5`) | - |
+| `--model string` | Agent model override (e.g. `codex-mini-latest`) | - |
 | `--orchestrator-agent string` | Harness override for orchestrator sessions | - |
 | `--orchestrator-rules string` | Project-specific standing instructions appended to orchestrator session prompts | - |
 | `--permission string` | Permission mode: `default`, `accept-edits`, `auto`, `bypass-permissions` | - |
@@ -157,7 +157,7 @@ ao project set-config <id> [flags]
 
 ```bash
 # Set default branch and model for a project
-ao project set-config agent-orchestrator --default-branch main --model claude-opus-4-5
+ao project set-config agent-orchestrator --default-branch main --model codex-mini-latest
 ```
 
 ```bash

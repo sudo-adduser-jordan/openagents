@@ -483,12 +483,11 @@ func backfillTestSnapshot(t *testing.T, openAIInputRate string) *pricing.Snapsho
 		input    string
 	}
 	models := []providerModel{
-		{provider: "anthropic", model: "claude-test", input: "0"},
 		{provider: "openai", model: "gpt-test", input: openAIInputRate},
 		{provider: "zai", model: "glm-test", input: "0"},
 	}
-	providers := make(map[string][]byte, 3)
-	refs := make([]map[string]any, 0, 3)
+	providers := make(map[string][]byte, 2)
+	refs := make([]map[string]any, 0, 2)
 	for _, model := range models {
 		blob, err := json.Marshal(map[string]any{
 			"schemaVersion": 1,

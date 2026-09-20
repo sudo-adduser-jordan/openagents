@@ -57,7 +57,7 @@ func TestRefresherPublishesLKGImmediatelyButDelaysActivationsUntilRemoteAttempt(
 	if err := refresher.Start(ctx); err != nil {
 		t.Fatal(err)
 	}
-	if got := manager.Snapshot().ProviderVersion("anthropic"); got != oldFixture.versions["anthropic"] {
+	if got := manager.Snapshot().ProviderVersion("openai"); got != oldFixture.versions["openai"] {
 		t.Fatalf("snapshot before remote attempt = %q, want LKG", got)
 	}
 	select {
@@ -73,9 +73,8 @@ func TestRefresherPublishesLKGImmediatelyButDelaysActivationsUntilRemoteAttempt(
 		t.Fatal("activation delivery timed out")
 	}
 	assertActivationVersions(t, activations, map[string]string{
-		"anthropic": oldFixture.versions["anthropic"],
-		"openai":    newFixture.versions["openai"],
-		"zai":       oldFixture.versions["zai"],
+		"openai": newFixture.versions["openai"],
+		"zai":    oldFixture.versions["zai"],
 	})
 	for _, activation := range activations {
 		if activation.ProviderID == "openai" && activation.PreviousVersion != oldFixture.versions["openai"] {
@@ -178,7 +177,7 @@ func TestRefresherFailureReleasesCachedActivationsAndRetriesExponentially(t *tes
 	}
 	select {
 	case activations := <-delivered:
-		if len(activations) != 3 {
+		if len(activations) != 2 {
 			t.Fatalf("cached activations = %#v", activations)
 		}
 	case <-time.After(time.Second):

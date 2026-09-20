@@ -10,7 +10,7 @@ import (
 // Reviewer is the contract a code-review adapter satisfies. It is deliberately
 // separate from Agent: a reviewer is invoked once over a checkout to review a
 // PR, and need not be a prompt-fed interactive agent. A prompt-driven reviewer
-// (claude-code) builds its own prompt internally; a one-shot CLI (greptile)
+// (codex) builds its own prompt internally; a one-shot CLI (greptile)
 // returns its own argv with no prompt at all.
 type Reviewer interface {
 	// ReviewCommand builds the command (and any extra env) AO should run to
@@ -113,7 +113,7 @@ type ReviewInvocation struct {
 	// Prompt and SystemPrompt are the review instructions AO authored centrally,
 	// mirroring the worker's LaunchConfig.Prompt / SystemPrompt split: SystemPrompt
 	// carries the standing reviewer role, Prompt the per-pass task. A prompt-driven
-	// adapter (claude-code) feeds them to the agent; a one-shot CLI reviewer may
+	// adapter (codex) feeds them to the agent; a one-shot CLI reviewer may
 	// ignore them.
 	Prompt       string
 	SystemPrompt string

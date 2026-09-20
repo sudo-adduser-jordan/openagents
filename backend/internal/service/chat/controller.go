@@ -405,7 +405,7 @@ type nativeHistoryCheckpoint struct {
 // dropUnsettledHookFacts retires legacy checkpoint text that AO recorded on a
 // turn the provider never settled. A provider promises to reproduce settled work
 // during history load, but a cancelled, interrupted or failed turn carries no
-// such promise: Claude forks its next prompt from the pre-failure transcript
+// such promise: the provider forks its next prompt from the pre-failure transcript
 // entry, so `session/load` never replays that prompt as a completed user
 // message. Requiring one is unsatisfiable — the settle loop then spends its full
 // `nativeHistorySettleLimit` and the interface transition rolls back to Terminal
@@ -525,7 +525,7 @@ func (p *nativeHistoryCheckpoint) captureAOHighWater(
 		turn := &turns[i]
 		// Only completed turns anchor the high-water mark. A provider promises to
 		// reproduce settled work during history load, but a failed or interrupted
-		// turn's items carry no such promise: Claude forks its next prompt from the
+		// turn's items carry no such promise: the provider forks its next prompt from the
 		// pre-failure transcript entry, leaving the failed turn (e.g. a synthetic
 		// auth-error message) on a dead branch that session/load never replays.
 		// Requiring one of those items would make every future switch time out.

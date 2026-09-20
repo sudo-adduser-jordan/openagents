@@ -13,8 +13,8 @@ func TestListAgentModelCatalogsByAgentReturnsOnlyRequestedScopes(t *testing.T) {
 	ctx := context.Background()
 	now := time.Now().UTC().Truncate(time.Second)
 	for _, record := range []ports.CachedAgentModelCatalog{
-		{AgentID: "claude-code", ProjectID: "project-b", CatalogJSON: `{}`, FetchedAt: now},
-		{AgentID: "claude-code", ProjectID: "project-a", CatalogJSON: `{}`, FetchedAt: now},
+		{AgentID: "codex", ProjectID: "project-b", CatalogJSON: `{}`, FetchedAt: now},
+		{AgentID: "codex", ProjectID: "project-a", CatalogJSON: `{}`, FetchedAt: now},
 		{AgentID: "muse", ProjectID: "project-c", CatalogJSON: `{}`, FetchedAt: now},
 	} {
 		if err := store.UpsertAgentModelCatalog(ctx, record); err != nil {
@@ -22,7 +22,7 @@ func TestListAgentModelCatalogsByAgentReturnsOnlyRequestedScopes(t *testing.T) {
 		}
 	}
 
-	records, err := store.ListAgentModelCatalogsByAgent(ctx, "claude-code")
+	records, err := store.ListAgentModelCatalogsByAgent(ctx, "codex")
 	if err != nil {
 		t.Fatal(err)
 	}

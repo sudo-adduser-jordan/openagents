@@ -679,7 +679,7 @@ func (s *Service) Start(ctx context.Context, cfg StartConfig) (*Controller, erro
 		// Read AO's existing projection too. ACP message/turn ids are opaque, and an
 		// agent may assign a different persisted user id from the id AO supplied at
 		// prompt time. Reconciliation must therefore happen before projection; doing
-		// it in a Claude binding would leave every other ACP harness with the same
+		// it in one provider's binding would leave every other ACP harness with the same
 		// restart duplication race.
 		var existing ConversationRows
 		if s.reader != nil {
@@ -1732,9 +1732,9 @@ func (s *Service) StopChat(ctx context.Context, id domain.SessionID) error {
 	return s.Stop(ctx, id)
 }
 
-// permissionConfigOptions returns the provider options unchanged. The claude
-// "mode" permission mapping that previously annotated these choices was
-// harness-specific and is no longer applied for opencode.
+// permissionConfigOptions returns the provider options unchanged. A
+// provider-specific "mode" permission mapping that previously annotated these
+// choices was harness-specific and is no longer applied for opencode.
 func permissionConfigOptions(options []ports.ChatConfigOption) []ports.ChatConfigOption {
 	return append([]ports.ChatConfigOption(nil), options...)
 }

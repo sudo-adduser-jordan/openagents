@@ -16,9 +16,8 @@ import (
 
 func TestDecodeCandidateBuildsExactCanonicalSnapshot(t *testing.T) {
 	candidate := testCandidate(t, map[string][]testModel{
-		"anthropic": {{ID: "claude-test", Input: "0.000003", Read: strptr("0.0000003"), Write: strptr("0.00000375"), Write1H: strptr("0.000006"), Output: "0.000015"}},
-		"openai":    {{ID: "gpt-test", Input: "0.000001", Output: "0.000004"}},
-		"zai":       {{ID: "glm-test", Input: "0.0000005", Output: "0.000002"}},
+		"openai": {{ID: "gpt-test", Input: "0.000003", Read: strptr("0.0000003"), Write: strptr("0.00000375"), Write1H: strptr("0.000006"), Output: "0.000015"}},
+		"zai":    {{ID: "glm-test", Input: "0.0000005", Output: "0.000002"}},
 	})
 
 	snapshot, err := DecodeCandidate(candidate.manifest, candidate.providers)
@@ -28,28 +27,27 @@ func TestDecodeCandidateBuildsExactCanonicalSnapshot(t *testing.T) {
 	if got, want := snapshot.ProviderVersion(" Z.AI "), candidate.versions["zai"]; got != want {
 		t.Fatalf("ProviderVersion = %q, want %q", got, want)
 	}
-	event := domain.ModelUsageEvent{BillingProviderID: " ANTHROPIC ", ModelID: "anthropic/CLAUDE-TEST"}
+	event := domain.ModelUsageEvent{BillingProviderID: " OPENAI ", ModelID: "openai/GPT-TEST"}
 	estimate, err := snapshot.Estimate(event)
 	if err != nil {
 		t.Fatalf("Estimate exact canonical lookup: %v", err)
 	}
-	if estimate.PricingVersion != candidate.versions["anthropic"] {
-		t.Fatalf("PricingVersion = %q, want %q", estimate.PricingVersion, candidate.versions["anthropic"])
+	if estimate.PricingVersion != candidate.versions["openai"] {
+		t.Fatalf("PricingVersion = %q, want %q", estimate.PricingVersion, candidate.versions["openai"])
 	}
 }
 
 func TestDecodeCandidateRejectsMalformedCatalogFacts(t *testing.T) {
 	base := map[string][]testModel{
-		"anthropic": {{ID: "claude-test", Input: "0.1", Output: "0.2"}},
-		"openai":    {{ID: "gpt-test", Input: "0.1", Output: "0.2"}},
-		"zai":       {{ID: "glm-test", Input: "0.1", Output: "0.2"}},
+		"openai": {{ID: "gpt-test", Input: "0.1", Output: "0.2"}},
+		"zai":    {{ID: "glm-test", Input: "0.1", Output: "0.2"}},
 	}
 	tests := []struct {
 		name   string
 		mutate func(*testing.T, *testCatalog)
 	}{
 		{name: "wrong hash", mutate: func(t *testing.T, c *testCatalog) {
-			providerPath, contents := c.provider(t, "anthropic")
+			providerPath, contents := c.provider(t, "openai")
 			c.providers[providerPath] = append(contents, ' ')
 		}},
 		{name: "unsafe path", mutate: func(t *testing.T, c *testCatalog) {
@@ -60,18 +58,18 @@ func TestDecodeCandidateRejectsMalformedCatalogFacts(t *testing.T) {
 		}},
 		{name: "unknown manifest field", mutate: func(t *testing.T, c *testCatalog) { c.manifest = addJSONField(t, c.manifest, "surprise", true) }},
 		{name: "duplicate canonical model", mutate: func(t *testing.T, c *testCatalog) {
-			_, contents := c.provider(t, "anthropic")
+			_, contents := c.provider(t, "openai")
 			blob := decodeJSONMap(t, contents)
 			models := blob["models"].([]any)
-			models = append(models, map[string]any{"modelId": "CLAUDE-TEST", "rates": map[string]any{"uncachedInputUsdPerToken": "0.1", "outputUsdPerToken": "0.2"}})
+			models = append(models, map[string]any{"modelId": "GPT-TEST", "rates": map[string]any{"uncachedInputUsdPerToken": "0.1", "outputUsdPerToken": "0.2"}})
 			blob["models"] = models
-			c.replaceProvider(t, "anthropic", blob)
+			c.replaceProvider(t, "openai", blob)
 		}},
 		{name: "noncanonical decimal", mutate: func(t *testing.T, c *testCatalog) {
-			_, contents := c.provider(t, "anthropic")
+			_, contents := c.provider(t, "openai")
 			blob := decodeJSONMap(t, contents)
 			blob["models"].([]any)[0].(map[string]any)["rates"].(map[string]any)["uncachedInputUsdPerToken"] = "0.10"
-			c.replaceProvider(t, "anthropic", blob)
+			c.replaceProvider(t, "openai", blob)
 		}},
 	}
 	for _, tc := range tests {
@@ -87,25 +85,24 @@ func TestDecodeCandidateRejectsMalformedCatalogFacts(t *testing.T) {
 
 func TestEstimateRoundsComponentsHalfUpAndSumsChecked(t *testing.T) {
 	snapshot := decodeTestSnapshot(t, map[string][]testModel{
-		"anthropic": {{ID: "claude-test", Input: "0.0000000005", Read: strptr("0.0000000015"), Write: strptr("0.0000000025"), Write1H: strptr("0.0000000035"), Output: "0.0000000045"}},
-		"openai":    {{ID: "gpt-test", Input: "0", Output: "0"}},
-		"zai":       {{ID: "glm-test", Input: "0", Output: "0"}},
+		"openai": {{ID: "gpt-test", Input: "0.0000000005", Read: strptr("0.0000000015"), Write: strptr("0.0000000025"), Output: "0.0000000045"}},
+		"zai":    {{ID: "glm-test", Input: "0", Output: "0"}},
 	})
-	five, one := int64(1), int64(1)
 	estimate, err := snapshot.Estimate(domain.ModelUsageEvent{
-		ProviderID: domain.UsageProviderAnthropic, BillingProviderID: "anthropic", ModelID: "claude-test",
+		ProviderID: domain.UsageProviderOpenAI, BillingProviderID: "openai", ModelID: "gpt-test",
 		Tokens:            pricingTokens(4, 1, 3, 1),
-		ProviderUsageJSON: anthropicUsageJSON(2, &five, &one),
+		ProviderUsageJSON: codexUsageJSON(2),
 	})
 	if err != nil {
 		t.Fatalf("Estimate: %v", err)
 	}
 	// One fresh token at 0.5 nano rounds half up to 1; the two cache-write
-	// tokens charge 2.5 and 3.5 and round to 3 each. Input is their sum.
-	assertCost(t, "input", estimate.InputNanos, 7)
+	// tokens charge 5.0 nanos at the single write rate. Cached input (1.5)
+	// and output (4.5) each round half up. Input is the checked sum.
+	assertCost(t, "input", estimate.InputNanos, 6)
 	assertCost(t, "cached input", estimate.CachedInputNanos, 2)
 	assertCost(t, "output", estimate.OutputNanos, 5)
-	assertCost(t, "total", estimate.TotalNanos, 14)
+	assertCost(t, "total", estimate.TotalNanos, 13)
 }
 
 // Only 5 of 112 OpenAI models publish a cache-write rate. A catalog without one
@@ -113,9 +110,8 @@ func TestEstimateRoundsComponentsHalfUpAndSumsChecked(t *testing.T) {
 // uncached bucket takes the input rate and the event still prices completely.
 func TestEstimateChargesCacheWritesAsInputWithoutAWriteRate(t *testing.T) {
 	snapshot := decodeTestSnapshot(t, map[string][]testModel{
-		"anthropic": {{ID: "claude-test", Input: "0.1", Output: "0.2"}},
-		"openai":    {{ID: "gpt-test", Input: "0.000001", Read: strptr("0.0000001"), Output: "0.000002"}},
-		"zai":       {{ID: "glm-test", Input: "0.1", Output: "0.2"}},
+		"openai": {{ID: "gpt-test", Input: "0.000001", Read: strptr("0.0000001"), Output: "0.000002"}},
+		"zai":    {{ID: "glm-test", Input: "0.1", Output: "0.2"}},
 	})
 	estimate, err := snapshot.Estimate(domain.ModelUsageEvent{
 		ProviderID: domain.UsageProviderOpenAI, BillingProviderID: "openai", ModelID: "gpt-test",
@@ -146,12 +142,11 @@ func TestEstimateChargesCacheWritesAsInputWithoutAWriteRate(t *testing.T) {
 // before the bounded object was captured cannot supply one.
 func TestEstimateLeavesInputUnknownWhenAPricedWriteSplitIsMissing(t *testing.T) {
 	snapshot := decodeTestSnapshot(t, map[string][]testModel{
-		"anthropic": {{ID: "claude-test", Input: "0.000003", Read: strptr("0.0000003"), Write: strptr("0.00000375"), Output: "0.000015"}},
-		"openai":    {{ID: "gpt-test", Input: "0.1", Output: "0.2"}},
-		"zai":       {{ID: "glm-test", Input: "0.1", Output: "0.2"}},
+		"openai": {{ID: "gpt-test", Input: "0.000003", Read: strptr("0.0000003"), Write: strptr("0.00000375"), Output: "0.000015"}},
+		"zai":    {{ID: "glm-test", Input: "0.1", Output: "0.2"}},
 	})
 	estimate, err := snapshot.Estimate(domain.ModelUsageEvent{
-		ProviderID: domain.UsageProviderAnthropic, BillingProviderID: "anthropic", ModelID: "claude-test",
+		ProviderID: domain.UsageProviderOpenAI, BillingProviderID: "openai", ModelID: "gpt-test",
 		Tokens: pricingTokens(1000, 400, 600, 200),
 	})
 	if err != nil {
@@ -167,9 +162,9 @@ func TestEstimateLeavesInputUnknownWhenAPricedWriteSplitIsMissing(t *testing.T) 
 
 	// With the object present the single write rate applies to the whole bucket.
 	priced, err := snapshot.Estimate(domain.ModelUsageEvent{
-		ProviderID: domain.UsageProviderAnthropic, BillingProviderID: "anthropic", ModelID: "claude-test",
+		ProviderID: domain.UsageProviderOpenAI, BillingProviderID: "openai", ModelID: "gpt-test",
 		Tokens:            pricingTokens(1000, 400, 600, 200),
-		ProviderUsageJSON: anthropicUsageJSON(100, nil, nil),
+		ProviderUsageJSON: codexUsageJSON(100),
 	})
 	if err != nil {
 		t.Fatalf("Estimate with provider usage: %v", err)
@@ -180,14 +175,13 @@ func TestEstimateLeavesInputUnknownWhenAPricedWriteSplitIsMissing(t *testing.T) 
 
 func TestEstimateKeepsUnknownBucketsUnknownAndZeroBucketsKnown(t *testing.T) {
 	snapshot := decodeTestSnapshot(t, map[string][]testModel{
-		"anthropic": {{ID: "claude-test", Input: "0.1", Output: "0.2"}},
-		"openai":    {{ID: "gpt-test", Input: "0.1", Output: "0.2"}},
-		"zai":       {{ID: "glm-test", Input: "0.1", Output: "0.2"}},
+		"openai": {{ID: "gpt-test", Input: "0.1", Output: "0.2"}},
+		"zai":    {{ID: "glm-test", Input: "0.1", Output: "0.2"}},
 	})
 
 	// An uncollected counter prices as unknown, never as zero.
 	estimate, err := snapshot.Estimate(domain.ModelUsageEvent{
-		ProviderID: domain.UsageProviderAnthropic, BillingProviderID: "anthropic", ModelID: "claude-test",
+		ProviderID: domain.UsageProviderOpenAI, BillingProviderID: "openai", ModelID: "gpt-test",
 		Tokens: domain.UsageTokenMetrics{CachedInputTokens: costInt64(0), OutputTokens: costInt64(0)},
 	})
 	if err != nil {
@@ -228,12 +222,11 @@ func TestEstimateKeepsUnknownBucketsUnknownAndZeroBucketsKnown(t *testing.T) {
 
 func TestEstimateRejectsInvalidTokensAndOverflow(t *testing.T) {
 	snapshot := decodeTestSnapshot(t, map[string][]testModel{
-		"anthropic": {{ID: "claude-test", Input: "9223372036.854775807", Output: "0"}},
-		"openai":    {{ID: "gpt-test", Input: "0", Output: "0"}},
-		"zai":       {{ID: "glm-test", Input: "0", Output: "0"}},
+		"openai": {{ID: "gpt-test", Input: "9223372036.854775807", Output: "0"}},
+		"zai":    {{ID: "glm-test", Input: "0", Output: "0"}},
 	})
 	if _, err := snapshot.Estimate(domain.ModelUsageEvent{
-		ProviderID: domain.UsageProviderAnthropic, BillingProviderID: "anthropic", ModelID: "claude-test",
+		ProviderID: domain.UsageProviderOpenAI, BillingProviderID: "openai", ModelID: "gpt-test",
 		Tokens: pricingTokens(2, 0, 2, 0),
 	}); err == nil {
 		t.Fatal("overflow error = nil")
@@ -371,8 +364,8 @@ func TestManagerActivatesOnlyChangedProviders(t *testing.T) {
 	second := decodeTestSnapshot(t, secondModels)
 	manager := NewManager(nil)
 	activations, err := manager.Activate(context.Background(), first)
-	if err != nil || len(activations) != 3 {
-		t.Fatalf("first Activate = %#v, %v; want 3", activations, err)
+	if err != nil || len(activations) != 2 {
+		t.Fatalf("first Activate = %#v, %v; want 2", activations, err)
 	}
 	activations, err = manager.Activate(context.Background(), second)
 	if err != nil {
@@ -441,9 +434,8 @@ type testCatalog struct {
 
 func testBaseModels(rate string) map[string][]testModel {
 	return map[string][]testModel{
-		"anthropic": {{ID: "claude-test", Input: rate, Output: rate}},
-		"openai":    {{ID: "gpt-test", Input: rate, Output: rate}},
-		"zai":       {{ID: "glm-test", Input: rate, Output: rate}},
+		"openai": {{ID: "gpt-test", Input: rate, Output: rate}},
+		"zai":    {{ID: "glm-test", Input: rate, Output: rate}},
 	}
 }
 
@@ -460,8 +452,8 @@ func decodeTestSnapshot(t *testing.T, models map[string][]testModel) *Snapshot {
 func testCandidate(t *testing.T, models map[string][]testModel) testCatalog {
 	t.Helper()
 	candidate := testCatalog{providers: map[string][]byte{}, versions: map[string]string{}}
-	refs := make([]map[string]any, 0, 3)
-	for _, providerID := range []string{"anthropic", "openai", "zai"} {
+	refs := make([]map[string]any, 0, 2)
+	for _, providerID := range []string{"openai", "zai"} {
 		entries := make([]map[string]any, 0, len(models[providerID]))
 		for _, model := range models[providerID] {
 			rates := map[string]any{"uncachedInputUsdPerToken": model.Input, "outputUsdPerToken": model.Output}
@@ -597,22 +589,6 @@ func pricingTokens(input, cachedInput, uncachedInput, output int64) domain.Usage
 	}
 }
 
-// anthropicUsageJSON is the bounded object Claude emits, reduced to the fields
-// pricing reads back out of it.
-func anthropicUsageJSON(cacheCreation int64, fiveM, oneH *int64) string {
-	usage := map[string]any{"cache_creation_input_tokens": cacheCreation}
-	if fiveM != nil && oneH != nil {
-		usage["cache_creation"] = map[string]any{
-			"ephemeral_5m_input_tokens": *fiveM, "ephemeral_1h_input_tokens": *oneH,
-		}
-	}
-	encoded, err := json.Marshal(usage)
-	if err != nil {
-		panic(err)
-	}
-	return string(encoded)
-}
-
 // codexUsageJSON is payload.info reduced to the per-event vector pricing reads.
 func codexUsageJSON(cacheWrite int64) string {
 	encoded, err := json.Marshal(map[string]any{
@@ -629,20 +605,18 @@ func codexUsageJSON(cacheWrite int64) string {
 // write-once column and priced against the wrong catalog, permanently.
 func TestProviderForModelResolvesOnlyAnUnambiguousOwner(t *testing.T) {
 	snapshot := decodeTestSnapshot(t, map[string][]testModel{
-		"anthropic": {{ID: "claude-test", Input: "0.1", Output: "0.2"}},
-		"openai":    {{ID: "gpt-test", Input: "0.1", Output: "0.2"}},
-		"zai":       {{ID: "glm-test", Input: "0.1", Output: "0.2"}},
+		"openai": {{ID: "gpt-test", Input: "0.1", Output: "0.2"}},
+		"zai":    {{ID: "glm-test", Input: "0.1", Output: "0.2"}},
 	})
 	for _, test := range []struct {
 		name, modelID, want string
 	}{
-		{name: "anthropic model", modelID: "claude-test", want: "anthropic"},
 		{name: "openai model", modelID: "gpt-test", want: "openai"},
 		{name: "zai model", modelID: "glm-test", want: "zai"},
 		// The stored id keeps whatever form the provider reported, so a
 		// provider-prefixed id still has to reach its unprefixed catalog entry.
-		{name: "provider-prefixed", modelID: "anthropic/claude-test", want: "anthropic"},
-		{name: "case and padding", modelID: "  CLAUDE-TEST  ", want: "anthropic"},
+		{name: "provider-prefixed", modelID: "openai/gpt-test", want: "openai"},
+		{name: "case and padding", modelID: "  GPT-TEST  ", want: "openai"},
 		// A model no catalog lists says nothing about who billed it, and neither
 		// do the sentinels the parser falls back to.
 		{name: "unlisted model", modelID: "glm-5.3"},
@@ -659,15 +633,14 @@ func TestProviderForModelResolvesOnlyAnUnambiguousOwner(t *testing.T) {
 
 	// Two providers listing the same id makes the model useless as evidence.
 	ambiguous := decodeTestSnapshot(t, map[string][]testModel{
-		"anthropic": {{ID: "shared-model", Input: "0.1", Output: "0.2"}},
-		"openai":    {{ID: "shared-model", Input: "0.9", Output: "0.9"}},
-		"zai":       {{ID: "glm-test", Input: "0.1", Output: "0.2"}},
+		"openai": {{ID: "shared-model", Input: "0.1", Output: "0.2"}},
+		"zai":    {{ID: "shared-model", Input: "0.9", Output: "0.9"}},
 	})
 	if got := ambiguous.ProviderForModel("shared-model"); got != "" {
 		t.Fatalf("ambiguous model resolved to %q, want no owner", got)
 	}
 
-	if got := (*Snapshot)(nil).ProviderForModel("claude-test"); got != "" {
+	if got := (*Snapshot)(nil).ProviderForModel("gpt-test"); got != "" {
 		t.Fatalf("nil snapshot resolved to %q", got)
 	}
 }

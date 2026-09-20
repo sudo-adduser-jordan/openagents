@@ -7,7 +7,7 @@
 // server echo when it arrives, modeled on VS Code's terminal typeahead and
 // mosh:
 //
-//   - Predict ONLY on xterm's normal buffer. Agent TUIs (claude, and any
+//   - Predict ONLY on xterm's normal buffer. Agent TUIs (and any
 //     alt-screen app) repaint aggressively and echo nothing byte-for-byte;
 //     the alternate-buffer gate disables prediction there entirely.
 //   - Predict ONLY single-column printable characters (ASCII + Latin) and

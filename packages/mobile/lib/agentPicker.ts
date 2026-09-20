@@ -19,8 +19,8 @@ export type RankedAgent = AgentInfo & {
 
 // Desktop's DEFAULT_AGENT_PRIORITY. Ties inside a rank break by this before
 // falling back to the label — without it the authorized group is alphabetical
-// and Aider sorts above Claude Code.
-const PRIORITY = ["claude-code", "codex", "cursor", "opencode", "aider"];
+// and Aider sorts above Codex.
+const PRIORITY = ["codex", "cursor", "opencode", "aider"];
 const priorityOf = (id: string) => {
 	const i = PRIORITY.indexOf(id);
 	return i === -1 ? Number.MAX_SAFE_INTEGER : i;

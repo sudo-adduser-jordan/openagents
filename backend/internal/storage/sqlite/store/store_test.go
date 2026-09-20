@@ -482,7 +482,7 @@ func TestProjectConfigRoundTrips(t *testing.T) {
 		AgentRules:        "Run focused tests.",
 		AgentRulesFile:    "docs/agent-rules.md",
 		OrchestratorRules: "Keep workers unblocked.",
-		AgentConfig:       domain.AgentConfig{Model: "claude-opus-4-5", Permissions: domain.PermissionModeAcceptEdits},
+		AgentConfig:       domain.AgentConfig{Model: "gpt-5.6", Permissions: domain.PermissionModeAcceptEdits},
 		Worker:            domain.RoleOverride{Harness: domain.HarnessOpenCode},
 	}
 	if err := s.UpsertProject(ctx, domain.ProjectRecord{

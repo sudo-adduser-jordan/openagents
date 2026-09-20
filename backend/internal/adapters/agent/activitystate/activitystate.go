@@ -3,7 +3,7 @@
 // session-start/user-prompt-submit/stop/permission-request callbacks and derive
 // activity identically from the event name alone; they share this deriver rather
 // than each carrying a copy. Adapters that inspect the hook payload for finer
-// grained state (claude-code, codex, droid) keep their own deriver.
+// grained state (codex, droid) keep their own deriver.
 package activitystate
 
 import "github.com/aoagents/agent-orchestrator/backend/internal/domain"

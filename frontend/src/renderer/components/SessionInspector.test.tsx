@@ -184,7 +184,7 @@ function commonGetsResponder(
 ) {
   return async (path: string) => {
     if (path === "/api/v1/agents/readiness") {
-      const agents = ["claude-code", "codex", "opencode"].map((id) => agentReadiness(id));
+      const agents = ["aider", "codex", "opencode"].map((id) => agentReadiness(id));
       return { data: { agents } };
     }
     if (path === "/api/v1/agents/{agent}/models") {
@@ -968,11 +968,11 @@ describe("SessionInspector usage", () => {
 		};
 		mockUsage(completeCost, [
 			{
-				harness: "claude-code",
+				harness: "codex",
 				totals: tokenTotals(completeCost),
 				models: [
 					{
-						modelId: "claude-sonnet-4",
+						modelId: "gpt-5.6",
 						totals: tokenTotals({ ...completeCost, totalNanos: 600_000_000 }),
 					},
 				],
@@ -990,8 +990,8 @@ describe("SessionInspector usage", () => {
 		expect(section).not.toHaveTextContent(/[≈≥]\$/);
 		// The row already sits under its agent, so the billing provider is not
 		// repeated in the model name.
-		expect(within(section).getByText("Sonnet 4")).toBeInTheDocument();
-		expect(section).not.toHaveTextContent("anthropic ·");
+		expect(within(section).getByText("GPT 5.6")).toBeInTheDocument();
+		expect(section).not.toHaveTextContent("openai ·");
 
 		await userEvent.hover(within(section).getByRole("button", { name: "About estimated cost" }));
 		const tooltip = await screen.findByRole("tooltip");
@@ -1081,7 +1081,7 @@ describe("SessionInspector usage", () => {
 		const totals = tokenTotals(null);
 		mockUsage(null, [
 			{ harness: "codex", totals, models: [{ modelId: "gpt-5.5", totals }] },
-			{ harness: "claude-code", totals, models: [{ modelId: "claude-sonnet-4", totals }] },
+			{ harness: "opencode", totals, models: [{ modelId: "gpt-5.6", totals }] },
 		]);
 
 		renderWithQuery(<SessionInspector session={session([])} />);
@@ -1109,9 +1109,9 @@ describe("SessionInspector usage", () => {
 		mockUsage(null, [
 			{ harness: "codex", totals: priced, models: [{ modelId: "gpt-5.5", totals: priced }] },
 			{
-				harness: "claude-code",
+				harness: "opencode",
 				totals: unpriced,
-				models: [{ modelId: "claude-sonnet-4", totals: unpriced }],
+				models: [{ modelId: "gpt-5.6", totals: unpriced }],
 			},
 		]);
 
@@ -1958,7 +1958,7 @@ describe("SessionInspector summary reviews", () => {
   it("labels the default reviewer with its display name, not the raw id", async () => {
     getMock.mockImplementation(async (path: string) => {
       if (path === "/api/v1/agents/readiness") {
-        const agents = ["claude-code", "codex", "opencode"].map((id) => agentReadiness(id));
+        const agents = ["aider", "codex", "opencode"].map((id) => agentReadiness(id));
         return { data: { agents } };
       }
       if (path === "/api/v1/sessions/{sessionId}/workspace/files") {
@@ -2006,7 +2006,7 @@ describe("SessionInspector summary reviews", () => {
   it("configures session auto-review and disables manual controls", async () => {
     getMock.mockImplementation(async (path: string) => {
       if (path === "/api/v1/agents/readiness") {
-        const agents = ["claude-code", "codex", "opencode"].map((id) => agentReadiness(id));
+        const agents = ["aider", "codex", "opencode"].map((id) => agentReadiness(id));
         return { data: { agents } };
       }
       if (path === "/api/v1/sessions/{sessionId}/reviews") {
@@ -2094,7 +2094,7 @@ describe("SessionInspector summary reviews", () => {
     };
     getMock.mockImplementation(async (path: string) => {
       if (path === "/api/v1/agents/readiness") {
-        const agents = ["claude-code", "codex", "opencode"].map((id) => agentReadiness(id));
+        const agents = ["aider", "codex", "opencode"].map((id) => agentReadiness(id));
         return { data: { agents } };
       }
       if (path === "/api/v1/sessions/{sessionId}/reviews") {

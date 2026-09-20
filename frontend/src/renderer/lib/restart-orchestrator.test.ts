@@ -141,7 +141,7 @@ describe("restartProjectOrchestrator", () => {
 		const setOrchestratorReplacementError = vi.fn();
 		spawnMock.mockRejectedValue(
 			new OrchestratorSpawnError(
-				"Claude Code is unavailable",
+				"Codex is unavailable",
 				"CHAT_DRIVER_UNAVAILABLE",
 				"request-42",
 				400,
@@ -159,7 +159,7 @@ describe("restartProjectOrchestrator", () => {
 
 		expect(spawnMock).toHaveBeenCalledWith("proj-1", "restart", true, "tui");
 		expect(setOrchestratorReplacementError).toHaveBeenLastCalledWith("proj-1", {
-			message: "Claude Code is unavailable",
+			message: "Codex is unavailable",
 			code: "CHAT_DRIVER_UNAVAILABLE",
 			requestId: "request-42",
 		});

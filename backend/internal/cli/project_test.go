@@ -270,12 +270,12 @@ func TestProjectSetConfig_RulesFlags(t *testing.T) {
 
 func TestProjectSetConfig_ReviewerJSON(t *testing.T) {
 	cfg := setConfigEnv(t)
-	srv, capture := projectServer(t, http.StatusOK, `{"status":"ok","project":{"id":"demo","config":{"sessionPrefix":"work","reviewers":[{"harness":"claude-code"}]}}}`)
+	srv, capture := projectServer(t, http.StatusOK, `{"status":"ok","project":{"id":"demo","config":{"sessionPrefix":"work","reviewers":[{"harness":"codex"}]}}}`)
 	writeRunFileFor(t, cfg, srv)
 
 	_, errOut, err := executeCLI(t, Deps{
 		ProcessAlive: func(int) bool { return true },
-	}, "project", "set-config", "demo", "--config-json", `{"reviewers":[{"harness":"claude-code"}],"sessionPrefix":"work"}`)
+	}, "project", "set-config", "demo", "--config-json", `{"reviewers":[{"harness":"codex"}],"sessionPrefix":"work"}`)
 	if err != nil {
 		t.Fatalf("unexpected error: %v\nstderr=%s", err, errOut)
 	}
@@ -283,8 +283,8 @@ func TestProjectSetConfig_ReviewerJSON(t *testing.T) {
 	if err := json.Unmarshal(capture.body, &got); err != nil {
 		t.Fatalf("decode request body: %v\nbody=%s", err, capture.body)
 	}
-	if len(got.Config.Reviewers) != 1 || got.Config.Reviewers[0].Harness != "claude-code" {
-		t.Fatalf("reviewers config = %#v, want claude-code reviewer preserved", got.Config.Reviewers)
+	if len(got.Config.Reviewers) != 1 || got.Config.Reviewers[0].Harness != "codex" {
+		t.Fatalf("reviewers config = %#v, want codex reviewer preserved", got.Config.Reviewers)
 	}
 }
 
@@ -295,7 +295,7 @@ func TestProjectSetConfig_ReviewerFlags(t *testing.T) {
 
 	_, errOut, err := executeCLI(t, Deps{
 		ProcessAlive: func(int) bool { return true },
-	}, "project", "set-config", "demo", "--reviewer", "claude-code")
+	}, "project", "set-config", "demo", "--reviewer", "codex")
 	if err != nil {
 		t.Fatalf("unexpected error: %v\nstderr=%s", err, errOut)
 	}
@@ -303,8 +303,8 @@ func TestProjectSetConfig_ReviewerFlags(t *testing.T) {
 	if err := json.Unmarshal(capture.body, &got); err != nil {
 		t.Fatalf("decode request body: %v\nbody=%s", err, capture.body)
 	}
-	if len(got.Config.Reviewers) != 1 || got.Config.Reviewers[0].Harness != "claude-code" {
-		t.Fatalf("reviewers config = %#v, want single claude-code reviewer", got.Config.Reviewers)
+	if len(got.Config.Reviewers) != 1 || got.Config.Reviewers[0].Harness != "codex" {
+		t.Fatalf("reviewers config = %#v, want single codex reviewer", got.Config.Reviewers)
 	}
 }
 

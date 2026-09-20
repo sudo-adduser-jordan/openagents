@@ -36,10 +36,10 @@ func TestConfigOptionsRoutePreservesProviderCatalog(t *testing.T) {
 	svc := &fakeConversationService{configOptions: []ports.ChatConfigOption{
 		{
 			ID: "model", Name: "Model", Category: "model", Type: ports.ChatConfigOptionSelect,
-			Current: ports.ChatConfigOptionValue{Select: "opus"},
+			Current: ports.ChatConfigOptionValue{Select: "gpt-5.4"},
 			Choices: []ports.ChatConfigOptionChoice{{
-				Value: "opus", Name: "Opus", Description: "Most capable",
-				Group: "claude", GroupName: "Claude models",
+				Value: "gpt-5.4", Name: "GPT-5.4", Description: "Most capable",
+				Group: "openai", GroupName: "OpenAI models",
 			}},
 		},
 		{ID: "fast", Name: "Fast mode", Type: ports.ChatConfigOptionBoolean,
@@ -59,10 +59,10 @@ func TestConfigOptionsRoutePreservesProviderCatalog(t *testing.T) {
 	if err := json.Unmarshal(rec.Body.Bytes(), &got); err != nil {
 		t.Fatalf("decode: %v", err)
 	}
-	if len(got.Options) != 2 || got.Options[0].CurrentValue != "opus" {
+	if len(got.Options) != 2 || got.Options[0].CurrentValue != "gpt-5.4" {
 		t.Fatalf("options = %#v", got.Options)
 	}
-	if len(got.Options[0].Choices) != 1 || got.Options[0].Choices[0].GroupName != "Claude models" {
+	if len(got.Options[0].Choices) != 1 || got.Options[0].Choices[0].GroupName != "OpenAI models" {
 		t.Fatalf("grouped choice = %#v", got.Options[0].Choices)
 	}
 	if got.Options[1].CurrentBoolean == nil || !*got.Options[1].CurrentBoolean {

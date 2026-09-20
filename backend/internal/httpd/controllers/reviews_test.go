@@ -151,7 +151,7 @@ func newReviewTestServer(t *testing.T, svc reviewsvc.Manager) *httptest.Server {
 }
 
 func TestReviewsTrigger_MissingReviewerBinaryReturns422WithCause(t *testing.T) {
-	err := fmt.Errorf("launch reviewer: reviewer command: claude: %w", ports.ErrAgentBinaryNotFound)
+	err := fmt.Errorf("launch reviewer: reviewer command: codex: %w", ports.ErrAgentBinaryNotFound)
 	srv := newReviewTestServer(t, &fakeReviewService{triggerErr: err})
 
 	body, status, headers := doRequest(t, srv, "POST", "/api/v1/sessions/mer-1/reviews/trigger", "")
@@ -160,7 +160,7 @@ func TestReviewsTrigger_MissingReviewerBinaryReturns422WithCause(t *testing.T) {
 
 	var got errorBody
 	mustJSON(t, body, &got)
-	if !strings.Contains(got.Message, "claude") || !strings.Contains(got.Message, ports.ErrAgentBinaryNotFound.Error()) {
+	if !strings.Contains(got.Message, "codex") || !strings.Contains(got.Message, ports.ErrAgentBinaryNotFound.Error()) {
 		t.Fatalf("message = %q, want reviewer binary cause", got.Message)
 	}
 }

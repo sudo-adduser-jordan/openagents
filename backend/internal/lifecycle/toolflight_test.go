@@ -231,7 +231,7 @@ func TestToolPrecedence_TurnBoundariesClearBlocked(t *testing.T) {
 func TestToolPrecedence_NotificationSubtypesDoNotClearBlocked(t *testing.T) {
 	// agent_completed (idle) and idle_prompt (waiting_input) arrive with
 	// event "notification" and are no evidence the dialog closed — a
-	// background `claude agents` run finishing must not unmask a live dialog
+	// background `agent tasks` run finishing must not unmask a live dialog
 	// (the cycle-2 minor finding on PR #5).
 	m, st, _ := newManager()
 	seedSignaled(st, "mer-1", domain.ActivityActive)
@@ -248,7 +248,7 @@ func TestToolPrecedence_NotificationSubtypesDoNotClearBlocked(t *testing.T) {
 }
 
 func TestToolPrecedence_IdentitylessBlockedDuplicatePreservesCandidate(t *testing.T) {
-	// Claude can report the same permission dialog twice: first with its tool
+	// An agent can report the same permission dialog twice: first with its tool
 	// identity, then as a bare Notification. The duplicate must not erase the
 	// candidate needed to correlate the approved tool's post.
 	m, st, _ := newManager()

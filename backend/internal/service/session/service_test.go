@@ -4696,7 +4696,7 @@ func TestToSessionWithFactsRemapsTransferredAliasReviewRuns(t *testing.T) {
 	}
 	st.reviewRuns[rec.ID] = []domain.CurrentHeadReviewRun{{
 		SessionID: rec.ID,
-		Harness:   "claude-code",
+		Harness:   "codex",
 		PRURL:     oldURL,
 		Status:    domain.ReviewRunRunning,
 		ID:        "run-old",
@@ -4751,11 +4751,11 @@ func TestToSessionWithFactsCanonicalAliasRunSupersedesOlderAliasRun(t *testing.T
 	}
 	st.reviewRuns[rec.ID] = []domain.CurrentHeadReviewRun{
 		{
-			SessionID: rec.ID, Harness: "claude-code", PRURL: oldURL,
+			SessionID: rec.ID, Harness: "codex", PRURL: oldURL,
 			Status: domain.ReviewRunRunning, ID: "run-old", CreatedAt: rec.UpdatedAt,
 		},
 		{
-			SessionID: rec.ID, Harness: "claude-code", PRURL: newURL,
+			SessionID: rec.ID, Harness: "codex", PRURL: newURL,
 			Status: domain.ReviewRunComplete, Verdict: domain.VerdictApproved,
 			ID: "run-new", CreatedAt: rec.UpdatedAt.Add(time.Minute),
 		},

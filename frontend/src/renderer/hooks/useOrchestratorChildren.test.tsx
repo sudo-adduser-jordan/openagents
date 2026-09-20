@@ -33,7 +33,7 @@ const child = (overrides: Partial<CloudCpSessionChild>): CloudCpSessionChild => 
 	orgId: "org-1",
 	projectId: "project-1",
 	kind: "worker",
-	harness: "claude-code",
+	harness: "codex",
 	displayName: "Fix CI",
 	branch: "ao/11111111",
 	mode: "trusted",

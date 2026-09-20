@@ -23,7 +23,7 @@ const (
 // former free-form map so the fields are validated and the API/UI render a
 // real form rather than arbitrary JSON. An empty value (IsZero) means unset.
 type AgentConfig struct {
-	// Model overrides the agent's default model (e.g. claude-opus-4-5).
+	// Model overrides the agent's default model (e.g. gpt-5.6).
 	Model string `json:"model,omitempty"`
 	// Effort selects a model-advertised reasoning level. Empty defers to the
 	// provider/model default.

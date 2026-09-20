@@ -22,7 +22,7 @@ func killProcessTree(cmd *exec.Cmd) error {
 		return nil
 	}
 	// Node launches the provider as a child. taskkill /T is the Windows equivalent
-	// of killing the Unix process group and avoids leaving Claude behind.
+	// of killing the Unix process group and avoids leaving the provider behind.
 	kill := exec.Command("taskkill", "/PID", strconv.Itoa(cmd.Process.Pid), "/T", "/F")
 	kill.SysProcAttr = &syscall.SysProcAttr{
 		CreationFlags: windows.CREATE_NO_WINDOW,

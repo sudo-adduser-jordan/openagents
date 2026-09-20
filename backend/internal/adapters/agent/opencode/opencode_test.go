@@ -530,11 +530,11 @@ func TestGetConfigSpecReportsModel(t *testing.T) {
 
 func TestGetLaunchCommandForwardsModel(t *testing.T) {
 	plugin := &Plugin{resolvedBinary: "opencode"}
-	cmd, err := plugin.GetLaunchCommand(context.Background(), ports.LaunchConfig{Config: ports.AgentConfig{Model: "  anthropic/claude-sonnet  "}})
+	cmd, err := plugin.GetLaunchCommand(context.Background(), ports.LaunchConfig{Config: ports.AgentConfig{Model: "  openai/gpt-5.4  "}})
 	if err != nil {
 		t.Fatal(err)
 	}
-	if want := []string{"opencode", "--model", "anthropic/claude-sonnet"}; !reflect.DeepEqual(cmd, want) {
+	if want := []string{"opencode", "--model", "openai/gpt-5.4"}; !reflect.DeepEqual(cmd, want) {
 		t.Fatalf("cmd = %#v, want %#v", cmd, want)
 	}
 }
@@ -623,7 +623,7 @@ func TestGetAgentHooksInstallsPlugin(t *testing.T) {
 		t.Fatalf("plugin subscribes to deprecated session.idle; use session.status(idle):\n%s", body)
 	}
 	// A hung `ao hooks` call must not block opencode forever, so each spawn is
-	// time-boxed (parity with the claude/codex 30s hook timeout).
+	// time-boxed (parity with the codex 30s hook timeout).
 	if !strings.Contains(body, "timeout:") {
 		t.Fatalf("plugin spawn has no timeout; a hung hook would block opencode:\n%s", body)
 	}

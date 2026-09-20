@@ -135,7 +135,7 @@ describe("AgentModelCombobox", () => {
 	it("adds simple model search at ten models", async () => {
 		renderCombobox(
 			Array.from({ length: 10 }, (_, index) => ({
-				id: index === 8 ? "gpt-luna" : index === 9 ? "claude-fable" : `model-${index}`,
+				id: index === 8 ? "gpt-luna" : index === 9 ? "atlas-fable" : `model-${index}`,
 				label: index === 8 ? "Luna" : index === 9 ? "Fable" : `Model ${index}`,
 				provider: "OpenAI",
 			})),
@@ -211,15 +211,15 @@ describe("AgentModelCombobox", () => {
 	it("shows machine IDs only when they disambiguate duplicate model names", async () => {
 		renderCombobox([
 			{ id: "gpt-5.6-sol", label: "GPT-5.6 Sol", provider: "OpenAI" },
-			{ id: "anthropic/opus-standard", label: "Opus", provider: "Anthropic" },
-			{ id: "anthropic/opus-long", label: "Opus", provider: "Anthropic" },
+			{ id: "openai/opus-standard", label: "Opus", provider: "OpenAI" },
+			{ id: "openai/opus-long", label: "Opus", provider: "OpenAI" },
 		]);
 
 		await userEvent.click(screen.getByRole("button", { name: "Worker model" }));
 
 		expect(screen.queryByText("gpt-5.6-sol")).not.toBeInTheDocument();
-		expect(screen.getByText("anthropic/opus-standard")).toBeInTheDocument();
-		expect(screen.getByText("anthropic/opus-long")).toBeInTheDocument();
+		expect(screen.getByText("openai/opus-standard")).toBeInTheDocument();
+		expect(screen.getByText("openai/opus-long")).toBeInTheDocument();
 	});
 
 	it("searches the full catalog and groups matching models by provider", async () => {

@@ -10857,7 +10857,7 @@ components:
           type: string
         providerId:
           description: Canonical provider routing hint derived by the trusted local
-            Claude hook.
+            agent hook.
           type: string
         subagentId:
           type: string

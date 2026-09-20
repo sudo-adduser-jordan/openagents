@@ -246,13 +246,13 @@ describe("ACP session config options", () => {
 	it("searches visible model names without matching hidden choice values", async () => {
 		const user = userEvent.setup();
 		const choices = [
-			{ value: "chatgpt/claude-opus-4-8", name: "Claude Opus 4.8" },
-			{ value: "chatgpt/claude-sonnet-4", name: "Claude Sonnet 4" },
+			{ value: "openai/nova-opus-4-8", name: "Nova Opus 4.8" },
+			{ value: "openai/nova-sonnet-4", name: "Nova Sonnet 4" },
 			...Array.from({ length: 8 }, (_, index) => ({
-				value: `chatgpt/gpt-5.${index + 3}`,
+				value: `openai/gpt-5.${index + 3}`,
 				name: `GPT-5.${index + 3}`,
 			})),
-		].map((choice) => ({ ...choice, group: "chatgpt", groupName: "ChatGPT" }));
+		].map((choice) => ({ ...choice, group: "openai", groupName: "OpenAI" }));
 		render(
 			<TurnSettingsBar
 				models={[]}
@@ -270,10 +270,10 @@ describe("ACP session config options", () => {
 		);
 
 		await user.click(screen.getByRole("button", { name: "Model" }));
-		await user.type(screen.getByRole("searchbox", { name: "Search models" }), "cl");
+		await user.type(screen.getByRole("searchbox", { name: "Search models" }), "nov");
 
-		expect(screen.getByRole("menuitemradio", { name: "Claude Opus 4.8" })).toBeInTheDocument();
-		expect(screen.getByRole("menuitemradio", { name: "Claude Sonnet 4" })).toBeInTheDocument();
+		expect(screen.getByRole("menuitemradio", { name: "Nova Opus 4.8" })).toBeInTheDocument();
+		expect(screen.getByRole("menuitemradio", { name: "Nova Sonnet 4" })).toBeInTheDocument();
 		expect(screen.queryByRole("menuitemradio", { name: "GPT-5.3" })).not.toBeInTheDocument();
 		expect(screen.getByText("Showing 2 of 2 matching models", { exact: true })).toBeInTheDocument();
 	});

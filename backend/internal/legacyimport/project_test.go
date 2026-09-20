@@ -47,7 +47,7 @@ func TestMapHarness(t *testing.T) {
 	if h, ok := mapHarness("opencode"); !ok || h != domain.HarnessOpenCode {
 		t.Fatalf("opencode = (%q,%v)", h, ok)
 	}
-	if _, ok := mapHarness("claude-code"); ok {
+	if _, ok := mapHarness("prime-agent"); ok {
 		t.Fatal("a removed harness must map to ok=false")
 	}
 	if _, ok := mapHarness("nope"); ok {

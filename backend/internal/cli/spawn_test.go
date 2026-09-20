@@ -958,11 +958,11 @@ func TestResolveSpawnHarness_OrchestratorDefault(t *testing.T) {
 		ID: "demo",
 		Config: &projectConfig{
 			Worker:       roleOverride{Agent: "codex"},
-			Orchestrator: roleOverride{Agent: "claude-code"},
+			Orchestrator: roleOverride{Agent: "codex"},
 		},
 	}
-	if got, err := resolveSpawnHarness("", "orchestrator", project); err != nil || got != "claude-code" {
-		t.Fatalf("orchestrator default: got %q err %v, want claude-code", got, err)
+	if got, err := resolveSpawnHarness("", "orchestrator", project); err != nil || got != "codex" {
+		t.Fatalf("orchestrator default: got %q err %v, want codex", got, err)
 	}
 	if got, err := resolveSpawnHarness("", "worker", project); err != nil || got != "codex" {
 		t.Fatalf("worker default: got %q err %v, want codex", got, err)

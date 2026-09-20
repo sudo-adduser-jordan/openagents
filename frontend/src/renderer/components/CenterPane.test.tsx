@@ -125,7 +125,7 @@ describe("CenterPane toolbar session label", () => {
 	it("shows the session display name while naming the harness accessibly", () => {
 		renderCenterPane({ session: worker });
 		expect(screen.getByText("do the thing")).toBeInTheDocument();
-		expect(screen.queryByText("Claude Code")).not.toBeInTheDocument();
+		expect(screen.queryByText("OpenCode")).not.toBeInTheDocument();
 		expect(screen.queryByText("sess-1")).not.toBeInTheDocument();
 		expect(screen.getByTestId("terminal-interaction-surface")).not.toHaveAttribute("inert");
 		expect(screen.queryByTestId("agent-switch-terminal-overlay")).not.toBeInTheDocument();

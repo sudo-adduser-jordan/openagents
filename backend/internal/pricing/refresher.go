@@ -186,7 +186,7 @@ func mergeInitialActivations(cached, remote []ProviderActivation) []ProviderActi
 		byProvider[activation.ProviderID] = activation
 	}
 	merged := make([]ProviderActivation, 0, len(byProvider))
-	for _, providerID := range []string{"anthropic", "openai", "zai"} {
+	for _, providerID := range []string{"openai", "zai"} {
 		if activation, ok := byProvider[providerID]; ok {
 			merged = append(merged, activation)
 		}

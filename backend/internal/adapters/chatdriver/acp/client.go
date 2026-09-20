@@ -19,9 +19,9 @@ import (
 )
 
 // AO deliberately advertises neither client-side filesystem nor terminal
-// capabilities. Claude's ACP adapter uses Claude Code's native tools inside the
-// worktree; routing those operations through Electron or the daemon would create
-// a second execution/security model beside AO's existing one.
+// capabilities. Agent tools run inside the worktree; routing those operations
+// through Electron or the daemon would create a second execution/security model
+// beside AO's existing one.
 func (c *conversation) ReadTextFile(context.Context, acpsdk.ReadTextFileRequest) (acpsdk.ReadTextFileResponse, error) {
 	return acpsdk.ReadTextFileResponse{}, errClientCapability
 }
@@ -179,9 +179,6 @@ func approvalToolDetail(tool acpsdk.ToolCallUpdate, activityKind domain.Activity
 	}
 	if tool.RawInput != nil {
 		detail["input"] = tool.RawInput
-	}
-	if claude := nestedMap(tool.Meta, "claudeCode"); claude != nil {
-		copyDetail(detail, claude, "toolName", "providerToolName")
 	}
 	encoded, err := json.Marshal(detail)
 	if err != nil {
@@ -586,23 +583,6 @@ func (c *conversation) SessionUpdate(_ context.Context, params acpsdk.SessionNot
 		}
 		id := c.providerItemID(messageID(update.AgentMessageChunk.MessageId, "assistant", turnID))
 		if delta := contentText(update.AgentMessageChunk.Content); delta != "" {
-			if parentID := c.providerItemID(parentToolUseID(update.AgentMessageChunk.Meta)); parentID != "" {
-				c.mu.Lock()
-				item, existed := c.nestedMessages[id]
-				item.text += delta
-				item.parentID = parentID
-				c.nestedMessages[id] = item
-				c.mu.Unlock()
-				detail, _ := json.Marshal(map[string]any{"parentProviderItemId": parentID, "nestedAgent": true})
-				if !existed {
-					emit(ports.ChatEvent{Kind: ports.ChatEventActivityStarted, ProviderTurnID: turnID,
-						ProviderItemID: id, ActivityKind: domain.ActivityKindMCPTool,
-						ActivityStatus: domain.ActivityStatusRunning, Summary: "Subagent response", Detail: detail})
-				}
-				emit(ports.ChatEvent{Kind: ports.ChatEventActivityText, ProviderTurnID: turnID,
-					ProviderItemID: id, Delta: delta})
-				break
-			}
 			c.mu.Lock()
 			c.messages[id] += delta
 			c.mu.Unlock()
@@ -681,9 +661,6 @@ func (c *conversation) SessionUpdate(_ context.Context, params acpsdk.SessionNot
 			usage.Currency = update.UsageUpdate.Cost.Currency
 		}
 		emit(ports.ChatEvent{Kind: ports.ChatEventUsage, Usage: usage})
-		if limits := claudeRateLimits(update.UsageUpdate.Meta); limits != nil {
-			emit(ports.ChatEvent{Kind: ports.ChatEventRateLimits, RateLimits: limits})
-		}
 	}
 	return nil
 }
@@ -773,18 +750,6 @@ func (c *conversation) toolEvent(turnID string, tool *toolState, completed bool)
 			detailMap["files"] = files
 		}
 	}
-	if claude := nestedMap(tool.meta, "claudeCode"); claude != nil {
-		copyDetail(detailMap, claude, "toolName", "providerToolName")
-		if parentID, ok := claude["parentToolUseId"].(string); ok && parentID != "" {
-			detailMap["parentProviderItemId"] = c.providerItemID(parentID)
-		}
-		copyDetail(detailMap, claude, "subagent", "nestedAgent")
-		copyDetail(detailMap, claude, "subagentType", "subagentType")
-		copyDetail(detailMap, claude, "subagentRetry", "subagentRetry")
-		if title, ok := claude["title"].(string); ok && strings.TrimSpace(title) != "" {
-			detailMap["providerTitle"] = title
-		}
-	}
 	if terminal := nestedMap(tool.meta, "terminal_info"); terminal != nil {
 		copyDetail(detailMap, terminal, "terminal_id", "terminalId")
 	}
@@ -796,8 +761,8 @@ func (c *conversation) toolEvent(turnID string, tool *toolState, completed bool)
 		if rawCommand := rawCommandFromInput(tool.rawInput); rawCommand != "" {
 			// The neutral command-detail contract (`detail.command`) is what the
 			// chat timeline renders as the row's subject. rawInput is a
-			// provider-shaped object (claude-code Bash: {"command": "..."}); the
-			// codex driver sets this key directly, and ACP-backed harnesses must
+			// provider-shaped object (a Bash tool call carries {"command": "..."});
+			// the codex driver sets this key directly, and ACP-backed harnesses must
 			// too or the UI can only ever say "Ran command".
 			detailMap["command"] = commanddetail.UnwrapShell(rawCommand)
 			// Keep the exact provider value beside the display form. The timeline is
@@ -873,7 +838,7 @@ func toolOutputText(raw any) string {
 // rawCommandFromInput extracts the verbatim shell command from a tool's
 // provider-defined rawInput so execute activities can carry AO's neutral command
 // detail without making the provider object itself part of that contract.
-// Providers wrap the command differently (claude-code Bash uses
+// Providers wrap the command differently (a Bash tool call carries
 // {"command": "..."}); anything unrecognizable stays empty rather than putting
 // a provider DTO on the wire as if it were the command.
 func rawCommandFromInput(raw any) string {
@@ -887,15 +852,6 @@ func rawCommandFromInput(raw any) string {
 		}
 	}
 	return ""
-}
-
-func parentToolUseID(meta map[string]any) string {
-	claude := nestedMap(meta, "claudeCode")
-	if claude == nil {
-		return ""
-	}
-	value, _ := claude["parentToolUseId"].(string)
-	return value
 }
 
 func terminalOutput(meta map[string]any) string {
@@ -915,8 +871,8 @@ func nestedMap(meta map[string]any, key string) map[string]any {
 	return value
 }
 
-// sessionFailureEvent translates the retry/failure extension advertised by
-// claude-agent-acp into an ordinary durable activity. The extension is parsed at
+// sessionFailureEvent translates the retry/failure extension (JetBrains AIR
+// namespace) into an ordinary durable activity. The extension is parsed at
 // the ACP boundary so neither the service nor the renderer depends on its vendor
 // namespace. A stable provider item id makes successive retry attempts update one
 // row; settling the enclosing turn then settles this running status with it.
@@ -980,10 +936,10 @@ func sessionFailure(meta map[string]any) map[string]any {
 	return failure
 }
 
-// Claude puts negotiated terminal failures on the prompt response, which still
-// has stopReason=end_turn. Translate the protocol's severity and actions into the
-// shared provider-failure contract; never match provider prose or maintain a list
-// of subscription/limit error messages.
+// Providers surface negotiated terminal failures on the prompt response, which
+// still has stopReason=end_turn. Translate the protocol's severity and actions
+// into the shared provider-failure contract; never match provider prose or
+// maintain a list of subscription/limit error messages.
 func promptResponseFailure(meta map[string]any) error {
 	failure := sessionFailure(meta)
 	if failure["severity"] != "error" {
@@ -1046,29 +1002,6 @@ func copyDetail(target, source map[string]any, sourceKey, targetKey string) {
 	if value, ok := source[sourceKey]; ok {
 		target[targetKey] = value
 	}
-}
-
-func claudeRateLimits(meta map[string]any) *ports.ChatRateLimits {
-	value := nestedMap(meta, "_claude/rateLimit")
-	if value == nil {
-		return nil
-	}
-	limits := &ports.ChatRateLimits{PrimaryUsedPercent: -1, SecondaryUsedPercent: -1}
-	if utilization, ok := number(value["utilization"]); ok {
-		// The Claude SDK reports utilization as 0..1.
-		limits.PrimaryUsedPercent = utilization * 100
-	}
-	if resetsAt, ok := number(value["resetsAt"]); ok {
-		remaining := int64(resetsAt) - time.Now().Unix()
-		if remaining < 0 {
-			remaining = 0
-		}
-		limits.PrimaryResetsInSeconds = remaining
-	}
-	if kind, ok := value["rateLimitType"].(string); ok {
-		limits.PlanLabel = strings.ReplaceAll(kind, "_", " ")
-	}
-	return limits
 }
 
 func number(value any) (float64, bool) {

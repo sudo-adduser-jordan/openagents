@@ -2623,7 +2623,7 @@ func TestPRObservation_ReArmClearsConflictSurvivesTerminatedRestore(t *testing.T
 // (codex maps permission-request to waiting_input) — the harness-aware gate the
 // urgent route consults, so an unsolicited paste never answers a hidden dialog.
 func TestPRObservation_MergeConflictReachesNeedsInputSession(t *testing.T) {
-	const safeHarness = domain.AgentHarness("claude-code")
+	const safeHarness = domain.AgentHarness("opencode")
 	const ambiguousHarness = domain.AgentHarness("codex")
 	urgentGate := func(h domain.AgentHarness) bool { return h == safeHarness }
 	cases := []struct {

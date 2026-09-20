@@ -107,7 +107,7 @@ describe("useWorkspaceQuery", () => {
 							terminalGeneration: "launch-2",
 							displayName: "fix-bug",
 							issueId: "github:acme/project-one#42",
-							harness: "claude-code",
+							harness: "codex",
 							reviewerHarness: "opencode",
 							branch: "qa/modal-worker",
 							status: "mergeable",

@@ -92,7 +92,7 @@ const STATUS_COLORS = {
 const SIDEBAR_DEFAULT_WIDTH = 208;
 
 const previewAgents = {
-	claude: { agent: "Claude", icon: "/app-icons/agents/claude-code.svg" },
+	qwen: { agent: "Qwen Code", icon: "/app-icons/agents/qwen.png" },
 	codex: { agent: "Codex", icon: "/app-icons/agents/codex.svg" },
 	cursor: { agent: "Cursor", icon: "/app-icons/agents/cursor.svg" },
 	opencode: { agent: "OpenCode", icon: "/app-icons/agents/opencode.svg" },
@@ -133,8 +133,8 @@ const columns = [
 			{
 				title: "Tighten hero window border alignment",
 				branch: "landing/window-border-pass",
-				agent: previewAgents.claude.agent,
-				icon: previewAgents.claude.icon,
+				agent: previewAgents.qwen.agent,
+				icon: previewAgents.qwen.icon,
 				activity: "Editing file",
 				activityState: "running",
 				pr: "draft",
@@ -196,8 +196,8 @@ const columns = [
 			{
 				title: "Pick final titlebar metrics for the preview",
 				branch: "landing/titlebar-metrics",
-				agent: previewAgents.claude.agent,
-				icon: previewAgents.claude.icon,
+				agent: previewAgents.qwen.agent,
+				icon: previewAgents.qwen.icon,
 				activity: "27/44 passed",
 				activityState: "running",
 				pr: "PR #322",
@@ -246,8 +246,8 @@ const columns = [
 			{
 				title: "Preload GitHub stars before hydration",
 				branch: "landing/preload-stars",
-				agent: previewAgents.claude.agent,
-				icon: previewAgents.claude.icon,
+				agent: previewAgents.qwen.agent,
+				icon: previewAgents.qwen.icon,
 				activity: "Checks passed",
 				activityState: "passed",
 				pr: "PR #324",
@@ -270,8 +270,8 @@ const columns = [
 			{
 				title: "Ship AO logo in top navigation",
 				branch: "landing/topbar-ao-logo",
-				agent: previewAgents.claude.agent,
-				icon: previewAgents.claude.icon,
+				agent: previewAgents.qwen.agent,
+				icon: previewAgents.qwen.icon,
 				activity: "Approved",
 				activityState: "passed",
 				pr: "PR #326",
@@ -515,7 +515,7 @@ const landingIncomingCards: StaticPreviewCard[] = [
 	{
 		title: "Tighten hero window border alignment",
 		branch: "landing/window-border-pass",
-		...previewAgents.claude,
+		...previewAgents.qwen,
 		activity: "Editing file",
 		activityState: "running",
 		pr: "draft",

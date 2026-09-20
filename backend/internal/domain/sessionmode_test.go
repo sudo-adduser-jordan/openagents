@@ -10,7 +10,7 @@ func TestSessionModeValid(t *testing.T) {
 		{SessionModeChat, true},
 		{SessionModeTUI, true},
 		{"", false},
-		{"claude-chat", false},
+		{"unknown-chat", false},
 		{"TUI", false},
 	} {
 		if got := tc.mode.Valid(); got != tc.want {

@@ -193,7 +193,7 @@ func validateRuntimeManifest(manifest catalogManifest) error {
 	if manifest.Source.Repository != "BerriAI/litellm" || manifest.Source.Path != "model_prices_and_context_window.json" || !sha40Pattern.MatchString(manifest.Source.Revision) {
 		return errors.New("invalid pricing manifest source")
 	}
-	wantProviders := []string{"anthropic", "openai", "zai"}
+	wantProviders := []string{"openai", "zai"}
 	if len(manifest.Providers) != len(wantProviders) {
 		return fmt.Errorf("pricing manifest has %d providers, want %d", len(manifest.Providers), len(wantProviders))
 	}
@@ -296,7 +296,7 @@ func (s *Snapshot) ProviderVersion(providerID string) string {
 // ProviderForModel returns the one catalog provider that lists modelID, or ""
 // when no provider does or more than one does.
 //
-// This is the last resort for an event nothing else could attribute: a Claude
+// This is the last resort for an event nothing else could attribute: a
 // transcript names no provider, so a session collected before its first hook
 // has only the served model name to go on. That name is a recorded fact — it is
 // what the provider actually answered with — so a lookup is evidence rather
@@ -312,7 +312,7 @@ func (s *Snapshot) ProviderForModel(modelID string) string {
 	found := ""
 	for providerID, provider := range s.providers {
 		// CanonicalModelID strips this provider's own prefix, so a stored
-		// "anthropic/claude-opus-5" still matches its unprefixed catalog entry.
+		// "openai/gpt-5" still matches its unprefixed catalog entry.
 		if _, ok := provider.models[CanonicalModelID(providerID, modelID)]; !ok {
 			continue
 		}
@@ -394,9 +394,9 @@ func (s *Snapshot) Estimate(event domain.ModelUsageEvent) (Estimate, error) {
 //
 // A catalog without a cache-write rate for the model is not missing data: the
 // provider does not bill writes separately, so the whole uncached bucket is
-// charged at the plain input rate. Only when a distinct write rate exists — as
-// Anthropic publishes, with its own five-minute and one-hour tiers — does the
-// split matter, and only then can an unavailable split leave the cost unknown.
+// charged at the plain input rate. Only when a distinct write rate exists — with
+// its own five-minute and one-hour tiers — does the split matter, and only then
+// can an unavailable split leave the cost unknown.
 func estimateInput(event domain.ModelUsageEvent, rates exactRates) (*int64, error) {
 	uncached := event.Tokens.UncachedInputTokens
 	if rates.write == nil && rates.write1H == nil {
@@ -451,23 +451,6 @@ func cacheWriteSplitFor(event domain.ModelUsageEvent) cacheWriteSplit {
 		return cacheWriteSplit{}
 	}
 	switch event.ProviderID {
-	case domain.UsageProviderAnthropic:
-		var usage struct {
-			CacheCreationInputTokens *int64 `json:"cache_creation_input_tokens"`
-			CacheCreation            *struct {
-				Ephemeral5mInputTokens *int64 `json:"ephemeral_5m_input_tokens"`
-				Ephemeral1hInputTokens *int64 `json:"ephemeral_1h_input_tokens"`
-			} `json:"cache_creation"`
-		}
-		if err := json.Unmarshal([]byte(event.ProviderUsageJSON), &usage); err != nil {
-			return cacheWriteSplit{}
-		}
-		split := cacheWriteSplit{total: usage.CacheCreationInputTokens}
-		if usage.CacheCreation != nil {
-			split.fiveM = usage.CacheCreation.Ephemeral5mInputTokens
-			split.oneH = usage.CacheCreation.Ephemeral1hInputTokens
-		}
-		return split
 	case domain.UsageProviderOpenAI:
 		// The neutral counters come from last_token_usage when Codex emits it,
 		// so the write bucket must be read from the same per-event object rather
@@ -702,10 +685,10 @@ func (m *Manager) Activate(ctx context.Context, candidate *Snapshot) ([]Provider
 }
 
 func validSnapshot(snapshot *Snapshot) bool {
-	if snapshot == nil || len(snapshot.providers) != 3 {
+	if snapshot == nil || len(snapshot.providers) != 2 {
 		return false
 	}
-	for _, providerID := range []string{"anthropic", "openai", "zai"} {
+	for _, providerID := range []string{"openai", "zai"} {
 		provider, ok := snapshot.providers[providerID]
 		if !ok || len(provider.models) == 0 {
 			return false
@@ -720,7 +703,7 @@ func validSnapshot(snapshot *Snapshot) bool {
 
 func changedProviders(previous, next *Snapshot) []ProviderActivation {
 	activations := make([]ProviderActivation, 0, len(next.providers))
-	for _, providerID := range []string{"anthropic", "openai", "zai"} {
+	for _, providerID := range []string{"openai", "zai"} {
 		version := next.ProviderVersion(providerID)
 		previousVersion := previous.ProviderVersion(providerID)
 		if version != "" && version != previousVersion {

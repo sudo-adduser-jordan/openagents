@@ -95,7 +95,7 @@ func TestSummaryReaderGetPreservesStrongestPartialLowerBoundWithoutDoubleCountin
 				Cost:   completeCostAggregate(1, 100, 20, 10, 70),
 			},
 			{
-				Harness: domain.HarnessOpenCode, ModelID: "claude-sonnet",
+				Harness: domain.HarnessOpenCode, ModelID: "glm-4.6",
 				Tokens: testUsageMetrics(100, 20, 80, 25),
 				Cost: domain.UsageCostAggregate{
 					EventCount:               1,
@@ -134,7 +134,7 @@ func TestSummaryReaderGetPreservesStrongestPartialLowerBoundWithoutDoubleCountin
 	}
 	if len(got.Harnesses) != 1 || len(got.Harnesses[0].Models) != 2 ||
 		got.Harnesses[0].Models[0].ModelID != "gpt-5.6" ||
-		got.Harnesses[0].Models[1].ModelID != "claude-sonnet" {
+		got.Harnesses[0].Models[1].ModelID != "glm-4.6" {
 		t.Fatalf("model grouping = %+v", got.Harnesses)
 	}
 	if got.Harnesses[0].Models[0].Totals.EstimatedCost == nil ||
@@ -172,8 +172,8 @@ func TestSummaryReaderReportsCostProviderAttributionAtEveryScope(t *testing.T) {
 		found:   true,
 		session: domain.SessionRecord{ID: "reverb-12", Harness: domain.HarnessOpenCode},
 		models: []domain.UsageModelAggregate{
-			{Harness: domain.HarnessOpenCode, ModelID: "claude-observed", Tokens: testUsageMetrics(1, 0, 1, 1), Cost: observed},
-			{Harness: domain.HarnessOpenCode, ModelID: "claude-inferred", Tokens: testUsageMetrics(1, 0, 1, 1), Cost: inferred},
+			{Harness: domain.HarnessOpenCode, ModelID: "gpt-observed", Tokens: testUsageMetrics(1, 0, 1, 1), Cost: observed},
+			{Harness: domain.HarnessOpenCode, ModelID: "gpt-inferred", Tokens: testUsageMetrics(1, 0, 1, 1), Cost: inferred},
 		},
 	}
 

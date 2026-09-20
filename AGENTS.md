@@ -69,7 +69,6 @@ AO_DATA_DIR=/tmp/ao-lab-data ./node_modules/.bin/electron-forge start
 - `docs/architecture.md` — backend mental model, package layout, lifecycle/session/service boundaries, and load-bearing rules.
 - `docs/STATUS.md` — what is shipped on `main` today and what is still in flight.
 - `docs/cli/README.md` — intended CLI shape: thin Cobra client over daemon HTTP, never direct storage/runtime access.
-- `CLAUDE.md` — compatibility pointer for Claude Code; it directs agents back to `AGENTS.md`.
 
 For code entry points:
 

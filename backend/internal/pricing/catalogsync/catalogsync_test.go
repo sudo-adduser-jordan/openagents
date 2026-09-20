@@ -30,14 +30,6 @@ func TestSyncWritesCanonicalContentAddressedCatalog(t *testing.T) {
     "mode": "chat",
     "input_cost_per_token": 0.000002,
     "output_cost_per_token": 0.000004
-  },
-  "anthropic/claude-test": {
-    "litellm_provider": "anthropic",
-    "mode": "chat",
-    "input_cost_per_token": 0.000003,
-    "output_cost_per_token": 0.000015,
-    "cache_creation_input_token_cost": 0.00000375,
-    "cache_creation_input_token_cost_above_1hr": 0.000006
   }
 }`)
 
@@ -57,7 +49,7 @@ func TestSyncWritesCanonicalContentAddressedCatalog(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	wantManifest := `{"schemaVersion":1,"source":{"repository":"BerriAI/litellm","revision":"0123456789abcdef0123456789abcdef01234567","path":"model_prices_and_context_window.json"},"providers":[{"providerId":"anthropic","version":"ao-catalog:anthropic:sha256:030ece6928c2c0e57313e57395c506889aecfa047fb295f38832f0424c16dd2a","sha256":"030ece6928c2c0e57313e57395c506889aecfa047fb295f38832f0424c16dd2a","path":"providers/anthropic/030ece6928c2c0e57313e57395c506889aecfa047fb295f38832f0424c16dd2a.json","modelCount":1},{"providerId":"openai","version":"ao-catalog:openai:sha256:893e629ba2ea7af7f13466a95a07d60ba2506a9bdef72aa6380c6daa7332769d","sha256":"893e629ba2ea7af7f13466a95a07d60ba2506a9bdef72aa6380c6daa7332769d","path":"providers/openai/893e629ba2ea7af7f13466a95a07d60ba2506a9bdef72aa6380c6daa7332769d.json","modelCount":1},{"providerId":"zai","version":"ao-catalog:zai:sha256:6945a8b33e7133ba6c9ce96378ef834ecab1f9c9872b5f5d772a2e1b3fb8805a","sha256":"6945a8b33e7133ba6c9ce96378ef834ecab1f9c9872b5f5d772a2e1b3fb8805a","path":"providers/zai/6945a8b33e7133ba6c9ce96378ef834ecab1f9c9872b5f5d772a2e1b3fb8805a.json","modelCount":1}]}
+	wantManifest := `{"schemaVersion":1,"source":{"repository":"BerriAI/litellm","revision":"0123456789abcdef0123456789abcdef01234567","path":"model_prices_and_context_window.json"},"providers":[{"providerId":"openai","version":"ao-catalog:openai:sha256:893e629ba2ea7af7f13466a95a07d60ba2506a9bdef72aa6380c6daa7332769d","sha256":"893e629ba2ea7af7f13466a95a07d60ba2506a9bdef72aa6380c6daa7332769d","path":"providers/openai/893e629ba2ea7af7f13466a95a07d60ba2506a9bdef72aa6380c6daa7332769d.json","modelCount":1},{"providerId":"zai","version":"ao-catalog:zai:sha256:6945a8b33e7133ba6c9ce96378ef834ecab1f9c9872b5f5d772a2e1b3fb8805a","sha256":"6945a8b33e7133ba6c9ce96378ef834ecab1f9c9872b5f5d772a2e1b3fb8805a","path":"providers/zai/6945a8b33e7133ba6c9ce96378ef834ecab1f9c9872b5f5d772a2e1b3fb8805a.json","modelCount":1}]}
 `
 	if string(manifest) != wantManifest {
 		t.Fatalf("manifest = %s, want %s", manifest, wantManifest)
@@ -80,7 +72,6 @@ func TestSyncRejectsConflictingCanonicalDuplicates(t *testing.T) {
 	upstream := `{
 "openai/gpt-test":{"litellm_provider":"openai","mode":"chat","input_cost_per_token":1,"output_cost_per_token":2},
 "OPENAI/GPT-TEST":{"litellm_provider":" OPENAI ","mode":"responses","input_cost_per_token":3,"output_cost_per_token":2},
-"anthropic/a":{"litellm_provider":"anthropic","mode":"chat","input_cost_per_token":1,"output_cost_per_token":1},
 "zai/z":{"litellm_provider":"zai","mode":"chat","input_cost_per_token":1,"output_cost_per_token":1}
 }`
 	_, err := Sync(t.TempDir(), []byte(upstream), testSource("1"))
@@ -93,7 +84,6 @@ func TestSyncRejectsConflictingCanonicalDuplicates(t *testing.T) {
 // allowing a reviewed provider to disappear without failing the catalog build.
 func TestSyncFiltersUnsupportedRecordsAndRequiresEveryProvider(t *testing.T) {
 	upstream := `{
-"anthropic/a":{"litellm_provider":"anthropic","mode":"chat","input_cost_per_token":1,"output_cost_per_token":1},
 "openai/o":{"litellm_provider":"openai","mode":"embedding","input_cost_per_token":1,"output_cost_per_token":1},
 "zai/z":{"litellm_provider":"zai","mode":"chat","input_cost_per_token":1,"output_cost_per_token":1},
 "other/x":{"litellm_provider":"other","mode":"chat","input_cost_per_token":1,"output_cost_per_token":1}
@@ -108,7 +98,6 @@ func TestSyncFiltersUnsupportedRecordsAndRequiresEveryProvider(t *testing.T) {
 // including another, fully priced model from the same reviewed provider.
 func TestSyncIgnoresSupportedModeRecordsWithoutBaseRates(t *testing.T) {
 	upstream := []byte(`{
-"anthropic/a":{"litellm_provider":"anthropic","mode":"chat","input_cost_per_token":1,"output_cost_per_token":1},
 "openai/metadata-only":{"litellm_provider":"openai","mode":"chat"},
 "openai/o":{"litellm_provider":"openai","mode":"chat","input_cost_per_token":1,"output_cost_per_token":1},
 "zai/z":{"litellm_provider":"zai","mode":"chat","input_cost_per_token":1,"output_cost_per_token":1}
@@ -123,7 +112,6 @@ func TestSyncIgnoresSupportedModeRecordsWithoutBaseRates(t *testing.T) {
 func TestSyncCanonicalizesWholeDecimalAndScientificRates(t *testing.T) {
 	root := t.TempDir()
 	upstream := []byte(`{
-"anthropic/a":{"litellm_provider":"anthropic","mode":"chat","input_cost_per_token":1,"output_cost_per_token":1},
 "openai/o":{"litellm_provider":"openai","mode":"chat","input_cost_per_token":1.0,"output_cost_per_token":2e0},
 "zai/z":{"litellm_provider":"zai","mode":"chat","input_cost_per_token":1,"output_cost_per_token":1}
 }`)
@@ -159,20 +147,19 @@ func TestSyncCanonicalizesWholeDecimalAndScientificRates(t *testing.T) {
 	}
 }
 
-// Break caught: LiteLLM names Anthropic's one-hour cache-creation price with
+// Break caught: LiteLLM names a one-hour cache-creation price with
 // the above_1hr suffix. Reading a made-up key silently drops the rate.
-func TestSyncMapsLiteLLMAnthropicOneHourCacheCreationRate(t *testing.T) {
+func TestSyncMapsLiteLLMOneHourCacheCreationRate(t *testing.T) {
 	root := t.TempDir()
 	upstream := []byte(`{
-"anthropic/a":{"litellm_provider":"anthropic","mode":"chat","input_cost_per_token":1,"output_cost_per_token":1,"cache_creation_input_token_cost_above_1hr":0.000006},
-"openai/o":{"litellm_provider":"openai","mode":"chat","input_cost_per_token":1,"output_cost_per_token":1},
+"openai/o":{"litellm_provider":"openai","mode":"chat","input_cost_per_token":1,"output_cost_per_token":1,"cache_creation_input_token_cost_above_1hr":0.000006},
 "zai/z":{"litellm_provider":"zai","mode":"chat","input_cost_per_token":1,"output_cost_per_token":1}
 }`)
-	if _, err := Sync(root, upstream, testSource("anthropic-one-hour")); err != nil {
+	if _, err := Sync(root, upstream, testSource("openai-one-hour")); err != nil {
 		t.Fatal(err)
 	}
 
-	blob := readProviderBlob(t, root, "anthropic")
+	blob := readProviderBlob(t, root, "openai")
 	if got := blob.Models[0].Rates.CacheWrite1HUSDPerToken; got == nil || *got != "0.000006" {
 		t.Fatalf("one-hour cache write rate = %v, want 0.000006", got)
 	}
@@ -201,7 +188,6 @@ func TestNormalizeDecimalRemovesFractionalTrailingZeroes(t *testing.T) {
 func TestSyncDeduplicatesIdenticalOptionalRates(t *testing.T) {
 	root := t.TempDir()
 	upstream := []byte(`{
-"anthropic/a":{"litellm_provider":"anthropic","mode":"chat","input_cost_per_token":1,"output_cost_per_token":1},
 "openai/gpt-test":{"litellm_provider":"openai","mode":"chat","input_cost_per_token":1,"output_cost_per_token":2,"cache_read_input_token_cost":0.5,"cache_creation_input_token_cost":1.25},
 "OPENAI/GPT-TEST":{"litellm_provider":" OPENAI ","mode":"responses","input_cost_per_token":1,"output_cost_per_token":2,"cache_read_input_token_cost":0.5,"cache_creation_input_token_cost":1.25},
 "zai/z":{"litellm_provider":"zai","mode":"chat","input_cost_per_token":1,"output_cost_per_token":1}
@@ -265,7 +251,6 @@ func TestValidateBlobRejectsNoncanonicalRateSpelling(t *testing.T) {
 func TestSyncIsSemanticNoOpForUnchangedProviderPayloads(t *testing.T) {
 	root := t.TempDir()
 	upstream := []byte(`{
-"anthropic/a":{"litellm_provider":"anthropic","mode":"chat","input_cost_per_token":1,"output_cost_per_token":1},
 "openai/o":{"litellm_provider":"openai","mode":"chat","input_cost_per_token":1,"output_cost_per_token":1},
 "zai/z":{"litellm_provider":"zai","mode":"chat","input_cost_per_token":1,"output_cost_per_token":1}
 }`)
@@ -285,7 +270,6 @@ func TestSyncIsSemanticNoOpForUnchangedProviderPayloads(t *testing.T) {
 	}
 
 	semanticNoopUpstream := []byte(`{
-"anthropic/a":{"litellm_provider":"anthropic","mode":"chat","input_cost_per_token":1,"output_cost_per_token":1},
 "openai/o":{"litellm_provider":"openai","mode":"chat","input_cost_per_token":1,"output_cost_per_token":1},
 "zai/z":{"litellm_provider":"zai","mode":"chat","input_cost_per_token":1,"output_cost_per_token":1},
 "openai/batch":{"litellm_provider":"openai","mode":"batch","input_cost_per_token":99,"output_cost_per_token":99}
@@ -314,7 +298,6 @@ func TestSyncIsSemanticNoOpForUnchangedProviderPayloads(t *testing.T) {
 func TestValidateRejectsChangedReferencedBlob(t *testing.T) {
 	root := t.TempDir()
 	upstream := []byte(`{
-"anthropic/a":{"litellm_provider":"anthropic","mode":"chat","input_cost_per_token":1,"output_cost_per_token":1},
 "openai/o":{"litellm_provider":"openai","mode":"chat","input_cost_per_token":1,"output_cost_per_token":1},
 "zai/z":{"litellm_provider":"zai","mode":"chat","input_cost_per_token":1,"output_cost_per_token":1}
 }`)
@@ -370,92 +353,4 @@ func readProviderBlob(t *testing.T, root, providerID string) providerBlob {
 		t.Fatal(err)
 	}
 	return blob
-}
-
-// Break caught: the feed carried an Anthropic 1-hour cache-write rate belonging
-// to a different model — 5x too low for claude-3-opus-20240229, 12x too high
-// for claude-3-haiku-20240307. Canonical-decimal validation accepted both, so
-// the daily sync shipped them and every 1-hour cache write on those models was
-// billed against a number Anthropic never charged.
-func TestSyncDropsImplausibleAnthropicCacheTiers(t *testing.T) {
-	root := t.TempDir()
-	upstream := []byte(`{
-  "anthropic/one-hour-below-five-minute": {"litellm_provider":"anthropic","mode":"chat",
-    "input_cost_per_token":0.000015,"output_cost_per_token":0.000075,
-    "cache_creation_input_token_cost":0.00001875,
-    "cache_creation_input_token_cost_above_1hr":0.000006},
-  "anthropic/one-hour-far-above-input": {"litellm_provider":"anthropic","mode":"chat",
-    "input_cost_per_token":0.00000025,"output_cost_per_token":0.00000125,
-    "cache_creation_input_token_cost":0.0000003,
-    "cache_creation_input_token_cost_above_1hr":0.000006},
-  "anthropic/plausible": {"litellm_provider":"anthropic","mode":"chat",
-    "input_cost_per_token":0.000005,"output_cost_per_token":0.000025,
-    "cache_creation_input_token_cost":0.00000625,
-    "cache_creation_input_token_cost_above_1hr":0.00001},
-  "zai/free-cache-write": {"litellm_provider":"zai","mode":"chat",
-    "input_cost_per_token":0.0000006,"output_cost_per_token":0.000002,
-    "cache_creation_input_token_cost":0},
-  "openai/discounted-cache-write": {"litellm_provider":"openai","mode":"chat",
-    "input_cost_per_token":0.00000375,"output_cost_per_token":0.000015,
-    "cache_creation_input_token_cost":0.000001875}
-}`)
-	if _, err := Sync(root, upstream, Source{
-		Repository: "BerriAI/litellm",
-		Revision:   "0123456789abcdef0123456789abcdef01234567",
-		Path:       "model_prices_and_context_window.json",
-	}); err != nil {
-		t.Fatalf("sync: %v", err)
-	}
-
-	anthropic := readProviderBlob(t, root, "anthropic")
-	for _, test := range []struct {
-		modelID      string
-		wantWrite    string
-		wantWrite1H  string
-		wantSurvival string
-	}{
-		// The 5-minute tier is sound in both, so only the hour is dropped: an
-		// absent rate prices that bucket as unknown, which is the honest answer.
-		{modelID: "one-hour-below-five-minute", wantWrite: "0.00001875", wantSurvival: "5m survives"},
-		{modelID: "one-hour-far-above-input", wantWrite: "0.0000003", wantSurvival: "5m survives"},
-		{modelID: "plausible", wantWrite: "0.00000625", wantWrite1H: "0.00001", wantSurvival: "both survive"},
-	} {
-		modelRates := blobRates(t, anthropic, test.modelID)
-		if got := optionalRateString(modelRates.CacheWriteUSDPerToken); got != test.wantWrite {
-			t.Errorf("%s (%s) 5m write = %q, want %q", test.modelID, test.wantSurvival, got, test.wantWrite)
-		}
-		if got := optionalRateString(modelRates.CacheWrite1HUSDPerToken); got != test.wantWrite1H {
-			t.Errorf("%s (%s) 1h write = %q, want %q", test.modelID, test.wantSurvival, got, test.wantWrite1H)
-		}
-	}
-
-	// The relation is Anthropic's, not a universal law. z.ai writes to cache for
-	// free and an OpenAI fine-tune writes at half its input rate; deleting those
-	// would be the same class of error in the other direction.
-	zai := blobRates(t, readProviderBlob(t, root, "zai"), "free-cache-write")
-	if got := optionalRateString(zai.CacheWriteUSDPerToken); got != "0" {
-		t.Errorf("zai free cache write = %q, want it kept", got)
-	}
-	openai := blobRates(t, readProviderBlob(t, root, "openai"), "discounted-cache-write")
-	if got := optionalRateString(openai.CacheWriteUSDPerToken); got != "0.000001875" {
-		t.Errorf("openai discounted cache write = %q, want it kept", got)
-	}
-}
-
-func blobRates(t *testing.T, blob providerBlob, modelID string) rates {
-	t.Helper()
-	for _, model := range blob.Models {
-		if model.ModelID == modelID {
-			return model.Rates
-		}
-	}
-	t.Fatalf("model %q missing from %s blob", modelID, blob.ProviderID)
-	return rates{}
-}
-
-func optionalRateString(value *string) string {
-	if value == nil {
-		return ""
-	}
-	return *value
 }

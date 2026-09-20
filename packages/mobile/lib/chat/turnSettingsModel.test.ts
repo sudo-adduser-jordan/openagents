@@ -93,7 +93,7 @@ describe("turnSettingsRows", () => {
 	it("summarizes the selected model and permission level without repeating the harness", () => {
 		const models: ChatModel[] = [{ id: "opus", displayName: "Opus", default: true }];
 		expect(turnSettingsSummary(
-			snapshot({ harness: "claude-code", capabilities: [], settings: { model: "opus", approvalMode: "auto" } }),
+			snapshot({ harness: "codex", capabilities: [], settings: { model: "opus", approvalMode: "auto" } }),
 			models,
 			[],
 		)).toBe("Opus · Ask when unsure");

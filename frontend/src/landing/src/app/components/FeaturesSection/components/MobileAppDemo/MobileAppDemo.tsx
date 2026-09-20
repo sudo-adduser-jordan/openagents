@@ -97,7 +97,7 @@ const sessions: Session[] = [
     status: "Needs input",
     statusColor: t.amber,
     time: "4m",
-    icon: "/app-icons/coverage-claude-code.svg",
+    icon: "/app-icons/coverage-opencode.svg",
   },
   {
     id: 17,
@@ -110,7 +110,7 @@ const sessions: Session[] = [
     statusColor: t.orange,
     breathing: true,
     time: "1m",
-    icon: "/app-icons/coverage-claude-code.svg",
+    icon: "/app-icons/coverage-opencode.svg",
   },
   {
     id: 18,
@@ -148,7 +148,7 @@ const sessions: Session[] = [
     status: "Merged",
     statusColor: t.green,
     time: "6h",
-    icon: "/app-icons/coverage-claude-code.svg",
+    icon: "/app-icons/coverage-opencode.svg",
     pr: { text: "PR #4, #3 merged", color: t.textSecondary },
   },
   {
@@ -880,8 +880,8 @@ const orchestrators: {
 }[] = [
   {
     project: "agent-orchestrator-mo",
-    harness: "claude-code",
-    icon: "/app-icons/coverage-claude-code.svg",
+    harness: "opencode",
+    icon: "/app-icons/coverage-opencode.svg",
     zones: [
       { n: 3, label: "Working", color: t.orange, tint: t.tintOrange },
       { n: 8, label: "Done", color: t.textTertiary, tint: t.bgSubtle },
@@ -890,8 +890,8 @@ const orchestrators: {
   },
   {
     project: "meetyou",
-    harness: "claude-code",
-    icon: "/app-icons/coverage-claude-code.svg",
+    harness: "opencode",
+    icon: "/app-icons/coverage-opencode.svg",
     zones: [
       { n: 1, label: "Working", color: t.orange, tint: t.tintOrange },
       { n: 5, label: "Done", color: t.textTertiary, tint: t.bgSubtle },
@@ -907,8 +907,8 @@ const orchestrators: {
   },
   {
     project: "precision-market",
-    harness: "claude-code",
-    icon: "/app-icons/coverage-claude-code.svg",
+    harness: "opencode",
+    icon: "/app-icons/coverage-opencode.svg",
     zones: [
       { n: 1, label: "Ready to merge", color: t.green, tint: t.tintGreen },
       { n: 5, label: "Done", color: t.textTertiary, tint: t.bgSubtle },

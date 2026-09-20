@@ -24,7 +24,7 @@ func TestACPDriverPromptResponseFailure(t *testing.T) {
 		actions  []any
 		reauth   bool
 	}{
-		{"subscription", "access", "This account does not have access to Claude Code.", "Choose an eligible plan to continue.", nil, false},
+		{"subscription", "access", "This account does not have access to the agent.", "Choose an eligible plan to continue.", nil, false},
 		{"authentication", "access", "Your login has expired.", "Run /login to sign in again.", []any{"login"}, true},
 		{"quota", "limit", "Usage limit reached", "Resets at 10:00 tomorrow.", nil, false},
 		{"rate limit", "limit", "Too many requests", "Retry after 30 seconds.", []any{"retry"}, false},

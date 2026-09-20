@@ -66,8 +66,8 @@ func TestSessionOptionsUseProviderAdvertisedModelOption(t *testing.T) {
 	if got := sessionOptions(ports.ChatTurnSettings{}); got != nil {
 		t.Fatalf("empty settings = %#v", got)
 	}
-	got := sessionOptions(ports.ChatTurnSettings{Model: "anthropic/claude-sonnet"})
-	if len(got) != 1 || got[0].ID != "model" || got[0].Value != "anthropic/claude-sonnet" {
+	got := sessionOptions(ports.ChatTurnSettings{Model: "openai/gpt-5.4"})
+	if len(got) != 1 || got[0].ID != "model" || got[0].Value != "openai/gpt-5.4" {
 		t.Fatalf("model settings = %#v", got)
 	}
 }

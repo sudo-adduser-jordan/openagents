@@ -197,14 +197,14 @@ describe("currentSessionLookup", () => {
 // 2026-09-13): project `scratch` has two, the first terminated. The /sessions
 // mock is trimmed to those two; the 404 body is the daemon's, requestId renamed.
 const scratch1 = {
-	id: "scratch-1", projectId: "scratch", kind: "orchestrator", harness: "claude-code", reviewerConfig: {},
+	id: "scratch-1", projectId: "scratch", kind: "orchestrator", harness: "codex", reviewerConfig: {},
 	autoReviewEnabled: false, mode: "chat", activity: { state: "exited", lastActivityAt: "2026-08-26T14:55:38.347578Z" },
 	isTerminated: true, terminateOnPrMerge: false, autoInjectReview: true, autoInjectCI: true,
 	createdAt: "2026-08-25T10:00:51.945665Z", updatedAt: "2026-08-26T14:55:38.347578Z", isPinned: false,
 	chatProviderPreserved: false, status: "terminated", kanbanColumn: "archive", displayStatus: "Terminated", prs: [],
 };
 const scratch2 = {
-	id: "scratch-2", projectId: "scratch", kind: "orchestrator", harness: "claude-code", reviewerConfig: {},
+	id: "scratch-2", projectId: "scratch", kind: "orchestrator", harness: "codex", reviewerConfig: {},
 	autoReviewEnabled: false, mode: "chat", activity: { state: "exited", lastActivityAt: "2026-09-01T17:25:46.152243Z" },
 	isTerminated: false, terminateOnPrMerge: false, autoInjectReview: true, autoInjectCI: true,
 	createdAt: "2026-09-01T15:27:57.219478Z", updatedAt: "2026-09-13T16:11:05.51102Z", isPinned: false,

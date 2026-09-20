@@ -85,15 +85,15 @@ describe("rankAgents", () => {
 	});
 
 	// Desktop breaks ties with DEFAULT_AGENT_PRIORITY before the label. Without
-	// it the authorized group is alphabetical and Aider outranks Claude Code.
+	// it the authorized group is alphabetical and Aider outranks Codex.
 	it("breaks ties by priority, not alphabetically", () => {
-		const ids = ["aider", "claude-code", "codex"];
+		const ids = ["aider", "cursor", "codex"];
 		const c = catalog({
 			supported: ids.map((id) => agent(id)),
 			installed: ids.map((id) => agent(id)),
 			authorized: ids.map((id) => agent(id)),
 		});
-		expect(rankAgents(c).map((a) => a.id)).toEqual(["claude-code", "codex", "aider"]);
+		expect(rankAgents(c).map((a) => a.id)).toEqual(["codex", "cursor", "aider"]);
 	});
 
 	it("falls back to the label for agents outside the priority list", () => {

@@ -89,7 +89,7 @@ Setup.exe` (per-user installer); Linux `maker-deb`/`maker-rpm` →
 
 - Canonical home `~/.ao` (`backend/internal/config/config.go:296`,
   `frontend/src/shared/daemon-discovery.ts:107`); overrides `AO_DATA_DIR`/`AO_RUN_FILE`.
-- `userData` pinned to `~/.ao/electron` (`main.ts:64`, before `whenReady`; CLAUDE.md
+- `userData` pinned to `~/.ao/electron` (`main.ts:64`, before `whenReady`; AGENTS.md
   hard rule).
 - `~/.ao/running.json` is written by the **daemon** (`backend/internal/runfile/runfile.go`
   `Write`, atomic temp+rename), read by the app (`daemon-discovery.ts parseRunFile`).

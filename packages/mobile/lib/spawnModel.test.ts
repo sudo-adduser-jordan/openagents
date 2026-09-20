@@ -5,19 +5,19 @@ describe("spawn agent resolution", () => {
 	it("prefers the project's worker agent when it is available", () => {
 		expect(resolveSpawnAgent({
 			projectWorkerAgent: "codex",
-			projectAgent: "claude-code",
-			availableAgents: ["claude-code", "codex"],
+			projectAgent: "cursor",
+			availableAgents: ["cursor", "codex"],
 		})).toBe("codex");
 	});
 
 	it("falls back through the project agent and catalog order", () => {
 		expect(resolveSpawnAgent({
 			projectWorkerAgent: "missing",
-			projectAgent: "claude-code",
-			availableAgents: ["codex", "claude-code"],
-		})).toBe("claude-code");
+			projectAgent: "cursor",
+			availableAgents: ["codex", "cursor"],
+		})).toBe("cursor");
 		expect(resolveSpawnAgent({
-			availableAgents: ["codex", "claude-code"],
+			availableAgents: ["codex", "cursor"],
 		})).toBe("codex");
 	});
 });
@@ -34,7 +34,7 @@ describe("spawn model resolution", () => {
 
 	it("uses the selected agent catalog default instead of another agent's project model", () => {
 		expect(resolveSpawnModel({
-			selectedAgent: "claude-code",
+			selectedAgent: "cursor",
 			projectWorkerAgent: "codex",
 			projectWorkerModel: "gpt-5",
 			catalogDefault: "sonnet",
@@ -62,7 +62,7 @@ describe("spawn model resolution", () => {
 		)).toBe(true);
 		expect(spawnModelSourceChanged(
 			{ projectId: "project-1", agentId: "codex" },
-			{ projectId: "project-1", agentId: "claude-code" },
+			{ projectId: "project-1", agentId: "cursor" },
 		)).toBe(true);
 	});
 });

@@ -13,7 +13,6 @@ const LOGOS: Record<string, number> = {
 	auggie: require("../assets/agents/auggie.png"),
 	autohand: require("../assets/agents/autohand.png"),
 	kimchi: require("../assets/agents/kimchi.png"),
-	"claude-code": require("../assets/agents/claude-code.png"),
 	cline: require("../assets/agents/cline.png"),
 	codex: require("../assets/agents/codex.png"),
 	continue: require("../assets/agents/continue.png"),

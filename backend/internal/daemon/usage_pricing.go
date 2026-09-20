@@ -92,7 +92,7 @@ func (r *usagePricingRuntime) Manager() *pricing.Manager {
 }
 
 // RepairLegacyAttribution asks for another historical repair pass because a
-// binding just learned its billing route. Without it a Claude session collected
+// binding just learned its billing route. Without it a session collected
 // before its first hook would stay unpriced until the next daemon start.
 func (r *usagePricingRuntime) RepairLegacyAttribution() {
 	if r == nil {

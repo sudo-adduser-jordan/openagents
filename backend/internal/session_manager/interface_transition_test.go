@@ -3235,7 +3235,7 @@ func TestRecoverInterruptedTUIToChatRollsBackCommittedModeBeforeReconcile(t *tes
 	}
 }
 
-func TestRecoverInterruptedClaudeTUIToChatPreservesPoisonedCheckpointThroughResumeSessionStart(t *testing.T) {
+func TestRecoverInterruptedAgentTUIToChatPreservesPoisonedCheckpointThroughResumeSessionStart(t *testing.T) {
 	dataDir := t.TempDir()
 	ctx := context.Background()
 	now := time.Now().UTC().Truncate(time.Millisecond)
@@ -3297,7 +3297,7 @@ func TestRecoverInterruptedClaudeTUIToChatPreservesPoisonedCheckpointThroughResu
 		Runtime: runtime, Agents: singleAgent{agent: transitionAgent{}}, Workspace: &fakeWorkspace{},
 		Store: st, Messenger: &fakeMessenger{}, Chat: chat, Lifecycle: lcm,
 		LookPath:          func(string) (string, error) { return "/bin/true", nil },
-		NewLaunchID:       func() string { return "claude-resume-generation" },
+		NewLaunchID:       func() string { return "agent-resume-generation" },
 		BackgroundContext: reconcileCtx,
 	})
 	useFastInterfaceTransitionTimings(manager)
@@ -3313,19 +3313,19 @@ func TestRecoverInterruptedClaudeTUIToChatPreservesPoisonedCheckpointThroughResu
 		t.Fatalf("read relaunched source: ok=%v err=%v", ok, err)
 	}
 	if relaunched.Mode != domain.SessionModeTUI ||
-		relaunched.Metadata.RuntimeLaunchID != "claude-resume-generation" {
+		relaunched.Metadata.RuntimeLaunchID != "agent-resume-generation" {
 		t.Fatalf("relaunched source = %+v", relaunched)
 	}
-	if relaunched.Metadata.AgentSessionIDLaunchID != "claude-resume-generation" {
-		t.Fatalf("resumed native identity launch = %q, want exact Claude resume generation",
+	if relaunched.Metadata.AgentSessionIDLaunchID != "agent-resume-generation" {
+		t.Fatalf("resumed native identity launch = %q, want exact agent resume generation",
 			relaunched.Metadata.AgentSessionIDLaunchID)
 	}
 
 	if err := lcm.ApplyActivitySignal(ctx, created.ID, ports.ActivitySignal{
 		Event: "session-start", AgentSessionID: "native-1",
-		LaunchID: "claude-resume-generation", Valid: true, State: domain.ActivityIdle,
+		LaunchID: "agent-resume-generation", Valid: true, State: domain.ActivityIdle,
 	}); err != nil {
-		t.Fatalf("apply Claude resume SessionStart: %v", err)
+		t.Fatalf("apply agent resume SessionStart: %v", err)
 	}
 	afterSessionStart, ok, err := st.GetSession(ctx, created.ID)
 	if err != nil || !ok {
@@ -3335,7 +3335,7 @@ func TestRecoverInterruptedClaudeTUIToChatPreservesPoisonedCheckpointThroughResu
 	if checkpoint.ConversationCheckpointState != domain.ConversationCheckpointLegacy ||
 		checkpoint.LatestUserPrompt != "poisoned user checkpoint" ||
 		checkpoint.LatestAssistantUpdate != "poisoned assistant checkpoint" {
-		t.Fatalf("checkpoint after exact Claude resume SessionStart = %+v, want poison retained", checkpoint)
+		t.Fatalf("checkpoint after exact agent resume SessionStart = %+v, want poison retained", checkpoint)
 	}
 
 	retry, err := manager.StartInterfaceTransition(ctx, created.ID, domain.SessionModeChat,

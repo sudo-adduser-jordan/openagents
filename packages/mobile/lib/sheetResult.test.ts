@@ -74,9 +74,9 @@ describe("route builders", () => {
 
 	it("builds the agent route", () => {
 		const fn = vi.fn();
-		const route = agentSheetRoute({ selected: "claude-code", onSelect: fn });
+		const route = agentSheetRoute({ selected: "codex", onSelect: fn });
 		expect(route.pathname).toBe("/sheets/agent");
-		expect(route.params.selected).toBe("claude-code");
+		expect(route.params.selected).toBe("codex");
 		takeSheetResult<string>(route.params.resultKey)?.("codex");
 		expect(fn).toHaveBeenCalledWith("codex");
 	});

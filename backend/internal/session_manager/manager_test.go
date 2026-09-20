@@ -719,7 +719,7 @@ type scratchHookAgent struct {
 }
 
 func (a *scratchHookAgent) GetAgentHooks(_ context.Context, cfg ports.WorkspaceHookConfig) error {
-	dir := filepath.Join(cfg.WorkspacePath, ".claude")
+	dir := filepath.Join(cfg.WorkspacePath, ".codex")
 	if err := os.MkdirAll(dir, 0o750); err != nil {
 		return err
 	}
@@ -833,7 +833,7 @@ func requireNoPromptDir(t *testing.T, dataDir string, id domain.SessionID) {
 	}
 }
 
-// alwaysResumeAgent mimics Claude Code: it pins a deterministic session id, so
+// alwaysResumeAgent mimics an agent with a deterministic session id, so
 // GetRestoreCommand can resume any session even with no captured agentSessionId
 // and no prompt.
 type alwaysResumeAgent struct{ fakeAgent }
@@ -1357,7 +1357,7 @@ func TestSpawn_InheritsChatOrchestratorPermissions(t *testing.T) {
 		t.Fatal(err)
 	}
 	if got := rec.Harness; got != domain.HarnessOpenCode {
-		t.Fatalf("harness = %q, want claude-code", got)
+		t.Fatalf("harness = %q, want opencode", got)
 	}
 	if got := rt.lastCfg.Env[EnvPermissionMode]; got != string(domain.PermissionModeBypassPermissions) {
 		t.Fatalf("worker permission environment = %q, want %q", got, domain.PermissionModeBypassPermissions)
@@ -5152,7 +5152,7 @@ func TestRestore_AgyAndCopilotPromptlessWorkersWithoutAgentSessionIDNotResumable
 	}
 }
 
-func TestRestore_ClaudeCodeWithoutRestoreCommandFallsBackToSavedPrompt(t *testing.T) {
+func TestRestore_NoRestoreCommandFallsBackToSavedPrompt(t *testing.T) {
 	st := newFakeStore()
 	st.sessions["mer-1"] = domain.SessionRecord{
 		ID: "mer-1", ProjectID: "mer", Kind: domain.KindWorker, Harness: domain.HarnessOpenCode, IsTerminated: true,
@@ -5192,7 +5192,7 @@ func TestRestore_ClaudeCodeWithoutRestoreCommandFallsBackToSavedPrompt(t *testin
 
 // TestRestore_PromptlessOrchestratorResumesViaAdapter locks the orchestrator
 // fix: a promptless session with no captured agentSessionId is still restorable
-// when the adapter can resume it (Claude pins a deterministic --session-id).
+// when the adapter can resume it (the fake pins a deterministic session id).
 // Before the fix the metadata-only guard rejected it with ErrNotResumable, so
 // every boot abandoned the orchestrator and spawned a fresh one.
 func TestRestore_PromptlessOrchestratorResumesViaAdapter(t *testing.T) {
@@ -5545,7 +5545,7 @@ func TestSpawn_MissingBinaryPreservesNonEmptyScratchWorkspaceForRetry(t *testing
 	if failed.Metadata.WorkspacePath == "" {
 		t.Fatal("failed scratch spawn must retain its preserved workspace path")
 	}
-	if _, err := os.Stat(filepath.Join(failed.Metadata.WorkspacePath, ".claude", "settings.local.json")); err != nil {
+	if _, err := os.Stat(filepath.Join(failed.Metadata.WorkspacePath, ".codex", "settings.local.json")); err != nil {
 		t.Fatalf("preserved hook file: %v", err)
 	}
 
@@ -5653,7 +5653,7 @@ func TestSpawn_AfterStartFailurePreservesNonEmptyScratchWorkspace(t *testing.T) 
 	if runtime.created != 1 || runtime.destroyed != 1 {
 		t.Fatalf("runtime created=%d destroyed=%d, want 1/1", runtime.created, runtime.destroyed)
 	}
-	if _, err := os.Stat(filepath.Join(failed.Metadata.WorkspacePath, ".claude", "settings.local.json")); err != nil {
+	if _, err := os.Stat(filepath.Join(failed.Metadata.WorkspacePath, ".codex", "settings.local.json")); err != nil {
 		t.Fatalf("preserved hook file: %v", err)
 	}
 }
@@ -6033,7 +6033,7 @@ func TestSpawnAndRestore_PrependsResolvedBinaryAndNodeDirsToRuntimePATH(t *testi
 func TestSpawn_LaunchBinaryDirDoesNotShadowDaemonAO(t *testing.T) {
 	t.Setenv("PATH", "/usr/bin")
 	sharedBin := filepath.Join(t.TempDir(), "npm-global", "bin")
-	agentBin := filepath.Join(sharedBin, "claude")
+	agentBin := filepath.Join(sharedBin, "codex")
 	daemonExe := filepath.Join(t.TempDir(), "daemon", "ao")
 
 	st := newFakeStore()
@@ -8747,7 +8747,7 @@ func TestSend_SkipsConfirmForHooklessHarness(t *testing.T) {
 	// fakeAgent) must skip confirmActive entirely: one Send, no nudges, and the
 	// call returns immediately without polling.
 	st := newFakeStore()
-	st.sessions["s1"] = pastStartupGate(domain.SessionRecord{ID: "s1", Harness: "claude-code"})
+	st.sessions["s1"] = pastStartupGate(domain.SessionRecord{ID: "s1", Harness: "codex"})
 	msg := &fakeMessenger{}
 	m := newSendTestManager(t, fakeAgent{}, msg, st)
 
@@ -8766,7 +8766,7 @@ func TestSend_SkipsConfirmForHooklessHarness(t *testing.T) {
 
 func TestSend_RecordsDeliveredUserInput(t *testing.T) {
 	st := newFakeStore()
-	st.sessions["s1"] = pastStartupGate(domain.SessionRecord{ID: "s1", Harness: "claude-code"})
+	st.sessions["s1"] = pastStartupGate(domain.SessionRecord{ID: "s1", Harness: "codex"})
 	m := newSendTestManager(t, fakeAgent{}, &fakeMessenger{}, st)
 
 	if err := m.Send(context.Background(), "s1", "continue with the migration", nil); err != nil {
@@ -9149,7 +9149,7 @@ func TestSend_ConfirmsAndNudgesUntilActive(t *testing.T) {
 	// flip the session active, after which confirmActive stops. Net: the
 	// initial message plus exactly one nudge.
 	st := newFakeStore()
-	st.sessions["s1"] = pastStartupGate(domain.SessionRecord{ID: "s1", Harness: "claude-code",
+	st.sessions["s1"] = pastStartupGate(domain.SessionRecord{ID: "s1", Harness: "codex",
 		Activity: domain.Activity{State: domain.ActivityIdle}})
 	// A messenger that flips the session active on the first Enter-only nudge,
 	// mimicking the agent accepting the prompt.
@@ -9177,7 +9177,7 @@ func TestSend_ConfirmBudgetCapsRetries(t *testing.T) {
 	// A signaling harness that never goes active must still terminate: at most
 	// maxAttempts Sends (initial + maxAttempts-1 nudges), and Send never errors.
 	st := newFakeStore()
-	st.sessions["s1"] = pastStartupGate(domain.SessionRecord{ID: "s1", Harness: "claude-code",
+	st.sessions["s1"] = pastStartupGate(domain.SessionRecord{ID: "s1", Harness: "codex",
 		Activity: domain.Activity{State: domain.ActivityIdle}})
 	msg := &fakeMessenger{}
 	m := newSendTestManager(t, signalingAgent{}, msg, st)
@@ -9208,7 +9208,7 @@ func TestSend_BlockedSessionRejectsDelivery(t *testing.T) {
 	// Send surfaces ErrAwaitingDecision (the API's 409) and the messenger is
 	// never called, so nothing — message or nudge — reaches the pane.
 	st := newFakeStore()
-	st.sessions["s1"] = pastStartupGate(domain.SessionRecord{ID: "s1", Harness: "claude-code",
+	st.sessions["s1"] = pastStartupGate(domain.SessionRecord{ID: "s1", Harness: "codex",
 		Activity: domain.Activity{State: domain.ActivityBlocked}})
 	msg := &fakeMessenger{}
 	m := newSendTestManager(t, signalingAgent{}, msg, st)
@@ -9224,7 +9224,7 @@ func TestSend_BlockedSessionRejectsDelivery(t *testing.T) {
 
 func TestSend_ExitedAgentRejectsDelivery(t *testing.T) {
 	st := newFakeStore()
-	st.sessions["s1"] = domain.SessionRecord{ID: "s1", Harness: "claude-code",
+	st.sessions["s1"] = domain.SessionRecord{ID: "s1", Harness: "codex",
 		Activity: domain.Activity{State: domain.ActivityExited}}
 	msg := &fakeMessenger{}
 	m := newSendTestManager(t, signalingAgent{}, msg, st)
@@ -9280,7 +9280,7 @@ func TestSend_NoNudgeWhenBlockedAppearsMidWait(t *testing.T) {
 	// itself triggered a tool approval). The confirm loop must abort on the
 	// first blocked observation instead of nudging after the deadline.
 	st := newFakeStore()
-	st.sessions["s1"] = pastStartupGate(domain.SessionRecord{ID: "s1", Harness: "claude-code",
+	st.sessions["s1"] = pastStartupGate(domain.SessionRecord{ID: "s1", Harness: "codex",
 		Activity: domain.Activity{State: domain.ActivityIdle}})
 	msg := &blockOnSendMessenger{sessionID: "s1", store: st}
 	m := newSendTestManager(t, signalingAgent{}, msg, st)
@@ -9298,7 +9298,7 @@ func TestSend_StillNudgesWhenWaitingInput(t *testing.T) {
 	// PRIMARY nudge scenario: a long-idle worker with an unsubmitted pasted
 	// draft. The decision-safety guard must not disable it.
 	st := newFakeStore()
-	st.sessions["s1"] = pastStartupGate(domain.SessionRecord{ID: "s1", Harness: "claude-code",
+	st.sessions["s1"] = pastStartupGate(domain.SessionRecord{ID: "s1", Harness: "codex",
 		Activity: domain.Activity{State: domain.ActivityWaitingInput}})
 	msg := &flipOnNudgeMessenger{sessionID: "s1", store: st}
 	m := newSendTestManager(t, signalingAgent{}, msg, st)
@@ -9338,7 +9338,7 @@ func TestSend_NoNudgeWhenBlockedAppearsBeforeNudge(t *testing.T) {
 	// before the Enter-only nudge. The just-in-time re-read in confirmActive
 	// must catch it — exactly one Send, no nudge.
 	st := newFakeStore()
-	st.sessions["s1"] = pastStartupGate(domain.SessionRecord{ID: "s1", Harness: "claude-code",
+	st.sessions["s1"] = pastStartupGate(domain.SessionRecord{ID: "s1", Harness: "codex",
 		Activity: domain.Activity{State: domain.ActivityIdle}})
 	// blockAfterFirstReadStore flips the session to blocked on read #4. The
 	// deterministic read sequence (attemptDeadline 0 makes waitForActive do
@@ -9386,19 +9386,19 @@ func TestSend_SkipsConfirmForSubmitOnlyHarness(t *testing.T) {
 
 func TestHarnessNudgeSafe(t *testing.T) {
 	m := New(Deps{Agents: singleAgent{agent: fakeAgent{}}})
-	if m.harnessNudgeSafe("claude-code") {
+	if m.harnessNudgeSafe("codex") {
 		t.Fatalf("hookless agent reported as nudge-safe")
 	}
 	m2 := New(Deps{Agents: singleAgent{agent: signalingAgent{}}})
-	if !m2.harnessNudgeSafe("claude-code") {
+	if !m2.harnessNudgeSafe("codex") {
 		t.Fatalf("submit+blocked agent not reported as nudge-safe")
 	}
 	m3 := New(Deps{Agents: singleAgent{agent: submitOnlyAgent{}}})
-	if m3.harnessNudgeSafe("claude-code") {
+	if m3.harnessNudgeSafe("codex") {
 		t.Fatalf("submit-only agent (no blocked signal) reported as nudge-safe")
 	}
 	m4 := New(Deps{Agents: missingAgents{}})
-	if m4.harnessNudgeSafe("claude-code") {
+	if m4.harnessNudgeSafe("codex") {
 		t.Fatalf("unresolved harness reported as nudge-safe")
 	}
 }

@@ -36,8 +36,6 @@ function Heading({
 }
 
 const FILE_LOGOS: Record<string, string> = {
-  "claude-code": "claude-code.svg",
-  claude: "claude-code.svg",
   codex: "codex.svg",
   cursor: "cursor.svg",
   opencode: "opencode.svg",

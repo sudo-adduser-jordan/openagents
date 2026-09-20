@@ -303,8 +303,8 @@ func TestCacheManifestReplaceFailurePreservesOldLKG(t *testing.T) {
 	if err != nil {
 		t.Fatalf("Load old LKG: %v", err)
 	}
-	if got := loaded.Snapshot().ProviderVersion("anthropic"); got != oldFixture.versions["anthropic"] {
-		t.Fatalf("version after failed install = %q, want old %q", got, oldFixture.versions["anthropic"])
+	if got := loaded.Snapshot().ProviderVersion("openai"); got != oldFixture.versions["openai"] {
+		t.Fatalf("version after failed install = %q, want old %q", got, oldFixture.versions["openai"])
 	}
 }
 

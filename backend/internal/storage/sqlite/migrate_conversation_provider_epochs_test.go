@@ -17,7 +17,7 @@ INSERT INTO sessions (
     id, project_id, num, harness, session_mode, activity_last_at,
     provider_conversation_id, created_at, updated_at
 ) VALUES (
-    'provider-epochs-1', 'provider-epochs', 1, 'claude-code', 'chat', ?, '', ?, ?
+    'provider-epochs-1', 'provider-epochs', 1, 'codex', 'chat', ?, '', ?, ?
 );
 INSERT INTO conversations (
     id, scope, project_id, session_id, current_session_id,

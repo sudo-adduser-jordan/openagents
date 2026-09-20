@@ -411,7 +411,7 @@ export interface ChatWorkspaceProps {
 	/**
 	 * Deliver guidance into the turn already running, instead of queueing a message
 	 * behind it. Absent means this harness cannot steer and no control is drawn —
-	 * Claude answers `CHAT_STEER_UNSUPPORTED`, and an affordance that only ever fails
+	 * A harness that cannot steer answers `CHAT_STEER_UNSUPPORTED`, and an affordance that only ever fails
 	 * is worse than none.
 	 */
 	onSteer?: (

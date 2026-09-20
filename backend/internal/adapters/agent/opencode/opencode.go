@@ -3,7 +3,7 @@
 // workspace-local activity plugin plus the using-ao skill, and reading
 // plugin-derived session info.
 //
-// opencode differs from Claude Code and Codex in two ways AO has to bridge:
+// opencode differs from Codex in two ways AO has to bridge:
 //   - It has no native command-hook config (no settings.local.json / hooks.json
 //     equivalent). Its only lifecycle-extensibility surface is a JS/TS plugin
 //     loaded from .opencode/plugins/, so GetAgentHooks installs an AO-owned
@@ -99,8 +99,8 @@ func (p *Plugin) GetConfigSpec(ctx context.Context) (ports.ConfigSpec, error) {
 //
 //	[env OPENCODE_CONFIG=<ao-config>] opencode [--dangerously-skip-permissions] [--agent <ao-agent>] [--prompt <prompt>]
 //
-// The session runs in the worktree (cwd is set by the runtime, as for Claude
-// Code and Codex). opencode has no CLI flag to set a system prompt, so AO writes
+// The session runs in the worktree (cwd is set by the runtime, as for Codex).
+// opencode has no CLI flag to set a system prompt, so AO writes
 // an opencode config into the AO prompt artifact directory, points OPENCODE_CONFIG
 // at it, and selects the generated agent with --agent. The initial task prompt
 // is delivered via --prompt (its argument, so a leading "-" is not read as a flag).

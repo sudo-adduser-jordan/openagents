@@ -587,7 +587,7 @@ describe("ChatWorkspace timeline", () => {
 		expect(onInterrupt).toHaveBeenCalledOnce();
 	});
 
-	it("replaces the generic working label with Claude's live retry count and backoff", () => {
+	it("replaces the generic working label with the agent's live retry count and backoff", () => {
 		const snapshot = structuredClone(chatFixture);
 		snapshot.items = snapshot.items.filter(
 			(item) =>
@@ -605,7 +605,7 @@ describe("ChatWorkspace timeline", () => {
 			revision: 2,
 			activityKind: "system",
 			status: "running",
-			summary: "Reconnecting to Claude, attempt 2 of 10.",
+			summary: "Reconnecting to agent, attempt 2 of 10.",
 			detail: {
 				event: "provider.failure",
 				category: "connection",
@@ -618,7 +618,7 @@ describe("ChatWorkspace timeline", () => {
 		render(<ChatWorkspace snapshot={snapshot} onInterrupt={vi.fn()} />);
 
 		const status = screen.getByTestId("live-turn-status");
-		expect(status).toHaveTextContent("Reconnecting to Claude, attempt 2 of 10.");
+		expect(status).toHaveTextContent("Reconnecting to agent, attempt 2 of 10.");
 		expect(status).toHaveTextContent("The API request failed. Trying again in 4s.");
 		expect(status).not.toHaveTextContent("Working for");
 	});
