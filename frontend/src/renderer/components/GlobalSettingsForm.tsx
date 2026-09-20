@@ -3,8 +3,6 @@ import { useTranslation } from "react-i18next";
 import type { GlobalSettingsSection as GlobalSettingsPage } from "../stores/ui-store";
 import { globalSettingsItemsFor } from "./settings/settingsCatalog";
 
-export type GlobalSettingsSection = GlobalSettingsPage | "all";
-
 export function GlobalSettingsForm({
 	cloudEnabled = true,
 	section = "all",
