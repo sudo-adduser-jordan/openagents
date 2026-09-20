@@ -100,7 +100,7 @@ function renderDocumentationItem(item: DocsNavItem, depth: number): string[] {
 	return lines;
 }
 
-export function buildDocumentationSection(): string[] {
+function buildDocumentationSection(): string[] {
 	const overview = getDocPage([]);
 	const overviewDescription = overview?.description
 		? `: ${overview.description}`

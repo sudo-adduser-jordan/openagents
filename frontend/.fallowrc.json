@@ -1,0 +1,76 @@
+{
+	// Run fallow from this directory (cd frontend && npx fallow) so framework
+	// plugins resolve against frontend/node_modules and nested apps below.
+	"$schema": "https://raw.githubusercontent.com/fallow-rs/fallow/main/schema.json",
+	// Production mode: focus on code that ships. This skips unused-* findings
+	// for devDependencies (electron-forge makers, testing libs) and excludes
+	// test/story/mock files from dead-code analysis.
+	"production": true,
+	// Files loaded by filename convention or by string reference at build or
+	// runtime time that fallow cannot see as imports: the Forge config (loaded
+	// by electron-forge by name) and its maker modules, the annotate-preload
+	// build target (referenced by string in forge.config.ts and main.ts), the
+	// Vite renderer/main/preload configs, the `node ./scripts/*.mjs` package
+	// script invocations, and the independently-deployed Cloudflare workers.
+	"entry": [
+		"forge.config.ts",
+		"src/annotate-preload.ts",
+		"vite.main.config.ts",
+		"vite.preload.config.ts",
+		"vite.renderer.config.ts",
+		"scripts/*.mjs",
+		"src/landing/cloudflare/*-worker.*"
+	],
+	// Server-side landing content: read via fs.readdirSync at runtime
+	// (blog.ts / changelog.ts / compare.ts / docs.ts), never statically
+	// imported. Declaring the directory makes the .mdx files reachable.
+	"dynamicallyLoaded": ["src/landing/content/**/*.mdx"],
+	// Generated artifacts ignored entirely.
+	"ignorePatterns": ["src/api/schema.ts"],
+	// Runtime-resolved optionalDependencies used by electron-forge makers via
+	// package-name lookup rather than static import.
+	"ignoreDependencies": [
+		"electron-installer-debian",
+		"electron-installer-redhat",
+		// Transitive dependencies imported directly by app code (following
+		// the analyzer, they are legitimately used but declared no closer than
+		// a transitive position is allowed to be, so scope them out to keep
+		// the signal focused on real manifest drift).
+		"@electron-forge/shared-types",
+		"@radix-ui/react-focus-scope",
+		"builder-util-runtime",
+		"cross-zip",
+		"hast",
+		"highlight.js",
+		"unified"
+	],
+	// CSS side-effect imports resolved by the fumadocs plugin's own bundling
+	// and a tsconfig path alias (`collections/server` inside the docs app).
+	"ignoreUnresolvedImports": [
+		"fumadocs-ui/style.css",
+		"fumadocs-ui/css/shadcn.css",
+		"collections/server"
+	],
+	// src/landing and src/docs are self-contained apps with their own
+	// package.json manifests (they are not declared npm workspaces). Treating
+	// them as workspace members resolves their dependencies against the
+	// correct manifest and lets framework plugins (Next.js) activate for them.
+	// src/landing/packages/* are internally-published packages (@ao/ui etc.)
+	// also not declared as npm workspaces; declaring them makes the landing
+	// app's package imports resolve to real files instead of external nodes.
+	"workspaces": {
+		"patterns": ["src/landing", "src/docs", "src/landing/packages/*"]
+	},
+	// electron-forge build tooling: loaded by the Forge CLI by name (not an
+	// import), and its entry script chain (package/make/publish) is outside
+	// production-mode's analyzed script list, so the makers/ modules read as
+	// orphaned in production mode. They ship nothing to users; scope them out
+	// of unused-file detection the same way production mode already scopes the
+	// electron-installer-* maker dependencies.
+	"overrides": [
+		{
+			"files": ["makers/*.ts"],
+			"rules": { "unused-files": "off" }
+		}
+	]
+}

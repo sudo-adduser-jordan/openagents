@@ -135,19 +135,6 @@ export function getDocsNav(): DocsNavItem[] {
 	return buildItems(DOCS_DIR, [], meta.pages);
 }
 
-/** Flat list of every linkable page in nav order — used for prev/next. */
-export function flattenNav(items: DocsNavItem[] = getDocsNav()): { title: string; url: string }[] {
-	const out: { title: string; url: string }[] = [];
-	const walk = (list: DocsNavItem[]) => {
-		for (const item of list) {
-			if (item.url) out.push({ title: item.title, url: item.url });
-			if (item.items) walk(item.items);
-		}
-	};
-	walk(items);
-	return out;
-}
-
 /** Headings (h2/h3) for the right-hand table of contents. */
 export function extractToc(content: string): TocItem[] {
 	const toc: TocItem[] = [];
