@@ -1205,26 +1205,12 @@ type ListUsageSessionsQuery struct {
 	ProjectID domain.ProjectID `query:"projectId,omitempty" description:"Optional project id filter for dashboard cards."`
 }
 
-// EstimatedCostResponse is a nano-USD estimate reused at every usage summary
-// scope. Coverage stays an API fact for aggregation, catalog backfills, and
-// contextual disclosure; it is never a pricing label or a mathematical
-// qualifier on the presented value.
-type EstimatedCostResponse struct {
-	TotalNanos          int64  `json:"totalNanos" minimum:"0" format:"int64"`
-	InputNanos          *int64 `json:"inputNanos" minimum:"0" format:"int64" description:"Every non-cache-read input charge, cache writes included."`
-	CachedInputNanos    *int64 `json:"cachedInputNanos" minimum:"0" format:"int64"`
-	OutputNanos         *int64 `json:"outputNanos" minimum:"0" format:"int64"`
-	Coverage            string `json:"coverage" enum:"complete,partial"`
-	ProviderAttribution string `json:"providerAttribution" enum:"observed,inferred,mixed" description:"Whether contributing billing providers were detected, inferred from model ownership, or both."`
-}
-
 // CompactSessionUsageResponse is one session card's usage summary.
 type CompactSessionUsageResponse struct {
 	SessionID       domain.SessionID       `json:"sessionId"`
 	ProcessedTokens *int64                 `json:"processedTokens" minimum:"0" description:"Canonical input plus output. Null when either component is unknown."`
 	TotalTokens     int64                  `json:"totalTokens" minimum:"0" description:"Deprecated compatibility alias for processedTokens."`
 	Incomplete      bool                   `json:"incomplete"`
-	EstimatedCost   *EstimatedCostResponse `json:"estimatedCost"`
 }
 
 // ListCompactSessionUsageResponse is the batch dashboard usage response.
@@ -1244,13 +1230,11 @@ type UsageTotalsResponse struct {
 	OutputTokens        *int64                 `json:"outputTokens" minimum:"0" description:"Total output, including provider-specific subsets such as reasoning output."`
 	ProcessedTokens     *int64                 `json:"processedTokens" minimum:"0" description:"Canonical input plus output. Null when either component is unknown."`
 	CacheReadTokens     *int64                 `json:"cacheReadTokens" minimum:"0" description:"Deprecated compatibility alias for cachedInputTokens."`
-	EstimatedCost       *EstimatedCostResponse `json:"estimatedCost"`
 }
 
-// UsageModelResponse is telemetry grouped by model. The billing provider is a
-// pricing input rather than a product distinction: each event was costed
-// against its own provider's rates before reaching this aggregate, so one model
-// stays one row even when more than one provider served it.
+// UsageModelResponse is telemetry grouped by model. The billing provider is
+// not a product distinction: one model stays one row even when more than one
+// provider served it.
 type UsageModelResponse struct {
 	ModelID string              `json:"modelId"`
 	Totals  UsageTotalsResponse `json:"totals"`

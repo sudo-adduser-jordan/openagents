@@ -311,133 +311,6 @@ WHERE id = sqlc.arg(id)
 -- name: TouchUsageBinding :exec
 UPDATE usage_bindings SET updated_at = ? WHERE id = ?;
 
--- name: ListUsageCostCandidates :many
-SELECT
-    event.id,
-    event.binding_id,
-    event.provider_id,
-    event.billing_provider_id,
-    event.model_id,
-    event.usage_measurement_kind,
-    event.input_tokens,
-    event.cached_input_tokens,
-    event.uncached_input_tokens,
-    event.output_tokens,
-    event.provider_usage_json,
-    event.pricing_version,
-    event.source_event_key
-FROM model_usage_events event
-WHERE event.billing_provider_id IS NOT NULL
-  AND CASE lower(trim(event.billing_provider_id))
-        WHEN 'z.ai' THEN 'zai'
-        ELSE lower(trim(event.billing_provider_id))
-  END = sqlc.arg(billing_provider_id)
-  AND event.estimated_cost_nanos IS NULL
-  AND event.pricing_version <> sqlc.arg(pricing_version)
-  AND event.id > sqlc.arg(after_id)
-ORDER BY event.id
-LIMIT 256;
-
--- name: UpdateUsageCostCandidate :one
-UPDATE model_usage_events
-SET input_cost_nanos = sqlc.narg(input_cost_nanos),
-    cached_input_cost_nanos = sqlc.narg(cached_input_cost_nanos),
-    output_cost_nanos = sqlc.narg(output_cost_nanos),
-    estimated_cost_nanos = sqlc.narg(estimated_cost_nanos),
-    pricing_version = sqlc.arg(attempted_pricing_version)
-WHERE id = sqlc.arg(id)
-  AND binding_id = sqlc.arg(binding_id)
-  AND billing_provider_id = sqlc.arg(expected_billing_provider_id)
-  AND model_id = sqlc.arg(expected_model_id)
-  AND usage_measurement_kind = sqlc.arg(expected_usage_measurement_kind)
-  AND input_tokens IS sqlc.narg(expected_input_tokens)
-  AND cached_input_tokens IS sqlc.narg(expected_cached_input_tokens)
-  AND uncached_input_tokens IS sqlc.narg(expected_uncached_input_tokens)
-  AND output_tokens IS sqlc.narg(expected_output_tokens)
-  AND provider_usage_json IS sqlc.narg(expected_provider_usage_json)
-  AND source_event_key = sqlc.arg(expected_source_event_key)
-  AND pricing_version = sqlc.arg(expected_pricing_version)
-  AND estimated_cost_nanos IS NULL
-RETURNING binding_id;
-
--- name: ListLegacyUsageSourceIDs :many
-SELECT DISTINCT us.id
-FROM usage_sources us
-JOIN model_usage_events mue ON mue.usage_source_id = us.id
--- Open attribution: never attributed, or attributed only by inference and so
--- still replaceable by an observation.
-WHERE mue.billing_provider_id IS NULL
-   OR mue.billing_provider_source = 'inferred'
-ORDER BY us.id;
-
--- name: ListLegacyUsageEvents :many
-SELECT
-    event.id,
-    event.binding_id,
-    event.usage_source_id,
-    event.provider_id,
-    event.billing_provider_id,
-    event.billing_provider_source,
-    event.model_id,
-    event.usage_measurement_kind,
-    event.input_tokens,
-    event.cached_input_tokens,
-    event.uncached_input_tokens,
-    event.output_tokens,
-    event.provider_usage_json,
-    event.pricing_version,
-    event.source_event_key
-FROM model_usage_events event
-WHERE event.usage_source_id = sqlc.arg(usage_source_id)
-  AND (event.billing_provider_id IS NULL OR event.billing_provider_source = 'inferred')
-ORDER BY event.id;
-
--- name: UpdateLegacyUsageEvent :one
-UPDATE model_usage_events
-SET billing_provider_id = sqlc.arg(billing_provider_id),
-    billing_provider_source = sqlc.arg(billing_provider_source),
-    -- The reparse is the only way a pre-capture event can ever gain its bounded
-    -- provider object, and it is exactly what makes the event priceable.
-    provider_usage_json = sqlc.narg(provider_usage_json),
-    input_cost_nanos = sqlc.narg(input_cost_nanos),
-    cached_input_cost_nanos = sqlc.narg(cached_input_cost_nanos),
-    output_cost_nanos = sqlc.narg(output_cost_nanos),
-    estimated_cost_nanos = sqlc.narg(estimated_cost_nanos),
-    pricing_version = sqlc.arg(pricing_version)
-WHERE model_usage_events.id = sqlc.arg(id)
-  AND model_usage_events.binding_id = sqlc.arg(binding_id)
-  AND model_usage_events.usage_source_id = sqlc.arg(usage_source_id)
-  -- Writable while the attribution is still open. An observation is final, so
-  -- this can promote an inference exactly once and never revise an observation.
-  AND (model_usage_events.billing_provider_id IS NULL
-       OR model_usage_events.billing_provider_source = 'inferred')
-  AND model_usage_events.billing_provider_id IS sqlc.narg(expected_billing_provider_id)
-  AND model_usage_events.billing_provider_source IS sqlc.narg(expected_billing_provider_source)
-  AND model_usage_events.provider_id = sqlc.arg(expected_provider_id)
-  AND model_usage_events.model_id = sqlc.arg(expected_model_id)
-  AND model_usage_events.usage_measurement_kind = sqlc.arg(expected_usage_measurement_kind)
-  AND model_usage_events.input_tokens IS sqlc.narg(expected_input_tokens)
-  AND model_usage_events.cached_input_tokens IS sqlc.narg(expected_cached_input_tokens)
-  AND model_usage_events.uncached_input_tokens IS sqlc.narg(expected_uncached_input_tokens)
-  AND model_usage_events.output_tokens IS sqlc.narg(expected_output_tokens)
-  AND model_usage_events.provider_usage_json IS sqlc.narg(expected_provider_usage_json)
-  AND model_usage_events.source_event_key = sqlc.arg(expected_source_event_key)
-  AND model_usage_events.pricing_version = sqlc.arg(expected_pricing_version)
-  AND EXISTS (
-      SELECT 1
-      FROM usage_sources source
-      WHERE source.id = model_usage_events.usage_source_id
-        AND source.file_identity = sqlc.arg(expected_file_identity)
-        AND source.byte_offset = sqlc.arg(expected_byte_offset)
-        AND source.parser_state_json = sqlc.arg(expected_parser_state_json)
-        AND source.updated_at = sqlc.arg(expected_source_updated_at)
-        AND NOT (
-            source.state = 'complete'
-            AND source.last_error_code = 'artifact_replaced'
-        )
-  )
-RETURNING binding_id;
-
 -- name: AggregateUsageBySessionHarnessModel :many
 SELECT
     ub.harness,
@@ -450,33 +323,12 @@ SELECT
     CAST(COALESCE(SUM(mue.uncached_input_tokens), 0) AS INTEGER) AS uncached_input_tokens,
     CAST(COUNT(mue.uncached_input_tokens) AS INTEGER) AS known_uncached_input_token_count,
     CAST(COALESCE(SUM(mue.output_tokens), 0) AS INTEGER) AS output_tokens,
-    CAST(COUNT(mue.output_tokens) AS INTEGER) AS known_output_token_count,
-    CAST(COUNT(mue.estimated_cost_nanos) AS INTEGER) AS priced_event_count,
-    CAST(COALESCE(SUM(mue.estimated_cost_nanos), 0) AS INTEGER) AS priced_total_nanos,
-    CAST(COUNT(CASE WHEN mue.billing_provider_source = 'observed' AND (
-        mue.estimated_cost_nanos IS NOT NULL OR mue.input_cost_nanos IS NOT NULL OR
-        mue.cached_input_cost_nanos IS NOT NULL OR mue.output_cost_nanos IS NOT NULL
-    ) THEN 1 END) AS INTEGER) AS observed_cost_event_count,
-    CAST(COUNT(CASE WHEN mue.billing_provider_source = 'inferred' AND (
-        mue.estimated_cost_nanos IS NOT NULL OR mue.input_cost_nanos IS NOT NULL OR
-        mue.cached_input_cost_nanos IS NOT NULL OR mue.output_cost_nanos IS NOT NULL
-    ) THEN 1 END) AS INTEGER) AS inferred_cost_event_count,
-    CAST(COUNT(mue.input_cost_nanos) AS INTEGER) AS known_input_count,
-    CAST(COALESCE(SUM(mue.input_cost_nanos), 0) AS INTEGER) AS known_input_nanos,
-    CAST(COALESCE(SUM(CASE WHEN mue.estimated_cost_nanos IS NULL THEN mue.input_cost_nanos END), 0) AS INTEGER) AS unpriced_known_input_nanos,
-    CAST(COUNT(mue.cached_input_cost_nanos) AS INTEGER) AS known_cached_input_count,
-    CAST(COALESCE(SUM(mue.cached_input_cost_nanos), 0) AS INTEGER) AS known_cached_input_nanos,
-    CAST(COALESCE(SUM(CASE WHEN mue.estimated_cost_nanos IS NULL THEN mue.cached_input_cost_nanos END), 0) AS INTEGER) AS unpriced_known_cached_input_nanos,
-    CAST(COUNT(mue.output_cost_nanos) AS INTEGER) AS known_output_count,
-    CAST(COALESCE(SUM(mue.output_cost_nanos), 0) AS INTEGER) AS known_output_nanos,
-    CAST(COALESCE(SUM(CASE WHEN mue.estimated_cost_nanos IS NULL THEN mue.output_cost_nanos END), 0) AS INTEGER) AS unpriced_known_output_nanos
+    CAST(COUNT(mue.output_tokens) AS INTEGER) AS known_output_token_count
 FROM model_usage_events mue
 JOIN usage_bindings ub ON ub.id = mue.binding_id
 WHERE ub.session_id = ?
--- Grouped by model alone. The billing provider is a pricing input, not a
--- product distinction: each event was already costed against its own provider's
--- rates, so summing across them is exact. Splitting on it only ever surfaced
--- AO's own attribution gaps as duplicate rows for one model.
+-- Grouped by model alone. The billing provider is not a product distinction:
+-- one model stays one row even when more than one provider served it.
 GROUP BY ub.harness, mue.model_id
 ORDER BY SUM(mue.input_tokens + mue.output_tokens) DESC, ub.harness, mue.model_id;
 
@@ -491,26 +343,7 @@ SELECT
     CAST(COALESCE(SUM(mue.input_tokens) + SUM(mue.output_tokens), 0) AS INTEGER) AS processed_tokens,
     CAST(COUNT(mue.input_tokens) = COUNT(*) AND COUNT(mue.output_tokens) = COUNT(*) AS INTEGER) AS processed_tokens_known,
     CAST(COALESCE(integrity.incomplete, 0) AS INTEGER) AS incomplete,
-    CAST(COUNT(*) AS INTEGER) AS event_count,
-    CAST(COUNT(mue.estimated_cost_nanos) AS INTEGER) AS priced_event_count,
-    CAST(COALESCE(SUM(mue.estimated_cost_nanos), 0) AS INTEGER) AS priced_total_nanos,
-    CAST(COUNT(CASE WHEN mue.billing_provider_source = 'observed' AND (
-        mue.estimated_cost_nanos IS NOT NULL OR mue.input_cost_nanos IS NOT NULL OR
-        mue.cached_input_cost_nanos IS NOT NULL OR mue.output_cost_nanos IS NOT NULL
-    ) THEN 1 END) AS INTEGER) AS observed_cost_event_count,
-    CAST(COUNT(CASE WHEN mue.billing_provider_source = 'inferred' AND (
-        mue.estimated_cost_nanos IS NOT NULL OR mue.input_cost_nanos IS NOT NULL OR
-        mue.cached_input_cost_nanos IS NOT NULL OR mue.output_cost_nanos IS NOT NULL
-    ) THEN 1 END) AS INTEGER) AS inferred_cost_event_count,
-    CAST(COUNT(mue.input_cost_nanos) AS INTEGER) AS known_input_count,
-    CAST(COALESCE(SUM(mue.input_cost_nanos), 0) AS INTEGER) AS known_input_nanos,
-    CAST(COALESCE(SUM(CASE WHEN mue.estimated_cost_nanos IS NULL THEN mue.input_cost_nanos END), 0) AS INTEGER) AS unpriced_known_input_nanos,
-    CAST(COUNT(mue.cached_input_cost_nanos) AS INTEGER) AS known_cached_input_count,
-    CAST(COALESCE(SUM(mue.cached_input_cost_nanos), 0) AS INTEGER) AS known_cached_input_nanos,
-    CAST(COALESCE(SUM(CASE WHEN mue.estimated_cost_nanos IS NULL THEN mue.cached_input_cost_nanos END), 0) AS INTEGER) AS unpriced_known_cached_input_nanos,
-    CAST(COUNT(mue.output_cost_nanos) AS INTEGER) AS known_output_count,
-    CAST(COALESCE(SUM(mue.output_cost_nanos), 0) AS INTEGER) AS known_output_nanos,
-    CAST(COALESCE(SUM(CASE WHEN mue.estimated_cost_nanos IS NULL THEN mue.output_cost_nanos END), 0) AS INTEGER) AS unpriced_known_output_nanos
+    CAST(COUNT(*) AS INTEGER) AS event_count
 FROM model_usage_events mue
 JOIN usage_bindings ub ON ub.id = mue.binding_id
 JOIN sessions s ON s.id = ub.session_id

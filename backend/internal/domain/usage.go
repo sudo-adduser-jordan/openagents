@@ -204,120 +204,9 @@ type ModelUsageEvent struct {
 	SourceEventKey        string
 }
 
-// UsageCostCandidate is one still-total-null event selected for an exact
-// provider catalog attempt. Source facts remain immutable and are carried back
-// to storage as compare-and-swap guards.
-type UsageCostCandidate struct {
-	ID                int64
-	BindingID         int64
-	ProviderID        UsageProviderID
-	BillingProviderID string
-	ModelID           string
-	MeasurementKind   UsageMeasurementKind
-	Tokens            UsageTokenMetrics
-	ProviderUsageJSON string
-	PricingVersion    string
-	SourceEventKey    string
-}
 
-// UsageCostUpdate carries one candidate's immutable compare-and-swap facts and
-// the result of attempting it against a newer provider catalog version.
-type UsageCostUpdate struct {
-	Candidate UsageCostCandidate
-	Costs     UsageEventCosts
-}
 
-// LegacyUsageEvent is one open-attribution event selected for transcript
-// attribution repair: never attributed, or attributed only by inference and so
-// still replaceable by an observation. Its source and generic facts are
-// immutable CAS guards.
-type LegacyUsageEvent struct {
-	ID                    int64
-	BindingID             int64
-	UsageSourceID         int64
-	ProviderID            UsageProviderID
-	BillingProviderID     string
-	BillingProviderSource UsageBillingProviderSource
-	ModelID               string
-	MeasurementKind       UsageMeasurementKind
-	Tokens                UsageTokenMetrics
-	ProviderUsageJSON     string
-	PricingVersion        string
-	SourceEventKey        string
-}
 
-// LegacyUsageRepair carries transcript-derived attribution and the estimate
-// made from the same fenced pricing snapshot.
-type LegacyUsageRepair struct {
-	Candidate               LegacyUsageEvent
-	ExpectedFileIdentity    string
-	ExpectedByteOffset      int64
-	ExpectedParserStateJSON string
-	ExpectedSourceUpdatedAt time.Time
-	BillingProviderID       string
-	BillingProviderSource   UsageBillingProviderSource
-	ProviderUsageJSON       string
-	Costs                   UsageEventCosts
-}
-
-// EstimatedCostCoverage describes how much of a usage scope has a durable
-// estimate. Token collection integrity is reported separately.
-type EstimatedCostCoverage string
-
-const (
-	// EstimatedCostCoverageComplete means every event in the scope has a stored total.
-	EstimatedCostCoverageComplete EstimatedCostCoverage = "complete"
-	// EstimatedCostCoveragePartial means the scope has a positive known lower bound.
-	EstimatedCostCoveragePartial EstimatedCostCoverage = "partial"
-)
-
-// EstimatedCostProviderAttribution describes whether the billing providers
-// behind an estimate were observed from routing evidence or inferred from the
-// model catalog.
-type EstimatedCostProviderAttribution string
-
-const (
-	// EstimatedCostProviderAttributionObserved means every contributing price
-	// used a billing provider named by routing evidence.
-	EstimatedCostProviderAttributionObserved EstimatedCostProviderAttribution = "observed"
-	// EstimatedCostProviderAttributionInferred means every contributing price
-	// used a billing provider inferred from model ownership.
-	EstimatedCostProviderAttributionInferred EstimatedCostProviderAttribution = "inferred"
-	// EstimatedCostProviderAttributionMixed means the estimate combines prices
-	// from observed and inferred billing providers.
-	EstimatedCostProviderAttributionMixed EstimatedCostProviderAttribution = "mixed"
-)
-
-// EstimatedCost is the user-facing nano-USD estimate for one usage scope.
-// Components remain nullable when only part of that component is known.
-type EstimatedCost struct {
-	TotalNanos          int64
-	InputNanos          *int64
-	CachedInputNanos    *int64
-	OutputNanos         *int64
-	Coverage            EstimatedCostCoverage
-	ProviderAttribution EstimatedCostProviderAttribution
-}
-
-// UsageCostAggregate contains the independent SQL sums and coverage counts
-// needed to derive a scope estimate without double-counting priced events.
-type UsageCostAggregate struct {
-	EventCount             int64
-	PricedEventCount       int64
-	PricedTotalNanos       int64
-	ObservedCostEventCount int64
-	InferredCostEventCount int64
-
-	KnownInputCount               int64
-	KnownInputNanos               int64
-	UnpricedKnownInputNanos       int64
-	KnownCachedInputCount         int64
-	KnownCachedInputNanos         int64
-	UnpricedKnownCachedInputNanos int64
-	KnownOutputCount              int64
-	KnownOutputNanos              int64
-	UnpricedKnownOutputNanos      int64
-}
 
 // UsageModelAggregate is the raw model-level aggregate read from storage before
 // the service applies user-facing coverage rules.
@@ -325,16 +214,14 @@ type UsageModelAggregate struct {
 	Harness AgentHarness
 	ModelID string
 	Tokens  UsageTokenMetrics
-	Cost    UsageCostAggregate
 }
 
 // CompactSessionUsageAggregate is one batched storage row before checked token
-// and cost derivation.
+// derivation.
 type CompactSessionUsageAggregate struct {
 	SessionID       SessionID
 	ProcessedTokens *int64
 	Incomplete      bool
-	Cost            UsageCostAggregate
 }
 
 // CompactSessionUsage is the dashboard usage read model.
@@ -342,7 +229,6 @@ type CompactSessionUsage struct {
 	SessionID       SessionID
 	ProcessedTokens *int64
 	Incomplete      bool
-	EstimatedCost   *EstimatedCost
 }
 
 // UsageMetricTotals is the aggregate metric block used by session, harness,
@@ -353,12 +239,11 @@ type UsageMetricTotals struct {
 	UncachedInputTokens *int64
 	OutputTokens        *int64
 	ProcessedTokens     *int64
-	EstimatedCost       *EstimatedCost
 }
 
-// ModelUsageSummary is a per-model aggregate. The billing provider stays a
-// pricing input: every event was costed against its own provider's rates before
-// it reached this sum, so the total is exact without splitting the model apart.
+// ModelUsageSummary is a per-model aggregate. The billing provider is not a
+// product distinction: one model stays one row even when more than one
+// provider served it.
 type ModelUsageSummary struct {
 	ModelID string
 	Totals  UsageMetricTotals

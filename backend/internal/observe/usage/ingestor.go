@@ -5,7 +5,6 @@ import (
 	"time"
 
 	"github.com/aoagents/agent-orchestrator/backend/internal/domain"
-	"github.com/aoagents/agent-orchestrator/backend/internal/pricing"
 )
 
 type ingestorStore interface {
@@ -14,18 +13,12 @@ type ingestorStore interface {
 
 // IngestorConfig retains the bounded-processing knobs of the transcript
 // ingestor. opencode has no certified transcript pipeline, so no source is ever
-// ingested; the fields are kept so wiring (pricing, legacy repair triggers)
-// stays source-compatible.
+// ingested.
 type IngestorConfig struct {
 	ChunkBytes       int64
 	RecordBytes      int
 	FinalizationWait time.Duration
 	Clock            func() time.Time
-	Pricing          *pricing.Manager
-	OnPricingError   func(error)
-	// RequestAttributionRepair asks for a legacy repair pass. See
-	// notifyLateRouteEvidence for the one window it closes.
-	RequestAttributionRepair func()
 }
 
 // IngestResult tells the coordinator whether another immediate chunk, source
@@ -45,21 +38,15 @@ type IngestResult struct {
 // opencode-only transition are deliberately left untouched rather than replayed
 // against a pipeline that no longer understands their format.
 type Ingestor struct {
-	store          ingestorStore
-	now            func() time.Time
-	pricing        *pricing.Manager
-	onPricingError func(error)
-	requestRepair  func()
+	store ingestorStore
+	now   func() time.Time
 }
 
 // NewIngestor constructs the dormant transcript ingestor.
 func NewIngestor(store ingestorStore, cfg IngestorConfig) *Ingestor {
 	return &Ingestor{
-		store:          store,
-		now:            cfg.Clock,
-		pricing:        cfg.Pricing,
-		onPricingError: cfg.OnPricingError,
-		requestRepair:  cfg.RequestAttributionRepair,
+		store: store,
+		now:   cfg.Clock,
 	}
 }
 

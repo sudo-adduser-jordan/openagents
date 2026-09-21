@@ -8,7 +8,6 @@ import (
 	"fmt"
 	"math"
 	"path/filepath"
-	"reflect"
 	"strings"
 	"testing"
 	"time"
@@ -502,381 +501,6 @@ WHERE mue.source_event_key = 'event-cost'`).Scan(
 // Break caught: provider backfill could miss source-exact case/alias variants,
 // revisit the active version, include immutable zero totals, or process an
 // unbounded/non-deterministic page.
-func TestListUsageCostCandidatesReturnsStableCanonicalBatch(t *testing.T) {
-	dataDir := t.TempDir()
-	s := sqlitetest.MustOpenAt(t, dataDir)
-	ctx := context.Background()
-	sess := seedUsageSession(t, s, domain.HarnessOpenCode)
-	now := time.Unix(1700000000, 0).UTC()
-	source := seedUsageSource(t, s, sess, now)
-	raw, err := sql.Open("sqlite", "file:"+filepath.Join(dataDir, "ao.db"))
-	mustNoError(t, err)
-	t.Cleanup(func() { _ = raw.Close() })
-	planRows, err := raw.Query(`EXPLAIN QUERY PLAN
-SELECT id FROM model_usage_events
-WHERE billing_provider_id IS NOT NULL
-  AND CASE lower(trim(billing_provider_id))
-        WHEN 'z.ai' THEN 'zai'
-        ELSE lower(trim(billing_provider_id))
-      END = ?
-  AND estimated_cost_nanos IS NULL
-  AND pricing_version <> ?
-	AND id > ?
-	ORDER BY id LIMIT 256`, "openai", "active", 0)
-	mustNoError(t, err)
-	defer func() { _ = planRows.Close() }()
-	usesCanonicalIndex := false
-	for planRows.Next() {
-		var id, parent, unused int
-		var detail string
-		mustNoError(t, planRows.Scan(&id, &parent, &unused, &detail))
-		usesCanonicalIndex = usesCanonicalIndex ||
-			(strings.Contains(detail, "idx_model_usage_events_canonical_cost_candidates") && strings.Contains(detail, "id>?"))
-	}
-	mustNoError(t, planRows.Err())
-	if !usesCanonicalIndex {
-		t.Fatal("canonical provider candidate query did not use its expression index")
-	}
-
-	insert := func(key, billingProvider, version string, total any) int64 {
-		t.Helper()
-		result, insertErr := raw.Exec(`
-INSERT INTO model_usage_events (
-    binding_id, usage_source_id, provider_id, billing_provider_id, model_id,
-    usage_measurement_kind, input_tokens, cached_input_tokens,
-    uncached_input_tokens, output_tokens, pricing_version,
-    estimated_cost_nanos, source_event_key
-) VALUES (?, ?, 'openai', ?, 'gpt-test', 'native_reported', 3, 1, 2, 2, ?, ?, ?)`,
-			source.BindingID, source.ID, billingProvider, version, total, key)
-		mustNoError(t, insertErr)
-		id, idErr := result.LastInsertId()
-		mustNoError(t, idErr)
-		return id
-	}
-
-	insert("immutable-zero", "openai", "old", int64(0))
-	insert("already-attempted", "openai", "active", nil)
-	firstWant := insert("candidate-000", " OpenAI ", "old", nil)
-	for index := 1; index < 257; index++ {
-		insert(fmt.Sprintf("candidate-%03d", index), " OpenAI ", "old", nil)
-	}
-	insert("other-provider", "anthropic", "old", nil)
-
-	candidates, err := s.ListUsageCostCandidates(ctx, "openai", "active", 0)
-	mustNoError(t, err)
-	if len(candidates) != 256 {
-		t.Fatalf("candidate count = %d, want exact batch of 256", len(candidates))
-	}
-	for index, candidate := range candidates {
-		wantID := firstWant + int64(index)
-		if candidate.ID != wantID || candidate.BillingProviderID != " OpenAI " || candidate.PricingVersion != "old" {
-			t.Fatalf("candidate[%d] = %+v, want id %d source-exact provider and old version", index, candidate, wantID)
-		}
-	}
-	remaining, err := s.ListUsageCostCandidates(ctx, "openai", "active", candidates[len(candidates)-1].ID)
-	mustNoError(t, err)
-	if len(remaining) != 1 || remaining[0].ID != firstWant+256 {
-		t.Fatalf("keyset remainder = %+v, want final candidate id %d", remaining, firstWant+256)
-	}
-
-	insert("zai-alias", "Z.AI", "old", nil)
-	zai, err := s.ListUsageCostCandidates(ctx, "zai", "active", 0)
-	mustNoError(t, err)
-	if len(zai) != 1 || zai[0].BillingProviderID != "Z.AI" {
-		t.Fatalf("zai alias candidates = %+v", zai)
-	}
-}
-
-// Break caught: per-row enrichment transactions would emit duplicate CDC
-// invalidations for one binding, while a partial transaction could expose only
-// some estimates from one bounded batch.
-func TestApplyUsageCostUpdatesCommitsBatchAndTouchesEachBindingOnce(t *testing.T) {
-	dataDir := t.TempDir()
-	s := sqlitetest.MustOpenAt(t, dataDir)
-	ctx := context.Background()
-	now := time.Unix(1700000000, 0).UTC()
-	firstSession := seedUsageSession(t, s, domain.HarnessOpenCode)
-	firstSource := seedUsageSource(t, s, firstSession, now)
-	secondSession := seedUsageSession(t, s, domain.HarnessOpenCode)
-	secondSource := seedUsageSource(t, s, secondSession, now)
-
-	for _, seeded := range []struct {
-		source domain.UsageSourceRecord
-		events []domain.ModelUsageEvent
-	}{
-		{source: firstSource, events: []domain.ModelUsageEvent{
-			pricedCandidateEvent("first-a"), pricedCandidateEvent("first-b"),
-		}},
-		{source: secondSource, events: []domain.ModelUsageEvent{pricedCandidateEvent("second-a")}},
-	} {
-		mustNoError(t, s.ApplyUsageChunk(ctx, seeded.source.ID, 0, seeded.source.UpdatedAt, domain.SourceCursorState{
-			ByteOffset: 10, State: domain.UsageSourceActive, UpdatedAt: now,
-		}, seeded.events))
-	}
-	candidates, err := s.ListUsageCostCandidates(ctx, "openai", "catalog-v2", 0)
-	mustNoError(t, err)
-	if len(candidates) != 3 {
-		t.Fatalf("candidates = %+v, want three", candidates)
-	}
-	updates := make([]domain.UsageCostUpdate, 0, len(candidates))
-	for _, candidate := range candidates {
-		input, cachedInput, output, total := int64(4), int64(2), int64(4), int64(10)
-		updates = append(updates, domain.UsageCostUpdate{
-			Candidate: candidate,
-			Costs: domain.UsageEventCosts{
-				InputCostNanos:       &input,
-				CachedInputCostNanos: &cachedInput,
-				OutputCostNanos:      &output,
-				EstimatedCostNanos:   &total,
-				PricingVersion:       "catalog-v2",
-			},
-		})
-	}
-	base, err := s.LatestSeq(ctx)
-	mustNoError(t, err)
-	applied, err := s.ApplyUsageCostUpdates(ctx, updates, now.Add(time.Minute))
-	mustNoError(t, err)
-	if applied != 3 {
-		t.Fatalf("applied = %d, want 3", applied)
-	}
-	changes, err := s.EventsAfter(ctx, base, 100)
-	mustNoError(t, err)
-	if len(changes) != 2 {
-		t.Fatalf("CDC changes = %+v, want one per affected binding", changes)
-	}
-	seenSessions := map[string]int{}
-	for _, change := range changes {
-		if change.Type != cdc.EventSessionUpdated {
-			t.Fatalf("CDC change = %+v", change)
-		}
-		seenSessions[change.SessionID]++
-	}
-	if seenSessions[string(firstSession.ID)] != 1 || seenSessions[string(secondSession.ID)] != 1 {
-		t.Fatalf("CDC sessions = %+v, want each affected session once", seenSessions)
-	}
-
-	raw, err := sql.Open("sqlite", "file:"+filepath.Join(dataDir, "ao.db"))
-	mustNoError(t, err)
-	t.Cleanup(func() { _ = raw.Close() })
-	rows, err := raw.Query(`
-SELECT input_cost_nanos, cached_input_cost_nanos, output_cost_nanos,
-       estimated_cost_nanos, pricing_version
-FROM model_usage_events ORDER BY id`)
-	mustNoError(t, err)
-	defer func() { _ = rows.Close() }()
-	count := 0
-	for rows.Next() {
-		var input, cachedInput, output, total int64
-		var version string
-		mustNoError(t, rows.Scan(&input, &cachedInput, &output, &total, &version))
-		if input != 4 || cachedInput != 2 || output != 4 || total != 10 || version != "catalog-v2" {
-			t.Fatalf("persisted estimate = %d/%d/%d/%d %q", input, cachedInput, output, total, version)
-		}
-		count++
-	}
-	mustNoError(t, rows.Err())
-	if count != 3 {
-		t.Fatalf("updated rows = %d, want 3", count)
-	}
-}
-
-// Break caught: a stale backfill page could overwrite a concurrent catalog
-// attempt, changed raw source facts, or an immutable known-zero total.
-func TestApplyUsageCostUpdatesRefusesStaleFactsVersionAndKnownZero(t *testing.T) {
-	dataDir := t.TempDir()
-	s := sqlitetest.MustOpenAt(t, dataDir)
-	ctx := context.Background()
-	now := time.Unix(1700000000, 0).UTC()
-	sess := seedUsageSession(t, s, domain.HarnessOpenCode)
-	source := seedUsageSource(t, s, sess, now)
-	events := []domain.ModelUsageEvent{
-		pricedCandidateEvent("version-race"),
-		pricedCandidateEvent("fact-race"),
-		pricedCandidateEvent("known-zero"),
-	}
-	mustNoError(t, s.ApplyUsageChunk(ctx, source.ID, 0, source.UpdatedAt, domain.SourceCursorState{
-		ByteOffset: 10, State: domain.UsageSourceActive, UpdatedAt: now,
-	}, events))
-	candidates, err := s.ListUsageCostCandidates(ctx, "openai", "catalog-v2", 0)
-	mustNoError(t, err)
-	if len(candidates) != 3 {
-		t.Fatalf("candidates = %+v", candidates)
-	}
-
-	raw, err := sql.Open("sqlite", "file:"+filepath.Join(dataDir, "ao.db"))
-	mustNoError(t, err)
-	t.Cleanup(func() { _ = raw.Close() })
-	_, err = raw.Exec(`UPDATE model_usage_events SET pricing_version = 'raced' WHERE source_event_key = 'version-race'`)
-	mustNoError(t, err)
-	_, err = raw.Exec(`UPDATE model_usage_events SET model_id = 'changed-model' WHERE source_event_key = 'fact-race'`)
-	mustNoError(t, err)
-	_, err = raw.Exec(`UPDATE model_usage_events SET estimated_cost_nanos = 0, pricing_version = 'known' WHERE source_event_key = 'known-zero'`)
-	mustNoError(t, err)
-
-	total := int64(99)
-	updates := make([]domain.UsageCostUpdate, 0, len(candidates))
-	for _, candidate := range candidates {
-		updates = append(updates, domain.UsageCostUpdate{
-			Candidate: candidate,
-			Costs: domain.UsageEventCosts{
-				EstimatedCostNanos: &total, PricingVersion: "catalog-v2",
-			},
-		})
-	}
-	base, err := s.LatestSeq(ctx)
-	mustNoError(t, err)
-	applied, err := s.ApplyUsageCostUpdates(ctx, updates, now.Add(time.Minute))
-	mustNoError(t, err)
-	if applied != 0 {
-		t.Fatalf("applied stale updates = %d, want 0", applied)
-	}
-	assertUsageSessionUpdatedEvents(t, s, base, sess, 0)
-
-	var version string
-	var zero int64
-	mustNoError(t, raw.QueryRow(`SELECT pricing_version FROM model_usage_events WHERE source_event_key = 'version-race'`).Scan(&version))
-	if version != "raced" {
-		t.Fatalf("raced version = %q", version)
-	}
-	mustNoError(t, raw.QueryRow(`SELECT estimated_cost_nanos, pricing_version FROM model_usage_events WHERE source_event_key = 'known-zero'`).Scan(&zero, &version))
-	if zero != 0 || version != "known" {
-		t.Fatalf("known-zero row = %d %q", zero, version)
-	}
-}
-
-// Break caught: legacy attribution must be selected source-by-source and the
-// repair transaction may not advance or rewrite the durable parser cursor.
-func TestApplyLegacyUsageRepairsUsesExactSourceFactsAndPreservesCursor(t *testing.T) {
-	dataDir := t.TempDir()
-	s := sqlitetest.MustOpenAt(t, dataDir)
-	ctx := context.Background()
-	now := time.Unix(1700000000, 0).UTC()
-	sess := seedUsageSession(t, s, domain.HarnessOpenCode)
-	source := seedUsageSource(t, s, sess, now)
-	event := anthropicUsageEvent("legacy-repair", 5, 10, 5, 4)
-	event.ModelID = "claude-test"
-	event.BillingProviderID = "anthropic"
-	event.BillingProviderSource = domain.UsageBillingProviderObserved
-	parserState := `{"version":1,"source_kind":"claude_main","claude":{"model_id":"claude-test"}}`
-	mustNoError(t, s.ApplyUsageChunk(ctx, source.ID, 0, source.UpdatedAt, domain.SourceCursorState{
-		ByteOffset: 123, ParserStateJSON: parserState,
-		State: domain.UsageSourceActive, UpdatedAt: now.Add(time.Second),
-	}, []domain.ModelUsageEvent{event}))
-
-	raw, err := sql.Open("sqlite", "file:"+filepath.Join(dataDir, "ao.db"))
-	mustNoError(t, err)
-	t.Cleanup(func() { _ = raw.Close() })
-	_, err = raw.Exec(`UPDATE model_usage_events
-SET billing_provider_id = NULL, pricing_version = '', estimated_cost_nanos = NULL
-WHERE source_event_key = 'legacy-repair'`)
-	mustNoError(t, err)
-
-	sources, err := s.ListLegacyUsageSources(ctx)
-	mustNoError(t, err)
-	if len(sources) != 1 || sources[0].Source.ID != source.ID ||
-		sources[0].Source.ByteOffset != 123 || sources[0].Source.ParserStateJSON != parserState {
-		t.Fatalf("legacy sources = %+v", sources)
-	}
-	candidates, err := s.ListLegacyUsageEvents(ctx, source.ID)
-	mustNoError(t, err)
-	if len(candidates) != 1 || candidates[0].SourceEventKey != "legacy-repair" ||
-		candidates[0].ModelID != "claude-test" || !reflect.DeepEqual(candidates[0].Tokens, event.Tokens) {
-		t.Fatalf("legacy candidates = %+v", candidates)
-	}
-	input, cachedInput, output, total := int64(4), int64(2), int64(4), int64(10)
-	base, err := s.LatestSeq(ctx)
-	mustNoError(t, err)
-	applied, err := s.ApplyLegacyUsageRepairs(ctx, []domain.LegacyUsageRepair{{
-		Candidate:               candidates[0],
-		ExpectedFileIdentity:    sources[0].Source.FileIdentity,
-		ExpectedByteOffset:      sources[0].Source.ByteOffset,
-		ExpectedParserStateJSON: sources[0].Source.ParserStateJSON,
-		ExpectedSourceUpdatedAt: sources[0].Source.UpdatedAt,
-		BillingProviderID:       "anthropic",
-		BillingProviderSource:   domain.UsageBillingProviderObserved,
-		ProviderUsageJSON:       anthropicProviderUsage(5, 10, nil, nil),
-		Costs: domain.UsageEventCosts{
-			InputCostNanos:       &input,
-			CachedInputCostNanos: &cachedInput,
-			OutputCostNanos:      &output,
-			EstimatedCostNanos:   &total,
-			PricingVersion:       "catalog-v2",
-		},
-	}}, now.Add(2*time.Second))
-	mustNoError(t, err)
-	if applied != 1 {
-		t.Fatalf("applied legacy repairs = %d, want 1", applied)
-	}
-	assertUsageSessionUpdatedEvents(t, s, base, sess, 1)
-
-	var billingProvider, version string
-	var gotTotal int64
-	mustNoError(t, raw.QueryRow(`SELECT billing_provider_id, estimated_cost_nanos, pricing_version
-FROM model_usage_events WHERE source_event_key = 'legacy-repair'`).Scan(
-		&billingProvider, &gotTotal, &version))
-	if billingProvider != "anthropic" || gotTotal != 10 || version != "catalog-v2" {
-		t.Fatalf("repaired row = %q total=%d version=%q", billingProvider, gotTotal, version)
-	}
-	got, ok, err := s.GetUsageSourceForIngestion(ctx, source.ID)
-	mustNoError(t, err)
-	if !ok || got.Source.ByteOffset != 123 || got.Source.ParserStateJSON != parserState {
-		t.Fatalf("repair changed source cursor/state: %+v ok=%v", got.Source, ok)
-	}
-}
-
-// Break caught: a replay result from a stale/replaced source generation must
-// not repair a row after any generic fact or the event's prior version changed.
-func TestApplyLegacyUsageRepairsRefusesStaleSourceAndRawFacts(t *testing.T) {
-	dataDir := t.TempDir()
-	s := sqlitetest.MustOpenAt(t, dataDir)
-	ctx := context.Background()
-	now := time.Unix(1700000000, 0).UTC()
-	sess := seedUsageSession(t, s, domain.HarnessOpenCode)
-	source := seedUsageSource(t, s, sess, now)
-
-	raw, err := sql.Open("sqlite", "file:"+filepath.Join(dataDir, "ao.db"))
-	mustNoError(t, err)
-	t.Cleanup(func() { _ = raw.Close() })
-	_, err = raw.Exec(`INSERT INTO model_usage_events (
-binding_id, usage_source_id, provider_id, billing_provider_id, model_id,
-usage_measurement_kind, input_tokens, cached_input_tokens,
-uncached_input_tokens, output_tokens, pricing_version, source_event_key
-) VALUES (?, ?, 'openai', NULL, 'gpt-test', 'native_reported', 9, 2, 7, 1, '', 'legacy-stale')`,
-		source.BindingID, source.ID)
-	mustNoError(t, err)
-	candidates, err := s.ListLegacyUsageEvents(ctx, source.ID)
-	mustNoError(t, err)
-	if len(candidates) != 1 {
-		t.Fatalf("legacy candidates = %+v", candidates)
-	}
-	_, err = raw.Exec(`UPDATE model_usage_events
-SET input_tokens = 10, uncached_input_tokens = 8, pricing_version = 'raced'
-WHERE source_event_key = 'legacy-stale'`)
-	mustNoError(t, err)
-	total := int64(99)
-	base, err := s.LatestSeq(ctx)
-	mustNoError(t, err)
-	applied, err := s.ApplyLegacyUsageRepairs(ctx, []domain.LegacyUsageRepair{{
-		Candidate:             candidates[0],
-		BillingProviderID:     "openai",
-		BillingProviderSource: domain.UsageBillingProviderObserved,
-		Costs: domain.UsageEventCosts{
-			EstimatedCostNanos: &total, PricingVersion: "catalog-v2",
-		},
-	}}, now.Add(time.Minute))
-	mustNoError(t, err)
-	if applied != 0 {
-		t.Fatalf("applied stale legacy repairs = %d, want 0", applied)
-	}
-	assertUsageSessionUpdatedEvents(t, s, base, sess, 0)
-	var billingProvider sql.NullString
-	mustNoError(t, raw.QueryRow(`SELECT billing_provider_id FROM model_usage_events
-WHERE source_event_key = 'legacy-stale'`).Scan(&billingProvider))
-	if billingProvider.Valid {
-		t.Fatalf("stale row billing provider = %q, want NULL", billingProvider.String)
-	}
-}
-
 func TestApplyUsageChunkReplayComparesNewSourceFactsButNotCosts(t *testing.T) {
 	s := newTestStore(t)
 	ctx := context.Background()
@@ -1223,7 +847,7 @@ func TestUsageRowsCascadeWhenSeedSessionDeleted(t *testing.T) {
 	}
 }
 
-func TestUsageAggregatesMergeProvidersPerModelAndPreserveCostCoverageFacts(t *testing.T) {
+func TestUsageAggregatesMergeProvidersPerModel(t *testing.T) {
 	s := newTestStore(t)
 	ctx := context.Background()
 	now := time.Unix(1700000000, 0).UTC()
@@ -1260,37 +884,23 @@ func TestUsageAggregatesMergeProvidersPerModelAndPreserveCostCoverageFacts(t *te
 		t.Fatalf("apply cost events: %v", err)
 	}
 
-	// One model is one row even when two providers served it. Each event was
-	// already costed against its own provider's rates, so the merged coverage
-	// facts stay exact; splitting the row only ever exposed AO's own attribution
-	// state as a duplicate model.
+	// One model is one row even when two providers served it; splitting the row
+	// only ever exposed AO's own attribution state as a duplicate model.
 	models, err := s.ListUsageModelAggregates(ctx, sess.ID)
 	mustNoError(t, err)
 	if len(models) != 1 || models[0].ModelID != "shared-model" {
 		t.Fatalf("model rows = %+v, want one merged row", models)
 	}
-	cost := models[0].Cost
-	if cost.EventCount != 2 || cost.PricedEventCount != 1 || cost.PricedTotalNanos != 100 ||
-		cost.ObservedCostEventCount != 1 || cost.InferredCostEventCount != 1 ||
-		cost.KnownInputCount != 2 || cost.KnownInputNanos != 50 || cost.UnpricedKnownInputNanos != 30 ||
-		cost.KnownCachedInputCount != 1 || cost.KnownCachedInputNanos != 10 ||
-		cost.KnownOutputCount != 2 || cost.KnownOutputNanos != 75 || cost.UnpricedKnownOutputNanos != 5 {
-		t.Fatalf("merged cost facts = %+v", cost)
+	tokens := models[0].Tokens
+	if usageTokenValue(tokens.InputTokens) != 15 || usageTokenValue(tokens.CachedInputTokens) != 4 ||
+		usageTokenValue(tokens.UncachedInputTokens) != 11 || usageTokenValue(tokens.OutputTokens) != 3 {
+		t.Fatalf("merged tokens = %+v", tokens)
 	}
 
 	compact, err := s.ListCompactSessionUsageAggregates(ctx, sess.ProjectID)
 	mustNoError(t, err)
 	if len(compact) != 1 || usageTokenValue(compact[0].ProcessedTokens) != 18 {
 		t.Fatalf("compact rows = %+v", compact)
-	}
-	// The dashboard row already summed across providers, so it is unchanged by
-	// the model row merging into one.
-	compactCost := compact[0].Cost
-	if compactCost.EventCount != 2 || compactCost.PricedEventCount != 1 || compactCost.PricedTotalNanos != 100 ||
-		compactCost.ObservedCostEventCount != 1 || compactCost.InferredCostEventCount != 1 ||
-		compactCost.KnownInputCount != 2 || compactCost.KnownInputNanos != 50 || compactCost.UnpricedKnownInputNanos != 30 ||
-		compactCost.KnownCachedInputCount != 1 || compactCost.KnownOutputNanos != 75 || compactCost.UnpricedKnownOutputNanos != 5 {
-		t.Fatalf("compact cost facts = %+v", compactCost)
 	}
 }
 
@@ -1708,7 +1318,11 @@ func mustNoError(t testing.TB, err error, context ...string) {
 // replacement owns no row for the event, so an attribution that never landed
 // could never land — the cost stayed NULL for the life of the row.
 func TestApplyUsageChunkRehomesAnOpenDuplicateToTheReplacementSource(t *testing.T) {
-	s := newTestStore(t)
+	dataDir := t.TempDir()
+	s := sqlitetest.MustOpenAt(t, dataDir)
+	raw, err := sql.Open("sqlite", "file:"+filepath.Join(dataDir, "ao.db"))
+	mustNoError(t, err, "open raw sqlite")
+	t.Cleanup(func() { _ = raw.Close() })
 	ctx := context.Background()
 	sess := seedUsageSession(t, s, domain.HarnessOpenCode)
 	now := time.Unix(1700000000, 0).UTC()
@@ -1740,20 +1354,22 @@ func TestApplyUsageChunkRehomesAnOpenDuplicateToTheReplacementSource(t *testing.
 
 	assertHomedTo := func(want int64, why string) {
 		t.Helper()
-		candidates, err := s.ListLegacyUsageEvents(ctx, want)
-		mustNoError(t, err, "list legacy events")
-		if len(candidates) != 1 {
-			t.Fatalf("%s: source %d owns %d open events, want 1", why, want, len(candidates))
+		var count int
+		mustNoError(t, raw.QueryRow(
+			`SELECT COUNT(*) FROM model_usage_events WHERE usage_source_id = ?`, want,
+		).Scan(&count), "count homed events")
+		if count != 1 {
+			t.Fatalf("%s: source %d owns %d events, want 1", why, want, count)
 		}
 	}
 	assertHomedTo(replacement.ID, "after replacement replay")
 
-	sources, err := s.ListLegacyUsageSources(ctx)
-	mustNoError(t, err, "list legacy sources")
-	for _, candidate := range sources {
-		if candidate.Source.ID == retired.ID {
-			t.Fatal("the retired generation still owns the open event, where repair will never reach it")
-		}
+	var retiredCount int
+	mustNoError(t, raw.QueryRow(
+		`SELECT COUNT(*) FROM model_usage_events WHERE usage_source_id = ?`, retired.ID,
+	).Scan(&retiredCount), "count retired events")
+	if retiredCount != 0 {
+		t.Fatal("the retired generation still owns the open event")
 	}
 
 	// Idempotent: replaying again neither duplicates the row nor moves it back.
@@ -1773,7 +1389,11 @@ func TestApplyUsageChunkRehomesAnOpenDuplicateToTheReplacementSource(t *testing.
 // stranded on a retired generation it keeps a guessed provider and the cost
 // derived from it, where no observation can reach either.
 func TestApplyUsageChunkRehomesAnInferredDuplicateToTheReplacementSource(t *testing.T) {
-	s := newTestStore(t)
+	dataDir := t.TempDir()
+	s := sqlitetest.MustOpenAt(t, dataDir)
+	raw, err := sql.Open("sqlite", "file:"+filepath.Join(dataDir, "ao.db"))
+	mustNoError(t, err, "open raw sqlite")
+	t.Cleanup(func() { _ = raw.Close() })
 	ctx := context.Background()
 	sess := seedUsageSession(t, s, domain.HarnessOpenCode)
 	now := time.Unix(1700000000, 0).UTC()
@@ -1802,15 +1422,19 @@ func TestApplyUsageChunkRehomesAnInferredDuplicateToTheReplacementSource(t *test
 		ByteOffset: 10, State: domain.UsageSourceActive, UpdatedAt: now.Add(2 * time.Second),
 	}, []domain.ModelUsageEvent{event}), "replay onto the replacement")
 
-	candidates, err := s.ListLegacyUsageEvents(ctx, replacement.ID)
-	mustNoError(t, err, "list legacy events")
-	if len(candidates) != 1 || candidates[0].BillingProviderSource != domain.UsageBillingProviderInferred {
-		t.Fatalf("replacement owns %d open events, want the inferred one: %+v", len(candidates), candidates)
+	var replacementSource string
+	mustNoError(t, raw.QueryRow(
+		`SELECT billing_provider_source FROM model_usage_events WHERE usage_source_id = ?`, replacement.ID,
+	).Scan(&replacementSource), "read replacement attribution")
+	if replacementSource != string(domain.UsageBillingProviderInferred) {
+		t.Fatalf("replacement attribution = %q, want the inferred one", replacementSource)
 	}
-	stranded, err := s.ListLegacyUsageEvents(ctx, retired.ID)
-	mustNoError(t, err, "list retired events")
-	if len(stranded) != 0 {
-		t.Fatalf("the retired generation kept %d open events", len(stranded))
+	var retiredCount int
+	mustNoError(t, raw.QueryRow(
+		`SELECT COUNT(*) FROM model_usage_events WHERE usage_source_id = ?`, retired.ID,
+	).Scan(&retiredCount), "count retired events")
+	if retiredCount != 0 {
+		t.Fatalf("the retired generation kept %d open events", retiredCount)
 	}
 }
 

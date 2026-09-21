@@ -7011,11 +7011,6 @@ components:
       type: object
     CompactSessionUsageResponse:
       properties:
-        estimatedCost:
-          anyOf:
-          - type: "null"
-          - $ref: '#/components/schemas/EstimatedCostResponse'
-            type: object
         incomplete:
           type: boolean
         processedTokens:
@@ -7037,7 +7032,6 @@ components:
       - processedTokens
       - totalTokens
       - incomplete
-      - estimatedCost
       type: object
     ContainerReapConfig:
       properties:
@@ -8166,52 +8160,6 @@ components:
           type: string
       required:
       - purpose
-      type: object
-    EstimatedCostResponse:
-      properties:
-        cachedInputNanos:
-          format: int64
-          minimum: 0
-          type:
-          - "null"
-          - integer
-        coverage:
-          enum:
-          - complete
-          - partial
-          type: string
-        inputNanos:
-          description: Every non-cache-read input charge, cache writes included.
-          format: int64
-          minimum: 0
-          type:
-          - "null"
-          - integer
-        outputNanos:
-          format: int64
-          minimum: 0
-          type:
-          - "null"
-          - integer
-        providerAttribution:
-          description: Whether contributing billing providers were detected, inferred
-            from model ownership, or both.
-          enum:
-          - observed
-          - inferred
-          - mixed
-          type: string
-        totalNanos:
-          format: int64
-          minimum: 0
-          type: integer
-      required:
-      - totalNanos
-      - inputNanos
-      - cachedInputNanos
-      - outputNanos
-      - coverage
-      - providerAttribution
       type: object
     ExitAgentResponse:
       properties:
@@ -10832,11 +10780,6 @@ components:
           type:
           - "null"
           - integer
-        estimatedCost:
-          anyOf:
-          - type: "null"
-          - $ref: '#/components/schemas/EstimatedCostResponse'
-            type: object
         inputTokens:
           description: Total input, including cached and uncached input.
           minimum: 0
@@ -10871,7 +10814,6 @@ components:
       - outputTokens
       - processedTokens
       - cacheReadTokens
-      - estimatedCost
       type: object
     WorkspaceCommitSummary:
       properties:
