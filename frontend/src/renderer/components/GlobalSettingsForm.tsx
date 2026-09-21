@@ -1,14 +1,14 @@
 import { Fragment, Suspense } from "react";
 import { useTranslation } from "react-i18next";
-import type { GlobalSettingsSection as GlobalSettingsPage } from "../stores/ui-store";
+import type { GlobalSettingsSection } from "../stores/ui-store";
 import { globalSettingsItemsFor } from "./settings/settingsCatalog";
 
+export type { GlobalSettingsSection };
+
 export function GlobalSettingsForm({
-	cloudEnabled = true,
 	section = "all",
 }: {
-	cloudEnabled?: boolean;
-	section?: GlobalSettingsSection;
+	section?: GlobalSettingsSection | "all";
 }) {
 	const { t } = useTranslation();
 	const all = section === "all";
@@ -22,7 +22,7 @@ export function GlobalSettingsForm({
 			className="flex w-full flex-col gap-(--size-settings-section-gap)"
 			data-testid="settings-page"
 		>
-			{globalSettingsItemsFor(section, { cloudEnabled }).map((item) => (
+			{globalSettingsItemsFor(section).map((item) => (
 				<Fragment key={item.id}>
 					<Suspense fallback={null}>{item.render(t, titleHidden)}</Suspense>
 				</Fragment>

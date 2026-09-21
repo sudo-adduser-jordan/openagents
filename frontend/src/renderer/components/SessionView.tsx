@@ -61,8 +61,6 @@ import {
 } from "../hooks/useSessionInterfaceTransition";
 import { useWorkspaceSession, workspaceQueryKey } from "../hooks/useWorkspaceQuery";
 import { useSetWorkflowMode } from "../hooks/useSetWorkflowMode";
-import { cloudLifecycleStage, type CloudLifecycleStage } from "../lib/cloud-lifecycle";
-import { useCloudCp } from "../hooks/useCloudCp";
 import { useWindowFullScreen } from "../hooks/useWindowFullScreen";
 import { apiClient, apiErrorCode, apiErrorMessage } from "../lib/api-client";
 import { sessionWorkspaceFilesQueryOptions } from "../hooks/useSessionWorkspaceFiles";
@@ -411,43 +409,6 @@ function SessionInspectorRail({
 // x-transform). Summary/Reviews/Files share a utility width, while Browser
 // automatically grows into a co-work canvas. Chat readability clamps either
 // profile before the conversation can become unusably narrow.
-function CloudLifecycleStatus({ stage }: { stage: CloudLifecycleStage }) {
-	const { t } = useTranslation();
-	const label = {
-		paused_by_coder: t("cloud.lifecycle.pausedByCoder"),
-		resuming_workspace: t("cloud.lifecycle.resumingWorkspace"),
-		waiting_for_coder_agent: t("cloud.lifecycle.connecting"),
-		starting_ao_worker: t("cloud.lifecycle.startingAoWorker"),
-		restoring_agent: t("cloud.lifecycle.restoringAgent"),
-		connected: t("cloud.lifecycle.connected"),
-	}[stage];
-	const settled = stage === "connected";
-	const paused = stage === "paused_by_coder";
-	return (
-		<motion.div
-			animate={{ opacity: 1, y: 0 }}
-			aria-live="polite"
-			className={cn(
-				"absolute right-3 top-3 z-20 flex h-7 items-center gap-2 rounded-sm border px-2.5",
-				"bg-background/92 font-mono text-[11px] tracking-tight shadow-sm backdrop-blur-sm",
-				settled ? "border-success/30 text-passive" : "border-border/80 text-foreground",
-			)}
-			data-cloud-lifecycle-stage={stage}
-			initial={{ opacity: 0, y: -4 }}
-			role="status"
-		>
-			<span
-				aria-hidden="true"
-				className={cn(
-					"size-1.5 rounded-full",
-					settled ? "bg-success" : paused ? "bg-warning" : "animate-pulse bg-primary",
-				)}
-			/>
-			{label}
-		</motion.div>
-	);
-}
-
 export function SessionView({ sessionId }: SessionViewProps) {
 	const { t } = useTranslation();
 	const [confirmedDraftDiscard, setConfirmedDraftDiscard] = useState<{
@@ -538,7 +499,6 @@ export function SessionView({ sessionId }: SessionViewProps) {
 		[queryClient],
 	);
 	const workspaceQuery = useWorkspaceSession(sessionId);
-	const { client: cloudCpClient } = useCloudCp();
 	const theme = useResolvedTheme();
 	const browserOnly = Boolean(workspaceQuery.data && isOrchestratorSession(workspaceQuery.data));
 	const isInspectorOpen = useUiStore((state) => state.inspectorSessions[sessionId]?.isOpen ?? !browserOnly);
@@ -688,21 +648,6 @@ export function SessionView({ sessionId }: SessionViewProps) {
 	useEffect(() => stopTerminalLiveResize, [stopTerminalLiveResize]);
 
 	const session = workspaceQuery.data;
-	const cloudStage = cloudLifecycleStage(session);
-	const cloudResumeRef = useRef("");
-	const requestCloudResume = useCallback(async () => {
-		if (!session?.cloud) return;
-		await cloudCpClient.resumeSession(session.cloud.orgId, session.id);
-		await refreshWorkspaces();
-	}, [cloudCpClient, refreshWorkspaces, session]);
-	useEffect(() => {
-		if (!session?.cloud || cloudResumeRef.current === session.id) return;
-		cloudResumeRef.current = session.id;
-		void requestCloudResume().catch(() => {
-			// Keep the paused lifecycle projection visible. A later message, shell
-			// open, or route visit can issue a fresh explicit resume intent.
-		});
-	}, [requestCloudResume, session]);
 	const interfaceSwitch = useSessionInterfaceTransition(session?.id);
 	useEffect(() => {
 		setConfirmedDraftDiscard(undefined);
@@ -878,7 +823,7 @@ export function SessionView({ sessionId }: SessionViewProps) {
 	// workspace can no longer be resolved).
 	const addShellTerminal = useCallback(() => {
 		const shell = openShellTerminal.open(
-			{ projectId: session?.workspaceId, sessionId, cloud: session?.cloud },
+			{ projectId: session?.workspaceId, sessionId },
 			{
 				onSuccess: (openedShell) => {
 					setActiveShellTerminal(openedShell.handleId);
@@ -909,7 +854,7 @@ export function SessionView({ sessionId }: SessionViewProps) {
 			sessionId,
 			title: shell.title,
 		});
-	}, [openShellTerminal, sessionId, session?.cloud, session?.workspaceId, setActiveShellTerminal]);
+	}, [openShellTerminal, sessionId, session?.workspaceId, setActiveShellTerminal]);
 
 	const activateAuxiliaryTab = useCallback(
 		(key?: string) => {
@@ -1859,7 +1804,6 @@ export function SessionView({ sessionId }: SessionViewProps) {
 							data-testid="session-topbar-host"
 						/>
 						<div className="relative min-h-0 flex-1">
-							{cloudStage ? <CloudLifecycleStatus stage={cloudStage} /> : null}
 							{/* The committed mode owns the agent surface. Auxiliary shell and
 							    reviewer targets remain terminal surfaces in either mode. */}
 							<div

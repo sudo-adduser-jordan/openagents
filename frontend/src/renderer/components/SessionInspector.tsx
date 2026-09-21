@@ -41,7 +41,6 @@ import { apiClient, apiErrorMessage } from "../lib/api-client";
 import { workspaceQueryKey } from "../hooks/useWorkspaceQuery";
 import { formatTimeCompact } from "../lib/format-time";
 import { AgentAvatar } from "./AgentAvatar";
-import { OrchestratorChildrenSection } from "./OrchestratorChildrenSection";
 import { ProductExternalLink } from "./ProductExternalLink";
 import {
 	sessionScmSummaryQueryKey,
@@ -312,10 +311,6 @@ const SummaryView = memo(function SummaryView({
 	const prSummaries = sessionPRDisplaySummaries(session, query.data);
 	const prSectionTitle = prSummaries.length > 1 ? t("inspector.pullRequests", { count: prSummaries.length }) : t("inspector.pullRequest");
 	const hasPRs = prSummaries.length > 0;
-	// Cloud orchestrators list the workers they spawned; local orchestrators
-	// have no parent/child model and every other session has no children.
-	const showWorkers =
-		session.kind === "orchestrator" && (session.cloud !== undefined || usePreviewData);
 	return (
 		<SessionInspectorSummaryView
 			activity={
@@ -344,7 +339,6 @@ const SummaryView = memo(function SummaryView({
 				</div>
 			}
 			pullRequestTitle={prSectionTitle}
-			workers={showWorkers ? <OrchestratorChildrenSection session={session} /> : undefined}
 			usage={
 				showUsageError ? (
 					<Section title={t("inspector.usage.title")}>

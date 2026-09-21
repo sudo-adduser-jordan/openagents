@@ -112,7 +112,7 @@ export type WorkspaceSession = {
 	statusReadiness?: "checking" | "ready" | "unavailable";
 	/** Durable runtime fact from the daemon; independent of the derived SCM-aware status. */
 	isTerminated?: boolean;
-	/** Whether the cloud worker has a current control-plane connection. */
+	/** Whether the session's worker currently has a live connection. */
 	runtimeConnected?: boolean;
 	chatProviderPreserved?: boolean;
 	/** User preference to tear down this session when its PR set completes through a merge. */
@@ -152,17 +152,6 @@ export type WorkspaceSession = {
 	 * done server-side, so {@link status} already reflects all of these.
 	 */
 	prs: PullRequestFacts[];
-	/**
-	 * Present only for sessions that run in a control-plane sandbox. Carries the
-	 * org the session is scoped to so its terminal can be opened against the CP;
-	 * absent for local sessions, which route through the local daemon.
-	 */
-	cloud?: {
-		orgId: string;
-		sandboxProvider?: string;
-		desiredState?: string;
-		observedState?: string;
-	};
 };
 
 // Tracker providers whose ids the intake daemon stamps sessions with, in
@@ -186,9 +175,6 @@ export type ProjectKind = "single_repo" | "workspace" | "scratch";
 /** UI-only grouping for sessions that have no daemon project row. */
 export const STANDALONE_WORKSPACE_ID = "__standalone__" as const;
 export const STANDALONE_PROJECT_KIND = "standalone" as const;
-
-/** Sentinel `kind` value for projects hosted by the AO cloud control plane. */
-export const CLOUD_PROJECT_KIND = "cloud" as const;
 
 const projectKinds = new Set<ProjectKind>(["single_repo", "workspace", "scratch"]);
 
@@ -318,12 +304,10 @@ export type WorkspaceSummary = {
 	name: string;
 	/**
 	 * Discriminator for where the project lives. Local projects carry the
-	 * daemon's ProjectKind (or undefined for older daemons); projects hosted by
-	 * the AO cloud control plane carry CLOUD_PROJECT_KIND — branch on
-	 * `kind === CLOUD_PROJECT_KIND`.
+	 * daemon's ProjectKind (or undefined for older daemons).
 	 */
-	kind?: ProjectKind | typeof CLOUD_PROJECT_KIND | typeof STANDALONE_PROJECT_KIND;
-	/** Local checkout path; empty string for cloud projects (no local folder). */
+	kind?: ProjectKind | typeof STANDALONE_PROJECT_KIND;
+	/** Local checkout path. */
 	path: string;
 	folderMissing?: boolean;
 	workspaceRepos?: WorkspaceRepoSummary[];

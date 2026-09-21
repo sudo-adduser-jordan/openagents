@@ -3,21 +3,14 @@ import { act, renderHook, waitFor } from "@testing-library/react";
 import type { ReactNode } from "react";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 import type { WorkspaceSession, WorkspaceSummary } from "../types/workspace";
-import { settingsQueryKey } from "./useSettings";
 
-const { createCloudClientMock, deleteSessionMock, postMock } = vi.hoisted(() => ({
-	createCloudClientMock: vi.fn(),
-	deleteSessionMock: vi.fn(),
+const { postMock } = vi.hoisted(() => ({
 	postMock: vi.fn(),
 }));
 
 vi.mock("../lib/api-client", () => ({
 	apiClient: { POST: postMock },
 	apiErrorMessage: (_error: unknown, fallback: string) => fallback,
-}));
-
-vi.mock("./useCloudCp", () => ({
-	createRendererCloudCpClient: createCloudClientMock,
 }));
 
 import { useTerminateSession } from "./useTerminateSession";
@@ -69,9 +62,6 @@ function newQueryClient() {
 }
 
 beforeEach(() => {
-	createCloudClientMock.mockReset();
-	deleteSessionMock.mockReset().mockResolvedValue({ session: { id: "session-1", desiredState: "deleted" } });
-	createCloudClientMock.mockReturnValue({ deleteSession: deleteSessionMock });
 	postMock.mockReset().mockResolvedValue({ data: { ok: true }, error: undefined });
 });
 
@@ -85,33 +75,11 @@ describe("useTerminateSession", () => {
 		expect(postMock).toHaveBeenCalledWith("/api/v1/sessions/{sessionId}/kill", {
 			params: { path: { sessionId: "session-1" } },
 		});
-		expect(createCloudClientMock).not.toHaveBeenCalled();
 	});
 
-	it("routes cloud sessions to their control-plane organization", async () => {
-		const queryClient = new QueryClient({ defaultOptions: { mutations: { retry: false } } });
-		queryClient.setQueryData(settingsQueryKey, { cloudControlPlaneUrl: "https://cp.example.com" });
-		const cloudSession: WorkspaceSession = { ...localSession, cloud: { orgId: "org-1" } };
-		const { result } = renderHook(() => useTerminateSession(), { wrapper: wrapper(queryClient) });
 
-		await act(async () => result.current.mutateAsync(cloudSession));
 
-		expect(createCloudClientMock).toHaveBeenCalledWith("https://cp.example.com");
-		expect(deleteSessionMock).toHaveBeenCalledWith("org-1", "session-1");
-		expect(postMock).not.toHaveBeenCalled();
-	});
 
-	it("fails closed when a cloud session has no configured control plane", async () => {
-		const queryClient = new QueryClient({ defaultOptions: { mutations: { retry: false } } });
-		const cloudSession: WorkspaceSession = { ...localSession, cloud: { orgId: "org-1" } };
-		const { result } = renderHook(() => useTerminateSession(), { wrapper: wrapper(queryClient) });
-
-		await expect(act(async () => result.current.mutateAsync(cloudSession))).rejects.toThrow(
-			"The cloud control plane is not configured.",
-		);
-		expect(deleteSessionMock).not.toHaveBeenCalled();
-		expect(postMock).not.toHaveBeenCalled();
-	});
 
 	// The delete control is disabled while the mutation is pending, and a
 	// mutation stays pending until its onSuccess settles. Waiting on the

@@ -415,7 +415,7 @@ describe("useTerminalSession", () => {
 			expect(view.result.current.replaySettled).toBe(true);
 		});
 
-		it("keeps a cloud-style startup covered until terminal output arrives", () => {
+		it("keeps a slow startup covered until terminal output arrives", () => {
 			const { view, muxes } = setup({ waitForInitialOutput: true });
 			act(() => muxes[0].emitOpened("handle-1"));
 			act(() => void vi.advanceTimersByTime(1_000));
@@ -986,41 +986,6 @@ describe("useTerminalSession", () => {
 		expect(view.result.current.state).toBe("attached");
 	});
 
-	it("has no client open timeout for a cloud pane: a slow open never storms", () => {
-		// A cloud pane opens its socket directly; readiness is server-driven (the
-		// CP holds it in "starting" until the terminal opens). There is NO client
-		// open timeout — the 3s/30s band-aids only ever tore a healthy slow open
-		// down mid-attach and rebuilt the mux, a self-sustaining storm. So however
-		// long the CP takes, the pane keeps its single mux and stays "connecting".
-		const cloudSession: WorkspaceSession = { ...session, cloud: { orgId: "org-1" } };
-		const { view, muxes } = setup({ attachedSession: cloudSession });
-		expect(view.result.current.state).toBe("connecting");
-		// Far past any old timeout: no teardown, no rebuild, no storm.
-		act(() => void vi.advanceTimersByTime(120_000));
-		expect(muxes).toHaveLength(1);
-		expect(muxes[0].disposed).toBe(false);
-		expect(view.result.current.state).toBe("connecting");
-		// The server finally acks: one clean attach, no rebuild.
-		act(() => muxes[0].emitOpened("handle-1"));
-		expect(view.result.current.state).toBe("attached");
-		expect(muxes).toHaveLength(1);
-	});
-
-	it("recovers a stalled cloud pane only when the socket closes (server-driven)", () => {
-		// With no client timer, a stalled cloud pane is recovered by the transport,
-		// not a clock: the CP closes the socket at its own ready deadline, which
-		// reaches onConnectionChange("closed") and schedules exactly one flat
-		// reattach. No client-side timeout ever fires to rebuild the mux.
-		const cloudSession: WorkspaceSession = { ...session, cloud: { orgId: "org-1" } };
-		const { view, muxes } = setup({ attachedSession: cloudSession });
-		act(() => void vi.advanceTimersByTime(120_000));
-		expect(muxes).toHaveLength(1); // no client teardown while the socket lives
-		act(() => muxes[0].emitConnection("closed")); // CP ready deadline closes it
-		act(() => void vi.advanceTimersByTime(1_000)); // flat cloud reconnect
-		expect(muxes).toHaveLength(2); // exactly one rebuild, not a storm
-		expect(view.result.current.state).not.toBe("attached");
-	});
-
 	it("backs off between failed reconnect attempts", () => {
 		const { muxes } = setup();
 		act(() => muxes[0].emitConnection("closed"));
@@ -1056,104 +1021,4 @@ describe("useTerminalSession", () => {
 		expect(muxes).toHaveLength(1);
 	});
 
-	describe("predictive local echo (cloud sessions)", () => {
-		const cloudSession: WorkspaceSession = { ...session, cloud: { orgId: "org-1" } };
-
-		it("renders a predicted keystroke immediately and strips the server echo", () => {
-			const { terminal, muxes } = setup({ attachedSession: cloudSession });
-			act(() => muxes[0].emitConnection("open"));
-			act(() => muxes[0].emitOpened("handle-1"));
-			terminal.typeKeys("a");
-			// The prediction landed locally before any server round trip…
-			expect(terminal.lines).toEqual(["a"]);
-			// …while the wire got the raw keystroke.
-			expect(muxes[0].inputs).toEqual([["handle-1", "a"]]);
-			// The authoritative echo of what is already on screen renders nothing.
-			act(() => muxes[0].emitData("handle-1", "a"));
-			expect(terminal.lines).toEqual(["a"]);
-			// Output beyond the echo flows through verbatim.
-			act(() => muxes[0].emitData("handle-1", "$ "));
-			expect(terminal.lines).toEqual(["a", "$ "]);
-		});
-
-		it("never predicts while the pane is on the alternate buffer", () => {
-			const { terminal, muxes } = setup({ attachedSession: cloudSession });
-			terminal.activeBufferType = "alternate";
-			act(() => muxes[0].emitConnection("open"));
-			act(() => muxes[0].emitOpened("handle-1"));
-			terminal.typeKeys("a");
-			expect(terminal.lines).toEqual([]);
-			expect(muxes[0].inputs).toEqual([["handle-1", "a"]]);
-		});
-
-		it("does not locally echo keystrokes on local sessions", () => {
-			const { terminal, muxes } = setup();
-			act(() => muxes[0].emitConnection("open"));
-			act(() => muxes[0].emitOpened("handle-1"));
-			terminal.typeKeys("a");
-			expect(terminal.lines).toEqual([]);
-			expect(muxes[0].inputs).toEqual([["handle-1", "a"]]);
-		});
-	});
-});
-
-// Cloud connect-failure circuit breaker (issue #4668) with the false-positive
-// fix: only genuine post-mint socket failures ("closed") count; a worker that
-// is still provisioning (mint 409, surfaced as "waiting") must never trip it.
-describe("cloud connect breaker (issue #4668)", () => {
-	const cloudSession: WorkspaceSession = { ...session, cloud: { orgId: "org-1" } };
-
-	function latest(muxes: FakeMux[]) {
-		return muxes[muxes.length - 1];
-	}
-	// One reconnect cycle: emit a state on the current mux, then let the flat
-	// 1s retry fire so the hook builds the next mux.
-	function cycle(muxes: FakeMux[], state: MuxConnectionState) {
-		act(() => latest(muxes).emitConnection(state));
-		act(() => void vi.advanceTimersByTime(1_100));
-	}
-
-	it("trips into error after 8 genuine socket failures", () => {
-		const { view, muxes } = setup({ attachedSession: cloudSession, coverInitialReplay: false });
-		for (let i = 0; i < 8; i++) cycle(muxes, "closed");
-		expect(view.result.current.state).toBe("error");
-		expect(view.result.current.error).toContain("WebSocket cannot connect");
-		expect(view.result.current.error).toContain("proxy");
-	});
-
-	it("never trips while the worker is still provisioning (mint 409 -> waiting)", () => {
-		const { view, muxes } = setup({ attachedSession: cloudSession, coverInitialReplay: false });
-		// Far more than the threshold: a slow cold start must not false-fire.
-		for (let i = 0; i < 20; i++) cycle(muxes, "waiting");
-		expect(view.result.current.state).toBe("reattaching");
-		expect(view.result.current.error).toBeUndefined();
-	});
-
-	it("does not count provisioning waits mixed in with socket failures", () => {
-		const { view, muxes } = setup({ attachedSession: cloudSession, coverInitialReplay: false });
-		// 7 real failures interleaved with waits that must not add to the count.
-		for (let i = 0; i < 7; i++) {
-			cycle(muxes, "waiting");
-			cycle(muxes, "closed");
-		}
-		// 7 closed < 8, plus 7 waits that don't count -> still retrying.
-		expect(view.result.current.state).toBe("reattaching");
-		expect(view.result.current.error).toBeUndefined();
-	});
-
-	it("resets the failure count after a successful attach", () => {
-		const { view, muxes } = setup({ attachedSession: cloudSession, coverInitialReplay: false });
-		for (let i = 0; i < 5; i++) cycle(muxes, "closed");
-		expect(view.result.current.state).toBe("reattaching");
-		act(() => latest(muxes).emitOpened("handle-1"));
-		expect(view.result.current.state).toBe("attached");
-		// After a real attach the breaker no longer applies (hasAttachedOnce),
-		// so further drops reconnect via backoff without ever erroring.
-		for (let i = 0; i < 5; i++) {
-			act(() => latest(muxes).emitConnection("closed"));
-			act(() => void vi.advanceTimersByTime(10_000));
-		}
-		expect(view.result.current.state).toBe("reattaching");
-		expect(view.result.current.error).toBeUndefined();
-	});
 });

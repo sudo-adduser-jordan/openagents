@@ -9,8 +9,6 @@ import (
 	"slices"
 	"testing"
 
-	"gopkg.in/yaml.v3"
-
 	"github.com/aoagents/agent-orchestrator/backend/pkg/contract"
 )
 
@@ -76,28 +74,12 @@ func TestAgentProfileJSONKeepsPolicyInAvailability(t *testing.T) {
 	}
 }
 
-func TestSharedAgentVocabulariesMatchGo(t *testing.T) {
+func TestSharedAgentVocabulariesMatchProductUI(t *testing.T) {
 	_, currentFile, _, ok := runtime.Caller(0)
 	if !ok {
 		t.Fatal("locate test file")
 	}
 	repoRoot := filepath.Join(filepath.Dir(currentFile), "..", "..", "..")
-	specPath := filepath.Join(repoRoot, "contracts", "cloud", "openapi.yaml")
-	data, err := os.ReadFile(specPath)
-	if err != nil {
-		t.Fatal(err)
-	}
-
-	var document struct {
-		Components struct {
-			Schemas map[string]struct {
-				Enum []string `yaml:"enum"`
-			} `yaml:"schemas"`
-		} `yaml:"components"`
-	}
-	if err := yaml.Unmarshal(data, &document); err != nil {
-		t.Fatal(err)
-	}
 
 	capabilities := make([]string, len(agentCapabilities))
 	for i, capability := range agentCapabilities {
@@ -105,13 +87,13 @@ func TestSharedAgentVocabulariesMatchGo(t *testing.T) {
 	}
 
 	productPath := filepath.Join(repoRoot, "packages", "product-ui", "src", "agent-capabilities.ts")
-	data, err = os.ReadFile(productPath)
+	data, err := os.ReadFile(productPath)
 	if err != nil {
 		t.Fatal(err)
 	}
 
 	checks := []struct {
-		schema       string
+		name         string
 		productConst string
 		want         []string
 	}{
@@ -139,15 +121,7 @@ func TestSharedAgentVocabulariesMatchGo(t *testing.T) {
 	}
 
 	for _, check := range checks {
-		t.Run(check.schema, func(t *testing.T) {
-			schema, ok := document.Components.Schemas[check.schema]
-			if !ok {
-				t.Fatalf("Cloud schema has no %s", check.schema)
-			}
-			if !slices.Equal(schema.Enum, check.want) {
-				t.Fatalf("Cloud %s = %q, want %q", check.schema, schema.Enum, check.want)
-			}
-
+		t.Run(check.name, func(t *testing.T) {
 			pattern := `(?s)` + regexp.QuoteMeta(check.productConst) + ` = \[(.*?)\] as const`
 			block := regexp.MustCompile(pattern).FindSubmatch(data)
 			if len(block) != 2 {

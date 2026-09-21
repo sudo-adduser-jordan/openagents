@@ -3,7 +3,6 @@ import { FocusScope } from "@radix-ui/react-focus-scope";
 import { useEffect, useRef, useState } from "react";
 import { createPortal } from "react-dom";
 import { useTranslation } from "react-i18next";
-import { useCloudGate } from "../hooks/useCloudGate";
 import { GlobalSettingsForm } from "./GlobalSettingsForm";
 import {
 	ProjectSettingsForm,
@@ -29,8 +28,6 @@ export function SettingsDialog() {
 	const { t } = useTranslation();
 	const settingsModal = useUiStore((state) => state.settingsModal);
 	const closeSettings = useUiStore((state) => state.closeSettings);
-	// Reads the daemon settings the dialog tree already queries; no extra fetch.
-	const { cloudEnabled } = useCloudGate();
 
 	const displaySettings = settingsModal;
 	// The selected page includes several store/query subscribers. Mount it one
@@ -44,7 +41,7 @@ export function SettingsDialog() {
 	}, [settingsModal]);
 	const isBodyReady = bodySettings === displaySettings;
 
-	const globalSections = visibleGlobalSettings({ cloudEnabled });
+	const globalSections = visibleGlobalSettings();
 
 	const projectSections: Array<{ id: ProjectSettingsSection; label: string; icon: LucideIcon }> = [
 		{ id: "general", label: t("settings.project.identity"), icon: MonitorCog },
@@ -60,7 +57,7 @@ export function SettingsDialog() {
 
 	const activeLabel = isProjectSettings
 		? (projectSections.find((s) => s.id === activeProjectSection)?.label ?? t("settings.project.identity"))
-		: globalSettingsItem(activeSection, { cloudEnabled }).label(t);
+		: globalSettingsItem(activeSection).label(t);
 
 	const closeSettingsDialog = () => {
 		if (isProjectSettings && (projectSaveState.phase === "pending" || projectSaveState.phase === "saving")) return;
@@ -86,13 +83,13 @@ export function SettingsDialog() {
 
 	useEffect(() => {
 		if (settingsModal?.scope === "global") {
-			setActiveSection(globalSettingsItem(settingsModal.section ?? "general", { cloudEnabled }).id);
+			setActiveSection(globalSettingsItem(settingsModal.section ?? "general").id);
 		}
 		if (settingsModal?.scope === "project") {
 			setActiveProjectSection("general");
 			setProjectSaveState(initialProjectSaveState());
 		}
-	}, [cloudEnabled, settingsModal]);
+	}, [settingsModal]);
 
 	if (!open || !displaySettings) return null;
 
@@ -219,7 +216,6 @@ export function SettingsDialog() {
 									/>
 								) : (
 									<GlobalSettingsForm
-										cloudEnabled={cloudEnabled}
 										section={activeSection}
 									/>
 								)

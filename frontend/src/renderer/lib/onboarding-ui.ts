@@ -1,12 +1,12 @@
 // Shared layout tokens for onboarding-style modals and panels (new task,
-// clone repo, add project, cloud credential/sign-in). Keeps shell classes in
-// one place so cloud flows don't drift from the local onboarding language.
+// clone repo, add project). Keeps shell classes in one place so the flows
+// don't drift from the local onboarding language.
 
-/** Centered Radix/shadcn dialog shell (CloudCredentialDialog, CloudLocalSignInDialog). */
+/** Centered Radix/shadcn dialog shell. */
 export const centeredOnboardingDialogClass =
 	"fixed left-1/2 top-1/2 z-overlay flex max-h-[min(640px,calc(100svh-24px))] w-[min(560px,calc(100vw-24px))] max-w-none -translate-x-1/2 -translate-y-1/2 flex-col gap-0 overflow-hidden rounded-lg border border-border bg-popover p-0 text-popover-foreground shadow-xl data-[state=open]:animate-modal-in data-[state=closed]:animate-modal-out motion-reduce:animate-none";
 
-/** Embedded panel inside the create-project source dialog (ImportSourcePicker, cloud card). */
+/** Embedded panel inside the create-project source dialog (ImportSourcePicker). */
 export const onboardingPanelClass =
 	"relative w-full max-w-[min(560px,calc(100vw-24px))] overflow-hidden rounded-lg border border-border bg-popover text-popover-foreground shadow-xl";
 

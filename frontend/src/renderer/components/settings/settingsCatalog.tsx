@@ -1,11 +1,9 @@
-import { Bot, CircleHelp, Cloud, Globe2, Keyboard, RefreshCw, Settings2, Smartphone, type LucideIcon } from "lucide-react";
+import { Bot, CircleHelp, Globe2, Keyboard, RefreshCw, Settings2, Smartphone, type LucideIcon } from "lucide-react";
 import { lazy, type ReactNode } from "react";
 import type { TFunction } from "i18next";
 import type { GlobalSettingsSection } from "../../stores/ui-store";
 import { BrowserDownloadsSection } from "./BrowserDownloadsSection";
 import { BrowserProfilesSection } from "./BrowserProfilesSection";
-import { CloudCredentialsSection } from "./CloudCredentialsSection";
-import { CloudProviderSection } from "./CloudProviderSection";
 import { ConnectMobileContent } from "./ConnectMobileContent";
 import { GeneralSettingsSection } from "./GeneralSettingsSection";
 import { HarnessSettingsSection } from "./HarnessSettingsSection";
@@ -19,15 +17,10 @@ const UpdatesSection = lazy(async () => {
 	return { default: module.UpdatesSection };
 });
 
-type CatalogContext = {
-	cloudEnabled: boolean;
-};
-
 export type SettingsCatalogItem = {
 	id: GlobalSettingsSection;
 	icon: LucideIcon;
 	label: (t: TFunction) => string;
-	visible?: (context: CatalogContext) => boolean;
 	/** Rendered in the settings nav but greyed out and non-interactive. */
 	disabled?: boolean;
 	render: (t: TFunction, titleHidden: boolean) => ReactNode;
@@ -60,18 +53,6 @@ const globalSettingsCatalog: SettingsCatalogItem[] = [
 				<div className="border-t border-border/60 pt-5">
 					<BrowserDownloadsSection />
 				</div>
-			</>
-		),
-	},
-	{
-		id: "cloud",
-		icon: Cloud,
-		label: (t) => t("settings.cloud"),
-		visible: ({ cloudEnabled }) => cloudEnabled,
-		render: (_t, titleHidden) => (
-			<>
-				<CloudProviderSection titleHidden={titleHidden} />
-				<CloudCredentialsSection titleHidden={titleHidden} />
 			</>
 		),
 	},
@@ -117,14 +98,14 @@ const globalSettingsCatalog: SettingsCatalogItem[] = [
 	},
 ];
 
-export function visibleGlobalSettings(context: CatalogContext): SettingsCatalogItem[] {
-	return globalSettingsCatalog.filter((item) => item.visible?.(context) ?? true);
+export function visibleGlobalSettings(): SettingsCatalogItem[] {
+	return globalSettingsCatalog;
 }
 
-export function globalSettingsItem(section: GlobalSettingsSection, context: CatalogContext): SettingsCatalogItem {
-	return visibleGlobalSettings(context).find((item) => item.id === section) ?? globalSettingsCatalog[0];
+export function globalSettingsItem(section: GlobalSettingsSection): SettingsCatalogItem {
+	return visibleGlobalSettings().find((item) => item.id === section) ?? globalSettingsCatalog[0];
 }
 
-export function globalSettingsItemsFor(section: GlobalSettingsSection | "all", context: CatalogContext): SettingsCatalogItem[] {
-	return section === "all" ? visibleGlobalSettings(context) : [globalSettingsItem(section, context)];
+export function globalSettingsItemsFor(section: GlobalSettingsSection | "all"): SettingsCatalogItem[] {
+	return section === "all" ? visibleGlobalSettings() : [globalSettingsItem(section)];
 }

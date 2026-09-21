@@ -9,7 +9,6 @@ import { ProjectBoardActions } from "./ProjectBoardActions";
 import { useBoardPresentation } from "../hooks/useBoardPresentation";
 import { useProjectOrchestratorAction } from "../hooks/useProjectOrchestratorAction";
 import {
-	CLOUD_PROJECT_KIND,
 	isOrchestratorSession,
 	sessionIsActive,
 	STANDALONE_PROJECT_KIND,
@@ -241,11 +240,8 @@ export function ShellTopbar({
 						{/* Open-in-editor leads the session actions: it is the only
 						    non-destructive one, and it must sit left of Kill. Kept outside
 						    the local-actions group because Electron main independently
-						    reports whether this session has a live workspace. Cloud sessions
-						    have no local workspace to hand off to an editor: the local daemon
-						    has never heard of them, so querying it just surfaces its 404 as a
-						    confusing "Unknown session" error (see workspace.ts's `kind` doc). */}
-						{session && project?.kind !== CLOUD_PROJECT_KIND ? (
+						    reports whether this session has a live workspace. */}
+						{session ? (
 							// Keyed per session so a stale launch error does not carry over
 							// when switching sessions. The prefix keeps it distinct from the
 							// kill button's key: identical sibling keys make React duplicate

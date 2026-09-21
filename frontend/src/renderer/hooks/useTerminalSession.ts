@@ -16,7 +16,6 @@ import { useQueryClient } from "@tanstack/react-query";
 import { useCallback, useEffect, useLayoutEffect, useRef, useState } from "react";
 import { getApiBaseUrl } from "../lib/api-client";
 import { consumeFreshTerminalHandle } from "../lib/fresh-terminal-handles";
-import { LOCAL_ECHO_ENABLED, withPredictiveLocalEcho } from "../lib/terminal-local-echo";
 import { createTerminalMux, muxUrlFromApiBase, type TerminalMux } from "../lib/terminal-mux";
 import { sessionIsActive, type WorkspaceSession } from "../types/workspace";
 import { workspaceQueryKey } from "./useWorkspaceQuery";
@@ -50,9 +49,8 @@ export type AttachableTerminal = {
 	/** Tell Cursor Agent the live light/dark scheme (private 997 notification). */
 	notifyCursorColorScheme: () => void;
 	/**
-	 * Which xterm buffer is active. Predictive local echo (cloud panes only)
-	 * predicts on the normal buffer and self-disables on the alternate one;
-	 * fakes may omit it, which reads as "alternate" — never predict.
+	 * Which xterm buffer is active. Fakes may omit it, which reads as
+	 * "alternate".
 	 */
 	bufferType?: () => "normal" | "alternate";
 	/** Send an explicit UI action through the same guarded path as user input. */
@@ -100,25 +98,9 @@ export type UseTerminalSessionOptions = {
 
 const RETRY_BASE_MS = 500;
 const RETRY_MAX_MS = 8_000;
-// Flat retry while a cloud session has never attached: the control plane
-// answers the terminal-ticket mint with a cheap 409 until the sandbox worker
-// connects, so this is a poll for readiness, not a reconnect storm.
-// Exponential backoff here only adds dead seconds between "worker ready" and
-// "terminal attached" (a worker ready at 17s would wait for the 23s attempt).
-const CLOUD_CONNECT_RETRY_MS = 1_000;
-// Stop retrying and surface a real error after this many consecutive genuine
-// socket failures for a cloud session that has never successfully attached.
-// Only post-mint socket failures count; "worker still provisioning" (mint 409,
-// reported by the mux as "waiting") never trips this, so a slow cold start does
-// not false-fire a "check your firewall" error. ~8 socket failures ≈ 8s.
-const CLOUD_CONNECT_MAX_FAILURES = 8;
 // Local daemon panes only: the daemon runs a liveness probe and spawns the
 // runtime client between mux.open() and the pane opening, so a stalled spawn
-// must recover. A CLOUD pane gets NO client open timeout — readiness is
-// server-driven: the CP holds the socket in "starting" until the terminal opens
-// or its own 20s ready deadline closes the socket, which the client already
-// handles as onConnectionChange("closed") -> scheduleReattach. A client-side
-// cloud open timeout only manufactured reconnect storms (the 3s/30s band-aids).
+// must recover.
 const OPEN_TIMEOUT_MS = 3_000;
 // Trailing debounce on grid changes: a pane drag emits a burst of intermediate
 // sizes; the attached program should get one SIGWINCH when the drag settles,
@@ -186,9 +168,8 @@ export function useTerminalSession(session: WorkspaceSession | undefined, option
 	// cover over xterm until the burst has been written and parsed.
 	const [replaySettled, setReplaySettled] = useState(true);
 	// True once this attachment has opened at least once. Lets the pane show a
-	// calm "Connecting…" during the first connect (e.g. a cloud sandbox worker
-	// still checking in) and reserve "disconnected — reattaching" for a genuine
-	// mid-session drop.
+	// calm "Connecting…" during the first connect and reserve "disconnected —
+	// reattaching" for a genuine mid-session drop.
 	const [hasAttached, setHasAttached] = useState(false);
 
 	const sessionRef = useRef(session);
@@ -215,14 +196,6 @@ export function useTerminalSession(session: WorkspaceSession | undefined, option
 		attempts: 0,
 		generation: 0,
 		inputReady: false,
-		// Mirrors the hasAttached state for callbacks: false until this
-		// attachment's first successful open, which switches the cloud pane's
-		// flat readiness polling over to exponential reconnect backoff.
-		hasAttachedOnce: false,
-		// Consecutive genuine socket failures before the first successful attach.
-		// Reset on a real open and on a fresh attach; provisioning waits do not
-		// touch it. Trips the connect-failure circuit breaker at the cap.
-		cloudConnectFailures: 0,
 		detached: true,
 		// True only after this attachment opens parked at 0×0. The next visible
 		// activation must promote it back to a positive primary grid.
@@ -337,7 +310,7 @@ export function useTerminalSession(session: WorkspaceSession | undefined, option
 		r.openTimer = null;
 	}, []);
 
-	const scheduleReattach = useCallback((countAsCloudFailure = false) => {
+	const scheduleReattach = useCallback(() => {
 		const r = runtime.current;
 		if (r.detached || !r.terminal || !r.handle) {
 			return;
@@ -348,38 +321,13 @@ export function useTerminalSession(session: WorkspaceSession | undefined, option
 		}
 		transition("reattaching");
 		// Not ready → no timer; the daemonReady effect reconnects when it flips.
-		// A cloud pane targets its sandbox worker, not the local daemon, so it
-		// keeps retrying on its own backoff regardless of local daemon state.
-		if (!optionsRef.current.daemonReady && !sessionRef.current?.cloud) {
+		if (!optionsRef.current.daemonReady) {
 			return;
 		}
 		if (r.retryTimer) {
 			return;
 		}
-		// Count only genuine post-mint socket failures for a cloud pane that has
-		// never attached. A "worker still provisioning" wait (mint 409) reaches
-		// here with countAsCloudFailure=false and must not accrue, so a slow cold
-		// start never false-fires the breaker. After CLOUD_CONNECT_MAX_FAILURES
-		// real socket failures we know it is a proxy/firewall/CSP block, not a
-		// transient, so we stop the loop and surface a real error.
-		if (countAsCloudFailure && !r.hasAttachedOnce && sessionRef.current?.cloud) {
-			r.cloudConnectFailures += 1;
-			if (r.cloudConnectFailures >= CLOUD_CONNECT_MAX_FAILURES) {
-				setError(
-					"Terminal ticket issued but the WebSocket cannot connect. " +
-						"Check proxy, firewall, or CSP settings.",
-				);
-				transition("error");
-				return;
-			}
-		}
-		// First connect of a cloud pane = polling for sandbox readiness; keep it
-		// flat (see CLOUD_CONNECT_RETRY_MS). After a real attachment, drops back
-		// to exponential backoff like every other reconnect.
-		const delay =
-			!r.hasAttachedOnce && sessionRef.current?.cloud
-				? CLOUD_CONNECT_RETRY_MS
-				: Math.min(RETRY_BASE_MS * 2 ** r.attempts, RETRY_MAX_MS);
+		const delay = Math.min(RETRY_BASE_MS * 2 ** r.attempts, RETRY_MAX_MS);
 		r.attempts += 1;
 		r.retryTimer = setTimeout(() => {
 			r.retryTimer = null;
@@ -401,19 +349,7 @@ export function useTerminalSession(session: WorkspaceSession | undefined, option
 		r.inputReady = false;
 		teardownMux();
 
-		const baseMux = (optionsRef.current.createMux ?? defaultCreateMux)();
-		// Cloud panes ride a real network round trip per keystroke, so wrap their
-		// mux with predictive local echo (see lib/terminal-local-echo.ts): typed
-		// characters render immediately and reconcile against the server echo.
-		// Local panes are loopback PTYs with ~0 latency and stay byte-exact
-		// untouched. Shell panes carry no session, so they are never wrapped —
-		// today the renderer only dials cloud sockets for agent panes anyway.
-		const mux =
-			LOCAL_ECHO_ENABLED && sessionRef.current?.cloud
-				? withPredictiveLocalEcho(baseMux, {
-						bufferType: () => terminal.bufferType?.() ?? "alternate",
-					})
-				: baseMux;
+		const mux = (optionsRef.current.createMux ?? defaultCreateMux)();
 		r.mux = mux;
 
 		let pendingReplayWrites = 0;
@@ -643,8 +579,6 @@ export function useTerminalSession(session: WorkspaceSession | undefined, option
 				clearOpenTimer(generation);
 				r.inputReady = true;
 				r.attempts = 0;
-				r.cloudConnectFailures = 0;
-				r.hasAttachedOnce = true;
 				setError(undefined);
 				setHasAttached(true);
 				transition("attached");
@@ -656,11 +590,8 @@ export function useTerminalSession(session: WorkspaceSession | undefined, option
 				if (r.replayBuffering && !optionsRef.current.waitForInitialOutput && !r.replayCapTimer) {
 					r.replayCapTimer = setTimeout(() => flushReplay(true), REPLAY_CAP_MS);
 				}
-				// Same anchor, different job: local panes may uncover when there is
-				// nothing to replay (see REPLAY_FIRST_BYTE_MS). Cloud agent panes
-				// deliberately wait for their first real TUI bytes: showing xterm
-				// after the worker attaches but before Codex draws created a second
-				// blank screen between “Connecting…” and the agent UI.
+				// Same anchor, different job: panes may uncover when there is
+				// nothing to replay (see REPLAY_FIRST_BYTE_MS).
 				if (r.replayBuffering && !optionsRef.current.waitForInitialOutput && !r.replayFirstByteTimer) {
 					r.replayFirstByteTimer = setTimeout(() => {
 						r.replayFirstByteTimer = null;
@@ -702,10 +633,6 @@ export function useTerminalSession(session: WorkspaceSession | undefined, option
 			}),
 			mux.onConnectionChange((connectionState) => {
 				if (!isCurrentAttachment(generation, handle, mux)) return;
-				// "closed" = a genuine socket failure (ticket minted but the
-				// WebSocket dropped or never opened); "waiting" = the worker is
-				// still provisioning (mint 409), which reconnects the same way but
-				// must not count against the connect-failure breaker.
 				if (connectionState === "closed" || connectionState === "waiting") {
 					// End the gate: no replay is coming over a dead socket. This is
 					// the ONLY settle path when the socket dies before `opened` —
@@ -717,7 +644,7 @@ export function useTerminalSession(session: WorkspaceSession | undefined, option
 					flushReplay(false, true);
 					clearOpenTimer(generation);
 					r.inputReady = false;
-					scheduleReattach(connectionState === "closed");
+					scheduleReattach();
 				}
 			}),
 		);
@@ -799,10 +726,8 @@ export function useTerminalSession(session: WorkspaceSession | undefined, option
 		// would then land frame-by-frame with the bug fully intact, behind a
 		// pointless blank cover. `opened` fires from setPTY immediately before
 		// copyOut, so anchoring there means the cap only ever measures the burst.
-		// If `opened` never arrives, the cover is lifted by the recovery path for
-		// that transport: a LOCAL pane's openTimer tears down (teardownMux lifts
-		// it); a CLOUD pane's socket closing or mint-409 reaches
-		// onConnectionChange, whose flushReplay lifts it.
+		// If `opened` never arrives, the cover is lifted by the recovery path:
+		// the openTimer tears down (teardownMux lifts it).
 
 		// A retained pane may reconnect while parked. It still needs the output
 		// stream, but its stale off-screen grid must not resize the shared PTY.
@@ -815,25 +740,16 @@ export function useTerminalSession(session: WorkspaceSession | undefined, option
 		mux.open(handle, openCols, openRows);
 		r.lastPublishedGrid =
 			openCols > 0 && openRows > 0 ? { cols: openCols, rows: openRows } : null;
-// Client open timeout for LOCAL panes only. It budgets the time between
-		// mux.open() and the pane opening — the daemon's liveness probe + runtime
-		// spawn — so a stalled spawn recovers. A CLOUD pane gets NO client open
-		// timeout: readiness is server-driven (the mux opens its socket directly,
-		// the CP holds it in "starting" until the terminal opens or its own ~20s
-		// deadline closes it, and a closed socket already reaches
-		// onConnectionChange("closed") -> scheduleReattach). A client timeout here
-		// only ever tore a healthy slow open down mid-attach and rebuilt the mux —
-		// the reconnect storm the 3s/30s band-aids chased. The mint-409 "waiting"
-		// poll and the CP-close bound already cover every cloud stall.
-		if (!sessionRef.current?.cloud) {
-			r.openTimer = setTimeout(() => {
-				if (!isCurrentAttachment(generation, handle, mux)) return;
-				r.openTimer = null;
-				transition("reattaching");
-				teardownMux();
-				scheduleReattach();
-			}, OPEN_TIMEOUT_MS);
-		}
+// Client open timeout. It budgets the time between mux.open() and the pane
+		// opening — the daemon's liveness probe + runtime spawn — so a stalled
+		// spawn recovers.
+		r.openTimer = setTimeout(() => {
+			if (!isCurrentAttachment(generation, handle, mux)) return;
+			r.openTimer = null;
+			transition("reattaching");
+			teardownMux();
+			scheduleReattach();
+		}, OPEN_TIMEOUT_MS);
 	}, [
 		clearOpenTimer,
 		clearReplayTimers,
@@ -857,14 +773,10 @@ export function useTerminalSession(session: WorkspaceSession | undefined, option
 			r.handle = handle;
 			r.detached = false;
 			r.attempts = 0;
-			r.cloudConnectFailures = 0;
-			r.hasAttachedOnce = false;
 			setError(undefined);
 			setHasAttached(false);
 			if (handle) {
-				// A cloud pane connects to its sandbox worker directly, so it must
-				// not wait on the LOCAL daemon being ready; only local panes do.
-				if (optionsRef.current.daemonReady || Boolean(sessionRef.current?.cloud)) {
+				if (optionsRef.current.daemonReady) {
 					transition("connecting");
 					connect();
 				} else {

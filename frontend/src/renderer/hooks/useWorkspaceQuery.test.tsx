@@ -4,31 +4,16 @@ import { beforeEach, describe, expect, it, vi } from "vitest";
 import type { ReactNode } from "react";
 import type { WorkspaceSummary } from "../types/workspace";
 
-const { cloudState, getMock, hasTrustedApiBaseUrlMock, listProjectsMock, listSessionsMock } = vi.hoisted(
+const { getMock, hasTrustedApiBaseUrlMock } = vi.hoisted(
 	() => ({
-		cloudState: { ready: false, org: undefined as { id: string } | undefined },
 		getMock: vi.fn(),
 		hasTrustedApiBaseUrlMock: vi.fn(() => true),
-		listProjectsMock: vi.fn(),
-		listSessionsMock: vi.fn(),
 	}),
 );
 
 vi.mock("../lib/api-client", () => ({
 	apiClient: { GET: getMock },
 	hasTrustedApiBaseUrl: hasTrustedApiBaseUrlMock,
-}));
-
-vi.mock("./useCloudCp", () => ({
-	useCloudCp: () => ({
-		client: { listProjects: listProjectsMock, listSessions: listSessionsMock },
-		ready: cloudState.ready,
-		baseUrl: "https://cp.example.com",
-	}),
-}));
-
-vi.mock("./useCloudOrg", () => ({
-	useCloudOrg: () => ({ org: cloudState.org, isLoading: false, error: undefined, ready: cloudState.ready }),
 }));
 
 import { useWorkspaceQuery, useWorkspaceScope, useWorkspaceSession, useWorkspaceTraySessions, workspaceQueryKey } from "./useWorkspaceQuery";
@@ -53,10 +38,6 @@ function respondWith(payload: {
 beforeEach(() => {
 	getMock.mockReset();
 	hasTrustedApiBaseUrlMock.mockReset().mockReturnValue(true);
-	cloudState.ready = false;
-	cloudState.org = undefined;
-	listProjectsMock.mockReset();
-	listSessionsMock.mockReset().mockResolvedValue({ items: [] });
 });
 
 describe("useWorkspaceQuery", () => {
@@ -465,85 +446,11 @@ describe("useWorkspaceQuery", () => {
 		expect(result.current.error).toBe(failure);
 	});
 
-	it("merges control-plane projects after local ones with kind cloud", async () => {
-		cloudState.ready = true;
-		cloudState.org = { id: "org-1" };
-		listProjectsMock.mockResolvedValue({
-			items: [
-				{
-					id: "cp-1",
-					orgId: "org-1",
-					displayName: "cloud-app",
-					repositoryUrl: "https://github.com/acme/cloud-app",
-					defaultBranch: "main",
-					config: {},
-					createdAt: "2026-08-01T00:00:00Z",
-					updatedAt: "2026-08-01T00:00:00Z",
-				},
-			],
-			page: { hasMore: false },
-		});
-		respondWith({
-			projects: { data: { projects: [{ id: "proj-1", name: "my-app", path: "/p" }] }, error: undefined },
-			sessions: {
-				data: {
-					sessions: [
-						{
-							id: "standalone-1",
-							displayName: "Research",
-							harness: "codex",
-							status: "working",
-							isTerminated: false,
-							updatedAt: "2026-06-10T16:15:04Z",
-						},
-					],
-				},
-				error: undefined,
-			},
-		});
 
-		const { result } = renderHook(() => useWorkspaceQuery(), { wrapper });
-		await waitFor(() => expect(result.current.data).toHaveLength(3));
 
-		expect(result.current.data?.[0]).toMatchObject({ id: "proj-1", name: "my-app", path: "/p" });
-		expect(result.current.data?.[1]).toEqual({
-			id: "cp-1",
-			name: "cloud-app",
-			kind: "cloud",
-			path: "",
-			sessions: [],
-		});
-		expect(result.current.data?.[2]).toMatchObject({ id: "__standalone__", name: "Ad hoc agents" });
-		expect(listProjectsMock).toHaveBeenCalledWith("org-1", { limit: 100 });
-	});
 
-	it("keeps local projects when the cloud fetch fails", async () => {
-		cloudState.ready = true;
-		cloudState.org = { id: "org-1" };
-		listProjectsMock.mockRejectedValue(new Error("control plane down"));
-		respondWith({
-			projects: { data: { projects: [{ id: "proj-1", name: "my-app", path: "/p" }] }, error: undefined },
-		});
 
-		const { result } = renderHook(() => useWorkspaceQuery(), { wrapper });
-		await waitFor(() => expect(result.current.isSuccess).toBe(true));
-		await waitFor(() => expect(listProjectsMock).toHaveBeenCalled());
 
-		expect(result.current.data).toHaveLength(1);
-		expect(result.current.data?.[0]).toMatchObject({ id: "proj-1" });
-		expect(result.current.isError).toBe(false);
-	});
-
-	it("does not call the control plane while cloud is not ready", async () => {
-		respondWith({
-			projects: { data: { projects: [{ id: "proj-1", name: "my-app", path: "/p" }] }, error: undefined },
-		});
-
-		const { result } = renderHook(() => useWorkspaceQuery(), { wrapper });
-		await waitFor(() => expect(result.current.isSuccess).toBe(true));
-
-		expect(listProjectsMock).not.toHaveBeenCalled();
-	});
 
 	it("selects only attention-worthy worker sessions for the always-mounted tray", async () => {
 		respondWith({
@@ -589,14 +496,5 @@ describe("useWorkspaceScope board presentation", () => {
 		expect(result.current.data?.project).not.toHaveProperty("sessions");
 	});
 
-	it("resolves a cloud board after the local query succeeds without a matching project", async () => {
-		cloudState.ready = true;
-		cloudState.org = { id: "org-1" };
-		respondWith({});
-		listProjectsMock.mockResolvedValue({ items: [{ id: "cloud-1", displayName: "Cloud project" }] });
-		listSessionsMock.mockResolvedValue({ items: [{ id: "cloud-worker", projectId: "cloud-1", kind: "worker", status: "working" }] });
-		const { result } = renderHook(() => useWorkspaceScope("cloud-1"), { wrapper });
-		await waitFor(() => expect(result.current.data?.hasWorkerSessions).toBe(true));
-		expect(result.current.data?.project).toMatchObject({ id: "cloud-1", kind: "cloud", name: "Cloud project" });
-	});
+
 });

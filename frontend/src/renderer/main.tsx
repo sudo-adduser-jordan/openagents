@@ -8,7 +8,6 @@ import "./styles.css";
 import { queryClient } from "./lib/query-client";
 import { mergeUnreadNotification, unreadNotificationsQueryKey } from "./lib/notifications";
 import { createAppRouter } from "./router";
-import { CloudOnboardingGate } from "./components/CloudOnboardingGate";
 import { appI18n } from "./i18n";
 import { useLocaleStore } from "./stores/locale-store";
 import { useSoundNotificationsStore } from "./stores/sound-notifications-store";
@@ -77,7 +76,6 @@ async function renderApp(): Promise<void> {
 		<I18nextProvider i18n={appI18n}>
 			<QueryClientProvider client={queryClient}>
 				<RouterProvider router={router} />
-				<CloudOnboardingGate />
 			</QueryClientProvider>
 		</I18nextProvider>,
 	);

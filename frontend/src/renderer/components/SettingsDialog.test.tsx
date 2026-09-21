@@ -104,13 +104,7 @@ describe("SettingsDialog", () => {
 		expect(screen.queryByRole("button", { name: "Downloads" })).not.toBeInTheDocument();
 	});
 
-	it("falls back to General when Cloud is unavailable", async () => {
-		useUiStore.getState().openGlobalSettings("cloud");
-		renderSettingsDialog();
 
-		expect(await screen.findByTestId("global-settings-section")).toHaveTextContent("general");
-		expect(screen.queryByRole("button", { name: "Cloud" })).not.toBeInTheDocument();
-	});
 
 	it("traps focus and closes from Escape or the backdrop", async () => {
 		useUiStore.getState().openGlobalSettings("general");

@@ -1,10 +1,7 @@
 import { type QueryClient, useMutation, useMutationState, useQueryClient } from "@tanstack/react-query";
 import { toKanbanColumn, type WorkspaceSession, type WorkspaceSummary } from "../types/workspace";
-import { cloudSessionsQueryKey, workspaceQueryKey } from "./useWorkspaceQuery";
+import { workspaceQueryKey } from "./useWorkspaceQuery";
 import { apiClient, apiErrorMessage } from "../lib/api-client";
-import { createRendererCloudCpClient } from "./useCloudCp";
-import { settingsQueryKey, type Settings } from "./useSettings";
-import type { CloudCpSession } from "../lib/cloud-cp";
 
 type TerminateSessionOptions = {
 	onSuccess?: (session: WorkspaceSession) => void;
@@ -12,15 +9,7 @@ type TerminateSessionOptions = {
 
 export const terminateSessionMutationKey = ["terminate-session"] as const;
 
-async function terminateSession(queryClient: QueryClient, session: WorkspaceSession): Promise<void> {
-	if (session.cloud) {
-		const settings = queryClient.getQueryData<Settings>(settingsQueryKey);
-		const baseUrl = settings?.cloudControlPlaneUrl ?? "";
-		if (baseUrl === "") throw new Error("The cloud control plane is not configured.");
-		await createRendererCloudCpClient(baseUrl).deleteSession(session.cloud.orgId, session.id);
-		return;
-	}
-
+async function terminateSession(session: WorkspaceSession): Promise<void> {
 	const { error, response } = await apiClient.POST("/api/v1/sessions/{sessionId}/kill", {
 		params: { path: { sessionId: session.id } },
 	});
@@ -45,21 +34,11 @@ function markTerminated(sessionId: string) {
 			: session;
 }
 
-// The merged board recomputes cloud cards from cloudSessionsQueryKey, NOT from
-// workspaceQueryKey, so a cloud kill must flip the raw CloudCpSession too or the
-// card sits still until the round trip refetches (the "nothing happened, click
-// again" symptom). Snapshot every matching cache entry so onError can roll back.
+// Snapshot the workspace cache entry so onError can roll back.
 type WorkspaceSnapshot = [readonly unknown[], WorkspaceSummary[] | undefined];
-type CloudSnapshot = [readonly unknown[], CloudCpSession[] | undefined];
-
-function markCloudSessionTerminated(sessionId: string) {
-	return (session: CloudCpSession): CloudCpSession =>
-		session.id === sessionId ? { ...session, isTerminated: true, status: "terminated" } : session;
-}
 
 type TerminateMutationContext = {
 	workspace: WorkspaceSnapshot | undefined;
-	cloud: CloudSnapshot[];
 };
 
 type TerminateSessionMutationState = {
@@ -108,12 +87,11 @@ export function useTerminateSession(options: TerminateSessionOptions = {}) {
 	return useMutation({
 		mutationKey: terminateSessionMutationKey,
 		mutationFn: async (session: WorkspaceSession) => {
-			await terminateSession(queryClient, session);
+			await terminateSession(session);
 		},
-// Archive the card on the click, not on the round trip: the CP delete is
-		// slow (terminate session + tear down the sandbox), and a card that does
-		// not move reads as "the click did nothing" — the reason a delete needed
-		// two or three taps. Roll the optimistic write back in onError.
+// Archive the card on the click, not on the round trip: a card that does
+		// not move reads as "the click did nothing". Roll the optimistic write
+		// back in onError.
 		onMutate: async (session): Promise<TerminateMutationContext> => {
 			await queryClient.cancelQueries({ queryKey: workspaceQueryKey });
 			const workspace: WorkspaceSnapshot = [
@@ -127,34 +105,19 @@ export function useTerminateSession(options: TerminateSessionOptions = {}) {
 						: ws,
 				),
 			);
-			const cloud: CloudSnapshot[] = [];
-			if (session.cloud) {
-				await queryClient.cancelQueries({ queryKey: cloudSessionsQueryKey });
-				for (const [key, sessions] of queryClient.getQueriesData<CloudCpSession[]>({
-					queryKey: cloudSessionsQueryKey,
-				})) {
-					cloud.push([key, sessions]);
-					if (!sessions?.some((s) => s.id === session.id)) continue;
-					queryClient.setQueryData<CloudCpSession[]>(key, sessions.map(markCloudSessionTerminated(session.id)));
-				}
-			}
-			return { workspace, cloud };
+			return { workspace };
 		},
 		onSuccess: (_data, session) => {
 			// The optimistic write already settled the board; refresh in the
-			// background to reconcile with the control plane's real state.
+			// background to reconcile with the daemon's real state.
 			void queryClient.invalidateQueries({ queryKey: workspaceQueryKey });
-			// A cloud kill also lives in the cloud sessions query, which the board
-			// merges in separately, so refresh it too.
-			if (session.cloud) void queryClient.invalidateQueries({ queryKey: cloudSessionsQueryKey });
 			options.onSuccess?.(session);
 		},
 		onError: (_error, _session, context) => {
-			// Restore the pre-mutation snapshots so a failed kill un-archives the card
+			// Restore the pre-mutation snapshot so a failed kill un-archives the card
 			// rather than leaving it wrongly terminated.
 			const ctx = context as TerminateMutationContext | undefined;
 			if (ctx?.workspace) queryClient.setQueryData(ctx.workspace[0], ctx.workspace[1]);
-			for (const [key, sessions] of ctx?.cloud ?? []) queryClient.setQueryData(key, sessions);
 		},
 	});
 }

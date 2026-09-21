@@ -22,7 +22,6 @@ export { readStoredThemePreference, readStoredThemeStyle, resolveTheme } from ".
 export type GlobalSettingsSection =
 	| "general"
 	| "harness"
-	| "cloud"
 	| "mobile"
 	| "shortcuts"
 	| "browserProfiles"

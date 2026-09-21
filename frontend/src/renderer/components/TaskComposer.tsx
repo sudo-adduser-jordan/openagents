@@ -19,10 +19,6 @@ import {
 } from "../hooks/useAgentReadinessQuery";
 import { type FileAttachmentPayload, useFileAttachments } from "../hooks/useFileAttachments";
 import { useSettings } from "../hooks/useSettings";
-import { useCloudCp } from "../hooks/useCloudCp";
-import { useCloudOrg } from "../hooks/useCloudOrg";
-import { useSandboxProviderStore } from "../stores/sandbox-provider-store";
-import { cloudSessionsQueryKey, useCloudProjectsQuery } from "../hooks/useWorkspaceQuery";
 import {
 	agentModelsQueryKey,
 	agentModelsQueryOptions,
@@ -116,45 +112,11 @@ export function TaskComposer({
 		clear: clearAttachments,
 		toSettledPayload,
 	} = useFileAttachments();
-	// Cloud vs local is decided here and nowhere else: a cloud project routes task
-	// creation to the control plane (which provisions a sandbox), while a local
-	// project keeps the existing daemon flow untouched.
-	const { client: cloudClient } = useCloudCp();
-	const { org: cloudOrg } = useCloudOrg();
-	// The user's client-side sandbox-provider preference (when the control plane
-	// offers more than one); omitted lets the control plane use its default.
-	const selectedProvider = useSandboxProviderStore((s) => s.selectedProvider);
-	const cloudProjects = useCloudProjectsQuery();
-	const isCloudProject =
-		Boolean(projectId) && (cloudProjects.data ?? []).some((project) => project.id === projectId);
 	const isStandalone = projectId === STANDALONE_WORKSPACE_ID;
-	// A cloud project is unknown to the local daemon, so the local model catalog
-	// must be queried agent-level (no project scope); otherwise the request 404s
-	// and the model dropdown spins forever. Local projects keep their scope.
-	const modelsProjectId = isCloudProject || isStandalone ? "" : (projectId ?? "");
-
-	const createCloudTask = useCallback(
-		async (input: CreateTaskInput): Promise<string> => {
-			if (!cloudOrg?.id) throw new Error(t("newTask.unableToStart"));
-			try {
-				const { session } = await cloudClient.createSession(cloudOrg.id, {
-					projectId: input.projectId,
-					kind: "worker",
-					harness: input.agent ?? "opencode",
-					displayName: input.brief.trim().slice(0, 80) || (input.agent ?? "opencode"),
-					prompt: input.brief,
-					...(selectedProvider ? { provider: selectedProvider } : {}),
-				});
-				// The control plane provisions the sandbox asynchronously; surface the
-				// new session on the board immediately.
-				void queryClient.invalidateQueries({ queryKey: cloudSessionsQueryKey });
-				return session.id;
-			} catch (err) {
-				throw err instanceof Error ? err : new Error(t("newTask.unableToStart"));
-			}
-		},
-		[cloudClient, cloudOrg, queryClient, selectedProvider, t],
-	);
+	// A standalone task has no project scope, so the model catalog must be
+	// queried agent-level; otherwise the request 404s and the model dropdown
+	// spins forever. Local projects keep their scope.
+	const modelsProjectId = isStandalone ? "" : (projectId ?? "");
 
 	const createLocalTask = useCallback(
 		async (input: CreateTaskInput): Promise<string> => {
@@ -225,15 +187,13 @@ export function TaskComposer({
 
 	const createTask = useCallback(
 		(input: CreateTaskInput): Promise<string> =>
-			isStandalone ? createStandaloneTask(input) : isCloudProject ? createCloudTask(input) : createLocalTask(input),
-		[isStandalone, isCloudProject, createStandaloneTask, createCloudTask, createLocalTask],
+			isStandalone ? createStandaloneTask(input) : createLocalTask(input),
+		[isStandalone, createStandaloneTask, createLocalTask],
 	);
 
 	const projectQuery = useQuery({
-		// A cloud project lives in the control plane, not the local daemon, so this
-		// local lookup would 404 (PROJECT_NOT_FOUND); skip it for cloud projects.
 		queryKey: ["project", projectId],
-		enabled: Boolean(projectId) && !isCloudProject && !isStandalone,
+		enabled: Boolean(projectId) && !isStandalone,
 		queryFn: async () => {
 			const { data, error: apiError } = await apiClient.GET("/api/v1/projects/{id}", {
 				params: { path: { id: projectId ?? "" } },

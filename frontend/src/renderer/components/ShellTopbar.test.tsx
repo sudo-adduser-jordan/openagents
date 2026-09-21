@@ -5,7 +5,6 @@ import type { ReactNode } from "react";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 import { useUiStore } from "../stores/ui-store";
 import {
-	CLOUD_PROJECT_KIND,
 	STANDALONE_PROJECT_KIND,
 	STANDALONE_WORKSPACE_ID,
 	type SessionActivityState,
@@ -500,20 +499,6 @@ describe("ShellTopbar open-in-editor control", () => {
 		renderTopbarSessions([worker], "sess-1");
 
 		expect(await screen.findByRole("button", { name: "Open in Cursor" })).toBeInTheDocument();
-	});
-
-	it("hides the open-in-editor control for a cloud session instead of asking the local daemon for it", async () => {
-		// Cloud sessions have no local workspace: the local daemon has never
-		// heard of them, so this control's own "workspace" query would 404 with
-		// "Unknown session" and surface that raw local-daemon error in the
-		// topbar (see issue #4570). Hiding the control for kind === CLOUD_PROJECT_KIND
-		// avoids the query entirely.
-		renderTopbarSessions([worker], "sess-1", false, undefined, CLOUD_PROJECT_KIND);
-
-		await waitFor(() => {
-			expect(screen.queryByRole("button", { name: "Open in Cursor" })).not.toBeInTheDocument();
-			expect(screen.queryByRole("button", { name: "Choose editor" })).not.toBeInTheDocument();
-		});
 	});
 });
 

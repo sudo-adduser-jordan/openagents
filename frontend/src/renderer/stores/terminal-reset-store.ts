@@ -1,11 +1,11 @@
 import { create } from "zustand";
 
-// Per-session terminal reset/reconnect signals for cloud sessions.
+// Per-session terminal reset/reconnect signals.
 //
-// A cloud terminal is otherwise keyed only on the (unchanged) session id, so a
-// restore — which re-provisions a FRESH box under the same id but a NEW worker
-// epoch — needs an explicit signal or the pane keeps its cached mux factory (and
-// stale cursor) and clings to the dead terminal. `bump` provides that:
+// A terminal pane is keyed on the (unchanged) session id, so a restore — which
+// replaces the live PTY under the same id — needs an explicit signal or the
+// pane keeps its cached mux factory (and stale cursor) and clings to the dead
+// terminal. `bump` provides that:
 //
 //   - `nonces` bumps the terminal cache key + mux factory key, so the pane
 //     rebuilds from scratch (new factory closure, cursor at 0) and re-mints.

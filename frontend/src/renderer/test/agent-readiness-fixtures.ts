@@ -1,4 +1,3 @@
-import type { components } from "../../api/schema";
 import type { AgentReadinessSnapshot } from "../hooks/useAgentReadinessQuery";
 
 export function agentReadiness(

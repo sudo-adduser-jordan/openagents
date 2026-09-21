@@ -2,9 +2,8 @@ import { useEffect, useRef } from "react";
 import { useMutation, useMutationState, useQueryClient } from "@tanstack/react-query";
 import { useNavigate } from "@tanstack/react-router";
 import { useTranslation } from "react-i18next";
-import { CLOUD_PROJECT_KIND, hasConfiguredOrchestratorAgent, type WorkspaceSession } from "../types/workspace";
-import { cloudSessionsQueryKey, workspaceQueryKey, type WorkspaceScope } from "./useWorkspaceQuery";
-import { spawnCloudOrchestrator } from "../lib/cloud-orchestrator";
+import { hasConfiguredOrchestratorAgent, type WorkspaceSession } from "../types/workspace";
+import { workspaceQueryKey, type WorkspaceScope } from "./useWorkspaceQuery";
 import { isChatPreflightError, spawnOrchestrator, type OrchestratorSpawnSource } from "../lib/spawn-orchestrator";
 import { formatOrchestratorStartupError } from "../lib/orchestrator-startup-error";
 import { useUiStore } from "../stores/ui-store";
@@ -62,12 +61,8 @@ export function useProjectOrchestratorAction({
 		mutationFn: async (mode?: "tui") => {
 			if (!projectId) return;
 			setStartupError(projectId, null);
-			const openedSessionId = project?.kind === CLOUD_PROJECT_KIND
-				? await spawnCloudOrchestrator(queryClient, projectId)
-				: await spawnOrchestrator(projectId, source, false, mode);
-			await queryClient.invalidateQueries({
-				queryKey: project?.kind === CLOUD_PROJECT_KIND ? cloudSessionsQueryKey : workspaceQueryKey,
-			});
+			const openedSessionId = await spawnOrchestrator(projectId, source, false, mode);
+			await queryClient.invalidateQueries({ queryKey: workspaceQueryKey });
 			setStartupError(projectId, null);
 			// A completed request belongs to its original route, even if this
 			// component survived a project or session change while it was pending.
@@ -86,7 +81,7 @@ export function useProjectOrchestratorAction({
 		if (queryClient.isMutating({ mutationKey, exact: true })) return;
 		if (orchestrator) {
 			void navigate({ to: "/projects/$projectId/sessions/$sessionId", params: { projectId, sessionId: orchestrator.id } });
-		} else if (project?.kind !== CLOUD_PROJECT_KIND && !hasConfiguredOrchestratorAgent(project)) {
+		} else if (!hasConfiguredOrchestratorAgent(project)) {
 			if (project) useUiStore.getState().openProjectSettings(projectId);
 		} else {
 			mutation.mutate(mode);

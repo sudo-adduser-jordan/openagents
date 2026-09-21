@@ -329,26 +329,5 @@ if (typeof window !== "undefined") {
 			list: async () => [],
 			getActive: async () => null,
 		},
-		cloud: {
-			getSession: async () => null,
-			signIn: async () => undefined,
-			signOut: async () => undefined,
-			cancelProviderAuth: async () => undefined,
-			connectProviderAuth: async () => undefined,
-			localAuthAvailable: async () => false,
-			localRegister: async () => {
-				throw new Error("not available in tests");
-			},
-			localLogin: async () => {
-				throw new Error("not available in tests");
-			},
-			onSessionChanged: () => () => undefined,
-		},
-		cloudCp: {
-			request: async () => ({ status: 401, headers: {}, body: "" }),
-			openStream: async () => ({ streamId: "stream_test" }),
-			closeStream: () => undefined,
-			onStreamEvent: () => () => undefined,
-		},
 	};
 } // end if (typeof window !== "undefined")

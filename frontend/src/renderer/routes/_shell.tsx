@@ -29,9 +29,7 @@ import { agentModelsQueryOptions } from "../hooks/useAgentModelsQuery";
 import { useDaemonStatus } from "../hooks/useDaemonStatus";
 import { useOpenShellTerminal } from "../hooks/useShellTerminals";
 import { useWindowFullScreen } from "../hooks/useWindowFullScreen";
-import { cloudProjectsQueryKey, cloudSessionsQueryKey, useWorkspaceQuery, workspaceQueryKey, workspaceQueryOptions } from "../hooks/useWorkspaceQuery";
-import { useCloudCp } from "../hooks/useCloudCp";
-import { useCloudOrg } from "../hooks/useCloudOrg";
+import { useWorkspaceQuery, workspaceQueryKey, workspaceQueryOptions } from "../hooks/useWorkspaceQuery";
 import { apiClient, apiErrorCode, apiErrorDetails, apiErrorMessage, apiErrorRequestId, hasTrustedApiBaseUrl } from "../lib/api-client";
 import { refreshDaemonStatus } from "../lib/daemon-status";
 import { usesPreviewWorkspaceData } from "../lib/preview-mode";
@@ -51,7 +49,7 @@ import {
 } from "../lib/platform";
 import { sidebarIsVisible, sidebarOccupiesLayout, useUiStore } from "../stores/ui-store";
 import { matchesRendererShortcut } from "../stores/keybindings-store";
-import { CLOUD_PROJECT_KIND, sessionIsActive, STANDALONE_WORKSPACE_ID, toProjectKind, type WorkspaceSummary } from "../types/workspace";
+import { sessionIsActive, STANDALONE_WORKSPACE_ID, toProjectKind, type WorkspaceSummary } from "../types/workspace";
 import type { components } from "../../api/schema";
 
 export const Route = createFileRoute("/_shell")({
@@ -169,8 +167,6 @@ function ShellLayout() {
 	const navigate = useNavigate();
 	const matchRoute = useMatchRoute();
 	const queryClient = useQueryClient();
-	const { client: cloudClient } = useCloudCp();
-	const { org: cloudOrg } = useCloudOrg();
 	const workspaceQuery = useWorkspaceQuery();
 	const workspaces = workspaceQuery.data ?? [];
 	// Global shortcut listeners need the latest workspace list, but recreating
@@ -296,9 +292,6 @@ function ShellLayout() {
 		: routeParams.sessionId
 			? workspaces.find((workspace) => workspace.sessions.some((session) => session.id === routeParams.sessionId))?.id
 			: undefined;
-	const scopedSession = routeParams.sessionId
-		? workspaces.flatMap((workspace) => workspace.sessions).find((session) => session.id === routeParams.sessionId)
-		: undefined;
 	// Warms the New Task composer's model-catalog cache while the user is just
 	// looking at the project, so the picker never shows a loading flash the
 	// first time they actually open the dialog.
@@ -513,7 +506,7 @@ function ShellLayout() {
 				if (failure.code === "PATH_ALREADY_REGISTERED") {
 					const existingProjectId = failure.details?.existingProjectId;
 					const findRegisteredWorkspace = (items: WorkspaceSummary[]) => {
-						const local = items.filter((workspace) => workspace.kind !== "cloud");
+						const local = items;
 						// The daemon resolves symlinks/canonical paths. Prefer its identity
 						// over renderer path spelling, but only open a known local project.
 						return typeof existingProjectId === "string" && existingProjectId !== ""
@@ -609,36 +602,6 @@ function ShellLayout() {
 		async (projectId: string) => {
 			const isLastWorkspace =
               workspaces.length === 1 && workspaces[0]?.id === projectId;
-// Cloud projects live in the control plane, not the local daemon: route
-			// their delete to the CP (which archives the project and all its
-			// sessions) instead of the local project endpoint.
-			const isCloudProject =
-				workspaces.find((item) => item.id === projectId)?.kind === CLOUD_PROJECT_KIND;
-			if (isCloudProject) {
-				if (!cloudOrg?.id) {
-					const failure = new Error("The cloud control plane is not ready. Sign in and try again.") as Error & {
-						code?: string;
-					};
-					failure.code = "cloud_not_ready";
-					throw failure;
-				}
-				try {
-					await cloudClient.deleteProject(cloudOrg.id, projectId);
-				} catch (error) {
-					const failure = new Error(
-						error instanceof Error ? error.message : "Unable to delete cloud project",
-					) as Error & { code?: string };
-					throw failure;
-				}
-				// The archive is asynchronous (202); refresh the cloud queries so the
-				// merged board drops the project and its sessions on the next fetch.
-				await queryClient.invalidateQueries({ queryKey: cloudProjectsQueryKey });
-				await queryClient.invalidateQueries({ queryKey: cloudSessionsQueryKey });
-				if (isLastWorkspace) {
-					void navigate({ to: "/" });
-				}
-				return;
-			}
 			const { error } = await apiClient.DELETE("/api/v1/projects/{id}", {
 				params: { path: { id: projectId } },
 			});
@@ -652,7 +615,7 @@ function ShellLayout() {
               void navigate({ to: "/" });
 }
 		},
-		[cloudClient, cloudOrg?.id, navigate, queryClient, updateWorkspaces, workspaces],
+		[navigate, queryClient, updateWorkspaces, workspaces],
 	);
 
 	const restartOrchestrator = useCallback(
@@ -840,7 +803,7 @@ function ShellLayout() {
 		if (handledShellNonceRef.current === newShellTerminalNonce) return;
 		handledShellNonceRef.current = newShellTerminalNonce;
 		const shell = openShellTerminal.open(
-			{ projectId: scopedProjectId, sessionId: routeParams.sessionId, cloud: scopedSession?.cloud },
+			{ projectId: scopedProjectId, sessionId: routeParams.sessionId },
 			{
 				onSuccess: (openedShell) => {
 					setActiveShellTerminal(openedShell.handleId);
@@ -856,7 +819,6 @@ function ShellLayout() {
 		newShellTerminalNonce,
 		openShellTerminal,
 		scopedProjectId,
-		scopedSession?.cloud,
 		routeParams.sessionId,
 		navigate,
 		setActiveShellTerminal,

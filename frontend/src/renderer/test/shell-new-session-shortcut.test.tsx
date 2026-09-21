@@ -171,17 +171,6 @@ vi.mock("../lib/daemon-status", () => ({
 	refreshDaemonStatus: vi.fn(async () => shellMocks.state.daemonStatus),
 }));
 
-// TerminalCacheProvider resolves the cloud terminal transport in production.
-// These shell shortcut tests never mount a terminal, so keep that unrelated
-// settings/query path out of the provider-free harness.
-vi.mock("../hooks/useCloudCp", () => ({
-	useCloudCp: () => ({ client: {}, ready: false, baseUrl: "" }),
-}));
-
-vi.mock("../hooks/useCloudOrg", () => ({
-	useCloudOrg: () => ({ org: undefined, isLoading: false, error: undefined, ready: false }),
-}));
-
 // The shell layout opens standalone terminals; this suite only covers the
 // shortcut subscriptions, so the mutation is stubbed rather than driven.
 vi.mock("../hooks/useShellTerminals", () => ({
@@ -691,24 +680,7 @@ describe("shell new-shell-terminal shortcut subscription", () => {
 		);
 	});
 
-	it("preserves the cloud identity for a session-scoped terminal", async () => {
-		const session = workspaces[0]!.sessions[0]!;
-		session.cloud = { orgId: "cloud-org" };
-		shellMocks.state.routeParams = { sessionId: "sess-1" };
-		await renderShell();
 
-		pressNewShellTerminal();
-
-		expect(shellMocks.openShellTerminal).toHaveBeenCalledWith(
-			expect.objectContaining({
-				projectId: "proj-1",
-				sessionId: "sess-1",
-				cloud: { orgId: "cloud-org" },
-			}),
-			expect.anything(),
-		);
-		delete session.cloud;
-	});
 
 	// Session terminals always belong to the session on screen — there is no
 	// longer an "owner" session whose worktree could be borrowed here (#3208).

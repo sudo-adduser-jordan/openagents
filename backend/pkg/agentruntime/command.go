@@ -27,10 +27,10 @@ const (
 	PermissionBypassPermissions PermissionPolicy = "bypass-permissions"
 )
 
-// SessionMode is the durable Cloud execution mode.
+// SessionMode is the durable execution mode for worker sessions.
 type SessionMode string
 
-// Durable Cloud execution modes.
+// Durable execution modes.
 const (
 	SessionModeReadOnly SessionMode = "read-only"
 	SessionModeStandard SessionMode = "standard"

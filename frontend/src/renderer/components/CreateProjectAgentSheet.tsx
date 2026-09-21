@@ -138,8 +138,8 @@ export function CreateProjectAgentSheet({
 			),
 		[agentOptions],
 	);
-	// This sheet creates local projects only (cloud uses CloudProjectCard),
-	// so local session history is the inference signal.
+	// This sheet creates local projects only, so local session history is
+	// the inference signal.
 	const workspacesQuery = useQuery({ ...workspaceQueryOptions, enabled: open });
 	const sessionHistory = useMemo(
 		() => (workspacesQuery.data ?? []).flatMap((workspace) => workspace.sessions),

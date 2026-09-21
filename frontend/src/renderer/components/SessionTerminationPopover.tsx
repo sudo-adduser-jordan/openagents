@@ -18,16 +18,7 @@ export function SessionTerminationPopover({
 }) {
 	const { t } = useTranslation();
 	const title = session?.title;
-	// A cloud session's teardown is restorable — the control plane keeps its
-	// conversation and work so it can be re-provisioned later.
-	const isCloud = session?.cloud !== undefined;
-	const body = isCloud
-		? title
-			? t("termination.bodyCloudNamed", { title })
-			: t("termination.bodyCloud")
-		: title
-			? t("termination.bodyNamed", { title })
-			: t("termination.body");
+	const body = title ? t("termination.bodyNamed", { title }) : t("termination.body");
 	return (
 		<Popover onOpenChange={onOpenChange} open={open}>
 			<PopoverTrigger asChild>{trigger}</PopoverTrigger>

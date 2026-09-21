@@ -14,35 +14,22 @@ import (
 
 const getAppSettings = `-- name: GetAppSettings :one
 
-SELECT id, default_session_mode, updated_at, cloud_offering FROM app_settings WHERE id = 1
+SELECT id, default_session_mode, updated_at FROM app_settings WHERE id = 1
 `
+
+type GetAppSettingsRow struct {
+	ID                 int64
+	DefaultSessionMode domain.SessionMode
+	UpdatedAt          time.Time
+}
 
 // Daemon-owned user preferences. One row, seeded by migration 0042, so a read
 // never has to handle absence.
-func (q *Queries) GetAppSettings(ctx context.Context) (AppSetting, error) {
+func (q *Queries) GetAppSettings(ctx context.Context) (GetAppSettingsRow, error) {
 	row := q.db.QueryRowContext(ctx, getAppSettings)
-	var i AppSetting
-	err := row.Scan(
-		&i.ID,
-		&i.DefaultSessionMode,
-		&i.UpdatedAt,
-		&i.CloudOffering,
-	)
+	var i GetAppSettingsRow
+	err := row.Scan(&i.ID, &i.DefaultSessionMode, &i.UpdatedAt)
 	return i, err
-}
-
-const setCloudOffering = `-- name: SetCloudOffering :exec
-UPDATE app_settings SET cloud_offering = ?, updated_at = ? WHERE id = 1
-`
-
-type SetCloudOfferingParams struct {
-	CloudOffering bool
-	UpdatedAt     time.Time
-}
-
-func (q *Queries) SetCloudOffering(ctx context.Context, arg SetCloudOfferingParams) error {
-	_, err := q.db.ExecContext(ctx, setCloudOffering, arg.CloudOffering, arg.UpdatedAt)
-	return err
 }
 
 const setDefaultSessionMode = `-- name: SetDefaultSessionMode :exec

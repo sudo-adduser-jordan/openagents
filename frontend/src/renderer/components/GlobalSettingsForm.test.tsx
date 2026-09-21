@@ -91,7 +91,7 @@ vi.mock("../lib/bridge", () => ({
 	},
 }));
 
-function renderForm(section: GlobalSettingsSection = "all") {
+function renderForm(section: GlobalSettingsSection | "all" = "all") {
 	const qc = new QueryClient({ defaultOptions: { queries: { retry: false } } });
 	render(
 		<QueryClientProvider client={qc}>

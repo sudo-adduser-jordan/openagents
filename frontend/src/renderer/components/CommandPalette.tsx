@@ -5,10 +5,9 @@ import { useCallback, useEffect, useMemo, useRef, useState, type AnimationEvent 
 import { useTranslation } from "react-i18next";
 import { useCommandPaletteEnabled } from "../hooks/useCommandPaletteEnabled";
 import { useRestoreSession } from "../hooks/useRestoreSession";
-import { cloudSessionsQueryKey, useWorkspaceQuery, workspaceQueryKey } from "../hooks/useWorkspaceQuery";
+import { useWorkspaceQuery, workspaceQueryKey } from "../hooks/useWorkspaceQuery";
 import { apiClient, apiErrorMessage } from "../lib/api-client";
 import { aoBridge } from "../lib/bridge";
-import { spawnCloudOrchestrator } from "../lib/cloud-orchestrator";
 import {
 	buildCommands,
 	buildSessionActions,
@@ -210,7 +209,7 @@ export function CommandPalette() {
 			if (!useUiStore.getState().isCommandPaletteOpen) resetTransient();
 		}, 150);
 	}, [resetTransient, setOpen]);
-	// The import flow has its own cloud/query/dialog subtree. Mounting it beside a
+	// The import flow has its own query/dialog subtree. Mounting it beside a
 	// permanently retained palette made every palette render pay for an unrelated
 	// feature. Mount it only after the user chooses New project, then pulse its
 	// existing programmatic-open signal on the following commit (the flow seeds its
@@ -369,16 +368,6 @@ export function CommandPalette() {
 				return;
 			}
 			const workspace = workspaces.find((candidate) => candidate.id === projectId);
-			// Cloud projects carry no local orchestrator-agent config; spawn the
-			// orchestrator as a cloud session in its own sandbox instead of falling
-			// through to the project-settings page.
-			if (workspace?.kind === "cloud") {
-				const sessionId = await spawnCloudOrchestrator(queryClient, projectId);
-				await queryClient.invalidateQueries({ queryKey: cloudSessionsQueryKey });
-				navigateToTarget(sessionRoute(projectId, sessionId));
-				closePalette();
-				return;
-			}
 			if (!hasConfiguredOrchestratorAgent(workspace)) {
 				if (workspace) {
 					navigateToTarget({ to: "/projects/$projectId/settings", params: { projectId } });
