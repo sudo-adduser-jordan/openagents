@@ -1,4 +1,3 @@
-import { appI18n } from "../i18n/instance";
 import { describe, expect, it, vi } from "vitest";
 
 import {
@@ -113,14 +112,9 @@ describe("Chat draft destructive-boundary state", () => {
 	});
 });
 
-it("uses the selected locale for renderer and native leave warnings", async () => {
-	await appI18n.changeLanguage("fr");
-	try {
-		const copy = chatDraftDialogCopy(["persistence-failed", "pending-attachments"]);
-		expect(copy).toMatchObject({ title: "Brouillon de conversation non enregistré", stay: "Rester", leave: "Quitter quand même" });
-		expect(copy.detail).toContain("Les pièces jointes sont en cours d’enregistrement");
-		expect(chatDraftDiscardWarning(["persistence-failed"])).toContain("Quitter quand même cette conversation ?");
-	} finally {
-		await appI18n.changeLanguage("en");
-	}
+it("builds renderer and native leave warnings in English", async () => {
+	const copy = chatDraftDialogCopy(["persistence-failed", "pending-attachments"]);
+	expect(copy).toMatchObject({ title: "Unsaved Chat draft", stay: "Stay", leave: "Leave anyway" });
+	expect(copy.detail).toContain("Attachments are still being saved");
+	expect(chatDraftDiscardWarning(["persistence-failed"])).toContain("Leave this chat anyway?");
 });

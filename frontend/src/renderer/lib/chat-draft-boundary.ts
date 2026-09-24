@@ -1,4 +1,3 @@
-import { appI18n } from "../i18n/instance";
 import {
 	parseChatDraftBoundaryKinds,
 	type ChatDraftBoundaryKind,
@@ -104,7 +103,7 @@ export function chatDraftDiscardWarning(
 ): string | undefined {
 	const warnings = [...new Set(kinds)].map(chatDraftBoundaryCopy);
 	if (warnings.length === 0) return undefined;
-	return `${warnings.join("\n\n")}\n\n${appI18n.t("chat.draftDiscard.question")}`;
+	return `${warnings.join("\n\n")}\n\n${"Leave this chat anyway?"}`;
 }
 
 export function confirmDiscardChatDrafts(
@@ -116,15 +115,17 @@ export function confirmDiscardChatDrafts(
 }
 
 export function chatDraftBoundaryCopy(kind: ChatDraftBoundaryKind): string {
-	return appI18n.t(kind === "persistence-failed" ? "chat.draftDiscard.persistenceFailed" : "chat.draftDiscard.pendingAttachments");
+	return kind === "persistence-failed"
+		? "This Chat draft could not be saved locally. Leaving now will discard the unsaved changes. Copy the draft before leaving."
+		: "Attachments are still being saved. Leaving now will discard any files AO has not finished writing to the worktree. Wait for saving to finish.";
 }
 
 export function chatDraftDialogCopy(kinds: Iterable<ChatDraftBoundaryKind>): ChatDraftDialogCopy {
 	return {
-		title: appI18n.t("chat.draftDiscard.nativeTitle"),
-		message: appI18n.t("chat.draftDiscard.nativeMessage"),
+		title: "Unsaved Chat draft",
+		message: "This Chat draft is not safely saved yet.",
 		detail: [...new Set(kinds)].map(chatDraftBoundaryCopy).join("\n\n"),
-		stay: appI18n.t("chat.draftDiscard.stay"),
-		leave: appI18n.t("chat.draftDiscard.leaveAnyway"),
+		stay: "Stay",
+		leave: "Leave anyway",
 	};
 }

@@ -1,6 +1,5 @@
 import { createContext, useContext, type ComponentProps } from "react";
 import { Copy, ExternalLink, Globe } from "lucide-react";
-import { useTranslation } from "react-i18next";
 import { aoBridge } from "../lib/bridge";
 import { isWebLink, openLinkInSystemBrowser } from "../lib/external-link-policy";
 import {
@@ -18,7 +17,6 @@ export function AppLink({ href, onClick, onBrowserOpen, inAppLink, ...props }: C
 	onBrowserOpen?: (url: string) => void;
 	inAppLink?: (url: string) => boolean;
 }) {
-	const { t } = useTranslation();
 	const sessionBrowserOpen = useContext(AppBrowserLinkContext);
 	const openBrowser = onBrowserOpen ?? sessionBrowserOpen;
 	const webLink = !!href && isWebLink(href);
@@ -45,18 +43,18 @@ export function AppLink({ href, onClick, onBrowserOpen, inAppLink, ...props }: C
 					<>
 						<ContextMenuItem disabled={!openBrowser} onSelect={() => openBrowser?.(href)}>
 							<Globe aria-hidden="true" />
-							{t("link.openInAOBrowser")}
+							{"Open in ao browser"}
 						</ContextMenuItem>
 						<ContextMenuItem onSelect={() => void openLinkInSystemBrowser(href)}>
 							<ExternalLink aria-hidden="true" />
-							{t("link.openInExternalBrowser")}
+							{"Open in external browser"}
 						</ContextMenuItem>
 						<ContextMenuSeparator />
 					</>
 				)}
 				<ContextMenuItem onSelect={() => void aoBridge.clipboard.writeText(href)}>
 					<Copy aria-hidden="true" />
-					{t("link.copy")}
+					{"Copy link"}
 				</ContextMenuItem>
 			</ContextMenuContent>
 		</ContextMenu>

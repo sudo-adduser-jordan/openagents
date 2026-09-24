@@ -4,7 +4,6 @@ import userEvent from "@testing-library/user-event";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 import type { WorkspaceSession, WorkspaceSummary } from "../types/workspace";
 import { toKanbanColumn } from "@aoagents/product-ui";
-import { appI18n } from "../i18n";
 
 // Instant motion updates so height tweens do not leave tests waiting on timers.
 vi.mock("motion/react", async (importOriginal) => {
@@ -139,8 +138,7 @@ describe("SessionsBoard", () => {
 		expect(presentation.lastUserMessageAt).toBe("2026-01-01T09:00:00Z");
 	});
 
-	it("localizes dynamic card actions and pull request lifecycle labels", async () => {
-		await appI18n.changeLanguage("zh-CN");
+	it("renders dynamic card actions and pull request lifecycle labels", async () => {
 		workspaceQueryMock.mockReturnValue({
 			data: [
 				workspaceWithSessions([
@@ -167,16 +165,12 @@ describe("SessionsBoard", () => {
 			isSuccess: true,
 		});
 
-		try {
-			renderBoard("p1");
-			expect(screen.getByRole("button", { name: "终止 localized worker" })).toBeInTheDocument();
-			expect(screen.getByRole("link", { name: "PR #42 已打开" })).toHaveAttribute(
-				"href",
-				"https://github.com/acme/repo/pull/42",
-			);
-		} finally {
-			await appI18n.changeLanguage("en");
-		}
+		renderBoard("p1");
+		expect(screen.getByRole("button", { name: "Terminate localized worker" })).toBeInTheDocument();
+		expect(screen.getByRole("link", { name: "PR #42 open" })).toHaveAttribute(
+			"href",
+			"https://github.com/acme/repo/pull/42",
+		);
 	});
 
 	it("does not show an agent setup warning on the board", () => {
@@ -1634,7 +1628,7 @@ describe("SessionsBoard", () => {
 			data: [{ ...workspaceWithSessions([]), folderMissing: true }],
 		});
 		renderBoard("p1");
-		expect(screen.getByText(appI18n.t("home.folderMissing"))).toBeInTheDocument();
+		expect(screen.getByText("Folder missing")).toBeInTheDocument();
 	});
 
 	it("does not show the folder-missing banner when the project folder exists", () => {
@@ -1642,7 +1636,7 @@ describe("SessionsBoard", () => {
 			data: [{ ...workspaceWithSessions([]), folderMissing: false }],
 		});
 		renderBoard("p1");
-		expect(screen.queryByText(appI18n.t("home.folderMissing"))).not.toBeInTheDocument();
+		expect(screen.queryByText("Folder missing")).not.toBeInTheDocument();
 	});
 });
 

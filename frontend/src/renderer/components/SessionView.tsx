@@ -15,7 +15,6 @@ import {
 	type RefObject,
 } from "react";
 import { createPortal } from "react-dom";
-import { useTranslation } from "react-i18next";
 import type { components } from "../../api/schema";
 import { defaultShortcutBindings, shortcutBindingLabel } from "../../shared/shortcuts";
 import { BrowserPanelView, useBrowserAnnotationQueue } from "./BrowserPanel";
@@ -410,7 +409,6 @@ function SessionInspectorRail({
 // automatically grows into a co-work canvas. Chat readability clamps either
 // profile before the conversation can become unusably narrow.
 export function SessionView({ sessionId }: SessionViewProps) {
-	const { t } = useTranslation();
 	const [confirmedDraftDiscard, setConfirmedDraftDiscard] = useState<{
 		sessionId: string;
 		transitionId: string;
@@ -488,7 +486,7 @@ export function SessionView({ sessionId }: SessionViewProps) {
 	});
 	useEffect(() => {
 		aoBridge.app.setChatDraftRisk?.(chatDraftBoundaries, chatDraftDialogCopy(chatDraftBoundaries));
-	}, [chatDraftBoundaries, t]);
+	}, [chatDraftBoundaries]);
 	useEffect(
 		() => () => aoBridge.app.setChatDraftRisk?.([]),
 		[sessionId],
@@ -1325,7 +1323,7 @@ export function SessionView({ sessionId }: SessionViewProps) {
 			<Tooltip>
 				<TooltipTrigger asChild>
 					<TopbarButton
-						aria-label={t("shortcut.new-shell-terminal")}
+						aria-label="New terminal"
 						onClick={addShellTerminal}
 						type="button"
 						variant="icon"
@@ -1334,11 +1332,11 @@ export function SessionView({ sessionId }: SessionViewProps) {
 					</TopbarButton>
 				</TooltipTrigger>
 				<TooltipContent side="bottom">
-					{newTerminalError ?? t("terminal.newWithShortcut", { shortcut: newTerminalShortcutLabel })}
+					{newTerminalError ?? `New terminal (${newTerminalShortcutLabel})`}
 				</TooltipContent>
 			</Tooltip>
 		) : null,
-		[addShellTerminal, isOrchestrator, newTerminalError, session, t],
+		[addShellTerminal, isOrchestrator, newTerminalError, session],
 	);
 	const fileAnnotation = useFileAnnotation(sessionId);
 	const centerFileTabs = useMemo(
@@ -1521,9 +1519,9 @@ export function SessionView({ sessionId }: SessionViewProps) {
 
 	const fetchWorkspaceFiles = useCallback(async () => {
 		return queryClient.fetchQuery(
-			sessionWorkspaceFilesQueryOptions(sessionId, t("files.error.loadWorkspace")),
+			sessionWorkspaceFilesQueryOptions(sessionId, "Unable to load workspace files"),
 		);
-	}, [queryClient, sessionId, t]);
+	}, [queryClient, sessionId]);
 
 	const revealResolvedWorkspaceFile = useCallback(
 		async (rawPath: string) => {
@@ -1769,7 +1767,7 @@ export function SessionView({ sessionId }: SessionViewProps) {
 	if (!session && !workspaceQuery.isLoading) {
 		return (
 			<div className="grid h-full place-items-center p-6 text-center font-mono text-xs text-passive">
-				{t("session.notFound")}
+				{"Session not found. It may have been cleaned up — pick another from the sidebar."}
 			</div>
 		);
 	}
@@ -1897,10 +1895,10 @@ export function SessionView({ sessionId }: SessionViewProps) {
 							{interfaceSwitch.startError && !interfaceSwitchDialogOpen && !historyRecoveryNotice && !restartRequiredNotice ? (
 								<div role="alert" className="absolute left-1/2 top-3 z-20 flex w-[min(34rem,calc(100%-1.5rem))] -translate-x-1/2 items-start gap-3 rounded-lg border border-destructive/40 bg-popover px-3 py-2.5 text-xs shadow-md">
 									<div className="min-w-0 flex-1">
-										<p className="font-medium">{t("session.interfaceSwitchFailed")}</p>
+										<p className="font-medium">{"Could not switch interfaces"}</p>
 										<p className="mt-1 break-words text-muted-foreground">{interfaceSwitch.startError}</p>
 									</div>
-									<button type="button" aria-label={t("session.dismissInterfaceSwitchError")} className="shrink-0 rounded px-1 text-muted-foreground hover:text-foreground" onClick={interfaceSwitch.resetStartError}>{t("session.dismissInterfaceSwitchNotice")}</button>
+									<button type="button" aria-label="Dismiss interface switch error" className="shrink-0 rounded px-1 text-muted-foreground hover:text-foreground" onClick={interfaceSwitch.resetStartError}>{"Dismiss"}</button>
 								</div>
 							) : null}
 							{(!interfaceSwitch.startError || historyRecoveryNotice || restartRequiredNotice) && hasInterfaceNotice ? (
@@ -1980,8 +1978,8 @@ export function SessionView({ sessionId }: SessionViewProps) {
 							<TopbarButton
 								aria-label={
 									browserOnly
-										? `${isInspectorOpen ? t("common.close") : t("inspector.open")} ${t("inspector.browser")}`
-										: isInspectorOpen ? t("shell.closeInspector") : t("shell.openInspector")
+										? `${isInspectorOpen ? "Close" : "Open"} ${"Browser"}`
+										: isInspectorOpen ? "Close inspector panel" : "Open inspector panel"
 								}
 								aria-pressed={isInspectorOpen}
 								onClick={handleToggleInspector}
@@ -2006,8 +2004,8 @@ export function SessionView({ sessionId }: SessionViewProps) {
 						</TooltipTrigger>
 						<TooltipContent side="bottom">
 							{browserOnly
-								? `${isInspectorOpen ? t("common.close") : t("inspector.open")} ${t("inspector.browser")}`
-								: isInspectorOpen ? t("shell.closeInspectorTitle") : t("shell.openInspectorTitle")}
+								? `${isInspectorOpen ? "Close" : "Open"} ${"Browser"}`
+								: isInspectorOpen ? "Close inspector · ⌘⇧B" : "Open inspector · ⌘⇧B"}
 						</TooltipContent>
 					</Tooltip>
 					{/* Keep the global notification action trailing at the window edge. */}
@@ -2027,13 +2025,13 @@ export function SessionView({ sessionId }: SessionViewProps) {
 			/>
 			<ConfirmDialog
 				open={unsafeDraftLeaveConfirmation?.sessionId === sessionId}
-				title={t("chat.draftDiscard.title")}
+				title="Discard unsafe Chat draft state?"
 				description={
 					<p className="whitespace-pre-line">
 						{chatDraftDiscardWarning(unsafeDraftLeaveConfirmation?.boundaries ?? [])}
 					</p>
 				}
-				confirmLabel={t("chat.draftDiscard.leave")}
+				confirmLabel="Leave chat"
 				destructive
 				onConfirm={() => settleUnsafeDraftLeave(true)}
 				onOpenChange={(open) => {

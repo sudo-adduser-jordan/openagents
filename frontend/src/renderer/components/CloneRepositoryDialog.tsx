@@ -2,7 +2,6 @@ import * as Dialog from "@radix-ui/react-dialog";
 import { ChevronLeft, Folder, Link2, LoaderCircle, X } from "lucide-react";
 import { AnimatePresence, motion } from "motion/react";
 import { type FormEvent, useCallback, useEffect, useRef, useState } from "react";
-import { useTranslation } from "react-i18next";
 import { aoBridge } from "../lib/bridge";
 import { isMacPlatform, isWindowsPlatform } from "../lib/platform";
 import { Button } from "./ui/button";
@@ -46,7 +45,6 @@ export default function CloneRepositoryDialog({
 	existingProjectNames?: readonly string[];
 	value: CloneRepositoryDetails;
 }) {
-	const { t } = useTranslation();
 	const [submitted, setSubmitted] = useState(false);
 	const [repositoryCheck, setRepositoryCheck] = useState<"idle" | "checking" | "valid" | "invalid">("idle");
 	const repositoryCheckRequest = useRef(0);
@@ -68,19 +66,17 @@ export default function CloneRepositoryDialog({
 	const projectExists = Boolean(
 		targetPath && existingProjectPaths.some((path) => sameProjectPath(path, targetPath)),
 	);
-	const urlError = hasRemoteUrl && !repositoryName ? t("createProject.cloneInvalidUrl") : null;
+	const urlError = hasRemoteUrl && !repositoryName ? "Enter a valid HTTPS, SSH, Git, or file URL." : null;
 	const repositoryAccessError = repositoryName && repositoryCheck === "invalid"
-		? t("createProject.cloneRepositoryUnavailable", {
-				defaultValue: "This isn't a repository or you don't have access",
-			})
+		? "This isn't a repository or you don't have access"
 		: null;
-	const duplicateError = repositoryName && projectExists ? t("createProject.cloneProjectExists") : null;
+	const duplicateError = repositoryName && projectExists ? "A repository already exists at this location" : null;
 	const deferredRepositoryError = urlError ?? duplicateError;
 	const inlineRepositoryError = repositoryAccessError ?? (
 		repositoryFieldTouched || submitted ? deferredRepositoryError : null
 	);
 	const parentError = error === inlineRepositoryError ? null : error;
-	const destinationError = submitted && !hasDestination ? t("createProject.cloneDestinationRequired") : null;
+	const destinationError = submitted && !hasDestination ? "Choose a destination folder." : null;
 	const canContinue = Boolean(
 		repositoryName &&
 		repositoryCheck === "valid" &&
@@ -167,7 +163,7 @@ export default function CloneRepositoryDialog({
 		setChoosingDestination(true);
 		try {
 			const selected = await aoBridge.app.chooseDirectory({
-				title: t("createProject.cloneChooseDestination"),
+				title: "Choose where to clone the repository",
 				defaultPath: "~/ao/projects",
 			});
 			if (requestId !== destinationPickerRequest.current) return;
@@ -181,7 +177,7 @@ export default function CloneRepositoryDialog({
 			onChange({ ...value, destinationParent: selected });
 		} catch (err) {
 			if (requestId !== destinationPickerRequest.current) return;
-			const message = err instanceof Error ? err.message : t("createProject.couldNotAdd");
+			const message = err instanceof Error ? err.message : "Could not add project";
 			setDestinationPickerError(message);
 			triggerShake();
 			onError?.(message);
@@ -195,7 +191,7 @@ export default function CloneRepositoryDialog({
 		setSubmitted(true);
 		if (!canContinue) {
 			if (!hasDestination) {
-				const message = t("createProject.cloneDestinationRequired");
+				const message = "Choose a destination folder.";
 				triggerShake();
 				onError?.(message);
 			}
@@ -223,7 +219,7 @@ export default function CloneRepositoryDialog({
 							type="button"
 							variant="outline"
 							size="icon"
-							aria-label={t("createProject.cloneBack")}
+							aria-label="Back to code source"
 							disabled={disabled || choosingDestination}
 							onClick={onBack}
 						>
@@ -231,16 +227,16 @@ export default function CloneRepositoryDialog({
 						</Button>
 						<div className="min-w-0 flex-1 pr-8">
 							<Dialog.Title className="text-balance text-[18px] font-semibold text-[var(--color-text-import-title)]">
-								{t("createProject.cloneTitle")}
+								{"Clone a Git repository"}
 							</Dialog.Title>
 							<Dialog.Description className="sr-only">
-								{t("createProject.cloneDescription")}
+								{"Paste a Git URL and choose where AO should create the local checkout."}
 							</Dialog.Description>
 						</div>
 						<button
 							type="button"
 							className="settings-close-button"
-							aria-label={t("createProject.cloneClose")}
+							aria-label="Close clone repository dialog"
 							disabled={disabled || choosingDestination}
 							onClick={onClose}
 						>
@@ -259,7 +255,7 @@ export default function CloneRepositoryDialog({
 							<div className="space-y-2">
 								<div className="relative">
 									<Label htmlFor="cloneRepositoryUrl" className="text-[13px] font-semibold text-[var(--color-text-import-title)]">
-										{t("createProject.cloneRepositoryUrl")}
+										{"Repository URL"}
 									</Label>
 									<AnimatePresence initial={false}>
 										{inlineRepositoryError ? (
@@ -288,25 +284,25 @@ export default function CloneRepositoryDialog({
 										aria-invalid={urlError || repositoryAccessError || duplicateError ? true : undefined}
 										className="bg-[var(--color-bg-import-card)] pl-10 pr-10 font-mono text-[13px]"
 										disabled={disabled}
-										placeholder={t("createProject.cloneRepositoryUrlPlaceholder")}
+										placeholder="https://github.com/org/repository.git"
 										spellCheck={false}
 										value={value.remoteUrl}
 										onChange={(event) => onChange({ ...value, remoteUrl: event.target.value })}
 										onBlur={() => setRepositoryFieldTouched(true)}
 									/>
 									{repositoryCheck === "checking" ? (
-										<LoaderCircle className="pointer-events-none absolute right-3 top-1/2 size-4 -translate-y-1/2 animate-spin text-muted-foreground" aria-label={t("createProject.cloneCheckingRepository", { defaultValue: "Checking repository" })} />
+										<LoaderCircle className="pointer-events-none absolute right-3 top-1/2 size-4 -translate-y-1/2 animate-spin text-muted-foreground" aria-label="Checking repository" />
 									) : null}
 									<RepositoryOwnerIcon owner={repositoryAvatar?.owner ?? null} avatarUrl={repositoryAvatar?.url ?? null} />
 								</div>
 								<span id="cloneRepositoryUrlHelp" className="sr-only">
-									{t("createProject.cloneRepositoryUrlHelp")}
+									{"HTTPS and SSH URLs are supported. Use configured Git credentials; do not include them in the URL."}
 								</span>
 							</div>
 
 							<div className="space-y-2">
 								<Label htmlFor="cloneDestination" className="text-[13px] font-semibold text-[var(--color-text-import-title)]">
-									{t("createProject.cloneDestination")}
+									{"Clone into"}
 								</Label>
 								<div className="flex h-control-form items-center overflow-hidden rounded-md border border-transparent bg-[var(--color-bg-import-card)] text-[13px] text-foreground">
 									<div className="relative min-w-0 flex-1">
@@ -320,25 +316,25 @@ export default function CloneRepositoryDialog({
 											autoCapitalize="none"
 											autoComplete="off"
 											spellCheck={false}
-											placeholder={t("createProject.cloneDestinationPlaceholder")}
+											placeholder="Choose a parent folder"
 											value={value.destinationParent}
 											onChange={(event) => onChange({ ...value, destinationParent: event.target.value })}
 										/>
 									</div>
 									<button
-										aria-label={t("createProject.cloneChooseDestination")}
+										aria-label="Choose where to clone the repository"
 										className="flex h-full shrink-0 items-center border-l border-border/60 px-4 text-foreground outline-none transition-colors hover:bg-foreground/10 focus-visible:bg-foreground/10 disabled:pointer-events-none disabled:opacity-50"
 										disabled={disabled || choosingDestination}
 										type="button"
 										onClick={() => void chooseDestination()}
 									>
-										{t("createProject.cloneChoose")}
+										{"Choose"}
 									</button>
 								</div>
 								<p id="cloneDestinationHelp" className="text-pretty text-[12px] leading-5 text-[var(--color-text-import-muted)]">
 									{targetPath
-										? t("createProject.cloneDestinationTarget", { path: targetPath })
-										: t("createProject.cloneDestinationHelp")}
+										? `Repository will be created at ${targetPath}.`
+										: "AO will create a new repository folder inside this destination."}
 								</p>
 								{destinationError ? (
 									<p id="cloneDestinationError" className="text-pretty text-[12px] leading-5 text-destructive" role="alert">
@@ -352,7 +348,7 @@ export default function CloneRepositoryDialog({
 						<div className="flex shrink-0 justify-end gap-2 px-4 pb-4 pt-3">
 							<div className="flex items-center justify-end gap-3">
 								<Button type="submit" variant="primary" disabled={!canContinue}>
-									{t("createProject.cloneContinue")}
+									{"Continue"}
 								</Button>
 							</div>
 						</div>

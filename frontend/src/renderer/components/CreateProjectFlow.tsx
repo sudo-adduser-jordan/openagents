@@ -2,7 +2,6 @@ import { AppLink } from "./AppLink";
 import * as Dialog from "@radix-ui/react-dialog";
 
 import { AnimatePresence, motion } from "motion/react";
-import { useTranslation } from "react-i18next";
 import {
 	CheckCircle2,
 	CircleDashed,
@@ -157,8 +156,7 @@ export function CreateProjectFlow({
 	// Home-page action cards: each new nonce jumps straight to clone/local/workspace.
 	sourceSignal?: { source: ProjectSource; nonce: number } | null;
 }) {
-	const { t } = useTranslation();
-	const resolvedIdleLabel = idleLabel ?? t("createProject.newProject");
+	const resolvedIdleLabel = idleLabel ?? "New project";
 	const [error, setError] = useState<string | null>(null);
 	const [activeView, dispatchView] = useReducer(createProjectViewReducer, null);
 	const modePickerOpen = activeView === "source";
@@ -233,7 +231,7 @@ export function CreateProjectFlow({
 
 	const reportProjectError = (message: string) => {
 		setError(message);
-		showGlobalToast(t("createProject.setupFailedToastTitle", { defaultValue: "Project setup failed" }), message, "error");
+		showGlobalToast("Project setup failed", message, "error");
 		setProjectImportShake(false);
 		window.requestAnimationFrame(() => setProjectImportShake(true));
 		window.setTimeout(() => setProjectImportShake(false), 320);
@@ -244,9 +242,7 @@ export function CreateProjectFlow({
 			await preparedClone.cleanup();
 			return true;
 		} catch {
-			reportProjectError(t("createProject.cloneCleanupFailed", {
-				defaultValue: "AO could not remove the incomplete checkout. Try again before leaving this flow.",
-			}));
+			reportProjectError("AO could not remove the incomplete checkout. Try again before leaving this flow.");
 			return false;
 		}
 	};
@@ -297,7 +293,7 @@ export function CreateProjectFlow({
 			const path =
 				presetPath ??
 				(await aoBridge.app.chooseDirectory(
-					kind === "workspace" ? t("createProject.chooseWorkspace") : t("createProject.chooseRepo"),
+					kind === "workspace" ? "Choose a workspace folder" : "Choose a project repository",
 				));
 			if (path && kind === "single_repo") {
 				const registeredPath = existingProjectPaths.find((candidate) => sameProjectPath(candidate, path));
@@ -380,7 +376,7 @@ export function CreateProjectFlow({
 					return;
 				} catch (err) {
 					setValidationScan({ path, repos: [] });
-					setError(err instanceof Error ? err.message : t("createProject.couldNotAdd"));
+					setError(err instanceof Error ? err.message : "Could not add project");
 					setFolderPickerOpen(true);
 					return;
 				}
@@ -394,7 +390,7 @@ export function CreateProjectFlow({
 				}
 			}
 		} catch (err) {
-			reportProjectError(err instanceof Error ? err.message : t("createProject.couldNotAdd"));
+			reportProjectError(err instanceof Error ? err.message : "Could not add project");
 		} finally {
 			setIsChoosingPath(false);
 		}
@@ -450,7 +446,7 @@ export function CreateProjectFlow({
 		try {
 			if (cloneSelection) {
 				const prepared = preparedClone.current();
-				if (!prepared) throw new Error(t("createProject.couldNotAdd"));
+				if (!prepared) throw new Error("Could not add project");
 				await onCreateProject({ path: selectedPath, clonePreparationId: prepared.preparationId, ...selection });
 				setCreateProgress({ open: true, stage: "complete", value: 100 });
 				await new Promise((resolve) => window.setTimeout(resolve, 180));
@@ -489,15 +485,15 @@ export function CreateProjectFlow({
 		} catch (err) {
 			const code = err instanceof Error && "code" in err ? (err.code as string | undefined) : undefined;
 			const message = cloneSelection
-				? t("createProject.cloneFailedTitle", { defaultValue: "Could not clone repository" })
-				: err instanceof Error ? err.message : t("createProject.couldNotAdd");
+				? "Could not clone repository"
+				: err instanceof Error ? err.message : "Could not add project";
 			if (!cloneSelection && selectedKind === "single_repo" && isRepositorySetupRecoveryCode(code)) {
 				setRepositorySetup(code);
 			}
 			if (cloneSelection) reportProjectError(message);
 			else if (selectedKind === "single_repo") reportProjectError(safeProjectCreationError(
 				message,
-				t("createProject.createFailedBody", { defaultValue: "AO could not create this project. Try again." }),
+				"AO could not create this project. Try again.",
 				code,
 			));
 			else reportProjectError(message);
@@ -556,10 +552,8 @@ export function CreateProjectFlow({
 			setSelectedPath(data.path);
 		} catch {
 			reportProjectError(clonedPath
-				? t("createProject.cloneValidationFailed", {
-					defaultValue: "AO cloned the repository but could not verify the checkout. Try again.",
-				})
-				: t("createProject.cloneFailedTitle", { defaultValue: "Could not clone repository" }));
+				? "AO cloned the repository but could not verify the checkout. Try again."
+				: "Could not clone repository");
 			if (clonedPath) await abandonPreparedClone();
 			setCloneDialogOpen(true);
 		} finally {
@@ -600,22 +594,18 @@ export function CreateProjectFlow({
 		const githubRepository = needsRemoteSetup ? projectGitHubRepo : null;
 		const remoteUrl = githubRepository ? githubRepositoryRemoteUrl(githubRepository) : projectRemoteUrl.trim();
 		if (remoteUrl !== "" && !isValidProjectRemote(remoteUrl)) {
-			reportProjectError(t("createProject.cloneInvalidUrl"));
+			reportProjectError("Enter a valid HTTPS, SSH, Git, or file URL.");
 			return;
 		}
 		if (projectApprovedActions.includes("set_remote") && remoteUrl !== "") {
 			setIsPreparingGit(true);
 			try {
 				if (!(await aoBridge.app.checkGitRepository(remoteUrl))) {
-					reportProjectError(t("createProject.cloneRepositoryUnavailable", {
-						defaultValue: "This isn't a repository or you don't have access",
-					}));
+					reportProjectError("This isn't a repository or you don't have access");
 					return;
 				}
 			} catch {
-				reportProjectError(t("createProject.cloneRepositoryUnavailable", {
-					defaultValue: "This isn't a repository or you don't have access",
-				}));
+				reportProjectError("This isn't a repository or you don't have access");
 				return;
 			} finally {
 				setIsPreparingGit(false);
@@ -630,7 +620,7 @@ export function CreateProjectFlow({
 			let currentValidation = projectValidation;
 			while (currentValidation.nextStep === "prepare_git") {
 				const activeAction = orderedProjectActions(currentValidation.root.requiredActions)[0];
-				if (!activeAction) throw new Error(t("createProject.couldNotAdd"));
+				if (!activeAction) throw new Error("Could not add project");
 				setProjectPrepEvents((current) => mergePreparationEvents(current, [{
 					repoPath: currentValidation.root.repoPath,
 					action: activeAction as GitPreparationEvent["action"],
@@ -646,7 +636,7 @@ export function CreateProjectFlow({
 							stepwise: true,
 						},
 				});
-				if (apiError || !data) throw new Error(apiErrorMessage(apiError, t("createProject.couldNotAdd")));
+				if (apiError || !data) throw new Error(apiErrorMessage(apiError, "Could not add project"));
 				setProjectPrepEvents((current) => mergePreparationEvents(current, data.events));
 				setProjectValidation(data.validation);
 				setProjectApprovedActions(data.validation.root.requiredActions);
@@ -661,10 +651,10 @@ export function CreateProjectFlow({
 					return;
 				}
 				if (data.validation.nextStep !== "prepare_git" && data.validation.nextStep !== "continue") {
-					throw new Error(t("createProject.couldNotAdd"));
+					throw new Error("Could not add project");
 				}
 				if (data.validation.nextStep === "prepare_git" && orderedProjectActions(data.validation.root.requiredActions)[0] === activeAction) {
-					throw new Error(t("createProject.couldNotAdd"));
+					throw new Error("Could not add project");
 				}
 				currentValidation = data.validation;
 			}
@@ -673,7 +663,7 @@ export function CreateProjectFlow({
 			setProjectImportStep(null);
 			setSelectedPath(currentValidation.root.repoPath);
 		} catch (err) {
-			reportProjectError(err instanceof Error ? err.message : t("createProject.couldNotAdd"));
+			reportProjectError(err instanceof Error ? err.message : "Could not add project");
 		} finally {
 			setIsPreparingGit(false);
 		}
@@ -681,12 +671,12 @@ export function CreateProjectFlow({
 
 	const label = isInitializing
 		? hasModePicker
-			? t("createProject.initializing")
-			: t("createProject.settingUp")
+			? "Initializing..."
+			: "Setting up..."
 		: isPreparingGit
-			? t("createProject.settingUp")
+			? "Setting up..."
 		: isCreating
-			? t("createProject.creating")
+			? "Creating..."
 			: resolvedIdleLabel;
 
 	return (
@@ -1036,7 +1026,6 @@ function CreateProjectFlowBackdrop({ open }: { open: boolean }) {
 }
 
 function CreateProjectProgressDialog({ message, open, progress }: { message: string; open: boolean; progress: number }) {
-	const { t } = useTranslation();
 	const roundedProgress = Math.round(progress);
 	return <Dialog.Root open={open}><Dialog.Portal><Dialog.Content
 		className="fixed left-1/2 top-1/2 z-overlay w-[min(440px,calc(100vw-24px))] -translate-x-1/2 -translate-y-1/2 overflow-hidden rounded-lg border border-border bg-popover p-0 text-popover-foreground shadow-xl data-[state=open]:animate-modal-in data-[state=closed]:animate-modal-out motion-reduce:animate-none"
@@ -1044,8 +1033,8 @@ function CreateProjectProgressDialog({ message, open, progress }: { message: str
 		onInteractOutside={(event) => event.preventDefault()}
 		onPointerDownOutside={(event) => event.preventDefault()}
 	><div className="px-5 pb-5 pt-5">
-		<Dialog.Title className="text-[18px] font-semibold text-[var(--color-text-import-title)]">{t("createProject.cloneProgressTitle", { defaultValue: "Creating the project" })}</Dialog.Title>
-		<Dialog.Description className="sr-only">{t("createProject.cloneProgressDescription", { defaultValue: "Creating the project" })}</Dialog.Description>
+		<Dialog.Title className="text-[18px] font-semibold text-[var(--color-text-import-title)]">{"Creating the project"}</Dialog.Title>
+		<Dialog.Description className="sr-only">{"Creating the project"}</Dialog.Description>
 		<div className="mt-6 space-y-3">
 			<div aria-label={`${roundedProgress}%`} aria-valuemax={100} aria-valuemin={0} aria-valuenow={roundedProgress} className="h-2 w-full overflow-hidden rounded-full bg-muted" role="progressbar"><div className="h-full rounded-full bg-primary transition-[width] duration-300 ease-out" style={{ width: `${Math.max(0, Math.min(100, progress))}%` }} /></div>
 			<p className="min-h-5 text-[13px] text-muted-foreground" role="status">{message}</p>
@@ -1068,7 +1057,6 @@ function CreateProjectSourceDialog({
 	onSelect: (source: ProjectSource) => void;
 	open: boolean;
 }) {
-	const { t } = useTranslation();
 	return (
 		<Dialog.Root open={open} onOpenChange={onOpenChange}>
 			<Dialog.Portal>
@@ -1081,8 +1069,8 @@ function CreateProjectSourceDialog({
 							: "data-[state=open]:animate-modal-in data-[state=closed]:animate-modal-out",
 					)}
 				>
-					<Dialog.Title className="sr-only">{t("createProject.addCodeTitle")}</Dialog.Title>
-					<Dialog.Description className="sr-only">{t("createProject.addCodeDescription")}</Dialog.Description>
+					<Dialog.Title className="sr-only">{"Add a project"}</Dialog.Title>
+					<Dialog.Description className="sr-only">{"Choose how you want to add code to Agent Orchestrator"}</Dialog.Description>
 					<div className="flex w-full flex-col items-center gap-3">
 						<ImportSourcePicker disabled={disabled} onClose={() => onOpenChange(false)} onSelect={onSelect} onCreateStandaloneAgent={onCreateStandaloneAgent} dialog />
 					</div>
@@ -1106,7 +1094,6 @@ function ImportSourcePicker({
 	onCreateStandaloneAgent?: () => void;
 	onSelect: (source: ProjectSource) => void;
 }) {
-	const { t } = useTranslation();
 	const createStandaloneAgent = () => {
 		onClose?.();
 		onCreateStandaloneAgent?.();
@@ -1115,35 +1102,35 @@ function ImportSourcePicker({
 		{
 			source: "clone",
 			icon: <GitFork className="size-5" aria-hidden="true" strokeWidth={1.8} />,
-			label: t("createProject.cloneFromGit"),
-			description: t("createProject.cloneFromGitDesc"),
+			label: "Clone from Git",
+			description: "Start from a remote repository using an HTTPS or SSH URL",
 		},
 		{
 			source: "local",
 			icon: <FolderClosed className="size-5" aria-hidden="true" strokeWidth={1.8} />,
-			label: t("createProject.openLocal"),
-			description: t("createProject.openLocalDesc"),
+			label: "Import an existing project",
+			description: "Use a project that is already on this computer",
 		},
 		{
 			source: "workspace",
 			icon: <Folders className="size-5" aria-hidden="true" strokeWidth={1.8} />,
-			label: t("createProject.addWorkspace"),
-			description: t("createProject.workspaceDesc"),
+			label: "Import a workspace folder",
+			description: "Several projects that live under one parent folder",
 		},
 	];
 	return (
 		<div className={onboardingPanelClass}>
 			{dialog ? (
-				<Dialog.Title className={onboardingPanelTitleClass}>{t("createProject.addCodeTitle")}</Dialog.Title>
+				<Dialog.Title className={onboardingPanelTitleClass}>{"Add a project"}</Dialog.Title>
 			) : (
-				<h2 className={onboardingPanelTitleClass}>{t("createProject.addCodeTitle")}</h2>
+				<h2 className={onboardingPanelTitleClass}>{"Add a project"}</h2>
 			)}
 			{dialog ? (
 				<Dialog.Description className={onboardingPanelDescriptionClass}>
-					{t("createProject.addCodeDescription")}
+					{"Choose how you want to add code to Agent Orchestrator"}
 				</Dialog.Description>
 			) : (
-				<p className={onboardingPanelDescriptionClass}>{t("createProject.addCodeDescription")}</p>
+				<p className={onboardingPanelDescriptionClass}>{"Choose how you want to add code to Agent Orchestrator"}</p>
 			)}
 			<div className="mx-4 mb-4 overflow-hidden rounded-md border border-border/50 bg-[var(--color-bg-import-modal)]">
 				<div className="flex flex-col divide-y divide-border/50">
@@ -1166,11 +1153,11 @@ function ImportSourcePicker({
 					</button>
 				))}
 				{onCreateStandaloneAgent ? (
-					<button type="button" className="group flex min-h-[76px] items-center gap-3 px-3.5 py-3 text-left hover:bg-accent/50" aria-label={t("home.newStandaloneAgent")} disabled={disabled} onClick={createStandaloneAgent}>
+					<button type="button" className="group flex min-h-[76px] items-center gap-3 px-3.5 py-3 text-left hover:bg-accent/50" aria-label="New standalone agent" disabled={disabled} onClick={createStandaloneAgent}>
 						<span className="grid w-9 shrink-0 place-items-center text-muted-foreground group-hover:text-foreground">
 							<Bot className="size-5" aria-hidden="true" />
 						</span>
-						<span><span className="block text-sm font-medium">{t("home.newStandaloneAgent")}</span><span className="mt-0.5 block text-[12px] leading-5 text-muted-foreground">{t("createProject.standaloneDesc")}</span></span>
+						<span><span className="block text-sm font-medium">{"New standalone agent"}</span><span className="mt-0.5 block text-[12px] leading-5 text-muted-foreground">{"Start an agent without a project, repository, or workspace."}</span></span>
 					</button>
 				) : null}
 				</div>
@@ -1179,7 +1166,7 @@ function ImportSourcePicker({
 				<button
 					type="button"
 					className="settings-close-button absolute right-3 top-3"
-					aria-label={t("createProject.closeDialog")}
+					aria-label="Close new project dialog"
 					disabled={disabled}
 					onClick={onClose}
 				>
@@ -1231,22 +1218,17 @@ function ProjectImportDialog({
 	isPreparingGit: boolean;
 	validation: ImportValidationResult | null;
 }) {
-	const { t } = useTranslation();
 	const requiredActions = validation?.root.requiredActions ?? [];
 	const needsRemote = importNeedsRemoteSetup(requiredActions);
 	const githubOwner = githubRepository?.owner.trim() ?? "";
 	const githubName = githubRepository?.name.trim() ?? "";
 	const isPrivate = githubRepository?.private ?? true;
 	const visibilityLabel = isPrivate
-		? t("createProject.privateRepository", { defaultValue: "Private repository" })
-		: t("createProject.publicRepository", { defaultValue: "Public repository" });
+		? "Private repository"
+		: "Public repository";
 	const visibilityHelper = isPrivate
-		? t("createProject.privateRepositoryHelper", {
-				defaultValue: "Only you and people you invite can see this repo",
-		  })
-		: t("createProject.publicRepositoryHelper", {
-				defaultValue: "Anyone on the internet can see this repo",
-		  });
+		? "Only you and people you invite can see this repo"
+		: "Anyone on the internet can see this repo";
 	const [githubOwners, setGitHubOwners] = useState<GitHubOwner[]>([]);
 	const [customGitHubOwner, setCustomGitHubOwner] = useState(false);
 	const selectedGitHubOwner = githubOwners.find((owner) => owner.login === githubOwner);
@@ -1283,14 +1265,14 @@ function ProjectImportDialog({
 					setAvailability(result.available ? { state: "available" } : { state: "unavailable", message: result.message });
 				})
 				.catch(() => {
-					if (!cancelled) setAvailability({ state: "unavailable", message: t("createProject.githubRepoUnavailable") });
+					if (!cancelled) setAvailability({ state: "unavailable", message: "Repository name is not available." });
 				});
 		}, 250);
 		return () => {
 			cancelled = true;
 			window.clearTimeout(timer);
 		};
-	}, [githubName, githubOwner, needsRemote, open, t]);
+	}, [githubName, githubOwner, needsRemote, open]);
 	if (!validation || !step) return null;
 	const hasChildRepos = (validation.childRepos?.length ?? 0) > 0;
 	const mustImportAsWorkspace = step === "blocked" && validation.nextStep === "choose_import_kind" && hasChildRepos;
@@ -1307,23 +1289,23 @@ function ProjectImportDialog({
 					onPointerDownOutside={(event) => event.preventDefault()}
 				>
 					<div className="relative flex shrink-0 items-center gap-3 px-4 pt-3">
-						<Button type="button" variant="outline" size="icon" aria-label={t("createProject.backToSource")} disabled={disabled} onClick={onBack}>
+						<Button type="button" variant="outline" size="icon" aria-label="Back to import source" disabled={disabled} onClick={onBack}>
 							<ChevronRight className="size-4 rotate-180" aria-hidden="true" />
 						</Button>
 						<div className="min-w-0 flex-1 pr-8">
 							<Dialog.Title className="text-[18px] font-semibold text-[var(--color-text-import-title)]">
 								{step === "prepare_git"
-									? t("createProject.prepareProjectTitle")
-									: t("createProject.importProject")}
+									? "Prepare project"
+									: "Import project"}
 							</Dialog.Title>
 							<Dialog.Description className="sr-only">
 								{step === "blocked"
-									? t("createProject.projectImportBlocked")
-									: t("createProject.projectImportApproval")}
+									? "AO found a problem with this folder before project setup can continue."
+									: "AO needs your approval before it initializes Git, creates a first commit, or sets the origin remote."}
 							</Dialog.Description>
 						</div>
 						<Dialog.Close asChild>
-							<button type="button" className="settings-close-button" aria-label={t("createProject.closeProjectImport")} disabled={disabled}>
+							<button type="button" className="settings-close-button" aria-label="Close project import dialog" disabled={disabled}>
 								<X className="size-4" aria-hidden="true" />
 							</button>
 						</Dialog.Close>
@@ -1331,11 +1313,11 @@ function ProjectImportDialog({
 					<div className="min-h-0 space-y-4 overflow-y-auto px-4 pb-1 pt-4">
 						<div className="space-y-2">
 							<Label htmlFor="projectImportFolder" className="text-[13px] font-semibold text-[var(--color-text-import-title)]">
-								{t("createProject.projectFolder")}
+								{"Project folder"}
 							</Label>
 							<PathRow
-								action={t("createProject.change")}
-								ariaLabel={t("createProject.change")}
+								action="Change"
+								ariaLabel="Change"
 								disabled={disabled}
 								id="projectImportFolder"
 								icon={<Folder className="size-4 shrink-0 text-[var(--color-text-import-muted)]" aria-hidden="true" />}
@@ -1346,7 +1328,7 @@ function ProjectImportDialog({
 						</div>
 						{mustImportAsWorkspace ? (
 							<p className="text-[14px] leading-6 text-[var(--color-text-import-muted)]">
-								{t("createProject.projectMustBeWorkspace", { defaultValue: "This folder contains child Git repositories. Import it as a workspace instead." })}
+								{"This folder contains child Git repositories. Import it as a workspace instead."}
 							</p>
 						) : null}
 						{validation.warning ? (
@@ -1359,18 +1341,18 @@ function ProjectImportDialog({
 								{needsRemote ? (
 									<p className="text-[14px] leading-5 text-[var(--color-text-import-muted)]">
 										<code className="rounded bg-muted px-1.5 py-0.5 font-mono text-[0.9em] text-foreground">{projectNameFromPath(validation.root.repoPath)}</code>{" "}
-										{t("createProject.noGitHubRemote")}
+										{"does not have a GitHub remote. AO will create a repository, add it as origin, and push the current branch."}
 									</p>
 								) : null}
 								{isPreparingGit ? (
 									<span className="text-[11px] text-muted-foreground" role="status">
-										{t("createProject.projectSetupRunning")}
+										{"Running project setup. AO is preparing this repository now."}
 									</span>
 								) : null}
 								{needsRemote ? (
 									<div className="space-y-3 pt-1">
 											<div className="space-y-1.5">
-												<Label htmlFor="githubRepoOwner" className="text-[12px] font-medium text-[var(--color-text-import-title)]">{t("createProject.githubOwner")}</Label>
+												<Label htmlFor="githubRepoOwner" className="text-[12px] font-medium text-[var(--color-text-import-title)]">{"Owner"}</Label>
 												<Select
 													value={customGitHubOwner ? "__custom__" : githubRepository?.owner ?? ""}
 													disabled={disabled}
@@ -1385,12 +1367,12 @@ function ProjectImportDialog({
 														onChangeRemote(githubRepositoryRemoteUrl(next));
 													}}
 												>
-													<SelectTrigger id="githubRepoOwner" size="sm" className="h-8 w-full bg-[var(--color-bg-import-card)] font-mono text-[12px]" aria-label={t("createProject.githubOwner")}>
-														<SelectValue placeholder={t("createProject.githubOwner")}>
+													<SelectTrigger id="githubRepoOwner" size="sm" className="h-8 w-full bg-[var(--color-bg-import-card)] font-mono text-[12px]" aria-label="Owner">
+														<SelectValue placeholder="Owner">
 															{customGitHubOwner ? (
 																<span className="flex items-center gap-2">
 															<GitHubIcon className="size-4" />
-																	{t("createProject.otherGitHubOwner")}
+																	{"Other"}
 																</span>
 															) : selectedGitHubOwner ? (
 																<span className="flex items-center gap-2">
@@ -1412,7 +1394,7 @@ function ProjectImportDialog({
 														<SelectItem value="__custom__">
 															<span className="flex items-center gap-2">
 															<GitHubIcon className="size-4" />
-																	{t("createProject.useDifferentGitHubOwner")}
+																	{"Use a different owner"}
 															</span>
 														</SelectItem>
 													</SelectContent>
@@ -1420,10 +1402,10 @@ function ProjectImportDialog({
 												{customGitHubOwner ? (
 													<Input
 														id="githubRepoCustomOwner"
-														aria-label={t("createProject.githubOwner")}
+														aria-label="Owner"
 														className="h-8 bg-[var(--color-bg-import-card)] font-mono text-[12px]"
 														disabled={disabled}
-														placeholder={t("createProject.githubOwner")}
+														placeholder="Owner"
 														value={githubRepository?.owner ?? ""}
 														onChange={(event) => {
 															const next = { owner: event.target.value, name: githubRepository?.name ?? "", private: githubRepository?.private ?? true };
@@ -1435,7 +1417,7 @@ function ProjectImportDialog({
 											</div>
 											<div className="space-y-1.5">
 												<div className="relative">
-													<Label htmlFor="githubRepoName" className="text-[12px] font-medium text-[var(--color-text-import-title)]">{t("createProject.githubRepositoryName")}</Label>
+													<Label htmlFor="githubRepoName" className="text-[12px] font-medium text-[var(--color-text-import-title)]">{"Repository name"}</Label>
 													<AnimatePresence initial={false}>
 														{availability.state === "unavailable" ? (
 															<motion.p
@@ -1447,7 +1429,7 @@ function ProjectImportDialog({
 																className="absolute right-0 top-0 max-w-[65%] truncate overflow-hidden whitespace-nowrap text-right text-[12px] leading-5 text-destructive"
 																role="alert"
 															>
-																{availability.message ?? t("createProject.githubRepoUnavailable")}
+																{availability.message ?? "Repository name is not available."}
 															</motion.p>
 														) : null}
 													</AnimatePresence>
@@ -1455,7 +1437,7 @@ function ProjectImportDialog({
 												<div className="relative">
 													<Input
 														id="githubRepoName"
-														aria-label={t("createProject.githubRepositoryName")}
+														aria-label="Repository name"
 														aria-describedby={availability.state === "unavailable" ? "githubRepoNameError" : undefined}
 														aria-invalid={availability.state === "unavailable" ? true : undefined}
 														className="h-8 bg-[var(--color-bg-import-card)] pr-8 font-mono text-[12px]"
@@ -1475,7 +1457,7 @@ function ProjectImportDialog({
 																exit={{ opacity: 0, filter: "blur(2px)" }}
 																transition={{ duration: 0.15, ease: "easeOut" }}
 																className="pointer-events-none absolute right-2.5 top-1/2 -translate-y-1/2"
-																aria-label={t("createProject.githubRepoChecking")}
+																aria-label="Checking repository name..."
 																role="status"
 															>
 																<LoaderCircle className="size-3.5 animate-spin text-muted-foreground" aria-hidden="true" />
@@ -1535,14 +1517,14 @@ function ProjectImportDialog({
 												<div key={`${event.repoPath}:${event.action}`} className="flex items-center gap-2 text-[12px]">
 													{event.state === "success" ? <CheckCircle2 className="size-3.5 text-emerald-500" aria-hidden="true" /> : event.state === "error" ? <XCircle className="size-3.5 text-destructive" aria-hidden="true" /> : <CircleDashed className={cn("size-3.5", event.state === "running" ? "animate-spin text-primary" : "text-muted-foreground")} aria-hidden="true" />}
 													<span className="min-w-0 flex-1 truncate">{displayImportPath(event.repoPath)} · {gitActionLabel(event.action)}</span>
-													<span className="text-muted-foreground">{event.state === "success" ? t("createProject.projectSetupComplete", { defaultValue: "Done" }) : event.state === "error" ? t("createProject.projectSetupError", { defaultValue: "Needs attention" }) : event.state === "running" ? t("createProject.projectSetupInProgress", { defaultValue: "In progress" }) : t("createProject.projectSetupQueued", { defaultValue: "Queued" })}</span>
+													<span className="text-muted-foreground">{event.state === "success" ? "Done" : event.state === "error" ? "Needs attention" : event.state === "running" ? "In progress" : "Queued"}</span>
 												</div>
 											))}
 										</div>
 									) : null}
 									{missingApprovals.length > 0 ? (
 										<p className="text-[11px] leading-4 text-muted-foreground">
-											{t("createProject.projectSetupContinue")}
+											{"Approve all required setup actions to continue importing this project."}
 										</p>
 									) : null}
 							</section>
@@ -1550,26 +1532,26 @@ function ProjectImportDialog({
 					</div>
 					<div className="flex shrink-0 items-center justify-end gap-2 px-4 pb-4 pt-3">
 						{mustImportAsWorkspace ? (
-							<Button type="button" variant="primary" disabled={disabled} onClick={onTryWorkspace}>{t("createProject.importAsWorkspace")}</Button>
+							<Button type="button" variant="primary" disabled={disabled} onClick={onTryWorkspace}>{"Import as workspace"}</Button>
 						) : step === "blocked" ? (
 							<>
 								<Button type="button" variant="outline" disabled={disabled} onClick={onBack}>
-									{t("createProject.back")}
+									{"Back"}
 								</Button>
-								{hasChildRepos || Boolean(validation.warning) ? <Button type="button" variant="primary" disabled={disabled} onClick={onContinueProject}>{t("createProject.cloneContinue")}</Button> : null}
+								{hasChildRepos || Boolean(validation.warning) ? <Button type="button" variant="primary" disabled={disabled} onClick={onContinueProject}>{"Continue"}</Button> : null}
 							</>
 						) : null}
 						{step === "prepare_git" ? (
 							<>
 								<Button type="button" variant="outline" disabled={disabled} onClick={onBack}>
-									{t("createProject.back")}
+									{"Back"}
 								</Button>
 								<Button type="button" variant="primary" disabled={continueDisabled} onClick={onContinue}>
 									{hasFailedStep
-										? t("createProject.retry")
+										? "Retry"
 										: needsRemote
-											? t("createProject.createRepositoryAndContinue")
-											: t("createProject.cloneContinue")}
+											? "Create repository and continue"
+											: "Continue"}
 								</Button>
 							</>
 						) : null}
@@ -1609,7 +1591,6 @@ function CreateProjectFolderDialog({
 	isPreparingGit: boolean;
 	shake: boolean;
 }) {
-	const { t } = useTranslation();
 	const isWorkspace = kind === "workspace";
 	const displayRepos = isWorkspace ? mergeWorkspaceImportRepos(scan, validation) : normalizeImportRepos(scan?.repos ?? []);
 	const workspaceHasNoChildGitRepos = isWorkspace && validation?.blockingErrors.includes("WORKSPACE_CHILD_REPO_REQUIRED");
@@ -1635,7 +1616,7 @@ function CreateProjectFolderDialog({
 							type="button"
 							variant="outline"
 							size="icon"
-							aria-label={t("createProject.backToType")}
+							aria-label="Back to import type"
 							disabled={disabled}
 							onClick={onBack}
 						>
@@ -1643,17 +1624,17 @@ function CreateProjectFolderDialog({
 						</Button>
 						<div className="min-w-0 flex-1 pr-8">
 							<Dialog.Title className="text-[18px] font-semibold text-[var(--color-text-import-title)]">
-								{isWorkspace ? t("createProject.importWorkspace") : t("createProject.importProject")}
+								{isWorkspace ? "Import workspace" : "Import project"}
 							</Dialog.Title>
 							<Dialog.Description className="sr-only">
-								{isWorkspace ? t("createProject.importWorkspaceDesc") : t("createProject.importProjectDesc")}
+								{isWorkspace ? "Pick a folder that contains your Git repositories. Each repo inside it joins the workspace." : "Import a single Git repository as one project."}
 							</Dialog.Description>
 						</div>
 						<Dialog.Close asChild>
 							<button
 								type="button"
 								className="settings-close-button"
-								aria-label={t("createProject.closeImport")}
+								aria-label="Close import dialog"
 								disabled={disabled}
 							>
 								<X className="size-4" aria-hidden="true" />
@@ -1664,7 +1645,7 @@ function CreateProjectFolderDialog({
 						{hasScan ? (
 							<div className="space-y-3">
 								{!workspaceHasNoChildGitRepos ? <PathRow
-									action={t("createProject.change")}
+									action="Change"
 									disabled={disabled}
 									icon={<Folder className="size-4 shrink-0 text-[var(--color-text-import-muted)]" aria-hidden="true" />}
 									onClick={onChooseFolder}
@@ -1676,11 +1657,11 @@ function CreateProjectFolderDialog({
 									<div className="rounded-lg border border-destructive/40 bg-destructive/10">
 										<div className="border-b border-destructive/30 px-3 py-2 font-mono text-[11px] font-semibold uppercase tracking-[0.12em] text-destructive">
 											<span className="mr-2 inline-block size-2 rounded-full bg-destructive" aria-hidden="true" />
-											{isWorkspace ? t("createProject.importFailedWorkspace") : t("createProject.importFailedProject")}
+											{isWorkspace ? "Import failed · workspace not registered" : "Import failed · project not registered"}
 										</div>
 						<div className="px-3 py-2 text-[12px] leading-5 text-destructive">{error}</div>
 						<div className="border-t border-destructive/30 px-3 py-2 text-[12px] text-[var(--color-text-import-muted)]">
-							{t("createProject.footerReview")}
+							{"Review the error above or choose a different folder"}
 						</div>
 										{failedRepos.length > 0 && (
 											<div className="border-t border-destructive/30">
@@ -1688,15 +1669,15 @@ function CreateProjectFolderDialog({
 										<ImportRepoRow key={repo.path} repo={repo} failed />
 									))}
 									<div className="border-t border-destructive/30 px-3 py-2 text-[12px] text-[var(--color-text-import-muted)]">
-										{t("createProject.footerResolve", { count: failedRepos.length })}
+										{(failedRepos.length === 1 ? `Resolve ${failedRepos.length} failed repository to continue` : `Resolve ${failedRepos.length} failed repositories to continue`)}
 									</div>
 								</div>
 										)}
 									</div>
 								)}
-								{workspaceHasNoChildGitRepos && !error ? <p className="text-[14px] leading-6 text-[var(--color-text-import-muted)]">{t("createProject.workspaceRequiresInitializedChildRepo")}</p> : null}
-								{workspaceRootIsProject && !error ? <p className="text-[14px] leading-6 text-[var(--color-text-import-muted)]">{t("createProject.workspaceRootIsProject")}</p> : null}
-								{workspaceReposNeedSetup && !error ? <p className="text-[13px] leading-5 text-destructive">{t("createProject.workspaceRemoteSetupRequired")}</p> : null}
+								{workspaceHasNoChildGitRepos && !error ? <p className="text-[14px] leading-6 text-[var(--color-text-import-muted)]">{"Importing a workspace requires at least one direct child Git repository that already has a commit and an origin remote. You can import this folder as a project instead."}</p> : null}
+								{workspaceRootIsProject && !error ? <p className="text-[14px] leading-6 text-[var(--color-text-import-muted)]">{"This is a single repository, not a collection of repositories. Import it as a project instead."}</p> : null}
+								{workspaceReposNeedSetup && !error ? <p className="text-[13px] leading-5 text-destructive">{"Set an origin remote for the child repositories marked below before importing this workspace."}</p> : null}
 
 							{workspaceRootIsProject || workspaceHasNoChildGitRepos ? null : isWorkspace ? <WorkspaceImportRepoList repos={displayRepos} /> : displayRepos.length > 0 ? <div className="divide-y divide-border/50 overflow-hidden rounded-sm bg-[var(--color-bg-import-card)]">
 								{displayRepos.map((repo) => <ImportRepoRow key={repo.path} repo={repo} />)}
@@ -1704,7 +1685,7 @@ function CreateProjectFolderDialog({
 
 								{displayRepos.length === 0 && !workspaceHasNoChildGitRepos && !workspaceRootIsProject && (
 									<div className="rounded-md border border-[var(--color-border-import-modal)] bg-[var(--color-bg-import-card)] p-3 text-[12px] text-[var(--color-text-import-muted)]">
-										{t("createProject.noRepos")}
+										{"No repositories detected in this folder."}
 									</div>
 								)}
 							</div>
@@ -1713,19 +1694,19 @@ function CreateProjectFolderDialog({
 					<div className="flex shrink-0 justify-end gap-2 px-4 pb-4 pt-3">
 						<div className="flex flex-wrap items-center justify-end gap-3">
 							<Button type="button" variant="outline" disabled={disabled} onClick={workspaceHasNoChildGitRepos ? onBack : () => onOpenChange(false)}>
-								{workspaceHasNoChildGitRepos ? "Go Back" : t("createProject.cancel")}
+								{workspaceHasNoChildGitRepos ? "Go Back" : "Cancel"}
 							</Button>
 							{hasScan && workspaceRootIsProject && !error ? (
 								<Button type="button" variant="primary" disabled={disabled} onClick={onContinueAsProject}>
-									{t("createProject.importAsProject")}
+									{"Import as project"}
 								</Button>
 							) : hasScan && workspaceHasNoChildGitRepos && !error ? (
 								<Button type="button" variant="outline" disabled={disabled} onClick={onContinueAsProject}>
-									{t("createProject.importAsProject")}
+									{"Import as project"}
 								</Button>
 							) : hasScan && !workspaceValidationBlocked && failedRepos.length === 0 && (!error || isWorkspace) ? (
 								<Button type="button" variant="primary" disabled={disabled || !workspaceSetupReady} onClick={onContinue}>
-									{isPreparingGit ? <><CircleDashed className="size-4 animate-spin" aria-hidden="true" />{t("createProject.settingUp")}</> : t("createProject.cloneContinue")}
+									{isPreparingGit ? <><CircleDashed className="size-4 animate-spin" aria-hidden="true" />{"Setting up..."}</> : "Continue"}
 								</Button>
 							) : null}
 						</div>
@@ -1737,7 +1718,6 @@ function CreateProjectFolderDialog({
 }
 
 function ImportRepoRow({ failed = false, onSetup, repo, setupExpanded = false }: { failed?: boolean; onSetup?: () => void; repo: DisplayImportRepo; setupExpanded?: boolean }) {
-	const { t } = useTranslation();
 	const repositoryAvatar = repo.hasRemote ? repositoryAvatarFromGitUrl(repo.remote) : null;
 	const needsSetup = repo.requiredActions.length > 0;
 	const isPlainFolder = repo.needsGitInit && !repo.isRepo && !needsSetup;
@@ -1749,7 +1729,7 @@ function ImportRepoRow({ failed = false, onSetup, repo, setupExpanded = false }:
 			</div>
 			<div className="min-w-0 flex-1 truncate text-[13px] font-semibold text-[var(--color-text-import-title)]">{repo.name}</div>
 			<div className="flex max-w-[220px] shrink-0 items-center gap-1 truncate text-right text-[11px] text-[var(--color-text-import-muted)]">
-				{needsSetup ? onSetup ? <button type="button" aria-expanded={setupExpanded} className="rounded-sm border border-orange-400/40 bg-orange-500/15 px-2 py-0.5 text-orange-300 hover:bg-orange-500/25" onClick={onSetup}>{setupExpanded ? "Hide setup" : `${workspaceSetupLabel(repo)} · Set up`}</button> : <span className="rounded-sm border border-orange-400/40 bg-orange-500/15 px-2 py-0.5 text-orange-300">{t("createProject.setupRequired")}</span> : repositoryUrl ? <><GitBranch className="size-3.5 shrink-0" aria-hidden="true" /><AppLink className="truncate underline decoration-border underline-offset-2 hover:text-foreground" href={repositoryUrl} rel="noreferrer" target="_blank">{repo.branch}</AppLink></> : <><span className={cn("truncate", isPlainFolder && "rounded-sm bg-orange-500/15 px-2 py-0.5 text-orange-300")}>{isPlainFolder ? "Needs git init" : failed ? (repo.reason ?? t("createProject.repoCannotImport")) : repo.branch}</span></>}
+				{needsSetup ? onSetup ? <button type="button" aria-expanded={setupExpanded} className="rounded-sm border border-orange-400/40 bg-orange-500/15 px-2 py-0.5 text-orange-300 hover:bg-orange-500/25" onClick={onSetup}>{setupExpanded ? "Hide setup" : `${workspaceSetupLabel(repo)} · Set up`}</button> : <span className="rounded-sm border border-orange-400/40 bg-orange-500/15 px-2 py-0.5 text-orange-300">{"Setup required"}</span> : repositoryUrl ? <><GitBranch className="size-3.5 shrink-0" aria-hidden="true" /><AppLink className="truncate underline decoration-border underline-offset-2 hover:text-foreground" href={repositoryUrl} rel="noreferrer" target="_blank">{repo.branch}</AppLink></> : <><span className={cn("truncate", isPlainFolder && "rounded-sm bg-orange-500/15 px-2 py-0.5 text-orange-300")}>{isPlainFolder ? "Needs git init" : failed ? (repo.reason ?? "Repository cannot be imported") : repo.branch}</span></>}
 			</div>
 		</div>
 	);
@@ -1785,11 +1765,10 @@ function GitSetupFields({ actions, approved, disabled, onApprovalChange, onRemot
 	remoteUrl: string;
 	showActionSummary?: boolean;
 }) {
-	const { t } = useTranslation();
 	return <div className="space-y-2">
 		<label className="flex items-start gap-2 text-[12px] text-[var(--color-text-import-title)]">
 			<Checkbox checked={approved} className="mt-0.5" disabled={disabled} onCheckedChange={(checked) => onApprovalChange(checked === true)} />
-			<span className="min-w-0 flex-1"><span className="block font-medium">{t("createProject.setupGitProject")}</span>{showActionSummary ? <span className="block text-[11px] leading-4 text-[var(--color-text-import-muted)]">{actions.map(gitActionLabel).join(", ")}</span> : null}</span>
+			<span className="min-w-0 flex-1"><span className="block font-medium">{"Set up Git for this project"}</span>{showActionSummary ? <span className="block text-[11px] leading-4 text-[var(--color-text-import-muted)]">{actions.map(gitActionLabel).join(", ")}</span> : null}</span>
 		</label>
 		{actions.includes("set_remote") ? <Input aria-label={remoteAriaLabel} className="h-8 bg-[var(--color-bg-import-card)] font-mono text-[12px]" disabled={disabled} placeholder={remotePlaceholder} value={remoteUrl} onChange={(event) => onRemoteChange(event.target.value)} /> : null}
 	</div>;

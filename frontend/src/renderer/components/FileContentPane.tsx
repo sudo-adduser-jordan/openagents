@@ -1,6 +1,5 @@
 import { useCallback, useEffect, useState } from "react";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
-import { useTranslation } from "react-i18next";
 import { LoaderCircle, MessageSquarePlus, Pencil, Save, X } from "lucide-react";
 import { Editor, type EditorFactory } from "@pierre/diffs/edit";
 import { EditProvider } from "@pierre/diffs/react";
@@ -62,7 +61,6 @@ export function FileContentPane({
 	split: boolean;
 	scope?: WorkspaceDiffScope;
 }) {
-	const { t } = useTranslation();
 	const queryClient = useQueryClient();
 	const [mode, setMode] = useState<FileViewMode>(initialMode);
 	const [editing, setEditing] = useState(false);
@@ -74,7 +72,7 @@ export function FileContentPane({
 	// an active native text selection.
 	const [selectionOrMenuActive, setSelectionOrMenuActive] = useState(false);
 	const query = useQuery({
-		...sessionWorkspaceFileQueryOptions(sessionId, path ?? "", t("files.error.loadWorkspaceFile"), scope, commitSha),
+		...sessionWorkspaceFileQueryOptions(sessionId, path ?? "", "Unable to load workspace file", scope, commitSha),
 		enabled: Boolean(path) && !selectionOrMenuActive,
 	});
 	const hasUnsavedChanges = Boolean(editing && query.data && draft !== query.data.content);
@@ -116,11 +114,11 @@ export function FileContentPane({
 			setEditing(false);
 			setDraft("");
 		} catch (error) {
-			setSaveError(error instanceof Error ? error.message : t("files.saveError"));
+			setSaveError(error instanceof Error ? error.message : "Unable to save workspace file");
 		} finally {
 			setSaving(false);
 		}
-	}, [commitSha, draft, path, query.data, queryClient, saving, scope, sessionId, t]);
+	}, [commitSha, draft, path, query.data, queryClient, saving, scope, sessionId]);
 	useEffect(() => {
 		if (!editing) return;
 		const onSaveShortcut = (event: KeyboardEvent) => {
@@ -139,22 +137,22 @@ export function FileContentPane({
 	const refetch = query.refetch;
 
 	if (!path) {
-		return <PanelMessage>{t("files.explorer.selectFile")}</PanelMessage>;
+		return <PanelMessage>{"Select a file to preview."}</PanelMessage>;
 	}
 	if (query.isPending) {
-		return <PanelMessage>{t("files.loadingDiff")}</PanelMessage>;
+		return <PanelMessage>{"Loading diff..."}</PanelMessage>;
 	}
 	if (query.error) {
 		return (
 			<PanelMessage action={<RetryButton onClick={() => void refetch()} />}>
-				{query.error.message || t("files.error.loadFile")}
+				{query.error.message || "Unable to load this file."}
 			</PanelMessage>
 		);
 	}
 	if (!query.data) {
 		return (
 			<PanelMessage action={<RetryButton onClick={() => void refetch()} />}>
-				{t("files.error.loadFile")}
+				{"Unable to load this file."}
 			</PanelMessage>
 		);
 	}
@@ -178,7 +176,7 @@ export function FileContentPane({
 			sessionId={sessionId}
 			commitSha={commitSha}
 		/>
-	) : <PanelMessage>{t("files.loading")}</PanelMessage>;
+	) : <PanelMessage>{"Loading files..."}</PanelMessage>;
 	const beginEditing = () => {
 		setMode("file");
 		annotation.cancel();
@@ -209,18 +207,18 @@ export function FileContentPane({
 					{statusLabel[detail.status]}
 				</span>
 			) : null}
-			{hasDisplayModeChoice ? <div aria-label={t("files.fileDisplayMode")} className="flex items-center" role="tablist">
+			{hasDisplayModeChoice ? <div aria-label="File display mode" className="flex items-center" role="tablist">
 				{detail.status !== "unmodified" ? (
 					<Button aria-selected={effectiveMode === "diff"} className="h-6 rounded px-2 text-2xs" disabled={editing} onClick={() => setMode("diff")} role="tab" size="sm" type="button" variant={effectiveMode === "diff" ? "secondary" : "ghost"}>
-						{t("files.diff")}
+						{"Diff"}
 					</Button>
 				) : null}
 				<Button aria-selected={effectiveMode === "file"} className="h-6 rounded px-2 text-2xs" disabled={editing} onClick={() => setMode("file")} role="tab" size="sm" type="button" variant={effectiveMode === "file" ? "secondary" : "ghost"}>
-					{t("files.fileView")}{unsavedIndicator}
+					{"File"}{unsavedIndicator}
 				</Button>
 				{renderedAvailable ? (
 					<Button aria-selected={effectiveMode === "rendered"} className="h-6 rounded px-2 text-2xs" disabled={editing} onClick={() => setMode("rendered")} role="tab" size="sm" type="button" variant={effectiveMode === "rendered" ? "secondary" : "ghost"}>
-						{t("files.rendered")}
+						{"Rich preview"}
 					</Button>
 				) : null}
 			</div> : (
@@ -230,21 +228,21 @@ export function FileContentPane({
 			)}
 			{editing ? (
 				<div className="ml-auto flex items-center gap-1">
-					<Button aria-label={t("files.cancelEditing")} disabled={saving} onClick={cancelEditing} size="sm" type="button" variant="ghost"><X aria-hidden="true" />{t("files.cancelEditing")}</Button>
-					<Button aria-label={t("files.saveFile")} disabled={saving || !hasUnsavedChanges} onClick={() => void saveEditing()} size="sm" type="button" variant="primary">{saving ? <LoaderCircle aria-hidden="true" className="animate-spin" /> : <Save aria-hidden="true" />}{t("files.saveFile")}</Button>
+					<Button aria-label="Cancel" disabled={saving} onClick={cancelEditing} size="sm" type="button" variant="ghost"><X aria-hidden="true" />{"Cancel"}</Button>
+					<Button aria-label="Save" disabled={saving || !hasUnsavedChanges} onClick={() => void saveEditing()} size="sm" type="button" variant="primary">{saving ? <LoaderCircle aria-hidden="true" className="animate-spin" /> : <Save aria-hidden="true" />}{"Save"}</Button>
 				</div>
 			) : (
 				<>
 					{editable ? (
 						<Tooltip>
-							<TooltipTrigger asChild><Button aria-label={t("files.editFile")} className="ml-auto" onClick={beginEditing} size="icon-sm" type="button" variant="ghost"><Pencil aria-hidden="true" /></Button></TooltipTrigger>
-							<TooltipContent side="bottom">{t("files.editFile")}</TooltipContent>
+							<TooltipTrigger asChild><Button aria-label="Edit file" className="ml-auto" onClick={beginEditing} size="icon-sm" type="button" variant="ghost"><Pencil aria-hidden="true" /></Button></TooltipTrigger>
+							<TooltipContent side="bottom">{"Edit file"}</TooltipContent>
 						</Tooltip>
 					) : <span className="ml-auto" />}
 			<Tooltip>
 				<TooltipTrigger asChild>
 					<Button
-						aria-label={t("files.addFeedback")}
+						aria-label="Add feedback"
 						onClick={() => annotation.begin({ path: detail.path, previousPath: detail.previousPath, side: "file", scope, surface: "focused", workspaceVersion: detail.workspaceVersion, fileFingerprint: detail.fileFingerprint })}
 						size="icon-sm"
 						type="button"
@@ -253,7 +251,7 @@ export function FileContentPane({
 						<MessageSquarePlus aria-hidden="true" />
 					</Button>
 				</TooltipTrigger>
-				<TooltipContent side="bottom">{t("files.addFeedback")}</TooltipContent>
+				<TooltipContent side="bottom">{"Add feedback"}</TooltipContent>
 			</Tooltip>
 				</>
 			)}
@@ -322,15 +320,14 @@ export function FileContentPane({
 }
 
 function CompleteFileView({ annotation, commitSha, detail, editing, onEditChange, scope, sessionId }: { annotation: FileAnnotationModel; commitSha?: string; detail: WorkspaceFileDetail; editing: boolean; onEditChange: (content: string) => void; scope: WorkspaceDiffScope; sessionId: string }) {
-	const { t } = useTranslation();
 	const revision = useQuery({
 		...sessionWorkspaceFileRevisionQueryOptions({ commitSha, path: detail.path, scope, sessionId, side: detail.deleted ? "before" : "after", workspaceVersion: detail.workspaceVersion }),
 		enabled: detail.deleted || detail.contentTruncated,
 	});
-	if (revision.isPending && revision.isFetching) return <PanelMessage>{t("files.loading")}</PanelMessage>;
+	if (revision.isPending && revision.isFetching) return <PanelMessage>{"Loading files..."}</PanelMessage>;
 	if (revision.error) return <PanelMessage>{revision.error.message}</PanelMessage>;
 	if (revision.data) {
-		if (!revision.data.exists) return <PanelMessage>{t("files.error.loadFile")}</PanelMessage>;
+		if (!revision.data.exists) return <PanelMessage>{"Unable to load this file."}</PanelMessage>;
 		return (
 			<ReadOnlyFileView
 				annotation={annotation}

@@ -12,7 +12,6 @@ import {
 	type ReactElement,
 } from "react";
 import { createPortal } from "react-dom";
-import { useTranslation } from "react-i18next";
 import {
 	DndContext,
 	DragOverlay,
@@ -76,7 +75,6 @@ import { Popover, PopoverAnchor, PopoverContent } from "./ui/popover";
 import { Tooltip, TooltipContent, TooltipTrigger } from "./ui/tooltip";
 import { cn } from "../lib/utils";
 import { useUiStore } from "../stores/ui-store";
-import { appI18n, type MessageKey } from "../i18n";
 import { browserTabLabel } from "../lib/browser-tab-label";
 import { reorderBrowserTabs } from "../lib/browser-tab-order";
 import { handleTabListKeyDown } from "../lib/terminal-tabs";
@@ -214,7 +212,7 @@ export function useBrowserAnnotationQueue({
 
 		void (async () => {
 			let sent = false;
-			let failureMessage = appI18n.t("browser.unableSendAnnotation");
+			let failureMessage = "Unable to send annotation.";
 			try {
 				let screenshotPaths = stagedScreenshotPathsRef.current.get(payload);
 				if (!screenshotPaths) {
@@ -228,7 +226,7 @@ export function useBrowserAnnotationQueue({
 							body: { attachments },
 						});
 						if (staged.error || !staged.data) {
-							failureMessage = apiErrorMessage(staged.error, appI18n.t("browser.unableSendAnnotation"));
+							failureMessage = apiErrorMessage(staged.error, "Unable to send annotation.");
 							return;
 						}
 						screenshotPaths = staged.data.paths;
@@ -243,7 +241,7 @@ export function useBrowserAnnotationQueue({
 					body: { message },
 				});
 				if (error) {
-					failureMessage = apiErrorMessage(error, appI18n.t("browser.unableSendAnnotation"));
+					failureMessage = apiErrorMessage(error, "Unable to send annotation.");
 					return;
 				}
 				sent = true;
@@ -256,7 +254,7 @@ export function useBrowserAnnotationQueue({
 					success: true,
 				});
 			} catch (error) {
-				failureMessage = apiErrorMessage(error, appI18n.t("browser.unableSendAnnotation"));
+				failureMessage = apiErrorMessage(error, "Unable to send annotation.");
 			} finally {
 				if (sendGeneration !== generationRef.current || sendSessionId !== sessionIdRef.current) return;
 				annotationSendingRef.current = false;
@@ -386,7 +384,6 @@ export function BrowserPanelView({
 	annotationQueue,
 	topbarHost,
 }: BrowserPanelProps & { annotationQueue: BrowserAnnotationQueueModel; browserView: BrowserViewModel }) {
-	const { t } = useTranslation();
 	const {
 		viewId,
 		navState,
@@ -517,17 +514,17 @@ export function BrowserPanelView({
 				viewId,
 				profileId,
 				labels: {
-					temporary: t("browser.profile.temporary"),
-					manage: t("browser.profile.manage"),
-					switchTitle: t("browser.profile.switchTitle"),
-					switchMessage: t("browser.profile.switchMessage"),
-					switchDetail: t("browser.profile.switchDetail"),
-					cancel: t("common.no"),
-					confirm: t("common.yes"),
+					temporary: "Temporary",
+					manage: "Manage profiles",
+					switchTitle: "Switch profile?",
+					switchMessage: "Switching profiles will reload the browser pages.",
+					switchDetail: "Unsaved page state may be lost.",
+					cancel: "No",
+					confirm: "Yes",
 				},
 			});
 		},
-		[t, viewId],
+		[ viewId],
 	);
 
 	useEffect(() => {
@@ -603,11 +600,11 @@ export function BrowserPanelView({
 		if (!viewId || !window.ao?.browser) return;
 		try {
 			await window.ao.browser.captureScreenshot(viewId);
-			showGlobalToast(t("browser.screenshotCopied"), undefined, "top-center");
+			showGlobalToast("Screenshot copied to clipboard", undefined, "top-center");
 		} catch {
-			showGlobalToast(t("browser.screenshotFailed"), undefined, "top-center");
+			showGlobalToast("Could not take screenshot", undefined, "top-center");
 		}
-	}, [showGlobalToast, t, viewId]);
+	}, [showGlobalToast,  viewId]);
 
 	useEffect(() => {
 		setUrlInput(navState.url);
@@ -774,7 +771,7 @@ export function BrowserPanelView({
 				cancelPicking();
 			}
 		} catch (error) {
-			failPicking(error instanceof Error ? error.message : appI18n.t("browser.unableStartAnnotation"));
+			failPicking(error instanceof Error ? error.message : "Unable to start annotation.");
 		}
 	};
 
@@ -805,15 +802,15 @@ export function BrowserPanelView({
 
 	const annotationStatusLabel =
 		status === "picking"
-			? t("browser.pickElement")
+			? "Pick element"
 			: status === "queued"
 				? queuedCount > 1
-					? t("browser.queuedCount", { count: queuedCount })
-					: t("browser.queued")
+					? `Queued (${queuedCount})`
+					: "Queued"
 				: status === "sending"
-					? t("browser.sending")
+					? "Sending"
 					: status === "sent"
-						? t("browser.sent")
+						? "Sent"
 						: status === "error"
 							? error
 							: "";
@@ -851,21 +848,21 @@ export function BrowserPanelView({
 							aria-controls={suggestionsOpen ? historyMenuId : undefined}
 							aria-expanded={suggestionsOpen}
 							aria-haspopup="listbox"
-							aria-label={t("browser.url")}
+							aria-label="Browser URL"
 							className="browser-panel__url-input h-browser-url text-xs"
 							onBlur={endUrlEditing}
 							onChange={(event) => handleURLChange(event.target.value)}
 							onClick={() => urlInputRef.current?.select()}
 							onFocus={beginUrlEditing}
 							onKeyDown={handleURLKeyDown}
-							placeholder={t("browser.urlPlaceholder")}
+							placeholder="Search or enter a URL"
 							ref={urlInputRef}
 							value={urlEditing || poppedOut ? urlInput : getDisplayUrl(navState.url)}
 						/>
 						{isWebLink(navState.url) ? (
-							<BrowserControlTooltip label={t("inspector.openInSystemBrowser")}>
+							<BrowserControlTooltip label="Open in System Browser">
 									<Button
-										aria-label={t("inspector.openInSystemBrowser")}
+										aria-label="Open in System Browser"
 										className="browser-panel__url-external"
 										onClick={openCurrentPageExternally}
 										size="icon-sm"
@@ -880,7 +877,7 @@ export function BrowserPanelView({
 				</PopoverAnchor>
 				<PopoverContent
 					align="start"
-					aria-label={t("browser.urlSuggestions")}
+					aria-label="Address suggestions"
 					className={cn(
 						SETTINGS_MENU_SURFACE,
 						"browser-panel__history-suggestions",
@@ -938,7 +935,7 @@ export function BrowserPanelView({
 				<SortableContext items={tabs.map((tab) => tab.id)} strategy={horizontalListSortingStrategy}>
 					<div className="browser-panel__tab-region">
 						<div
-							aria-label={t("browser.tabs")}
+							aria-label="Browser tabs"
 							className="browser-panel__tab-strip"
 							onKeyDown={draggedTopTabId ? undefined : handleTabListKeyDown}
 							ref={tabScrollRef}
@@ -965,9 +962,9 @@ export function BrowserPanelView({
 					{draggedTopTab ? <BrowserTopTabDragOverlay onlyTab={tabs.length === 1} tab={draggedTopTab} /> : null}
 				</DragOverlay>
 			</DndContext>
-				<BrowserControlTooltip label={t("browser.openNewTab")}>
+				<BrowserControlTooltip label="Open new tab">
 					<button
-						aria-label={t("browser.openNewTab")}
+						aria-label="Open new tab"
 						className={cn("browser-panel__tab-new", draggedTopTabId && "browser-panel__tab-new--dragging")}
 						onClick={() => void handleOpenTab()}
 						type="button"
@@ -986,7 +983,7 @@ export function BrowserPanelView({
 				<Tooltip>
 					<TooltipTrigger asChild>
 						<Button
-							aria-label={t("browser.annotationExitMode")}
+							aria-label="Exit annotation mode"
 							onClick={() => {
 								cancelPicking();
 								void setAnnotationMode(false);
@@ -999,14 +996,14 @@ export function BrowserPanelView({
 						</Button>
 					</TooltipTrigger>
 					<TooltipContent data-browser-native-overlay="true" side="bottom">
-						{t("browser.annotationExit")}
+						{"Exit"}
 					</TooltipContent>
 				</Tooltip>
 				<span aria-hidden="true" className="browser-panel__annotation-separator" />
 				<Tooltip>
 					<TooltipTrigger asChild>
 						<Button
-							aria-label={t("browser.annotationDiscardAllComments")}
+							aria-label="Discard all comments"
 							className="browser-panel__annotation-discard"
 							onClick={() => void annotationAction("discard-all")}
 							size="icon-sm"
@@ -1017,13 +1014,13 @@ export function BrowserPanelView({
 						</Button>
 					</TooltipTrigger>
 					<TooltipContent data-browser-native-overlay="true" side="bottom">
-						{t("browser.annotationDiscardAll")}
+						{"Discard all"}
 					</TooltipContent>
 				</Tooltip>
 			</div>
 			<div className="browser-panel__annotation-context">
 				<span aria-hidden="true" className="browser-panel__annotation-status-dot" />
-				<span className="browser-panel__annotation-label">{t("browser.annotationActive")}</span>
+				<span className="browser-panel__annotation-label">{"Annotating"}</span>
 				<span className="browser-panel__annotation-host">
 					{(() => {
 						try {
@@ -1038,7 +1035,7 @@ export function BrowserPanelView({
 				<Tooltip>
 					<TooltipTrigger asChild>
 						<Button
-							aria-label={t("browser.takeScreenshot")}
+							aria-label="Take a screenshot"
 							onClick={() => void annotationAction("capture")}
 							size="icon-sm"
 							type="button"
@@ -1051,13 +1048,13 @@ export function BrowserPanelView({
 						</Button>
 					</TooltipTrigger>
 					<TooltipContent data-browser-native-overlay="true" side="bottom">
-						{t("browser.takeScreenshot")}
+						{"Take a screenshot"}
 					</TooltipContent>
 				</Tooltip>
 				<Tooltip>
 					<TooltipTrigger asChild>
 						<Button
-							aria-label={t("browser.annotationOriginalPage")}
+							aria-label="Hold to view original page"
 							onBlur={() => void annotationAction("restore-preview")}
 							onPointerCancel={() => void annotationAction("restore-preview")}
 							onPointerDown={() => void annotationAction("preview-original")}
@@ -1071,19 +1068,19 @@ export function BrowserPanelView({
 						</Button>
 					</TooltipTrigger>
 					<TooltipContent data-browser-native-overlay="true" side="bottom">
-						{t("browser.annotationOriginal")}
+						{"Hold to view original"}
 					</TooltipContent>
 				</Tooltip>
 				<span aria-hidden="true" className="browser-panel__annotation-separator" />
 				<Button
-					aria-label={t("browser.annotationSendAll")}
+					aria-label="Send annotations"
 					className="browser-panel__annotation-send h-7 gap-1.5 px-2.5 text-xs font-medium"
 					disabled={annotationState.count === 0 && !annotationState.hasDraft}
 					onClick={() => void annotationAction("submit")}
 					size="sm"
 					type="button"
 				>
-					{t("browser.annotationSend")}
+					{"Send"}
 					{annotationState.count > 0 ? (
 						<span className="browser-panel__annotation-send-count">{annotationState.count}</span>
 					) : null}
@@ -1138,10 +1135,10 @@ export function BrowserPanelView({
 					<>
 						{browserTabBar}
 						<div className="browser-panel__toolbar" data-testid="browser-toolbar">
-							<BrowserControlTooltip label={t("browser.back")}>
+							<BrowserControlTooltip label="Back">
 								<span className="browser-panel__navigation-control inline-flex">
 							<Button
-								aria-label={t("browser.back")}
+								aria-label="Back"
 								className="browser-panel__navigation-btn"
 								disabled={!navState.canGoBack}
 								onClick={() => void goBack()}
@@ -1153,10 +1150,10 @@ export function BrowserPanelView({
 							</Button>
 					</span>
 				</BrowserControlTooltip>
-				<BrowserControlTooltip label={t("browser.forward")}>
+				<BrowserControlTooltip label="Forward">
 					<span className="browser-panel__navigation-control inline-flex">
 							<Button
-								aria-label={t("browser.forward")}
+								aria-label="Forward"
 								className="browser-panel__navigation-btn"
 								disabled={!navState.canGoForward}
 								onClick={() => void goForward()}
@@ -1168,9 +1165,9 @@ export function BrowserPanelView({
 							</Button>
 					</span>
 				</BrowserControlTooltip>
-				<BrowserControlTooltip label={navState.isLoading ? t("browser.stop") : t("browser.reload")}>
+				<BrowserControlTooltip label={navState.isLoading ? "Stop" : "Reload"}>
 					<Button
-							aria-label={navState.isLoading ? t("browser.stop") : t("browser.reload")}
+							aria-label={navState.isLoading ? "Stop" : "Reload"}
 							className="browser-panel__navigation-btn"
 							onClick={() => void (navState.isLoading ? stop() : reload())}
 							size="icon-sm"
@@ -1199,16 +1196,16 @@ export function BrowserPanelView({
 					</span>
 				) : null}
 				<BrowserControlTooltip
-					label={annotationStatusLabel || agentStatusLabel || (canRetryAnnotation ? t("browser.retryAnnotation") : t("browser.annotate"))}
+					label={annotationStatusLabel || agentStatusLabel || (canRetryAnnotation ? "Retry annotation" : "Annotate page")}
 				>
 					<span className="inline-flex">
 							<Button
 								aria-label={
 									canRetryAnnotation
-										? t("browser.retryAnnotation")
+										? "Retry annotation"
 										: annotationMode || status === "picking"
-											? t("browser.cancelAnnotation")
-											: t("browser.annotate")
+											? "Cancel annotation"
+											: "Annotate page"
 								}
 								aria-pressed={annotationMode || status === "picking"}
 								className="browser-panel__annotate-btn relative"
@@ -1240,10 +1237,10 @@ export function BrowserPanelView({
 						}}
 						open={downloadsOpen}
 					>
-						<BrowserControlTooltip disabled={downloadsOpen} label={t("browser.downloads.title")}>
+						<BrowserControlTooltip disabled={downloadsOpen} label="Downloads">
 							<DropdownMenuTrigger asChild>
 									<Button
-									aria-label={t("browser.downloads.title")}
+									aria-label="Downloads"
 									className={cn("relative", hasActiveDownload && "text-accent")}
 										size="icon-sm"
 										type="button"
@@ -1260,9 +1257,9 @@ export function BrowserPanelView({
 							data-browser-native-overlay="true"
 						>
 							<div className="flex items-center justify-between border-b border-border px-3 py-2">
-								<p className="text-xs font-semibold">{t("browser.downloads.title")}</p>
+								<p className="text-xs font-semibold">{"Downloads"}</p>
 								<Button onClick={() => openGlobalSettings("browserProfiles")} size="sm" type="button" variant="ghost">
-									{t("browser.downloads.showAll")}
+									{"Show all"}
 								</Button>
 							</div>
 							<BrowserDownloadsList
@@ -1280,10 +1277,10 @@ export function BrowserPanelView({
 						if (!open) setControlsView("root");
 					}}
 				>
-					<BrowserControlTooltip disabled={controlsOpen} label={t("browser.controls")}>
+					<BrowserControlTooltip disabled={controlsOpen} label="Browser controls">
 						<DropdownMenuTrigger asChild>
 								<Button
-									aria-label={t("browser.controls")}
+									aria-label="Browser controls"
 									size="icon-sm"
 									type="button"
 									variant="ghost"
@@ -1307,14 +1304,14 @@ export function BrowserPanelView({
 									}}
 								>
 									<ChevronRight aria-hidden="true" className="size-3.5 rotate-180 text-passive" />
-									{t("browser.devicePreset")}
+									{"Device preset"}
 								</DropdownMenuItem>
 								<div className="my-1 h-px bg-border" role="separator" />
 						<DropdownMenuItem className="gap-1.5" onSelect={() => setDevicePreset(null)}>
 							<span className="flex size-4 shrink-0 items-center justify-center">
 								{devicePreset === null ? <Check aria-hidden="true" className="text-accent" /> : null}
 							</span>
-							{t("browser.deviceFit")}
+							{"Fit panel"}
 						</DropdownMenuItem>
 						<div className="my-1 h-px bg-border" role="separator" />
 						<div className="board-scrollbar flex max-h-72 flex-col gap-px overflow-y-auto pr-0.5">
@@ -1343,7 +1340,7 @@ export function BrowserPanelView({
 							<span className="flex size-4 shrink-0 items-center justify-center">
 								{devicePreset === CUSTOM_DEVICE_PRESET_ID ? <Check aria-hidden="true" className="text-accent" /> : null}
 							</span>
-							<span className="flex-1">{t("browser.deviceCustomWidth")}</span>
+							<span className="flex-1">{"Custom width"}</span>
 							<Input
 								className="h-6 w-16 shrink-0 px-1.5 text-right font-mono text-caption"
 								inputMode="numeric"
@@ -1369,17 +1366,17 @@ export function BrowserPanelView({
 									}}
 								>
 									<ChevronRight aria-hidden="true" className="size-3.5 rotate-180 text-passive" />
-									{t("browser.profile.label")}
+									{"Profile"}
 								</DropdownMenuItem>
 								<div className="my-1 h-px bg-border" role="separator" />
 								<DropdownMenuItem className="gap-2" disabled={agentBrowserActive} onSelect={() => selectBrowserProfile(null)}>
 									<span className="flex size-4 shrink-0 items-center justify-center">
 										{profileState.profileId === null ? <Check aria-hidden="true" className="text-accent" /> : null}
 									</span>
-									<span className="flex-1 truncate">{t("browser.profile.temporary")}</span>
+									<span className="flex-1 truncate">{"Temporary"}</span>
 								</DropdownMenuItem>
 								{profilesLoading ? (
-									<div className="px-8 py-1.5 text-caption text-passive">{t("settings.browserProfiles.loading")}</div>
+									<div className="px-8 py-1.5 text-caption text-passive">{"Loading browser profiles…"}</div>
 								) : (
 									browserProfiles.map((profile) => (
 										<DropdownMenuItem
@@ -1398,7 +1395,7 @@ export function BrowserPanelView({
 								<div className="my-1 h-px bg-border" role="separator" />
 								<DropdownMenuItem onSelect={() => openGlobalSettings("browserProfiles")}>
 									<Settings2 aria-hidden="true" className="size-icon-base" />
-									{t("browser.profile.manage")}
+									{"Manage profiles"}
 								</DropdownMenuItem>
 							</>
 						) : (
@@ -1413,7 +1410,7 @@ export function BrowserPanelView({
 										<Maximize2 aria-hidden="true" className="size-icon-base shrink-0" />
 									)}
 									<span className="flex-1">
-										{poppedOut ? t("browser.returnToPanel") : t("browser.popOut")}
+										{poppedOut ? "Return to panel" : "Pop out"}
 									</span>
 								</DropdownMenuItem>
 								<div className="my-1 h-px bg-border" role="separator" />
@@ -1425,7 +1422,7 @@ export function BrowserPanelView({
 									}}
 								>
 									<Monitor aria-hidden="true" className="size-icon-base shrink-0" />
-									<span className="flex-1">{t("browser.devicePreset")}</span>
+									<span className="flex-1">{"Device preset"}</span>
 									{devicePreset !== null ? <span className="size-1.5 rounded-full bg-accent" /> : null}
 									<ChevronRight aria-hidden="true" className="size-3.5 shrink-0 text-passive" />
 								</DropdownMenuItem>
@@ -1437,9 +1434,9 @@ export function BrowserPanelView({
 									}}
 								>
 									<UserRound aria-hidden="true" className="size-icon-base shrink-0" />
-									<span className="flex-1">{t("browser.profile.label")}</span>
+									<span className="flex-1">{"Profile"}</span>
 									<span className="max-w-20 truncate text-caption text-passive">
-										{profileState.profileName ?? t("browser.profile.temporary")}
+										{profileState.profileName ?? "Temporary"}
 									</span>
 									<ChevronRight aria-hidden="true" className="size-3.5 shrink-0 text-passive" />
 								</DropdownMenuItem>
@@ -1449,21 +1446,21 @@ export function BrowserPanelView({
 									onSelect={() => void (devtoolsState.open ? closeDevTools() : openDevTools())}
 								>
 									<Bug aria-hidden="true" className="size-icon-base shrink-0" />
-									<span className="flex-1">{t(devtoolsState.open ? "browser.closeDevTools" : "browser.openDevTools")}</span>
+									<span className="flex-1">{(devtoolsState.open ? "Close DevTools" : "Open DevTools")}</span>
 									{devtoolsState.open ? <Check aria-hidden="true" className="text-accent" /> : null}
 								</DropdownMenuItem>
 								<DropdownMenuItem className="gap-2" disabled={!canTakeScreenshot} onSelect={() => void takeScreenshot()}>
 									<Camera aria-hidden="true" className="size-icon-base shrink-0" />
-									<span className="flex-1">{t("browser.takeScreenshot")}</span>
+									<span className="flex-1">{"Take a screenshot"}</span>
 								</DropdownMenuItem>
 								<DropdownMenuItem className="gap-2" onSelect={() => openGlobalSettings("browserProfiles")}>
 									<Download aria-hidden="true" className="size-icon-base shrink-0" />
-									<span className="flex-1">{t("browser.downloads.title")}</span>
+									<span className="flex-1">{"Downloads"}</span>
 								</DropdownMenuItem>
 								{closedTabs.length > 0 ? (
 									<DropdownMenuItem className="gap-2" onSelect={() => void reopenClosedTab()}>
 										<RotateCcw aria-hidden="true" className="size-icon-base shrink-0" />
-										<span className="flex-1">{t("browser.reopenClosedTab")}</span>
+										<span className="flex-1">{"Reopen closed tab"}</span>
 									</DropdownMenuItem>
 								) : null}
 							</>
@@ -1508,7 +1505,7 @@ export function BrowserPanelView({
 					{showStaticPreview ? <StaticPreview url={navState.url} /> : null}
 					{navState.url === "" ? (
 						<div className="pointer-events-none absolute inset-0 grid place-items-center p-5 text-center font-mono text-xs text-passive">
-							<p>{t("browser.emptyUrl")}</p>
+							<p>{"Enter a URL or click one in the terminal."}</p>
 						</div>
 					) : null}
 					{navState.error ? (
@@ -1564,10 +1561,9 @@ const SortableBrowserTopTab = memo(function SortableBrowserTopTab({
 	onSelect: (tabId: string) => void;
 	onClose: (tabId: string) => void;
 }) {
-	const { t } = useTranslation();
 	const { attributes, listeners, setNodeRef, transform, transition, isDragging } = useSortable({ id: tab.id });
 	const label = browserTabLabel(tab.title, tab.url);
-	const closeLabel = t("browser.closeTab", { title: label.title });
+	const closeLabel = `Close tab ${label.title}`;
 	return (
 		<div
 			className={cn(
@@ -1598,7 +1594,7 @@ const SortableBrowserTopTab = memo(function SortableBrowserTopTab({
 					<span className="browser-panel__tab-title">{label.title}</span>
 				</button>
 			</BrowserControlTooltip>
-			<BrowserControlTooltip label={onlyTab ? t("browser.onlyTab") : closeLabel}>
+			<BrowserControlTooltip label={onlyTab ? "The only tab cannot be closed" : closeLabel}>
 				<button
 					aria-label={closeLabel}
 					className="browser-panel__tab-close"
@@ -1647,49 +1643,45 @@ export const BrowserTopTabDragOverlay = memo(function BrowserTopTabDragOverlay({
 function agentActivityLabel(activity: BrowserViewModel["agentBrowserActivity"], active: boolean): string {
 	if (!active && !activity?.active) return "";
 	const action = activity?.active ? activity.action : "";
-	if (!action) return appI18n.t("browser.agentUsing");
-	return appI18n.t("browser.agentAction", { verb: browserActionVerb(action) });
+	if (!action) return "Agent using browser";
+	return `Agent ${browserActionVerb(action)}`;
 }
 
 function browserActionVerb(action: string): string {
-	const key = ((): MessageKey => {
-		switch (action) {
-			case "click":
-				return "browser.verb.click";
-			case "fill":
-			case "type":
-				return "browser.verb.type";
-			case "press":
-				return "browser.verb.press";
-			case "hover":
-				return "browser.verb.hover";
-			case "scroll":
-				return "browser.verb.scroll";
-			case "open":
-				return "browser.verb.open";
-			case "wait":
-				return "browser.verb.wait";
-			case "snapshot":
-				return "browser.verb.read";
-			case "highlight":
-				return "browser.verb.highlight";
-			case "unhighlight":
-				return "browser.verb.clearHighlight";
-			case "tab-new":
-				return "browser.verb.openTab";
-			case "tab-select":
-				return "browser.verb.switchTab";
-			case "tab-close":
-				return "browser.verb.closeTab";
-			case "tabs":
-				return "browser.verb.checkTabs";
-			default:
-				return "browser.verb.using";
-		}
-	})();
-	return appI18n.t(key);
+	switch (action) {
+		case "click":
+			return "clicking";
+		case "fill":
+		case "type":
+			return "typing";
+		case "press":
+			return "pressing";
+		case "hover":
+			return "hovering";
+		case "scroll":
+			return "scrolling";
+		case "open":
+			return "opening";
+		case "wait":
+			return "waiting";
+		case "snapshot":
+			return "reading";
+		case "highlight":
+			return "highlighting";
+		case "unhighlight":
+			return "clearing highlight";
+		case "tab-new":
+			return "opening tab";
+		case "tab-select":
+			return "switching tabs";
+		case "tab-close":
+			return "closing tab";
+		case "tabs":
+			return "checking tabs";
+		default:
+			return "using browser";
+	}
 }
-
 function getDisplayUrl(url: string): string {
 	if (!url) return url;
 	try {

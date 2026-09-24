@@ -2190,7 +2190,6 @@ ipcMain.handle("uiSettings:get", async (): Promise<UiSettings> => {
 	ipcMain.handle("uiSettings:set", async (_event, settings: Partial<UiSettings>): Promise<UiSettings> => {
 		const runFile = runFilePath();
 	const result = !runFile ? coerceUiSettings(settings) : await writeUiSettings(path.dirname(runFile), settings);
-	trayController?.setLocale(result.locale);
 	soundNotificationsEnabled = result.soundNotificationsEnabled;
 	terminalShellPreference = result.terminalShell;
 	shellEnvPromise = null;
@@ -2612,7 +2611,6 @@ app.whenReady().then(async () => {
 		trayController = createTrayController({
 			focusWindow: focusMainWindow,
 			openSession: trayLifecycle.openSession,
-			locale: initialUiSettings.locale,
 		});
 	}
 	await createWindow();

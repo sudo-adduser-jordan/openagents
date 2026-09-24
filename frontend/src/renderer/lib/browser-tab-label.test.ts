@@ -1,10 +1,6 @@
 import { describe, expect, it } from "vitest";
 import { browserTabLabel } from "./browser-tab-label";
 
-// The test setup (src/renderer/test/setup.ts) boots i18n in English, so:
-//   appI18n.t("browser.newTab")   === "New tab"
-//   appI18n.t("browser.blankPage") === "Blank page"
-
 describe("browserTabLabel", () => {
 	// ─── empty / blank URL ───────────────────────────────────────────────────
 	describe("blank URL", () => {

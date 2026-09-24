@@ -1,6 +1,4 @@
 import { useCanGoBack, useRouter } from "@tanstack/react-router";
-import { useTranslation } from "react-i18next";
-import type { TFunction } from "i18next";
 import {
   ArrowLeft,
   ArrowRight,
@@ -90,19 +88,17 @@ function TopMenu({
 
 function WindowControls({
   isMaximized,
-  t,
 }: {
   isMaximized: boolean;
-  t: TFunction;
 }) {
   return (
     <div
-      aria-label={t("titlebar.window")}
+      aria-label="Window"
       className="window-titlebar__controls"
       role="group"
     >
       <button
-        aria-label={t("titlebar.minimize")}
+        aria-label="Minimize"
         className="window-titlebar__control"
         onClick={act("window.minimize")}
         type="button"
@@ -110,7 +106,7 @@ function WindowControls({
         <Minus aria-hidden="true" className="window-titlebar__control-icon" />
       </button>
       <button
-        aria-label={t("titlebar.maximize")}
+        aria-label="Maximize / Restore"
         className="window-titlebar__control"
         onClick={act("window.maximize")}
         type="button"
@@ -128,7 +124,7 @@ function WindowControls({
         )}
       </button>
       <button
-        aria-label={t("titlebar.close")}
+        aria-label="Close"
         className="window-titlebar__control window-titlebar__control--close"
         onClick={act("window.close")}
         type="button"
@@ -140,7 +136,6 @@ function WindowControls({
 }
 
 export function WindowTitlebar() {
-  const { t } = useTranslation();
   const toggleSidebar = useUiStore((state) => state.toggleSidebar);
   const isSidebarOpen = useUiStore(sidebarIsVisible);
   const router = useRouter();
@@ -199,8 +194,8 @@ export function WindowTitlebar() {
           <button
             aria-label={
               isSidebarOpen
-                ? t("shell.collapseSidebar")
-                : t("shell.expandSidebar")
+                ? "Collapse sidebar"
+                : "Expand sidebar"
             }
             className="window-titlebar__toggle"
             onClick={toggleSidebar}
@@ -214,15 +209,15 @@ export function WindowTitlebar() {
         </TooltipTrigger>
         <TooltipContent side="bottom">
           {isSidebarOpen
-            ? t("shell.collapseSidebarTitle")
-            : t("shell.expandSidebarTitle")}
+            ? "Collapse sidebar · Ctrl+B"
+            : "Expand sidebar · Ctrl+B"}
         </TooltipContent>
       </Tooltip>
       <Tooltip>
         <TooltipTrigger asChild>
           <span className="inline-flex">
             <button
-              aria-label={t("titlebar.goBack")}
+              aria-label="Go back"
               className="window-titlebar__toggle"
               disabled={!canGoBack}
               onClick={() => router.history.back()}
@@ -235,13 +230,13 @@ export function WindowTitlebar() {
             </button>
           </span>
         </TooltipTrigger>
-        <TooltipContent side="bottom">{t("titlebar.goBack")}</TooltipContent>
+        <TooltipContent side="bottom">{"Go back"}</TooltipContent>
       </Tooltip>
       <Tooltip>
         <TooltipTrigger asChild>
           <span className="inline-flex">
             <button
-              aria-label={t("titlebar.goForward")}
+              aria-label="Go forward"
               className="window-titlebar__toggle"
               disabled={!canGoForward}
               onClick={() => router.history.forward()}
@@ -254,58 +249,58 @@ export function WindowTitlebar() {
             </button>
           </span>
         </TooltipTrigger>
-        <TooltipContent side="bottom">{t("titlebar.goForward")}</TooltipContent>
+        <TooltipContent side="bottom">{"Go forward"}</TooltipContent>
       </Tooltip>
       <nav className="window-titlebar__menus">
         <TopMenu
           id="view"
-          label={t("titlebar.view")}
+          label="View"
           openMenu={openMenu}
           setOpenMenu={setOpenMenu}
         >
           <DropdownMenuItem onSelect={act("view.reload")}>
-            {t("titlebar.reload")}
+            {"Reload"}
             <DropdownMenuShortcut>Ctrl+R</DropdownMenuShortcut>
           </DropdownMenuItem>
           <DropdownMenuItem onSelect={act("view.devtools")}>
-            {t("titlebar.devtools")}
+            {"Toggle DevTools"}
             <DropdownMenuShortcut>Ctrl+Shift+I</DropdownMenuShortcut>
           </DropdownMenuItem>
           <DropdownMenuSeparator />
           <DropdownMenuItem onSelect={act("view.zoomIn")}>
-            {t("titlebar.zoomIn")}
+            {"Zoom In"}
           </DropdownMenuItem>
           <DropdownMenuItem onSelect={act("view.zoomOut")}>
-            {t("titlebar.zoomOut")}
+            {"Zoom Out"}
           </DropdownMenuItem>
           <DropdownMenuItem onSelect={act("view.zoomReset")}>
-            {t("titlebar.zoomReset")}
+            {"Reset Zoom"}
           </DropdownMenuItem>
           <DropdownMenuSeparator />
           <DropdownMenuItem onSelect={act("view.fullscreen")}>
-            {t("titlebar.fullscreen")}
+            {"Toggle Full Screen"}
             <DropdownMenuShortcut>F11</DropdownMenuShortcut>
           </DropdownMenuItem>
         </TopMenu>
 
         <TopMenu
           id="help"
-          label={t("titlebar.help")}
+          label="Help"
           openMenu={openMenu}
           setOpenMenu={setOpenMenu}
         >
           <DropdownMenuItem onSelect={act("help.shortcuts")}>
-            {t("settings.keyboardShortcuts")}
+            {"Keyboard shortcuts"}
             <DropdownMenuShortcut>Ctrl+/</DropdownMenuShortcut>
           </DropdownMenuItem>
           <DropdownMenuSeparator />
           <DropdownMenuItem onSelect={act("help.about")}>
-            {t("titlebar.about")}
+            {"About Agent Orchestrator"}
           </DropdownMenuItem>
         </TopMenu>
       </nav>
       <div className="window-titlebar__spacer" />
-      <WindowControls isMaximized={isMaximized} t={t} />
+      <WindowControls isMaximized={isMaximized} />
     </header>
   );
 }

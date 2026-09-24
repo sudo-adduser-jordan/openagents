@@ -1,5 +1,6 @@
 import {
 	attentionZone,
+	defaultProductUITranslator,
 	attentionZoneOrder,
 	boardAttentionZoneOrder,
 	boardLaneOrder,
@@ -18,46 +19,35 @@ import {
 	type BoardLane,
 	type BoardLaneView,
 	type KanbanColumn,
-	type ProductUITranslator,
 	type SessionStatusView,
 	type SessionTimelinePillStatus,
 	type SessionTimelinePillView,
 	type WorkflowMode,
 } from "@aoagents/product-ui";
-import type { TFunction } from "i18next";
-import { appI18n, type MessageKey } from "../i18n";
 import type { SessionActivity, SessionStatus } from "../types/workspace";
 
-function translator(t: TFunction): ProductUITranslator {
-	return (key, values) => t(key as MessageKey, values);
-}
-
 export function getAgentActivityView(
-	activity?: SessionActivity | null,
-	t: TFunction = appI18n.t,
+	activity?: SessionActivity | null
 ): AgentActivityView {
-	return getPortableAgentActivityView(activity, translator(t));
+	return getPortableAgentActivityView(activity, defaultProductUITranslator);
 }
 
 export function getSessionStatusView(
-	status: SessionStatus,
-	t: TFunction = appI18n.t,
+	status: SessionStatus
 ): SessionStatusView {
-	return getPortableSessionStatusView(status, translator(t));
+	return getPortableSessionStatusView(status, defaultProductUITranslator);
 }
 
 export function getAttentionZoneView(
-	status: SessionStatus,
-	t: TFunction = appI18n.t,
+	status: SessionStatus
 ): AttentionZoneView {
-	return getPortableAttentionZoneView(status, translator(t));
+	return getPortableAttentionZoneView(status, defaultProductUITranslator);
 }
 
 export function getAttentionZoneViewForZone(
-	zone: AttentionZone,
-	t: TFunction = appI18n.t,
+	zone: AttentionZone
 ): AttentionZoneView {
-	return getPortableAttentionZoneViewForZone(zone, translator(t));
+	return getPortableAttentionZoneViewForZone(zone, defaultProductUITranslator);
 }
 
 export type SessionStatusDotView = {
@@ -79,8 +69,7 @@ export function getSessionStatusDotView(
 		displayStatus?: string;
 		scmStatus?: SessionStatus;
 		status: SessionStatus;
-	},
-	t: TFunction = appI18n.t,
+	}
 ): SessionStatusDotView {
 	const working = isAgentActivityWorking(session.activity);
 	const closedWithoutMerge = session.displayStatus === "Closed without merge";
@@ -89,10 +78,10 @@ export function getSessionStatusDotView(
 	const toneStatus = sectionStatus === "idle" && working ? "working" : sectionStatus;
 	const className =
 		closedWithoutMerge
-			? getSessionStatusView("exited", t).dotClassName
+			? getSessionStatusView("exited").dotClassName
 			: toneStatus === "idle" || toneStatus === "merged"
-				? getSessionStatusView(toneStatus, t).dotClassName
-				: getAttentionZoneView(toneStatus, t).dotClassName;
+				? getSessionStatusView(toneStatus).dotClassName
+				: getAttentionZoneView(toneStatus).dotClassName;
 
 	return {
 		className,
@@ -101,17 +90,15 @@ export function getSessionStatusDotView(
 }
 
 export function getBoardLaneView(
-	lane: BoardLane,
-	t: TFunction = appI18n.t,
+	lane: BoardLane
 ): BoardLaneView {
-	return getPortableBoardLaneView(lane, translator(t));
+	return getPortableBoardLaneView(lane, defaultProductUITranslator);
 }
 
 export function getSessionTimelinePillView(
-	status: SessionTimelinePillStatus,
-	t: TFunction = appI18n.t,
+	status: SessionTimelinePillStatus
 ): SessionTimelinePillView {
-	return getPortableSessionTimelinePillView(status, translator(t));
+	return getPortableSessionTimelinePillView(status, defaultProductUITranslator);
 }
 
 /** Live labels for the current locale (getters re-resolve on each access). */

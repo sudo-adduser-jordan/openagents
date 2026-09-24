@@ -1,6 +1,5 @@
 import { GitPullRequest, TerminalSquare, X } from "lucide-react";
 import { useCallback, useEffect, useRef, useState } from "react";
-import { useTranslation } from "react-i18next";
 import type { TerminalSessionState } from "../hooks/useTerminalSession";
 import { useCloseShellTerminal } from "../hooks/useShellTerminals";
 import { useGitHubAuthAutoLoginOffered, useGitHubAuthRequirement, useGitHubAuthTerminal, useStartGitHubAuthTerminal, useSystemRequirementsGate } from "../hooks/useSystemRequirementsGate";
@@ -16,7 +15,6 @@ const GITHUB_CLI_INSTALL_URL = "https://cli.github.com/";
  * missing auth before task creation prevents a late PR-creation failure inside
  * an agent session. */
 export function GitHubOnboardingNotice() {
-	const { t } = useTranslation();
 	const gate = useSystemRequirementsGate();
 	const startLogin = useStartGitHubAuthTerminal();
 	const autoLogin = useGitHubAuthAutoLoginOffered();
@@ -58,9 +56,9 @@ export function GitHubOnboardingNotice() {
 		if (!auth?.satisfied || !terminal) return;
 		if (completedTerminalRef.current === terminal.handleId) return;
 		completedTerminalRef.current = terminal.handleId;
-		showGlobalToast(t("startup.githubConnected"));
+		showGlobalToast("GitHub connected");
 		closeTerminal(terminal.handleId, { onSuccess: terminalQuery.clear });
-	}, [auth?.satisfied, closeTerminal, showGlobalToast, t, terminal, terminalQuery.clear]);
+	}, [auth?.satisfied, closeTerminal, showGlobalToast,  terminal, terminalQuery.clear]);
 	useEffect(() => {
 		if (
 			!auth ||
@@ -116,9 +114,9 @@ export function GitHubOnboardingNotice() {
 						<GitPullRequest className="size-4" aria-hidden="true" />
 					</span>
 					<div className="min-w-0 flex-1">
-						<p className="text-[14px] font-semibold text-[var(--color-text-import-title)]">{t("startup.githubSetupTitle")}</p>
+						<p className="text-[14px] font-semibold text-[var(--color-text-import-title)]">{"Connect GitHub for pull requests"}</p>
 						<p className="mt-0.5 text-[12px] leading-5 text-[var(--color-text-import-muted)]">
-							{t(cliMissing ? "startup.githubSetupMissingCli" : "startup.githubSetupSignedOut")}
+							{(cliMissing ? "Install GitHub CLI and sign in before asking agents to open pull requests." : "Sign in once so agent sessions can open pull requests and read issues without asking you for a token.")}
 						</p>
 						<div className="mt-2 flex flex-wrap items-center gap-2">
 							<TopbarButton
@@ -132,12 +130,12 @@ export function GitHubOnboardingNotice() {
 							>
 								{cliMissing ? null : <TerminalSquare className="size-icon-sm" aria-hidden="true" />}
 								{cliMissing
-									? t("startup.openGithubCliDocs")
+									? "Get GitHub CLI"
 									: startLogin.isPending
-										? t("startup.githubLoginStarting")
+										? "Starting sign-in…"
 										: loginEnded
-											? t("startup.githubLoginTryAgain")
-											: t("startup.githubLogin")}
+											? "Try again"
+											: "Sign in with GitHub"}
 							</TopbarButton>
 							{loginRunning ? null : (
 								<TopbarButton
@@ -145,7 +143,7 @@ export function GitHubOnboardingNotice() {
 									onClick={() => void checkAgain()}
 									variant="accent"
 								>
-									{manualCheckPending ? t("startup.checkingAgain") : t("startup.checkAgain")}
+									{manualCheckPending ? "Checking…" : "Check again"}
 								</TopbarButton>
 							)}
 						</div>
@@ -156,10 +154,10 @@ export function GitHubOnboardingNotice() {
 									<div className="min-w-0">
 										<p className="truncate text-xs font-medium text-[var(--color-text-import-title)]">{terminal.title}</p>
 										<p className="truncate text-[11px] text-[var(--color-text-import-muted)]">
-											{t(loginEnded ? "startup.githubLoginStopped" : "startup.githubLoginRunning")}
+											{(loginEnded ? "Sign-in stopped before GitHub was connected" : "Complete sign-in in this terminal")}
 										</p>
 									</div>
-									<TopbarButton aria-label={t("common.close")} className="!size-7 shrink-0" onClick={closeLogin} variant="icon">
+									<TopbarButton aria-label="Close" className="!size-7 shrink-0" onClick={closeLogin} variant="icon">
 										<X className="size-4" aria-hidden="true" />
 									</TopbarButton>
 								</div>

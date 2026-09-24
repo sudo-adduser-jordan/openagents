@@ -4,7 +4,6 @@ import { createFileRoute, Outlet, useMatchRoute, useNavigate, useParams } from "
 import { isCancelledError, useQueryClient } from "@tanstack/react-query";
 import { memo, type CSSProperties, useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { FolderPlus } from "lucide-react";
-import { useTranslation } from "react-i18next";
 import { CommandPalette } from "../components/CommandPalette";
 import { CenterPanelShell } from "../components/CenterPanelShell";
 import { DaemonFailureBanner } from "../components/DaemonFailureBanner";
@@ -163,7 +162,6 @@ const ShellCenter = memo(function ShellCenter({
 // the old single <App>, with selection now owned by the router (route params)
 // instead of Zustand. The daemon-status effect runs here exactly once.
 function ShellLayout() {
-	const { t } = useTranslation();
 	const navigate = useNavigate();
 	const matchRoute = useMatchRoute();
 	const queryClient = useQueryClient();
@@ -894,7 +892,7 @@ function ShellLayout() {
 								<FolderPlus className="size-5" aria-hidden="true" />
 							</span>
 							<p className="text-[15px] font-semibold text-[var(--color-text-import-title)]">
-								{t("createProject.dropToAdd")}
+								{"Drop to add project"}
 							</p>
 						</div>
 					</div>

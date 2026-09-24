@@ -1,5 +1,4 @@
 import * as Dialog from "@radix-ui/react-dialog";
-import { useTranslation } from "react-i18next";
 import { Loader2, X } from "lucide-react";
 import { useState } from "react";
 import { useQueryClient } from "@tanstack/react-query";
@@ -21,7 +20,6 @@ import {
 // for this launch (re-prompts next launch); {t("migration.dontMigrate")} declines permanently
 // (re-runnable later once the Settings entry point lands, issue #2205).
 export function MigrationPopup() {
-	const { t } = useTranslation();
 	const offer = useMigrationOffer();
 	const queryClient = useQueryClient();
 	const [skipped, setSkipped] = useState(false);
@@ -80,35 +78,35 @@ export function MigrationPopup() {
 					<button
 						type="button"
 						className="settings-dialog-close-button settings-close-button"
-						aria-label={t("common.close")}
+						aria-label="Close"
 						disabled={busy}
 						onClick={() => setSkipped(true)}
 					>
 						<X className="size-5" aria-hidden="true" />
 					</button>
 					<div className={settingsDialogHeaderClass}>
-						<Dialog.Title className="settings-dialog-title">{t("migration.title")}</Dialog.Title>
+						<Dialog.Title className="settings-dialog-title">{"Import projects from your earlier AO?"}</Dialog.Title>
 						<Dialog.Description className="text-control leading-body text-settings-muted">
-							{t("migration.bodyLead")}{" "}
+							{"We found an existing install at"}{" "}
 							<span className="font-mono text-caption text-foreground">{legacyRoot}</span>
-							. {t("migration.bodyTrail")}
+							. {"Importing brings in your projects. Your old files are never modified, and you can do this later."}
 						</Dialog.Description>
 					</div>
 					<div className={settingsDialogBodyClass}>
-						{error ? <p className="text-xs text-destructive">{t("migration.failed", { error })}</p> : null}
-						<p className="text-caption text-settings-muted">{t("migration.againLater")}</p>
+						{error ? <p className="text-xs text-destructive">{`Migration failed: ${error}. Your legacy projects are untouched (nothing is ever deleted). You can retry.`}</p> : null}
+						<p className="text-caption text-settings-muted">{"You can run this again later."}</p>
 					</div>
 					<div className={`${settingsDialogFooterClass} justify-between`}>
 						<Button type="button" variant="footer" className="text-destructive" onClick={dontMigrate} disabled={busy}>
-							{t("migration.dontMigrate")}
+							{"Don't Migrate"}
 						</Button>
 						<div className="flex flex-wrap items-center justify-end gap-3">
 							<Button type="button" variant="footer" onClick={() => setSkipped(true)} disabled={busy}>
-								{t("migration.skip")}
+								{"Skip"}
 							</Button>
 							<Button type="button" variant="footer-primary" onClick={proceed} disabled={busy}>
 								{busy ? <Loader2 className="size-icon-base animate-spin" aria-hidden="true" /> : null}
-								{error ? t("migration.retry") : t("migration.proceed")}
+								{error ? "Retry" : "Proceed"}
 							</Button>
 						</div>
 					</div>

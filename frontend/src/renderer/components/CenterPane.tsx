@@ -11,7 +11,6 @@ import {
 	type WheelEvent as ReactWheelEvent,
 } from "react";
 import { useQueryClient } from "@tanstack/react-query";
-import { useTranslation } from "react-i18next";
 import { useTabScrollEdges } from "../hooks/useTabScrollEdges";
 import { workspaceQueryKey } from "../hooks/useWorkspaceQuery";
 import { MAX_SESSION_DISPLAY_NAME_LEN, useSessionRename } from "../hooks/useSessionRename";
@@ -148,7 +147,6 @@ export function CenterPane({
 	onAuxiliaryTabOrderChange,
 	agentInputDisabled = false,
 }: CenterPaneProps) {
-	const { t } = useTranslation();
 	const paneRef = useRef<HTMLDivElement | null>(null);
 	const wheelZoomRemainderRef = useRef(0);
 	const lastWheelZoomAtRef = useRef(0);
@@ -207,14 +205,14 @@ export function CenterPane({
 		target.kind === "worker" && (agentInputDisabled || handoffDialogOpen);
 	const sessionTabLabel = session
 		? isOrchestratorSession(session)
-			? t("shell.orchestrator")
+			? "Orchestrator"
 			: session.title
-		: t("terminal.noSession");
+		: "No session";
 	const activeTerminalLabel =
 		target.kind === "shell"
 			? (shellTerminals.find((shell) => shell.handleId === target.handleId)?.title ?? target.title)
 			: target.kind === "reviewer"
-				? `${t("terminal.reviewer")} · ${target.harness}`
+				? `${"Reviewer"} · ${target.harness}`
 				: (session?.title ?? sessionTabLabel);
 	const reorderAuxiliaryTabs = useCallback(
 		(nextKeys: string[]) => {
@@ -447,7 +445,7 @@ export function CenterPane({
 					}}
 				>
 					<div
-							aria-label={t("terminal.tabsAria")}
+							aria-label="Open terminals"
 							className="flex h-full min-w-0 flex-1 items-stretch"
 							onKeyDown={handleTerminalTabListKeyDown}
 							role="tablist"
@@ -492,7 +490,7 @@ export function CenterPane({
 															/>
 														}
 														isActive={target.kind === "reviewer" && !workspaceActiveTabKey}
-														label={t("terminal.reviewer")}
+														label="Reviewer"
 														onSelect={() => onSelectReviewerTerminal?.(tab.terminal)}
 														title={tab.terminal.harness}
 													/>
@@ -544,7 +542,7 @@ export function CenterPane({
 		>
 			{isFullscreen ? terminalTopbar : <SessionTopbarPortal>{terminalTopbar}</SessionTopbarPortal>}
 			<div
-				aria-label={t("terminal.panelAria", { title: activeTerminalLabel })}
+				aria-label={`${activeTerminalLabel} terminal`}
 				className="relative min-h-0 flex-1"
 				role="tabpanel"
 			>
@@ -606,9 +604,8 @@ export function SessionPaneTab({
 	tabAction,
 	tabActionWide = false,
 }: SessionPaneTabProps) {
-	const { t } = useTranslation();
 	const { ref, isTruncated } = useTruncatedText<HTMLButtonElement>(label);
-	const activityLabel = session ? getAgentActivityView(session.activity, t).label : undefined;
+	const activityLabel = session ? getAgentActivityView(session.activity).label : undefined;
 	const providerLabel = session ? agentLabel(session.provider) : undefined;
 	const tabIcon = session ? <AgentAvatar className="size-terminal-agent-icon" decorative provider={session.provider} /> : icon;
 	const connected = appearance === "connected";
@@ -621,7 +618,7 @@ export function SessionPaneTab({
 		<div className="flex h-full min-w-0 flex-1 items-center gap-2 px-2">
 			{tabIcon}
 			<input
-				aria-label={t("shell.renameSession", { title: renameSession.title })}
+				aria-label={`Rename ${renameSession.title}`}
 				autoFocus
 				className="min-w-0 flex-1 rounded-xs border border-accent bg-background px-1 text-control text-foreground outline-none ring-1 ring-accent"
 				maxLength={MAX_SESSION_DISPLAY_NAME_LEN}
@@ -672,7 +669,7 @@ export function SessionPaneTab({
 					: undefined,
 				role: "tab",
 				tabIndex: isActive ? 0 : -1,
-				title: title ?? (isTruncated ? label : t("terminal.sessionAria")),
+				title: title ?? (isTruncated ? label : "Session terminal"),
 				type: "button",
 			}}
 			buttonRef={ref}
@@ -691,9 +688,9 @@ export function SessionPaneTab({
 				<span className="contents">{tabFrame}</span>
 			</ContextMenuTrigger>
 			<ContextMenuContent className="min-w-44">
-				<ContextMenuItem aria-label={t("shell.renameSession", { title: renameSession.title })} onSelect={rename.begin}>
+				<ContextMenuItem aria-label={`Rename ${renameSession.title}`} onSelect={rename.begin}>
 					<Pencil aria-hidden="true" />
-					{t("shell.rename")}
+					{"Rename"}
 				</ContextMenuItem>
 			</ContextMenuContent>
 		</ContextMenu>

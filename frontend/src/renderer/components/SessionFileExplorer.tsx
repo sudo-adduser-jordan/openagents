@@ -1,6 +1,5 @@
 import { useEffect, useMemo, useState, type ReactNode } from "react";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
-import { useTranslation } from "react-i18next";
 import {
 	Columns2,
 	Maximize2,
@@ -45,7 +44,6 @@ export function SessionFileExplorer({
 	revealRequest,
 	split: controlledSplit,
 }: SessionFileExplorerProps) {
-	const { t } = useTranslation();
 	const [filter, setFilter] = useState("");
 	const [internalSplit, setInternalSplit] = useState(() => window.localStorage.getItem("ao.files.diffStyle") === "split");
 	const split = controlledSplit ?? internalSplit;
@@ -58,7 +56,7 @@ export function SessionFileExplorer({
 	const setFilesChangedOnly = useUiStore((state) => state.setFilesChangedOnly);
 
 	const filesQuery = useQuery({
-		...sessionWorkspaceFilesQueryOptions(sessionId, t("files.error.loadWorkspace")),
+		...sessionWorkspaceFilesQueryOptions(sessionId, "Unable to load workspace files"),
 		refetchInterval: workspaceFilesRefetchInterval(connectionState),
 	});
 	const changedOnlyData = useMemo(
@@ -95,21 +93,21 @@ export function SessionFileExplorer({
 	const treeSelectedPath = selectedPath;
 
 	return (
-		<section className="flex h-full min-h-0 flex-col bg-background text-foreground" aria-label={t("files.sessionFiles")}>
+		<section className="flex h-full min-h-0 flex-col bg-background text-foreground" aria-label="Session files">
 			<header className="flex h-10 shrink-0 items-center gap-0.5 border-b border-border bg-surface px-2">
 				<label className="relative mr-1 min-w-0 flex-1">
 					<Search className="pointer-events-none absolute left-2.5 top-1/2 size-icon-sm -translate-y-1/2 text-passive" />
 					<Input
-						aria-label={t("files.explorer.filter")}
+						aria-label="Filter files"
 						className="h-8 pl-8 font-mono text-xs"
 						onChange={(event) => setFilter(event.target.value)}
-						placeholder={t("files.explorer.filterPlaceholder")}
+						placeholder="Filter files"
 						value={filter}
 					/>
 				</label>
 				{hasChanges ? (
 					<div
-						aria-label={t("files.viewMode")}
+						aria-label="File view"
 						className="flex shrink-0 items-center rounded-md border border-border bg-muted/30 p-0.5"
 						role="tablist"
 					>
@@ -122,7 +120,7 @@ export function SessionFileExplorer({
 							type="button"
 							variant={showChanges ? "secondary" : "ghost"}
 						>
-							{t("files.reviewChanges")}
+							{"Changes"}
 						</Button>
 						<Button
 							aria-selected={!showChanges}
@@ -133,7 +131,7 @@ export function SessionFileExplorer({
 							type="button"
 							variant={!showChanges ? "secondary" : "ghost"}
 						>
-							{t("files.allFiles")}
+							{"Files"}
 						</Button>
 					</div>
 				) : null}
@@ -141,7 +139,7 @@ export function SessionFileExplorer({
 					<Tooltip>
 						<TooltipTrigger asChild>
 							<Button
-								aria-label={split ? t("files.unifiedDiff") : t("files.splitDiff")}
+								aria-label={split ? "Unified diff view" : "Split diff view"}
 								aria-pressed={split}
 								className="shrink-0"
 								onClick={() => {
@@ -160,14 +158,14 @@ export function SessionFileExplorer({
 								)}
 							</Button>
 						</TooltipTrigger>
-						<TooltipContent side="bottom">{split ? t("files.unifiedDiff") : t("files.splitDiff")}</TooltipContent>
+						<TooltipContent side="bottom">{split ? "Unified diff view" : "Split diff view"}</TooltipContent>
 					</Tooltip>
 				) : null}
 				{onToggleMaximized ? (
 					<Tooltip>
 						<TooltipTrigger asChild>
 							<Button
-								aria-label={isMaximized ? t("files.minimize") : t("files.maximize")}
+								aria-label={isMaximized ? "Minimize files" : "Maximize files"}
 								className="shrink-0"
 								onClick={() => onToggleMaximized(!isMaximized)}
 								size="icon-sm"
@@ -181,16 +179,16 @@ export function SessionFileExplorer({
 								)}
 							</Button>
 						</TooltipTrigger>
-						<TooltipContent side="bottom">{isMaximized ? t("files.minimize") : t("files.maximize")}</TooltipContent>
+						<TooltipContent side="bottom">{isMaximized ? "Minimize files" : "Maximize files"}</TooltipContent>
 					</Tooltip>
 				) : null}
 			</header>
 			{showChanges ? (
 				filesQuery.isPending ? (
-					<PanelMessage>{t("files.loading")}</PanelMessage>
+					<PanelMessage>{"Loading files..."}</PanelMessage>
 				) : filesQuery.isError ? (
 					<PanelMessage action={<RetryButton onClick={() => void filesQuery.refetch()} />}>
-						{filesQuery.error.message || t("files.error.loadWorkspace")}
+						{filesQuery.error.message || "Unable to load workspace files"}
 					</PanelMessage>
 				) : filesQuery.data ? (
 					<WorkspaceReviewPane

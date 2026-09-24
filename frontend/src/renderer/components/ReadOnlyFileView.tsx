@@ -1,5 +1,4 @@
 import { useId, useRef } from "react";
-import { useTranslation } from "react-i18next";
 import { type FileContents, type LineAnnotation } from "@pierre/diffs";
 import { File } from "@pierre/diffs/react";
 import { getApiBaseUrl } from "../lib/api-client";
@@ -40,7 +39,6 @@ export function ReadOnlyFileView({
 	sessionId: string;
 	side?: "before" | "after";
 }) {
-	const { t } = useTranslation();
 	const resolvedTheme = useUiStore((state) => state.resolvedTheme);
 	const containerRef = useRef<HTMLDivElement>(null);
 	const editorInstanceId = useId();
@@ -57,10 +55,10 @@ export function ReadOnlyFileView({
 				</div>
 			);
 		}
-		return <PanelMessage>{t("files.binaryUnavailable")}</PanelMessage>;
+		return <PanelMessage>{"Binary file preview is not available."}</PanelMessage>;
 	}
 	if (detail.contentTruncated) {
-		return <PanelMessage>{t("files.explorer.tooLarge", { size: formatBytes(detail.size) })}</PanelMessage>;
+		return <PanelMessage>{`File is too large to preview (${formatBytes(detail.size)}).`}</PanelMessage>;
 	}
 	const activeLine = annotation.target?.surface !== "review" && annotation.target?.path === detail.path && annotation.target.side === "file"
 		? annotation.target.line
@@ -123,7 +121,7 @@ export function ReadOnlyFileView({
 				onEditChange={(event) => onEditChange?.(event.file.contents)}
 				onEditComplete={() => "reject"}
 				renderGutterUtility={(getHoveredLine) => (
-					<LineFeedbackButtonControl gutter label={t("files.addFeedback")} onClick={() => {
+					<LineFeedbackButtonControl gutter label="Add feedback" onClick={() => {
 						const line = getHoveredLine();
 						if (line) beginLineAnnotation(line.lineNumber);
 					}} />

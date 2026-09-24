@@ -1,7 +1,6 @@
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { useEffect, useRef, useState, type ReactNode } from "react";
 import { AlertTriangle, CheckCircle2, Clock3, Download, Info, Loader2, RefreshCw } from "lucide-react";
-import { useTranslation } from "react-i18next";
 import { aoBridge } from "../../lib/bridge";
 import { cn } from "../../lib/utils";
 import { parseNightlyVersion } from "../../lib/build-channel";
@@ -38,7 +37,6 @@ function nextUpdateRequestId(prefix = "feature-update"): string {
 }
 
 export function UpdatesSection({ titleHidden }: { titleHidden?: boolean } = {}) {
-	const { t } = useTranslation();
 	const queryClient = useQueryClient();
 	const query = useQuery({
 		queryKey: updateSettingsQueryKey,
@@ -69,7 +67,7 @@ export function UpdatesSection({ titleHidden }: { titleHidden?: boolean } = {}) 
 	};
 
 	const finishManualCheck = (requestId: string, error?: unknown) => {
-		if (error) setManualCheckFailure(error instanceof Error ? error.message : t("settings.updates.updateFailed"));
+		if (error) setManualCheckFailure(error instanceof Error ? error.message : "Update failed.");
 		clearManualCheckWatchdog();
 		if (manualCheckFinishTimerRef.current !== null) clearTimeout(manualCheckFinishTimerRef.current);
 		const elapsed = manualCheckStartedAtRef.current === null ? MIN_MANUAL_CHECK_VISIBLE_MS : Date.now() - manualCheckStartedAtRef.current;
@@ -93,7 +91,7 @@ export function UpdatesSection({ titleHidden }: { titleHidden?: boolean } = {}) 
 		setManualCheckRequestId(requestId);
 		manualCheckWatchdogRef.current = setTimeout(() => {
 			manualCheckWatchdogRef.current = null;
-			setManualCheckFailure(t("settings.updates.checkTimedOut"));
+			setManualCheckFailure("Update check stopped responding. Try again.");
 			setManualCheckRequestId((pending) => (pending === requestId ? null : pending));
 		}, MAX_MANUAL_CHECK_MS);
 	};
@@ -157,9 +155,9 @@ export function UpdatesSection({ titleHidden }: { titleHidden?: boolean } = {}) 
 	});
 
 	const channelOptions: { value: PrimaryValue; label: string }[] = [
-		{ value: "latest", label: t("settings.updates.channel.stable") },
-		{ value: "nightly", label: t("settings.updates.channel.nightly") },
-		{ value: "feature", label: t("settings.updates.channel.feature") },
+		{ value: "latest", label: "Stable" },
+		{ value: "nightly", label: "Nightly (Pre-release)" },
+		{ value: "feature", label: "Feature Releases" },
 	];
 	const primaryValue: PrimaryValue = developerMode && (form.feature !== null || showFeature) ? "feature" : form.channel;
 
@@ -243,7 +241,7 @@ export function UpdatesSection({ titleHidden }: { titleHidden?: boolean } = {}) 
 
 	return (
 		<>
-			<SettingsSection title={t("settings.updates")} sectionId="updates" titleHidden={titleHidden} grouped>
+			<SettingsSection title="Updates" sectionId="updates" titleHidden={titleHidden} grouped>
 				<UpdateActions
 					status={manualCheckFailure ? { ...status, state: "error", message: manualCheckFailure } : status}
 					manualCheckRequestId={manualCheckRequestId}
@@ -258,25 +256,25 @@ export function UpdatesSection({ titleHidden }: { titleHidden?: boolean } = {}) 
 						<div className="min-w-0 flex-1">
 							<p className="text-sm leading-5 text-settings-label">
 								{activeBuild
-									? t("settings.updates.onFeatureBuild", { pr: featurePr })
-									: t("settings.updates.featurePinned", { pr: featurePr })}
+									? `You are on PR #${featurePr}'s build.`
+									: `PR #${featurePr} is pinned but not yet installed.`}
 							</p>
 							<p className="mt-1 text-xs leading-4 text-settings-muted">
-								{t("settings.updates.featureTracking", { pr: featurePr })}
+								{`Automatic updates, if enabled, keep tracking PR #${featurePr} until you return home or the build retires.`}
 							</p>
 						</div>
 						<Button type="button" variant="outline" size="sm" onClick={() => void handleReturnToHome()}>
-							{form.channel === "nightly" ? t("settings.updates.returnToNightly") : t("settings.updates.returnToStable")}
+							{form.channel === "nightly" ? "Return to Nightly" : "Return to Stable"}
 						</Button>
 					</div>
 				)}
 
 				<SettingsRow
-					label={t("settings.updates.automatic")}
-					description={t("settings.updates.automaticHelp")}
+					label="Automatic Updates"
+					description="Downloads updates in the background. They install when you quit the app."
 				>
 					<Switch
-						aria-label={t("settings.updates.automatic")}
+						aria-label="Automatic Updates"
 						checked={form.enabled}
 						onCheckedChange={setEnabled}
 						disabled={savingField === "automatic"}
@@ -284,11 +282,11 @@ export function UpdatesSection({ titleHidden }: { titleHidden?: boolean } = {}) 
 				</SettingsRow>
 
 				<SettingsRow
-					label={t("settings.updates.channel")}
-					description={t("settings.updates.channelHelp")}
+					label="Updates channel"
+					description="Stable is released and tested. Nightly is the newest daily build."
 				>
 					<SettingsOptionMenu
-						aria-label={t("settings.updates.channel")}
+						aria-label="Updates channel"
 						value={primaryValue}
 						options={developerMode ? channelOptions : channelOptions.filter((option) => option.value !== "feature")}
 						onChange={handlePrimaryChannel}
@@ -312,21 +310,21 @@ export function UpdatesSection({ titleHidden }: { titleHidden?: boolean } = {}) 
 					// actionable — failing checks, a stale network stack, update errors.
 					<p className="nightly-warning -mt-1 flex items-start gap-2 px-(--size-settings-row-padding) pb-(--size-settings-row-padding) text-xs leading-4 text-settings-muted">
 						<Info className="mt-px size-icon-sm shrink-0" aria-hidden="true" />
-						<span className="min-w-0">{t("settings.updates.nightlyWarning")}</span>
+						<span className="min-w-0">{"Nightly updates daily and may be unstable or cause data loss."}</span>
 					</p>
 				)}
 
 				{save.isError && (
 					<p className="mt-2 px-(--size-settings-row-padding) text-xs text-error">
-						{save.error instanceof Error ? save.error.message : t("settings.updates.saveFailed")}
+						{save.error instanceof Error ? save.error.message : "Save failed"}
 					</p>
 				)}
 			</SettingsSection>
 			<ConfirmDialog
 				open={pendingPin !== null}
-				title={t("settings.updates.switchFeatureTitle")}
-				description={pendingPin ? t("settings.updates.switchFeatureBody", pendingPin) : null}
-				confirmLabel={t("settings.updates.confirm")}
+				title="Switch feature build?"
+				description={pendingPin ? `Switch to PR #${pendingPin.pr}: ${pendingPin.title}? The app will download the feature build and restart.` : null}
+				confirmLabel="Confirm"
 				onConfirm={() => void confirmPinBuild()}
 				onOpenChange={(open) => !open && setPendingPin(null)}
 			/>
@@ -341,20 +339,19 @@ function FeatureBuildsSelect({
 	currentPr: number | null;
 	onPin: (pr: number, title: string) => void;
 }) {
-	const { t } = useTranslation();
 	const buildsQuery = useQuery({ queryKey: ["feature-builds"], queryFn: () => aoBridge.featureBuilds.list() });
 	const builds = buildsQuery.data ?? [];
 
 	if (!buildsQuery.isLoading && builds.length === 0) {
-		return <p className="px-3 text-xs text-settings-muted">{t("settings.updates.noFeatureReleases")}</p>;
+		return <p className="px-3 text-xs text-settings-muted">{"No live feature releases."}</p>;
 	}
 
 	return (
-		<SettingsRow label={t("settings.updates.featureBuild")}>
+		<SettingsRow label="Feature build">
 			<SettingsOptionMenu
-				aria-label={t("settings.updates.featureBuild")}
+				aria-label="Feature build"
 				value={currentPr === null ? "__none__" : currentPr.toString()}
-				placeholder={t("settings.updates.selectFeature")}
+				placeholder="Select a feature build..."
 				options={builds.map((build) => ({ value: build.pr.toString(), label: `PR #${build.pr}: ${build.title}` }))}
 				disabled={buildsQuery.isLoading}
 				onChange={(value) => {
@@ -379,8 +376,6 @@ function UpdateActions({
 	finishManualCheck: (requestId: string, error?: unknown) => void;
 	channelSwitch: { channel: UpdateChannel; requestId: string } | null;
 }) {
-	const { t, i18n } = useTranslation();
-	const locale = i18n.resolvedLanguage ?? i18n.language;
 	const version = useQuery({ queryKey: ["app-version"], queryFn: () => aoBridge.app.getVersion() });
 	const requestUpdateInstall = useRequestUpdateInstall();
 	const installedChannel = installedUpdateChannel(version.data);
@@ -407,7 +402,7 @@ function UpdateActions({
 		return () => clearInterval(timer);
 	}, []);
 	const checkedAt = status.checkedAt
-		? new Intl.DateTimeFormat(locale, { dateStyle: "medium", timeStyle: "medium" }).format(status.checkedAt)
+		? new Intl.DateTimeFormat("en", { dateStyle: "medium", timeStyle: "medium" }).format(status.checkedAt)
 		: null;
 
 	const channelSwitchInFlight = channelSwitch !== null && (!status.requestId || status.requestId === channelSwitch.requestId);
@@ -419,11 +414,7 @@ function UpdateActions({
 	// "Restart to switch to Nightly." put two restart sentences side by side.
 	const channelSwitchMessage = channelSwitchInFlight &&
 		(status.state === "available" || status.state === "downloading")
-		? t("settings.updates.channelSwitchUpdate", {
-			// Short form: "Restart to switch to Nightly (Pre-release)." reads as a
-			// parenthetical stuck mid-sentence. The suffix belongs in the picker.
-			channel: channelSwitch.channel === "nightly" ? t("settings.updates.channel.nightlyShort") : t("settings.updates.channel.stable"),
-		})
+		? `Update and restart to switch to ${channelSwitch.channel === "nightly" ? "Nightly" : "Stable"}.`
 		: null;
 
 	const checkNow = async () => {
@@ -450,18 +441,18 @@ function UpdateActions({
 				    heading it wrapped mid-token and swallowed the row. */}
 				<div className="min-w-0 flex-1">
 					<p className="text-caption font-medium uppercase tracking-wide text-settings-muted">
-						{t("settings.updates.installedVersion")}
+						{"Installed version"}
 					</p>
 					<div className="mt-1 flex min-w-0 flex-wrap items-center gap-x-2 gap-y-1">
 						<span
-							aria-label={t("settings.updates.currentVersion", { version: version.data ? `v${version.data}` : "…" })}
+							aria-label={`Current version - ${version.data ? `v${version.data}` : "…"}`}
 							className="text-2xl font-semibold leading-none tracking-tight tabular-nums text-settings-label"
 							data-testid="app-version"
 						>
 							{version.data ? `v${installed?.base ?? version.data}` : "…"}
 						</span>
 						<Badge data-testid="installed-update-channel" variant="neutral">
-							{installedChannel === "nightly" ? t("settings.updates.channel.nightlyShort") : t("settings.updates.channel.stable")}
+							{installedChannel === "nightly" ? "Nightly" : "Stable"}
 						</Badge>
 					</div>
 					{installed && (
@@ -471,9 +462,7 @@ function UpdateActions({
 						<p className="mt-1.5 flex min-w-0 flex-wrap items-baseline gap-x-1.5 text-caption leading-4 text-settings-muted">
 							<span className="min-w-0 break-all font-mono">{version.data}</span>
 							<span className="whitespace-nowrap">
-								{t("settings.updates.nightlyBuiltAt", {
-									date: new Intl.DateTimeFormat(locale, { dateStyle: "medium", timeStyle: "short" }).format(installed.builtAt),
-								})}
+								{`Built ${new Intl.DateTimeFormat("en", { dateStyle: "medium", timeStyle: "short" }).format(installed.builtAt)}`}
 							</span>
 						</p>
 					)}
@@ -488,11 +477,11 @@ function UpdateActions({
 							type="button"
 							variant="primary"
 							size="sm"
-							aria-label={status.version ? t("settings.updates.updateTo", { version: `v${status.version}` }) : t("settings.updates.updateToLatest")}
+							aria-label={status.version ? `Update to ${`v${status.version}`}` : "Update to latest"}
 							onClick={() => void requestUpdateDownload()}
 						>
 							<Download className="size-icon-sm" aria-hidden="true" />
-							{t("settings.updates.update")}
+							{"Update"}
 						</Button>
 					)}
 					{(!downloading && (status.state === "downloaded" || (status.staged && status.staged.ready !== false))) && (
@@ -501,7 +490,7 @@ function UpdateActions({
 						// running a daemon-owned driver.
 						<Button type="button" variant="primary" size="sm" onClick={requestUpdateInstall}>
 							<RefreshCw className="size-icon-sm" aria-hidden="true" />
-							{t("settings.updates.restartInstall")}
+							{"Restart & install"}
 						</Button>
 					)}
 					{/* Always rendered. Hiding it whenever something was available or
@@ -510,7 +499,7 @@ function UpdateActions({
 					    other action on the page. */}
 					<Button
 						type="button"
-						aria-label={checking ? t("settings.updates.checking") : t("settings.updates.check")}
+						aria-label={checking ? "Checking for updates…" : "Check for updates"}
 						aria-describedby={showStatusState ? "update-status-line" : undefined}
 						variant="outline"
 						size="sm"
@@ -522,7 +511,7 @@ function UpdateActions({
 						) : (
 							<RefreshCw className="size-icon-sm" aria-hidden="true" />
 						)}
-						{checking ? t("settings.updates.checking") : t("settings.updates.check")}
+						{checking ? "Checking for updates…" : "Check for updates"}
 					</Button>
 				</div>
 			</div>
@@ -542,15 +531,15 @@ function UpdateActions({
 				className="flex min-h-5 min-w-0 flex-col gap-1"
 			>
 				{showStatusState && <UpdateStatusLine state={displayState} status={status} />}
-				{status.state === "downloading" && status.percent !== undefined && <progress aria-label={t("settings.updates.progress")} max={100} value={status.percent} className="h-1 w-full" />}
-				{status.transferred !== undefined && status.total !== undefined && <p className="text-xs tabular-nums text-settings-muted">{t("settings.updates.bytes", { downloaded: (status.transferred / 1_000_000).toFixed(1), total: (status.total / 1_000_000).toFixed(1) })}</p>}
+				{status.state === "downloading" && status.percent !== undefined && <progress aria-label="Download progress" max={100} value={status.percent} className="h-1 w-full" />}
+				{status.transferred !== undefined && status.total !== undefined && <p className="text-xs tabular-nums text-settings-muted">{`${(status.transferred / 1_000_000).toFixed(1)} / ${(status.total / 1_000_000).toFixed(1)} MB`}</p>}
 				{channelSwitchMessage && <p className="text-xs leading-4 text-settings-muted">{channelSwitchMessage}</p>}
 				{checkedAt ? (
 					<p className="flex min-w-0 items-start gap-2 text-xs leading-4 tabular-nums text-settings-muted" data-testid="update-checked-at">
 						<span className="flex h-4 shrink-0 items-center">
 							<Clock3 className="size-icon-sm shrink-0" aria-hidden="true" />
 						</span>
-						<span title={new Date(status.checkedAt!).toISOString()}>{now - status.checkedAt! < 60_000 ? t("settings.updates.checkedJustNow", { defaultValue: "Checked just now" }) : t("settings.updates.checkedMinutesAgo", { defaultValue: "Checked {{count}} minutes ago", count: Math.floor((now - status.checkedAt!) / 60_000) })} · {checkedAt}</span>
+						<span title={new Date(status.checkedAt!).toISOString()}>{now - status.checkedAt! < 60_000 ? "Checked just now" : `Checked ${Math.floor((now - status.checkedAt!) / 60_000)} minutes ago`} · {checkedAt}</span>
 					</p>
 				) : null}
 			</div>
@@ -563,7 +552,7 @@ function UpdateActions({
 			{(status.state === "downloaded" || status.staged) && status.releaseNotes ? (
 				<div className="mt-3" data-testid="update-release-notes">
 					<p className="text-caption font-medium uppercase tracking-wide text-settings-muted">
-						{t("update.restart.whatsNew")}
+						{"What's new"}
 					</p>
 					<p className="mt-1.5 max-h-40 overflow-y-auto whitespace-pre-line text-pretty text-sm leading-5 text-settings-label">
 						{status.releaseNotes}
@@ -578,10 +567,10 @@ function UpdateActions({
 			)}
 
 			{!status.checkError && !status.staleCheckNudge && status.checksFailing && (
-				<UpdateNotice tone="warning" text={t("settings.updates.checksFailing")} />
+				<UpdateNotice tone="warning" text="Update checks keep failing. The app can't tell whether a newer version is out." />
 			)}
 
-			{status.staleCheckNudge && <UpdateNotice tone="warning" text={t("settings.updates.networkStale")} />}
+			{status.staleCheckNudge && <UpdateNotice tone="warning" text="Updates haven't been able to check for a while — restarting the app usually fixes this." />}
 		</div>
 	);
 }
@@ -630,7 +619,6 @@ function UpdateStatusLine({
 	state: UpdateState;
 	status: UpdateStatus;
 }) {
-	const { t } = useTranslation();
 	let className = "text-settings-muted";
 	let icon: ReactNode = null;
 	let label: string;
@@ -640,49 +628,49 @@ function UpdateStatusLine({
 	switch (state) {
 		case "checking":
 			icon = <Loader2 className="size-icon-sm shrink-0 animate-spin motion-reduce:animate-none" aria-hidden="true" />;
-			label = t("settings.updates.checking");
+			label = "Checking for updates…";
 			break;
 		case "available":
 			className = "text-settings-label";
 			icon = <Download className="size-icon-sm shrink-0" aria-hidden="true" />;
-			label = t("settings.updates.availableNow");
-			detail = status.version ? t("settings.updates.targetVersion", { version: status.version }) : null;
+			label = "Update available";
+			detail = status.version ? `Updating to v${status.version}` : null;
 			break;
 		case "downloading":
 			className = "text-settings-label tabular-nums";
 			icon = <DownloadProgressIcon percent={status.percent ?? 0} />;
-			label = status.percent === undefined ? t("settings.updates.startingDownload", { defaultValue: "Starting download…" }) : t("settings.updates.downloading", { percent: status.percent });
-			detail = status.version ? t("settings.updates.targetVersion", { version: status.version }) : null;
+			label = status.percent === undefined ? "Starting download…" : `Downloading… ${status.percent}%`;
+			detail = status.version ? `Updating to v${status.version}` : null;
 			break;
 		case "preparing":
 			icon = <Loader2 className="size-icon-sm animate-spin" aria-hidden="true" />;
-			label = t("settings.updates.preparing", { defaultValue: "Preparing update…" });
-			detail = status.version ? t("settings.updates.targetVersion", { version: status.version }) : null;
+			label = "Preparing update…";
+			detail = status.version ? `Updating to v${status.version}` : null;
 			break;
 		case "downloaded":
 			className = "text-success";
 			icon = <CheckCircle2 className="size-icon-sm shrink-0" aria-hidden="true" />;
-			label = t("settings.updates.downloaded");
-			detail = status.version ? t("settings.updates.targetVersion", { version: status.version }) : null;
+			label = "Downloaded. Restart to finish updating.";
+			detail = status.version ? `Updating to v${status.version}` : null;
 			break;
 		case "not-available":
 			className = "text-success";
 			icon = <CheckCircle2 className="size-icon-sm shrink-0" aria-hidden="true" />;
-			label = t("settings.updates.latest");
+			label = "You're on the latest version.";
 			break;
 		case "unsupported":
 			icon = <Info className="size-icon-sm shrink-0" aria-hidden="true" />;
-			label = status.message ?? t("settings.updates.needInstalledApp");
+			label = status.message ?? "Updates need the installed app.";
 			break;
 		case "error":
 			className = "text-error";
 			icon = <AlertTriangle className="size-icon-sm shrink-0" aria-hidden="true" />;
 			label = status.netError
-				? t("settings.updates.netErrorRestartGuidance")
-				: status.message ?? t("settings.updates.updateFailed");
+				? "Couldn't reach the update server — the app's network connection appears stuck. Restarting the app usually fixes this."
+				: status.message ?? "Update failed.";
 			break;
 		default:
-			label = t("settings.updates.notChecked");
+			label = "Updates haven't been checked yet.";
 	}
 
 	return (

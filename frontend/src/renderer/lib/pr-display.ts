@@ -1,6 +1,5 @@
 import type { SessionPRSummary } from "../hooks/useSessionScmSummary";
 import { sortedPRs, type PRState, type PullRequestFacts, type WorkspaceSession } from "../types/workspace";
-import { appI18n, type PluralMessageKey } from "../i18n";
 import type {
 	PRCardPresentation,
 	PRCardStatus,
@@ -42,14 +41,20 @@ const mergeabilityStates = new Set<SessionPRSummary["mergeability"]["state"]>([
 	"unstable",
 ]);
 
-export const prNounKeys: Record<PRNoun, PluralMessageKey> = {
-	check: "pr.noun.check",
-	comment: "pr.noun.comment",
-	file: "pr.noun.file",
-	line: "pr.noun.line",
-	reason: "pr.noun.reason",
-	reviewer: "pr.noun.reviewer",
+export const prNouns: Record<PRNoun, { one: string; other: string }> = {
+	check: { one: "check", other: "checks" },
+	comment: { one: "comment", other: "comments" },
+	file: { one: "file", other: "files" },
+	line: { one: "line", other: "lines" },
+	reason: { one: "reason", other: "reasons" },
+	reviewer: { one: "reviewer", other: "reviewers" },
 };
+
+/** English noun for a count, e.g. prNounLabel("file", 2) returns "files". */
+export function prNounLabel(noun: PRNoun, count: number): string {
+	const forms = prNouns[noun];
+	return count === 1 ? forms.one : forms.other;
+}
 
 export function comparePRDisplaySummaries(a: SessionPRSummary, b: SessionPRSummary): number {
 	return prStateRank[a.state] - prStateRank[b.state] || a.number - b.number;
@@ -180,7 +185,7 @@ export function prCardPresentation(pr: SessionPRSummary): PRCardPresentation {
 	} else if (pr.review.decision === "changes_requested" || pr.review.hasUnresolvedHumanComments) {
 		primary = cardStatus("review", "pr.card.changesRequested", "warning", reviewSummary(pr), reviewLinks(pr));
 	} else if (pr.review.decision === "review_required") {
-		primary = cardStatus("review", "pr.card.reviewRequired", "review", appI18n.t("pr.card.reviewRequiredDetail"));
+		primary = cardStatus("review", "pr.card.reviewRequired", "review", "Merge blocked until a required review is submitted.");
 	} else if (pr.ci.state === "pending") {
 		primary = cardStatus("ci", "pr.card.checksPending", "neutral", undefined, [], prChecksUrl(pr), true);
 	} else if (pr.ci.state === "unknown") {
@@ -229,40 +234,43 @@ export function prCardPresentation(pr: SessionPRSummary): PRCardPresentation {
 		const mergeable = prCanMerge(pr);
 		const checkingReadiness = pr.ci.state === "pending" || pr.ci.state === "unknown" || pr.mergeability.state === "unknown";
 		return { primary, supporting, statusRows, readiness: {
-			label: appI18n.t(checkingReadiness ? "pr.merge.checkingReadiness" : mergeable ? "pr.merge.mergeable" : "pr.merge.notMergeableYet"),
-			detail: checkingReadiness ? appI18n.t("pr.merge.checkingDetail") : mergeReadinessDetail(pr),
+			label: checkingReadiness ? "Checking merge readiness" : mergeable ? "Mergeable" : "Not mergeable yet",
+			detail: checkingReadiness ? "Waiting for the latest checks and review state." : mergeReadinessDetail(pr),
 			tone: checkingReadiness ? "neutral" : mergeable ? "success" : "error",
 		} };
 	}
 	return { primary, supporting };
 }
 
+const prCardLabels: Record<string, string> = {
+	"pr.card.merged": "Pull request merged",
+	"pr.card.closed": "Pull request closed",
+	"pr.card.checksFailing": "Checks failing",
+	"pr.card.mergeConflict": "Merge conflict",
+	"pr.card.changesRequested": "Changes requested",
+	"pr.card.reviewRequired": "Review required",
+	"pr.card.mergeBlocked": "Merge blocked",
+	"pr.card.mergeUnavailable": "Merge unavailable",
+	"pr.card.checksPending": "Checks running",
+	"pr.card.checksLoading": "Checking merge readiness",
+	"pr.card.draft": "Draft pull request",
+	"pr.card.readyToMerge": "Ready to merge",
+	"pr.card.reviewApproved": "Review approved",
+	"pr.card.open": "Pull request open",
+	"pr.card.checksPassing": "Checks passing",
+	"pr.card.reviewStatus": "Review status",
+};
+
 function cardStatus(
 	key: PRCardStatus["key"],
-	labelKey:
-		| "pr.card.merged"
-		| "pr.card.closed"
-		| "pr.card.checksFailing"
-		| "pr.card.mergeConflict"
-		| "pr.card.changesRequested"
-		| "pr.card.reviewRequired"
-		| "pr.card.mergeBlocked"
-		| "pr.card.mergeUnavailable"
-		| "pr.card.checksPending"
-		| "pr.card.checksLoading"
-		| "pr.card.draft"
-		| "pr.card.readyToMerge"
-		| "pr.card.reviewApproved"
-		| "pr.card.open"
-		| "pr.card.checksPassing"
-		| "pr.card.reviewStatus",
+	labelKey: string,
 	tone: PRDisplayTone,
 	detail?: string,
 	links: PRSummaryLink[] = [],
 	href?: string,
 	breathe = false,
 ): PRCardStatus {
-	return { key, label: appI18n.t(labelKey), detail, href, breathe, links, tone };
+	return { key, label: prCardLabels[labelKey] ?? labelKey, detail, href, breathe, links, tone };
 }
 
 export function prCanMerge(pr: SessionPRSummary): boolean {
@@ -281,31 +289,31 @@ function reviewAllowsMerge(decision: SessionPRSummary["review"]["decision"]): bo
 
 function reviewStatusDetail(pr: SessionPRSummary): string {
 	switch (pr.review.decision) {
-		case "approved": return appI18n.t("pr.review.requirementSatisfied");
-		case "changes_requested": return appI18n.t("pr.review.changesActive");
-		case "review_required": return appI18n.t("pr.review.requiredNotSubmitted");
-		case "none": return appI18n.t("pr.review.notRequired");
+		case "approved": return "PR approved";
+		case "changes_requested": return "Changes requested";
+		case "review_required": return "Required review not submitted";
+		case "none": return "No review required";
 	}
 }
 
 function mergeReadinessDetail(pr: SessionPRSummary): string {
-	if (pr.mergeability.state === "conflicting") return appI18n.t("pr.merge.reasonConflict");
-	if (pr.ci.state === "failing") return appI18n.t("pr.merge.reasonChecksFailing");
-	if (!reviewAllowsMerge(pr.review.decision)) return appI18n.t("pr.merge.reasonReview");
-	if (pr.review.hasUnresolvedHumanComments) return appI18n.t("pr.merge.reasonComments");
+	if (pr.mergeability.state === "conflicting") return "One approval is sufficient, but the merge conflict still blocks this PR.";
+	if (pr.ci.state === "failing") return "The review requirement is satisfied, but failing checks still block this PR.";
+	if (!reviewAllowsMerge(pr.review.decision)) return "A required review must be completed before this PR can merge.";
+	if (pr.review.hasUnresolvedHumanComments) return "Unresolved review comments must be resolved before this PR can merge.";
 	if (pr.mergeability.state !== "mergeable") return providerBlockedDetail(pr);
-	return appI18n.t("pr.merge.reasonReady");
+	return "No merge conflict, checks are passing, and the review requirement is satisfied.";
 }
 
 function providerBlockedDetail(pr: SessionPRSummary): string {
-	return appI18n.t("pr.merge.providerBlocked", { provider: pr.provider === "gitlab" ? "GitLab" : "GitHub" });
+	return `${pr.provider === "gitlab" ? "GitLab" : "GitHub"} currently reports this pull request can't be merged.`;
 }
 
 export function prSummaryParts(pr: SessionPRSummary): PRSummaryPart[] {
 	return [
 		{
 			key: "ci",
-			label: appI18n.t("pr.section.ci"),
+			label: "CI",
 			status: ciLabel(pr.ci.state),
 			summary: ciSummary(pr),
 			links: ciLinks(pr),
@@ -316,7 +324,7 @@ export function prSummaryParts(pr: SessionPRSummary): PRSummaryPart[] {
 		},
 		{
 			key: "merge",
-			label: appI18n.t("pr.section.merge"),
+			label: "Merge",
 			status: mergeabilityLabel(pr.mergeability.state),
 			summary: mergeSummary(pr),
 			links: mergeLinks(pr),
@@ -327,7 +335,7 @@ export function prSummaryParts(pr: SessionPRSummary): PRSummaryPart[] {
 		},
 		{
 			key: "review",
-			label: appI18n.t("pr.section.review"),
+			label: "Review",
 			status: reviewLabel(pr.review.decision),
 			summary: reviewSummary(pr),
 			links: reviewLinks(pr),
@@ -356,7 +364,7 @@ export function prDiffSummary(pr: SessionPRSummary): string | undefined {
 
 function ciSummary(pr: SessionPRSummary): string | undefined {
 	if (pr.ci.state === "failing") {
-		return pr.ci.failingChecks.length === 0 ? appI18n.t("pr.ci.noFailingLink") : undefined;
+		return pr.ci.failingChecks.length === 0 ? "No failing check link observed" : undefined;
 	}
 	return undefined;
 }
@@ -377,13 +385,13 @@ function reviewSummary(pr: SessionPRSummary): string | undefined {
 		return undefined;
 	}
 	if (pr.state === "draft") {
-		return appI18n.t("pr.review.draftNotReady");
+		return "Draft PR · Not ready for review";
 	}
 	if (pr.review.decision === "changes_requested" || pr.review.hasUnresolvedHumanComments) {
-		return reviewLinks(pr).length === 0 ? appI18n.t("pr.review.changesActive") : undefined;
+		return reviewLinks(pr).length === 0 ? "Changes requested" : undefined;
 	}
 	if (pr.review.decision === "review_required") {
-		return appI18n.t("pr.review.requiredNotSubmitted");
+		return "Required review not submitted";
 	}
 	return undefined;
 }
@@ -398,9 +406,9 @@ function reviewLinks(pr: SessionPRSummary): PRSummaryLink[] {
 	const links = pr.review.unresolvedBy.slice(0, 3).map((reviewer) => reviewAttentionLink(pr, reviewer));
 	if (links.length === 0 && pr.review.decision === "changes_requested") {
 		links.push({
-			label: appI18n.t("pr.short"),
+			label: "PR",
 			href: prBrowserUrl(pr),
-			title: appI18n.t("pr.review.openPR"),
+			title: "Open pull request",
 		});
 	}
 	return links;
@@ -411,7 +419,7 @@ function mergeSummary(pr: SessionPRSummary): string | undefined {
 		return formatDiffSummary(pr);
 	}
 	if (pr.mergeability.state === "conflicting") {
-		return mergeLinks(pr).length === 0 ? appI18n.t("pr.merge.conflictsWithBase") : undefined;
+		return mergeLinks(pr).length === 0 ? "Conflicts with the base branch" : undefined;
 	}
 	if (pr.mergeability.state === "blocked" || pr.mergeability.state === "unstable") {
 		return mergeLinks(pr).length === 0 ? providerBlockedDetail(pr) : undefined;
@@ -495,13 +503,13 @@ function toMergeabilityState(value: string): SessionPRSummary["mergeability"]["s
 function ciLabel(state: SessionPRSummary["ci"]["state"]): string {
 	switch (state) {
 		case "passing":
-			return appI18n.t("pr.ci.passing");
+			return "Passing";
 		case "failing":
-			return appI18n.t("pr.ci.failing");
+			return "Failing";
 		case "pending":
-			return appI18n.t("pr.ci.pending");
+			return "Pending";
 		case "unknown":
-			return appI18n.t("pr.ci.checking");
+			return "Checking";
 	}
 }
 
@@ -521,13 +529,13 @@ function ciTone(state: SessionPRSummary["ci"]["state"]): PRDisplayTone {
 function reviewLabel(decision: SessionPRSummary["review"]["decision"]): string {
 	switch (decision) {
 		case "approved":
-			return appI18n.t("pr.review.approved");
+			return "Approved";
 		case "changes_requested":
-			return appI18n.t("pr.review.changesRequested");
+			return "Changes requested";
 		case "review_required":
-			return appI18n.t("pr.review.pending");
+			return "Review pending";
 		case "none":
-			return appI18n.t("pr.review.none");
+			return "None";
 	}
 }
 
@@ -550,15 +558,15 @@ function reviewTone(
 function mergeabilityLabel(state: SessionPRSummary["mergeability"]["state"]): string {
 	switch (state) {
 		case "mergeable":
-			return appI18n.t("pr.merge.mergeable");
+			return "Mergeable";
 		case "conflicting":
-			return appI18n.t("pr.merge.conflict");
+			return "Conflict";
 		case "blocked":
-			return appI18n.t("pr.merge.blocked");
+			return "Blocked";
 		case "unstable":
-			return appI18n.t("pr.merge.unstable");
+			return "Unstable";
 		case "unknown":
-			return appI18n.t("pr.merge.checking");
+			return "Checking";
 	}
 }
 
@@ -601,7 +609,7 @@ function formatLineDelta(additions: number, deletions: number): string | undefin
 function mergeAttentionLinks(pr: SessionPRSummary, kind: "merge_conflict" | "merge_blocked"): PRSummaryLink[] {
 	const href =
 		kind === "merge_conflict" ? mergeConflictUrl(pr) : pr.mergeability.prUrl || pr.htmlUrl || pr.url || undefined;
-	const openConflicts = appI18n.t("pr.merge.openConflicts");
+	const openConflicts = "Open merge conflicts";
 	const fileLinks = (pr.mergeability.conflictFiles ?? []).slice(0, 3).map((file) => ({
 		label: file.path,
 		href: file.url || href,
@@ -616,7 +624,7 @@ function mergeAttentionLinks(pr: SessionPRSummary, kind: "merge_conflict" | "mer
 				}));
 	const fallbackLink =
 		kind === "merge_conflict" && href
-			? [{ label: appI18n.t("pr.merge.conflicts"), href, title: openConflicts }]
+			? [{ label: "conflicts", href, title: openConflicts }]
 			: [];
 	return fileLinks.length > 0 ? fileLinks : reasonLinks.length > 0 ? reasonLinks : fallbackLink;
 }
@@ -680,7 +688,7 @@ function reviewerLabel(reviewer: SessionPRSummary["review"]["unresolvedBy"][numb
 
 function reviewerDisplayName(reviewer: SessionPRSummary["review"]["unresolvedBy"][number]): string {
 	if (!reviewer.isBot) return reviewer.reviewerId;
-	return appI18n.t("pr.botSuffix", { name: reviewer.reviewerId });
+	return `${reviewer.reviewerId} bot`;
 }
 
 function reviewAttentionLink(
@@ -693,7 +701,7 @@ function reviewAttentionLink(
 		return {
 			label: reviewerLabel(reviewer),
 			href: reviewer.reviewUrl,
-			title: appI18n.t("pr.openReviewFrom", { name }),
+			title: `Open requested-changes review from ${name}`,
 		};
 	}
 	if (inlineURL) {
@@ -702,32 +710,29 @@ function reviewAttentionLink(
 			href: inlineURL,
 				title:
 					reviewer.count > 0
-						? appI18n.t("pr.unresolvedComments", {
-								count: reviewer.count,
-								name,
-							})
-					: appI18n.t("pr.openCommentsFrom", { name }),
+						? (reviewer.count === 1 ? `${reviewer.count} unresolved comment from ${name}` : `${reviewer.count} unresolved comments from ${name}`)
+					: `Open review comments from ${name}`,
 		};
 	}
 	return {
 		label: reviewerLabel(reviewer),
 		href: prBrowserUrl(pr),
-		title: appI18n.t("pr.openPRFor", { name }),
+		title: `Open pull request for ${name}`,
 	};
 }
 
 function mergeReasonLabel(reason: string): string {
 	switch (reason) {
 		case "behind_base":
-			return appI18n.t("pr.reason.behindBase");
+			return "branch behind base";
 		case "ci_failing":
-			return appI18n.t("pr.reason.ciFailing");
+			return "CI failing";
 		case "changes_requested":
-			return appI18n.t("pr.reason.changesRequested");
+			return "changes requested";
 		case "review_required":
-			return appI18n.t("pr.reason.reviewRequired");
+			return "review required";
 		case "blocked_by_provider":
-			return appI18n.t("pr.reason.providerBlocked");
+			return "merge unavailable";
 		default:
 			return reason.replaceAll("_", " ");
 	}
@@ -738,9 +743,10 @@ function overflowLabel(total: number, shown: number, noun: PRNoun): string | und
 	if (extra <= 0) {
 		return undefined;
 	}
-	return appI18n.t("pr.overflow", { n: extra, noun: pluralize(noun, extra) });
+	return `+${extra} ${pluralize(noun, extra)}`;
 }
 
 function pluralize(noun: PRNoun, count: number): string {
-	return appI18n.t(prNounKeys[noun], { count });
+	const forms = prNouns[noun];
+	return count === 1 ? forms.one : forms.other;
 }

@@ -1,5 +1,4 @@
 import { useEffect, useRef, useState } from "react";
-import { useTranslation } from "react-i18next";
 import { formatFileAnnotationMessage } from "../../shared/file-annotations";
 import { apiClient, apiErrorMessage } from "../lib/api-client";
 import type { ActiveFileAnnotationTarget, FileAnnotationModel, FileAnnotationStatus } from "../components/WorkspaceDiffView";
@@ -13,7 +12,6 @@ function isSameAnnotationTarget(current: ActiveFileAnnotationTarget | null, next
 }
 
 export function useFileAnnotation(sessionId: string): FileAnnotationModel {
-	const { t } = useTranslation();
 	const [target, setTarget] = useState<ActiveFileAnnotationTarget | null>(null);
 	const [draft, setDraft] = useState("");
 	const [status, setStatus] = useState<FileAnnotationStatus>("idle");
@@ -63,7 +61,7 @@ export function useFileAnnotation(sessionId: string): FileAnnotationModel {
 				body: { message: formatFileAnnotationMessage(target, draft) },
 			});
 			if (generation !== generationRef.current) return;
-			if (responseError) throw new Error(apiErrorMessage(responseError, t("files.feedbackError")));
+			if (responseError) throw new Error(apiErrorMessage(responseError, "Unable to send feedback"));
 			setStatus("sent");
 			sentTimerRef.current = window.setTimeout(() => {
 				sentTimerRef.current = null;
@@ -72,7 +70,7 @@ export function useFileAnnotation(sessionId: string): FileAnnotationModel {
 		} catch (submitError) {
 			if (generation !== generationRef.current) return;
 			setStatus("error");
-			setError(apiErrorMessage(submitError, t("files.feedbackError")));
+			setError(apiErrorMessage(submitError, "Unable to send feedback"));
 		}
 	};
 

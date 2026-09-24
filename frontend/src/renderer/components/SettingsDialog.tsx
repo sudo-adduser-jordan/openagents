@@ -2,7 +2,6 @@ import { Bot, GitBranch, Inbox, MonitorCog, TriangleAlert, X, type LucideIcon } 
 import { FocusScope } from "@radix-ui/react-focus-scope";
 import { useEffect, useRef, useState } from "react";
 import { createPortal } from "react-dom";
-import { useTranslation } from "react-i18next";
 import { GlobalSettingsForm } from "./GlobalSettingsForm";
 import {
 	ProjectSettingsForm,
@@ -25,7 +24,6 @@ function initialProjectSaveState(): ProjectSettingsSaveState {
 }
 
 export function SettingsDialog() {
-	const { t } = useTranslation();
 	const settingsModal = useUiStore((state) => state.settingsModal);
 	const closeSettings = useUiStore((state) => state.closeSettings);
 
@@ -44,10 +42,10 @@ export function SettingsDialog() {
 	const globalSections = visibleGlobalSettings();
 
 	const projectSections: Array<{ id: ProjectSettingsSection; label: string; icon: LucideIcon }> = [
-		{ id: "general", label: t("settings.project.identity"), icon: MonitorCog },
-		{ id: "agents", label: t("settings.project.agents"), icon: Bot },
-		{ id: "workflow", label: t("settings.project.workflow"), icon: GitBranch },
-		{ id: "intake", label: t("settings.project.intake"), icon: Inbox },
+		{ id: "general", label: "Identity", icon: MonitorCog },
+		{ id: "agents", label: "Agents", icon: Bot },
+		{ id: "workflow", label: "Workflow", icon: GitBranch },
+		{ id: "intake", label: "Intake", icon: Inbox },
 	];
 
 	const isProjectSettings = displaySettings?.scope === "project";
@@ -56,8 +54,8 @@ export function SettingsDialog() {
 	const [projectSaveState, setProjectSaveState] = useState<ProjectSettingsSaveState>(initialProjectSaveState);
 
 	const activeLabel = isProjectSettings
-		? (projectSections.find((s) => s.id === activeProjectSection)?.label ?? t("settings.project.identity"))
-		: globalSettingsItem(activeSection).label(t);
+		? (projectSections.find((s) => s.id === activeProjectSection)?.label ?? "Identity")
+		: globalSettingsItem(activeSection).label();
 
 	const closeSettingsDialog = () => {
 		if (isProjectSettings && (projectSaveState.phase === "pending" || projectSaveState.phase === "saving")) return;
@@ -122,8 +120,8 @@ export function SettingsDialog() {
 				>
 					<div className="flex h-full min-h-0">
 						<aside className="flex w-48 shrink-0 flex-col border-r border-(--color-border-settings-dialog-header) bg-card">
-						<p className="px-3 pb-1 pt-3 text-2xs font-semibold tracking-wider text-muted-foreground/60">{t("settings.title")}</p>
-						<nav aria-label={t("settings.navSectionsAria")} className="flex flex-col gap-0.5 p-2 pt-0">
+						<p className="px-3 pb-1 pt-3 text-2xs font-semibold tracking-wider text-muted-foreground/60">{"Settings"}</p>
+						<nav aria-label="Settings sections" className="flex flex-col gap-0.5 p-2 pt-0">
 							{isProjectSettings
 								? projectSections.map(({ id, label, icon }) => (
 										<SettingsNavItem
@@ -140,7 +138,7 @@ export function SettingsDialog() {
 											disabled={disabled}
 											icon={icon}
 											key={id}
-											label={label(t)}
+											label={label()}
 											onClick={() => setActiveSection(id)}
 										/>
 									))}
@@ -161,25 +159,25 @@ export function SettingsDialog() {
 									title={
 										projectSaveState.error ??
 										(projectSaveState.replacementError
-											? t("settings.project.restartFailed", { error: projectSaveState.replacementError })
+											? `Orchestrator restart failed: ${projectSaveState.replacementError}`
 											: undefined)
 									}
 								>
 									{projectSaveState.phase === "saving" ? (
-										t("settings.project.saving")
+										"Saving…"
 									) : projectSaveState.phase === "saved" ? (
-										t("settings.project.saved")
+										"Saved."
 									) : projectSaveState.phase === "failed" ? (
 										<>
 											<TriangleAlert className="size-4" aria-hidden="true" />
-											{t("settings.project.saveFailed")}
+											{"Save failed"}
 										</>
 									) : (
-										t("settings.project.saveChanges")
+										"Save changes"
 									)}
 								</Button>
 								<span className="sr-only" role="status" aria-live="polite">
-									{projectSaveState.error ?? (projectSaveState.phase === "saved" ? t("settings.project.saved") : "")}
+									{projectSaveState.error ?? (projectSaveState.phase === "saved" ? "Saved." : "")}
 								</span>
 							</div>
 						)}
@@ -190,10 +188,10 @@ export function SettingsDialog() {
 						<DialogHeader className={cn(settingsDialogHeaderClass, "flex h-auto shrink-0 flex-row items-center justify-between border-b-0 pb-3")}>
 							<h2 className="text-2xl font-bold text-foreground" id="settings-dialog-title">{activeLabel}</h2>
 							<p className="sr-only" id="settings-dialog-description">
-								{isProjectSettings ? t("settings.project.dialogDescription") : t("settings.dialogDescription", { section: activeLabel.toLowerCase() })}
+								{isProjectSettings ? "Manage this project's settings." : `Manage ${activeLabel.toLowerCase()} settings.`}
 							</p>
 							<button
-								aria-label={t("settings.close")}
+								aria-label="Close settings"
 								className="settings-close-button"
 								disabled={isProjectSettings && (projectSaveState.phase === "pending" || projectSaveState.phase === "saving")}
 								onClick={closeSettingsDialog}

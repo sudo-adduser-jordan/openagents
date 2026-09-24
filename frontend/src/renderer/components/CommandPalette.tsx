@@ -2,7 +2,6 @@ import { useQueries, useQueryClient } from "@tanstack/react-query";
 import { useNavigate, useParams } from "@tanstack/react-router";
 import { ArrowLeft, Loader2 } from "lucide-react";
 import { useCallback, useEffect, useMemo, useRef, useState, type AnimationEvent } from "react";
-import { useTranslation } from "react-i18next";
 import { useCommandPaletteEnabled } from "../hooks/useCommandPaletteEnabled";
 import { useRestoreSession } from "../hooks/useRestoreSession";
 import { useWorkspaceQuery, workspaceQueryKey } from "../hooks/useWorkspaceQuery";
@@ -52,7 +51,6 @@ function terminalHasFocus(): boolean {
 }
 
 export function CommandPalette() {
-	const { i18n, t } = useTranslation();
 	const enabled = useCommandPaletteEnabled();
 	const navigate = useNavigate();
 	const queryClient = useQueryClient();
@@ -161,24 +159,24 @@ export function CommandPalette() {
 				currentSessionId: params.sessionId,
 				restartingProjectIds,
 				reviewStatesBySessionId: reviewStatesForCommands,
-			}, t),
-		[workspaces, currentProjectId, params.sessionId, restartingProjectIds, reviewStatesForCommands, t, i18n.resolvedLanguage],
+			}),
+		[workspaces, currentProjectId, params.sessionId, restartingProjectIds, reviewStatesForCommands],
 	);
 	const scoped = useMemo(
 		() => (view.mode === "session-actions" ? findSession(workspaces, view.sessionId) : undefined),
 		[view, workspaces],
 	);
 	const sessionActionItems = useMemo(
-		() => (scoped ? buildSessionActions(scoped.workspace, scoped.session, t) : []),
-		[scoped, t],
+		() => (scoped ? buildSessionActions(scoped.workspace, scoped.session) : []),
+		[scoped],
 	);
 
 	const groups = useMemo(() => {
 		if (view.mode === "session-actions") {
 			return [{ id: "actions", label: "", items: filterCommands(sessionActionItems, query) }];
 		}
-		return displayGroups(rootItems, query, t);
-	}, [view.mode, rootItems, sessionActionItems, query, t, i18n.resolvedLanguage]);
+		return displayGroups(rootItems, query);
+	}, [view.mode, rootItems, sessionActionItems, query]);
 
 	const visibleItems = useMemo(() => groups.flatMap((group) => group.items), [groups]);
 	const value =
@@ -311,9 +309,9 @@ export function CommandPalette() {
 			setView({ mode: "root" });
 			setQuery("");
 			setSelectedValue("");
-			setError(t("command.sessionUnavailable"));
+			setError("That session is no longer available.");
 		}
-	}, [view, scoped, t]);
+	}, [view, scoped]);
 
 	const toggleTheme = useCallback(() => {
 		setThemePreference(resolvedTheme === "dark" ? "light" : "dark");
@@ -354,9 +352,9 @@ export function CommandPalette() {
 
 	const blockedByRestart = useCallback((projectId: string) => {
 		if (!useUiStore.getState().restartingProjectIds.has(projectId)) return false;
-		setError(t("command.orchestratorRestarting"));
+		setError("Orchestrator restarting");
 		return true;
-	}, [t]);
+	}, []);
 
 	const openOrchestrator = useCallback(
 		async (projectId: string) => {
@@ -387,10 +385,10 @@ export function CommandPalette() {
 		async (sessionId: string) => {
 			const result = await restoreSessionById(sessionId);
 			if (result.status === "success") return null;
-			if (result.status === "not_resumable") return t("command.resumeNotResumable");
+			if (result.status === "not_resumable") return "This session has no saved agent session or prompt to resume from.";
 			return result.message;
 		},
-		[restoreSessionById, t],
+		[restoreSessionById],
 	);
 
 	const runAction = useCallback(
@@ -460,13 +458,13 @@ export function CommandPalette() {
 							break;
 				}
 			} catch (err) {
-				if (isCurrentRun()) setError(err instanceof Error ? err.message : t("command.failed"));
+				if (isCurrentRun()) setError(err instanceof Error ? err.message : "Command failed");
 			} finally {
 				pendingRef.current = false;
 				setPendingId(null);
 			}
 		},
-		[navigateToTarget, closePalette, toggleTheme, openOrchestrator, resumeSession, pushView, blockedByRestart, openNewProject, queryClient, t],
+		[navigateToTarget, closePalette, toggleTheme, openOrchestrator, resumeSession, pushView, blockedByRestart, openNewProject, queryClient],
 	);
 
 	const onSelectItem = useCallback(
@@ -528,9 +526,9 @@ export function CommandPalette() {
 
 	const contextLabel =
 		view.mode === "session-actions"
-			? (scoped?.session.title ?? t("command.sessionFallback"))
+			? (scoped?.session.title ?? "Session")
 			: view.mode === "new-task"
-				? t("command.newTask")
+				? "New task"
 				: "";
 
 	return (
@@ -559,7 +557,7 @@ export function CommandPalette() {
 					value,
 					onValueChange: setSelectedValue,
 					loop: true,
-					label: t("command.palette"),
+					label: "Command palette",
 				}}
 			>
 				{view.mode !== "root" && (
@@ -568,7 +566,7 @@ export function CommandPalette() {
 							type="button"
 							onClick={() => requestDismiss("pop")}
 							className="grid size-10 place-items-center rounded-md text-muted-foreground transition-colors hover:bg-surface hover:text-foreground"
-							aria-label={t("command.back")}
+							aria-label="Back"
 						>
 							<ArrowLeft className="size-icon-base" aria-hidden="true" />
 						</button>
@@ -582,13 +580,13 @@ export function CommandPalette() {
 					<div onKeyDown={(event) => event.stopPropagation()}>
 						{pendingDismiss !== null && (
 							<div className="mx-3 mt-3 rounded-md border border-border bg-surface px-3 py-2 text-xs text-foreground">
-								<p className="text-muted-foreground">{t("command.discardDraft")}</p>
+								<p className="text-muted-foreground">{"Discard this draft? Your title, brief, and images will be lost."}</p>
 								<div className="mt-2 flex justify-end gap-3">
 									<Button type="button" variant="footer" onClick={() => setPendingDismiss(null)}>
-										{t("command.keepEditing")}
+										{"Keep editing"}
 									</Button>
 									<Button type="button" variant="footer" className="text-destructive" onClick={confirmDiscard}>
-										{t("command.discard")}
+										{"Discard"}
 									</Button>
 								</div>
 							</div>
@@ -610,7 +608,7 @@ export function CommandPalette() {
 									setError(null);
 								}}
 							placeholder={
-								view.mode === "session-actions" ? t("command.searchActionsPlaceholder") : t("command.searchPlaceholder")
+								view.mode === "session-actions" ? "Search actions…" : "Search projects, sessions, PRs, and commands…"
 							}
 							onKeyDown={(event) => {
 								if (
@@ -625,7 +623,7 @@ export function CommandPalette() {
 							}}
 						/>
 						<CommandList>
-							<CommandEmpty>{t("command.noResults")}</CommandEmpty>
+							<CommandEmpty>{"No results."}</CommandEmpty>
 							{error && (
 								<div
 									role="alert"
@@ -667,11 +665,11 @@ export function CommandPalette() {
 						<CommandFooter aria-hidden="true">
 							<span className="inline-flex items-center gap-1.5">
 								<span>↑↓</span>
-								<span>{t("command.select")}</span>
+								<span>{"Select"}</span>
 							</span>
 							<span className="inline-flex items-center gap-1.5">
 								<span>↵</span>
-								<span>{t("command.open")}</span>
+								<span>{"Open"}</span>
 							</span>
 						</CommandFooter>
 					</>

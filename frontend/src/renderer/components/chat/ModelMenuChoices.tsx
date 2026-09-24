@@ -1,6 +1,5 @@
 import { Search } from "lucide-react";
 import { useCallback, useLayoutEffect, useMemo, useRef, useState, type ReactNode } from "react";
-import { useTranslation } from "react-i18next";
 import { cn } from "../../lib/utils";
 
 /** Mounted inside menu content so closing either menu also clears its query. */
@@ -11,7 +10,6 @@ export function ModelMenuChoices<T extends { id: string; label: string }>({
 	models: T[];
 	children: (models: T[]) => ReactNode;
 }) {
-	const { t } = useTranslation();
 	const [search, setSearch] = useState("");
 	const showSearch = models.length >= 10;
 	const query = showSearch ? search.trim() : "";
@@ -68,10 +66,10 @@ export function ModelMenuChoices<T extends { id: string; label: string }>({
 						<input
 							ref={searchRef}
 							type="search"
-							aria-label={t("settings.models.searchAria", { label: "models" })}
+							aria-label={`Search ${"models"}`}
 							value={search}
 							onChange={(event) => setSearch(event.target.value)}
-							placeholder={t("settings.models.searchPlaceholder")}
+							placeholder="Search models…"
 							className="menu-search-input h-control-form! rounded-[10px] pl-8!"
 						/>
 					</div>
@@ -112,7 +110,7 @@ export function ModelMenuChoices<T extends { id: string; label: string }>({
 				>
 					{children(matches)}
 					{matches.length === 0 && (
-						<p className="px-2 py-1.5 text-xs text-settings-muted">{t("settings.models.noMatches")}</p>
+						<p className="px-2 py-1.5 text-xs text-settings-muted">{"No matching models."}</p>
 					)}
 				</div>
 				<div
@@ -122,10 +120,7 @@ export function ModelMenuChoices<T extends { id: string; label: string }>({
 			</div>
 			{showSearch && (
 				<p className="shrink-0 px-2 py-1.5 text-xs text-settings-muted" aria-live="polite">
-					{t("settings.models.matchingCount", {
-						visible: matches.length.toLocaleString(),
-						total: matches.length.toLocaleString(),
-					})}
+					{`Showing ${matches.length.toLocaleString()} of ${matches.length.toLocaleString()} matching models`}
 				</p>
 			)}
 		</div>

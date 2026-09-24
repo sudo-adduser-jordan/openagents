@@ -1,6 +1,5 @@
 import { ChevronDown, Code2, FolderOpen, SquareTerminal } from "lucide-react";
 import { useState } from "react";
-import { useTranslation } from "react-i18next";
 import type { OpenTarget, OpenTargetId } from "../../shared/editor-handoff";
 import { useEditorHandoffState, useOpenSessionTarget } from "../hooks/useEditorHandoff";
 import { TopbarActionError, TopbarButton } from "./TopbarButton";
@@ -79,7 +78,6 @@ export function TopbarOpenEditorButton({
 	sessionTerminated?: boolean;
 	style?: React.CSSProperties;
 }) {
-	const { t } = useTranslation();
 	const stateQuery = useEditorHandoffState(sessionId, { sessionCreatedAt, sessionTerminated });
 	const open = useOpenSessionTarget();
 	const state = stateQuery.data;
@@ -99,16 +97,16 @@ export function TopbarOpenEditorButton({
 	};
 	const launchError = open.error instanceof Error ? open.error.message : null;
 	const workspaceError = !stateQuery.isPending && !workspaceAvailable
-		? state?.unavailableReason ?? t("editor.workspaceUnavailable")
+		? state?.unavailableReason ?? "Session workspace is not available."
 		: null;
 	const visibleActionError = launchError ?? workspaceError;
 	const noEditorInstalled = !stateQuery.isPending && workspaceAvailable && editors.length === 0;
 	const mainTitle = stateQuery.isPending
-		? t("editor.preparingWorkspace")
+		? "Preparing workspace…"
 		: (workspaceError
 			?? (preferred
-				? t("editor.openWorkspaceInTitle", { name: preferred.name })
-				: (noEditorInstalled ? t("editor.noEditorInstalled") : t("editor.chooseEditorTitle"))));
+				? `Open this session's workspace in ${preferred.name}`
+				: (noEditorInstalled ? "No editor installed" : "Choose an installed editor or use a native fallback")));
 
 	return (
 		<>
@@ -127,10 +125,10 @@ export function TopbarOpenEditorButton({
 						<span className="inline-flex">
 							<TopbarButton
 								aria-label={stateQuery.isPending
-									? t("editor.preparingWorkspace")
+									? "Preparing workspace…"
 									: preferred
-										? t("editor.openInAria", { name: preferred.name })
-										: (noEditorInstalled ? t("editor.noEditorInstalled") : t("editor.chooseEditor"))}
+										? `Open in ${preferred.name}`
+										: (noEditorInstalled ? "No editor installed" : "Choose editor")}
 								className="hover:bg-transparent"
 								disabled={mainDisabled}
 								onClick={() => launch()}
@@ -148,7 +146,7 @@ export function TopbarOpenEditorButton({
 							<span className="inline-flex">
 								<DropdownMenuTrigger asChild>
 									<TopbarButton
-										aria-label={t("editor.openOptionsAria")}
+										aria-label="Open workspace options"
 										className="hover:bg-transparent"
 										disabled={menuDisabled}
 										variant="icon"
@@ -158,17 +156,17 @@ export function TopbarOpenEditorButton({
 								</DropdownMenuTrigger>
 							</span>
 						</TooltipTrigger>
-						<TooltipContent side="bottom">{t("editor.openOptionsAria")}</TooltipContent>
+						<TooltipContent side="bottom">{"Open workspace options"}</TooltipContent>
 					</Tooltip>
 					<DropdownMenuContent align="end" className="min-w-52">
 						{safeTargets.map((target) => (
 							<DropdownMenuItem key={target.id} onSelect={() => launch(target.id)}>
 								<TargetIcon target={target} className="size-icon-sm" />
-								{t("editor.openInTarget", { name: target.name })}
+								{`Open in ${target.name}`}
 							</DropdownMenuItem>
 						))}
 						{safeTargets.length > 0 && editors.length > 0 ? <DropdownMenuSeparator /> : null}
-						{editors.length > 0 ? <DropdownMenuLabel>{t("editor.openWith")}</DropdownMenuLabel> : null}
+						{editors.length > 0 ? <DropdownMenuLabel>{"Open with"}</DropdownMenuLabel> : null}
 						{editors.map((editor) => (
 							<DropdownMenuItem key={editor.id} onSelect={() => launch(editor.id)}>
 								<TargetIcon target={editor} className="size-icon-sm" />

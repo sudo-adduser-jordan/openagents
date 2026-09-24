@@ -1,6 +1,5 @@
 import { forwardRef, useCallback, useEffect, useRef, useState, type HTMLAttributes, type RefObject } from "react";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
-import { useTranslation } from "react-i18next";
 import { Tree, type NodeApi, type NodeRendererProps, type RowRendererProps, type TreeApi } from "react-arborist";
 import { ChevronRight } from "lucide-react";
 import { cn } from "../lib/utils";
@@ -87,7 +86,6 @@ export function FileTree({
 	selectedPath: string | null;
 	onSelectPath: (node: TreeNode) => void;
 }) {
-	const { t } = useTranslation();
 	const queryClient = useQueryClient();
 	const treeApiRef = useRef<TreeApi<TreeNode> | null>(null);
 	const loadedDirsRef = useRef<Set<string>>(new Set());
@@ -97,7 +95,7 @@ export function FileTree({
 
 	const rootQuery = useQuery({ ...sessionWorkspaceTreeQueryOptions(sessionId, ""), enabled: !changedOnly && normalizedFilter.length === 0 });
 	const searchQuery = useQuery({
-		...sessionWorkspaceSearchQueryOptions(sessionId, normalizedFilter, t("files.error.searchWorkspace")),
+		...sessionWorkspaceSearchQueryOptions(sessionId, normalizedFilter, "Unable to search workspace files"),
 		enabled: !changedOnly && normalizedFilter.length > 0,
 	});
 
@@ -118,7 +116,7 @@ export function FileTree({
 			loadedDirsRef.current.add(dir);
 			try {
 				const result = await queryClient.fetchQuery(
-					sessionWorkspaceTreeQueryOptions(sessionId, dir, t("files.error.loadWorkspaceTree")),
+					sessionWorkspaceTreeQueryOptions(sessionId, dir, "Unable to load workspace tree"),
 				);
 				setLazyData((current) => withChildrenAt(current, dir, result.entries.map(entryToNode)));
 			} catch {
@@ -127,7 +125,7 @@ export function FileTree({
 				loadedDirsRef.current.delete(dir);
 			}
 		},
-		[queryClient, sessionId, t],
+		[queryClient, sessionId],
 	);
 
 	const handleToggle = useCallback(
@@ -155,12 +153,12 @@ export function FileTree({
 	return (
 		<div className="flex h-full min-h-0 min-w-0 flex-col bg-background" ref={containerRef}>
 			{isPending ? (
-				<p className="p-3 text-xs text-muted-foreground">{t("files.loading")}</p>
+				<p className="p-3 text-xs text-muted-foreground">{"Loading files..."}</p>
 			) : null}
 			{activeError ? (
-				<p className="p-3 text-xs text-error">{activeError.message || t("files.error.loadWorkspaceTree")}</p>
+				<p className="p-3 text-xs text-error">{activeError.message || "Unable to load workspace tree"}</p>
 			) : null}
-			{isEmpty ? <p className="p-3 text-xs text-muted-foreground">{t("files.explorer.empty")}</p> : null}
+			{isEmpty ? <p className="p-3 text-xs text-muted-foreground">{"This folder is empty."}</p> : null}
 			{size.width > 0 && size.height > 0 ? (
 				<Tree<TreeNode>
 					data={data}
@@ -180,7 +178,7 @@ export function FileTree({
 					width={size.width}
 					height={size.height}
 					padding={4}
-					aria-label={t("files.explorer.tree")}
+					aria-label="File tree"
 					outerElementType={FileTreeScrollElement}
 					renderRow={FileTreeRowContainer}
 				>
@@ -214,7 +212,6 @@ function FileTreeRowContainer<T>({ node, attrs, innerRef, children }: RowRendere
 }
 
 function FileTreeRow({ node, style, dragHandle }: NodeRendererProps<TreeNode>) {
-	const { t } = useTranslation();
 	const entry = node.data;
 	const isDir = entry.type === "dir";
 	return (
@@ -247,7 +244,7 @@ function FileTreeRow({ node, style, dragHandle }: NodeRendererProps<TreeNode>) {
 			{!isDir && entry.status && entry.status !== "unmodified" ? (
 				<span
 					className={cn("shrink-0 font-mono text-caption font-medium", statusTone[entry.status])}
-					title={t(`files.status.${entry.status}`)}
+					title={({"added": "Added", "deleted": "Deleted", "modified": "Modified", "renamed": "Renamed", "unmodified": "Unmodified"}[entry.status] ?? entry.status)}
 				>
 					{statusLabel[entry.status]}
 				</span>

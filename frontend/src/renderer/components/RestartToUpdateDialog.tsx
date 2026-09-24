@@ -1,6 +1,5 @@
 import { useEffect, useRef, useState } from "react";
 import { AlertTriangle } from "lucide-react";
-import { useTranslation } from "react-i18next";
 import { aoBridge } from "../lib/bridge";
 import { parseNightlyVersion } from "../lib/build-channel";
 import { sessionsAtRiskFromInstall } from "../lib/update-install-risk";
@@ -40,7 +39,6 @@ export function RestartToUpdateDialog() {
 }
 
 function RestartToUpdateDialogBody() {
-	const { t, i18n } = useTranslation();
 	const close = useUiStore((state) => state.closeUpdateInstallPrompt);
 	const status = useUpdateStatus(undefined, true);
 	const workspace = useWorkspaceQuery();
@@ -67,13 +65,10 @@ function RestartToUpdateDialogBody() {
 	const releaseNotes = confirmedBuild ? confirmedBuild.releaseNotes : status.releaseNotes;
 	const nightly = parseNightlyVersion(version);
 	const buildLabel = nightly
-		? t("shell.nightlyBuild", {
-				version: nightly.base,
-				date: new Intl.DateTimeFormat(i18n.resolvedLanguage ?? i18n.language, {
+		? `Nightly ${nightly.base} · ${new Intl.DateTimeFormat("en", {
 					month: "short",
 					day: "numeric",
-				}).format(nightly.builtAt),
-			})
+				}).format(nightly.builtAt)}`
 		: version
 			? `v${version}`
 			: null;
@@ -145,12 +140,12 @@ function RestartToUpdateDialogBody() {
 				}}
 			>
 				<div className={settingsDialogHeaderClass}>
-					<DialogTitle>{t("update.restart.title")}</DialogTitle>
+					<DialogTitle>{"Restart to update"}</DialogTitle>
 					{buildLabel && <DialogDescription>{buildLabel}</DialogDescription>}
 				</div>
 
 				<div className={settingsDialogBodyClass}>
-					{(workspace.isError || !workspace.data) && <p role="status">{t("update.restart.unknownWorkers", { defaultValue: "Current worker state could not be confirmed. Installing restarts AO and may interrupt current tasks." })}</p>}
+					{(workspace.isError || !workspace.data) && <p role="status">{"Current worker state could not be confirmed. Installing restarts AO and may interrupt current tasks."}</p>}
 					{atRisk.length > 0 && (
 						<div
 							className="mb-4 rounded-md border border-warning/30 bg-warning/8 px-3 py-2.5"
@@ -159,7 +154,7 @@ function RestartToUpdateDialogBody() {
 							<p className="flex items-start gap-2 text-xs font-medium leading-5 text-warning">
 								<AlertTriangle className="mt-0.5 size-icon-sm shrink-0" aria-hidden="true" />
 								<span className="min-w-0">
-									{t("update.restart.sessionsTitle", { count: atRisk.length })}
+									{(atRisk.length === 1 ? "1 chat session will lose its current turn" : `${atRisk.length} chat sessions will lose their current turn`)}
 								</span>
 							</p>
 							<ul className="mt-2 space-y-1 pl-6">
@@ -170,13 +165,13 @@ function RestartToUpdateDialogBody() {
 								))}
 							</ul>
 							<p className="mt-2 pl-6 text-xs leading-4 text-settings-muted">
-								{t("update.restart.sessionsBody")}
+								{"Restarting stops these mid-turn. Terminal sessions and OpenCode chat sessions reconnect on their own."}
 							</p>
 						</div>
 					)}
 
 					<p className="text-caption font-medium uppercase tracking-wide text-settings-muted">
-						{t("update.restart.whatsNew")}
+						{"What's new"}
 					</p>
 					{releaseNotes ? (
 						// Plain text on purpose. The notes are the remote release body,
@@ -185,30 +180,30 @@ function RestartToUpdateDialogBody() {
 							{releaseNotes}
 						</p>
 					) : (
-						<p className="mt-1.5 text-sm leading-5 text-settings-muted">{t("update.restart.noNotes")}</p>
+						<p className="mt-1.5 text-sm leading-5 text-settings-muted">{"No release notes were published for this build."}</p>
 					)}
 
 					{targetChanged && (
 						<p role="status" className="mt-3 text-sm text-settings-label">
-							{t("update.restart.targetChanged")}
+							{"A different update is now available. Review its version and release notes, then confirm again."}
 						</p>
 					)}
 					{failureDetail !== null && (
 						<div role="alert" className="space-y-1 text-sm text-destructive">
-							<p>{t("update.restart.prepareFailed")}</p>
+							<p>{"AO could not prepare the update. Please try again."}</p>
 							{failureDetail && <p className="whitespace-pre-line break-words">{failureDetail}</p>}
 						</div>
 					)}
 					{/* On failure the main process turns off install-on-quit, so hide
 					    this line rather than contradict the error above. */}
 					{failureDetail === null && (
-						<p className="mt-2 text-xs leading-4 text-settings-muted">{t("update.restart.installsOnQuit")}</p>
+						<p className="mt-2 text-xs leading-4 text-settings-muted">{"This build also installs on its own the next time you quit the app."}</p>
 					)}
 				</div>
 
 				<div className={settingsDialogFooterClass}>
 					<Button type="button" variant="outline" size="sm" onClick={close} disabled={pending}>
-						{t("confirm.cancel")}
+						{"Cancel"}
 					</Button>
 					<Button
 						type="button"
@@ -218,10 +213,10 @@ function RestartToUpdateDialogBody() {
 						disabled={pending || (!hasFailed && !version)}
 					>
 						{pending
-							? t("update.restart.preparing")
+							? "Preparing update…"
 							: hasFailed
-								? t("update.restart.retry")
-								: t("update.restart.confirm")}
+								? "Retry"
+								: "Restart & install"}
 					</Button>
 				</div>
 			</DialogContent>

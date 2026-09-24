@@ -1,5 +1,4 @@
 import { useEffect, useRef } from "react";
-import { useTranslation } from "react-i18next";
 import type { components } from "../../../api/schema";
 import { SettingsOptionMenu } from "./SettingsOptionMenu";
 import { SettingsRow } from "./SettingsRow";
@@ -52,12 +51,11 @@ export function useModelTuning(props: Omit<ModelTuningControlsProps, "variant" |
 }
 
 export function ModelTuningControls(props: ModelTuningControlsProps) {
-	const { t } = useTranslation();
 	const { effort, onEffortChange, variant, roleLabel, disabled } = props;
 	const { selected, invalidEffort } = useModelTuning(props);
 	const prefix = roleLabel ? `${roleLabel} ` : "";
 	const warning = invalidEffort
-		? t("settings.models.unsupportedTuning", { role: roleLabel ? `${roleLabel} ` : "" })
+		? `${roleLabel ? `${roleLabel} ` : ""}model tuning is no longer supported by the selected model. Choose a supported value before saving.`
 		: null;
 	if (!selected) {
 		return warning && variant === "settings" ? (
@@ -66,11 +64,11 @@ export function ModelTuningControls(props: ModelTuningControlsProps) {
 	}
 	const effortControl = selected.efforts?.length ? (
 		<SettingsOptionMenu
-			aria-label={`${prefix}${t("settings.models.effort")}`}
+			aria-label={`${prefix}${"Effort"}`}
 			value={effort || "__default__"}
 			disabled={disabled}
 			options={[
-				{ value: "__default__", label: t("settings.models.providerDefault") },
+				{ value: "__default__", label: "Provider default" },
 				...selected.efforts.map((value) => ({ value, label: value })),
 			]}
 			onChange={(value) => onEffortChange(value === "__default__" ? "" : value)}
@@ -83,7 +81,7 @@ export function ModelTuningControls(props: ModelTuningControlsProps) {
 	}
 	return (
 		<>
-			{effortControl ? <SettingsRow label={`${prefix}${t("settings.models.effort")}`}>{effortControl}</SettingsRow> : null}
+			{effortControl ? <SettingsRow label={`${prefix}${"Effort"}`}>{effortControl}</SettingsRow> : null}
 			{warning ? <p role="alert" className="px-1 text-xs leading-row text-warning">{warning}</p> : null}
 		</>
 	);

@@ -9,8 +9,6 @@ import {
 	QueryClientProvider,
 	QueryObserver,
 } from "@tanstack/react-query";
-import { I18nextProvider } from "react-i18next";
-import { appI18n } from "../../src/renderer/i18n";
 import { TooltipProvider } from "../../src/renderer/components/ui/tooltip";
 import { AssistantMessage } from "../../src/renderer/components/chat/ChatTimelineItems";
 import { ChatWorkspace } from "../../src/renderer/components/chat/ChatWorkspace";
@@ -34,9 +32,7 @@ function render(node: ReactNode) {
 	flushSync(() =>
 		root.render(
 			<QueryClientProvider client={client}>
-				<I18nextProvider i18n={appI18n}>
 					<TooltipProvider>{node}</TooltipProvider>
-				</I18nextProvider>
 			</QueryClientProvider>,
 		),
 	);

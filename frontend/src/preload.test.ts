@@ -234,14 +234,14 @@ describe("preload keybinding recording bridge", () => {
 
 describe("preload uiSettings bridge", () => {
 	it("invokes get and set over IPC", async () => {
-		electronMocks.invoke.mockResolvedValueOnce({ locale: "en" });
-		electronMocks.invoke.mockResolvedValueOnce({ locale: "zh-CN" });
+		electronMocks.invoke.mockResolvedValueOnce({ soundNotificationsEnabled: true });
+		electronMocks.invoke.mockResolvedValueOnce({ soundNotificationsEnabled: false });
 
-		await expect(exposedBridge().uiSettings.get()).resolves.toEqual({ locale: "en" });
-		await expect(exposedBridge().uiSettings.set({ locale: "zh-CN" })).resolves.toEqual({ locale: "zh-CN" });
+		await expect(exposedBridge().uiSettings.get()).resolves.toEqual({ soundNotificationsEnabled: true });
+		await expect(exposedBridge().uiSettings.set({ soundNotificationsEnabled: false })).resolves.toEqual({ soundNotificationsEnabled: false });
 
 		expect(electronMocks.invoke).toHaveBeenNthCalledWith(1, "uiSettings:get");
-		expect(electronMocks.invoke).toHaveBeenNthCalledWith(2, "uiSettings:set", { locale: "zh-CN" });
+		expect(electronMocks.invoke).toHaveBeenNthCalledWith(2, "uiSettings:set", { soundNotificationsEnabled: false });
 	});
 });
 

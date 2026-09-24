@@ -1,5 +1,4 @@
 import { X } from "lucide-react";
-import { useTranslation } from "react-i18next";
 import type { SessionFileTabState } from "../lib/session-file-tabs";
 import { cn } from "../lib/utils";
 import { TerminalTabFrame } from "./TerminalTabFrame";
@@ -51,7 +50,6 @@ export function SessionFileTab({
 	onClose: () => void;
 	path: string;
 }) {
-	const { t } = useTranslation();
 	const name = basename(path);
 	// The close button overlays the file icon's slot and replaces it on hover,
 	// matching the shell terminal tabs. A dirty file keeps an always-visible dot
@@ -61,7 +59,7 @@ export function SessionFileTab({
 			<Tooltip>
 				<TooltipTrigger asChild>
 					<button
-						aria-label={t("files.closeTab", { name })}
+						aria-label={`Close ${name}`}
 						className={cn(
 							"grid size-icon-sm place-items-center rounded-sm text-passive hover:bg-interactive-hover hover:text-foreground focus-visible:outline-2 focus-visible:outline-offset-1 focus-visible:outline-accent/50",
 							dirty
@@ -86,7 +84,7 @@ export function SessionFileTab({
 						) : <X className="size-icon-sm" aria-hidden="true" />}
 					</button>
 				</TooltipTrigger>
-				<TooltipContent side="bottom">{t("files.closeTab", { name })}</TooltipContent>
+				<TooltipContent side="bottom">{`Close ${name}`}</TooltipContent>
 			</Tooltip>
 		</span>
 	);

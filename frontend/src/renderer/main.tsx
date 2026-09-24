@@ -2,14 +2,11 @@ import "./lib/apply-initial-theme";
 import { createRoot } from "react-dom/client";
 import { QueryClientProvider } from "@tanstack/react-query";
 import { RouterProvider } from "@tanstack/react-router";
-import { I18nextProvider } from "react-i18next";
 import "@xterm/xterm/css/xterm.css";
 import "./styles.css";
 import { queryClient } from "./lib/query-client";
 import { mergeUnreadNotification, unreadNotificationsQueryKey } from "./lib/notifications";
 import { createAppRouter } from "./router";
-import { appI18n } from "./i18n";
-import { useLocaleStore } from "./stores/locale-store";
 import { useSoundNotificationsStore } from "./stores/sound-notifications-store";
 
 const router = createAppRouter(queryClient);
@@ -62,10 +59,6 @@ declare module "@tanstack/react-router" {
 }
 
 async function renderApp(): Promise<void> {
-	// The persisted locale is cosmetic; do not leave a newly opened native
-	// window blank while its IPC read completes. The router's pending screen
-	// renders immediately, then i18n updates if the user chose another locale.
-	void useLocaleStore.getState().load();
 	// The sound-notifications toggle only needs to be right by the time
 	// Settings renders, so it loads in the background rather than blocking mount.
 	void useSoundNotificationsStore.getState().load();
@@ -73,11 +66,9 @@ async function renderApp(): Promise<void> {
 	// performance tracking for that tree in development, which made common route
 	// switches and drag updates spend hundreds of milliseconds recording timings.
 	createRoot(document.getElementById("root") as HTMLElement).render(
-		<I18nextProvider i18n={appI18n}>
-			<QueryClientProvider client={queryClient}>
-				<RouterProvider router={router} />
-			</QueryClientProvider>
-		</I18nextProvider>,
+		<QueryClientProvider client={queryClient}>
+			<RouterProvider router={router} />
+		</QueryClientProvider>,
 	);
 }
 

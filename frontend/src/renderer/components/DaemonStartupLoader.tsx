@@ -1,31 +1,29 @@
 import { useEffect, useState } from "react";
-import { useTranslation } from "react-i18next";
 import aoLogo from "../../../assets/ao-logo.svg";
 import { aoBridge } from "../lib/bridge";
 import { useSystemRequirementsGate } from "../hooks/useSystemRequirementsGate";
 import { InstallDependencyDialog } from "./InstallDependencyDialog";
 
-const STARTUP_PHRASE_KEYS = [
-	"startup.startingServices",
-	"startup.connectingDaemon",
-	"startup.loadingWorkspaces",
-	"startup.preparingBoard",
+const STARTUP_PHRASES = [
+	"Starting local services",
+	"Connecting to the daemon",
+	"Loading workspaces",
+	"Preparing your board",
 ] as const;
 
 // Shown instead of the normal phrases when the current boot is a post-update
 // relaunch, so the swap reads as "the app is updating" rather than "the app is
 // slow to connect".
-const UPDATE_PHRASE_KEYS = [
-	"startup.updatingApp",
-	"startup.restartingApp",
-	"startup.startingServices",
-	"startup.preparingBoard",
+const UPDATE_PHRASES = [
+	"Updating AO",
+	"Restarting AO",
+	"Starting local services",
+	"Preparing your board",
 ] as const;
 
 const PHRASE_INTERVAL_MS = 2_200;
 
 export function DaemonStartupLoader() {
-	const { t } = useTranslation();
 	const [phraseIndex, setPhraseIndex] = useState(0);
 	const [postUpdate, setPostUpdate] = useState(false);
 	const {
@@ -54,21 +52,21 @@ export function DaemonStartupLoader() {
 		};
 	}, []);
 
-	const phraseKeys = postUpdate ? UPDATE_PHRASE_KEYS : STARTUP_PHRASE_KEYS;
+	const phrases = postUpdate ? UPDATE_PHRASES : STARTUP_PHRASES;
 
 	useEffect(() => {
 		const timer = window.setInterval(() => {
-			setPhraseIndex((current) => (current + 1) % phraseKeys.length);
+			setPhraseIndex((current) => (current + 1) % phrases.length);
 		}, PHRASE_INTERVAL_MS);
 		return () => window.clearInterval(timer);
-	}, [phraseKeys.length]);
+	}, [phrases.length]);
 
-	const phrase = t(phraseKeys[phraseIndex % phraseKeys.length]);
+	const phrase = phrases[phraseIndex % phrases.length];
 
 	return (
 		<div
 			aria-busy="true"
-			aria-label={t("startup.aria", { brand: "Agent Orchestrator" })}
+			aria-label={`${"Agent Orchestrator"} is starting`}
 			aria-live="polite"
 			className="ao-startup-screen flex h-full w-full items-center justify-center bg-background text-foreground"
 			data-testid="daemon-startup-loader"

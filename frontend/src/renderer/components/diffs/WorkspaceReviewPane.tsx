@@ -3,7 +3,6 @@ import { useQueries } from "@tanstack/react-query";
 import { parsePatchFiles, type CodeViewItem, type FileDiffMetadata } from "@pierre/diffs";
 import { CodeView } from "@pierre/diffs/react";
 import { ChevronDown, ChevronRight, ChevronsDownUp, ChevronsUpDown, FileCode2, GitCommitHorizontal, MessageSquarePlus, Pencil } from "lucide-react";
-import { useTranslation } from "react-i18next";
 import {
 	fetchWorkspaceFileRevision,
 	sessionWorkspaceDiffsQueryOptions,
@@ -136,7 +135,6 @@ export function WorkspaceReviewPane({
 	sessionId: string;
 	split: boolean;
 }) {
-	const { t } = useTranslation();
 	const resolvedTheme = useUiStore((state) => state.resolvedTheme);
 	const initialSelection = useMemo(() => initialReviewSelection(data), [data]);
 	const [scope, setScope] = useState<WorkspaceDiffScope>(() => initialSelection.scope);
@@ -199,7 +197,7 @@ export function WorkspaceReviewPane({
 	const patchQueries = useQueries({
 		queries: batches.map((paths, index) => ({
 			...sessionWorkspaceDiffsQueryOptions({
-				errorMessage: t("files.error.loadWorkspace"),
+				errorMessage: "Unable to load workspace files",
 				paths,
 				scope,
 				sessionId,
@@ -287,17 +285,17 @@ export function WorkspaceReviewPane({
 			// Pierre may hand this callback a normalized metadata object rather than
 			// the exact object stored in our parse cache, so resolve by stable path.
 			const file = files.find((candidate) => candidate.path === metadata.name);
-			if (!file) throw new Error(t("files.error.loadFile"));
+			if (!file) throw new Error("Unable to load this file.");
 			const [before, after] = await Promise.all([
 				fetchWorkspaceFileRevision({ commitSha: selectedCommit?.sha, sessionId, path: file.path, scope, side: "before", workspaceVersion: data.workspaceVersion }),
 				fetchWorkspaceFileRevision({ commitSha: selectedCommit?.sha, sessionId, path: file.path, scope, side: "after", workspaceVersion: data.workspaceVersion }),
 			]);
-			if (before.binary || after.binary || before.truncated || after.truncated) throw new Error(t("files.error.loadFile"));
+			if (before.binary || after.binary || before.truncated || after.truncated) throw new Error("Unable to load this file.");
 			const newFile = { name: file.path, contents: after.content, cacheKey: after.revision };
 			if (metadata.type === "rename-pure") return { oldFile: null, newFile };
 			return { oldFile: { name: file.previousPath || file.path, contents: before.content, cacheKey: before.revision }, newFile };
 		},
-		[data.workspaceVersion, files, scope, selectedCommit?.sha, sessionId, t],
+		[data.workspaceVersion, files, scope, selectedCommit?.sha, sessionId],
 	);
 
 	const beginLineAnnotation = useCallback((itemId: string, lineNumber: number, side: "deletions" | "additions") => {
@@ -354,7 +352,7 @@ export function WorkspaceReviewPane({
 	const loading = patchQueries.some((query) => query.isPending);
 	const viewedCount = allFiles.filter((file) => viewed.has(file.path)).length;
 	const fileOpenContext = selectedCommit ? { commitSha: selectedCommit.sha, scope } : { scope };
-	const workingSourceLabel = (entry: WorkspaceDiffScope) => entry === "combined" ? t("files.reviewChanges") : t(`files.section.${entry}`);
+	const workingSourceLabel = (entry: WorkspaceDiffScope) => entry === "combined" ? "Changes" : ({"committed": "Committed", "staged": "Staged", "unstaged": "Unstaged", "untracked": "Untracked"}[entry] ?? entry);
 	const hasAnyReviewFiles = data.files.some((file) => file.status !== "unmodified")
 		|| workingScopeOrder.some((entry) => data.sections[entry].length > 0)
 		|| data.commits.some((commit) => commit.files.length > 0);
@@ -385,17 +383,17 @@ export function WorkspaceReviewPane({
 				)) : null}
 				<Button aria-expanded={commitBrowserOpen} aria-pressed={scope === "committed"} className="gap-1.5" disabled={data.commits.length === 0} onClick={() => setCommitBrowserOpen((open) => !open)} size="sm" type="button" variant={scope === "committed" ? "secondary" : "ghost"}>
 					<GitCommitHorizontal aria-hidden="true" className="size-icon-sm" />
-					<span>{t("files.commits")}</span>
+					<span>{"Commits"}</span>
 					{commitHashForButton ? <span className="text-caption text-passive">{commitHashForButton}</span> : null}
 				</Button>
 				{!commitBrowserOpen ? <div className="ml-auto flex items-center gap-1 text-caption text-muted-foreground">
-					<span>{t("files.reviewProgress", { total: allFiles.length, viewed: viewedCount })}</span>
-					<HeaderActionTooltip label={t(allFilesCollapsed ? "files.expandAll" : "files.collapseAll")}>
-						<Button aria-label={t(allFilesCollapsed ? "files.expandAll" : "files.collapseAll")} onClick={toggleAll} size="icon-sm" type="button" variant="ghost">
+					<span>{`${viewedCount} of ${allFiles.length} viewed`}</span>
+					<HeaderActionTooltip label={(allFilesCollapsed ? "Expand all files" : "Collapse all files")}>
+						<Button aria-label={(allFilesCollapsed ? "Expand all files" : "Collapse all files")} onClick={toggleAll} size="icon-sm" type="button" variant="ghost">
 							{allFilesCollapsed ? <ChevronsUpDown aria-hidden="true" /> : <ChevronsDownUp aria-hidden="true" />}
 						</Button>
 					</HeaderActionTooltip>
-				</div> : <span className="ml-auto text-caption text-muted-foreground">{t("files.selectCommit")}</span>}
+				</div> : <span className="ml-auto text-caption text-muted-foreground">{"Select a commit"}</span>}
 			</div>
 			{commitBrowserOpen ? (
 				<CommitBrowser
@@ -408,8 +406,8 @@ export function WorkspaceReviewPane({
 				<>
 			{firstError ? <PanelMessage action={<RetryButton onClick={retryAll} />}>{firstError.message}</PanelMessage> : null}
 			{groupError ? <PanelMessage action={<RetryButton onClick={retryAll} />}>{groupError.message}</PanelMessage> : null}
-			{loading && items.length === 0 ? <PanelMessage compact>{t("files.loadingDiff")}</PanelMessage> : null}
-			{files.length === 0 ? <PanelMessage action={allFiles.length === 0 ? <Button onClick={onBrowseAll}>{t("files.browseAll")}</Button> : undefined} compact>{allFiles.length === 0 ? t(hasAnyReviewFiles ? "files.noneInSource" : "files.noneChanged") : t("files.noFilterMatches")}</PanelMessage> : null}
+			{loading && items.length === 0 ? <PanelMessage compact>{"Loading diff..."}</PanelMessage> : null}
+			{files.length === 0 ? <PanelMessage action={allFiles.length === 0 ? <Button onClick={onBrowseAll}>{"Browse all files"}</Button> : undefined} compact>{allFiles.length === 0 ? (hasAnyReviewFiles ? "No files in this change source." : "No changed files found.") : "No changed files match this filter."}</PanelMessage> : null}
 			<div className="min-h-0 flex-1 overflow-hidden">
 				{items.length > 0 ? (
 					<CodeView<"feedback">
@@ -440,7 +438,7 @@ export function WorkspaceReviewPane({
 						renderGutterUtility={(getHoveredLine, item) => (
 							<LineFeedbackButtonControl
 								gutter
-								label={t("files.addFeedback")}
+								label="Add feedback"
 								onClick={() => {
 									const line = getHoveredLine();
 									if (!line) return;
@@ -460,7 +458,7 @@ export function WorkspaceReviewPane({
 								<div className="relative bg-surface">
 									<div className="flex h-10 min-w-0 items-center gap-2 border-b border-border px-2">
 										<Button
-											aria-label={isCollapsed ? t("files.expandFile", { file: file.path }) : t("files.collapseFile", { file: file.path })}
+											aria-label={isCollapsed ? `Expand ${file.path}` : `Collapse ${file.path}`}
 											onClick={() => toggleCollapsed(file.path)}
 											size="icon-sm"
 											type="button"
@@ -470,7 +468,7 @@ export function WorkspaceReviewPane({
 										</Button>
 										<span className={cn("font-mono text-xs font-semibold", statusTone[file.status])}>{statusLabel[file.status]}</span>
 										<button
-											aria-label={isCollapsed ? t("files.expandFile", { file: file.path }) : t("files.collapseFile", { file: file.path })}
+											aria-label={isCollapsed ? `Expand ${file.path}` : `Collapse ${file.path}`}
 											className="min-w-0 flex-1 truncate text-left font-mono text-xs hover:underline"
 											onClick={() => toggleCollapsed(file.path)}
 											title={file.path}
@@ -482,24 +480,24 @@ export function WorkspaceReviewPane({
 										<span className="text-caption text-error">−{file.deletions}</span>
 										<div className="flex shrink-0 items-center">
 											{file.editable && file.fileFingerprint ? (
-												<HeaderActionTooltip label={t("files.editFile")}>
-											<Button aria-label={t("files.editFile")} className="size-6" onClick={(event) => { event.stopPropagation(); onOpenFile?.(file.path, { editing: true, mode: "file", scope }); }} size="icon-sm" type="button" variant="ghost"><Pencil aria-hidden="true" className="size-icon-sm" /></Button>
+												<HeaderActionTooltip label="Edit file">
+											<Button aria-label="Edit file" className="size-6" onClick={(event) => { event.stopPropagation(); onOpenFile?.(file.path, { editing: true, mode: "file", scope }); }} size="icon-sm" type="button" variant="ghost"><Pencil aria-hidden="true" className="size-icon-sm" /></Button>
 												</HeaderActionTooltip>
 											) : null}
-											<HeaderActionTooltip label={t("files.addFeedback")}>
-												<Button aria-label={t("files.addFeedback")} className="size-6" onClick={(event) => { event.stopPropagation(); annotation.begin({ path: file.path, previousPath: file.previousPath, side: "file", scope, surface: "review", workspaceVersion: data.workspaceVersion, fileFingerprint: file.fileFingerprint }); }} size="icon-sm" type="button" variant="ghost"><MessageSquarePlus aria-hidden="true" className="size-icon-sm" /></Button>
+											<HeaderActionTooltip label="Add feedback">
+												<Button aria-label="Add feedback" className="size-6" onClick={(event) => { event.stopPropagation(); annotation.begin({ path: file.path, previousPath: file.previousPath, side: "file", scope, surface: "review", workspaceVersion: data.workspaceVersion, fileFingerprint: file.fileFingerprint }); }} size="icon-sm" type="button" variant="ghost"><MessageSquarePlus aria-hidden="true" className="size-icon-sm" /></Button>
 											</HeaderActionTooltip>
-											<HeaderActionTooltip label={renderedAvailable ? t("files.openRichPreview") : t("files.openFullFileGeneric")}>
-										<Button aria-label={renderedAvailable ? t("files.openRichPreview") : t("files.openFullFileGeneric")} className="size-6" onClick={() => onOpenFile?.(file.path, { ...fileOpenContext, mode: renderedAvailable ? "rendered" : "file" })} size="icon-sm" type="button" variant="ghost"><FileCode2 aria-hidden="true" className="size-icon-sm" /></Button>
+											<HeaderActionTooltip label={renderedAvailable ? "Open rich preview" : "Open full file"}>
+										<Button aria-label={renderedAvailable ? "Open rich preview" : "Open full file"} className="size-6" onClick={() => onOpenFile?.(file.path, { ...fileOpenContext, mode: renderedAvailable ? "rendered" : "file" })} size="icon-sm" type="button" variant="ghost"><FileCode2 aria-hidden="true" className="size-icon-sm" /></Button>
 											</HeaderActionTooltip>
 											{onOpenFile ? (
-												<HeaderActionTooltip label={t("files.openDiffInCenter")}>
-											<Button aria-label={t("files.openDiffInCenter")} className="size-6" onClick={() => onOpenFile(file.path, { ...fileOpenContext, mode: "diff" })} size="icon-sm" type="button" variant="ghost"><VscodeGoToFileIcon aria-hidden="true" className="size-icon-sm" /></Button>
+												<HeaderActionTooltip label="Open diff in center">
+											<Button aria-label="Open diff in center" className="size-6" onClick={() => onOpenFile(file.path, { ...fileOpenContext, mode: "diff" })} size="icon-sm" type="button" variant="ghost"><VscodeGoToFileIcon aria-hidden="true" className="size-icon-sm" /></Button>
 												</HeaderActionTooltip>
 											) : null}
-											<HeaderActionTooltip label={isViewed ? t("files.markUnviewed", { file: file.path }) : t("files.markViewed", { file: file.path })}>
+											<HeaderActionTooltip label={isViewed ? `Mark ${file.path} as not viewed` : `Mark ${file.path} as viewed`}>
 												<Checkbox
-													aria-label={isViewed ? t("files.markUnviewed", { file: file.path }) : t("files.markViewed", { file: file.path })}
+													aria-label={isViewed ? `Mark ${file.path} as not viewed` : `Mark ${file.path} as viewed`}
 													checked={isViewed}
 													className="size-4 border border-muted-foreground/70 bg-transparent"
 													onCheckedChange={() => toggleViewed(file)}
@@ -523,10 +521,10 @@ export function WorkspaceReviewPane({
 					return (
 					<div className="m-2 flex items-center gap-2 rounded-md border border-border bg-surface p-3" key={file.path}>
 						<FileCode2 aria-hidden="true" className="text-passive" />
-						<div className="min-w-0 flex-1"><p className="truncate font-mono text-xs">{file.path}</p><p className="text-caption text-muted-foreground">{file.binary ? t("files.binaryUnavailable") : deferred ? t("files.deferredDiff") : serverDeferredReason ? t("files.diffUnavailableReason", { reason: serverDeferredReason }) : pending ? t("files.loadingDiff") : t("files.diffUnavailable")}</p></div>
-						{deferred ? <Button onClick={() => setLoadedDeferredPaths((current) => new Set(current).add(file.path))} size="sm" type="button" variant="outline">{t("files.loadDiff")}</Button> : null}
+						<div className="min-w-0 flex-1"><p className="truncate font-mono text-xs">{file.path}</p><p className="text-caption text-muted-foreground">{file.binary ? "Binary file preview is not available." : deferred ? "This diff is deferred or unavailable. Open the full file to inspect it." : serverDeferredReason ? `Diff unavailable: ${serverDeferredReason}.` : pending ? "Loading diff..." : "Unable to load this diff."}</p></div>
+						{deferred ? <Button onClick={() => setLoadedDeferredPaths((current) => new Set(current).add(file.path))} size="sm" type="button" variant="outline">{"Load diff"}</Button> : null}
 						{unavailable ? <RetryButton onClick={retryAll} /> : null}
-						<Button onClick={() => onOpenFile?.(file.path, { ...fileOpenContext, mode: "file" })} size="sm" type="button" variant="outline">{t("files.fileView")}</Button>
+						<Button onClick={() => onOpenFile?.(file.path, { ...fileOpenContext, mode: "file" })} size="sm" type="button" variant="outline">{"File"}</Button>
 					</div>
 					);
 				})}
@@ -538,14 +536,13 @@ export function WorkspaceReviewPane({
 }
 
 function CommitBrowser({ commits, filter, onSelect, selectedSha }: { commits: readonly WorkspaceCommitSummary[]; filter: string; onSelect: (commit: WorkspaceCommitSummary) => void; selectedSha?: string }) {
-	const { t } = useTranslation();
 	const normalizedFilter = filter.trim().toLowerCase();
 	const visibleCommits = normalizedFilter
 		? commits.filter((commit) => `${commit.subject} ${commit.author} ${commit.sha} ${commit.files.map((file) => file.path).join(" ")}`.toLowerCase().includes(normalizedFilter))
 		: commits;
 	return (
-		<ul className="board-scrollbar min-h-0 flex-1 overflow-y-auto overscroll-contain" aria-label={t("files.commitHistory")}>
-			{visibleCommits.length === 0 ? <PanelMessage compact>{commits.length === 0 ? t("files.noCommits") : t("files.noFilterMatches")}</PanelMessage> : null}
+		<ul className="board-scrollbar min-h-0 flex-1 overflow-y-auto overscroll-contain" aria-label="Commit history">
+			{visibleCommits.length === 0 ? <PanelMessage compact>{commits.length === 0 ? "No commits found." : "No changed files match this filter."}</PanelMessage> : null}
 			{visibleCommits.map((commit) => (
 				<li key={commit.sha}>
 				<button
@@ -566,7 +563,7 @@ function CommitBrowser({ commits, filter, onSelect, selectedSha }: { commits: re
 								<span className="shrink-0 font-mono">{commit.sha.slice(0, 7)}</span>
 							</p>
 						</div>
-						<span className="shrink-0 text-caption text-passive">{t("files.count", { count: commit.files.length })}</span>
+						<span className="shrink-0 text-caption text-passive">{(commit.files.length === 1 ? `${commit.files.length} file` : `${commit.files.length} files`)}</span>
 					</div>
 					<div className="mt-2 space-y-1 pl-5">
 						{commit.files.slice(0, 5).map((file) => (
@@ -575,7 +572,7 @@ function CommitBrowser({ commits, filter, onSelect, selectedSha }: { commits: re
 								<span className="truncate">{file.path}</span>
 							</div>
 						))}
-						{commit.files.length > 5 ? <p className="text-caption text-passive">{t("files.moreFiles", { count: commit.files.length - 5 })}</p> : null}
+						{commit.files.length > 5 ? <p className="text-caption text-passive">{`+${commit.files.length - 5} more files`}</p> : null}
 					</div>
 				</button>
 				</li>

@@ -1,10 +1,9 @@
-import { act, render, screen, waitFor } from "@testing-library/react";
+import { render, screen, waitFor } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { afterEach, describe, expect, it, vi } from "vitest";
 import type { AoBridge } from "../../../preload";
 import { aoBridge } from "../../lib/bridge";
 import { BrowserImportDialog } from "./BrowserImportDialog";
-import { appI18n } from "../../i18n";
 import type { BrowserImportWarning } from "../../../shared/browser-profile-import";
 
 const source = {
@@ -201,11 +200,9 @@ describe("BrowserImportDialog", () => {
 		await userEvent.click(screen.getByRole("button", { name: "Start import" }));
 		await screen.findByRole("alert");
 		try {
-			await act(async () => { await appI18n.changeLanguage("de"); });
 			expect(screen.getByRole("alert")).toHaveTextContent("Import failed; please retry.");
 			expect(discover).toHaveBeenCalledOnce();
 		} finally {
-			await act(async () => { await appI18n.changeLanguage("en"); });
 		}
 	});
 

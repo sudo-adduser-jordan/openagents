@@ -1,6 +1,5 @@
 import { Bot, CircleHelp, Globe2, Keyboard, RefreshCw, Settings2, Smartphone, type LucideIcon } from "lucide-react";
 import { lazy, type ReactNode } from "react";
-import type { TFunction } from "i18next";
 import type { GlobalSettingsSection } from "../../stores/ui-store";
 import { BrowserDownloadsSection } from "./BrowserDownloadsSection";
 import { BrowserProfilesSection } from "./BrowserProfilesSection";
@@ -20,10 +19,10 @@ const UpdatesSection = lazy(async () => {
 export type SettingsCatalogItem = {
 	id: GlobalSettingsSection;
 	icon: LucideIcon;
-	label: (t: TFunction) => string;
+	label: () => string;
 	/** Rendered in the settings nav but greyed out and non-interactive. */
 	disabled?: boolean;
-	render: (t: TFunction, titleHidden: boolean) => ReactNode;
+	render: (titleHidden: boolean) => ReactNode;
 };
 
 function SettingsContentPanel({ children }: { children: ReactNode }) {
@@ -34,20 +33,20 @@ const globalSettingsCatalog: SettingsCatalogItem[] = [
 	{
 		id: "general",
 		icon: Settings2,
-		label: (t) => t("settings.general"),
-		render: (_t, titleHidden) => <GeneralSettingsSection titleHidden={titleHidden} />,
+		label: () => "General",
+		render: (titleHidden) => <GeneralSettingsSection titleHidden={titleHidden} />,
 	},
 	{
 		id: "harness",
 		icon: Bot,
-		label: (t) => t("settings.harness"),
-		render: (_t, titleHidden) => <HarnessSettingsSection titleHidden={titleHidden} />,
+		label: () => "Harness",
+		render: (titleHidden) => <HarnessSettingsSection titleHidden={titleHidden} />,
 	},
 	{
 		id: "browserProfiles",
 		icon: Globe2,
-		label: (t) => t("settings.browserProfiles"),
-		render: (_t, titleHidden) => (
+		label: () => "Browser",
+		render: (titleHidden) => (
 			<>
 				<BrowserProfilesSection titleHidden={titleHidden} />
 				<div className="border-t border-border/60 pt-5">
@@ -59,10 +58,10 @@ const globalSettingsCatalog: SettingsCatalogItem[] = [
 	{
 		id: "mobile",
 		icon: Smartphone,
-		label: (t) => t("settings.mobile"),
+		label: () => "Mobile",
 		disabled: true,
-		render: (t, titleHidden) => (
-			<SettingsSection titleHidden={titleHidden} title={t("settings.mobile")}>
+		render: ( titleHidden) => (
+			<SettingsSection titleHidden={titleHidden} title="Mobile">
 				<div className="rounded-md bg-[var(--color-bg-settings-row)] pb-4 pt-0">
 					<ConnectMobileContent active />
 					<MobileDevicesSection />
@@ -73,9 +72,9 @@ const globalSettingsCatalog: SettingsCatalogItem[] = [
 	{
 		id: "shortcuts",
 		icon: Keyboard,
-		label: (t) => t("settings.shortcuts"),
-		render: (t, titleHidden) => (
-			<SettingsSection titleHidden={titleHidden} title={t("settings.keyboardShortcuts")}>
+		label: () => "Shortcuts",
+		render: ( titleHidden) => (
+			<SettingsSection titleHidden={titleHidden} title="Keyboard shortcuts">
 				<SettingsContentPanel><KeyboardShortcutsContent active /></SettingsContentPanel>
 			</SettingsSection>
 		),
@@ -83,15 +82,15 @@ const globalSettingsCatalog: SettingsCatalogItem[] = [
 	{
 		id: "updates",
 		icon: RefreshCw,
-		label: (t) => t("settings.updates"),
-		render: (_t, titleHidden) => <UpdatesSection titleHidden={titleHidden} />,
+		label: () => "Updates",
+		render: (titleHidden) => <UpdatesSection titleHidden={titleHidden} />,
 	},
 	{
 		id: "help",
 		icon: CircleHelp,
-		label: (t) => t("settings.help"),
-		render: (t, titleHidden) => (
-			<SettingsSection titleHidden={titleHidden} title={t("settings.reportProblem")}>
+		label: () => "Help",
+		render: ( titleHidden) => (
+			<SettingsSection titleHidden={titleHidden} title="Report a problem">
 				<SettingsContentPanel><ReportProblemContent active /></SettingsContentPanel>
 			</SettingsSection>
 		),

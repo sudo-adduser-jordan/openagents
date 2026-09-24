@@ -1,7 +1,48 @@
-import { useTranslation } from "react-i18next";
 
-/** Local draft notices store resource keys; daemon/provider errors remain text. */
+/** Static English draft notices; daemon/provider errors pass through as text. */
+const DRAFT_COPY: Record<string, string> = {
+	"chat.draft.abandon": "Abandon recovery",
+	"chat.draft.abandonEditFailed": "Edit recovery couldn\u2019t be abandoned because its local record could not be cleared. Nothing will be resent automatically.",
+	"chat.draft.abandonFailed": "Recovery couldn\u2019t be abandoned because its local record could not be cleared. Nothing will be resent automatically.",
+	"chat.draft.abandonedEdit": "Recovery was abandoned. The earlier edit may already have been delivered; sending this edit again may duplicate it.",
+	"chat.draft.abandonedSteer": "Recovery was abandoned. The earlier guidance may already have been delivered; sending this draft now may duplicate it.",
+	"chat.draft.acceptedEdit": "Edited message was accepted, but its local draft still needs to be cleared.",
+	"chat.draft.acceptedMessage": "Message was accepted, but its local draft still needs to be cleared.",
+	"chat.draft.clearEdit": "Finish clearing accepted edit",
+	"chat.draft.clearEditFailed": "Edited message was accepted, but its local draft couldn\u2019t be cleared. Retry clearing before leaving; AO will not branch it again.",
+	"chat.draft.clearMessage": "Finish clearing accepted message",
+	"chat.draft.clearMessageFailed": "Message was accepted, but its local draft couldn\u2019t be cleared. Retry clearing before leaving; AO will not send it again.",
+	"chat.draft.clearRefusedEditFailed": "The edit was rejected, but its local recovery record couldn\u2019t be cleared. Nothing will be resent automatically.",
+	"chat.draft.clearRefusedSteerFailed": "The steer was refused, but its local recovery record couldn\u2019t be cleared. Nothing will be resent automatically.",
+	"chat.draft.editDiscardFailed": "Inline edit couldn\u2019t be discarded. Keep this chat open and try again.",
+	"chat.draft.editRestart": "AO can\u2019t determine whether the earlier edit may already have been delivered before Chat restarted. Retry safely with the same delivery ID, or abandon recovery to edit it. Sending it again after abandonment may duplicate it.",
+	"chat.draft.editSaveFailed": "Inline edit couldn\u2019t be saved. Keep this chat open or copy it before leaving.",
+	"chat.draft.editUncertain": "AO can\u2019t determine whether the earlier edit may already have been delivered. Retry safely with the same delivery ID, or abandon recovery to edit it. Sending it again after abandonment may duplicate it.",
+	"chat.draft.filesUnavailable": "The files are not durably available. Nothing was sent.",
+	"chat.draft.prepareEditFailed": "This exact inline edit and its recovery ID couldn\u2019t be saved locally. Nothing was sent. Restore local storage and try again.",
+	"chat.draft.prepareFailed": "This exact draft and its recovery ID couldn\u2019t be saved locally. Nothing was sent. Restore local storage and try again.",
+	"chat.draft.queueClearFailed": "The edit was saved, but its local draft could not be cleared.",
+	"chat.draft.queueMissing": "This message is no longer queued. Copy or cancel this edit to continue.",
+	"chat.draft.queuePrepareFailed": "Queued edit could not be saved locally. Nothing was sent.",
+	"chat.draft.queueReplaced": "This queued edit was replaced. Nothing was sent.",
+	"chat.draft.queueSaveFailed": "Could not save that queued message edit. Your draft was kept.",
+	"chat.draft.queueSaveLocalFailed": "Queued edit could not be saved. Keep this chat open or copy it before leaving.",
+	"chat.draft.queueUnavailable": "Queued message edits are unavailable right now.",
+	"chat.draft.readAttachmentFailed": "The saved attachment could not be read. Your draft was kept.",
+	"chat.draft.recordEditFailed": "Edited-message acceptance couldn\u2019t be recorded locally. Retry safely to reconcile it with the same delivery ID.",
+	"chat.draft.recordMessageFailed": "Message acceptance couldn\u2019t be recorded locally. Retry safely to reconcile it with the same delivery ID.",
+	"chat.draft.retryEdit": "Retry edit safely",
+	"chat.draft.retryMessage": "Retry message safely",
+	"chat.draft.saveFailed": "Draft couldn\u2019t be saved. Keep this chat open or copy it before leaving.",
+	"chat.draft.sendAttachmentsFailed": "Message not sent. Your draft and attachments were kept so you can retry.",
+	"chat.draft.sendFailed": "Message not sent. Your draft was kept so you can retry.",
+	"chat.draft.sendRestart": "Message delivery wasn\u2019t confirmed before Chat restarted. Retry safely to reuse the same delivery ID.",
+	"chat.draft.sendUncertain": "Message delivery wasn\u2019t confirmed. Retry safely to reuse the same delivery ID; your draft remains locked until it is reconciled.",
+	"chat.draft.steerRestart": "AO can\u2019t determine whether the agent may already have received this guidance before Chat restarted. Retry safely with the same delivery ID, or abandon recovery to edit it. Sending it again after abandonment may duplicate it.",
+	"chat.draft.steerUncertain": "AO can\u2019t determine whether the agent may already have received this guidance. Retry safely with the same delivery ID, or abandon recovery to edit it. Sending it again after abandonment may duplicate it.",
+	"chat.draft.storageUnavailable": "Chat draft storage could not be activated. Restore access to local storage, then retry before chatting.",
+};
+
 export function useChatDraftTranslation(): (message: string | null | undefined) => string | undefined {
-	const { t } = useTranslation();
-	return (message) => message?.startsWith("chat.draft.") ? t(message, { defaultValue: message }) : message ?? undefined;
+	return (message) => (message == null ? undefined : (DRAFT_COPY[message] ?? message));
 }

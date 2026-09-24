@@ -31,7 +31,6 @@ import {
 } from "react";
 import { ArrowDown, Loader2, LoaderCircle, TriangleAlert, Undo2 } from "lucide-react";
 import { Reorder, useDragControls } from "motion/react";
-import { useTranslation } from "react-i18next";
 import { cn } from "../../lib/utils";
 import {
 	acknowledgeChatInlineEditMutation,
@@ -610,7 +609,6 @@ function ChatWorkspaceContent({
 	draftScope,
 }: ChatWorkspaceProps & { draftScope: ChatDraftScope }) {
 	const draftScopeKey = chatDraftScopeKey(draftScope);
-	const { t } = useTranslation();
 	const turn = activeTurn(snapshot);
 	const hasPendingInteraction = snapshot.items.some(
 		(item) =>
@@ -1143,7 +1141,7 @@ function ChatWorkspaceContent({
 			}
 			await handleComposerSend("Commit the changes and wait for PR approval.");
 		},
-		[handleComposerSend, newWorkDisabled, onDecide, session, stablePendingApproval, t],
+		[handleComposerSend, newWorkDisabled, onDecide, session, stablePendingApproval],
 	);
 	const stageBar = useMemo(() => {
 		if (!session || snapshot.controller.state === "stopped") return null;
@@ -1182,7 +1180,7 @@ function ChatWorkspaceContent({
 		reviewToCommit,
 		session,
 		snapshot.controller.state,
-		t,
+		
 		workflowTone,
 		working,
 	]);
@@ -1748,13 +1746,12 @@ function ChatHeader({
 	inline?: boolean;
 	topbarBounds: TopbarBounds;
 }) {
-	const { t } = useTranslation();
 	const providerLabel = agentLabel(snapshot.harness);
 	const sessionIsOrchestrator = session
 		? isOrchestratorSession(session)
 		: sessionRole === "orchestrator";
 	const label = sessionIsOrchestrator
-		? t("shell.orchestrator")
+		? "Orchestrator"
 		: (sessionTitle || session?.title || snapshot.title || snapshot.sessionId);
 	const tabScrollWatch = `${session?.id ?? ""}|${orderedAuxiliaryTabs.map((tab) => tab.key).join("|")}`;
 	const {

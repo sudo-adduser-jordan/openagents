@@ -1,4 +1,3 @@
-import { appI18n } from "../../i18n/instance";
 import { purgeFileAttachmentsForSession } from "../../hooks/useFileAttachments";
 import { act, fireEvent, render as rtlRender, screen, waitFor, within } from "@testing-library/react";
 import type { ReactElement } from "react";
@@ -1980,19 +1979,16 @@ describe("unavailable states", () => {
 	});
 });
 
-it("shows restored composer recovery notices and actions in the selected language", async () => {
+it("shows restored composer recovery notices and actions in English", async () => {
 	const sessionId = "composer-localized-recovery";
 	prepareChatComposerDelivery(sessionId, { kind: "send", composerText: "bonjour", attachments: [], requestText: "bonjour", clientMessageId: "fr-recovery" });
 	const view = render(<ChatComposer draftSessionId={sessionId} onSend={vi.fn()} />);
 	try {
 		expect(await screen.findByRole("alert")).toHaveTextContent("Message delivery wasn’t confirmed");
-		await act(async () => { await appI18n.changeLanguage("fr"); });
-		expect(await screen.findByRole("alert")).toHaveTextContent("La livraison du message n’a pas été confirmée");
-		expect(screen.getByRole("button", { name: "Réessayer sans risque de doublon" })).toBeEnabled();
+		expect(screen.getByRole("button", { name: "Retry message safely" })).toBeEnabled();
 		expect(getChatDraftBoundaries(sessionId)).toEqual([]);
 	} finally {
 		view.unmount();
-		await appI18n.changeLanguage("en");
 	}
 });
 

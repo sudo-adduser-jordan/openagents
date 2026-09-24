@@ -33,7 +33,6 @@ import { rehypeGithubAlerts } from "rehype-github-alerts";
 import rehypeSlug from "rehype-slug";
 import rehypeAutolinkHeadings from "rehype-autolink-headings";
 import { useCallback, useMemo, useRef } from "react";
-import { useTranslation } from "react-i18next";
 import { canonicalLanguage } from "../../lib/code-highlight";
 import { fenceOf } from "../../lib/markdown-fence";
 import { isWebLink } from "../../lib/external-link-policy";
@@ -79,7 +78,6 @@ export function MarkdownFileView({
 	/** The file detail's load timestamp, for cache-busting relative images. */
 	version: number;
 }) {
-	const { t } = useTranslation();
 	const bodyRef = useRef<HTMLDivElement>(null);
 	const contextValue = useMemo(() => ({ sessionId, filePath, version }), [sessionId, filePath, version]);
 
@@ -155,7 +153,7 @@ export function MarkdownFileView({
 			<div>
 				{truncated ? (
 					<div className="shrink-0 border-b border-border bg-warning/10 px-3 py-1.5 text-xs text-warning">
-						{t("files.contentTruncated")}
+						{"Rendered preview truncated."}
 					</div>
 				) : null}
 				<div className="markdown-body p-4" ref={bodyRef}>

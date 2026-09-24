@@ -1,5 +1,4 @@
 import { memo, useCallback, useEffect, useRef, useState, type MouseEvent } from "react";
-import { useTranslation } from "react-i18next";
 import { useQueryClient } from "@tanstack/react-query";
 import { useNavigate } from "@tanstack/react-router";
 import {
@@ -100,14 +99,13 @@ const dragStyle = isMac ? ({ WebkitAppRegion: "drag" } as React.CSSProperties) :
 const noDragStyle = isMac ? ({ WebkitAppRegion: "no-drag" } as React.CSSProperties) : undefined;
 
 export function SessionsBoard({ projectId }: SessionsBoardProps) {
-	const { t } = useTranslation();
 	const navigate = useNavigate();
 	const queryClient = useQueryClient();
 	// Lanes follow the delivery order the user asked for: planning -> building
 	// -> review -> ready. Planning and Building split the daemon's pre-PR
 	// `building` column by workflow mode; Review groups the validating and
 	// in-review feedback loop.
-	const columns: BoardLaneView[] = boardLaneOrder.map((lane) => getBoardLaneView(lane, t));
+	const columns: BoardLaneView[] = boardLaneOrder.map((lane) => getBoardLaneView(lane));
 	const workspaceQuery = useWorkspaceQuery();
 	const liveUsageBySession = useSessionUsageSummaries(projectId).data ?? emptyUsageBySession;
 	// Evaluated at render so platform mocks in tests can flip the in-panel chrome.
@@ -118,7 +116,7 @@ export function SessionsBoard({ projectId }: SessionsBoardProps) {
 	const workspaces = projectId ? all.filter((workspace) => workspace.id === projectId) : all;
 	const workspace = projectId ? workspaces[0] : undefined;
 	// Board chrome stays route-oriented; project context remains in the sidebar.
-	const boardLabel = t("shell.board");
+	const boardLabel = "Board";
 	const liveSessions = workspaces.flatMap((workspace) => workerSessions(workspace.sessions));
 	const demoWorkspaceId = projectId ?? workspaces[0]?.id;
 	const sessions = usesPreviewWorkspaceData && demoWorkspaceId && liveSessions.length === 0
@@ -149,7 +147,7 @@ export function SessionsBoard({ projectId }: SessionsBoardProps) {
 		.filter(isArchivedSession)
 		.sort((left, right) => right.updatedAt.localeCompare(left.updatedAt));
 	const activeSessions = sessions.filter((candidate) => !isArchivedSession(candidate));
-	const boardLabels = sessionsBoardLabels(t);
+	const boardLabels = sessionsBoardLabels();
 	const { showStartup, showWelcome, showProjectEmpty, workspaceStartupState } = useBoardPresentation({
 		projectId,
 		isSuccess: workspaceQuery.isSuccess,
@@ -269,7 +267,7 @@ export function SessionsBoard({ projectId }: SessionsBoardProps) {
 						{health.state === "restart_needed" || health.state === "duplicates" ? (
 							<TopbarButton disabled={isProjectRestarting} onClick={() => void restartOrchestrator()} variant="primary">
 								<RotateCw className="size-3.5" aria-hidden="true" />
-								{t("shell.restart")}
+								{"Restart"}
 							</TopbarButton>
 						) : null}
 					</div>
@@ -277,7 +275,7 @@ export function SessionsBoard({ projectId }: SessionsBoardProps) {
 			{workspace?.folderMissing ? (
 				<div className="mx-3 my-3 flex items-center gap-3 rounded-md border border-border bg-surface px-3 py-2 text-xs text-muted-foreground">
 					<AlertTriangle className="size-icon-base shrink-0 text-warning" aria-hidden="true" />
-					<span className="min-w-0 flex-1">{t("home.folderMissing")}</span>
+					<span className="min-w-0 flex-1">{"Folder missing"}</span>
 				</div>
 			) : null}
 			{projectId && isProvisioning ? (
@@ -290,12 +288,12 @@ export function SessionsBoard({ projectId }: SessionsBoardProps) {
 						aria-hidden="true"
 					/>
 					<span className="min-w-0 flex-1">
-						{t("shell.provisioning", { defaultValue: "Setting up the project — starting the orchestrator…" })}
+						{"Setting up the project — starting the orchestrator…"}
 					</span>
 				</div>
 			) : null}
 			{workspaceStartupState === "error" || workspaceQuery.isError ? (
-				<p className="py-10 text-center text-xs text-passive">{t("shell.couldNotLoadSessions")}</p>
+				<p className="py-10 text-center text-xs text-passive">{"Could not load sessions."}</p>
 			) : showWelcome ? (
 				<BoardWelcome />
 			) : showProjectEmpty ? (
@@ -349,7 +347,6 @@ const BoardArchivePanel = memo(function BoardArchivePanel({
 	sessions: WorkspaceSession[];
 	usageBySession: UsageBySession;
 }) {
-	const { t } = useTranslation();
 	const navigate = useNavigate();
 	const queryClient = useQueryClient();
 	const restoreSessionById = useRestoreSession();
@@ -416,9 +413,9 @@ const BoardArchivePanel = memo(function BoardArchivePanel({
 		<>
 			<SessionsArchiveView
 				labels={{
-					archive: t("shell.archive"),
-					archiveAria: t("shell.archiveSessionsAria", { count: sessions.length }),
-					archivedSessions: t("shell.archivedSessions"),
+					archive: "Archive",
+					archiveAria: (sessions.length === 1 ? `Archive, ${sessions.length} session` : `Archive, ${sessions.length} sessions`),
+					archivedSessions: "Archived sessions",
 				}}
 				renderSessionCard={(session) => (
 					<ArchivedSessionCardAdapter

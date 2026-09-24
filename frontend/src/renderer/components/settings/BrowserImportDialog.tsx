@@ -1,6 +1,5 @@
 import { CheckCircle2, Cookie, History as HistoryIcon, LoaderCircle, TriangleAlert, X } from "lucide-react";
 import { useEffect, useMemo, useRef, useState } from "react";
-import { useTranslation } from "react-i18next";
 import type { AoBridge } from "../../../preload";
 import type {
 	BrowserImportProgress,
@@ -9,7 +8,6 @@ import type {
 	BrowserImportWarning,
 } from "../../../shared/browser-profile-import";
 import { aoBridge } from "../../lib/bridge";
-import { appI18n, type MessageKey } from "../../i18n";
 import { Button } from "../ui/button";
 import {
 	Dialog,
@@ -37,7 +35,6 @@ export function BrowserImportDialog({
 	onOpenChange: (open: boolean) => void;
 	onImported: () => void;
 }) {
-	const { t } = useTranslation();
 	const bridge = (aoBridge as Partial<AoBridge>).browserProfiles as ImportBridge | undefined;
 	const [view, setView] = useState<View>("form");
 	const [sources, setSources] = useState<BrowserImportSource[]>([]);
@@ -76,7 +73,7 @@ export function BrowserImportDialog({
 		setProgress(null);
 		setResult(null);
 		if (!bridge) {
-			setError(t("settings.browserImport.unavailable"));
+			setError("Browser import is unavailable in this build.");
 			return;
 		}
 		setLoading(true);
@@ -87,7 +84,7 @@ export function BrowserImportDialog({
 				const first = discovery.sources[0];
 				if (first) applySourceDefaults(first, setSourceId, setSelectedProfileIds, setDestinationNames, setMergeName, setDestinationMode);
 			},
-			(reason) => setError(reason instanceof Error ? reason.message : t("settings.browserImport.discoveryFailed")),
+			(reason) => setError(reason instanceof Error ? reason.message : "Could not inspect installed browsers."),
 		).finally(() => setLoading(false));
 		// Translation changes must not reset an active import or its outcome.
 		// eslint-disable-next-line react-hooks/exhaustive-deps
@@ -173,7 +170,7 @@ export function BrowserImportDialog({
 			<DialogContent className={settingsDialogContentClass} showCloseButton={false}>
 				<DialogClose asChild>
 					<button
-						aria-label={t("common.close")}
+						aria-label="Close"
 						className="settings-dialog-close-button settings-close-button"
 						disabled={!canClose}
 						type="button"
@@ -182,8 +179,8 @@ export function BrowserImportDialog({
 					</button>
 				</DialogClose>
 				<div className={settingsDialogHeaderClass}>
-					<DialogTitle className="settings-dialog-title">{t("settings.browserImport.title")}</DialogTitle>
-					<DialogDescription>{t("settings.browserImport.description")}</DialogDescription>
+					<DialogTitle className="settings-dialog-title">{"Import browser data"}</DialogTitle>
+					<DialogDescription>{"Copy selected cookies and history into new, isolated AO profiles. Your source browser is never modified."}</DialogDescription>
 				</div>
 
 				<div className={settingsDialogBodyClass}>
@@ -191,7 +188,7 @@ export function BrowserImportDialog({
 						<p ref={errorRef} tabIndex={-1} className="rounded-lg border border-destructive/40 bg-destructive/10 p-3 text-sm text-destructive" role="alert">{error}</p>
 					) : null}
 					{view === "form" && safariAccessDenied ? (
-						<p className="text-xs text-warning" role="status">{t("settings.browserImport.safariAccessUnavailable")}</p>
+						<p className="text-xs text-warning" role="status">{"AO couldn't access Safari's data. In System Settings, open Privacy & Security > Full Disk Access, allow AO, then restart AO and try the import again."}</p>
 					) : null}
 					{view === "form" ? (
 						<ImportForm
@@ -220,8 +217,8 @@ export function BrowserImportDialog({
 						<div className="flex flex-1 flex-col items-center justify-center gap-5 py-12 text-center">
 							<LoaderCircle aria-hidden="true" className="size-8 animate-spin text-accent" />
 							<div>
-								<p className="font-semibold">{t(`settings.browserImport.progress.${progress?.phase ?? "preparing"}`)}</p>
-								<p className="mt-1 text-xs text-muted-foreground">{t("settings.browserImport.progress.keepOpen")}</p>
+								<p className="font-semibold">{({"preparing": "Preparing a safe import…", "permission": "Waiting for macOS Safe Storage permission…", "reading": "Reading copied browser data…", "importing": "Writing new AO profiles…", "keepOpen": "Keep AO open until the import finishes."}[progress?.phase ?? "preparing"] ?? progress?.phase ?? "preparing")}</p>
+								<p className="mt-1 text-xs text-muted-foreground">{"Keep AO open until the import finishes."}</p>
 							</div>
 							<div className="h-1.5 w-full max-w-sm overflow-hidden rounded-full bg-muted">
 								<div className="h-full rounded-full bg-accent transition-[width]" style={{ width: `${progressPercent}%` }} />
@@ -236,7 +233,7 @@ export function BrowserImportDialog({
 					{view !== "running" ? (
 						<DialogClose asChild>
 							<Button type="button" variant="footer">
-								{view === "result" ? t("settings.browserImport.done") : t("confirm.cancel")}
+								{view === "result" ? "Done" : "Cancel"}
 							</Button>
 						</DialogClose>
 					) : null}
@@ -247,7 +244,7 @@ export function BrowserImportDialog({
 							type="button"
 							variant="footer-primary"
 						>
-							{t("settings.browserImport.start")}
+							{"Start import"}
 						</Button>
 					) : null}
 				</div>
@@ -257,15 +254,15 @@ export function BrowserImportDialog({
 }
 
 function importFailureMessage(reason: unknown, browser: string): string {
-	const fallback = appI18n.t("settings.browserImport.failed");
+	const fallback = "Browser data could not be imported.";
 	const raw = reason instanceof Error ? reason.message : typeof reason === "string" ? reason : fallback;
 	const message = raw
 		.replace(/^Error invoking remote method '[^']+':\s*(?:Error:\s*)?/i, "")
 		.replace(/^Error:\s*/i, "")
 		.trim();
 	if (/unable to open database file|database is locked|SQLITE_(?:BUSY|CANTOPEN|LOCKED)|\b(?:EACCES|EBUSY|EPERM)\b/i.test(message)) {
-		if (browser === "Safari") return appI18n.t("settings.browserImport.safariAccessUnavailable");
-		return appI18n.t("settings.browserImport.sourceDatabaseUnavailable", { browser });
+		if (browser === "Safari") return "AO couldn't access Safari's data. In System Settings, open Privacy & Security > Full Disk Access, allow AO, then restart AO and try the import again.";
+		return `AO couldn't access ${browser}'s profile database. ${browser} may still be using it, or the operating system may be blocking access. Fully close ${browser}, including background processes, then try again. If it still fails, check that the browser profile files are accessible. Encrypted cookies are handled separately and did not cause this error.`;
 	}
 	return message || fallback;
 }
@@ -311,22 +308,21 @@ function ImportForm({
 	setDestinationNames: React.Dispatch<React.SetStateAction<Record<string, string>>>;
 	setMergeName: (value: string) => void;
 }) {
-	const { t } = useTranslation();
 	if (loading) return (
 		<div className="flex items-center gap-2 py-4 text-sm text-muted-foreground">
 			<LoaderCircle aria-hidden="true" className="size-4 animate-spin" />
-			{t("settings.browserImport.detecting")}
+			{"Looking for browser profiles…"}
 		</div>
 	);
 	if (sources.length === 0) {
 		return error
 			? null
-			: <p className="text-sm text-muted-foreground">{t("settings.browserImport.noneFound")}</p>;
+			: <p className="text-sm text-muted-foreground">{"No supported browser profiles were found on this computer."}</p>;
 	}
 	return (
 		<div className="space-y-5">
 			<section className="space-y-2">
-				<h3 className="text-sm font-semibold" id="browser-import-source-label">{t("settings.browserImport.from")}</h3>
+				<h3 className="text-sm font-semibold" id="browser-import-source-label">{"From"}</h3>
 				<Select onValueChange={onSelectSource} value={sourceId}>
 					<SelectTrigger
 						aria-disabled={sources.length === 1}
@@ -343,7 +339,7 @@ function ImportForm({
 								<SelectItem className={selected ? "bg-settings-menu-selected text-foreground" : ""} key={candidate.id} value={candidate.id}>
 									<span className="flex w-full min-w-0 items-center gap-2">
 										<span className="min-w-0 flex-1 truncate">{candidate.name}</span>
-										<span className="text-xs text-muted-foreground">{t("settings.browserImport.profileCount", { count: candidate.profiles.length })}</span>
+										<span className="text-xs text-muted-foreground">{`${candidate.profiles.length} profiles found`}</span>
 										{selected ? <CheckCircle2 aria-hidden="true" className="size-4 shrink-0 text-accent" /> : null}
 									</span>
 								</SelectItem>
@@ -377,10 +373,9 @@ function ImportForm({
 }
 
 function ProfilesStep({ source, selected, onChange }: { source: BrowserImportSource; selected: string[]; onChange: (ids: string[]) => void }) {
-	const { t } = useTranslation();
 	return (
 		<section className="space-y-2">
-			<p className="text-sm text-muted-foreground">{t("settings.browserImport.selectProfiles", { browser: source.name })}</p>
+			<p className="text-sm text-muted-foreground">{`Choose the ${source.name} profiles you want to bring into AO.`}</p>
 			<div className="grid gap-2">
 				{source.profiles.map((profile) => {
 					const checked = selected.includes(profile.id);
@@ -393,7 +388,7 @@ function ProfilesStep({ source, selected, onChange }: { source: BrowserImportSou
 							type="checkbox"
 						/>
 						<span className="text-sm font-medium">{profile.name}</span>
-						{profile.default ? <span className="text-xs text-muted-foreground">{t("settings.browserImport.defaultProfile")}</span> : null}
+						{profile.default ? <span className="text-xs text-muted-foreground">{"Default"}</span> : null}
 					</label>
 					);
 				})}
@@ -429,46 +424,45 @@ function OptionsStep({
 	setDestinationNames: React.Dispatch<React.SetStateAction<Record<string, string>>>;
 	setMergeName: (value: string) => void;
 }) {
-	const { t } = useTranslation();
 	return (
 		<div className="space-y-5 border-t border-border pt-5">
 			<section className="space-y-2">
-				<h3 className="text-sm font-semibold">{t("settings.browserImport.dataTitle")}</h3>
+				<h3 className="text-sm font-semibold">{"Choose data"}</h3>
 				<label className={`flex cursor-pointer items-start gap-3 rounded-lg border p-3 transition-colors ${includeCookies ? "border-accent/70 bg-settings-menu-selected" : "border-border hover:bg-interactive-hover"}`}>
 					<Cookie aria-hidden="true" className="mt-0.5 size-5 shrink-0 text-muted-foreground" />
 					<span className="min-w-0 flex-1">
-						<span className="block text-sm font-medium">{t("settings.browserImport.cookies")}</span>
-						<span className="block text-xs text-muted-foreground">{t("settings.browserImport.cookiesDescription")}</span>
+						<span className="block text-sm font-medium">{"Cookies and site sign-ins"}</span>
+						<span className="block text-xs text-muted-foreground">{"Copies usable website cookies into the destination profile."}</span>
 					</span>
 					<input checked={includeCookies} className="mt-0.5 size-4 shrink-0 accent-accent" onChange={(event) => setIncludeCookies(event.target.checked)} type="checkbox" />
 				</label>
 				{source.cookieSupport !== "supported" ? (
 					<p className="flex items-start gap-2 text-xs text-warning">
 						<TriangleAlert aria-hidden="true" className="mt-0.5 size-3.5 shrink-0" />
-						{t(capabilityKey(source.cookieSupportReason))}
+						{capabilityText(source.cookieSupportReason)}
 					</p>
 				) : null}
 				<label className={`flex cursor-pointer items-start gap-3 rounded-lg border p-3 transition-colors ${includeHistory ? "border-accent/70 bg-settings-menu-selected" : "border-border hover:bg-interactive-hover"}`}>
 					<HistoryIcon aria-hidden="true" className="mt-0.5 size-5 shrink-0 text-muted-foreground" />
 					<span className="min-w-0 flex-1">
-						<span className="block text-sm font-medium">{t("settings.browserImport.history")}</span>
-						<span className="block text-xs text-muted-foreground">{t("settings.browserImport.historyDescription")}</span>
+						<span className="block text-sm font-medium">{"Browsing history"}</span>
+						<span className="block text-xs text-muted-foreground">{"Adds visited pages to AO address-bar suggestions."}</span>
 					</span>
 					<input checked={includeHistory} className="mt-0.5 size-4 shrink-0 accent-accent" onChange={(event) => setIncludeHistory(event.target.checked)} type="checkbox" />
 				</label>
 			</section>
 
 			<section className="space-y-2">
-				<h3 className="text-sm font-semibold">{t("settings.browserImport.destinationTitle")}</h3>
+				<h3 className="text-sm font-semibold">{"Choose destinations"}</h3>
 				{profiles.length > 1 ? (
 					<div className="flex flex-wrap gap-4 text-sm">
-						<label className="flex items-center gap-2"><input checked={destinationMode === "separate"} onChange={() => setDestinationMode("separate")} type="radio" />{t("settings.browserImport.keepSeparate")}</label>
-						<label className="flex items-center gap-2"><input checked={destinationMode === "merge"} onChange={() => setDestinationMode("merge")} type="radio" />{t("settings.browserImport.merge")}</label>
+						<label className="flex items-center gap-2"><input checked={destinationMode === "separate"} onChange={() => setDestinationMode("separate")} type="radio" />{"Keep profiles separate"}</label>
+						<label className="flex items-center gap-2"><input checked={destinationMode === "merge"} onChange={() => setDestinationMode("merge")} type="radio" />{"Merge into one new AO profile"}</label>
 					</div>
 				) : null}
 				{destinationMode === "merge" ? (
 					<label className="grid gap-1.5 text-xs text-muted-foreground">
-						{t("settings.browserImport.destinationName")}
+						{"Destination profile name"}
 						<Input maxLength={64} onChange={(event) => setMergeName(event.target.value)} value={mergeName} />
 					</label>
 				) : (
@@ -487,7 +481,6 @@ function OptionsStep({
 }
 
 function ResultStep({ result }: { result: BrowserImportResult }) {
-	const { t } = useTranslation();
 	const empty = result.entries.every((entry) => entry.importedCookies + entry.importedHistoryEntries === 0);
 	const partial = result.entries.some((entry) =>
 		entry.warnings.some((warning) => !isExpectedSkip(warning))
@@ -498,23 +491,23 @@ function ResultStep({ result }: { result: BrowserImportResult }) {
 		<div className="space-y-4">
 			<div className={`flex items-start gap-3 rounded-lg border p-3 ${warning ? "border-warning/30 bg-warning/10" : "border-success/30 bg-success/10"}`} role="status">
 				{warning ? <TriangleAlert aria-hidden="true" className="mt-0.5 size-5 text-warning" /> : <CheckCircle2 aria-hidden="true" className="mt-0.5 size-5 text-success" />}
-				<div><p className="text-sm font-semibold">{t(empty ? "settings.browserImport.empty" : partial ? "settings.browserImport.partial" : "settings.browserImport.complete")}</p>{!empty ? <p className="text-xs text-muted-foreground">{t("settings.browserImport.completeDescription", { browser: result.sourceName })}</p> : null}</div>
+				<div><p className="text-sm font-semibold">{(empty ? "Nothing was imported" : (partial ? "Import completed with warnings" : "Import complete"))}</p>{!empty ? <p className="text-xs text-muted-foreground">{`AO imported the supported data available from ${result.sourceName}.`}</p> : null}</div>
 			</div>
 			{result.entries.map((entry) => (
 				<div className="rounded-lg border border-border p-3" key={entry.destinationProfile.id}>
 					<p className="text-sm font-semibold">{entry.destinationProfile.name}</p>
-					<p className="mt-1 text-xs text-muted-foreground">{t("settings.browserImport.resultCounts", { cookies: entry.importedCookies, history: entry.importedHistoryEntries })}</p>
+					<p className="mt-1 text-xs text-muted-foreground">{`${entry.importedCookies} cookies · ${entry.importedHistoryEntries} history entries`}</p>
 					{entry.warnings.filter((warning) => !isExpectedSkip(warning)).map((warning) => <p className="mt-1 text-xs text-warning" key={warning.code}>{warningText(warning)}</p>)}
 					{entry.skippedCookies > 0 ? (
 						<details className="mt-2 text-xs text-muted-foreground">
-							<summary className="cursor-pointer">{t("settings.browserImport.skippedItems")} · {t("settings.browserImport.skippedCookies", { count: entry.skippedCookies })}</summary>
+							<summary className="cursor-pointer">{"Skipped items"} · {`${entry.skippedCookies} cookies were skipped.`}</summary>
 							{entry.warnings.filter(isExpectedSkip).map((warning) => <p className="mt-1" key={warning.code}>{warningText(warning)}</p>)}
-							<p className="mt-1">{t("settings.browserImport.signInAgain")}</p>
+							<p className="mt-1">{"Some sites may ask you to sign in again."}</p>
 						</details>
 					) : null}
 				</div>
 			))}
-			{!empty ? <p className="text-xs text-muted-foreground">{t("settings.browserImport.useProfile")}</p> : null}
+			{!empty ? <p className="text-xs text-muted-foreground">{"Select a new profile from the browser toolbar to use the imported data."}</p> : null}
 		</div>
 	);
 }
@@ -524,7 +517,19 @@ function isExpectedSkip(warning: BrowserImportWarning): boolean {
 }
 
 function warningText(warning: BrowserImportWarning): string {
-	return appI18n.t(warningKey(warning.code), { count: warning.count ?? 0 });
+	const count = warning.count ?? 0;
+	switch (warning.code) {
+		case "cookie-database-missing": return "No cookie database was available for this source profile.";
+		case "history-database-missing": return "No history database was available for this source profile.";
+		case "isolated-cookies-skipped": return `${count} cookies tied to isolated browser contexts were skipped to avoid mixing site or organization data.`;
+		case "cookie-limit-truncated": return `${count} cookies exceeded AO's import limit and were skipped.`;
+		case "history-limit-truncated": return `${count} history entries exceeded AO's import limit and were skipped.`;
+		case "encrypted-cookies-skipped": return `${count} encrypted cookies could not be decrypted and were skipped.`;
+		case "expired-cookies-skipped": return `${count} expired cookies were skipped.`;
+		case "invalid-cookies-skipped": return `${count} invalid cookies were skipped.`;
+		case "cookie-attributes-defaulted": return `${count} cookies used safe defaults for attributes unavailable in this browser version.`;
+		case "cookie-write-failed": return `AO could not write ${count} cookies to the new profile.`;
+	}
 }
 
 function suggestedName(browser: string, profile: string): string {
@@ -549,23 +554,9 @@ function applySourceDefaults(
 	setDestinationMode(selected.length > 1 ? "separate" : "merge");
 }
 
-function capabilityKey(reason: BrowserImportSource["cookieSupportReason"]): MessageKey {
-	if (reason === "chromium-encryption-partial") return "settings.browserImport.capability.chromium-encryption-partial";
-	if (reason === "chromium-encryption-unsupported") return "settings.browserImport.capability.chromium-encryption-unsupported";
-	return "settings.browserImport.cookiesDescription";
+function capabilityText(reason: BrowserImportSource["cookieSupportReason"]): string {
+	if (reason === "chromium-encryption-partial") return "Modern Chromium encryption can prevent some cookies from being imported. AO will report exactly what was skipped.";
+	if (reason === "chromium-encryption-unsupported") return "Encrypted Chromium cookies cannot be imported on this platform. Unencrypted cookies and history remain available.";
+	return "Copies usable website cookies into the destination profile.";
 }
 
-function warningKey(code: BrowserImportWarning["code"]): MessageKey {
-	switch (code) {
-		case "cookie-database-missing": return "settings.browserImport.warning.cookie-database-missing";
-		case "history-database-missing": return "settings.browserImport.warning.history-database-missing";
-		case "isolated-cookies-skipped": return "settings.browserImport.warning.isolated-cookies-skipped";
-		case "cookie-limit-truncated": return "settings.browserImport.warning.cookie-limit-truncated";
-		case "history-limit-truncated": return "settings.browserImport.warning.history-limit-truncated";
-		case "encrypted-cookies-skipped": return "settings.browserImport.warning.encrypted-cookies-skipped";
-		case "expired-cookies-skipped": return "settings.browserImport.warning.expired-cookies-skipped";
-		case "invalid-cookies-skipped": return "settings.browserImport.warning.invalid-cookies-skipped";
-		case "cookie-attributes-defaulted": return "settings.browserImport.warning.cookie-attributes-defaulted";
-		case "cookie-write-failed": return "settings.browserImport.warning.cookie-write-failed";
-	}
-}

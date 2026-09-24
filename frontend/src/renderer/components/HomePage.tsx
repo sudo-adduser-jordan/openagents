@@ -1,6 +1,5 @@
 import type { ProjectSource } from "@aoagents/product-ui";
 import { useNavigate } from "@tanstack/react-router";
-import { useTranslation } from "react-i18next";
 import { AlertTriangle, Bot, Folder, Folders, FolderOpen, GitFork, Star } from "lucide-react";
 import { useMemo, useState, type ReactNode } from "react";
 import { useSystemRequirementsGate } from "../hooks/useSystemRequirementsGate";
@@ -92,7 +91,6 @@ function mostRecentStandaloneSession(sessions: WorkspaceSession[]): WorkspaceSes
 }
 
 function ProjectRow({ project, onClick, emptyTimeLabel, justNowLabel }: { project: WorkspaceSummary; onClick: () => void; emptyTimeLabel: string; justNowLabel: string }) {
-	const { t } = useTranslation();
 	const lastOpenedAt = getProjectLastOpenedAt(project.id);
 	const latestProjectFact = latestProjectTimestamp(project) || lastOpenedAt;
 
@@ -115,7 +113,7 @@ function ProjectRow({ project, onClick, emptyTimeLabel, justNowLabel }: { projec
 				<span className="flex items-center gap-1.5">
 					<span className="block truncate font-medium text-foreground">{project.name}</span>
 					{project.folderMissing ? (
-						<Badge variant="warning" className="h-4 shrink-0 px-1.5 text-2xs">{t("home.folderMissing")}</Badge>
+						<Badge variant="warning" className="h-4 shrink-0 px-1.5 text-2xs">{"Folder missing"}</Badge>
 					) : null}
 				</span>
 				<span className="block truncate text-caption text-muted-foreground">{project.path}</span>
@@ -155,7 +153,6 @@ function HomeActionCard({
 
 export function HomePage() {
 	const navigate = useNavigate();
-	const { t } = useTranslation();
 	const requestNewTask = useUiStore((state) => state.requestNewTask);
 	const { cloneProject, createProject, daemonStatus, initializeProjectRepository, workspaceStartupState } =
 		useShell();
@@ -191,7 +188,7 @@ export function HomePage() {
 	if (workspaceStartupState === "error" || workspaceQuery.isError) {
 		return (
 			<div className="flex min-h-full items-center justify-center px-6 py-16">
-				<p className="text-center text-xs text-passive">{t("shell.couldNotLoadProjects")}</p>
+				<p className="text-center text-xs text-passive">{"Could not load projects."}</p>
 			</div>
 		);
 	}
@@ -204,7 +201,7 @@ export function HomePage() {
 				<div className="space-y-6">
 					<section className="space-y-3 px-3">
 						<div className="flex items-baseline justify-between gap-4">
-							<h1 className={HOME_SECTION_TITLE_CLASS}>{t("home.jumpBack")}</h1>
+							<h1 className={HOME_SECTION_TITLE_CLASS}>{"Jump back right in"}</h1>
 							{/* Quiet text link — not TopbarButton / accent. Dashed underline only on hover. */}
 							<button
 								className="inline-flex shrink-0 items-center gap-1.5 border-b border-dashed border-transparent pb-px text-sm text-muted-foreground hover:border-current hover:text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring/60"
@@ -212,7 +209,7 @@ export function HomePage() {
 								type="button"
 							>
 								<Star className="size-3.5" strokeWidth={1.8} aria-hidden="true" />
-								{t("home.starUs")}
+								{"Star Us"}
 							</button>
 						</div>
 
@@ -220,29 +217,29 @@ export function HomePage() {
 						<div className="grid grid-cols-2 gap-3">
 							<HomeActionCard
 								icon={<GitFork strokeWidth={1.8} />}
-								label={t("createProject.cloneFromGit")}
+								label="Clone from Git"
 								onClick={() => requestSource("clone")}
 							/>
 							<HomeActionCard
 								icon={<FolderOpen strokeWidth={1.8} />}
-								label={t("createProject.openLocal")}
+								label="Import an existing project"
 								onClick={() => requestSource("local")}
 							/>
 							<HomeActionCard
 								icon={<Folders strokeWidth={1.8} />}
-								label={t("createProject.addWorkspace")}
+								label="Import a workspace folder"
 								onClick={() => requestSource("workspace")}
 							/>
 							<HomeActionCard
 								icon={<Bot strokeWidth={1.8} />}
-								label={t("home.newStandaloneAgent")}
+								label="New standalone agent"
 								onClick={() => requestNewTask(STANDALONE_WORKSPACE_ID)}
 							/>
 						</div>
 					</section>
 
 					<section className="space-y-3 px-3">
-						<h2 className={HOME_SECTION_TITLE_CLASS}>{t("home.recentProjects")}</h2>
+						<h2 className={HOME_SECTION_TITLE_CLASS}>{"Recent projects"}</h2>
 						<div>
 							{recentProjects.map((project) => (
 								<ProjectRow
@@ -258,8 +255,8 @@ export function HomePage() {
 										}
 										openProject(project.id);
 									}}
-									emptyTimeLabel={t("home.never")}
-									justNowLabel={t("time.justNow")}
+									emptyTimeLabel="Never"
+									justNowLabel="just now"
 								/>
 							))}
 						</div>

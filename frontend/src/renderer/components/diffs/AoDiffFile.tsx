@@ -1,7 +1,6 @@
 import { useCallback, useEffect, useMemo, useRef, type ReactNode } from "react";
 import { parsePatchFiles, type DiffLineAnnotation, type FileDiffMetadata } from "@pierre/diffs";
 import { FileDiff } from "@pierre/diffs/react";
-import { useTranslation } from "react-i18next";
 import { fetchWorkspaceFileRevision, type WorkspaceDiffScope, type WorkspaceFileDetail } from "../../hooks/useSessionWorkspaceFiles";
 import { parseUnifiedDiff, type DiffRow } from "../../lib/diff-parser";
 import { useUiStore } from "../../stores/ui-store";
@@ -56,7 +55,6 @@ export function AoDiffFile({
 	split: boolean;
 	commitSha?: string;
 }) {
-	const { t } = useTranslation();
 	const resolvedTheme = useUiStore((state) => state.resolvedTheme);
 	const containerRef = useRef<HTMLDivElement>(null);
 	const gutterHover = usePersistentGutterUtility(containerRef);
@@ -86,7 +84,7 @@ export function AoDiffFile({
 				fetchWorkspaceFileRevision({ commitSha, sessionId, path: detail.path, scope, side: "after", workspaceVersion: detail.workspaceVersion }),
 			]);
 			if (before.binary || after.binary || before.truncated || after.truncated) {
-				throw new Error(t("files.explorer.tooLarge", { size: Math.max(before.size, after.size) }));
+				throw new Error(`File is too large to preview (${Math.max(before.size, after.size)}).`);
 			}
 			const newFile = { name: detail.path, contents: after.content, cacheKey: after.revision };
 			if (fileDiff.type === "rename-pure") return { oldFile: null, newFile };
@@ -95,7 +93,7 @@ export function AoDiffFile({
 				newFile,
 			};
 		},
-		[commitSha, detail.path, detail.previousPath, detail.workspaceVersion, scope, sessionId, t],
+		[commitSha, detail.path, detail.previousPath, detail.workspaceVersion, scope, sessionId],
 	);
 	const beginLineAnnotation = useCallback((side: "deletions" | "additions", lineNumber: number) => {
 		const { row, rowIndex } = rowForLine(rows, side, lineNumber);
@@ -153,7 +151,7 @@ export function AoDiffFile({
 				renderGutterUtility={(getHoveredLine) => (
 					<LineFeedbackButtonControl
 						gutter
-						label={t("files.addFeedback")}
+						label="Add feedback"
 						onClick={() => {
 							const line = getHoveredLine();
 							if (line) beginLineAnnotation(line.side, line.lineNumber);
@@ -163,7 +161,7 @@ export function AoDiffFile({
 			/>
 			{detail.diffTruncated ? (
 				<div className="border-t border-border bg-warning/10 px-3 py-1.5 text-xs text-warning">
-					{t("files.diffTruncated")}
+					{"Diff preview truncated."}
 				</div>
 			) : null}
 		</div>

@@ -1,7 +1,6 @@
 import { useEffect, useRef } from "react";
 import { useMutation, useMutationState, useQueryClient } from "@tanstack/react-query";
 import { useNavigate } from "@tanstack/react-router";
-import { useTranslation } from "react-i18next";
 import { hasConfiguredOrchestratorAgent, type WorkspaceSession } from "../types/workspace";
 import { workspaceQueryKey, type WorkspaceScope } from "./useWorkspaceQuery";
 import { isChatPreflightError, spawnOrchestrator, type OrchestratorSpawnSource } from "../lib/spawn-orchestrator";
@@ -21,7 +20,6 @@ export function useProjectOrchestratorAction({
 	source: OrchestratorSpawnSource;
 	sessionId?: string;
 }) {
-	const { t } = useTranslation();
 	const navigate = useNavigate();
 	const queryClient = useQueryClient();
 	const mutationKey = ["project-orchestrator-open", projectId] as const;
@@ -54,7 +52,7 @@ export function useProjectOrchestratorAction({
 	const latest = mutations.at(-1);
 	const error = !orchestrator && !isSpawning && latest?.status === "error" ? latest.error : null;
 	const spawnError = formatOrchestratorStartupError(
-		error ? (error instanceof Error ? error.message : t("shell.couldNotSpawn")) : startupError ?? "",
+		error ? (error instanceof Error ? error.message : "Could not spawn orchestrator") : startupError ?? "",
 	);
 	const mutation = useMutation({
 		mutationKey,

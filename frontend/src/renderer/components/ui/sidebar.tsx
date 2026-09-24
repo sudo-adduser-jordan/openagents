@@ -4,7 +4,6 @@ import * as React from "react";
 import { cva, type VariantProps } from "class-variance-authority";
 import { motion, useReducedMotion } from "motion/react";
 import { Slot } from "radix-ui";
-import { useTranslation } from "react-i18next";
 
 import { useIsMobile } from "@/hooks/use-mobile";
 import { SHELL_PANEL_SPRING } from "@/lib/motion-spring";
@@ -157,7 +156,6 @@ function Sidebar({
 	collapsible?: "offcanvas" | "icon" | "none";
 	resizeScopeRef?: React.RefObject<HTMLDivElement | null>;
 }) {
-	const { t } = useTranslation();
 	const prefersReducedMotion = useReducedMotion();
 	const { isMobile, state, openMobile, setOpenMobile, isReady } = useSidebar();
 
@@ -189,8 +187,8 @@ function Sidebar({
 					side={side}
 				>
 					<SheetHeader className="sr-only">
-						<SheetTitle>{t("common.sidebar")}</SheetTitle>
-						<SheetDescription>{t("common.sidebarDescription")}</SheetDescription>
+						<SheetTitle>{"Sidebar"}</SheetTitle>
+						<SheetDescription>{"Displays the mobile sidebar."}</SheetDescription>
 					</SheetHeader>
 					<div className="flex h-full w-full flex-col">{children}</div>
 				</SheetContent>
@@ -273,14 +271,13 @@ function Sidebar({
 }
 
 function SidebarRail({ className, ...props }: React.ComponentProps<"button">) {
-	const { t } = useTranslation();
 	const { toggleSidebar } = useSidebar();
 
 	return (
 		<button
 			data-sidebar="rail"
 			data-slot="sidebar-rail"
-			aria-label={t("shortcut.toggle-sidebar")}
+			aria-label="Toggle sidebar"
 			tabIndex={-1}
 			onClick={toggleSidebar}
 			className={cn(

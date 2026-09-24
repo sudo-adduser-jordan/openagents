@@ -1,5 +1,4 @@
 import { Fragment, Suspense } from "react";
-import { useTranslation } from "react-i18next";
 import type { GlobalSettingsSection } from "../stores/ui-store";
 import { globalSettingsItemsFor } from "./settings/settingsCatalog";
 
@@ -10,7 +9,6 @@ export function GlobalSettingsForm({
 }: {
 	section?: GlobalSettingsSection | "all";
 }) {
-	const { t } = useTranslation();
 	const all = section === "all";
 	// One section per page means the dialog header already names it, so a
 	// leading in-page heading would just repeat that title.
@@ -18,13 +16,13 @@ export function GlobalSettingsForm({
 
 	return (
 		<div
-			aria-label={t("settings.title")}
+			aria-label="Settings"
 			className="flex w-full flex-col gap-(--size-settings-section-gap)"
 			data-testid="settings-page"
 		>
 			{globalSettingsItemsFor(section).map((item) => (
 				<Fragment key={item.id}>
-					<Suspense fallback={null}>{item.render(t, titleHidden)}</Suspense>
+					<Suspense fallback={null}>{item.render(titleHidden)}</Suspense>
 				</Fragment>
 			))}
 		</div>

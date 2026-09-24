@@ -1,7 +1,5 @@
 import { useEffect, useRef, useState, type MouseEvent, type ReactNode } from "react";
 import { useQueryClient } from "@tanstack/react-query";
-import { useTranslation } from "react-i18next";
-import type { TFunction } from "i18next";
 import {
 	scmUserAvatarUrl,
 	SessionCardView,
@@ -11,10 +9,8 @@ import {
 	type BoardSessionPresentation,
 	type BoardColumnLabels,
 	type BoardUsagePresentation,
-	type ProductUITranslator,
 } from "@aoagents/product-ui";
 import { Check, Copy, GitBranch, LoaderCircle, RotateCcw, Trash2 } from "lucide-react";
-import type { MessageKey } from "../i18n";
 import { aoBridge } from "../lib/bridge";
 import { formatTimeCompact } from "../lib/format-time";
 import { formatTokenCount } from "../lib/format-token-count";
@@ -35,7 +31,6 @@ import { Tooltip, TooltipContent, TooltipTrigger } from "./ui/tooltip";
 
 export function toBoardSessionPresentation(
 	session: WorkspaceSession,
-	_t?: TFunction,
 ): BoardSessionPresentation {
 	return {
 		activity: session.activity,
@@ -54,9 +49,9 @@ export function toBoardSessionPresentation(
 	};
 }
 
-export function sessionsBoardLabels(t: TFunction): BoardColumnLabels {
+export function sessionsBoardLabels(): BoardColumnLabels {
 	return {
-		columnAria: (label) => t("shell.sessionsAria", { label }),
+		columnAria: (label) => `${label} sessions`,
 	};
 }
 
@@ -145,15 +140,13 @@ function DesktopSessionCard({
 	session: WorkspaceSession;
 	usage?: SessionUsageSummary;
 }) {
-	const { t } = useTranslation();
 	const queryClient = useQueryClient();
 	const [confirmOpen, setConfirmOpen] = useState(false);
 	const summaries = sessionPRDisplaySummaries(session, useSessionScmSummary(session.id).data);
 	const termination = useTerminateSessionState(session.id);
 	const showTerminate = interactive && session.isTerminated !== true && onTerminate;
 	const keepTerminateVisible = session.status === "merged";
-	const usagePresentation = toUsagePresentation(usage, t);
-	const translate: ProductUITranslator = (key, values) => t(key as MessageKey, values);
+	const usagePresentation = toUsagePresentation(usage);
 	// The daemon reports a finished pre-PR session as "Awaiting PR". That text
 	// is replaced here with the delivery-stage actions: confirm a finished plan,
 	// or review the pending edit so the agent commits and waits on PR approval.
@@ -193,8 +186,8 @@ function DesktopSessionCard({
 							<button
 								aria-label={
 									termination.isPending
-										? t("shell.killingNamedAria", { title: session.title })
-										: t("shell.terminateNamed", { title: session.title })
+										? `Killing ${session.title}`
+										: `Terminate ${session.title}`
 								}
 								className={cn(
 									"inline-flex size-control-md items-center justify-center rounded-sm text-passive transition-[color,background-color,opacity] hover:bg-error/10 hover:text-error focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring/60",
@@ -223,7 +216,7 @@ function DesktopSessionCard({
 				</span>
 			</TooltipTrigger>
 			<TooltipContent side="bottom">
-				{termination.isPending ? t("shell.killingSession") : t("shell.terminateSession")}
+				{termination.isPending ? "Killing session" : "Terminate session"}
 			</TooltipContent>
 		</Tooltip>
 	) : undefined;
@@ -239,10 +232,10 @@ function DesktopSessionCard({
 			interactive={interactive}
 			labels={{
 				formatTime: formatTimeCompact,
-				intakeIssue: (id) => t("shell.intakeIssue", { id }),
-				pr: pullRequestLabels(t),
+				intakeIssue: (id) => `Intake issue: ${id}`,
+				pr: pullRequestLabels(),
 				updatedAt: (timestamp: string) =>
-					t("shell.lastMessageAt", { time: formatTimeCompact(timestamp) }),
+					`Last message ${formatTimeCompact(timestamp)}`,
 			}}
 			onOpen={onOpen}
 			overlay={terminationOverlay}
@@ -261,9 +254,8 @@ function DesktopSessionCard({
 				url: prBrowserUrl(pr),
 			}))}
 			renderAvatar={(provider) => <AgentAvatar provider={provider} />}
-			session={toBoardSessionPresentation(session, t)}
+			session={toBoardSessionPresentation(session)}
 			statusAction={statusAction}
-			translate={translate}
 			renderUsage={(usage) => (
 				<Tooltip>
 					<TooltipTrigger asChild>
@@ -293,28 +285,27 @@ function WorkflowStageActionButton({ label, onClick }: { label: string; onClick:
 	);
 }
 
-function pullRequestLabels(t: TFunction): BoardPullRequestLabels {
+function pullRequestLabels(): BoardPullRequestLabels {
 	return {
-		progress: (progress) => pullRequestProgressLabel(progress, t),
-		short: t("pr.short"),
+		progress: (progress) => pullRequestProgressLabel(progress),
+		short: "PR",
 		states: {
-			closed: t("pr.state.closed"),
-			draft: t("pr.state.draft"),
-			merged: t("pr.state.merged"),
-			open: t("pr.state.open"),
+			closed: "closed",
+			draft: "draft",
+			merged: "merged",
+			open: "open",
 		},
 	};
 }
 
 function pullRequestProgressLabel(
 	{ closed, draft, merged, open, total }: BoardPullRequestProgress,
-	t: TFunction,
 ): string {
 	return [
-		t("pr.progress.merged", { count: total, merged }),
-		open > 0 ? t("pr.progress.open", { count: open }) : undefined,
-		draft > 0 ? t("pr.progress.draft", { count: draft }) : undefined,
-		closed > 0 ? t("pr.progress.closed", { count: closed }) : undefined,
+		(total === 1 ? `${merged} of ${total} PR merged` : `${merged} of ${total} PRs merged`),
+		open > 0 ? (open === 1 ? `${open} open` : `${open} open`) : undefined,
+		draft > 0 ? (draft === 1 ? `${draft} draft` : `${draft} drafts`) : undefined,
+		closed > 0 ? (closed === 1 ? `${closed} closed` : `${closed} closed`) : undefined,
 	]
 		.filter((part): part is string => part !== undefined)
 		.join(" · ");
@@ -324,16 +315,13 @@ function pullRequestProgressLabel(
 // token summary remains available from the hover tooltip and to screen readers.
 function toUsagePresentation(
 	usage: SessionUsageSummary | undefined,
-	t: TFunction,
 ): BoardUsagePresentation | undefined {
 	const processedTokens = usage?.processedTokens ?? null;
 	if (!usage || processedTokens === null || processedTokens <= 0) {
 		return undefined;
 	}
 	const compactTokens = formatTokenCount(processedTokens).replace(/ tok$/, "");
-	const accessibleTokens = t("shell.usageTokens", {
-		count: processedTokens.toLocaleString("en-US"),
-	});
+	const accessibleTokens = `${processedTokens.toLocaleString("en-US")} tokens`;
 	return {
 		accessibleLabel: accessibleTokens,
 		compactLabel: compactTokens,
@@ -351,7 +339,6 @@ function ArchiveRestoreButton({
 	isRestoring: boolean;
 	isDisabled: boolean;
 }) {
-	const { t } = useTranslation();
 	return (
 		<Tooltip>
 			<TooltipTrigger asChild>
@@ -368,7 +355,7 @@ function ArchiveRestoreButton({
 				</span>
 			</TooltipTrigger>
 			<TooltipContent side="top">
-				{isRestoring ? t("shell.restoringSession") : t("shell.restoreSession")}
+				{isRestoring ? "Restoring session" : "Restore session"}
 			</TooltipContent>
 		</Tooltip>
 	);

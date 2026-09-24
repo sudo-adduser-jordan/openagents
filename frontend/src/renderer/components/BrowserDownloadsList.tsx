@@ -1,5 +1,4 @@
 import { Ban, Folder, FolderOpen, Pause, Play, Trash2, X } from "lucide-react";
-import { useTranslation } from "react-i18next";
 import type { BrowserDownload, BrowserDownloadAction } from "../../shared/browser-downloads";
 import { Button } from "./ui/button";
 import { cn } from "../lib/utils";
@@ -23,11 +22,10 @@ export function BrowserDownloadsList({
 	onAction: (id: string, action: BrowserDownloadAction) => void;
 	compact?: boolean;
 }) {
-	const { t } = useTranslation();
 	if (downloads.length === 0) {
 		return (
 			<>
-				<p className="px-3 py-6 text-center text-xs text-muted-foreground">{t("browser.downloads.empty")}</p>
+				<p className="px-3 py-6 text-center text-xs text-muted-foreground">{"No downloads yet"}</p>
 				{error ? <p className="px-3 py-2 text-xs text-destructive" role="alert">{error}</p> : null}
 			</>
 		);
@@ -44,10 +42,10 @@ export function BrowserDownloadsList({
 					download.status === "progressing" || download.status === "paused" || resumableInterrupted
 				);
 				const terminalStatus = download.status === "completed"
-					? t("browser.downloads.completed")
+					? "Completed"
 					: download.status === "cancelled"
-						? t("browser.downloads.cancelled")
-						: t("browser.downloads.interrupted");
+						? "Cancelled"
+						: "Interrupted";
 				return (
 					<div className={cn("min-w-0", compact ? "border-b border-border px-3 py-2.5 last:border-b-0" : "rounded-md border border-border bg-card px-3 py-3")} key={download.id}>
 						<div className="flex min-w-0 items-center gap-2">
@@ -61,27 +59,24 @@ export function BrowserDownloadsList({
 								<p className="mt-0.5 text-caption text-muted-foreground">
 									{active
 										? download.status === "interrupted"
-											? t("browser.downloads.interrupted")
-											: t(download.status === "paused" ? "browser.downloads.paused" : "browser.downloads.progress", {
-											received: formatBytes(download.receivedBytes),
-											total: download.totalBytes > 0 ? formatBytes(download.totalBytes) : t("browser.downloads.unknownSize"),
-										})
+											? "Interrupted"
+											: (download.status === "paused" ? `Paused · ${formatBytes(download.receivedBytes)} of ${download.totalBytes > 0 ? formatBytes(download.totalBytes) : "Unknown size"}` : `${formatBytes(download.receivedBytes)} of ${download.totalBytes > 0 ? formatBytes(download.totalBytes) : "Unknown size"}`)
 										: terminalStatus}
 								</p>
 							</div>
 							<div className="flex shrink-0 items-center gap-0.5">
 								{download.status === "progressing" ? (
-									<Button aria-label={t("browser.downloads.pause", { file: download.fileName })} onClick={() => onAction(download.id, "pause")} size="icon-sm" type="button" variant="ghost"><Pause aria-hidden="true" className="size-3.5" /></Button>
+									<Button aria-label={`Pause ${download.fileName}`} onClick={() => onAction(download.id, "pause")} size="icon-sm" type="button" variant="ghost"><Pause aria-hidden="true" className="size-3.5" /></Button>
 								) : download.status === "paused" || resumableInterrupted ? (
-									<Button aria-label={t("browser.downloads.resume", { file: download.fileName })} onClick={() => onAction(download.id, "resume")} size="icon-sm" type="button" variant="ghost"><Play aria-hidden="true" className="size-3.5" /></Button>
+									<Button aria-label={`Resume ${download.fileName}`} onClick={() => onAction(download.id, "resume")} size="icon-sm" type="button" variant="ghost"><Play aria-hidden="true" className="size-3.5" /></Button>
 								) : download.status === "completed" ? (
 									<>
-										<Button aria-label={t("browser.downloads.open", { file: download.fileName })} onClick={() => onAction(download.id, "open")} size="icon-sm" type="button" variant="ghost"><Folder aria-hidden="true" className="size-3.5" /></Button>
-										<Button aria-label={t("browser.downloads.show", { file: download.fileName })} onClick={() => onAction(download.id, "show")} size="icon-sm" type="button" variant="ghost"><FolderOpen aria-hidden="true" className="size-3.5" /></Button>
+										<Button aria-label={`Open ${download.fileName}`} onClick={() => onAction(download.id, "open")} size="icon-sm" type="button" variant="ghost"><Folder aria-hidden="true" className="size-3.5" /></Button>
+										<Button aria-label={`Show ${download.fileName} in File Explorer`} onClick={() => onAction(download.id, "show")} size="icon-sm" type="button" variant="ghost"><FolderOpen aria-hidden="true" className="size-3.5" /></Button>
 									</>
 								) : null}
 								<Button
-									aria-label={t(active ? "browser.downloads.cancel" : "browser.downloads.remove", { file: download.fileName })}
+									aria-label={(active ? `Cancel ${download.fileName}` : `Delete ${download.fileName} from computer`)}
 									onClick={() => onAction(download.id, active ? "cancel" : "remove")}
 									size="icon-sm"
 									type="button"
@@ -91,7 +86,7 @@ export function BrowserDownloadsList({
 								</Button>
 							</div>
 						</div>
-						{active ? <div aria-label={t("browser.downloads.progressLabel", { file: download.fileName })} aria-valuemax={100} aria-valuemin={0} aria-valuenow={Math.round(progress)} className="mt-2 h-1 overflow-hidden rounded-full bg-muted" role="progressbar"><div className="h-full rounded-full bg-accent transition-[width]" style={{ width: `${progress}%` }} /></div> : null}
+						{active ? <div aria-label={`Download progress for ${download.fileName}`} aria-valuemax={100} aria-valuemin={0} aria-valuenow={Math.round(progress)} className="mt-2 h-1 overflow-hidden rounded-full bg-muted" role="progressbar"><div className="h-full rounded-full bg-accent transition-[width]" style={{ width: `${progress}%` }} /></div> : null}
 					</div>
 				);
 			})}
