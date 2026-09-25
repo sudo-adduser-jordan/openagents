@@ -532,6 +532,6 @@ const api = {
 	},
 };
 
-contextBridge.exposeInMainWorld("open-agents", api);
+contextBridge.exposeInMainWorld("openAgents", api);
 
 export type OpenAgentsBridge = typeof api;

@@ -37,7 +37,7 @@ await import("./preload");
 const openFolderPathBufferListener = electronMocks.listeners.get("app:openFolderPath");
 
 function exposedBridge(): OpenAgentsBridge {
-	const call = electronMocks.exposeInMainWorld.mock.calls.find(([key]) => key === "open-agents");
+	const call = electronMocks.exposeInMainWorld.mock.calls.find(([key]) => key === "openAgents");
 	if (!call) throw new Error("preload bridge was not exposed");
 	return call[1] as OpenAgentsBridge;
 }
