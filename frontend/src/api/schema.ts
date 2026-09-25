@@ -1916,7 +1916,7 @@ export interface paths {
             path?: never;
             cookie?: never;
         };
-        /** List compact token and estimated cost usage for session cards */
+        /** List compact token usage for session cards */
         get: operations["listCompactSessionUsage"];
         put?: never;
         post?: never;
@@ -1933,7 +1933,7 @@ export interface paths {
             path?: never;
             cookie?: never;
         };
-        /** Get detailed token and estimated cost usage for one session */
+        /** Get detailed token usage for one session */
         get: operations["getSessionUsage"];
         put?: never;
         post?: never;

@@ -420,7 +420,7 @@ func TestApplyUsageChunkAtomicReplayAndTokenAggregates(t *testing.T) {
 	}
 }
 
-func TestApplyUsageChunkPersistsProviderSplitsAndPassiveCosts(t *testing.T) {
+func TestApplyUsageChunkPersistsProviderSplits(t *testing.T) {
 	dataDir := t.TempDir()
 	s := sqlitetest.MustOpenAt(t, dataDir)
 	ctx := context.Background()
@@ -440,7 +440,6 @@ func TestApplyUsageChunkPersistsProviderSplitsAndPassiveCosts(t *testing.T) {
 		State:           domain.UsageSourcePending,
 	})
 	fiveMinutes, oneHour := int64(7), int64(3)
-	inputCost, cachedInputCost, outputCost, totalCost := int64(24), int64(12), int64(14), int64(50)
 	providerUsage := anthropicProviderUsage(5, 10, &fiveMinutes, &oneHour)
 	event := domain.ModelUsageEvent{
 		ProviderID:        domain.UsageProviderAnthropic,
@@ -449,14 +448,7 @@ func TestApplyUsageChunkPersistsProviderSplitsAndPassiveCosts(t *testing.T) {
 		MeasurementKind:   domain.UsageMeasurementNativeReported,
 		Tokens:            canonicalUsageTokens(20, 5, 15, 4),
 		ProviderUsageJSON: providerUsage,
-		Costs: domain.UsageEventCosts{
-			InputCostNanos:       &inputCost,
-			CachedInputCostNanos: &cachedInputCost,
-			OutputCostNanos:      &outputCost,
-			EstimatedCostNanos:   &totalCost,
-			PricingVersion:       "catalog-v1",
-		},
-		SourceEventKey: "event-cost",
+		SourceEventKey:    "event-cost",
 	}
 	if err := s.ApplyUsageChunk(ctx, source.ID, 0, source.UpdatedAt, domain.SourceCursorState{
 		ByteOffset: 10, State: domain.UsageSourceActive, UpdatedAt: now,
@@ -469,27 +461,36 @@ func TestApplyUsageChunkPersistsProviderSplitsAndPassiveCosts(t *testing.T) {
 		t.Fatalf("open raw sqlite: %v", err)
 	}
 	t.Cleanup(func() { _ = raw.Close() })
-	var providerHint, billingProviderID, modelID, measurementKind, storedUsage, pricingVersion string
-	var gotInput, gotCachedInput, gotOutput, gotTotal int64
+	var providerHint, billingProviderID, modelID, measurementKind, storedUsage string
 	if err := raw.QueryRow(`
 SELECT ub.provider_hint, mue.billing_provider_id, mue.model_id,
-       mue.usage_measurement_kind, mue.provider_usage_json,
-       mue.input_cost_nanos, mue.cached_input_cost_nanos,
-       mue.output_cost_nanos, mue.estimated_cost_nanos, mue.pricing_version
+       mue.usage_measurement_kind, mue.provider_usage_json
 FROM model_usage_events mue
 JOIN usage_bindings ub ON ub.id = mue.binding_id
 WHERE mue.source_event_key = 'event-cost'`).Scan(
 		&providerHint, &billingProviderID, &modelID, &measurementKind, &storedUsage,
-		&gotInput, &gotCachedInput, &gotOutput, &gotTotal, &pricingVersion,
 	); err != nil {
-		t.Fatalf("read persisted source/cost facts: %v", err)
+		t.Fatalf("read persisted source facts: %v", err)
 	}
 	if providerHint != "anthropic" || billingProviderID != "source-provider" || modelID != "source-model" ||
-		measurementKind != string(domain.UsageMeasurementNativeReported) || storedUsage != providerUsage ||
-		gotInput != 24 || gotCachedInput != 12 ||
-		gotOutput != 14 || gotTotal != 50 || pricingVersion != "catalog-v1" {
-		t.Fatalf("persisted facts = hint:%q billing:%q model:%q kind:%q usage:%s costs:%d/%d/%d/%d version:%q",
-			providerHint, billingProviderID, modelID, measurementKind, storedUsage,
+		measurementKind != string(domain.UsageMeasurementNativeReported) || storedUsage != providerUsage {
+		t.Fatalf("persisted facts = hint:%q billing:%q model:%q kind:%q usage:%s",
+			providerHint, billingProviderID, modelID, measurementKind, storedUsage)
+	}
+	// The cost columns still exist in the table, but nothing writes them, so a
+	// fresh event must leave the estimates NULL and the version at its default.
+	var gotInput, gotCachedInput, gotOutput, gotTotal sql.NullInt64
+	var pricingVersion string
+	if err := raw.QueryRow(`
+SELECT input_cost_nanos, cached_input_cost_nanos, output_cost_nanos,
+       estimated_cost_nanos, pricing_version
+FROM model_usage_events WHERE source_event_key = 'event-cost'`).Scan(
+		&gotInput, &gotCachedInput, &gotOutput, &gotTotal, &pricingVersion,
+	); err != nil {
+		t.Fatalf("read cost columns: %v", err)
+	}
+	if gotInput.Valid || gotCachedInput.Valid || gotOutput.Valid || gotTotal.Valid || pricingVersion != "" {
+		t.Fatalf("cost columns were written: %v/%v/%v/%v version=%q",
 			gotInput, gotCachedInput, gotOutput, gotTotal, pricingVersion)
 	}
 	contextRow, ok, err := s.GetUsageSourceForIngestion(ctx, source.ID)
@@ -501,7 +502,7 @@ WHERE mue.source_event_key = 'event-cost'`).Scan(
 // Break caught: provider backfill could miss source-exact case/alias variants,
 // revisit the active version, include immutable zero totals, or process an
 // unbounded/non-deterministic page.
-func TestApplyUsageChunkReplayComparesNewSourceFactsButNotCosts(t *testing.T) {
+func TestApplyUsageChunkReplayComparesNewSourceFacts(t *testing.T) {
 	s := newTestStore(t)
 	ctx := context.Background()
 	sess := seedUsageSession(t, s, domain.HarnessOpenCode)
@@ -516,23 +517,15 @@ func TestApplyUsageChunkReplayComparesNewSourceFactsButNotCosts(t *testing.T) {
 		t.Fatalf("seed event: %v", err)
 	}
 
-	differentCost := int64(99)
-	replay := event
-	replay.Costs.EstimatedCostNanos = &differentCost
-	replay.Costs.PricingVersion = "later-version"
-	if err := s.ApplyUsageChunk(ctx, source.ID, 10, now, domain.SourceCursorState{ByteOffset: 20, State: domain.UsageSourceActive, UpdatedAt: now.Add(time.Second)}, []domain.ModelUsageEvent{replay}); err != nil {
-		t.Fatalf("cost-only replay conflict: %v", err)
-	}
-
 	providerConflict := event
 	providerConflict.BillingProviderID = "zai"
-	if err := s.ApplyUsageChunk(ctx, source.ID, 20, now.Add(time.Second), domain.SourceCursorState{ByteOffset: 30, State: domain.UsageSourceActive, UpdatedAt: now.Add(2 * time.Second)}, []domain.ModelUsageEvent{providerConflict}); !errors.Is(err, domain.ErrUsageSourceEventConflict) {
+	if err := s.ApplyUsageChunk(ctx, source.ID, 10, now, domain.SourceCursorState{ByteOffset: 30, State: domain.UsageSourceActive, UpdatedAt: now.Add(2 * time.Second)}, []domain.ModelUsageEvent{providerConflict}); !errors.Is(err, domain.ErrUsageSourceEventConflict) {
 		t.Fatalf("provider replay err = %v, want source conflict", err)
 	}
 	otherFiveMinutes, otherOneHour := int64(6), int64(4)
 	splitConflict := event
 	splitConflict.ProviderUsageJSON = anthropicProviderUsage(5, 10, &otherFiveMinutes, &otherOneHour)
-	if err := s.ApplyUsageChunk(ctx, source.ID, 20, now.Add(time.Second), domain.SourceCursorState{ByteOffset: 30, State: domain.UsageSourceActive, UpdatedAt: now.Add(2 * time.Second)}, []domain.ModelUsageEvent{splitConflict}); !errors.Is(err, domain.ErrUsageSourceEventConflict) {
+	if err := s.ApplyUsageChunk(ctx, source.ID, 10, now, domain.SourceCursorState{ByteOffset: 30, State: domain.UsageSourceActive, UpdatedAt: now.Add(2 * time.Second)}, []domain.ModelUsageEvent{splitConflict}); !errors.Is(err, domain.ErrUsageSourceEventConflict) {
 		t.Fatalf("split replay err = %v, want source conflict", err)
 	}
 
@@ -540,7 +533,7 @@ func TestApplyUsageChunkReplayComparesNewSourceFactsButNotCosts(t *testing.T) {
 	// enrichment rather than a conflict.
 	kindConflict := event
 	kindConflict.MeasurementKind = domain.UsageMeasurementUnknown
-	if err := s.ApplyUsageChunk(ctx, source.ID, 20, now.Add(time.Second), domain.SourceCursorState{ByteOffset: 30, State: domain.UsageSourceActive, UpdatedAt: now.Add(2 * time.Second)}, []domain.ModelUsageEvent{kindConflict}); !errors.Is(err, domain.ErrUsageSourceEventConflict) {
+	if err := s.ApplyUsageChunk(ctx, source.ID, 10, now, domain.SourceCursorState{ByteOffset: 30, State: domain.UsageSourceActive, UpdatedAt: now.Add(2 * time.Second)}, []domain.ModelUsageEvent{kindConflict}); !errors.Is(err, domain.ErrUsageSourceEventConflict) {
 		t.Fatalf("measurement kind replay err = %v, want source conflict", err)
 	}
 }
@@ -853,7 +846,6 @@ func TestUsageAggregatesMergeProvidersPerModel(t *testing.T) {
 	now := time.Unix(1700000000, 0).UTC()
 	sess := seedUsageSession(t, s, domain.HarnessOpenCode)
 	source := seedUsageSource(t, s, sess, now)
-	value := func(n int64) *int64 { return &n }
 	events := []domain.ModelUsageEvent{
 		{
 			ProviderID: domain.UsageProviderOpenAI, BillingProviderID: "openai",
@@ -861,10 +853,6 @@ func TestUsageAggregatesMergeProvidersPerModel(t *testing.T) {
 			ModelID:               "shared-model", SourceEventKey: "complete",
 			MeasurementKind: domain.UsageMeasurementNativeReported,
 			Tokens:          canonicalUsageTokens(10, 4, 6, 2),
-			Costs: domain.UsageEventCosts{
-				InputCostNanos: value(20), CachedInputCostNanos: value(10),
-				OutputCostNanos: value(70), EstimatedCostNanos: value(100), PricingVersion: "openai-v1",
-			},
 		},
 		{
 			ProviderID: domain.UsageProviderOpenAI, BillingProviderID: "zai",
@@ -872,10 +860,6 @@ func TestUsageAggregatesMergeProvidersPerModel(t *testing.T) {
 			ModelID:               "shared-model", SourceEventKey: "partial",
 			MeasurementKind: domain.UsageMeasurementNativeReported,
 			Tokens:          canonicalUsageTokens(5, 0, 5, 1),
-			Costs: domain.UsageEventCosts{
-				InputCostNanos: value(30), OutputCostNanos: value(5),
-				PricingVersion: "zai-v1",
-			},
 		},
 	}
 	if err := s.ApplyUsageChunk(ctx, source.ID, 0, source.UpdatedAt, domain.SourceCursorState{
@@ -1259,7 +1243,6 @@ func pricedCandidateEvent(key string) domain.ModelUsageEvent {
 	event.BillingProviderID = "openai"
 	event.BillingProviderSource = domain.UsageBillingProviderObserved
 	event.ModelID = "gpt-test"
-	event.Costs.PricingVersion = "catalog-v1"
 	return event
 }
 
@@ -1449,17 +1432,9 @@ func TestApplyUsageChunkPromotesRehomedInferenceToObservedProvider(t *testing.T)
 	now := time.Unix(1700000000, 0).UTC()
 	retired := seedUsageSource(t, s, sess, now)
 
-	anthropicInputCost, anthropicCachedCost, anthropicOutputCost, anthropicTotal := int64(11), int64(3), int64(5), int64(19)
 	inferred := anthropicUsageEvent("provider-promotion", 5, 10, 5, 4)
 	inferred.BillingProviderID = "anthropic"
 	inferred.BillingProviderSource = domain.UsageBillingProviderInferred
-	inferred.Costs = domain.UsageEventCosts{
-		InputCostNanos:       &anthropicInputCost,
-		CachedInputCostNanos: &anthropicCachedCost,
-		OutputCostNanos:      &anthropicOutputCost,
-		EstimatedCostNanos:   &anthropicTotal,
-		PricingVersion:       "anthropic-v1",
-	}
 	mustNoError(t, s.ApplyUsageChunk(ctx, retired.ID, 0, retired.UpdatedAt, domain.SourceCursorState{
 		ByteOffset: 10, State: domain.UsageSourceActive, UpdatedAt: now,
 	}, []domain.ModelUsageEvent{inferred}), "seed inferred Anthropic event")
@@ -1476,17 +1451,9 @@ func TestApplyUsageChunkPromotesRehomedInferenceToObservedProvider(t *testing.T)
 	}, now.Add(time.Second))
 	mustNoError(t, err, "replace source")
 
-	zaiInputCost, zaiCachedCost, zaiOutputCost, zaiTotal := int64(23), int64(3), int64(5), int64(31)
 	observed := inferred
 	observed.BillingProviderID = "zai"
 	observed.BillingProviderSource = domain.UsageBillingProviderObserved
-	observed.Costs = domain.UsageEventCosts{
-		InputCostNanos:       &zaiInputCost,
-		CachedInputCostNanos: &zaiCachedCost,
-		OutputCostNanos:      &zaiOutputCost,
-		EstimatedCostNanos:   &zaiTotal,
-		PricingVersion:       "zai-v2",
-	}
 	mustNoError(t, s.ApplyUsageChunk(ctx, replacement.ID, 0, replacement.UpdatedAt, domain.SourceCursorState{
 		ByteOffset: 10, State: domain.UsageSourceActive, UpdatedAt: now.Add(2 * time.Second),
 	}, []domain.ModelUsageEvent{observed}), "promote replayed event to observed Z.AI")
@@ -1494,22 +1461,17 @@ func TestApplyUsageChunkPromotesRehomedInferenceToObservedProvider(t *testing.T)
 	raw, err := sql.Open("sqlite", "file:"+filepath.Join(dataDir, "open-agents.db"))
 	mustNoError(t, err, "open raw sqlite")
 	t.Cleanup(func() { _ = raw.Close() })
-	var sourceID, inputCost, cachedCost, outputCost, total int64
-	var provider, providerSource, version string
+	var sourceID int64
+	var provider, providerSource string
 	mustNoError(t, raw.QueryRow(`
-SELECT usage_source_id, billing_provider_id, billing_provider_source,
-       input_cost_nanos, cached_input_cost_nanos, output_cost_nanos,
-       estimated_cost_nanos, pricing_version
+SELECT usage_source_id, billing_provider_id, billing_provider_source
 FROM model_usage_events
 WHERE source_event_key = 'provider-promotion'`).Scan(
-		&sourceID, &provider, &providerSource, &inputCost, &cachedCost, &outputCost, &total, &version,
+		&sourceID, &provider, &providerSource,
 	), "read promoted event")
-	if sourceID != replacement.ID || provider != "zai" || providerSource != "observed" ||
-		inputCost != zaiInputCost || cachedCost != zaiCachedCost || outputCost != zaiOutputCost ||
-		total != zaiTotal || version != "zai-v2" {
-		t.Fatalf("promoted event = source %d provider %q/%q costs %d/%d/%d/%d version %q; want source %d zai/observed costs %d/%d/%d/%d version zai-v2",
-			sourceID, provider, providerSource, inputCost, cachedCost, outputCost, total, version,
-			replacement.ID, zaiInputCost, zaiCachedCost, zaiOutputCost, zaiTotal)
+	if sourceID != replacement.ID || provider != "zai" || providerSource != "observed" {
+		t.Fatalf("promoted event = source %d provider %q/%q; want source %d zai/observed",
+			sourceID, provider, providerSource, replacement.ID)
 	}
 	open, err := s.HasOpenUsageAttribution(ctx, replacement.ID)
 	mustNoError(t, err, "check promoted attribution")

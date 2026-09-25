@@ -450,10 +450,8 @@ INSERT INTO model_usage_events (
     billing_provider_source, model_id, usage_measurement_kind,
     input_tokens, cached_input_tokens, uncached_input_tokens, output_tokens,
     provider_usage_json,
-    input_cost_nanos, cached_input_cost_nanos, output_cost_nanos,
-    estimated_cost_nanos, pricing_version,
     source_event_key, created_at
-) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
 RETURNING id
 `
 
@@ -470,15 +468,12 @@ type InsertModelUsageEventParams struct {
 	UncachedInputTokens   sql.NullInt64
 	OutputTokens          sql.NullInt64
 	ProviderUsageJson     sql.NullString
-	InputCostNanos        sql.NullInt64
-	CachedInputCostNanos  sql.NullInt64
-	OutputCostNanos       sql.NullInt64
-	EstimatedCostNanos    sql.NullInt64
-	PricingVersion        string
 	SourceEventKey        string
 	CreatedAt             sql.NullTime
 }
 
+// The cost columns exist in the table but are never written: the pricing
+// catalog that used to fill them is gone, and nothing recomputes them.
 func (q *Queries) InsertModelUsageEvent(ctx context.Context, arg InsertModelUsageEventParams) (int64, error) {
 	row := q.db.QueryRowContext(ctx, insertModelUsageEvent,
 		arg.BindingID,
@@ -493,11 +488,6 @@ func (q *Queries) InsertModelUsageEvent(ctx context.Context, arg InsertModelUsag
 		arg.UncachedInputTokens,
 		arg.OutputTokens,
 		arg.ProviderUsageJson,
-		arg.InputCostNanos,
-		arg.CachedInputCostNanos,
-		arg.OutputCostNanos,
-		arg.EstimatedCostNanos,
-		arg.PricingVersion,
 		arg.SourceEventKey,
 		arg.CreatedAt,
 	)
@@ -831,42 +821,26 @@ func (q *Queries) ListWatchableUsageSources(ctx context.Context) ([]UsageSource,
 const promoteInferredUsageEventToObserved = `-- name: PromoteInferredUsageEventToObserved :execrows
 UPDATE model_usage_events
 SET billing_provider_id = ?1,
-    billing_provider_source = 'observed',
-    input_cost_nanos = ?2,
-    cached_input_cost_nanos = ?3,
-    output_cost_nanos = ?4,
-    estimated_cost_nanos = ?5,
-    pricing_version = ?6
-WHERE id = ?7
-  AND usage_source_id = ?8
-  AND billing_provider_id = ?9
+    billing_provider_source = 'observed'
+WHERE id = ?2
+  AND usage_source_id = ?3
+  AND billing_provider_id = ?4
   AND billing_provider_source = 'inferred'
 `
 
 type PromoteInferredUsageEventToObservedParams struct {
 	BillingProviderID         sql.NullString
-	InputCostNanos            sql.NullInt64
-	CachedInputCostNanos      sql.NullInt64
-	OutputCostNanos           sql.NullInt64
-	EstimatedCostNanos        sql.NullInt64
-	PricingVersion            string
 	ID                        int64
 	ExpectedUsageSourceID     int64
 	ExpectedBillingProviderID sql.NullString
 }
 
-// A later observation supersedes an inferred billing provider and every cost
-// derived from that inference. ApplyUsageChunk rehomes replacement-generation
-// rows before this statement, so the source guard also prevents promotion on a
-// stale generation.
+// A later observation supersedes an inferred billing provider. ApplyUsageChunk
+// rehomes replacement-generation rows before this statement, so the source
+// guard also prevents promotion on a stale generation.
 func (q *Queries) PromoteInferredUsageEventToObserved(ctx context.Context, arg PromoteInferredUsageEventToObservedParams) (int64, error) {
 	result, err := q.db.ExecContext(ctx, promoteInferredUsageEventToObserved,
 		arg.BillingProviderID,
-		arg.InputCostNanos,
-		arg.CachedInputCostNanos,
-		arg.OutputCostNanos,
-		arg.EstimatedCostNanos,
-		arg.PricingVersion,
 		arg.ID,
 		arg.ExpectedUsageSourceID,
 		arg.ExpectedBillingProviderID,

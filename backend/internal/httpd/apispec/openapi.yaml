@@ -5973,7 +5973,7 @@ paths:
               schema:
                 $ref: '#/components/schemas/APIError'
           description: Not Implemented
-      summary: List compact token and estimated cost usage for session cards
+      summary: List compact token usage for session cards
       tags:
       - usage
   /api/v1/usage/sessions/{sessionId}:
@@ -6012,7 +6012,7 @@ paths:
               schema:
                 $ref: '#/components/schemas/APIError'
           description: Not Implemented
-      summary: Get detailed token and estimated cost usage for one session
+      summary: Get detailed token usage for one session
       tags:
       - usage
 components:

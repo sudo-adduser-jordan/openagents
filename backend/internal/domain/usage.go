@@ -169,28 +169,20 @@ type UsageTokenMetrics struct {
 	OutputTokens        *int64
 }
 
-// UsageEventCosts is the durable nano-USD estimate stored on one event. Every
-// field is nil until the event has been priced; a non-nil total is immutable.
-// InputCostNanos covers every non-cache-read input charge, cache writes
-// included, so reasoning and cache-write subsets are never charged twice.
-type UsageEventCosts struct {
-	InputCostNanos       *int64
-	CachedInputCostNanos *int64
-	OutputCostNanos      *int64
-	EstimatedCostNanos   *int64
-	PricingVersion       string
-}
-
 // ModelUsageEvent is one append-only normalized usage fact.
 //
 // ProviderID identifies the provider vocabulary into which token counters were
-// normalized. BillingProviderID identifies the exact catalog provider used for
-// pricing and is empty until attribution proves it; the two differ whenever an
+// normalized. BillingProviderID identifies the exact provider that answered and
+// is empty until attribution proves it; the two differ whenever an
 // Anthropic-vocabulary transcript is served by another provider such as z.ai.
 //
 // ProviderUsageJSON is the bounded usage object the CLI emitted, stored
 // verbatim so optional and future provider fields survive. It is empty when the
 // event predates the capture or the object exceeded its size bound.
+//
+// There is no cost on an event. The table still carries cost columns from when
+// a pricing catalog estimated them, but nothing writes or recomputes them, so
+// they are not part of this shape.
 type ModelUsageEvent struct {
 	ProviderID            UsageProviderID
 	BillingProviderID     string
@@ -199,7 +191,6 @@ type ModelUsageEvent struct {
 	MeasurementKind       UsageMeasurementKind
 	Tokens                UsageTokenMetrics
 	ProviderUsageJSON     string
-	Costs                 UsageEventCosts
 	CreatedAt             time.Time
 	SourceEventKey        string
 }

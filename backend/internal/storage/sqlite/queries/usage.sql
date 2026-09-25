@@ -233,15 +233,15 @@ FROM model_usage_events event
 WHERE event.binding_id = ? AND event.source_event_key = ?;
 
 -- name: InsertModelUsageEvent :one
+-- The cost columns exist in the table but are never written: the pricing
+-- catalog that used to fill them is gone, and nothing recomputes them.
 INSERT INTO model_usage_events (
     binding_id, usage_source_id, provider_id, billing_provider_id,
     billing_provider_source, model_id, usage_measurement_kind,
     input_tokens, cached_input_tokens, uncached_input_tokens, output_tokens,
     provider_usage_json,
-    input_cost_nanos, cached_input_cost_nanos, output_cost_nanos,
-    estimated_cost_nanos, pricing_version,
     source_event_key, created_at
-) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
 RETURNING id;
 
 -- name: RehomeOpenUsageEventToReplacementSource :execrows
@@ -271,18 +271,12 @@ WHERE model_usage_events.id = sqlc.arg(id)
   );
 
 -- name: PromoteInferredUsageEventToObserved :execrows
--- A later observation supersedes an inferred billing provider and every cost
--- derived from that inference. ApplyUsageChunk rehomes replacement-generation
--- rows before this statement, so the source guard also prevents promotion on a
--- stale generation.
+-- A later observation supersedes an inferred billing provider. ApplyUsageChunk
+-- rehomes replacement-generation rows before this statement, so the source
+-- guard also prevents promotion on a stale generation.
 UPDATE model_usage_events
 SET billing_provider_id = sqlc.arg(billing_provider_id),
-    billing_provider_source = 'observed',
-    input_cost_nanos = sqlc.narg(input_cost_nanos),
-    cached_input_cost_nanos = sqlc.narg(cached_input_cost_nanos),
-    output_cost_nanos = sqlc.narg(output_cost_nanos),
-    estimated_cost_nanos = sqlc.narg(estimated_cost_nanos),
-    pricing_version = sqlc.arg(pricing_version)
+    billing_provider_source = 'observed'
 WHERE id = sqlc.arg(id)
   AND usage_source_id = sqlc.arg(expected_usage_source_id)
   AND billing_provider_id = sqlc.arg(expected_billing_provider_id)

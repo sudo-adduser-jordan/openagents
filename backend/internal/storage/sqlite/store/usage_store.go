@@ -389,11 +389,6 @@ func (s *Store) ApplyUsageChunk(
 				if promoteAttribution {
 					rows, err := q.PromoteInferredUsageEventToObserved(ctx, gen.PromoteInferredUsageEventToObservedParams{
 						BillingProviderID:         stringOrNull(ev.BillingProviderID),
-						InputCostNanos:            ptrInt64ToNull(ev.Costs.InputCostNanos),
-						CachedInputCostNanos:      ptrInt64ToNull(ev.Costs.CachedInputCostNanos),
-						OutputCostNanos:           ptrInt64ToNull(ev.Costs.OutputCostNanos),
-						EstimatedCostNanos:        ptrInt64ToNull(ev.Costs.EstimatedCostNanos),
-						PricingVersion:            ev.Costs.PricingVersion,
 						ID:                        existing.ID,
 						ExpectedUsageSourceID:     sourceID,
 						ExpectedBillingProviderID: existing.BillingProviderID,
@@ -591,11 +586,6 @@ func usageEventInsertParams(source gen.GetUsageSourceWithBindingAndSessionRow, e
 		UncachedInputTokens:   ptrInt64ToNull(ev.Tokens.UncachedInputTokens),
 		OutputTokens:          ptrInt64ToNull(ev.Tokens.OutputTokens),
 		ProviderUsageJson:     stringOrNull(ev.ProviderUsageJSON),
-		InputCostNanos:        ptrInt64ToNull(ev.Costs.InputCostNanos),
-		CachedInputCostNanos:  ptrInt64ToNull(ev.Costs.CachedInputCostNanos),
-		OutputCostNanos:       ptrInt64ToNull(ev.Costs.OutputCostNanos),
-		EstimatedCostNanos:    ptrInt64ToNull(ev.Costs.EstimatedCostNanos),
-		PricingVersion:        ev.Costs.PricingVersion,
 		SourceEventKey:        ev.SourceEventKey,
 		CreatedAt:             sql.NullTime{Time: ev.CreatedAt.UTC(), Valid: !ev.CreatedAt.IsZero()},
 	}
