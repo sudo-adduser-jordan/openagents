@@ -79,19 +79,29 @@ func TestReviewCommandUsesReadOnlyPermissionPolicy(t *testing.T) {
 func TestReviewCommandKeepsSystemPromptFileOutOfVisiblePrompt(t *testing.T) {
 	agent := &captureAgent{}
 	r := &Reviewer{agent: agent}
-	taskPromptRoot := filepath.Join("open-agents", "prompts", "reviewer")
+	root := t.TempDir()
+	taskPromptRoot := filepath.Join(root, "prompts", "reviewer")
 	taskPromptFile := filepath.Join(taskPromptRoot, "requests", "batch-1", "run-1", "task.md")
+	systemPromptFile := filepath.Join(taskPromptRoot, "system.md")
+	if err := os.MkdirAll(taskPromptRoot, 0o700); err != nil {
+		t.Fatalf("create reviewer prompt dir: %v", err)
+	}
+	if err := os.WriteFile(systemPromptFile, []byte("reviewer role\n"), 0o600); err != nil {
+		t.Fatalf("write system prompt: %v", err)
+	}
 
 	got, err := r.ReviewCommand(context.Background(), ports.ReviewInvocation{
 		Prompt:           "Start the Open Agents review task.",
-		SystemPromptFile: "/open-agents/prompts/reviewer/system.md",
+		SystemPromptFile: systemPromptFile,
 		TaskPromptFile:   taskPromptFile,
 		TaskPromptRoot:   taskPromptRoot,
 	})
 	if err != nil {
 		t.Fatalf("ReviewCommand: %v", err)
 	}
-	if agent.got.Prompt != "Start the Open Agents review task." || agent.got.SystemPrompt != "" || agent.got.SystemPromptFile != "/open-agents/prompts/reviewer/system.md" {
+	// The system prompt is delivered as the launch's SystemPrompt, never spliced
+	// into the task text the reviewer reads in its terminal.
+	if agent.got.Prompt != "Start the Open Agents review task." || agent.got.SystemPrompt != "reviewer role" || agent.got.SystemPromptFile != systemPromptFile {
 		t.Fatalf("launch config = %+v", agent.got)
 	}
 	var config struct {
@@ -204,10 +214,9 @@ func TestReviewCommandBuildsBothOpenCodeConfigSources(t *testing.T) {
 	if err != nil {
 		t.Fatalf("ReviewCommand: %v", err)
 	}
-	configPath := filepath.Join(promptDir, "opencode.json")
 	joinedArgv := strings.Join(spec.Argv, "\n")
 	for _, want := range []string{
-		"OPENCODE_CONFIG=" + configPath,
+		"OPENCODE_CONFIG_CONTENT=",
 		"--agent\nopen-agents-review-w1",
 		"--prompt\nRead the Open Agents review task.",
 	} {
@@ -215,16 +224,17 @@ func TestReviewCommandBuildsBothOpenCodeConfigSources(t *testing.T) {
 			t.Fatalf("argv missing %q: %#v", want, spec.Argv)
 		}
 	}
-	generated, err := os.ReadFile(configPath)
-	if err != nil {
-		t.Fatalf("read generated opencode config: %v", err)
+	// The reviewer's own read-only permission block and the session's agent both
+	// travel as overlay content; no config file is generated next to the prompt.
+	inline := spec.Env["OPENCODE_CONFIG_CONTENT"]
+	if !strings.Contains(inline, `"external_directory"`) || !strings.Contains(inline, `"permission"`) {
+		t.Fatalf("inline reviewer config = %s", inline)
 	}
-	if !strings.Contains(string(generated), `"prompt": "{file:./system.md}"`) {
-		t.Fatalf("generated prompt config = %s", generated)
+	if !strings.Contains(joinedArgv, "review system prompt") {
+		t.Fatalf("argv missing the reviewer system prompt from its prompt file: %#v", spec.Argv)
 	}
-	if !strings.Contains(spec.Env["OPENCODE_CONFIG_CONTENT"], `"external_directory"`) ||
-		!strings.Contains(spec.Env["OPENCODE_CONFIG_CONTENT"], `"permission"`) {
-		t.Fatalf("inline reviewer config = %s", spec.Env["OPENCODE_CONFIG_CONTENT"])
+	if _, err := os.Stat(filepath.Join(promptDir, "opencode.json")); !os.IsNotExist(err) {
+		t.Fatalf("reviewer wrote an opencode.json beside the prompt: %v", err)
 	}
 }
 

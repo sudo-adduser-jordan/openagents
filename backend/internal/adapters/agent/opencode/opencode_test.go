@@ -404,7 +404,11 @@ func TestResolveOpenCodeBinaryContextCanceled(t *testing.T) {
 
 func TestGetLaunchCommandBuildsArgv(t *testing.T) {
 	plugin := &Plugin{resolvedBinary: "opencode"}
-	promptFile := filepath.Join(t.TempDir(), "system.md")
+	promptDir := t.TempDir()
+	promptFile := filepath.Join(promptDir, "system.md")
+	if err := os.WriteFile(promptFile, []byte("follow Open Agents rules"), 0o600); err != nil {
+		t.Fatal(err)
+	}
 
 	cmd, err := plugin.GetLaunchCommand(context.Background(), ports.LaunchConfig{
 		Permissions:      ports.PermissionModeBypassPermissions,
@@ -417,9 +421,15 @@ func TestGetLaunchCommandBuildsArgv(t *testing.T) {
 		t.Fatal(err)
 	}
 
-	configPath := filepath.Join(filepath.Dir(promptFile), "opencode.json")
+	if len(cmd) < 2 || cmd[0] != "env" {
+		t.Fatalf("expected an env prefix, got %#v", cmd)
+	}
+	assignment, ok := strings.CutPrefix(cmd[1], opencodeConfigContentEnvVar+"=")
+	if !ok {
+		t.Fatalf("expected %s assignment, got %q", opencodeConfigContentEnvVar, cmd[1])
+	}
 	want := []string{
-		"env", "OPENCODE_CONFIG=" + configPath,
+		"env", cmd[1],
 		"opencode",
 		"--dangerously-skip-permissions",
 		"--agent", "open-agents-sess-1",
@@ -428,23 +438,41 @@ func TestGetLaunchCommandBuildsArgv(t *testing.T) {
 	if !reflect.DeepEqual(cmd, want) {
 		t.Fatalf("unexpected command\nwant: %#v\n got: %#v", want, cmd)
 	}
-	var config opencodeInlineConfig
-	data, err := os.ReadFile(configPath)
-	if err != nil {
-		t.Fatal(err)
+
+	var config struct {
+		Agent        map[string]opencodeAgentSettings `json:"agent"`
+		DefaultAgent string                           `json:"default_agent"`
+		Schema       string                           `json:"$schema"`
 	}
-	if err := json.Unmarshal(data, &config); err != nil {
+	if err := json.Unmarshal([]byte(assignment), &config); err != nil {
 		t.Fatal(err)
 	}
 	agent := config.Agent["open-agents-sess-1"]
 	if agent.Mode != "primary" || agent.Prompt != "follow Open Agents rules" {
 		t.Fatalf("agent config = %#v, want primary inline prompt", agent)
 	}
+	if config.DefaultAgent != "open-agents-sess-1" {
+		t.Fatalf("default_agent = %q, want the generated agent", config.DefaultAgent)
+	}
+
+	// The overlay is content, not a generated file. Writing one behind
+	// OPENCODE_CONFIG would displace the user's own ~/.config/opencode config.
+	if _, err := os.Stat(filepath.Join(promptDir, "opencode.json")); !os.IsNotExist(err) {
+		t.Fatalf("adapter wrote an opencode.json beside the prompt: %v", err)
+	}
+	entries, err := os.ReadDir(promptDir)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if len(entries) != 1 || entries[0].Name() != "system.md" {
+		t.Fatalf("prompt dir = %v, want only system.md", entries)
+	}
 }
 
-func TestGetLaunchCommandSystemPromptFileConfig(t *testing.T) {
+func TestGetLaunchCommandWithoutSystemPromptOmitsOverlay(t *testing.T) {
 	plugin := &Plugin{resolvedBinary: "opencode"}
-	promptFile := filepath.Join(t.TempDir(), "system.md")
+	promptDir := t.TempDir()
+	promptFile := filepath.Join(promptDir, "system.md")
 
 	cmd, err := plugin.GetLaunchCommand(context.Background(), ports.LaunchConfig{
 		SessionID:        "sess-2",
@@ -454,21 +482,11 @@ func TestGetLaunchCommandSystemPromptFileConfig(t *testing.T) {
 		t.Fatal(err)
 	}
 
-	configPath := filepath.Join(filepath.Dir(promptFile), "opencode.json")
-	want := []string{"env", "OPENCODE_CONFIG=" + configPath, "opencode", "--agent", "open-agents-sess-2"}
+	// The prompt file alone no longer produces a config: the prompt reaches the
+	// harness inline, so an absent prompt means no agent to select.
+	want := []string{"opencode"}
 	if !reflect.DeepEqual(cmd, want) {
 		t.Fatalf("unexpected command\nwant: %#v\n got: %#v", want, cmd)
-	}
-	var config opencodeInlineConfig
-	data, err := os.ReadFile(configPath)
-	if err != nil {
-		t.Fatal(err)
-	}
-	if err := json.Unmarshal(data, &config); err != nil {
-		t.Fatal(err)
-	}
-	if got := config.Agent["open-agents-sess-2"].Prompt; got != "{file:./system.md}" {
-		t.Fatalf("agent prompt = %q, want file reference", got)
 	}
 }
 
@@ -881,9 +899,15 @@ func TestGetRestoreCommandReappliesSystemPromptConfig(t *testing.T) {
 	if !ok {
 		t.Fatal("ok = false, want true")
 	}
-	configPath := filepath.Join(filepath.Dir(promptFile), "opencode.json")
+	if len(cmd) < 2 || cmd[0] != "env" {
+		t.Fatalf("expected an env prefix, got %#v", cmd)
+	}
+	assignment, ok := strings.CutPrefix(cmd[1], opencodeConfigContentEnvVar+"=")
+	if !ok {
+		t.Fatalf("expected %s assignment, got %q", opencodeConfigContentEnvVar, cmd[1])
+	}
 	want := []string{
-		"env", "OPENCODE_CONFIG=" + configPath,
+		"env", cmd[1],
 		"opencode",
 		"--agent", "open-agents-sess-1",
 		"--session", "ses_abc123",
@@ -891,12 +915,10 @@ func TestGetRestoreCommandReappliesSystemPromptConfig(t *testing.T) {
 	if !reflect.DeepEqual(cmd, want) {
 		t.Fatalf("restore cmd\nwant: %#v\n got: %#v", want, cmd)
 	}
-	var config opencodeInlineConfig
-	data, err := os.ReadFile(configPath)
-	if err != nil {
-		t.Fatal(err)
+	var config struct {
+		Agent map[string]opencodeAgentSettings `json:"agent"`
 	}
-	if err := json.Unmarshal(data, &config); err != nil {
+	if err := json.Unmarshal([]byte(assignment), &config); err != nil {
 		t.Fatal(err)
 	}
 	if got := config.Agent["open-agents-sess-1"].Prompt; got != "restore Open Agents rules" {

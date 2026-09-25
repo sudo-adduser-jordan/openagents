@@ -855,7 +855,7 @@ func (m *Manager) Spawn(ctx context.Context, cfg ports.SpawnConfig) (domain.Sess
 	}
 	m.markFreshSessionStatusReady(rec.ID)
 	id := rec.ID
-	systemPromptFile, err := m.prepareSystemPromptFile(id, cfg.Harness, systemPrompt)
+	systemPromptFile, err := m.prepareSystemPromptFile(id, systemPrompt)
 	if err != nil {
 		m.rollbackSpawnSeedRowAfterFailure(ctx, id)
 		return domain.SessionRecord{}, 0, 0, wrapSpawnStage(id, ErrSpawnSystemPrompt, err)
@@ -2358,7 +2358,7 @@ func (m *Manager) relaunchSessionWithPolicy(
 	if err != nil {
 		return RestoreResult{}, fmt.Errorf("%s %s: system prompt: %w", operation, rec.ID, err)
 	}
-	systemPromptFile, err := m.prepareSystemPromptFile(rec.ID, rec.Harness, systemPrompt)
+	systemPromptFile, err := m.prepareSystemPromptFile(rec.ID, systemPrompt)
 	if err != nil {
 		m.cleanupSystemPromptDir(rec.ID)
 		return RestoreResult{}, fmt.Errorf("%s %s: system prompt file: %w", operation, rec.ID, err)
@@ -4191,25 +4191,17 @@ func (m *Manager) writeSystemPromptFile(id domain.SessionID, systemPrompt string
 	return path, nil
 }
 
-func (m *Manager) prepareSystemPromptFile(id domain.SessionID, harness domain.AgentHarness, systemPrompt string) (string, error) {
+// prepareSystemPromptFile writes system.md next to the session's other prompt
+// artifacts. The file is a debug and support artifact only: every harness
+// receives the prompt inline, so a write failure is logged and the spawn
+// continues rather than failing a session that could have run.
+func (m *Manager) prepareSystemPromptFile(id domain.SessionID, systemPrompt string) (string, error) {
 	path, err := m.writeSystemPromptFile(id, systemPrompt)
 	if err == nil || path != "" {
 		return path, err
 	}
-	if systemPromptFileRequired(harness) {
-		return "", err
-	}
-	m.logger.Warn("system prompt file unavailable; falling back to inline system prompt", "session", id, "harness", harness, "err", err)
+	m.logger.Warn("system prompt file unavailable; the session prompt is delivered inline", "session", id, "err", err)
 	return "", nil
-}
-
-func systemPromptFileRequired(harness domain.AgentHarness) bool {
-	switch harness {
-	case domain.HarnessOpenCode:
-		return true
-	default:
-		return false
-	}
 }
 
 func (m *Manager) systemPromptDir(id domain.SessionID) string {

@@ -97,12 +97,13 @@ func (p *Plugin) GetConfigSpec(ctx context.Context) (ports.ConfigSpec, error) {
 // GetLaunchCommand builds the argv to start a new interactive opencode session.
 // Shape:
 //
-//	[env OPENCODE_CONFIG=<open-agents-config>] opencode [--dangerously-skip-permissions] [--agent <open-agents-agent>] [--prompt <prompt>]
+//	[env OPENCODE_CONFIG_CONTENT=<overlay>] opencode [--dangerously-skip-permissions] [--agent <open-agents-agent>] [--prompt <prompt>]
 //
 // The session runs in the worktree (cwd is set by the runtime, as for Codex).
-// opencode has no CLI flag to set a system prompt, so Open Agents writes
-// an opencode config into the Open Agents prompt artifact directory, points OPENCODE_CONFIG
-// at it, and selects the generated agent with --agent. The initial task prompt
+// opencode has no CLI flag to set a system prompt, so Open Agents carries the
+// session's generated agent in an OPENCODE_CONFIG_CONTENT overlay and selects
+// it with --agent. The overlay is content, not a config path, so the user's own
+// ~/.config/opencode config stays the base layer. The initial task prompt
 // is delivered via --prompt (its argument, so a leading "-" is not read as a flag).
 func (p *Plugin) GetLaunchCommand(ctx context.Context, cfg ports.LaunchConfig) (cmd []string, err error) {
 	binary, err := p.opencodeBinary(ctx)
@@ -110,9 +111,13 @@ func (p *Plugin) GetLaunchCommand(ctx context.Context, cfg ports.LaunchConfig) (
 		return nil, err
 	}
 
-	envPrefix, agentName, err := opencodeConfigEnvPrefix(cfg.SystemPrompt, cfg.SystemPromptFile, cfg.SessionID)
+	content, agentName, err := sessionConfigContent(cfg.SystemPrompt, cfg.SessionID)
 	if err != nil {
 		return nil, err
+	}
+	var envPrefix []string
+	if content != "" {
+		envPrefix = []string{"env", opencodeConfigContentEnvVar + "=" + content}
 	}
 	cmd = envPrefix
 	cmd = append(cmd, binary)
@@ -128,7 +133,7 @@ func (p *Plugin) GetLaunchCommand(ctx context.Context, cfg ports.LaunchConfig) (
 }
 
 // GetRestoreCommand rebuilds the argv that continues an existing opencode
-// session: `[env OPENCODE_CONFIG=<open-agents-config>] opencode [--dangerously-skip-permissions] [--agent <open-agents-agent>] --session <agentSessionId> [--prompt <prompt>]`.
+// session: `[env OPENCODE_CONFIG_CONTENT=<overlay>] opencode [--dangerously-skip-permissions] [--agent <open-agents-agent>] --session <agentSessionId> [--prompt <prompt>]`.
 // It re-applies the permission flag and the generated Open Agents agent config (resume
 // otherwise reverts to configured defaults). ok is false when the plugin-derived
 // native session id has not landed yet, so callers fall back to fresh launch
@@ -150,9 +155,13 @@ func (p *Plugin) GetRestoreCommand(ctx context.Context, cfg ports.RestoreConfig)
 		return nil, false, err
 	}
 
-	envPrefix, agentName, err := opencodeConfigEnvPrefix(cfg.SystemPrompt, cfg.SystemPromptFile, cfg.Session.ID)
+	content, agentName, err := sessionConfigContent(cfg.SystemPrompt, cfg.Session.ID)
 	if err != nil {
 		return nil, false, err
+	}
+	var envPrefix []string
+	if content != "" {
+		envPrefix = []string{"env", opencodeConfigContentEnvVar + "=" + content}
 	}
 	cmd = envPrefix
 	cmd = append(cmd, binary)
@@ -376,53 +385,32 @@ func appendPermissionFlags(cmd *[]string, permissions ports.PermissionMode) {
 	}
 }
 
-const opencodeConfigEnvVar = "OPENCODE_CONFIG"
-
-type opencodeInlineConfig struct {
-	Schema string                           `json:"$schema,omitempty"`
-	Agent  map[string]opencodeAgentSettings `json:"agent,omitempty"`
-}
-
 type opencodeAgentSettings struct {
 	Mode   string `json:"mode,omitempty"`
 	Prompt string `json:"prompt,omitempty"`
 }
 
-func opencodeConfigEnvPrefix(inlinePrompt, promptFile, sessionID string) ([]string, string, error) {
-	if inlinePrompt == "" && promptFile == "" {
-		return nil, "", nil
+const opencodeConfigContentEnvVar = "OPENCODE_CONFIG_CONTENT"
+
+// sessionConfigContent builds the OpenCode config overlay that carries this
+// session's generated primary agent, returning the overlay and the agent name
+// the caller must pass as --agent.
+//
+// The overlay is delivered as content rather than as a generated file behind
+// OPENCODE_CONFIG. OPENCODE_CONFIG names a config *location*, so pointing it at
+// an Open Agents-owned file displaces the user's own ~/.config/opencode config
+// -- the one holding their providers, credentials and permission rules. Content
+// is additive, so the user's config stays the base layer and Open Agents only
+// contributes the session's agent.
+func sessionConfigContent(systemPrompt, sessionID string) (string, string, error) {
+	if strings.TrimSpace(systemPrompt) == "" {
+		return "", "", nil
 	}
-	if promptFile == "" {
-		return nil, "", fmt.Errorf("opencode: system prompt file required to build agent config")
-	}
-	agentName := opencodeOpenAgentsAgentName(sessionID)
-	prompt := inlinePrompt
-	if prompt == "" {
-		prompt = "{file:./" + filepath.Base(promptFile) + "}"
-	}
-	dir := filepath.Dir(promptFile)
-	configPath := filepath.Join(dir, "opencode.json")
-	config := opencodeInlineConfig{
-		Schema: "https://opencode.ai/config.json",
-		Agent: map[string]opencodeAgentSettings{
-			agentName: {
-				Mode:   "primary",
-				Prompt: prompt,
-			},
-		},
-	}
-	data, err := json.MarshalIndent(config, "", "  ")
+	content, err := PrepareACPConfigContent("", systemPrompt, sessionID, ports.PermissionModeDefault)
 	if err != nil {
-		return nil, "", err
+		return "", "", err
 	}
-	data = append(data, '\n')
-	if err := os.MkdirAll(dir, 0o700); err != nil {
-		return nil, "", fmt.Errorf("opencode: create prompt config dir: %w", err)
-	}
-	if err := hookutil.AtomicWriteFile(configPath, data, 0o600); err != nil {
-		return nil, "", fmt.Errorf("opencode: write prompt config: %w", err)
-	}
-	return []string{"env", opencodeConfigEnvVar + "=" + configPath}, agentName, nil
+	return content, opencodeOpenAgentsAgentName(sessionID), nil
 }
 
 // PrepareACPConfigContent merges Open Agents's standing instructions and any explicit

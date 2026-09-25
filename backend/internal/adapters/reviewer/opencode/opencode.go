@@ -5,6 +5,7 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
+	"os"
 	"path/filepath"
 	"strings"
 	"time"
@@ -40,14 +41,27 @@ var _ ports.ReviewerRestorer = (*Reviewer)(nil)
 // Open Agents-owned prompt file; direct callers without one retain the inline fallback.
 func (r *Reviewer) ReviewCommand(ctx context.Context, inv ports.ReviewInvocation) (ports.ReviewCommandSpec, error) {
 	prompt := inv.Prompt
-	if inv.SystemPromptFile == "" {
-		prompt = strings.TrimSpace(inv.SystemPrompt + "\n\n" + inv.Prompt)
+	// The prompt file is authoritative when one is provided; the inline prompt is
+	// only a fallback for direct callers without one. Open Agents carries the
+	// system prompt inline in the config overlay rather than behind a generated
+	// config file, so read the file here instead of leaving the reviewer to run
+	// on whatever agent opencode picks by default.
+	systemPrompt := strings.TrimSpace(inv.SystemPrompt)
+	if inv.SystemPromptFile != "" {
+		data, err := os.ReadFile(inv.SystemPromptFile)
+		if err != nil {
+			return ports.ReviewCommandSpec{}, fmt.Errorf("read reviewer system prompt: %w", err)
+		}
+		systemPrompt = strings.TrimSpace(string(data))
+	} else {
+		prompt = systemPrompt + "\n\n" + inv.Prompt
 	}
 	argv, err := r.agent.GetLaunchCommand(ctx, ports.LaunchConfig{
 		Config:           inv.Config,
 		SessionID:        inv.ReviewerID,
 		WorkspacePath:    inv.WorkspacePath,
 		Prompt:           prompt,
+		SystemPrompt:     systemPrompt,
 		SystemPromptFile: inv.SystemPromptFile,
 		Permissions:      ports.PermissionModeAuto,
 	})

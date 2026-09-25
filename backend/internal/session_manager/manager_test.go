@@ -4548,7 +4548,9 @@ func TestSpawnWorker_WritesSystemPromptFile(t *testing.T) {
 	}
 }
 
-func TestSpawnWorker_PromptFileFailureBlocksFileOnlyHarness(t *testing.T) {
+// The on-disk system.md is a debug artifact: every harness receives the prompt
+// inline, so a write failure must not take down a spawn that could otherwise run.
+func TestSpawnWorker_PromptFileFailureDoesNotBlockSpawn(t *testing.T) {
 	st := newFakeStore()
 	agent := &recordingAgent{}
 	dataDir := blockedDataDir(t)
@@ -4564,15 +4566,15 @@ func TestSpawnWorker_PromptFileFailureBlocksFileOnlyHarness(t *testing.T) {
 		LookPath:  lookPath,
 	})
 
-	_, _, _, err := m.Spawn(ctx, ports.SpawnConfig{ProjectID: "mer", Kind: domain.KindWorker, Harness: domain.HarnessOpenCode, Prompt: "do it"})
-	if err == nil {
-		t.Fatal("Spawn succeeded, want prompt-file error for file-only harness")
+	rec, _, _, err := m.Spawn(ctx, ports.SpawnConfig{ProjectID: "mer", Kind: domain.KindWorker, Harness: domain.HarnessOpenCode, Prompt: "do it"})
+	if err != nil {
+		t.Fatalf("Spawn err = %v, want success despite the unwritable prompt artifact dir", err)
 	}
-	if !strings.Contains(err.Error(), "system prompt file") {
-		t.Fatalf("Spawn err = %v, want system prompt file error", err)
+	if rec.ID == "" {
+		t.Fatal("Spawn returned no session")
 	}
-	if _, ok := st.sessions["mer-1"]; ok {
-		t.Fatal("seed row still exists after prompt-file failure")
+	if _, ok := st.sessions[rec.ID]; !ok {
+		t.Fatalf("session %s missing after a prompt-file failure", rec.ID)
 	}
 }
 
@@ -4836,7 +4838,8 @@ func TestRestore_ManagerRederivesSystemPrompt(t *testing.T) {
 	}
 }
 
-func TestRestore_PromptFileFailureBlocksFileOnlyHarness(t *testing.T) {
+// Restore carries the same contract as Spawn: the prompt artifact is optional.
+func TestRestore_PromptFileFailureDoesNotBlockRestore(t *testing.T) {
 	st := newFakeStore()
 	st.sessions["mer-1"] = domain.SessionRecord{
 		ID: "mer-1", ProjectID: "mer", Kind: domain.KindWorker, Harness: domain.HarnessOpenCode, IsTerminated: true,
@@ -4856,12 +4859,8 @@ func TestRestore_PromptFileFailureBlocksFileOnlyHarness(t *testing.T) {
 		LookPath:  lookPath,
 	})
 
-	_, err := m.RestoreWithMode(ctx, "mer-1")
-	if err == nil {
-		t.Fatal("Restore succeeded, want prompt-file error for file-only harness")
-	}
-	if !strings.Contains(err.Error(), "system prompt file") {
-		t.Fatalf("Restore err = %v, want system prompt file error", err)
+	if _, err := m.RestoreWithMode(ctx, "mer-1"); err != nil {
+		t.Fatalf("Restore err = %v, want success despite the unwritable prompt artifact dir", err)
 	}
 }
 
