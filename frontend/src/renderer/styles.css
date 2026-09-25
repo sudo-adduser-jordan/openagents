@@ -1240,7 +1240,7 @@ button.settings-row-bar {
 	}
 }
 
-/* Segmented control — ReportProblem destination picker, ConnectMobile LAN/Tailscale. */
+/* Segmented control — ReportProblem destination picker. */
 @utility settings-segment {
 	display: inline-flex;
 	align-items: center;
@@ -1277,18 +1277,6 @@ button.settings-row-bar {
 	&[data-state="checked"] {
 		background-color: var(--color-bg-settings-menu-selected);
 		color: var(--color-text-settings-title);
-	}
-}
-
-@utility settings-mobile-steps {
-	list-style-type: decimal;
-	padding-left: var(--space-4);
-	font-size: var(--font-size-caption);
-	line-height: var(--leading-settings-mobile-hint);
-	color: var(--color-text-settings-muted);
-
-	& > li + li {
-		margin-top: calc(var(--spacing) * 1.5);
 	}
 }
 
@@ -5355,101 +5343,4 @@ html[data-native-browser-composition="true"] .browser-popout-frame {
 @utility reviews-agent-menu-item {
 	padding-inline: var(--space-2_5);
 	padding-block: var(--space-2);
-}
-
-/* Connect Mobile: the pairing QR and the wait before it. The placeholder is a
-   real QR carrying decoy data, so it can dissolve into the finished code
-   instead of being swapped for it. See PairingQr.tsx. */
-/* The library's SVG includes a generous quiet zone. Enlarge the artwork
-   inside the fixed card so the preview and the finished code share the same
-   visible bounds while the card still supplies the clipping edge. */
-.open-agents-qr-visual > svg {
-	transform: scale(0.885);
-	transform-origin: center;
-}
-
-/* A triangular ramp occupying half the cycle. With four layers offset by a
-   quarter cycle, two are always mid-ramp in opposite directions, so the
-   composite dissolves continuously instead of swapping one code for the next. */
-@keyframes open-agents-qr-decoy-cycle {
-	0% {
-		opacity: 0;
-	}
-	25% {
-		opacity: 0.5;
-	}
-	50% {
-		opacity: 0;
-	}
-	100% {
-		opacity: 0;
-	}
-}
-
-/* A slow wander, so the panel reads as working rather than frozen. Small
-   enough that it never looks like a layout bug. */
-@keyframes open-agents-qr-drift {
-	0%,
-	100% {
-		transform: translate3d(0, 0, 0);
-	}
-	25% {
-		transform: translate3d(-3px, 2px, 0);
-	}
-	50% {
-		transform: translate3d(2px, -3px, 0);
-	}
-	75% {
-		transform: translate3d(3px, 2px, 0);
-	}
-}
-
-@keyframes open-agents-qr-resolve-in {
-	from {
-		opacity: 0;
-		filter: blur(4px);
-	}
-	to {
-		opacity: 1;
-		filter: blur(0);
-	}
-}
-
-@keyframes open-agents-qr-decoy-settle {
-	to {
-		opacity: 0;
-		filter: blur(4px);
-	}
-}
-
-.open-agents-qr-decoy {
-	opacity: 0;
-	animation: open-agents-qr-decoy-cycle 4800ms linear infinite;
-}
-
-.open-agents-qr-drift {
-	animation: open-agents-qr-drift 9s ease-in-out infinite;
-}
-
-/* The real code has arrived: stop cycling and clear away together. */
-.open-agents-qr-decoy--settling {
-	animation: open-agents-qr-decoy-settle 260ms ease-out forwards;
-}
-
-.open-agents-qr-resolved {
-	animation: open-agents-qr-resolve-in ease-out both;
-}
-
-@media (prefers-reduced-motion: reduce) {
-	.open-agents-qr-decoy {
-		animation-duration: 9000ms;
-	}
-
-	.open-agents-qr-drift {
-		animation: none;
-	}
-
-	.open-agents-qr-resolved {
-		animation: none;
-	}
 }

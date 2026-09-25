@@ -266,9 +266,9 @@ func (l *agentLauncher) invocation(spec LaunchSpec) ports.ReviewInvocation {
 // prepareInvocation stores the full reviewer instructions outside the
 // worktree, then replaces the terminal-visible prompt with a short file
 // reference.
-// Reviewer panes are shared by desktop, mobile, and direct runtime attaches,
-// so keeping the full text out of the PTY is the only device-independent way
-// to hide it.
+// Reviewer panes are shared by the desktop and direct runtime attaches, so
+// keeping the full text out of the PTY is the only device-independent way to
+// hide it.
 func (l *agentLauncher) prepareInvocation(ctx context.Context, spec LaunchSpec) (ports.ReviewInvocation, error) {
 	if err := ctx.Err(); err != nil {
 		return ports.ReviewInvocation{}, err

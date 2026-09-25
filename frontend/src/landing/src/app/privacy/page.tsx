@@ -4,7 +4,7 @@ import type { Metadata } from "next";
 const LAST_UPDATED = "19 August 2026";
 
 const description =
-  "How Open Agents handles data in Open Agents Mobile, the desktop app and CLI, and orchestrator.inc: local-first operation, waitlists, and testimonial submissions.";
+  "How Open Agents handles data in the desktop app, CLI, and orchestrator.inc: local-first operation, waitlists, and testimonial submissions.";
 
 export const metadata: Metadata = {
   title: "Privacy Policy",
@@ -101,7 +101,6 @@ function Code({ children }: { children: React.ReactNode }) {
 
 const toc = [
   { id: "scope", label: "What this covers" },
-  { id: "mobile", label: "Open Agents Mobile app" },
   { id: "desktop", label: "Desktop app & CLI" },
   { id: "website", label: "This website" },
   { id: "not-collected", label: "Data we do not collect" },
@@ -139,8 +138,7 @@ export default function PrivacyPage() {
               <Strong>no telemetry and run no analytics</Strong>. If you
               voluntarily join a waitlist or send us a testimonial, we process
               the details you submit only for the purpose described on that
-              form. The mobile app sends <Strong>no telemetry at all</Strong>{" "}
-              and talks only to the server you point it at.
+              form. The product runs locally and sends no product telemetry.
             </p>
           </div>
 
@@ -174,10 +172,6 @@ export default function PrivacyPage() {
             </p>
             <Bullets>
               <Bullet>
-                <Strong>Open Agents Mobile</Strong> — the companion app for iOS and
-                Android that connects to an Open Agents daemon you run yourself.
-              </Bullet>
-              <Bullet>
                 <Strong>The Open Agents desktop app and CLI</Strong> — the local
                 orchestrator that supervises coding agents in git worktrees on
                 your computer.
@@ -198,75 +192,6 @@ export default function PrivacyPage() {
               third-party tool with its own privacy policy. Open Agents launches it
               locally; it does not intercept, store, or forward what it sends to
               its own provider.
-            </p>
-          </Section>
-
-          <Section id="mobile" title="Open Agents Mobile (iOS and Android)">
-            <p>
-              Open Agents Mobile lets you monitor and control an Open Agents daemon that{" "}
-              <Strong>you run yourself</Strong>, over your local network or a
-              private network such as Tailscale. The app has no backend of its
-              own; it talks only to the server you configure.
-            </p>
-
-            <h3 className="pt-2 text-[16px] font-semibold text-foreground">
-              Data the app handles
-            </h3>
-            <Bullets>
-              <Bullet>
-                <Strong>Server connection details.</Strong> The host or address
-                and port of your Open Agents server, plus the connection password. The
-                address and port are stored in the app's local storage; the
-                password is stored in the device's secure keychain (iOS Keychain
-                / Android Keystore). Both are sent only to the server you
-                configure, in order to connect.
-              </Bullet>
-              <Bullet>
-                <Strong>Camera (QR pairing).</Strong> With your permission, the
-                camera is used solely to scan the pairing QR code shown by your
-                server. No photos or video are stored, uploaded, or retained.
-              </Bullet>
-              <Bullet>
-                <Strong>Push notification token.</Strong> To deliver
-                notifications — for example when an agent is waiting for your
-                input — the app requests a push token from the platform and
-                registers it with <Strong>your own server</Strong>, so your
-                server can notify you. The token is not sent anywhere else.
-              </Bullet>
-              <Bullet>
-                <Strong>Device model and OS version.</Strong> Read on-device to
-                request a valid push token and to render the interface
-                correctly. Not transmitted to us.
-              </Bullet>
-              <Bullet>
-                <Strong>Agent and project data.</Strong> Sessions, pull-request
-                state, and terminal output are fetched from your own server for
-                display. That data lives on your server; the app displays it and
-                sends it nowhere else.
-              </Bullet>
-            </Bullets>
-
-            <h3 className="pt-2 text-[16px] font-semibold text-foreground">
-              How notifications work
-            </h3>
-            <p>
-              When your server sends you a notification, it is relayed by the{" "}
-              <Strong>Expo Push Service</Strong> to{" "}
-              <Strong>Apple Push Notification service (APNs)</Strong> on iOS or{" "}
-              <Strong>Firebase Cloud Messaging (FCM)</Strong> on Android, which
-              deliver it to your device. The payload contains only what is
-              needed to display and open the notification — a short title and
-              body, and identifiers such as a session or pull-request reference.
-              No passwords, tokens, or secrets are included. These platform
-              services process the message only to deliver it, under their own
-              privacy policies.
-            </p>
-
-            <p>
-              Open Agents Mobile contains{" "}
-              <Strong>no analytics, advertising, or tracking SDKs</Strong>, and
-              collects no usage telemetry whatsoever. Nothing in the app is used
-              for tracking across apps or websites owned by other companies.
             </p>
           </Section>
 
@@ -367,27 +292,6 @@ export default function PrivacyPage() {
             </p>
             <Bullets>
               <Bullet>
-                <Strong>Expo Push Service</Strong> — relays mobile push
-                notifications (
-                <Ext href="https://expo.dev/privacy">privacy policy</Ext>).
-              </Bullet>
-              <Bullet>
-                <Strong>Apple Push Notification service</Strong> — delivers
-                notifications on iOS (
-                <Ext href="https://www.apple.com/legal/privacy/">
-                  privacy policy
-                </Ext>
-                ).
-              </Bullet>
-              <Bullet>
-                <Strong>Firebase Cloud Messaging (Google)</Strong> — delivers
-                notifications on Android (
-                <Ext href="https://policies.google.com/privacy">
-                  privacy policy
-                </Ext>
-                ).
-              </Bullet>
-              <Bullet>
                 <Strong>GitHub</Strong> — hosts the source code, releases, and
                 this website (
                 <Ext href="https://docs.github.com/en/site-policy/privacy-policies/github-general-privacy-statement">
@@ -404,21 +308,10 @@ export default function PrivacyPage() {
 
           <Section id="security" title="Storage and security">
             <p>
-              On desktop, all Open Agents state is stored under <Code>~/.open-agents</Code> on
+              All Open Agents state is stored under <Code>~/.open-agents</Code> on
               your own machine, protected by your operating system's file
-              permissions. On mobile, configuration is stored in app-local
-              storage and the connection password is held in the platform secure
-              keychain rather than in plaintext.
-            </p>
-            <p>
-              Open Agents Mobile connects over the address and transport (HTTP or HTTPS)
-              you configure. The optional LAN listener that serves the mobile
-              app binds to your network only while you explicitly enable it, and
-              always requires the connection password. Because the server is one{" "}
-              <Strong>you</Strong> run, you are responsible for securing that
-              machine and the network it is reachable over. We recommend a
-              private network such as Tailscale rather than exposing the daemon
-              to the public internet.
+              permissions. Because the server is one <Strong>you</Strong> run,
+              you are responsible for securing that machine.
             </p>
             <p>
               No system is perfectly secure, but because Open Agents holds no central
@@ -431,10 +324,8 @@ export default function PrivacyPage() {
             <Bullets>
               <Bullet>
                 <Strong>On your devices.</Strong> Data stays until you delete
-                it. Uninstalling the mobile app, or clearing its data, removes
-                stored settings and the keychain entry and invalidates the push
-                token registered with your server. Deleting <Code>~/.open-agents</Code>{" "}
-                removes all desktop state.
+                it. Deleting <Code>~/.open-agents</Code> removes all desktop
+                state.
               </Bullet>
               <Bullet>
                 <Strong>Waitlist details.</Strong> Retained only while needed to
@@ -460,7 +351,7 @@ export default function PrivacyPage() {
             </p>
             <p>
               In practice, nearly all data Open Agents touches is already in your own
-              hands: delete the app, delete <Code>~/.open-agents</Code>, and it is gone.
+              hands: delete <Code>~/.open-agents</Code>, and it is gone.
               If you submitted a waitlist email or believe we hold other data about
               you, contact us privately at{" "}
               <Ext href={COMPANY.MAIL_TO}>{COMPANY.MAIL_TO.replace("mailto:", "")}</Ext>{" "}

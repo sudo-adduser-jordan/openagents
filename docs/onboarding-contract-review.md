@@ -3,8 +3,8 @@
 Scope: local desktop project creation, cloning, existing-folder imports,
 workspace imports, Git preparation, registration, and first orchestrator startup.
 This is a code-path review prompted by the `untrivial` empty-clone failure, not
-an exhaustive interactive audit. Cloud provisioning, mobile onboarding, and
-all native picker/platform combinations remain outside this review.
+an exhaustive interactive audit. Cloud provisioning and all native
+picker/platform combinations remain outside this review.
 
 ## Root cause across stages
 

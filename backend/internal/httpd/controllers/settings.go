@@ -21,9 +21,9 @@ type SettingsService interface {
 
 // SettingsController owns the daemon-owned preference routes.
 //
-// These are daemon-owned rather than renderer-owned on purpose: desktop, mobile,
-// and the CLI all resolve the same value, so a preference held in one client would
-// disagree with the others.
+// These are daemon-owned rather than renderer-owned on purpose: the desktop
+// and CLI resolve the same value, so a preference held in one client would
+// disagree with the other.
 type SettingsController struct {
 	Svc SettingsService
 }

@@ -34,11 +34,4 @@ export const FEATURES: Feature[] = [
       "25 harnesses supported, with per-project agent choice. Codex, Cursor, OpenCode, Aider, Goose, and more, Open Agents keeps it running the way you already run it while the tools underneath evolve.",
     colors: ["#7c3aed", "#6d28d9", "#4c1d95", "#1a1a2e"],
   },
-  {
-    tag: "Mobile companion",
-    title: "Your fleet goes where you go",
-    description:
-      "Pair the Open Agents mobile app with your desktop over LAN or Tailscale. Watch every session, open a terminal, and get notified when an agent needs you - while execution and code stay on your machine.",
-    colors: ["#2563eb", "#1d4ed8", "#1e3a8a", "#1a1a2e"],
-  },
 ];

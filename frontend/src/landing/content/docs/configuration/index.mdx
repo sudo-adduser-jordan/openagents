@@ -58,7 +58,7 @@ The primary daemon listener is always loopback-only and unauthenticated. Its bin
 | `OPEN_AGENTS_SHUTDOWN_TIMEOUT` | `10s` | Graceful shutdown deadline |
 | `OPEN_AGENTS_ALLOWED_ORIGINS` | packaged desktop origin | Additional trusted browser origins |
 
-Do not set `HOST=0.0.0.0` or proxy the primary daemon to a network. For phone access, use the separate authenticated listener created by **Connect Mobile**. See [Remote access](/docs/configuration/remote-access).
+Do not set `HOST=0.0.0.0` or proxy the primary daemon to a network.
 
 ## Chat and Terminal UI defaults
 
@@ -72,5 +72,4 @@ Choose the default for new sessions in project settings. You can also select it 
 <Cards>
 	<Card title="Projects" href="/docs/configuration/projects" description="Configure one project and its session roles." />
 	<Card title="Lifecycle automation" href="/docs/configuration/lifecycle-automation" description="Understand built-in CI, review, and merge-conflict handling." />
-	<Card title="Remote access" href="/docs/configuration/remote-access" description="Pair the native mobile app safely." />
 </Cards>

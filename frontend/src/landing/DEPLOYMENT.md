@@ -19,8 +19,7 @@ variable. An Actions-based Pages deployment does not use a `CNAME` file.
   `https://orchestrator.inc`.
 - Do not attach the landing redirect Worker to any `aoagents.dev` hostname. The
   API, staging API, status page, and other existing service origins remain
-  independent and are intentionally preserved. The Android and iOS application
-  IDs are `dev.openagents.mobile`.
+  independent and are intentionally preserved.
 
 The `open-agents-landing-domain-redirect` Worker implements these redirects. Its source
 and Wrangler configuration live under `cloudflare/domain-redirect*`. It uses

@@ -19,7 +19,6 @@ The agents still write the code. Open Agents provides the control layer around t
 - Send follow-up instructions to the right worker.
 - Run reviewer agents and route requested changes back to the worker.
 - Preview a session's local app beside its Chat or terminal.
-- Check and respond from the companion mobile app on your home network.
 
 Open Agents works best when each worker has a clear, reviewable outcome: a focused bug, feature, refactor, test, documentation update, or review follow-up.
 
@@ -45,8 +44,6 @@ Chat is currently available for installed Codex, OpenCode, and Droid harnesses. 
 ## Local By Design
 
 The desktop app runs a Go daemon on `127.0.0.1` and communicates with it over a local API. Durable product state, Electron data, and worktree metadata live under `~/.open-agents` by default. Your agent CLIs and source-control credentials remain your own; Open Agents does not bundle provider CLIs.
-
-Connect Mobile is a separate, opt-in home-network listener protected by a connection password. It is off until you enable it in the desktop app.
 
 ## Supported Agents
 

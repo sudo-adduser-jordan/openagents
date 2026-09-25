@@ -15,8 +15,6 @@ import (
 	sessionsvc "github.com/sudo-adduser-jordan/open-agents/backend/internal/service/session"
 	"github.com/sudo-adduser-jordan/open-agents/backend/internal/service/systemcheck"
 	"github.com/sudo-adduser-jordan/open-agents/backend/internal/service/systeminstall"
-
-	"github.com/sudo-adduser-jordan/open-agents/backend/internal/mobilebridge"
 )
 
 // HTTP response envelopes for the projects surface — the SINGLE definition of
@@ -1262,7 +1260,7 @@ type GitHubAuthRequirementResponse = systemcheck.Requirement
 
 // InstallTargetParam is the {target} path parameter for /system/install routes.
 type InstallTargetParam struct {
-	Target string `path:"target" enum:"tmux,gh,opencode,cloudflared" description:"Install target identifier: tmux, gh, opencode, or cloudflared."`
+	Target string `path:"target" enum:"tmux,gh,opencode" description:"Install target identifier: tmux, gh, or opencode."`
 }
 
 // StartInstallResponse is the body of POST /api/v1/system/install/{target} (202).
@@ -1440,121 +1438,6 @@ type ResolveCommentsRequest struct {
 type ResolveCommentsResponse struct {
 	OK       bool `json:"ok"`
 	Resolved int  `json:"resolved"`
-}
-
-// EndpointsResponse is the body of GET /api/v1/endpoints. The phone re-reads
-// it after every successful connect, so a rotated tunnel hostname or a changed
-// LAN address is picked up without re-pairing.
-type EndpointsResponse struct {
-	Endpoints []mobilebridge.Endpoint `json:"endpoints"`
-}
-
-// IdentityResponse is the body of the unauthenticated GET /api/v1/identity
-// probe. It is deliberately minimal: the route is reachable without the
-// connection password, so it must carry nothing but an opaque host id and the
-// mobile contract version.
-type IdentityResponse struct {
-	HostID     string `json:"hostId"`
-	APIVersion int    `json:"apiVersion"`
-}
-
-// MobileStatusResponse is the body of the Connect Mobile status/enable/disable/
-// regenerate endpoints. Password is populated only transiently, on enable and
-// regenerate responses (empty otherwise) — it is never persisted in plaintext.
-type MobileStatusResponse struct {
-	Enabled bool `json:"enabled"`
-	// Endpoints is every way the phone can reach this daemon, in the client's
-	// preference order. The phone races them; Host/TailscaleHost below are the
-	// head of each kind, kept for the existing renderer.
-	Endpoints []mobilebridge.Endpoint `json:"endpoints"`
-	// HostID is this machine's stable identity, echoed into the pairing code.
-	// The phone checks every endpoint it races against this value.
-	HostID string `json:"hostId"`
-	// Tunnel is the managed remote-access connector's state, so the desktop can
-	// show progress during the tens of seconds before it is advertisable.
-	Tunnel mobilebridge.TunnelStatus `json:"tunnel"`
-	Host   string                    `json:"host"`
-	// TailscaleHost is this machine's 100.64.0.0/10 Tailscale address, or "" when
-	// Tailscale is not up. The renderer encodes it into the pairing QR when the
-	// user selects the Tailscale tab, and shows a hint instead when it is empty.
-	TailscaleHost string              `json:"tailscaleHost"`
-	Port          int                 `json:"port"`
-	Password      string              `json:"password"`
-	Warning       string              `json:"warning"`
-	SecurePairing SecurePairingStatus `json:"securePairing"`
-}
-
-// SecurePairingStatus describes the optional TLS-over-Tailscale pairing mode,
-// in which `tailscale serve` fronts the bridge with a real certificate so iOS
-// can pair by scanning (App Transport Security blocks cleartext to Tailscale's
-// 100.64.0.0/10 range).
-type SecurePairingStatus struct {
-	Enabled   bool   `json:"enabled"`   // the user turned the mode on
-	Available bool   `json:"available"` // CLI present, MagicDNS name known, certs enabled
-	Active    bool   `json:"active"`    // proxy verified pointing at the live bridge port
-	Host      string `json:"host"`      // MagicDNS name; "" when unknown
-	Port      int    `json:"port"`      // 443 when active, else 0
-	// Reason is a fixed enum the renderer maps to localized setup steps:
-	// no_cli, no_magicdns, no_certs, serve_failed, port_mismatch, clear_failed.
-	// Empty when Available. Never a raw error string — those are untranslated
-	// and can leak paths.
-	Reason string `json:"reason"`
-}
-
-// SetSecurePairingRequest is the body of POST /api/v1/mobile/secure-pairing.
-type SetSecurePairingRequest struct {
-	Enabled bool `json:"enabled"`
-}
-
-// PushPairingIDParam is the {id} path parameter for the unpair route. It accepts
-// either the phone's install ID or, from builds that predate install IDs, its
-// push token.
-type PushPairingIDParam struct {
-	ID string `path:"id" description:"The phone's install id, or its push token for older builds."`
-}
-
-// PushDeviceTokenParam is the {token} path parameter for push-device routes.
-type PushDeviceTokenParam struct {
-	Token string `path:"token" description:"Expo push token (URL-encoded) identifying the device."`
-}
-
-// RegisterPushDeviceRequest is the body of POST /api/v1/push/devices. The phone
-// sends its Expo push token plus a bit of descriptive metadata; the daemon keys
-// the registry on the install ID (the token is an attribute and is now optional)
-// and re-registering is an idempotent upsert.
-type RegisterPushDeviceRequest struct {
-	// Optional so the published contract matches what the daemon actually
-	// accepts: app builds predating install IDs send none, and the handler
-	// synthesizes a legacy one rather than rejecting them. Marking it required
-	// would generate clients unable to express a request the server handles.
-	InstallID string `json:"installId,omitempty" description:"Stable per-install device id, keying the registry so a rotated push token updates the same row. Optional: older app builds omit it and the daemon synthesizes one."`
-	// Optional: a row represents a paired phone, not a push registration. Omitted
-	// (or empty) when the phone is only announcing its identity — permission not
-	// yet granted, or a build that can't mint a token. When present it must still
-	// be a well-formed Expo push token.
-	Token      string `json:"token,omitempty" description:"Expo push token, e.g. ExponentPushToken[...]. Optional: omitted when the phone has no push token yet."`
-	Platform   string `json:"platform,omitempty" enum:"ios,android" description:"Device platform."`
-	DeviceName string `json:"deviceName,omitempty" description:"Human-friendly device label."`
-}
-
-// PushDeviceResponse is the stored view of a registered push device.
-type PushDeviceResponse struct {
-	Token      string    `json:"token,omitempty"`
-	Platform   string    `json:"platform,omitempty"`
-	DeviceName string    `json:"deviceName,omitempty"`
-	CreatedAt  time.Time `json:"createdAt"`
-	LastSeenAt time.Time `json:"lastSeenAt"`
-}
-
-// PushDeviceEnvelope is the { device } response body for a registered push device.
-type PushDeviceEnvelope struct {
-	Device PushDeviceResponse `json:"device"`
-}
-
-// UnregisterPushDeviceResponse is the body of DELETE /api/v1/push/devices/{token} (200).
-type UnregisterPushDeviceResponse struct {
-	Token   string `json:"token"`
-	Deleted bool   `json:"deleted"`
 }
 
 /* ---- chat conversations ------------------------------------------------ */
@@ -2251,34 +2134,4 @@ type RequestRereviewRequest struct {
 // RequestRereviewResponse is returned after Open Agents asks the SCM provider for another review.
 type RequestRereviewResponse struct {
 	OK bool `json:"ok"`
-}
-
-// MobileDeviceResponse is one row of the desktop's mobile-device roster: the
-// stored registration plus whether that phone is running the app right now.
-type MobileDeviceResponse struct {
-	InstallID            string    `json:"installId"`
-	Token                string    `json:"token,omitempty"`
-	Platform             string    `json:"platform,omitempty" enum:"ios,android"`
-	DeviceName           string    `json:"deviceName,omitempty"`
-	Muted                bool      `json:"muted"`
-	Live                 bool      `json:"live" description:"True when the phone's app is open and polling."`
-	NotificationsEnabled bool      `json:"notificationsEnabled" description:"True when this device has a push token registered."`
-	CreatedAt            time.Time `json:"createdAt"`
-	LastSeenAt           time.Time `json:"lastSeenAt"`
-}
-
-// MobileDevicesResponse is the { devices } envelope for the roster.
-type MobileDevicesResponse struct {
-	Devices []MobileDeviceResponse `json:"devices"`
-}
-
-// MuteDeviceRequest is the body of PATCH /api/v1/mobile/devices/{installId}.
-type MuteDeviceRequest struct {
-	Muted bool `json:"muted" description:"True to stop sending push notifications to this device."`
-}
-
-// InstallIDParam is the {installId} path parameter for mobile-device roster
-// routes.
-type InstallIDParam struct {
-	InstallID string `path:"installId" description:"The device's stable install id."`
 }

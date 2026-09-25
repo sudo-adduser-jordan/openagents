@@ -54,7 +54,6 @@ Display status like `working`, `needs_input`, `ci_failed`, `mergeable` are **com
 graph TB
     subgraph Frontend
         FE[Electron + React UI]
-        Mobile[Expo + React Native UI]
         CLI[open-agents CLI]
     end
 
@@ -94,8 +93,6 @@ graph TB
     end
 
     FE -->|REST/SSE| Controllers
-    Mobile -->|Authenticated LAN REST/SSE| Controllers
-    Mobile -->|Authenticated mux| Terminal
     CLI -->|REST| Controllers
     Controllers --> SessionSvc
     Controllers --> ProjectSvc
@@ -908,21 +905,9 @@ flowchart TD
 
 ```
 
-### Multi-Listener Architecture (Loopback + LAN)
+### HTTP Listener Architecture
 
-The daemon runs two independent HTTP listeners sharing the same chi router:
-
-1. **Primary (Loopback) Listener** — binds `127.0.0.1:3001` with no authentication. All existing daemon operations (CLI, desktop app) use this listener.
-2. **LAN Listener** (Connect Mobile) — an opt-in second listener that binds `0.0.0.0:3011` (or ephemeral fallback) **only when explicitly enabled** by the user through the desktop app's Settings. It wraps the shared router in bearer-password authentication middleware, serves app API routes to mobile clients, but never exposes loopback-gated control routes (`/shutdown`, `/internal/`, mobile control commands). All traffic is plaintext HTTP on a home network only, by deliberate security decision — see `docs/adr/0001-lan-listener-for-mobile.md` for rationale and threat model. Auth state (hashed password, per-source lockout) is persisted to `~/.open-agents/mobile/config.json` and restored on daemon boot.
-
-The mobile app is a second thin renderer over those same session resources. It
-branches on the session's persisted `mode`: TUI attaches the existing mux PTY,
-while Chat reads the paged conversation projection and uses the durable CDC SSE
-stream only for targeted invalidation/reconnect. Sends, approvals, input,
-provider configuration, compaction, rollback, and shell creation remain daemon
-commands; no provider or lifecycle policy is implemented in React Native.
-
-For implementation details and security model, consult `docs/adr/0001-lan-listener-for-mobile.md` and the glossary in `CONTEXT.md`.
+The daemon runs one HTTP listener: the primary loopback listener binds `127.0.0.1:3001` with no authentication and serves the desktop app and CLI. No additional network-facing listener is supported.
 
 ### Request Flow
 
@@ -1049,8 +1034,8 @@ unauthenticated remote-debugging port.
 
 Electron attaches its debugger directly to the selected session's
 `WebContentsView`, so the protocol transport cannot enumerate or attach to the
-Open Agents renderer or a different session. The loopback `/api/v1/browser` surface is
-blocked entirely on the opt-in LAN listener.
+Open Agents renderer or a different session. Browser control remains on the
+loopback daemon surface.
 
 Request observation is an explicit, temporary browser command rather than a
 standing debugger feature. Capture is off by default, bound to the active tab

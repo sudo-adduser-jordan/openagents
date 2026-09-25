@@ -74,8 +74,8 @@ type interfaceTransitionRun struct {
 	done   chan struct{}
 }
 
-// InterfaceTransitionStatus is the controller-facing view used by desktop and
-// mobile to decide whether to draw the switch and to render any durable attempt.
+// InterfaceTransitionStatus is the controller-facing view used by clients to
+// decide whether to draw the switch and to render any durable attempt.
 type InterfaceTransitionStatus struct {
 	Supported  bool
 	TargetMode domain.SessionMode

@@ -29,11 +29,11 @@ description: Common questions about the current Open Agents desktop product.
 	</Accordion>
 
 	<Accordion title="Where does Open Agents store data?">
-		Under `~/.open-agents` by default. Durable daemon state is SQLite under `~/.open-agents/data`; the same Open Agents home also contains the run file, managed worktrees and metadata, Electron data, and mobile configuration. Advanced daemon paths can be overridden with `OPEN_AGENTS_DATA_DIR` and `OPEN_AGENTS_RUN_FILE`.
+		Under `~/.open-agents` by default. Durable daemon state is SQLite under `~/.open-agents/data`; the same Open Agents home also contains the run file, managed worktrees and metadata, Electron data, and application metadata. Advanced daemon paths can be overridden with `OPEN_AGENTS_DATA_DIR` and `OPEN_AGENTS_RUN_FILE`.
 	</Accordion>
 
 	<Accordion title="Can I expose Open Agents on a remote server?">
-		Do not expose the primary daemon listener. It is unauthenticated and fixed to `127.0.0.1`. Connect Mobile is the only built-in LAN path: it is opt-in, password-protected, plaintext, and intended only for a trusted home network.
+		Do not expose the primary daemon listener. It is unauthenticated and fixed to `127.0.0.1`.
 	</Accordion>
 
 	<Accordion title="What does Open Agents cost?">
@@ -53,6 +53,6 @@ description: Common questions about the current Open Agents desktop product.
 	</Accordion>
 
 	<Accordion title="How do I uninstall Open Agents?">
-		Remove the desktop application using your operating system's normal process. If you also remove `~/.open-agents`, you permanently delete Open Agents's database, session history, managed state, Electron data, and mobile pairing configuration. Inspect and preserve any work you need first. Legacy CLI users can separately run `npm uninstall -g @openagents/open-agents`.
+		Remove the desktop application using your operating system's normal process. If you also remove `~/.open-agents`, you permanently delete Open Agents's database, session history, managed state, Electron data, and application metadata. Inspect and preserve any work you need first. Legacy CLI users can separately run `npm uninstall -g @openagents/open-agents`.
 	</Accordion>
 </Accordions>

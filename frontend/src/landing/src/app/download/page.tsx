@@ -10,15 +10,13 @@ import type { Metadata } from "next";
 import Image from "next/image";
 import Link from "next/link";
 import { FaApple, FaLinux, FaWindows } from "react-icons/fa";
-import { AndroidAppCTA } from "./AndroidAppCTA";
-import { MobileAppCTA } from "./MobileAppCTA";
 import { PlatformDownloadButton } from "./PlatformDownloadButton";
-import { DesktopAppPreview, PhoneAppPreview } from "./StaticAppPreviews";
+import { DesktopAppPreview } from "./StaticAppPreviews";
 
 export const metadata: Metadata = {
   title: "Download",
   description:
-    "Download Open Agents for macOS, Windows, or Linux, and get Open Agents Mobile on iPhone and Android.",
+    "Download Open Agents for macOS, Windows, or Linux.",
 };
 
 interface GitHubReleaseAsset {
@@ -229,33 +227,6 @@ export default async function DownloadPage() {
                 </p>
                 <div className="mt-6">
                   <PlatformDownloadButton />
-                </div>
-              </div>
-            </article>
-
-            <article className="order-1 flex h-full flex-col rounded-2xl bg-card p-4 sm:p-5 md:order-2">
-              <div className="relative mb-5 h-80 overflow-hidden rounded-xl sm:h-[360px]">
-                <Image
-                  src="/optimized/feature.webp"
-                  alt=""
-                  fill
-                  preload
-                  sizes="(max-width: 767px) 100vw, 50vw"
-                  className="object-cover"
-                />
-                <div className="absolute inset-0 bg-background/10" />
-                <PhoneAppPreview />
-              </div>
-
-              <div className="flex flex-1 flex-col">
-                <h2 className="text-xl font-semibold text-foreground">Mobile</h2>
-                <p className="mt-2 text-base text-muted-foreground">
-                  Mobile companion to monitor agent runs and follow reviews from
-                  anywhere. Free on iPhone and Android.
-                </p>
-                <div className="mt-6 flex flex-wrap items-center gap-3">
-                  <MobileAppCTA />
-                  <AndroidAppCTA />
                 </div>
               </div>
             </article>

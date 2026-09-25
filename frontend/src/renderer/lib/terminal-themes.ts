@@ -18,7 +18,7 @@ export function buildTerminalThemes(): { dark: ITheme; light: ITheme } {
 	const terminalCursor = namedThemeActive ? cssVar("--primary") : cssVar("--color-working");
 	// Collapse ANSI black into the plate. Agent TUIs (Cursor's prompt bar) fill
 	// rows with "black"; leaving the slot as a true dark color paints a black
-	// stripe on the light canvas. Same approach as packages/mobile/lib/theme.ts.
+	// stripe on the light canvas.
 	const ansiBlack = terminalBg;
 	const dark: ITheme = {
 		background: terminalBg,

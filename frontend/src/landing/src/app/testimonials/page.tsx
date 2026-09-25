@@ -24,11 +24,6 @@ const testimonials = [
   },
   {
     quote:
-      "With Open Agents Mobile, I’m able to ship things on the fly, and my agents are never blocked on my input anymore.",
-    author: "Dhruv Sharma, Engineering Lead, The Hashgraph group",
-  },
-  {
-    quote:
       "Before Open Agents, I would ship at most 2–3 PRs a day. Now I consistently ship 5+ PRs every day at work.",
     author: "Harshit Singh Bhandari, IEOR @ IIT Bombay",
   },

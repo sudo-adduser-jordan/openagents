@@ -54,7 +54,7 @@ The first migration covers high-visibility desktop chrome, including:
 - Board lanes and empty states, sidebar, topbar, titlebar, notifications, and dialogs
 - New Task and Create Project flows
 - Session inspector, PR/CI/review presentation, compact relative time, and terminal chrome
-- Connect Mobile setup and browser-panel controls
+- Browser-panel controls and other desktop settings surfaces
 - Command palette actions, headings, states, and footer help
 - Session files and diffs, migration, restore/replacement failures, terminal tabs, and reusable dialog/sidebar chrome
 
@@ -68,7 +68,7 @@ Separate product work:
 
 - Native main-process menus and operating-system dialogs
 - Formatting known daemon notification/error types at the display layer
-- Mobile, landing, documentation, and CLI localization
+- Landing, documentation, and CLI localization
 
 Always leave agent terminal I/O, PR titles/bodies, branch names, paths, repository content, and unknown daemon/provider messages unchanged.
 

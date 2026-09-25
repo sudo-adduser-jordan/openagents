@@ -72,16 +72,12 @@ func Build() ([]byte, error) {
 			"Durable dashboard notifications"),
 		*(&openapi31.Tag{Name: "usage"}).WithDescription(
 			"Token usage telemetry for Open Agents sessions"),
-		*(&openapi31.Tag{Name: "push"}).WithDescription(
-			"Mobile push-device registration for OS push notifications"),
 		*(&openapi31.Tag{Name: "events"}).WithDescription(
 			"Server-sent CDC event stream with durable replay"),
 		*(&openapi31.Tag{Name: "import"}).WithDescription(
 			"Project-folder import validation and Git preparation"),
 		*(&openapi31.Tag{Name: "dev"}).WithDescription(
 			"Developer-only maintenance operations"),
-		*(&openapi31.Tag{Name: "mobile"}).WithDescription(
-			"Connect Mobile LAN bridge control (loopback/desktop only)"),
 		*(&openapi31.Tag{Name: "browser"}).WithDescription(
 			"Target-isolated desktop browser runtime (loopback only)"),
 		*(&openapi31.Tag{Name: "system"}).WithDescription(
@@ -386,25 +382,9 @@ var schemaNames = map[string]string{ //nolint:gosec // Public OpenAPI type names
 	// httpd/controllers: dev wire envelopes
 	"ControllersDevImportProjectsRequest":  "DevImportProjectsRequest",
 	"ControllersDevImportProjectsResponse": "DevImportProjectsResponse",
-	// httpd/controllers: mobile wire envelopes
-	"ControllersMobileStatusResponse":  "MobileStatusResponse",
-	"MobilebridgeEndpoint":             "MobileEndpoint",
-	"MobilebridgeTunnelStatus":         "MobileTunnelStatus",
-	"ControllersIdentityResponse":      "IdentityResponse",
-	"ControllersEndpointsResponse":     "EndpointsResponse",
-	"ControllersMobileDeviceResponse":  "MobileDeviceResponse",
-	"ControllersMobileDevicesResponse": "MobileDevicesResponse",
-	"ControllersMuteDeviceRequest":     "MuteDeviceRequest",
-	"ControllersInstallIDParam":        "InstallIDParam",
-	"ControllersPushPairingIDParam":    "PushPairingIDParam",
 	// devimport report
 	"DevimportReport":   "DevImportProjectsReport",
 	"DevimportConflict": "DevImportProjectsConflict",
-	// httpd/controllers: push-device wire envelopes
-	"ControllersRegisterPushDeviceRequest":    "RegisterPushDeviceRequest",
-	"ControllersPushDeviceEnvelope":           "PushDeviceEnvelope",
-	"ControllersPushDeviceResponse":           "PushDeviceResponse",
-	"ControllersUnregisterPushDeviceResponse": "UnregisterPushDeviceResponse",
 	// service/project entities + DTOs
 	"ProjectProject":                    "Project",
 	"ProjectSummary":                    "ProjectSummary",
@@ -519,50 +499,12 @@ func operations() []operation {
 	ops = append(ops, reviewOperations()...)
 	ops = append(ops, notificationOperations()...)
 	ops = append(ops, usageOperations()...)
-	ops = append(ops, pushOperations()...)
 	ops = append(ops, importOperations()...)
 	ops = append(ops, devOperations()...)
-	ops = append(ops, mobileOperations()...)
-	ops = append(ops, mobileDeviceOperations()...)
 	ops = append(ops, browserOperations()...)
 	ops = append(ops, shellTerminalOperations()...)
 	ops = append(ops, systemOperations()...)
-	ops = append(ops, identityOperations()...)
-	ops = append(ops, endpointsOperations()...)
 	return ops
-}
-
-// endpointsOperations declares the phone's endpoint refresh. Not under
-// /api/v1/mobile, which lanControlBlock 404s on the only listener a phone can
-// reach.
-func endpointsOperations() []operation {
-	return []operation{
-		{
-			method: http.MethodGet, path: "/api/v1/endpoints", id: "getEndpoints", tag: "identity",
-			summary: "List the ways this daemon can currently be reached",
-			resps: []respUnit{
-				{http.StatusOK, controllers.EndpointsResponse{}},
-				{http.StatusNotImplemented, envelope.APIError{}},
-			},
-		},
-	}
-}
-
-// identityOperations declares the unauthenticated host-identity probe. It is
-// the one route the Connect Mobile LAN listener serves without the connection
-// password, so the phone can confirm which machine answered before presenting
-// a credential. See docs/adr/0003-unauthenticated-identity-probe.md.
-func identityOperations() []operation {
-	return []operation{
-		{
-			method: http.MethodGet, path: "/api/v1/identity", id: "getIdentity", tag: "identity",
-			summary: "Identify the daemon so a client can confirm which machine answered",
-			resps: []respUnit{
-				{http.StatusOK, controllers.IdentityResponse{}},
-				{http.StatusNotImplemented, envelope.APIError{}},
-			},
-		},
-	}
 }
 
 // systemOperations declares the startup requirements gate the desktop loading
@@ -1212,112 +1154,6 @@ func agentOperations() []operation {
 	}
 }
 
-// mobileOperations declares the 5 /mobile control operations. These are
-// mounted on the loopback router (mountMobile in router.go), not the REST
-// /api/v1 group — only the desktop/CLI may enable, disable, or regenerate the
-// phone's LAN access; the phone never toggles its own connection. Must stay
-// 1:1 with the routes mountMobile registers (enforced by the parity test).
-func mobileOperations() []operation {
-	return []operation{
-		{
-			method: http.MethodGet, path: "/api/v1/mobile/status", id: "getMobileStatus", tag: "mobile",
-			summary: "Check whether Connect Mobile's LAN bridge is enabled",
-			resps: []respUnit{
-				{http.StatusOK, controllers.MobileStatusResponse{}},
-				{http.StatusForbidden, envelope.APIError{}},
-			},
-		},
-		{
-			method: http.MethodPost, path: "/api/v1/mobile/remote-access", id: "startMobileRemoteAccess", tag: "mobile",
-			summary: "Look for a connector again and start it, without rotating the password",
-			resps: []respUnit{
-				{http.StatusOK, controllers.MobileStatusResponse{}},
-				{http.StatusForbidden, envelope.APIError{}},
-				{http.StatusInternalServerError, envelope.APIError{}},
-			},
-		},
-		{
-			method: http.MethodPost, path: "/api/v1/mobile/enable", id: "enableMobile", tag: "mobile",
-			summary: "Enable the Connect Mobile LAN bridge and issue a fresh password",
-			resps: []respUnit{
-				{http.StatusOK, controllers.MobileStatusResponse{}},
-				{http.StatusForbidden, envelope.APIError{}},
-				{http.StatusInternalServerError, envelope.APIError{}},
-			},
-		},
-		{
-			method: http.MethodPost, path: "/api/v1/mobile/disable", id: "disableMobile", tag: "mobile",
-			summary: "Disable the Connect Mobile LAN bridge",
-			resps: []respUnit{
-				{http.StatusOK, controllers.MobileStatusResponse{}},
-				{http.StatusForbidden, envelope.APIError{}},
-				{http.StatusInternalServerError, envelope.APIError{}},
-			},
-		},
-		{
-			method: http.MethodPost, path: "/api/v1/mobile/regenerate", id: "regenerateMobile", tag: "mobile",
-			summary: "Rotate the Connect Mobile password, dropping any connected phone",
-			resps: []respUnit{
-				{http.StatusOK, controllers.MobileStatusResponse{}},
-				{http.StatusForbidden, envelope.APIError{}},
-				{http.StatusInternalServerError, envelope.APIError{}},
-			},
-		},
-		{
-			method: http.MethodPost, path: "/api/v1/mobile/secure-pairing", id: "setMobileSecurePairing", tag: "mobile",
-			summary: "Turn TLS-over-Tailscale secure pairing on or off",
-			reqBody: controllers.SetSecurePairingRequest{},
-			resps: []respUnit{
-				{http.StatusOK, controllers.MobileStatusResponse{}},
-				{http.StatusBadRequest, envelope.APIError{}},
-				{http.StatusForbidden, envelope.APIError{}},
-				{http.StatusInternalServerError, envelope.APIError{}},
-			},
-		},
-	}
-}
-
-// mobileDeviceOperations declares the desktop-only mobile device roster
-// routes. These sit under /api/v1/mobile — like mobileOperations above — so
-// they inherit the LAN listener's transport-level block; a paired phone can
-// neither list nor manage the household's other devices. Must stay 1:1 with
-// the routes mountMobileDevices registers (enforced by the parity test).
-func mobileDeviceOperations() []operation {
-	return []operation{
-		{
-			method: http.MethodGet, path: "/api/v1/mobile/devices", id: "listMobileDevices", tag: "mobile",
-			summary: "List paired mobile devices with their live/muted status",
-			resps: []respUnit{
-				{http.StatusOK, controllers.MobileDevicesResponse{}},
-				{http.StatusInternalServerError, envelope.APIError{}},
-				{http.StatusServiceUnavailable, envelope.APIError{}},
-			},
-		},
-		{
-			method: http.MethodPatch, path: "/api/v1/mobile/devices/{installId}", id: "muteMobileDevice", tag: "mobile",
-			summary:    "Mute or unmute push notifications for a paired device",
-			pathParams: []any{controllers.InstallIDParam{}},
-			reqBody:    controllers.MuteDeviceRequest{},
-			resps: []respUnit{
-				{http.StatusOK, map[string]bool{}},
-				{http.StatusBadRequest, envelope.APIError{}},
-				{http.StatusNotFound, envelope.APIError{}},
-				{http.StatusServiceUnavailable, envelope.APIError{}},
-			},
-		},
-		{
-			method: http.MethodDelete, path: "/api/v1/mobile/devices/{installId}", id: "removeMobileDevice", tag: "mobile",
-			summary:    "Remove a paired device from the roster",
-			pathParams: []any{controllers.InstallIDParam{}},
-			resps: []respUnit{
-				{http.StatusNoContent, nil},
-				{http.StatusInternalServerError, envelope.APIError{}},
-				{http.StatusServiceUnavailable, envelope.APIError{}},
-			},
-		},
-	}
-}
-
 // importOperations declares the /import operations. Must stay 1:1 with
 // the routes ImportController.Register mounts (enforced by the parity test).
 func importOperations() []operation {
@@ -1417,44 +1253,6 @@ func notificationOperations() []operation {
 // reviewOperations declares the session-scoped /reviews operations. Must stay
 // 1:1 with the routes ReviewsController.Register mounts (enforced by the parity
 // test).
-// pushOperations declares the /push/devices operations. Must stay 1:1 with the
-// routes PushController.Register mounts (enforced by the parity test).
-func pushOperations() []operation {
-	return []operation{
-		{
-			method: http.MethodPost, path: "/api/v1/push/devices", id: "registerPushDevice", tag: "push",
-			summary: "Register (upsert) a phone's Expo push token",
-			reqBody: controllers.RegisterPushDeviceRequest{},
-			resps: []respUnit{
-				{http.StatusOK, controllers.PushDeviceEnvelope{}},
-				{http.StatusBadRequest, envelope.APIError{}},
-				{http.StatusInternalServerError, envelope.APIError{}},
-				{http.StatusNotImplemented, envelope.APIError{}},
-			},
-		},
-		{
-			method: http.MethodDelete, path: "/api/v1/push/devices/{token}", id: "unregisterPushDevice", tag: "push",
-			summary:    "Unregister a phone's Expo push token, leaving it paired",
-			pathParams: []any{controllers.PushDeviceTokenParam{}},
-			resps: []respUnit{
-				{http.StatusOK, controllers.UnregisterPushDeviceResponse{}},
-				{http.StatusInternalServerError, envelope.APIError{}},
-				{http.StatusNotImplemented, envelope.APIError{}},
-			},
-		},
-		{
-			method: http.MethodDelete, path: "/api/v1/push/pairings/{id}", id: "unpairPushDevice", tag: "push",
-			summary:    "Unpair this phone from the daemon, removing it from the roster",
-			pathParams: []any{controllers.PushPairingIDParam{}},
-			resps: []respUnit{
-				{http.StatusNoContent, nil},
-				{http.StatusInternalServerError, envelope.APIError{}},
-				{http.StatusNotImplemented, envelope.APIError{}},
-			},
-		},
-	}
-}
-
 func reviewOperations() []operation {
 	return []operation{
 		{

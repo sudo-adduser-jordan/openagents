@@ -1,7 +1,6 @@
 package httpd
 
 import (
-	"log/slog"
 	"net/http"
 
 	"github.com/go-chi/chi/v5"
@@ -13,7 +12,6 @@ import (
 	"github.com/sudo-adduser-jordan/open-agents/backend/internal/httpd/apispec"
 	"github.com/sudo-adduser-jordan/open-agents/backend/internal/httpd/controllers"
 	"github.com/sudo-adduser-jordan/open-agents/backend/internal/httpd/envelope"
-	"github.com/sudo-adduser-jordan/open-agents/backend/internal/presence"
 	prsvc "github.com/sudo-adduser-jordan/open-agents/backend/internal/service/pr"
 	projectsvc "github.com/sudo-adduser-jordan/open-agents/backend/internal/service/project"
 	reviewsvc "github.com/sudo-adduser-jordan/open-agents/backend/internal/service/review"
@@ -32,7 +30,6 @@ type APIDeps struct {
 	Reviews            reviewsvc.Manager
 	Notifications      controllers.NotificationService
 	NotificationStream controllers.NotificationStream
-	Push               controllers.PushRegistry
 	Import             controllers.ImportService
 	ShellTerminals     controllers.ShellTerminalService
 	// Conversations is nil until a Chat driver is wired; the controller then
@@ -43,55 +40,12 @@ type APIDeps struct {
 	DevImport           controllers.DevImportService
 	CDC                 cdc.Source
 	Events              cdcSubscriber
-	Mobile              *controllers.MobileController
 	Browser             controllers.BrowserService
 	PreviewServer       controllers.ManagedPreviewServer
 	SessionCapabilities controllers.SessionCapabilityValidator
 	SystemChecks        controllers.SystemChecker
-	// HostID is this machine's stable, machine-bound identity, served by the
-	// unauthenticated GET /api/v1/identity probe so a phone can confirm which
-	// machine answered before presenting a credential.
-	HostID string
-	// Endpoints reports how this daemon can currently be reached, for the
-	// phone's endpoint-refresh route.
-	Endpoints controllers.EndpointSource
-	Installer controllers.Installer
-	AgentAuth controllers.AgentAuthService
-
-	// Presence tracks which mobile devices are currently running the app.
-	// Nil disables presence tracking (the roster then reports every device offline).
-	Presence *presence.Tracker
-
-	// DeviceRoster and DeviceLive back the desktop-only mobile device roster.
-	DeviceRoster controllers.DeviceRoster
-	DeviceLive   controllers.LiveSet
-}
-
-// normalizeAPIDeps closes the Presence/DeviceLive duplication trap structurally.
-// Liveness enters APIDeps twice — Presence drives the heartbeat middleware that
-// touches it, DeviceLive is what the device roster reads — and nothing enforces
-// they stay the same tracker. If a future edit set Presence but left DeviceLive
-// nil (or re-split them), the roster would silently and permanently report
-// every device offline: no error, no log, no test failure short of a live
-// phone. Defaulting DeviceLive to Presence here, at the one place APIDeps is
-// consumed to build the API, makes that trap unreachable rather than merely
-// currently avoided by careful call-site wiring.
-//
-// A nil Presence on its own is not an error: the roster must keep listing and
-// managing devices with every device simply reporting offline (see
-// MobileDevicesController.List's own nil-Presence fallback) — that decision
-// stands. What IS a real mis-wiring is a live DeviceRoster with no liveness
-// source at all after the fallback above; that gets exactly one startup
-// warning, because a silent-forever-offline roster is precisely what a
-// startup log is for.
-func normalizeAPIDeps(deps APIDeps, log *slog.Logger) APIDeps {
-	if deps.DeviceLive == nil && deps.Presence != nil {
-		deps.DeviceLive = deps.Presence
-	}
-	if deps.DeviceRoster != nil && deps.DeviceLive == nil {
-		log.Warn("mobile device roster has no liveness tracker wired; every device will report offline")
-	}
-	return deps
+	Installer           controllers.Installer
+	AgentAuth           controllers.AgentAuthService
 }
 
 // API owns one controller per resource and is the single Register call the
@@ -107,7 +61,6 @@ type API struct {
 	prs           *controllers.PRsController
 	reviews       *controllers.ReviewsController
 	notifications *controllers.NotificationsController
-	push          *controllers.PushController
 	imports       *controllers.ImportController
 	shellTerms    *controllers.ShellTerminalsController
 	conversations *controllers.ConversationsController
@@ -115,8 +68,6 @@ type API struct {
 	dev           *controllers.DevController
 	browser       *controllers.BrowserController
 	system        *controllers.SystemController
-	identity      *controllers.IdentityController
-	endpoints     *controllers.EndpointsController
 	systemInstall *controllers.SystemInstallController
 	agentAuth     *controllers.AgentAuthController
 	events        *EventsController
@@ -148,7 +99,6 @@ func NewAPI(cfg config.Config, deps APIDeps) *API {
 		prs:           &controllers.PRsController{Svc: deps.PRs},
 		reviews:       &controllers.ReviewsController{Svc: deps.Reviews},
 		notifications: &controllers.NotificationsController{Svc: deps.Notifications, Stream: deps.NotificationStream},
-		push:          &controllers.PushController{Registry: deps.Push},
 		imports:       &controllers.ImportController{Svc: deps.Import},
 		shellTerms:    &controllers.ShellTerminalsController{Svc: deps.ShellTerminals},
 		conversations: &controllers.ConversationsController{Svc: deps.Conversations},
@@ -156,8 +106,6 @@ func NewAPI(cfg config.Config, deps APIDeps) *API {
 		dev:           &controllers.DevController{Import: deps.DevImport},
 		browser:       &controllers.BrowserController{Svc: deps.Browser},
 		system:        &controllers.SystemController{Checks: deps.SystemChecks},
-		identity:      &controllers.IdentityController{HostID: deps.HostID},
-		endpoints:     &controllers.EndpointsController{Source: deps.Endpoints},
 		systemInstall: &controllers.SystemInstallController{Installer: deps.Installer},
 		agentAuth:     &controllers.AgentAuthController{Svc: deps.AgentAuth},
 		events:        &EventsController{Source: deps.CDC, Live: deps.Events},
@@ -177,7 +125,6 @@ func (a *API) Register(root chi.Router) {
 
 		r.Group(func(r chi.Router) {
 			r.Use(middleware.Timeout(timeout))
-			r.Use(presenceMiddleware(a.deps.Presence))
 			a.agents.Register(r)
 			a.projects.Register(r)
 			a.sessions.Register(r)
@@ -186,7 +133,6 @@ func (a *API) Register(root chi.Router) {
 			a.prs.Register(r)
 			a.reviews.Register(r)
 			a.notifications.Register(r)
-			a.push.Register(r)
 			a.imports.Register(r)
 			a.shellTerms.Register(r)
 			a.conversations.Register(r)
@@ -194,8 +140,6 @@ func (a *API) Register(root chi.Router) {
 			a.dev.Register(r)
 			a.browser.Register(r)
 			a.system.Register(r)
-			a.identity.Register(r)
-			a.endpoints.Register(r)
 			a.systemInstall.Register(r)
 			a.agentAuth.Register(r)
 			// Sibling REST controllers plug in here.

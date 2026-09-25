@@ -95,7 +95,7 @@ The layout is desktop-first. On constrained widths, preserve task content first,
 - **Home:** intentionally minimal. It introduces the next meaningful action, not a fake dashboard.
   - One centered column (`max-w-[640px]`); no decorative upward translate.
   - "Star us" is a quiet text link with dashed underline on hover — never a TopbarButton, accent pill, or bordered card.
-  - Primary actions are a 2×2 grid; standalone agent is a grid cell, not a full-width hero CTA above. Connect Mobile stays in settings — not on home.
+  - Primary actions are a 2×2 grid; standalone agent is a grid cell, not a full-width hero CTA above. Mobile support remains a disabled settings entry — not on home.
   - Recent project rows use shared `NavRowHighlight` (same growing pill as sidebar), not a flat `hover:bg-interactive-hover` wash.
 - **Board:** the operational overview. Each lane has a semantic reason to exist and derived status determines placement.
 - **Session:** the working room. The conversation or terminal is primary; tabs, files, PRs, and inspector are supporting context.
@@ -421,6 +421,6 @@ Approve only when the answer to every applicable check is yes. Otherwise classif
 | 2026-09-04 | Settings language follows the user's task, not internal architecture | “Agents” describes installation/setup and “Accounts” describes sign-in/account management more clearly than “Harness” or “Subscriptions”. |
 | 2026-09-04 | Installed agent rows use a terminal, compact state | A disabled Installed button is clearer than a detached check icon; stale details must not make a completed installation look actionable. |
 | 2026-09-04 | Only trustworthy user-facing data belongs below an agent name | The model catalog's `binaryVersion` is an internal cache fingerprint, so it must not be presented as a CLI version. |
-| 2026-09-16 | Home: quiet Star-us link; 2×2 action grid with standalone in-grid; recent rows use NavRowHighlight | Rejected accent CTAs, Connect Mobile on home, and flat hover washes — keep home minimal and aligned with sidebar row chrome. |
+| 2026-09-16 | Home: quiet Star-us link; 2×2 action grid with standalone in-grid; recent rows use NavRowHighlight | Rejected accent CTAs, mobile controls on home, and flat hover washes — keep home minimal and aligned with sidebar row chrome. |
 | 2026-09-16 | Brand mark clicks to home with no hover/focus fill | Separate home affordance and sidebar focus wash on the brand were rejected. |
 | 2026-09-16 | Resize grips: fixed 80vh hover pill on center-pane border; clamp to panel min/max ∩ CSS max-width | Rejected always-on/`::after`/inset grips and unclamped pointer-following (inspector flew past both limits). |

@@ -14,8 +14,8 @@ import type { TerminalShellKind } from "../../../shared/ui-locale";
 import { isWindowsPlatform } from "../../lib/platform";
 
 /**
- * Default interface for new sessions. Daemon-owned so `open-agents spawn` and mobile
- * resolve the same value. Only affects sessions created afterwards — a
+ * Default interface for new sessions. Daemon-owned so `open-agents spawn` and
+ * headless clients resolve the same value. Only affects sessions created afterwards — a
  * session's interface is fixed when it is born.
  */
 function SessionInterfaceRow() {

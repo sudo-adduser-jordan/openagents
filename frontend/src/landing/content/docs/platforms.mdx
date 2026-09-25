@@ -1,6 +1,6 @@
 ---
 title: Platforms
-description: Install and use Open Agents on macOS, Windows, Linux, and mobile.
+description: Install and use Open Agents on macOS, Windows, and Linux.
 ---
 
 Open Agents ships as a desktop application for macOS, Windows, and Linux. The core workflow is the same everywhere: register a repository, create an isolated worktree, run an agent in Chat or Terminal UI, and follow its pull request.
@@ -55,23 +55,9 @@ Windows supports the desktop workflow, structured Chat, and native Terminal UI t
 
 Use PowerShell, Command Prompt, or Git Bash for optional CLI commands. Open Agents suppresses transient console windows for tools launched by the desktop daemon.
 
-## Mobile Companion
-
-Open Agents's Expo mobile app is a second interface to the desktop daemon, not a cloud relay. In desktop settings, choose **Connect Mobile** to enable a separate LAN listener and pair the phone.
-
-Security properties:
-
-- The LAN listener is off by default and exists only while Connect Mobile is enabled.
-- It is protected by a rotating connection password.
-- The pairing QR contains the address, not the password.
-- Traffic is plaintext HTTP and intended only for a trusted home network.
-- Daemon control, telemetry, and browser-control routes remain loopback-only.
-
-Mobile defaults new workers and orchestrators to Chat when the selected harness supports it. Terminal UI remains available as a compatibility choice.
-
 ## Remote And Server Use
 
-The desktop daemon's primary listener is deliberately bound to `127.0.0.1` without authentication. Do not expose it through a public bind or reverse proxy. Connect Mobile is the only built-in off-device listener and is deliberately limited to an explicitly enabled home-network workflow.
+The desktop daemon's primary listener is deliberately bound to `127.0.0.1` without authentication. Do not expose it through a public bind or reverse proxy.
 
 For unattended work, keep the desktop host awake and reachable on its local network. Open Agents does not turn the local desktop product into a hosted multi-user service.
 
@@ -79,6 +65,6 @@ For unattended work, keep the desktop host awake and reachable on its local netw
 
 <Cards>
 	<Card title="Installation" href="/docs/installation" description="Download Open Agents and connect GitHub and an agent harness." />
-	<Card title="Dashboard" href="/docs/dashboard" description="Learn the desktop and mobile control surfaces." />
+	<Card title="Dashboard" href="/docs/dashboard" description="Learn the desktop control surface." />
 	<Card title="Troubleshooting" href="/docs/troubleshooting" description="Resolve platform-specific startup and terminal issues." />
 </Cards>

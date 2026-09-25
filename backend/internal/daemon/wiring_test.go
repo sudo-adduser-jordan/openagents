@@ -76,7 +76,6 @@ func TestInstalledAgentHarnessMapsManagedHarnessInstalls(t *testing.T) {
 		{target: systeminstall.TargetOpencode, harness: "opencode", ok: true},
 		{target: systeminstall.TargetTmux},
 		{target: systeminstall.TargetGH},
-		{target: systeminstall.TargetCloudflared},
 	} {
 		got, ok := installedAgentHarness(test.target)
 		if got != test.harness || ok != test.ok {

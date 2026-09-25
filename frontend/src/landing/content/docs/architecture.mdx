@@ -3,14 +3,13 @@ title: Architecture
 description: How the Go daemon, Electron app, storage, controllers, and adapters fit together.
 ---
 
-Open Agents is a local, single-user system built around a long-running Go daemon. The Electron/React desktop app, optional CLI, and Expo mobile app are thin clients over the daemon's HTTP, SSE, and terminal interfaces.
+Open Agents is a local, single-user system built around a long-running Go daemon. The Electron/React desktop app and optional CLI are thin clients over the daemon's HTTP, SSE, and terminal interfaces.
 
 ## System Overview
 
 ```text
 Electron + React desktop ─┐
 open-agents CLI ──────────────────┼─> Go daemon ─> services/managers ─> SQLite
-Expo mobile (opt-in LAN) ┘       │                 │
                                 │                 ├─> agent/runtime/workspace adapters
                                 ├─> SSE events    ├─> native Chat drivers
                                 ├─> terminal mux  └─> GitHub SCM observer
@@ -50,7 +49,7 @@ Durable state is stored in SQLite under `~/.open-agents/data` by default. Databa
 
 The event stream supports replay with `Last-Event-ID`. Clients use it to invalidate targeted queries rather than transferring every full session or Chat payload on each update.
 
-All application state remains under `~/.open-agents`, including the run file, managed worktrees, Electron data, and mobile configuration. `OPEN_AGENTS_DATA_DIR` and `OPEN_AGENTS_RUN_FILE` provide advanced overrides for daemon storage and discovery.
+All application state remains under `~/.open-agents`, including the run file, managed worktrees, and Electron data. `OPEN_AGENTS_DATA_DIR` and `OPEN_AGENTS_RUN_FILE` provide advanced overrides for daemon storage and discovery.
 
 ## Services And Adapters
 
@@ -70,13 +69,11 @@ The daemon also exposes pull-request merge and comment-resolution actions plus r
 
 The primary daemon listener binds `127.0.0.1:3001` and is unauthenticated. It serves the desktop app and CLI and is never configurable to a public bind.
 
-Connect Mobile creates a second listener only when explicitly enabled. It binds the LAN interface behind bearer-password authentication and serves the app API and authenticated terminal mux, but excludes shutdown, telemetry, mobile-control, and browser-control routes. Transport is plaintext and intended only for a trusted home network.
-
 ## Terminal And Browser Bridges
 
 `/mux` provides per-client terminal attachment. TUI sessions attach to the agent runtime; Chat sessions can use it for a separate worktree shell.
 
-Browser automation crosses a dedicated local daemon-to-Electron socket. The daemon authorizes and correlates commands; Electron owns the selected session's isolated `WebContentsView`. Browser control is blocked on the mobile LAN listener.
+Browser automation crosses a dedicated local daemon-to-Electron socket. The daemon authorizes and correlates commands; Electron owns the selected session's isolated `WebContentsView`.
 
 ## Load-Bearing Rules
 
@@ -84,7 +81,7 @@ Browser automation crosses a dedicated local daemon-to-Electron socket. The daem
 2. Never treat failed probes as proof that a session died.
 3. Never force-delete dirty worktrees.
 4. Keep all app state under `~/.open-agents` unless an explicit supported override applies.
-5. Keep the primary listener on loopback; only Connect Mobile may create the authenticated opt-in LAN listener.
+5. Keep the primary listener on loopback; the desktop app is the supported client surface.
 6. Keep the CLI and UI thin; domain logic belongs in the daemon.
 7. Emit durable change events through SQLite triggers and CDC.
 8. Add new migrations; never modify an already-merged migration.
@@ -93,6 +90,6 @@ Browser automation crosses a dedicated local daemon-to-Electron socket. The daem
 
 <Cards>
 	<Card title="Dashboard" href="/docs/dashboard" description="See how these capabilities appear in the desktop app." />
-	<Card title="Platforms" href="/docs/platforms" description="Understand desktop and mobile platform behavior." />
+	<Card title="Platforms" href="/docs/platforms" description="Understand desktop platform behavior." />
 	<Card title="Troubleshooting" href="/docs/troubleshooting" description="Diagnose daemon, controller, terminal, and SCM problems." />
 </Cards>

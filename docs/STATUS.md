@@ -164,26 +164,11 @@ surface (`npm run sqlc`, `npm run api`).
   actions, persistent read history, mark-read controls, and Electron app toasts
   while the app is running.
 
-### Mobile (Expo + React Native)
+### Mobile
 
-- Connect Mobile pairs with the daemon's opt-in authenticated LAN listener; the
-  loopback listener and its security model remain unchanged.
-- New mobile workers and orchestrators request Chat mode by default. Worker
-  creation filters to the daemon-advertised Chat harnesses, while Terminal UI
-  remains an explicit compatibility choice and typed Chat preflight failures
-  offer that fallback.
-- Session routing uses the same daemon-committed mode as desktop. TUI keeps
-  the existing authenticated mux/xterm surface; Chat uses the same durable,
-  paged conversation projection and CDC/SSE invalidation stream as desktop.
-- Mobile exposes the same capability-gated TUI↔Chat handoff, busy-turn policy,
-  cancellation window, progress overlay, and automatic renderer swap after the
-  daemon commits the new controller.
-- Native Chat includes prose/Markdown, provider activity, commands, plans,
-  changed files, approvals, structured input, model/effort/provider controls,
-  compaction, rollback, MCP recovery, skills and file references, staged/native
-  image delivery, embedded text resources, voice dictation, retryable delivery,
-  persisted drafts, and a session-scoped worktree shell through the existing
-  terminal mux.
+The mobile app and its network bridge have been removed. The desktop shell keeps
+only a disabled Mobile settings entry and a disabled Connect Mobile button for
+future product work.
 
 ## In flight / not yet a runtime feature
 

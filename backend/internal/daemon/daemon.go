@@ -27,15 +27,11 @@ import (
 	"github.com/sudo-adduser-jordan/open-agents/backend/internal/daemon/supervisor"
 	"github.com/sudo-adduser-jordan/open-agents/backend/internal/domain"
 	"github.com/sudo-adduser-jordan/open-agents/backend/internal/httpd"
-	"github.com/sudo-adduser-jordan/open-agents/backend/internal/httpd/controllers"
-	"github.com/sudo-adduser-jordan/open-agents/backend/internal/mobilebridge"
 	"github.com/sudo-adduser-jordan/open-agents/backend/internal/notify"
 	usagepipeline "github.com/sudo-adduser-jordan/open-agents/backend/internal/observe/usage"
 	"github.com/sudo-adduser-jordan/open-agents/backend/internal/ports"
-	"github.com/sudo-adduser-jordan/open-agents/backend/internal/presence"
 	"github.com/sudo-adduser-jordan/open-agents/backend/internal/preview"
 	"github.com/sudo-adduser-jordan/open-agents/backend/internal/previewserver"
-	"github.com/sudo-adduser-jordan/open-agents/backend/internal/push"
 	"github.com/sudo-adduser-jordan/open-agents/backend/internal/runfile"
 	agentsvc "github.com/sudo-adduser-jordan/open-agents/backend/internal/service/agent"
 	"github.com/sudo-adduser-jordan/open-agents/backend/internal/service/agentauth"
@@ -314,18 +310,6 @@ func Run() error {
 		agentSvc.RecheckAgent(harness)
 	})
 
-	// Connect Mobile: the bridge service needs the LAN listener, but the LAN
-	// listener needs the built router's handler, which only exists once srv is
-	// constructed — and srv's router mounts the mobile controller, which needs
-	// the bridge service. Break the cycle with late binding: build bs with LAN
-	// left nil, hand its controller into NewWithDeps, then once srv exists,
-	// build the LAN listener over srv.Handler() and assign it onto bs.LAN.
-	bs := &controllers.BridgeService{
-		ConfigPath:  mobilebridge.Path(cfg.DataDir),
-		DefaultPort: mobilebridge.DefaultPort,
-	}
-	// HostID is assigned below, once the identity file has been read.
-	mc := &controllers.MobileController{Bridge: bs}
 	browserService := browsersvc.New(sessionSvc, browserBroker, browserAuthority)
 
 	// Standalone shell terminals: user-opened shells with no agent session
@@ -400,92 +384,8 @@ func Run() error {
 	}
 	autoReview := autoreview.New(store, reviewSvc, autoreview.Config{Logger: log})
 	lcStack.autoReviewDone = autoReview.Start(ctx)
-	// Push-device registry: persisted phones that receive OS push notifications.
-	// A load failure must not block boot — degrade to no push rather than refusing
-	// to start the daemon. pushRegistry (interface) is assigned only when load
-	// succeeds so a failure leaves a true nil interface (not a non-nil interface
-	// wrapping a nil pointer), which the controller's nil guard relies on to
-	// return 501. pushDevices keeps the concrete registry for the dispatcher.
-	// deviceRoster (interface) mirrors the same nil-guard as pushRegistry: it is
-	// assigned only when load succeeds, so a failed load leaves a true nil
-	// interface rather than a non-nil interface wrapping a nil *DeviceRegistry
-	// (which would panic on first method call). The roster controller answers
-	// 503 DEVICE_REGISTRY_UNAVAILABLE in that state instead of crashing or
-	// silently no-oping.
-	var (
-		pushRegistry controllers.PushRegistry
-		pushDevices  *mobilebridge.DeviceRegistry
-		deviceRoster controllers.DeviceRoster
-	)
-	if reg, regErr := mobilebridge.LoadRegistry(mobilebridge.PushDevicesPath(cfg.DataDir)); regErr != nil {
-		log.Warn("load push device registry failed; push notifications disabled", "err", regErr)
-	} else {
-		pushRegistry = reg
-		pushDevices = reg
-		deviceRoster = reg
-	}
-
-	// One presence tracker instance shared by APIDeps.Presence (the
-	// heartbeat middleware that touches it) and APIDeps.DeviceLive (the roster
-	// controller that reads it) — must be the same instance or every device
-	// would silently report offline.
-	presenceTracker := presence.NewTracker()
-
-	// Push dispatcher: an additive notification-hub subscriber that relays each
-	// new notification to every registered device via the Expo Push Service. Runs
-	// for the daemon's lifetime and stops when ctx is cancelled. EXPO_ACCESS_TOKEN
-	// (optional) enables Expo's enforced push security when set.
-	if pushDevices != nil {
-		dispatcher := push.NewDispatcher(notificationHub, pushDevices, push.NewExpoClient(os.Getenv("EXPO_ACCESS_TOKEN")), log)
-		go dispatcher.Run(ctx)
-	}
-
-	// Managed remote-access connector. Reap first: a daemon that died without
-	// stopping its connector leaves a public tunnel to this machine running
-	// with nobody watching it.
-	tunnelPID := mobilebridge.TunnelPIDPath(cfg.DataDir)
-	if reapErr := mobilebridge.ReapStaleTunnel(tunnelPID, mobilebridge.IsLiveCloudflared, mobilebridge.KillProcess); reapErr != nil {
-		log.Warn("could not reap a stale mobile tunnel", "error", reapErr)
-	}
-	// Looked up again whenever the bridge is enabled, so a cloudflared the user
-	// installs from Connect Mobile is picked up without restarting Open Agents.
-	bs.ResolveTunnel = func() controllers.TunnelController {
-		res := mobilebridge.ResolveCloudflared(mobilebridge.LocalCloudflaredLookup(cfg.DataDir))
-		if res.NeedsInstall {
-			return nil
-		}
-		log.Info("mobile remote access available", "cloudflared", res.Path, "source", res.Source)
-		return mobilebridge.NewManagedTunnel(mobilebridge.ManagedTunnelDeps{
-			Binary: res.Path, PIDPath: tunnelPID, Log: log,
-		})
-	}
-	if res := mobilebridge.ResolveCloudflared(mobilebridge.LocalCloudflaredLookup(cfg.DataDir)); !res.NeedsInstall {
-		log.Info("mobile remote access available", "cloudflared", res.Path, "source", res.Source)
-		bs.Tunnel = mobilebridge.NewManagedTunnel(mobilebridge.ManagedTunnelDeps{
-			Binary: res.Path, PIDPath: tunnelPID, Log: log,
-		})
-	} else {
-		// Not fatal: the LAN and Tailscale endpoints still work, and Connect
-		// Mobile behaves exactly as it did before remote access existed.
-		log.Info("mobile remote access unavailable; cloudflared not installed",
-			"rejectedSystemPath", res.SystemPath)
-	}
-
-	// Stable, machine-bound host identity, served by the unauthenticated
-	// GET /api/v1/identity probe. A failure here is not fatal: the probe then
-	// answers 501 and the phone falls back to pairing without identity
-	// verification, which is how it behaved before the probe existed.
-	hostIdentity, identityErr := mobilebridge.EnsureLocalIdentity(cfg.DataDir)
-	if identityErr != nil {
-		log.Warn("could not establish host identity; /api/v1/identity will report unimplemented", "error", identityErr)
-	}
-
-	bs.HostID = hostIdentity.HostID
-
 	srv, err := httpd.NewWithDeps(cfg, log, termMgr, httpd.APIDeps{
 		Projects:           projectSvc,
-		HostID:             hostIdentity.HostID,
-		Endpoints:          bs,
 		Agents:             agentSvc,
 		SystemChecks:       systemChecks,
 		Installer:          systemInstall,
@@ -495,10 +395,6 @@ func Run() error {
 		Reviews:            reviewSvc,
 		Notifications:      notifier,
 		NotificationStream: notificationHub,
-		Push:               pushRegistry,
-		Presence:           presenceTracker,
-		DeviceRoster:       deviceRoster,
-		DeviceLive:         presenceTracker,
 		Import:             importsvc.New(importsvc.Deps{}),
 		ShellTerminals:     shellTermSvc,
 		AgentAuth:          agentAuthSvc,
@@ -509,7 +405,6 @@ func Run() error {
 		Activity:           lcStack.LCM,
 		UsageHooks:         usageCollector,
 		UsageSummary:       usagesvc.NewSummaryReader(store),
-		Mobile:             mc,
 		DevImport: devimportsvc.New(devimportsvc.Deps{
 			Store:         store,
 			TargetDataDir: cfg.DataDir,
@@ -546,22 +441,6 @@ func Run() error {
 		}()
 	}
 	var usageDone <-chan struct{}
-
-	// Late-bind: the LAN listener shares the exact loopback router instance so
-	// the LAN surface and loopback surface never drift apart.
-	lan := httpd.NewMobileLAN(srv.Handler(), mobilebridge.DefaultPort, log)
-	bs.LAN = lan
-
-	// Restore Connect Mobile across a daemon restart: if the bridge was left
-	// enabled, re-arm the listener on its last port with the same password
-	// hash so an already-paired phone keeps working with no new password, and
-	// (via bs.RestoreOnBoot) re-apply the secure-pairing proxy against the
-	// port Start actually bound. Routed through bs, not lan directly, so the
-	// proxy never gets pinned to a dead port after an ephemeral fallback.
-	// Best-effort: never blocks boot.
-	if err := restoreMobileOnBoot(mobilebridge.Path(cfg.DataDir), bs); err != nil {
-		log.Warn("restore mobile bridge on boot failed", "err", err)
-	}
 
 	if usagePipeline != nil {
 		usageDone = usagePipeline.Start(ctx)
@@ -639,22 +518,6 @@ func Run() error {
 		<-usageDone
 	}
 	lcStack.Stop()
-	// Tear the tailnet proxy down before the listener it fronts. `tailscale
-	// serve --bg` state lives in tailscaled and outlives this process, so
-	// leaving it would keep publishing a local port that no longer has the
-	// authenticated LAN listener behind it. Best-effort and never blocking:
-	// boot restore re-applies it against the next bound port.
-	bs.ShutdownServe()
-	// And the connector before that again, for the same reason: cloudflared is
-	// a separate process that outlives this one, so leaving it would keep a
-	// public hostname resolving to a port that is about to close. Stopping it
-	// does not disable the bridge — boot restore starts a new one.
-	bs.ShutdownTunnel()
-	lanStopCtx, lanCancel := context.WithTimeout(context.Background(), cfg.ShutdownTimeout)
-	defer lanCancel()
-	if err := lan.Stop(lanStopCtx); err != nil {
-		log.Error("mobile LAN listener shutdown", "err", err)
-	}
 	if err := cdcPipe.Stop(); err != nil {
 		log.Error("cdc pipeline shutdown", "err", err)
 	}

@@ -67,12 +67,6 @@ Open Agents's browser bridge can support agent-driven navigation, snapshots, cli
 
 The notification center keeps durable alerts for sessions that need input, pull requests ready to merge, merged pull requests, and pull requests closed without merging. Use **Unread** and **All**, mark items read, or click through to the relevant session or pull request. Electron also shows app toasts while Open Agents is running.
 
-## Connect Mobile
-
-In settings, **Connect Mobile** enables an authenticated LAN listener and shows pairing details. The mobile app uses the same durable sessions, Chat history, and event stream. It supports Chat by default and can open a TUI session through the authenticated terminal mux.
-
-Connect Mobile is plaintext and intended only for a trusted home network. Turning it off closes the LAN listener.
-
 ## Project Settings
 
 Project settings configure worker and orchestrator roles without changing the registered repository identity. The desktop app writes through the daemon API; it does not directly edit the database or run session logic in the renderer.

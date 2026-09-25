@@ -232,8 +232,7 @@ func (c *SessionsController) spawn(w http.ResponseWriter, r *http.Request) {
 		apispec.NotImplemented(w, r, "POST", "/api/v1/sessions")
 		return
 	}
-	// Bound the body before decoding: this route is served on the LAN listener
-	// (Open Agents Mobile), not just loopback, and the attachment caps only run after the
+	// Bound the body before decoding: the attachment caps only run after the
 	// whole body is decoded. MaxBytesReader stops the read past the limit so an
 	// oversized base64 payload can't allocate in full first.
 	r.Body = http.MaxBytesReader(w, r.Body, maxSpawnBodyBytes)

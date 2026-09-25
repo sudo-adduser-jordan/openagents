@@ -17,7 +17,7 @@ func TestChatModeSpawnPrecedenceAndDefaultIsolation(t *testing.T) {
 	project := seedProject(t, d, "modes")
 
 	// The daemon owns the default, so a client that says nothing still gets a
-	// consistent answer — including `open-agents spawn` and mobile, which have no UI state.
+	// consistent answer — including `open-agents spawn`, which has no UI state.
 	d.mustCall("PATCH", "/settings/session-interface", http.StatusOK,
 		map[string]any{"defaultSessionMode": "chat"}, nil)
 

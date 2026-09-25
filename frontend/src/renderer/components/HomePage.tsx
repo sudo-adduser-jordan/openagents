@@ -29,7 +29,7 @@ import { Badge } from "./ui/badge";
  * - "Star us" is a quiet text link with dashed underline on hover — NOT a
  *   TopbarButton / accent pill / bordered card.
  * - Primary actions are a 2×2 grid; standalone agent lives IN the grid (not a
- *   full-width accent CTA above). Connect Mobile is settings-only — not here.
+ *   full-width accent CTA above). Mobile support is intentionally not exposed here.
  * - Recent rows use shared {@link NavRowHighlight} (same as sidebar), not a
  *   flat `hover:bg-interactive-hover` wash.
  * - Section titles share {@link HOME_SECTION_TITLE_CLASS}; keep Jump back /

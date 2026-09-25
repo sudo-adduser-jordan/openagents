@@ -4,7 +4,6 @@ import { FeatureDemo } from "./components/FeatureDemo";
 import { DelegationDemo } from "./components/DelegationDemo/DelegationDemo";
 import { FeedbackLoopDemo } from "./components/FeedbackLoopDemo/FeedbackLoopDemo";
 import { FleetBoardDemo } from "./components/FleetBoardDemo/FleetBoardDemo";
-import { MobileAppDemo } from "./components/MobileAppDemo/MobileAppDemo";
 import { ProjectAgentsDemo } from "./components/ProjectAgentsDemo/ProjectAgentsDemo";
 import { FEATURES } from "./constants";
 
@@ -13,7 +12,6 @@ const DEMO_COMPONENTS = [
 	FleetBoardDemo,
 	FeedbackLoopDemo,
 	ProjectAgentsDemo,
-	MobileAppDemo,
 ];
 
 const FEATURE_BACKGROUNDS = [

@@ -53,12 +53,6 @@ export const DOWNLOAD_URL_MAC_X64 = "https://github.com/sudo-adduser-jordan/open
 export const DOWNLOAD_URL_WINDOWS = "https://github.com/sudo-adduser-jordan/open-agents/releases/latest/download/open-agents-win32-x64.exe";
 export const DOWNLOAD_URL_LINUX = "https://github.com/sudo-adduser-jordan/open-agents/releases/latest/download/open-agents-linux-x64.AppImage";
 
-// The new native identities use dev.openagents.mobile. Store listings are
-// provisioned externally, so no retired listing or guessed replacement URL is
-// exposed until both values are available.
-export const IOS_APP_STORE_URL: string | null = null;
-export const ANDROID_PLAY_STORE_URL: string | null = null;
-
 export const AGENT_HARNESSES = 24;
 export const TAGLINE = "Stop babysitting agents. Start merging real work.";
 export const HERO_SUBHEADLINE = "Run a fleet of coding agents while keeping branches, reviews, and CI failures manageable.";

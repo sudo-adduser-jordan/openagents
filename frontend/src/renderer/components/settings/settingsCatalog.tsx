@@ -3,11 +3,9 @@ import { lazy, type ReactNode } from "react";
 import type { GlobalSettingsSection } from "../../stores/ui-store";
 import { BrowserDownloadsSection } from "./BrowserDownloadsSection";
 import { BrowserProfilesSection } from "./BrowserProfilesSection";
-import { ConnectMobileContent } from "./ConnectMobileContent";
 import { GeneralSettingsSection } from "./GeneralSettingsSection";
 import { HarnessSettingsSection } from "./HarnessSettingsSection";
 import { KeyboardShortcutsContent } from "./KeyboardShortcutsContent";
-import { MobileDevicesSection } from "./MobileDevicesSection";
 import { ReportProblemContent } from "./ReportProblemContent";
 import { SettingsSection } from "./SettingsSection";
 
@@ -60,11 +58,13 @@ const globalSettingsCatalog: SettingsCatalogItem[] = [
 		icon: Smartphone,
 		label: () => "Mobile",
 		disabled: true,
-		render: ( titleHidden) => (
+		render: (titleHidden) => (
 			<SettingsSection titleHidden={titleHidden} title="Mobile">
-				<div className="rounded-md bg-[var(--color-bg-settings-row)] pb-4 pt-0">
-					<ConnectMobileContent active />
-					<MobileDevicesSection />
+				<div className="rounded-md bg-[var(--color-bg-settings-row)] px-3 py-4">
+					<p className="text-sm text-settings-label">{"Mobile support is currently unavailable."}</p>
+					<p className="mt-1 text-caption text-settings-muted">
+						{"The Connect Mobile entry point remains visible for a future release."}
+					</p>
 				</div>
 			</SettingsSection>
 		),

@@ -599,8 +599,7 @@ Startup ordering is:
    after the durable policy is known. Daemon dispatch begins only after its
    matching-generation acknowledgement.
 
-Live changes use two loopback-only internal commands that are not served by the
-LAN listener. prepare-disable can only close the daemon gate; it cannot enable
+Live changes use two loopback-only internal commands. prepare-disable can only close the daemon gate; it cannot enable
 reporting or change durable policy. apply-policy treats its body as a hint: the
 daemon must re-read and validate telemetry_policy.json and applies only the exact
 generation/value found there. It rejects a missing, malformed, stale, or

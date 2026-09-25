@@ -201,12 +201,6 @@ launch setting, not a remotely managed switch: the variable must reach the Open 
 desktop process itself. A shell startup file may not be inherited when Open Agents is
 launched from the macOS Finder or Dock.
 
-Mobile telemetry is not affected by this variable. Mobile builds instead use
-`EXPO_PUBLIC_OPEN_AGENTS_TELEMETRY_DISABLED=1` to disable all telemetry or
-`EXPO_PUBLIC_OPEN_AGENTS_TELEMETRY_DISABLED_EVENTS` for a comma-separated event list.
-Those values are compiled into the app, so an ingestion drop rule is the only
-way to silence a mobile stream in builds already shipped.
-
 The switch is applied before aggregation, rate limiting, and export, so a
 disabled stream consumes none of those resources. Local SQLite storage is
 deliberately unaffected and continues to keep the raw operational event for
