@@ -37,7 +37,9 @@ type Launch struct {
 // construct its process. It intentionally contains no install mechanism: binary
 // ownership stays with the existing agent plugin.
 type LaunchConfig struct {
-	SessionID       domain.SessionID
+	SessionID domain.SessionID
+	// Kind is the session role, so a driver can scope tool policy per role.
+	Kind           domain.SessionKind
 	DataDir         string
 	WorkspacePath   string
 	Env             map[string]string
@@ -193,7 +195,7 @@ func (d *Driver) Start(ctx context.Context, cfg ports.ChatStartConfig) (ports.Ch
 		}
 	}
 	launchCfg := LaunchConfig{
-		SessionID: cfg.SessionID, DataDir: cfg.DataDir, WorkspacePath: cfg.WorkspacePath,
+		SessionID: cfg.SessionID, Kind: cfg.Kind, DataDir: cfg.DataDir, WorkspacePath: cfg.WorkspacePath,
 		Env:   cfg.Env,
 		Model: cfg.Model, Permissions: cfg.Permissions, SystemPrompt: cfg.SystemPrompt,
 		ProviderScopeID: cfg.ProviderScopeID,
@@ -282,7 +284,7 @@ func (d *Driver) Resume(ctx context.Context, cfg ports.ChatResumeConfig) (ports.
 		}
 	}
 	launchCfg := LaunchConfig{
-		SessionID: cfg.SessionID, DataDir: cfg.DataDir, WorkspacePath: cfg.WorkspacePath,
+		SessionID: cfg.SessionID, Kind: cfg.Kind, DataDir: cfg.DataDir, WorkspacePath: cfg.WorkspacePath,
 		Env:   cfg.Env,
 		Model: cfg.Model, Permissions: cfg.Permissions, SystemPrompt: cfg.SystemPrompt,
 		ProviderScopeID: cfg.ProviderScopeID,

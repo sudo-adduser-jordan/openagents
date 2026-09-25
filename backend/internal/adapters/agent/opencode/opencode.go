@@ -11,8 +11,11 @@
 //     materializes using-open-agents under .opencode/skills/ so opencode's skill tool
 //     can discover it (the data-dir skill path alone is invisible to opencode).
 //   - Its CLI exposes only one approval flag (--dangerously-skip-permissions)
-//     and no system-prompt flag, so Open Agents injects standing instructions by writing
-//     an Open Agents-owned per-session config and selecting the generated agent.
+//     and no system-prompt flag, so Open Agents injects standing instructions by
+//     passing a per-session config overlay and selecting the generated agent.
+//     That overlay also carries a per-agent tool policy: a manager is scoped to
+//     read-only tools, which is what makes "a manager never edits files" an
+//     enforced rule rather than a prompt convention.
 //
 // Open Agents-managed sessions derive native session identity and display metadata from
 // the opencode plugin's reported events, mirroring the Codex adapter.
@@ -35,6 +38,7 @@ import (
 	"github.com/sudo-adduser-jordan/open-agents/backend/internal/adapters/agent/agentbase"
 	"github.com/sudo-adduser-jordan/open-agents/backend/internal/adapters/agent/binaryutil"
 	"github.com/sudo-adduser-jordan/open-agents/backend/internal/adapters/agent/hookutil"
+	"github.com/sudo-adduser-jordan/open-agents/backend/internal/domain"
 	"github.com/sudo-adduser-jordan/open-agents/backend/internal/ports"
 	openagentsprocess "github.com/sudo-adduser-jordan/open-agents/backend/internal/process"
 
@@ -111,7 +115,7 @@ func (p *Plugin) GetLaunchCommand(ctx context.Context, cfg ports.LaunchConfig) (
 		return nil, err
 	}
 
-	content, agentName, err := sessionConfigContent(cfg.SystemPrompt, cfg.SessionID)
+	content, agentName, err := sessionConfigContent(cfg.SystemPrompt, cfg.SessionID, cfg.Kind)
 	if err != nil {
 		return nil, err
 	}
@@ -155,7 +159,7 @@ func (p *Plugin) GetRestoreCommand(ctx context.Context, cfg ports.RestoreConfig)
 		return nil, false, err
 	}
 
-	content, agentName, err := sessionConfigContent(cfg.SystemPrompt, cfg.Session.ID)
+	content, agentName, err := sessionConfigContent(cfg.SystemPrompt, cfg.Session.ID, cfg.Kind)
 	if err != nil {
 		return nil, false, err
 	}
@@ -388,9 +392,45 @@ func appendPermissionFlags(cmd *[]string, permissions ports.PermissionMode) {
 type opencodeAgentSettings struct {
 	Mode   string `json:"mode,omitempty"`
 	Prompt string `json:"prompt,omitempty"`
+	// Permission scopes tools for this agent alone. Open Agents sets it only for
+	// a manager, so the restriction cannot leak into a worker or into the user's
+	// own agents, and the user's global rules still layer on top of it.
+	Permission map[string]any `json:"permission,omitempty"`
 }
 
 const opencodeConfigContentEnvVar = "OPENCODE_CONFIG_CONTENT"
+
+// managerToolPolicy is the tool policy Open Agents enforces on a manager
+// session. A manager coordinates work and never edits files, but that was only
+// ever a prompt rule: nothing stopped it writing, and denying the edit/write
+// tools alone would still let `sed -i` and a stray `git commit` through bash.
+//
+// The shape mirrors the reviewer's read-only policy, narrowed to what a manager
+// actually needs: the Open Agents CLI it coordinates through, and read-only
+// inspection. It is emitted per agent rather than globally so it is scoped to
+// this session, and the user's own ~/.config/opencode rules still apply on top.
+func managerToolPolicy() map[string]any {
+	return map[string]any{
+		"*":    "deny",
+		"read": "allow",
+		"glob": "allow",
+		"grep": "allow",
+		"list": "allow",
+		"bash": map[string]string{
+			"*":                                      "deny",
+			"open-agents *":                          "allow",
+			"git status*":                            "allow",
+			"git diff*":                              "allow",
+			"git log*":                               "allow",
+			"git show*":                              "allow",
+			"gh api *":                               "allow",
+			"gh pr view*":                            "allow",
+			"gh issue view*":                         "allow",
+			"open-agents review submit *":            "allow",
+			"printf * | open-agents review submit *": "allow",
+		},
+	}
+}
 
 // sessionConfigContent builds the OpenCode config overlay that carries this
 // session's generated primary agent, returning the overlay and the agent name
@@ -402,24 +442,26 @@ const opencodeConfigContentEnvVar = "OPENCODE_CONFIG_CONTENT"
 // -- the one holding their providers, credentials and permission rules. Content
 // is additive, so the user's config stays the base layer and Open Agents only
 // contributes the session's agent.
-func sessionConfigContent(systemPrompt, sessionID string) (string, string, error) {
+func sessionConfigContent(systemPrompt, sessionID string, kind domain.SessionKind) (string, string, error) {
 	if strings.TrimSpace(systemPrompt) == "" {
 		return "", "", nil
 	}
-	content, err := PrepareACPConfigContent("", systemPrompt, sessionID, ports.PermissionModeDefault)
+	content, err := PrepareACPConfigContent("", systemPrompt, sessionID, ports.PermissionModeDefault, kind)
 	if err != nil {
 		return "", "", err
 	}
 	return content, opencodeOpenAgentsAgentName(sessionID), nil
 }
 
-// PrepareACPConfigContent merges Open Agents's standing instructions and any explicit
-// bypass-permissions choice into OpenCode's inline runtime overlay. The user's
-// OPENCODE_CONFIG path remains untouched, preserving its normal global, custom,
-// project, provider, and credential configuration.
+// PrepareACPConfigContent merges Open Agents's standing instructions, the
+// role's tool policy, and any explicit bypass-permissions choice into OpenCode's
+// inline runtime overlay. The user's OPENCODE_CONFIG path remains untouched,
+// preserving its normal global, custom, project, provider, and credential
+// configuration.
 func PrepareACPConfigContent(
 	existing, systemPrompt, sessionID string,
 	permissions ports.PermissionMode,
+	kind domain.SessionKind,
 ) (string, error) {
 	allowAll := ports.NormalizePermissionMode(permissions) == ports.PermissionModeBypassPermissions
 	if strings.TrimSpace(systemPrompt) == "" && !allowAll {
@@ -443,7 +485,13 @@ func PrepareACPConfigContent(
 			agents = map[string]any{}
 		}
 		agentName := opencodeOpenAgentsAgentName(sessionID)
-		agents[agentName] = opencodeAgentSettings{Mode: "primary", Prompt: systemPrompt}
+		settings := opencodeAgentSettings{Mode: "primary", Prompt: systemPrompt}
+		if kind == domain.KindManager {
+			// Scoped to this agent entry, so a worker is unaffected and the
+			// user's own agents keep whatever policy they configured.
+			settings.Permission = managerToolPolicy()
+		}
+		agents[agentName] = settings
 		config["agent"] = agents
 		config["default_agent"] = agentName
 	}

@@ -268,6 +268,9 @@ func MissingCapabilitiesForPermissions(caps ChatCapabilities, permissions Permis
 // ChatStartConfig is what a driver needs to open a new provider conversation.
 type ChatStartConfig struct {
 	SessionID domain.SessionID
+	// Kind is the session role. Drivers that scope tool policy per role (the
+	// opencode overlay restricts a manager to read-only tools) need it here.
+	Kind domain.SessionKind
 	// DataDir is Open Agents's state root. Provider bindings may write process-scoped
 	// configuration beneath it, but must never use the worktree or an OS-default
 	// application-data directory for Open Agents-owned state.
@@ -311,7 +314,9 @@ type ChatStartConfig struct {
 // ChatResumeConfig reattaches to a provider conversation after a restart.
 type ChatResumeConfig struct {
 	// See ChatStartConfig.ProviderIDsScoped.
-	ProviderIDsScoped      bool
+	ProviderIDsScoped bool
+	// See ChatStartConfig.Kind.
+	Kind                   domain.SessionKind
 	SessionID              domain.SessionID
 	ProviderConversationID string
 	DataDir                string

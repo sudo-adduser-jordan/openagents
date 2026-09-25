@@ -32,7 +32,7 @@ func configure(_ context.Context, cfg acpdriver.LaunchConfig) ([]string, map[str
 		return []string{"acp"}, nil, nil
 	}
 	content, err := opencode.PrepareACPConfigContent(
-		cfg.Env["OPENCODE_CONFIG_CONTENT"], cfg.SystemPrompt, string(cfg.SessionID), cfg.Permissions)
+		cfg.Env["OPENCODE_CONFIG_CONTENT"], cfg.SystemPrompt, string(cfg.SessionID), cfg.Permissions, cfg.Kind)
 	if err != nil {
 		return nil, nil, err
 	}

@@ -13,6 +13,7 @@ import (
 	"testing"
 
 	"github.com/sudo-adduser-jordan/open-agents/backend/internal/adapters/agent/hookutil"
+	"github.com/sudo-adduser-jordan/open-agents/backend/internal/domain"
 	"github.com/sudo-adduser-jordan/open-agents/backend/internal/ports"
 )
 
@@ -466,6 +467,69 @@ func TestGetLaunchCommandBuildsArgv(t *testing.T) {
 	}
 	if len(entries) != 1 || entries[0].Name() != "system.md" {
 		t.Fatalf("prompt dir = %v, want only system.md", entries)
+	}
+}
+
+// A manager coordinates and never edits files. That used to be a prompt rule
+// only, and denying the edit/write tools alone would still let `sed -i` and a
+// stray `git commit` through bash, so the policy scopes bash too.
+func TestManagerLaunchOverlayCarriesReadOnlyToolPolicy(t *testing.T) {
+	content, agentName, err := sessionConfigContent("manager rules", "mer-1", domain.KindManager)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if agentName != "open-agents-mer-1" {
+		t.Fatalf("agentName = %q", agentName)
+	}
+	var config struct {
+		Agent map[string]struct {
+			Permission map[string]any `json:"permission"`
+		} `json:"agent"`
+	}
+	if err := json.Unmarshal([]byte(content), &config); err != nil {
+		t.Fatal(err)
+	}
+	policy := config.Agent["open-agents-mer-1"].Permission
+	if policy == nil {
+		t.Fatalf("manager overlay carries no tool policy: %s", content)
+	}
+	if policy["*"] != "deny" {
+		t.Fatalf("default action = %v, want deny", policy["*"])
+	}
+	for _, tool := range []string{"read", "glob", "grep"} {
+		if policy[tool] != "allow" {
+			t.Fatalf("%s = %v, want allow", tool, policy[tool])
+		}
+	}
+	bash, ok := policy["bash"].(map[string]any)
+	if !ok {
+		t.Fatalf("bash policy = %#v, want an allowlist", policy["bash"])
+	}
+	if bash["*"] != "deny" {
+		t.Fatalf("bash default = %v, want deny", bash["*"])
+	}
+	if bash["open-agents *"] != "allow" {
+		t.Fatalf("open-agents CLI = %v, want allow", bash["open-agents *"])
+	}
+	for _, denied := range []string{"sed *", "git commit*", "git push*", "rm *"} {
+		if _, allowed := bash[denied]; allowed {
+			t.Fatalf("bash policy explicitly allows %q", denied)
+		}
+	}
+	// It must be scoped to the manager's own agent entry, not global, so a
+	// worker or one of the user's own agents is unaffected.
+	if _, ok := policy["default_agent"]; ok {
+		t.Fatalf("tool policy leaked to the global permission key: %s", content)
+	}
+}
+
+func TestWorkerLaunchOverlayCarriesNoToolPolicy(t *testing.T) {
+	content, _, err := sessionConfigContent("worker rules", "mer-2", domain.KindWorker)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if strings.Contains(content, `"permission"`) {
+		t.Fatalf("worker overlay carries a tool policy: %s", content)
 	}
 }
 

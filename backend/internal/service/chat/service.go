@@ -527,6 +527,7 @@ func (s *Service) Start(ctx context.Context, cfg StartConfig) (*Controller, erro
 	var conv ports.ChatConversation
 	if cfg.ProviderConversationID != "" {
 		conv, err = driver.Resume(ctx, ports.ChatResumeConfig{
+			Kind:                   cfg.Kind,
 			SessionID:              cfg.SessionID,
 			ProviderConversationID: cfg.ProviderConversationID,
 			DataDir:                cfg.DataDir,
@@ -545,6 +546,7 @@ func (s *Service) Start(ctx context.Context, cfg StartConfig) (*Controller, erro
 	} else {
 		conv, err = driver.Start(ctx, ports.ChatStartConfig{
 			ProviderIDsScoped:     providerBoundaryID != "" || activeBranch.ProviderIDsScoped,
+			Kind:                  cfg.Kind,
 			SessionID:             cfg.SessionID,
 			DataDir:               cfg.DataDir,
 			WorkspacePath:         cfg.WorkspacePath,
