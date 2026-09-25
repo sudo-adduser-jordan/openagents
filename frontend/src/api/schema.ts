@@ -2220,7 +2220,8 @@ export interface components {
             issueId?: string;
             /** @enum {string} */
             kanbanColumn: "building" | "validating" | "needs_review" | "ready" | "archive";
-            kind: string;
+            /** @enum {string} */
+            kind: "worker" | "manager";
             /** Format: date-time */
             lastUserMessageAt?: null | string;
             /** @enum {string} */
@@ -5969,6 +5970,15 @@ export interface operations {
             };
             /** @description Not Found */
             404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["APIError"];
+                };
+            };
+            /** @description Conflict */
+            409: {
                 headers: {
                     [name: string]: unknown;
                 };

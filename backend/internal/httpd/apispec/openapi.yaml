@@ -1789,6 +1789,12 @@ paths:
               schema:
                 $ref: '#/components/schemas/APIError'
           description: Not Found
+        "409":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/APIError'
+          description: Conflict
         "500":
           content:
             application/json:
@@ -6710,6 +6716,9 @@ components:
           - archive
           type: string
         kind:
+          enum:
+          - worker
+          - manager
           type: string
         lastUserMessageAt:
           format: date-time

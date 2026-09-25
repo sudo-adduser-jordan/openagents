@@ -1,6 +1,9 @@
 package domain
 
-import "time"
+import (
+	"fmt"
+	"time"
+)
 
 // These ID types are distinct string types so they can't be swapped at a call
 // site by accident.
@@ -21,6 +24,24 @@ const (
 	KindWorker  SessionKind = "worker"
 	KindManager SessionKind = "manager"
 )
+
+// Valid reports whether k is one of the active session roles.
+func (k SessionKind) Valid() bool {
+	return k == KindWorker || k == KindManager
+}
+
+// ParseSessionKind validates a caller-supplied role. An empty value means that
+// the caller did not specify a role; callers may then apply their own default.
+func ParseSessionKind(raw string) (SessionKind, error) {
+	if raw == "" {
+		return "", nil
+	}
+	kind := SessionKind(raw)
+	if !kind.Valid() {
+		return "", fmt.Errorf("unknown session kind %q: want %q or %q", raw, KindWorker, KindManager)
+	}
+	return kind, nil
+}
 
 // ConversationCheckpointState records which main-turn boundaries Open Agents has
 // durably observed for the hook-derived replay checkpoint. The legacy value is
@@ -154,7 +175,7 @@ type SessionRecord struct {
 	ID        SessionID    `json:"id"`
 	ProjectID ProjectID    `json:"projectId,omitempty"`
 	IssueID   IssueID      `json:"issueId,omitempty"`
-	Kind      SessionKind  `json:"kind"`
+	Kind      SessionKind  `json:"kind" enum:"worker,manager"`
 	Harness   AgentHarness `json:"harness,omitempty"`
 	// ReviewerHarness is this session's preferred reviewer. Empty delegates to
 	// the project configuration.

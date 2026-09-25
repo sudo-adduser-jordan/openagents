@@ -247,6 +247,12 @@ func (c *SessionsController) spawn(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	in.Mode = mode
+	kind, err := domain.ParseSessionKind(string(in.Kind))
+	if err != nil {
+		envelope.WriteAPIError(w, r, http.StatusBadRequest, "validation", "SESSION_KIND_INVALID", err.Error(), nil)
+		return
+	}
+	in.Kind = kind
 	if len(in.Prompt) > maxPromptLen {
 		envelope.WriteAPIError(w, r, http.StatusBadRequest, "bad_request", "PROMPT_TOO_LONG", "Prompt must be 16 KiB or fewer", nil)
 		return

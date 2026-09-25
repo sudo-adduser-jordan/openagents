@@ -101,8 +101,6 @@
 		"mermaid": "11.17.2",
 		"motion": "^12.43.0",
 		"openapi-fetch": "^0.17.0",
-		"qr-code-styling": "^1.9.2",
-		"qrcode.react": "^4.2.0",
 		"radix-ui": "^1.5.0",
 		"react": "^19.2.7",
 		"react-arborist": "^3.16.0",

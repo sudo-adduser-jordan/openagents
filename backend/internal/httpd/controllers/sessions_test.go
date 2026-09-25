@@ -1239,6 +1239,18 @@ func TestSessionsAPI_SpawnsStandaloneWorkerWithoutProjectID(t *testing.T) {
 	}
 }
 
+func TestSessionsAPI_SpawnRejectsUnknownKindBeforeService(t *testing.T) {
+	svc := newFakeSessionService()
+	srv := newSessionTestServer(t, svc)
+
+	body, status, _ := doRequest(t, srv, http.MethodPost, "/api/v1/sessions",
+		`{"projectId":"open-agents","kind":"orchestrator","harness":"opencode","prompt":"fix"}`)
+	assertErrorCode(t, body, status, http.StatusBadRequest, "SESSION_KIND_INVALID")
+	if svc.lastSpawn.ProjectID != "" {
+		t.Fatalf("service was called for invalid kind: %#v", svc.lastSpawn)
+	}
+}
+
 func TestSessionsAPI_SpawnPassesModelToService(t *testing.T) {
 	svc := newFakeSessionService()
 	srv := newSessionTestServer(t, svc)
@@ -1281,6 +1293,16 @@ func TestSessionsAPI_ManagerDefaultsToManagerWorkflowMode(t *testing.T) {
 	if got := svc.sessions["open-agents-2"].WorkflowMode; got != domain.WorkflowModeManager {
 		t.Fatalf("persisted manager workflow mode = %q, want manager", got)
 	}
+}
+
+func TestSessionsAPI_SpawnReturnsPlanningManagerConflict(t *testing.T) {
+	svc := newFakeSessionService()
+	svc.spawnErr = apierr.Conflict("PLANNING_MANAGER_NO_TASKS", "planning manager cannot create tasks", nil)
+	srv := newSessionTestServer(t, svc)
+
+	body, status, _ := doRequest(t, srv, http.MethodPost, "/api/v1/sessions",
+		`{"projectId":"open-agents","kind":"worker","parentSessionId":"manager-1","harness":"opencode"}`)
+	assertErrorCode(t, body, status, http.StatusConflict, "PLANNING_MANAGER_NO_TASKS")
 }
 
 func TestSessionsAPI_ManagerAcceptsExplicitChatMode(t *testing.T) {
