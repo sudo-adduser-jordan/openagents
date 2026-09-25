@@ -40,6 +40,7 @@ import (
 	devimportsvc "github.com/sudo-adduser-jordan/open-agents/backend/internal/service/devimport"
 	importsvc "github.com/sudo-adduser-jordan/open-agents/backend/internal/service/importer"
 	notificationsvc "github.com/sudo-adduser-jordan/open-agents/backend/internal/service/notification"
+	opencodeconfigsvc "github.com/sudo-adduser-jordan/open-agents/backend/internal/service/opencodeconfig"
 	prsvc "github.com/sudo-adduser-jordan/open-agents/backend/internal/service/pr"
 	projectsvc "github.com/sudo-adduser-jordan/open-agents/backend/internal/service/project"
 	settingssvc "github.com/sudo-adduser-jordan/open-agents/backend/internal/service/settings"
@@ -182,6 +183,9 @@ func Run() error {
 		chatDrivers,
 		func() time.Time { return time.Now().UTC() },
 	)
+	// The user's own opencode config. Resolved from HOME at call time rather
+	// than captured, so it follows the same home the runtimes inherit.
+	opencodeConfigSvc := opencodeconfigsvc.New(nil)
 
 	// Chat service. The driver registry is the capability gate: a harness with no
 	// registered driver cannot start in chat mode, so an unsupported request fails
@@ -400,6 +404,7 @@ func Run() error {
 		AgentAuth:          agentAuthSvc,
 		Conversations:      chatSvc,
 		Settings:           settingsSvc,
+		OpencodeConfig:     opencodeConfigSvc,
 		CDC:                store,
 		Events:             cdcPipe.Broadcaster,
 		Activity:           lcStack.LCM,

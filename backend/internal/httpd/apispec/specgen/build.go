@@ -18,6 +18,7 @@ import (
 	"github.com/sudo-adduser-jordan/open-agents/backend/internal/httpd/controllers"
 	"github.com/sudo-adduser-jordan/open-agents/backend/internal/httpd/envelope"
 	importsvc "github.com/sudo-adduser-jordan/open-agents/backend/internal/service/importer"
+	opencodeconfig "github.com/sudo-adduser-jordan/open-agents/backend/internal/service/opencodeconfig"
 	projectsvc "github.com/sudo-adduser-jordan/open-agents/backend/internal/service/project"
 )
 
@@ -639,6 +640,32 @@ func shellTerminalOperations() []operation {
 			summary: "Read the daemon-owned user preferences",
 			resps: []respUnit{
 				{http.StatusOK, controllers.SettingsResponse{}},
+				{http.StatusInternalServerError, envelope.APIError{}},
+				{http.StatusNotImplemented, envelope.APIError{}},
+			},
+		},
+		{
+			// This is the user's own opencode file, not Open Agents state. The
+			// content round-trips verbatim so comments and layout survive a save.
+			method: http.MethodGet, path: "/api/v1/settings/opencode-config", id: "getOpencodeConfig", tag: "settings",
+			summary: "Read the user's own opencode configuration for editing",
+			resps: []respUnit{
+				{http.StatusOK, opencodeconfig.Document{}},
+				{http.StatusInternalServerError, envelope.APIError{}},
+				{http.StatusNotImplemented, envelope.APIError{}},
+			},
+		},
+		{
+			method: http.MethodPut, path: "/api/v1/settings/opencode-config", id: "updateOpencodeConfig", tag: "settings",
+			// Rejected rather than written when the document does not parse, so a
+			// typo cannot leave the user with a config opencode will not read. The
+			// previous contents are kept alongside the file.
+			summary: "Replace the user's own opencode configuration",
+			reqBody: opencodeconfig.WriteRequest{},
+			resps: []respUnit{
+				{http.StatusOK, opencodeconfig.Document{}},
+				{http.StatusBadRequest, envelope.APIError{}},
+				{http.StatusUnprocessableEntity, envelope.APIError{}},
 				{http.StatusInternalServerError, envelope.APIError{}},
 				{http.StatusNotImplemented, envelope.APIError{}},
 			},

@@ -26,6 +26,7 @@ import {
 	RefreshCw,
 	Search,
 	Settings,
+	Wrench,
 	Smartphone,
 	Trash2,
 	X,
@@ -331,6 +332,9 @@ function useSelection() {
 	});
 	const goHome = useCallback(() => void navigate({ to: "/" }), [navigate]);
 	const goGlobalSettings = useCallback(() => openGlobalSettings(), [openGlobalSettings]);
+	// Tools is a settings section, not a second surface: the footer row is a
+	// shortcut that opens Settings already parked on it.
+	const goToolsSettings = useCallback(() => openGlobalSettings("tools"), [openGlobalSettings]);
 	const goSettings = useCallback((projectId: string) => openProjectSettings(projectId), [openProjectSettings]);
 	const goProject = useCallback(
 		(projectId: string) => void navigate({ to: "/projects/$projectId", params: { projectId } }),
@@ -357,10 +361,11 @@ function useSelection() {
 		// Settings is a modal — open it in place so the current page (session
 		// terminal, board, etc.) stays underneath.
 		goGlobalSettings,
+		goToolsSettings,
 		goSettings,
 		goProject,
 		goSession,
-	}), [goGlobalSettings, goHome, goProject, goSession, goSettings, params.projectId, params.sessionId, pathname]);
+	}), [goGlobalSettings, goHome, goProject, goSession, goSettings, goToolsSettings, params.projectId, params.sessionId, pathname]);
 }
 
 // Colour tracks the session's board section, preserving SCM state while the
@@ -892,6 +897,19 @@ export function Sidebar({
 						</span>
 					</button>
 					<button
+						aria-label="Tools"
+						className={FOOTER_NAV_BUTTON_CLASS}
+						onClick={() => selection.goToolsSettings()}
+						tabIndex={isCollapsed ? -1 : 0}
+						type="button"
+					>
+						<NavRowHighlight />
+						<span className="relative z-[1] flex min-w-0 flex-1 items-center gap-2.5 [&_svg]:size-icon-md [&_svg]:shrink-0">
+							<Wrench aria-hidden="true" />
+							<span className="tracking-tight">{"Tools"}</span>
+						</span>
+					</button>
+					<button
 						aria-label="Settings"
 						className={FOOTER_NAV_BUTTON_CLASS}
 						onClick={() => selection.goGlobalSettings()}
@@ -934,6 +952,23 @@ export function Sidebar({
 							</button>
 						</TooltipTrigger>
 						<TooltipContent side="right">{"Connect mobile"}</TooltipContent>
+					</Tooltip>
+					<Tooltip>
+						<TooltipTrigger asChild>
+							<button
+								aria-label="Tools"
+								className={FOOTER_RAIL_BUTTON_CLASS}
+								onClick={() => selection.goToolsSettings()}
+								tabIndex={isCollapsed ? 0 : -1}
+								type="button"
+							>
+								<NavRowHighlight />
+								<span className="relative z-[1] grid place-items-center [&_svg]:size-icon-base">
+									<Wrench aria-hidden="true" />
+								</span>
+							</button>
+						</TooltipTrigger>
+						<TooltipContent side="right">{"Tools"}</TooltipContent>
 					</Tooltip>
 					<Tooltip>
 						<TooltipTrigger asChild>

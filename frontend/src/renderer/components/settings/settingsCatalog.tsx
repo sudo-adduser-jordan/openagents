@@ -1,4 +1,4 @@
-import { Bot, CircleHelp, Globe2, Keyboard, RefreshCw, Settings2, Smartphone, type LucideIcon } from "lucide-react";
+import { Bot, CircleHelp, Globe2, Keyboard, RefreshCw, Settings2, Smartphone, Wrench, type LucideIcon } from "lucide-react";
 import { lazy, type ReactNode } from "react";
 import type { GlobalSettingsSection } from "../../stores/ui-store";
 import { BrowserDownloadsSection } from "./BrowserDownloadsSection";
@@ -6,6 +6,7 @@ import { BrowserProfilesSection } from "./BrowserProfilesSection";
 import { GeneralSettingsSection } from "./GeneralSettingsSection";
 import { HarnessSettingsSection } from "./HarnessSettingsSection";
 import { KeyboardShortcutsContent } from "./KeyboardShortcutsContent";
+import { OpencodeConfigSection } from "./OpencodeConfigSection";
 import { ReportProblemContent } from "./ReportProblemContent";
 import { SettingsSection } from "./SettingsSection";
 
@@ -68,6 +69,14 @@ const globalSettingsCatalog: SettingsCatalogItem[] = [
 				</div>
 			</SettingsSection>
 		),
+	},
+	{
+		// The user's own opencode config, and the tool policy Open Agents layers
+		// on a manager session. Sits after Mobile to match the sidebar order.
+		id: "tools",
+		icon: Wrench,
+		label: () => "Tools",
+		render: (titleHidden) => <OpencodeConfigSection titleHidden={titleHidden} />,
 	},
 	{
 		id: "shortcuts",

@@ -5630,6 +5630,73 @@ paths:
       summary: Read the daemon-owned user preferences
       tags:
       - settings
+  /api/v1/settings/opencode-config:
+    get:
+      operationId: getOpencodeConfig
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/OpencodeconfigDocument'
+          description: OK
+        "500":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/APIError'
+          description: Internal Server Error
+        "501":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/APIError'
+          description: Not Implemented
+      summary: Read the user's own opencode configuration for editing
+      tags:
+      - settings
+    put:
+      operationId: updateOpencodeConfig
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/OpencodeconfigWriteRequest'
+        required: true
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/OpencodeconfigDocument'
+          description: OK
+        "400":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/APIError'
+          description: Bad Request
+        "422":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/APIError'
+          description: Unprocessable Entity
+        "500":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/APIError'
+          description: Internal Server Error
+        "501":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/APIError'
+          description: Not Implemented
+      summary: Replace the user's own opencode configuration
+      tags:
+      - settings
   /api/v1/settings/session-interface:
     patch:
       operationId: updateSessionInterface
@@ -8372,6 +8439,28 @@ components:
           description: 'Windows shell selector: auto, git-bash, pwsh, powershell,
             cmd, or a custom executable path. Ignored on macOS and Linux.'
           type: string
+      type: object
+    OpencodeconfigDocument:
+      properties:
+        content:
+          type: string
+        exists:
+          type: boolean
+        path:
+          type: string
+        warning:
+          type: string
+      required:
+      - path
+      - exists
+      - content
+      type: object
+    OpencodeconfigWriteRequest:
+      properties:
+        content:
+          type: string
+      required:
+      - content
       type: object
     PRReviewState:
       properties:
