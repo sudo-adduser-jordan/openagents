@@ -159,6 +159,7 @@ var shippedMigrations = map[int64]string{
 	152: "0152_remove_claude_code_harness.sql",
 	153: "0153_open_agents_usage_measurement.sql",
 	154: "0154_manager_role_cutover.sql",
+	155: "0155_retire_sessions.sql",
 }
 
 // burnedVersion reports version numbers that must never be (re)used: they
