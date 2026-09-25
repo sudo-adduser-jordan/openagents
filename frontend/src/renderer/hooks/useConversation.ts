@@ -618,6 +618,25 @@ export function useConversationCommands(sessionId: string | undefined) {
 		onSuccess: invalidate,
 	});
 
+	/**
+	 * Start the conversation over. The daemon drops the provider thread handle
+	 * and records a boundary, so the agent stops carrying this task's narrative
+	 * into the next one. Nothing is erased from the transcript, which is why it
+	 * needs no data-loss confirmation -- the agent's memory is what resets.
+	 */
+	const clearHistory = useMutation({
+		mutationFn: async () => {
+			const { error } = await apiClient.POST(
+				"/api/v1/sessions/{sessionId}/conversation/clear-history",
+				{
+					params: { path: { sessionId: sessionId as string } },
+				},
+			);
+			if (error) throw error;
+		},
+		onSuccess: invalidate,
+	});
+
 	const chooseSettings = useMutation({
 		mutationFn: async ({ targetSessionId, settings }: { targetSessionId: string; settings: TurnSettings }) => {
 			const { data, error } = await apiClient.PATCH(
@@ -944,6 +963,8 @@ export function useConversationCommands(sessionId: string | undefined) {
 		resumingAgent: resume.isPending,
 		resumeError: resume.error ? apiErrorMessage(resume.error) : undefined,
 		compact: () => compact.mutateAsync(),
+		clearHistory: () => clearHistory.mutateAsync(),
+		clearingHistory: clearHistory.isPending,
 		choosingSettings: chooseSettings.isPending && chooseSettings.variables?.targetSessionId === sessionId,
 		chooseSettings: (settings: TurnSettings) => chooseSettings.mutate({ targetSessionId: sessionId as string, settings }),
 		/** A compaction is in flight provider-side and takes seconds, so it reads as

@@ -102,6 +102,70 @@ func (s *Store) CreateProjectConversationWithContextReset(
 	})
 }
 
+// ClearHistory resets what the provider remembers for a session's conversation
+// and records the boundary that made the switch visible.
+//
+// The provider handle lives on the branch, not the conversation, so clearing it
+// is what makes the agent genuinely forget: the next turn opens a fresh
+// provider thread. The transcript rows are left alone. Nothing deletes a
+// provider-side history -- the ACP driver has no such primitive -- so this is a
+// reset, not an erase, and the boundary row is what tells the reader so.
+//
+// The boundary and the handle reset share one transaction. Writing them
+// separately would let a reader observe a conversation whose history is intact
+// and whose agent has already forgotten it.
+func (s *Store) ClearHistory(
+	ctx context.Context,
+	conversationID string,
+	boundary domain.ConversationActivity,
+	now time.Time,
+) (domain.ConversationRecord, error) {
+	s.writeMu.Lock()
+	defer s.writeMu.Unlock()
+
+	existing, err := s.qw.SelectConversationByID(ctx, conversationID)
+	if err != nil {
+		return domain.ConversationRecord{}, fmt.Errorf("get conversation %s to clear: %w", conversationID, err)
+	}
+	err = s.inTx(ctx, "clear conversation history", func(q *gen.Queries) error {
+		sequence, seqErr := q.NextConversationSequence(ctx, gen.NextConversationSequenceParams{
+			UpdatedAt: now,
+			ID:        conversationID,
+		})
+		if seqErr != nil {
+			return fmt.Errorf("allocate clear-history boundary sequence: %w", seqErr)
+		}
+		if err := q.InsertConversationActivity(ctx, gen.InsertConversationActivityParams{
+			ID:             boundary.ID,
+			ConversationID: conversationID,
+			TurnID:         sql.NullString{},
+			Sequence:       sequence,
+			Kind:           boundary.Kind,
+			Status:         boundary.Status,
+			Summary:        boundary.Summary,
+			DetailJson:     string(boundary.Detail),
+			RequestID:      boundary.RequestID,
+			ProviderItemID: boundary.ProviderItemID,
+			CreatedAt:      now,
+			UpdatedAt:      now,
+		}); err != nil {
+			return fmt.Errorf("insert clear-history boundary: %w", err)
+		}
+		_, err := q.ClearConversationProviderContext(ctx, conversationID)
+		return err
+	})
+	if err != nil {
+		return domain.ConversationRecord{}, err
+	}
+	// Re-read rather than allocate again: NextConversationSequence increments, so
+	// calling it a second time would burn a sequence number with no row for it.
+	refreshed, err := s.qw.SelectConversationByID(ctx, conversationID)
+	if err != nil {
+		return conversationToDomain(existing), nil
+	}
+	return conversationToDomain(refreshed), nil
+}
+
 func (s *Store) createConversation(
 	ctx context.Context,
 	options conversationCreateOptions,

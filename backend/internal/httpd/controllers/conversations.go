@@ -46,6 +46,7 @@ type ConversationService interface {
 	Skills(ctx context.Context, session domain.SessionID) ([]ports.ChatSkill, error)
 	SetTurnSettings(ctx context.Context, session domain.SessionID, settings domain.ConversationSettings) (domain.ConversationSettings, error)
 	Compact(ctx context.Context, session domain.SessionID) (ports.ChatCompactionResult, error)
+	ClearHistory(ctx context.Context, session domain.SessionID) error
 	Rollback(ctx context.Context, session domain.SessionID, turnID string) (int, error)
 	RetryTurn(ctx context.Context, session domain.SessionID, turnID string) (domain.ConversationTurn, error)
 	SetTitle(ctx context.Context, session domain.SessionID, title string) (string, error)
@@ -79,6 +80,7 @@ func (c *ConversationsController) Register(r chi.Router) {
 	r.Post("/sessions/{sessionId}/conversation/turns/{turnId}/queue/edit", c.editQueuedTurn)
 	r.Post("/sessions/{sessionId}/conversation/queue/reorder", c.reorderQueuedTurns)
 	r.Post("/sessions/{sessionId}/conversation/compact", c.compact)
+	r.Post("/sessions/{sessionId}/conversation/clear-history", c.clearHistory)
 	r.Get("/sessions/{sessionId}/conversation/models", c.models)
 	r.Get("/sessions/{sessionId}/conversation/config-options", c.configOptions)
 	r.Patch("/sessions/{sessionId}/conversation/config-options/{configId}", c.setConfigOption)
@@ -389,6 +391,25 @@ func (c *ConversationsController) compact(w http.ResponseWriter, r *http.Request
 		TokensBefore: result.TokensBefore,
 		TokensAfter:  result.TokensAfter,
 	})
+}
+
+// clearHistory starts the session's conversation over: the agent forgets what
+// came before and the timeline records the boundary.
+//
+// 200 rather than 202 because the reset is durable when this returns -- the
+// provider handle is dropped and the boundary written in one transaction. There
+// is no provider work to wait for, because nothing asks the provider to forget;
+// it forgets because Open Agents stops resuming its thread.
+func (c *ConversationsController) clearHistory(w http.ResponseWriter, r *http.Request) {
+	if c.Svc == nil {
+		apispec.NotImplemented(w, r, "POST", "/api/v1/sessions/{sessionId}/conversation/clear-history")
+		return
+	}
+	if err := c.Svc.ClearHistory(r.Context(), domain.SessionID(chi.URLParam(r, "sessionId"))); err != nil {
+		writeConversationError(w, r, err)
+		return
+	}
+	envelope.WriteJSON(w, http.StatusOK, map[string]bool{"ok": true})
 }
 
 // models serves the provider's catalog for this session plus the current choice.

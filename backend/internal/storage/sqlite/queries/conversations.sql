@@ -25,6 +25,16 @@ WHERE id = ? AND scope = 'project';
 -- name: SelectConversationByID :one
 SELECT * FROM conversations WHERE id = ? LIMIT 1;
 
+-- name: ClearConversationProviderContext :execrows
+-- Drop the active branch's provider handle so the next turn opens a fresh
+-- provider thread. The transcript rows stay: this resets what the agent
+-- remembers, not what Open Agents renders. The caller records the boundary in
+-- the same transaction, so a reader never sees a silent context loss.
+UPDATE conversation_branches
+SET provider_conversation_id = ''
+WHERE conversation_id = sqlc.arg(conversation_id)
+  AND id = (SELECT active_branch_id FROM conversations WHERE id = sqlc.arg(conversation_id));
+
 -- name: HasConversationTurns :one
 SELECT EXISTS (SELECT 1 FROM conversation_turns WHERE conversation_id = ?);
 

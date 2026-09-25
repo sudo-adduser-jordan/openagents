@@ -747,6 +747,21 @@ func shellTerminalOperations() []operation {
 			},
 		},
 		{
+			method: http.MethodPost, path: "/api/v1/sessions/{sessionId}/conversation/clear-history", id: "clearSessionConversationHistory", tag: "conversations",
+			// The transcript stays readable above the boundary and no provider-side
+			// history is deleted; what changes is that the agent stops carrying it,
+			// which is what stops one task's narrative leaking into the next.
+			summary:    "Start a chat session's conversation over, so the agent stops carrying earlier tasks",
+			pathParams: []any{controllers.SessionIDParam{}},
+			resps: []respUnit{
+				{http.StatusOK, map[string]bool{}},
+				{http.StatusNotFound, envelope.APIError{}},
+				{http.StatusConflict, envelope.APIError{}},
+				{http.StatusInternalServerError, envelope.APIError{}},
+				{http.StatusNotImplemented, envelope.APIError{}},
+			},
+		},
+		{
 			method: http.MethodPost, path: "/api/v1/sessions/{sessionId}/conversation/mcp/reload", id: "reloadSessionConversationMcpServers", tag: "conversations",
 			summary:    "Restart the tool servers a chat session can reach",
 			pathParams: []any{controllers.SessionIDParam{}},

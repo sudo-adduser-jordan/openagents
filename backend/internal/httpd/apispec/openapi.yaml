@@ -2319,6 +2319,54 @@ paths:
       summary: Resume a durable conversation branch without sending
       tags:
       - conversations
+  /api/v1/sessions/{sessionId}/conversation/clear-history:
+    post:
+      operationId: clearSessionConversationHistory
+      parameters:
+      - description: Session identifier, e.g. project-1.
+        in: path
+        name: sessionId
+        required: true
+        schema:
+          description: Session identifier, e.g. project-1.
+          type: string
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                additionalProperties:
+                  type: boolean
+                type: object
+          description: OK
+        "404":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/APIError'
+          description: Not Found
+        "409":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/APIError'
+          description: Conflict
+        "500":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/APIError'
+          description: Internal Server Error
+        "501":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/APIError'
+          description: Not Implemented
+      summary: Start a chat session's conversation over, so the agent stops carrying
+        earlier tasks
+      tags:
+      - conversations
   /api/v1/sessions/{sessionId}/conversation/compact:
     post:
       operationId: compactSessionConversation

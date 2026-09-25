@@ -171,6 +171,8 @@ export const ChatComposer = memo(function ChatComposer({
 	attachedTop = false,
 	queuedDock,
 	onCompact,
+	onClearHistory,
+	clearingHistory,
 	compacting,
 	compactUnavailable,
 	compactBlocked,
@@ -248,6 +250,12 @@ export const ChatComposer = memo(function ChatComposer({
 	queuedDock?: ReactNode;
 	/** Run Open Agents's built-in `/compact` command instead of sending it to the agent. */
 	onCompact?: () => void | Promise<unknown>;
+	/**
+	 * Start the conversation over. Offered only to a manager, whose conversation
+	 * is project-scoped and would otherwise carry this task into the next.
+	 */
+	onClearHistory?: () => void | Promise<unknown>;
+	clearingHistory?: boolean;
 	/** The provider is already compacting this conversation. */
 	compacting?: boolean;
 	/** A typed provider refusal from the last compaction attempt. */
@@ -440,17 +448,27 @@ export const ChatComposer = memo(function ChatComposer({
 	const canAttach = Boolean(onStageAttachments) && !queuedEditRecovery;
 
 	const slashCommands = useMemo<ChatSkill[]>(() => {
-		if (!onCompact || compactUnavailable === "This agent cannot compact its history") return skills;
-		return [
-			{
+		const extras: ChatSkill[] = [];
+		if (onCompact && compactUnavailable !== "This agent cannot compact its history") {
+			extras.push({
 				name: "compact",
 				displayName: "compact",
 				description: "Summarize earlier history to reclaim context",
 				source: "Open Agents",
-			},
-			...skills.filter((skill) => skill.name !== "compact"),
-		];
-	}, [compactUnavailable, onCompact, skills]);
+			});
+		}
+		if (onClearHistory) {
+			extras.push({
+				name: "clear-history",
+				displayName: "clear-history",
+				description: "Start this conversation over, so the next task does not inherit this one",
+				source: "Open Agents",
+			});
+		}
+		if (extras.length === 0) return skills;
+		const claimed = new Set(extras.map((skill) => skill.name));
+		return [...extras, ...skills.filter((skill) => !claimed.has(skill.name))];
+	}, [compactUnavailable, onClearHistory, onCompact, skills]);
 
 	const suggestionsFor = useCallback((currentTrigger?: ComposerTrigger): Suggestion[] => {
 		if (!currentTrigger || currentTrigger.key === dismissedKeyRef.current) return [];
@@ -1013,6 +1031,31 @@ export const ChatComposer = memo(function ChatComposer({
 				setHighlighted(0);
 			} catch {
 				setSendError("Conversation history could not be compacted. Try again.");
+			} finally {
+				if (draftScope && mutationToken && !mutationFinished) {
+					cancelChatComposerMutation(draftScope, mutationToken);
+				}
+				setSubmitting(false);
+			}
+			return;
+		}
+
+		if (!recoveringDelivery && !savingQueuedEdit && body === "/clear-history" && onClearHistory) {
+			if (draftScope && !mutationToken) return;
+			let mutationFinished = false;
+			setSubmitting(true);
+			try {
+				if (clearingHistory) {
+					setSendError("Conversation history is already being cleared.");
+					return;
+				}
+				await onClearHistory();
+				clearAcceptedDraft(composerRevision.current, mutationToken);
+				mutationFinished = true;
+				setDismissedKey(null);
+				setHighlighted(0);
+			} catch {
+				setSendError("Conversation history could not be cleared. Try again.");
 			} finally {
 				if (draftScope && mutationToken && !mutationFinished) {
 					cancelChatComposerMutation(draftScope, mutationToken);

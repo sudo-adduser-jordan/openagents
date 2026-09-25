@@ -1618,6 +1618,44 @@ func (s *Service) Compact(ctx context.Context, id domain.SessionID) (ports.ChatC
 	return controller.Compact(ctx)
 }
 
+// ClearHistory starts a session's conversation over: the agent forgets what came
+// before, and the timeline records the boundary that made the switch visible.
+//
+// It does not erase anything. The transcript rows stay readable above the
+// boundary, and no provider-side history is deleted -- the ACP driver exposes no
+// such primitive, so a hard erase is not something Open Agents can offer. What it
+// does stop is the thing that actually matters for a manager: a project-scoped
+// conversation otherwise carries every earlier task's narrative into the next
+// one, because the conversation outlives any single manager session.
+//
+// The user's own prior messages remain on screen, so this is safe to run without
+// a data-loss warning. What is lost is the agent's memory of them.
+func (s *Service) ClearHistory(ctx context.Context, id domain.SessionID) error {
+	if _, err := s.requireChatSession(ctx, id); err != nil {
+		return err
+	}
+	conversation, err := s.store.ConversationForSession(ctx, id)
+	if err != nil {
+		return err
+	}
+	detail, err := json.Marshal(map[string]string{
+		"event":  "context.reset",
+		"reason": "history cleared by the user",
+	})
+	if err != nil {
+		return err
+	}
+	_, err = s.store.ClearHistory(ctx, conversation.ID, domain.ConversationActivity{
+		ID:             s.newID(),
+		Kind:           domain.ActivityKindSystem,
+		Status:         domain.ActivityStatusCompleted,
+		Summary:        "History cleared.",
+		Detail:         detail,
+		ProviderItemID: domain.ConversationContextResetProviderItemID(id),
+	}, s.now())
+	return err
+}
+
 // ReloadMCPServers restarts the provider's tool servers for this session.
 //
 // The failure it addresses is not the agent's. An MCP server that fails to start

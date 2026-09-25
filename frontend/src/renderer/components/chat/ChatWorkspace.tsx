@@ -361,6 +361,13 @@ export interface ChatWorkspaceProps {
 	configOptionError?: string;
 	/** Summarize earlier history to reclaim context. */
 	onCompact?: () => void;
+	/**
+	 * Start the conversation over. Managers get this because their conversation
+	 * is project-scoped and would otherwise carry this task's narrative into the
+	 * next one. A worker is scoped to its own task, so it has nothing to reset.
+	 */
+	onClearHistory?: () => void;
+	clearingHistory?: boolean;
 	/** A compaction is running provider-side. It takes seconds, not milliseconds. */
 	compacting?: boolean;
 	/** Why compaction is not available right now, from the daemon's typed refusal. */
@@ -575,6 +582,8 @@ function ChatWorkspaceContent({
 	configOptionPending,
 	configOptionError,
 	onCompact,
+	onClearHistory,
+	clearingHistory,
 	compacting,
 	compactUnavailable,
 	onRollback,
@@ -1573,6 +1582,12 @@ function ChatWorkspaceContent({
 									steerPending={steerPending}
 									steerRefusal={steerRefusal}
 									onCompact={newWorkDisabled ? undefined : onCompact}
+									onClearHistory={
+										effectiveSessionRole === "manager" && !newWorkDisabled
+											? onClearHistory
+											: undefined
+									}
+									clearingHistory={clearingHistory}
 									compacting={compacting}
 									compactUnavailable={compactUnavailable}
 									compactBlocked={Boolean(turn)}

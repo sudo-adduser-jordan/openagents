@@ -485,6 +485,25 @@ func (q *Queries) CancelQueuedConversationTurns(ctx context.Context, arg CancelQ
 	return err
 }
 
+const clearConversationProviderContext = `-- name: ClearConversationProviderContext :execrows
+UPDATE conversation_branches
+SET provider_conversation_id = ''
+WHERE conversation_id = ?1
+  AND id = (SELECT active_branch_id FROM conversations WHERE id = ?1)
+`
+
+// Drop the active branch's provider handle so the next turn opens a fresh
+// provider thread. The transcript rows stay: this resets what the agent
+// remembers, not what Open Agents renders. The caller records the boundary in
+// the same transaction, so a reader never sees a silent context loss.
+func (q *Queries) ClearConversationProviderContext(ctx context.Context, conversationID string) (int64, error) {
+	result, err := q.db.ExecContext(ctx, clearConversationProviderContext, conversationID)
+	if err != nil {
+		return 0, err
+	}
+	return result.RowsAffected()
+}
+
 const completeQueuedConversationTurnPromotion = `-- name: CompleteQueuedConversationTurnPromotion :execrows
 UPDATE conversation_turns
 SET state = 'completed',
