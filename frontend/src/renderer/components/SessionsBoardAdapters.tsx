@@ -157,8 +157,9 @@ function DesktopSessionCard({
 			<div className="flex min-w-0 items-center gap-1.5">
 				{session.workflowMode === "planning" && onWorkflowModeChange ? (
 					<WorkflowStageActionButton
-						label="Confirm building"
+						label="Build"
 						onClick={() => onWorkflowModeChange(session, "building")}
+						title="Approve this plan and let the worker start building"
 					/>
 				) : null}
 				{onReviewToCommit ? (
@@ -270,7 +271,16 @@ function DesktopSessionCard({
 }
 
 /** Compact card action used in place of the "Awaiting PR" status label. */
-function WorkflowStageActionButton({ label, onClick }: { label: string; onClick: () => void }) {
+function WorkflowStageActionButton({
+	label,
+	onClick,
+	title,
+}: {
+	label: string;
+	onClick: () => void;
+	/** Carries the meaning a one-word label drops. Falls back to no tooltip. */
+	title?: string;
+}) {
 	return (
 		<button
 			type="button"
@@ -278,7 +288,8 @@ function WorkflowStageActionButton({ label, onClick }: { label: string; onClick:
 				event.stopPropagation();
 				onClick();
 			}}
-			className="inline-flex min-w-0 items-center rounded-sm border border-border/80 px-1.5 py-0.5 text-2xs font-medium text-foreground transition-colors hover:border-foreground/30 hover:bg-surface focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring/60"
+			title={title}
+			className="inline-flex min-w-0 items-center rounded-sm border border-border/80 px-1.5 py-px text-2xs font-medium leading-none text-foreground transition-colors hover:border-foreground/30 hover:bg-surface focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring/60"
 		>
 			<span className="truncate">{label}</span>
 		</button>

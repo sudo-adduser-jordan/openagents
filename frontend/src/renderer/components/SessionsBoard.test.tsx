@@ -1312,7 +1312,11 @@ describe("SessionsBoard", () => {
 
 		renderBoard("p1");
 		expect(screen.queryByText("Awaiting PR")).not.toBeInTheDocument();
-		await userEvent.click(screen.getByRole("button", { name: "Confirm building" }));
+		const build = screen.getByRole("button", { name: "Build" });
+		// The one-word label drops the "approve the plan" nuance, so the long
+		// form has to survive as a tooltip.
+		expect(build).toHaveAttribute("title", "Approve this plan and let the worker start building");
+		await userEvent.click(build);
 
 		await waitFor(() =>
 			expect(patchMock).toHaveBeenCalledWith("/api/v1/sessions/{sessionId}/workflow-mode", {
