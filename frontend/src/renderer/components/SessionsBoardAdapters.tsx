@@ -15,7 +15,7 @@ import { openAgentsBridge } from "../lib/bridge";
 import { formatTimeCompact } from "../lib/format-time";
 import { formatTokenCount } from "../lib/format-token-count";
 import { prBrowserUrl, sessionPRDisplaySummaries } from "../lib/pr-display";
-import type { WorkspaceSession } from "../types/workspace";
+import type { WorkflowMode, WorkspaceSession } from "../types/workspace";
 import { canonicalTrackerIssueId } from "../types/workspace";
 import { useSessionScmSummary } from "../hooks/useSessionScmSummary";
 import type { SessionUsageSummary } from "../hooks/useSessionUsageSummaries";
@@ -58,14 +58,14 @@ export function sessionsBoardLabels(): BoardColumnLabels {
 export function BoardSessionCardAdapter({
 	onOpen,
 	onTerminate,
-	onConfirmBuilding,
+	onWorkflowModeChange,
 	onReviewToCommit,
 	session,
 	usage,
 }: {
 	onOpen: () => void;
 	onTerminate: () => void;
-	onConfirmBuilding?: (session: WorkspaceSession) => void;
+	onWorkflowModeChange?: (session: WorkspaceSession, workflowMode: WorkflowMode) => void;
 	onReviewToCommit?: (session: WorkspaceSession) => void;
 	session: WorkspaceSession;
 	usage?: SessionUsageSummary;
@@ -74,7 +74,7 @@ export function BoardSessionCardAdapter({
 		<DesktopSessionCard
 			onOpen={onOpen}
 			onTerminate={onTerminate}
-			onConfirmBuilding={onConfirmBuilding}
+			onWorkflowModeChange={onWorkflowModeChange}
 			onReviewToCommit={onReviewToCommit}
 			session={session}
 			usage={usage}
@@ -124,7 +124,7 @@ function DesktopSessionCard({
 	interactive = true,
 	onOpen,
 	onTerminate,
-	onConfirmBuilding,
+	onWorkflowModeChange,
 	onReviewToCommit,
 	session,
 	usage,
@@ -135,7 +135,7 @@ function DesktopSessionCard({
 	interactive?: boolean;
 	onOpen?: () => void;
 	onTerminate?: () => void;
-	onConfirmBuilding?: (session: WorkspaceSession) => void;
+	onWorkflowModeChange?: (session: WorkspaceSession, workflowMode: WorkflowMode) => void;
 	onReviewToCommit?: (session: WorkspaceSession) => void;
 	session: WorkspaceSession;
 	usage?: SessionUsageSummary;
@@ -155,10 +155,10 @@ function DesktopSessionCard({
 	const statusAction =
 		pausedAwaitingPR && canAdvance ? (
 			<div className="flex min-w-0 items-center gap-1.5">
-				{session.workflowMode === "planning" && onConfirmBuilding ? (
+				{session.workflowMode === "planning" && onWorkflowModeChange ? (
 					<WorkflowStageActionButton
 						label="Confirm building"
-						onClick={() => onConfirmBuilding(session)}
+						onClick={() => onWorkflowModeChange(session, "building")}
 					/>
 				) : null}
 				{onReviewToCommit ? (

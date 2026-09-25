@@ -28,7 +28,7 @@ import type { Theme } from "../../stores/ui-store";
 import { can } from "../../types/conversation";
 import type { ConversationSnapshot } from "../../types/conversation";
 import type { TerminalTarget } from "../../types/terminal";
-import { isManagerSession, type WorkspaceSession } from "../../types/workspace";
+import { isManagerSession, type WorkflowMode, type WorkspaceSession } from "../../types/workspace";
 import { ChatWorkspace } from "./ChatWorkspace";
 
 export interface ConversationWorkState {
@@ -100,6 +100,7 @@ export const SessionChatSurface = memo(function SessionChatSurface({
 	controllerTransitioning,
 	newWorkDisabled,
 	onConversationWorkChange,
+	onWorkflowModeChange,
 }: {
 	session: WorkspaceSession;
 	reviewerTerminal?: { handleId: string; harness: string };
@@ -141,6 +142,11 @@ export const SessionChatSurface = memo(function SessionChatSurface({
 	newWorkDisabled?: boolean;
 	/** Reports accepted Chat work that must inform an interface-switch policy choice. */
 	onConversationWorkChange?: (state: ConversationWorkState) => void;
+	/**
+	 * Persist a role-appropriate workflow stage for this session. Owned by the
+	 * view that can resolve the role, so the stage bar and the shortcut agree.
+	 */
+	onWorkflowModeChange?: (workflowMode: WorkflowMode) => void;
 }) {
 	const {
 		snapshot: queriedSnapshot,
@@ -395,11 +401,7 @@ export const SessionChatSurface = memo(function SessionChatSurface({
 				}}
 				commandError={commands.error}
 				onDecide={commands.resolve}
-				onConfirmBuilding={() =>
-					setWorkflowMode.mutate({
-						sessionId: session.id,
-						workflowMode: isManagerSession(session) ? "manager" : "building",
-					})}
+				onWorkflowModeChange={onWorkflowModeChange}
 				onResolveInput={commands.resolveInput}
 				onInterrupt={commands.interrupt}
 				onResumeAgent={() => {

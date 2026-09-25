@@ -1611,12 +1611,12 @@ describe("ChatWorkspace workflow stage bar", () => {
 	}
 
 	it("offers building confirmation and commit review when a plan has finished", () => {
-		const onConfirmBuilding = vi.fn();
+		const onWorkflowModeChange = vi.fn();
 		render(
 			<ChatWorkspace
 				snapshot={idleSnapshot()}
 				session={sessionAt({ workflowMode: "planning" })}
-				onConfirmBuilding={onConfirmBuilding}
+				onWorkflowModeChange={onWorkflowModeChange}
 			/>,
 		);
 
@@ -1625,7 +1625,8 @@ describe("ChatWorkspace workflow stage bar", () => {
 		expect(within(bar).getByRole("button", { name: "Commit" })).toBeInTheDocument();
 
 		fireEvent.click(within(bar).getByRole("button", { name: "Confirm building" }));
-		expect(onConfirmBuilding).toHaveBeenCalledTimes(1);
+		expect(onWorkflowModeChange).toHaveBeenCalledTimes(1);
+		expect(onWorkflowModeChange).toHaveBeenCalledWith("building");
 	});
 
 	it("drops the building confirmation once the session is building", () => {
@@ -1675,32 +1676,53 @@ describe("ChatWorkspace workflow stage bar", () => {
 		expect(bar).not.toHaveTextContent("Building…");
 	});
 
-	it("keeps a manager explicitly labeled and delegates only from Manager mode", () => {
-		const onConfirmBuilding = vi.fn();
+	it("keeps a manager explicitly labeled and toggles between planning and manager", () => {
+		const onWorkflowModeChange = vi.fn();
 		const { rerender } = render(
 			<ChatWorkspace
 				snapshot={idleSnapshot()}
 				session={sessionAt({ kind: "manager", workflowMode: "manager" })}
-				onConfirmBuilding={onConfirmBuilding}
+				onWorkflowModeChange={onWorkflowModeChange}
 			/>,
 		);
 
+		// The stage control must survive in Manager mode, otherwise the only way
+		// back to planning is the keyboard shortcut and the bar looks inert.
 		const managing = screen.getByTestId("workflow-stage-bar");
 		expect(managing).toHaveTextContent("Manager");
 		expect(within(managing).queryByRole("button", { name: "Commit" })).not.toBeInTheDocument();
+		fireEvent.click(within(managing).getByRole("button", { name: "Return to planning" }));
+		expect(onWorkflowModeChange).toHaveBeenLastCalledWith("planning");
 
 		rerender(
 			<ChatWorkspace
 				snapshot={idleSnapshot()}
 				session={sessionAt({ kind: "manager", workflowMode: "planning" })}
-				onConfirmBuilding={onConfirmBuilding}
+				onWorkflowModeChange={onWorkflowModeChange}
 			/>,
 		);
 		const planning = screen.getByTestId("workflow-stage-bar");
 		expect(planning).toHaveTextContent("Planning — delegation paused");
 		expect(within(planning).queryByRole("button", { name: "Commit" })).not.toBeInTheDocument();
 		fireEvent.click(within(planning).getByRole("button", { name: "Start managing" }));
-		expect(onConfirmBuilding).toHaveBeenCalledTimes(1);
+		expect(onWorkflowModeChange).toHaveBeenLastCalledWith("manager");
+		expect(onWorkflowModeChange).toHaveBeenCalledTimes(2);
+	});
+
+	it("never offers a manager the worker building stage", () => {
+		const onWorkflowModeChange = vi.fn();
+		render(
+			<ChatWorkspace
+				snapshot={idleSnapshot()}
+				session={sessionAt({ kind: "manager", workflowMode: "manager" })}
+				onWorkflowModeChange={onWorkflowModeChange}
+			/>,
+		);
+
+		const bar = screen.getByTestId("workflow-stage-bar");
+		expect(within(bar).queryByRole("button", { name: "Confirm building" })).not.toBeInTheDocument();
+		fireEvent.click(within(bar).getByRole("button", { name: "Return to planning" }));
+		expect(onWorkflowModeChange).not.toHaveBeenCalledWith("building");
 	});
 
 	it("approves the pending edit when the user reviews to commit", async () => {

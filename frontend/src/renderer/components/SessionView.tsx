@@ -89,7 +89,7 @@ import {
 import { hidesShellTopbar, isMacPlatform } from "../lib/platform";
 import { useShell } from "../lib/shell-context";
 import { cn } from "../lib/utils";
-import { isManagerSession, sessionIsActive } from "../types/workspace";
+import { isManagerSession, sessionIsActive, type WorkflowMode } from "../types/workspace";
 import { terminalTargetBelongsToSession, type TerminalTarget } from "../types/terminal";
 import { matchesRendererShortcut } from "../stores/keybindings-store";
 import { useResolvedTheme, useUiStore, type InspectorView } from "../stores/ui-store";
@@ -1702,25 +1702,37 @@ export function SessionView({ sessionId }: SessionViewProps) {
 		return () => window.removeEventListener("keydown", handleKeyDown);
 	}, [handleToggleInspector, hasInspector]);
 
-	// The workflow mode is a per-session delivery stage, so the shortcut always
+	// The workflow mode is a per-session delivery stage, so every durable change
 	// acts on the session this view is showing. It is registered on the renderer
 	// (like toggle-inspector) rather than the main process, so it never fires for
-	// a background session. Workers toggle planning/building; managers toggle
+	// a background session. Workers retain planning/building; managers retain
 	// planning/manager and never enter the worker building stage.
-	const setWorkflowMode = useSetWorkflowMode();
+	//
+	// This is the single place a stage is resolved. The shortcut below and the
+	// stage-bar button both route through it, so they cannot drift apart: a
+	// requested stage is normalized against the session role first, which is what
+	// stops a "building" request from silently no-oping on a manager.
+	const { mutate: setWorkflowMode } = useSetWorkflowMode();
+	const changeWorkflowMode = useCallback(
+		(requestedMode: WorkflowMode) => {
+			if (!session) return;
+			const role = isManagerSession(session) ? "manager" : "worker";
+			const currentMode = resolveWorkflowMode(role, session.workflowMode);
+			const nextMode = resolveWorkflowMode(role, requestedMode);
+			if (currentMode === nextMode) return;
+			setWorkflowMode({ sessionId: session.id, workflowMode: nextMode });
+		},
+		[session, setWorkflowMode],
+	);
 	const toggleWorkflowMode = useCallback(() => {
-		const session = workspaceQuery.data;
 		if (!session) return;
 		const managerSession = isManagerSession(session);
 		const currentMode = resolveWorkflowMode(
 			managerSession ? "manager" : "worker",
 			session.workflowMode,
 		);
-		const nextMode = currentMode === "planning"
-			? managerSession ? "manager" as const : "building" as const
-			: "planning" as const;
-		setWorkflowMode.mutate({ sessionId: session.id, workflowMode: nextMode });
-	}, [setWorkflowMode, workspaceQuery.data]);
+		changeWorkflowMode(currentMode === "planning" ? (managerSession ? "manager" : "building") : "planning");
+	}, [changeWorkflowMode, session]);
 
 	useEffect(() => {
 		const handleKeyDown = (event: KeyboardEvent) => {
@@ -1847,6 +1859,7 @@ export function SessionView({ sessionId }: SessionViewProps) {
 									controllerTransitioning={chatControllerTransitioning}
 									newWorkDisabled={chatNewWorkDisabled}
 									onConversationWorkChange={handleConversationWorkChange}
+									onWorkflowModeChange={changeWorkflowMode}
 									onOpenShell={addShellTerminal}
 									openingShell={openShellTerminal.isPending}
 									shellError={

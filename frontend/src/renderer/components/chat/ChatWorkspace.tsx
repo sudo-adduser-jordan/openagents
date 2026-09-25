@@ -82,6 +82,7 @@ import type { TerminalTarget } from "../../types/terminal";
 import {
 	isManagerSession,
 	type SessionKind,
+	type WorkflowMode,
 	type WorkspaceSession,
 } from "../../types/workspace";
 import { AgentAvatar } from "../AgentAvatar";
@@ -302,10 +303,11 @@ export interface ChatWorkspaceProps {
 	) => void | Promise<unknown>;
 	onDecide?: (requestId: string, decisionId: string) => void;
 	/**
-	 * Confirm a finished planning stage by moving the session to building.
-	 * Owned by the surface that can persist it; absent hides the action.
+	 * Persist a role-appropriate workflow stage. The caller resolves the target
+	 * against the session role, so the stage bar and the keyboard shortcut can
+	 * never disagree; absent hides the stage-change actions.
 	 */
-	onConfirmBuilding?: () => void;
+	onWorkflowModeChange?: (workflowMode: WorkflowMode) => void;
 	onResolveInput?: (
 		requestId: string,
 		action: "accept" | "decline" | "cancel",
@@ -550,7 +552,7 @@ function ChatWorkspaceContent({
 	onLoadOlder,
 	onSend,
 	onDecide,
-	onConfirmBuilding,
+	onWorkflowModeChange,
 	onResolveInput,
 	onInterrupt,
 	commandError,
@@ -1125,12 +1127,12 @@ function ChatWorkspaceContent({
 	const working = Boolean(turn) || busy;
 	const prePR = !session?.kanbanColumn || session.kanbanColumn === "building";
 	const pendingApprovalRequest = Boolean(stablePendingApproval?.requestId);
-	const confirmBuilding = useCallback(
-		() => {
+	const changeWorkflowMode = useCallback(
+		(workflowMode: WorkflowMode) => {
 			if (newWorkDisabled) return;
-			onConfirmBuilding?.();
+			onWorkflowModeChange?.(workflowMode);
 		},
-		[newWorkDisabled, onConfirmBuilding],
+		[newWorkDisabled, onWorkflowModeChange],
 	);
 	const reviewToCommit = useCallback(
 		async () => {
@@ -1166,9 +1168,14 @@ function ChatWorkspaceContent({
 					<span className="text-2xs font-medium text-muted-foreground">
 						{workflowTone === "planning" ? "Planning — delegation paused" : "Manager"}
 					</span>
-					{workflowTone === "planning" && onConfirmBuilding && !pendingApprovalRequest && !newWorkDisabled ? (
-						<Button variant="outline" size="sm" onClick={confirmBuilding}>
-							Start managing
+					{onWorkflowModeChange && !pendingApprovalRequest && !newWorkDisabled ? (
+						<Button
+							variant="outline"
+							size="sm"
+							onClick={() =>
+								changeWorkflowMode(workflowTone === "planning" ? "manager" : "planning")}
+						>
+							{workflowTone === "planning" ? "Start managing" : "Return to planning"}
 						</Button>
 					) : null}
 				</div>
@@ -1177,8 +1184,8 @@ function ChatWorkspaceContent({
 		if (newWorkDisabled || !prePR) return null;
 		return (
 			<div className="flex items-center gap-2 px-1" data-testid="workflow-stage-bar">
-				{workflowTone === "planning" && onConfirmBuilding && !pendingApprovalRequest ? (
-					<Button variant="outline" size="sm" onClick={confirmBuilding}>
+				{workflowTone === "planning" && onWorkflowModeChange && !pendingApprovalRequest ? (
+					<Button variant="outline" size="sm" onClick={() => changeWorkflowMode("building")}>
 						Confirm building
 					</Button>
 				) : null}
@@ -1188,10 +1195,10 @@ function ChatWorkspaceContent({
 			</div>
 		);
 	}, [
-		confirmBuilding,
+		changeWorkflowMode,
 		effectiveSessionRole,
 		newWorkDisabled,
-		onConfirmBuilding,
+		onWorkflowModeChange,
 		pendingApprovalRequest,
 		prePR,
 		reviewToCommit,

@@ -5,9 +5,12 @@ import {
 	SessionsArchiveView,
 	SessionsBoardGridView,
 	archiveToggleOffsetClassName,
+	resolveWorkflowMode,
 } from "@openagents/product-ui";
 import { AlertTriangle, LayoutDashboard, RotateCw } from "lucide-react";
 import {
+	isManagerSession,
+	type WorkflowMode,
 	type WorkspaceSession,
 	newestActiveManager,
 	managerHealth,
@@ -167,8 +170,18 @@ export function SessionsBoard({ projectId }: SessionsBoardProps) {
 		}), [navigate]);
 
 	const setWorkflowMode = useSetWorkflowMode();
-	const confirmBuilding = useCallback(
-		(session: WorkspaceSession) => setWorkflowMode.mutate({ sessionId: session.id, workflowMode: "building" }),
+	// Resolve the requested stage against the session role before persisting it.
+	// A manager can never enter the worker building stage, so an unnormalized
+	// "building" write would be accepted by the daemon and then read back as
+	// "manager" — a click that looks like it did nothing.
+	const changeWorkflowMode = useCallback(
+		(session: WorkspaceSession, requestedMode: WorkflowMode) => {
+			const role = isManagerSession(session) ? "manager" : "worker";
+			const currentMode = resolveWorkflowMode(role, session.workflowMode);
+			const nextMode = resolveWorkflowMode(role, requestedMode);
+			if (currentMode === nextMode) return;
+			setWorkflowMode.mutate({ sessionId: session.id, workflowMode: nextMode });
+		},
 		[setWorkflowMode],
 	);
 	const reviewToCommit = useCallback(
@@ -307,7 +320,7 @@ export function SessionsBoard({ projectId }: SessionsBoardProps) {
 								<BoardSessionCardAdapter
 								onOpen={() => openSession(session)}
 									onTerminate={() => terminateSession.mutate(session)}
-									onConfirmBuilding={() => confirmBuilding(session)}
+									onWorkflowModeChange={(_session, workflowMode) => changeWorkflowMode(session, workflowMode)}
 									onReviewToCommit={() => void reviewToCommit(session)}
 									session={session}
 								usage={usageBySession.get(session.id)}
