@@ -1676,6 +1676,55 @@ describe("ChatWorkspace workflow stage bar", () => {
 		expect(bar).not.toHaveTextContent("Building…");
 	});
 
+	it("keeps a manager's stage control reachable while a turn is running", () => {
+		const onWorkflowModeChange = vi.fn();
+		render(
+			<ChatWorkspace
+				snapshot={workingSnapshot()}
+				session={sessionAt({ kind: "manager", workflowMode: "planning" })}
+				onWorkflowModeChange={onWorkflowModeChange}
+			/>,
+		);
+
+		// Plan mode is exactly the state in which a manager is mid-turn, so the
+		// running indicator must not replace the control. When it did, the only
+		// way out of Plan mode was a keyboard shortcut the terminal can eat.
+		const bar = screen.getByTestId("workflow-stage-bar");
+		expect(bar).toHaveTextContent("Planning…");
+		fireEvent.click(within(bar).getByRole("button", { name: "Start managing" }));
+		expect(onWorkflowModeChange).toHaveBeenLastCalledWith("manager");
+	});
+
+	it("keeps a manager's stage control reachable while a turn is running in Manager mode", () => {
+		const onWorkflowModeChange = vi.fn();
+		render(
+			<ChatWorkspace
+				snapshot={workingSnapshot()}
+				session={sessionAt({ kind: "manager", workflowMode: "manager" })}
+				onWorkflowModeChange={onWorkflowModeChange}
+			/>,
+		);
+
+		const bar = screen.getByTestId("workflow-stage-bar");
+		expect(bar).toHaveTextContent("Manager…");
+		fireEvent.click(within(bar).getByRole("button", { name: "Return to planning" }));
+		expect(onWorkflowModeChange).toHaveBeenLastCalledWith("planning");
+	});
+
+	it("still withholds a worker's stage controls while a turn is running", () => {
+		render(
+			<ChatWorkspace
+				snapshot={workingSnapshot()}
+				session={sessionAt({ kind: "worker", workflowMode: "planning" })}
+				onWorkflowModeChange={vi.fn()}
+			/>,
+		);
+
+		// Workers keep the original behavior: a running turn shows progress only.
+		const bar = screen.getByTestId("workflow-stage-bar");
+		expect(within(bar).queryByRole("button")).not.toBeInTheDocument();
+	});
+
 	it("keeps a manager explicitly labeled and toggles between planning and manager", () => {
 		const onWorkflowModeChange = vi.fn();
 		const { rerender } = render(

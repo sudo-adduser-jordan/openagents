@@ -1734,15 +1734,27 @@ export function SessionView({ sessionId }: SessionViewProps) {
 		changeWorkflowMode(currentMode === "planning" ? (managerSession ? "manager" : "building") : "planning");
 	}, [changeWorkflowMode, session]);
 
+	// toggle-workflow-mode is a renderer listener rather than a main-process app
+	// shortcut, so unlike the others it can fire while the terminal owns the
+	// keyboard. A stage change is not a keystroke the user meant to send to the
+	// agent, so ignore it when xterm's helper textarea is the event target.
+	const isTerminalKeyEvent = useCallback(
+		(event: KeyboardEvent) =>
+			event.target instanceof HTMLElement &&
+			event.target.classList.contains("xterm-helper-textarea"),
+		[],
+	);
+
 	useEffect(() => {
 		const handleKeyDown = (event: KeyboardEvent) => {
 			if (!matchesRendererShortcut("toggle-workflow-mode", event)) return;
+			if (isTerminalKeyEvent(event)) return;
 			event.preventDefault();
 			toggleWorkflowMode();
 		};
 		window.addEventListener("keydown", handleKeyDown);
 		return () => window.removeEventListener("keydown", handleKeyDown);
-	}, [toggleWorkflowMode]);
+	}, [isTerminalKeyEvent, toggleWorkflowMode]);
 
 	const inspectorMotionReadyRef = useRef(false);
 	const handleInspectorCloseAnimationComplete = useCallback(() => {

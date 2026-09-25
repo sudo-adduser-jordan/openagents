@@ -1149,25 +1149,24 @@ function ChatWorkspaceContent({
 	);
 	const stageBar = useMemo(() => {
 		if (!session || snapshot.controller.state === "stopped") return null;
-		// A running turn shows progress, unless the agent is blocked on a decision
-		// the user can settle right here.
-		if (working && !pendingApprovalRequest) {
-			return (
-				<div
-					className="flex items-center gap-2 px-1 text-2xs font-medium text-muted-foreground"
-					data-testid="workflow-stage-bar"
-				>
-					<LoaderCircle aria-hidden="true" className="size-3.5 animate-spin text-foreground" />
-					<span>{WORKFLOW_MODE_LABELS[workflowTone]}…</span>
-				</div>
-			);
-		}
+		// A manager's stage control is never preempted by the running indicator.
+		// Plan mode is exactly the state in which a manager is mid-turn, so
+		// returning the spinner first left no way out of Plan mode except the
+		// keyboard shortcut -- which a TUI-backed session cannot reliably receive,
+		// because the terminal consumes the keystroke before it reaches the window.
 		if (effectiveSessionRole === "manager") {
 			return (
 				<div className="flex items-center gap-2 px-1" data-testid="workflow-stage-bar">
-					<span className="text-2xs font-medium text-muted-foreground">
-						{workflowTone === "planning" ? "Planning — delegation paused" : "Manager"}
-					</span>
+					{working && !pendingApprovalRequest ? (
+						<span className="flex items-center gap-2 text-2xs font-medium text-muted-foreground">
+							<LoaderCircle aria-hidden="true" className="size-3.5 animate-spin text-foreground" />
+							{`${WORKFLOW_MODE_LABELS[workflowTone]}…`}
+						</span>
+					) : (
+						<span className="text-2xs font-medium text-muted-foreground">
+							{workflowTone === "planning" ? "Planning — delegation paused" : "Manager"}
+						</span>
+					)}
 					{onWorkflowModeChange && !pendingApprovalRequest && !newWorkDisabled ? (
 						<Button
 							variant="outline"
@@ -1178,6 +1177,19 @@ function ChatWorkspaceContent({
 							{workflowTone === "planning" ? "Start managing" : "Return to planning"}
 						</Button>
 					) : null}
+				</div>
+			);
+		}
+		// A running turn shows progress for a worker, unless the agent is blocked on
+		// a decision the user can settle right here.
+		if (working && !pendingApprovalRequest) {
+			return (
+				<div
+					className="flex items-center gap-2 px-1 text-2xs font-medium text-muted-foreground"
+					data-testid="workflow-stage-bar"
+				>
+					<LoaderCircle aria-hidden="true" className="size-3.5 animate-spin text-foreground" />
+					<span>{WORKFLOW_MODE_LABELS[workflowTone]}…</span>
 				</div>
 			);
 		}
