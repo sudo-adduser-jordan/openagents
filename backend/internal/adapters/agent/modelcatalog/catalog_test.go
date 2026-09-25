@@ -49,6 +49,51 @@ func TestModelDiscoveryErrorExplainsTimeout(t *testing.T) {
 	}
 }
 
+// An agent CLI reports no rates, so the cost class comes from the id's own
+// naming. The direction of the guess matters: calling a paid model free is what
+// costs money, so only an explicit free marker counts as free.
+func TestParseIDLinesClassifiesCostFromID(t *testing.T) {
+	output := []byte(strings.Join([]string{
+		"opencode/big-pickle",
+		"opencode/ling-3.0-flash-fin-free",
+		"opencode/mimo-v2.6-flash-free",
+		"opencode/nemotron-3-ultra-free",
+		"opencode/space-bunny-free",
+		"openrouter/some-model:free",
+		"anthropic/claude-sonnet-4",
+	}, "\n"))
+	models, err := parseIDLines(output)
+	if err != nil {
+		t.Fatal(err)
+	}
+	got := map[string]ports.AgentModelCost{}
+	for _, m := range models {
+		got[m.ID] = m.Cost
+	}
+	for _, want := range []string{
+		"opencode/ling-3.0-flash-fin-free",
+		"opencode/mimo-v2.6-flash-free",
+		"opencode/nemotron-3-ultra-free",
+		"opencode/space-bunny-free",
+		"openrouter/some-model:free",
+	} {
+		if got[want] != ports.AgentModelCostFree {
+			t.Fatalf("%s cost = %q, want free", want, got[want])
+		}
+	}
+	for _, want := range []string{"opencode/big-pickle", "anthropic/claude-sonnet-4"} {
+		if got[want] != ports.AgentModelCostPaid {
+			t.Fatalf("%s cost = %q, want paid", want, got[want])
+		}
+	}
+}
+
+func TestClassifyModelIDIsCaseInsensitive(t *testing.T) {
+	if got := classifyModelID("opencode/Model-FREE"); got != ports.AgentModelCostFree {
+		t.Fatalf("cost = %q, want free", got)
+	}
+}
+
 func TestOpenCodeDiscoveryUsesPureMode(t *testing.T) {
 	spec := commandSpecs["opencode"]
 	if len(spec.args) != 2 || spec.args[0] != "--pure" || spec.args[1] != "models" {

@@ -422,6 +422,26 @@ func model(id, label string, isDefault bool) ports.AgentModelInfo {
 	return ports.AgentModelInfo{ID: id, Label: label, IsDefault: isDefault}
 }
 
+// classifyModelID infers a model's cost class from its id.
+//
+// An agent CLI reports no rates, so this is a name convention, not a fact:
+// opencode's own catalog marks its no-cost models with a "-free" suffix. The
+// picker treats a model with no suffix as paid and lets the user correct a wrong
+// call, because guessing wrong in the cheap direction (showing a paid model as
+// free) is the failure that costs money. An id that already declares itself free
+// in any recognised spelling is free; anything else is left unclassified so the
+// picker can present it without asserting a price.
+func classifyModelID(id string) ports.AgentModelCost {
+	lower := strings.ToLower(id)
+	switch {
+	case strings.HasSuffix(lower, "-free"), strings.HasSuffix(lower, ":free"),
+		strings.HasSuffix(lower, "_free"), strings.HasSuffix(lower, " (free)"):
+		return ports.AgentModelCostFree
+	default:
+		return ports.AgentModelCostPaid
+	}
+}
+
 func parseIDLines(output []byte) ([]ports.AgentModelInfo, error) {
 	text := ansiPattern.ReplaceAllString(string(output), "")
 	var models []ports.AgentModelInfo
@@ -435,7 +455,9 @@ func parseIDLines(output []byte) ([]ports.AgentModelInfo, error) {
 			continue
 		}
 		id := strings.Trim(fields[0], "`\"'[](),:")
-		models = append(models, ports.AgentModelInfo{ID: id, Label: id})
+		models = append(models, ports.AgentModelInfo{
+			ID: id, Label: id, Cost: classifyModelID(id),
+		})
 	}
 	return normalize(models), nil
 }
@@ -715,6 +737,9 @@ func normalize(models []ports.AgentModelInfo) []ports.AgentModelInfo {
 			}
 			if previous.Provider == "" {
 				previous.Provider = item.Provider
+			}
+			if previous.Cost == "" {
+				previous.Cost = item.Cost
 			}
 			previous.IsDefault = previous.IsDefault || item.IsDefault
 			byID[item.ID] = previous

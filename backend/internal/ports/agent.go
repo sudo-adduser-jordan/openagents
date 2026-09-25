@@ -166,6 +166,20 @@ const (
 	CustomModelEntryConfigured CustomModelEntryMode = "configured"
 )
 
+// AgentModelCost classifies what a model costs, so a picker can lead with the
+// models that cost nothing. It is a classification, not a price: an agent CLI
+// reports neither rates nor billing, and a price table would be wrong within a
+// week. Empty means the adapter could not classify the model, and the picker
+// then treats it as unknown rather than guessing.
+type AgentModelCost string
+
+const (
+	// AgentModelCostFree is a model that does not bill.
+	AgentModelCostFree AgentModelCost = "free"
+	// AgentModelCostPaid is a model that bills.
+	AgentModelCostPaid AgentModelCost = "paid"
+)
+
 // AgentModelInfo is one model or mode that an adapter reports as selectable.
 type AgentModelInfo struct {
 	ID            string   `json:"id"`
@@ -174,6 +188,8 @@ type AgentModelInfo struct {
 	IsDefault     bool     `json:"isDefault,omitempty"`
 	Efforts       []string `json:"efforts,omitempty"`
 	DefaultEffort string   `json:"defaultEffort,omitempty"`
+	// Cost is the model's cost class, empty when the adapter cannot tell.
+	Cost AgentModelCost `json:"cost,omitempty" enum:"free,paid"`
 }
 
 // AgentModelCatalog is Open Agents's normalized model-picker response.

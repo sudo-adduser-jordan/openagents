@@ -144,6 +144,20 @@ export function AgentModelCombobox({
 	}, [compact, normalizedSearch, recentModelIDs, searchIndex, value]);
 
 	const visibleModels = rankedModels.slice(0, MAX_VISIBLE_MODELS);
+	// Lead with the models that cost nothing. An agent CLI reports no rates, so
+	// `cost` is a classification the adapter derived, not a price -- which is why
+	// paid models are hidden behind a disclosure rather than removed, and why
+	// picking one reveals them automatically instead of stranding the selection
+	// in a hidden group. Searching always shows everything: the user asked for a
+	// specific model and filtering would hide the answer.
+	const paidModelIDs = useMemo(
+		() => new Set(models.filter((model) => model.cost === "paid").map((model) => model.id)),
+		[models],
+	);
+	const [showPaidModels, setShowPaidModels] = useState(false);
+	const hasPaidModels = paidModelIDs.size > 0;
+	const selectionIsPaid = Boolean(value) && paidModelIDs.has(normalizeSearch(value));
+	const includePaid = showPaidModels || selectionIsPaid || normalizedSearch !== "";
 	const groups = useMemo(
 		() =>
 			compact
@@ -151,8 +165,9 @@ export function AgentModelCombobox({
 				: groupModels(visibleModels, normalizedSearch === "", value, recentModelIDs, {
 						pinned: "Current & defaults",
 						recent: "Recent",
-					}),
-		[compact, normalizedSearch, recentModelIDs,  value, visibleModels],
+						free: "Free",
+					}, includePaid),
+		[compact, includePaid, normalizedSearch, recentModelIDs,  value, visibleModels],
 	);
 	const customSearchValue = search.trim();
 	const showCustomSearchAction = allowDirectCustom && customSearchValue !== "" && rankedModels.length === 0;
@@ -286,7 +301,7 @@ export function AgentModelCombobox({
 														<p className="truncate text-xs text-settings-muted">{item.id}</p>
 													)}
 												</div>
-												{group.kind !== "provider" && item.provider !== "Other" && (
+												{(group.kind === "pinned" || group.kind === "recent") && item.provider !== "Other" && (
 													<span className="shrink-0 text-xs text-settings-muted">{item.provider}</span>
 												)}
 											</div>
@@ -295,6 +310,26 @@ export function AgentModelCombobox({
 								)}
 							</div>
 						))}
+
+						{normalizedSearch === "" && hasPaidModels && !compact && (
+							<>
+								<DropdownMenuSeparator />
+								<DropdownMenuItem
+									className={modelItemClass(false)}
+									// A disclosure is not a choice: keep the menu open so the
+									// models it reveals can actually be picked.
+									onSelect={(event) => {
+										event.preventDefault();
+										setShowPaidModels((shown) => !shown);
+									}}
+								>
+									<span className="truncate text-settings-label">
+										{showPaidModels ? "Hide paid models" : "Show paid models"}
+									</span>
+									<span className="ml-auto shrink-0 text-xs text-settings-muted">{paidModelIDs.size}</span>
+								</DropdownMenuItem>
+							</>
+						)}
 
 						{showCustomSearchAction && (
 							<DropdownMenuItem onSelect={() => onCustom(customSearchValue)} className={modelItemClass(false)}>
@@ -609,7 +644,7 @@ function fuzzySubsequenceScore(haystack: string, needle: string): number | null 
 type ModelGroup = {
 	key: string;
 	label: string;
-	kind: "pinned" | "recent" | "provider";
+	kind: "pinned" | "recent" | "free" | "provider";
 	models: IndexedModel[];
 };
 
@@ -618,18 +653,24 @@ function groupModels(
 	showPinned: boolean,
 	selectedID: string,
 	recentIDs: string[],
-	labels: { pinned: string; recent: string },
+	labels: { pinned: string; recent: string; free: string },
+	includePaid: boolean,
 ) {
 	const groups = new Map<string, ModelGroup>();
 	const recentSet = new Set(recentIDs);
+	// A free model is only pinned or recent by its own merits; the free group is
+	// about cost, so a selected free model still leads under its own heading.
 	for (const item of models) {
 		const pinned = showPinned && (item.id === selectedID || item.model.isDefault);
 		const recent = showPinned && !pinned && recentSet.has(item.id);
-		const kind: ModelGroup["kind"] = pinned ? "pinned" : recent ? "recent" : "provider";
+		const free = !pinned && !recent && item.model.cost === "free";
+		const paid = !pinned && !recent && !free;
+		if (paid && !includePaid) continue;
+		const kind: ModelGroup["kind"] = pinned ? "pinned" : recent ? "recent" : free ? "free" : "provider";
 		const key = kind === "provider" ? `provider:${item.provider}` : kind;
 		const group = groups.get(key) ?? {
 			key,
-			label: kind === "pinned" ? labels.pinned : kind === "recent" ? labels.recent : item.provider,
+			label: kind === "pinned" ? labels.pinned : kind === "recent" ? labels.recent : kind === "free" ? labels.free : item.provider,
 			kind,
 			models: [],
 		};

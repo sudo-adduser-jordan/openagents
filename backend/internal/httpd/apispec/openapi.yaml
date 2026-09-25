@@ -6295,6 +6295,11 @@ components:
       type: object
     AgentModelInfo:
       properties:
+        cost:
+          enum:
+          - free
+          - paid
+          type: string
         defaultEffort:
           type: string
         efforts:

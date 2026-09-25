@@ -2059,6 +2059,8 @@ export interface components {
             agents: components["schemas"]["AgentInstallPlan"][];
         };
         AgentModelInfo: {
+            /** @enum {string} */
+            cost?: "free" | "paid";
             defaultEffort?: string;
             efforts?: string[];
             id: string;

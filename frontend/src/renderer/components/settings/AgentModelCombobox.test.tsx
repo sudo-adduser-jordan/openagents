@@ -1,11 +1,11 @@
-import { render, screen } from "@testing-library/react";
+import { render, screen, within } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { useState } from "react";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 import { AgentModelCombobox, buildModelSearchIndex, searchModelIndex } from "./AgentModelCombobox";
 
 function renderCombobox(
-	models: Array<{ id: string; label: string; provider?: string; isDefault?: boolean }>,
+	models: Array<{ id: string; label: string; provider?: string; isDefault?: boolean; cost?: "free" | "paid" }>,
 	overrides: Partial<React.ComponentProps<typeof AgentModelCombobox>> = {},
 ) {
 	const onChange = vi.fn();
@@ -84,10 +84,11 @@ describe("AgentModelCombobox", () => {
 	});
 
 	it("renders only the first 50 models from a large cached catalog", async () => {
-		const models = Array.from({ length: 1_397 }, (_, index) => ({
+		const models: Parameters<typeof renderCombobox>[0] = Array.from({ length: 1_397 }, (_, index) => ({
 			id: `provider-${index % 4}/model-${index}`,
 			label: `Model ${index}`,
 			provider: `provider-${index % 4}`,
+			cost: "free",
 			isDefault: index === 0,
 		}));
 
@@ -190,11 +191,56 @@ describe("AgentModelCombobox", () => {
 		expect(screen.queryByRole("menuitem", { name: "Enter model ID…" })).not.toBeInTheDocument();
 	});
 
+	it("leads with free models and keeps paid ones behind a disclosure", async () => {
+		renderCombobox([
+			{ id: "opencode/ling-free", label: "Ling free", provider: "opencode", cost: "free" },
+			{ id: "opencode/nemotron-free", label: "Nemotron free", provider: "opencode", cost: "free" },
+			{ id: "opencode/big-pickle", label: "Big pickle", provider: "opencode", cost: "paid" },
+		]);
+		await userEvent.click(screen.getByRole("button", { name: "Worker model" }));
+
+		const menu = within(screen.getByRole("menu"));
+		expect(menu.getByText("Free")).toBeInTheDocument();
+		expect(menu.getByText("Ling free")).toBeInTheDocument();
+		expect(menu.getByText("Nemotron free")).toBeInTheDocument();
+		expect(menu.queryByText("Big pickle")).not.toBeInTheDocument();
+		expect(menu.getByRole("menuitem", { name: /Show paid models/ })).toBeInTheDocument();
+
+		await userEvent.click(menu.getByRole("menuitem", { name: /Show paid models/ }));
+		expect(within(screen.getByRole("menu")).getByText("Big pickle")).toBeInTheDocument();
+	});
+
+	it("reveals paid models when the current selection is one", async () => {
+		renderCombobox(
+			[
+				{ id: "opencode/ling-free", label: "Ling free", provider: "opencode", cost: "free" },
+				{ id: "opencode/big-pickle", label: "Big pickle", provider: "opencode", cost: "paid" },
+			],
+			{ value: "opencode/big-pickle" },
+		);
+		await userEvent.click(screen.getByRole("button", { name: "Worker model" }));
+
+		// The selection must never sit in a hidden group, or the user cannot see
+		// what they picked or change it.
+		expect(within(screen.getByRole("menu")).getByText("Big pickle")).toBeInTheDocument();
+	});
+
+	it("shows every model while searching, paid included", async () => {
+		renderCombobox([
+			{ id: "opencode/ling-free", label: "Ling free", provider: "opencode", cost: "free" },
+			{ id: "opencode/big-pickle", label: "Big pickle", provider: "opencode", cost: "paid" },
+		]);
+		await userEvent.click(screen.getByRole("button", { name: "Worker model" }));
+		await userEvent.type(within(screen.getByRole("menu")).getByRole("searchbox"), "pickle");
+
+		expect(within(screen.getByRole("menu")).getByText("Big pickle")).toBeInTheDocument();
+	});
+
 	it("groups a recent explicit choice immediately after current and default models", async () => {
-		const models = [
-			{ id: "gpt-5.6-sol", label: "GPT-5.6 Sol", provider: "OpenAI", isDefault: true },
-			{ id: "gpt-5.6-terra", label: "GPT-5.6 Terra", provider: "OpenAI" },
-			{ id: "gpt-5.6-luna", label: "GPT-5.6 Luna", provider: "OpenAI" },
+		const models: Parameters<typeof renderCombobox>[0] = [
+			{ id: "gpt-5.6-sol", label: "GPT-5.6 Sol", provider: "OpenAI", cost: "free", isDefault: true },
+			{ id: "gpt-5.6-terra", label: "GPT-5.6 Terra", provider: "OpenAI", cost: "free" },
+			{ id: "gpt-5.6-luna", label: "GPT-5.6 Luna", provider: "OpenAI", cost: "free" },
 		];
 		const first = renderCombobox(models, { recentScope: "codex" });
 		await userEvent.click(screen.getByRole("button", { name: "Worker model" }));
@@ -210,9 +256,9 @@ describe("AgentModelCombobox", () => {
 
 	it("shows machine IDs only when they disambiguate duplicate model names", async () => {
 		renderCombobox([
-			{ id: "gpt-5.6-sol", label: "GPT-5.6 Sol", provider: "OpenAI" },
-			{ id: "openai/opus-standard", label: "Opus", provider: "OpenAI" },
-			{ id: "openai/opus-long", label: "Opus", provider: "OpenAI" },
+			{ id: "gpt-5.6-sol", label: "GPT-5.6 Sol", provider: "OpenAI", cost: "free" },
+			{ id: "openai/opus-standard", label: "Opus", provider: "OpenAI", cost: "free" },
+			{ id: "openai/opus-long", label: "Opus", provider: "OpenAI", cost: "free" },
 		]);
 
 		await userEvent.click(screen.getByRole("button", { name: "Worker model" }));
