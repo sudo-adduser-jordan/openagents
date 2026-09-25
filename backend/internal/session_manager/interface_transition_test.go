@@ -12,11 +12,11 @@ import (
 	"testing"
 	"time"
 
-	"github.com/aoagents/agent-orchestrator/backend/internal/adapters/agent/terminalui"
-	"github.com/aoagents/agent-orchestrator/backend/internal/domain"
-	"github.com/aoagents/agent-orchestrator/backend/internal/lifecycle"
-	"github.com/aoagents/agent-orchestrator/backend/internal/ports"
-	"github.com/aoagents/agent-orchestrator/backend/internal/storage/sqlite"
+	"github.com/sudo-adduser-jordan/open-agents/backend/internal/adapters/agent/terminalui"
+	"github.com/sudo-adduser-jordan/open-agents/backend/internal/domain"
+	"github.com/sudo-adduser-jordan/open-agents/backend/internal/lifecycle"
+	"github.com/sudo-adduser-jordan/open-agents/backend/internal/ports"
+	"github.com/sudo-adduser-jordan/open-agents/backend/internal/storage/sqlite"
 )
 
 type transitionStore struct {
@@ -891,7 +891,7 @@ func newTransitionManager(t *testing.T, mode domain.SessionMode) (*Manager, *tra
 	store := newTransitionStore()
 	store.projects["proj"] = domain.ProjectRecord{ID: "proj", Path: "/repo"}
 	metadata := domain.SessionMetadata{
-		WorkspacePath: "/ws/session-1", Branch: "ao/session-1", AgentSessionID: "native-1",
+		WorkspacePath: "/ws/session-1", Branch: "open-agents/session-1", AgentSessionID: "native-1",
 	}
 	if mode == domain.SessionModeChat {
 		metadata.ProviderConversationID = "native-1"
@@ -1554,7 +1554,7 @@ func TestInterfaceTransitionProviderHistoryRecoverySurvivesDaemonRestart(t *test
 		ID: "session-1", ProjectID: "proj", Kind: domain.KindWorker,
 		Harness: domain.HarnessOpenCode, Mode: domain.SessionModeTUI,
 		Metadata: domain.SessionMetadata{
-			WorkspacePath: "/ws/session-1", Branch: "ao/session-1",
+			WorkspacePath: "/ws/session-1", Branch: "open-agents/session-1",
 			RuntimeHandleID: "runtime-1", RuntimeLaunchID: "tui-generation-1",
 			AgentSessionID: "native-1", AgentSessionIDLaunchID: "tui-generation-1",
 		},
@@ -3258,7 +3258,7 @@ func TestRecoverInterruptedAgentTUIToChatPreservesPoisonedCheckpointThroughResum
 		ID: "session-1", ProjectID: "proj", Kind: domain.KindWorker,
 		Harness: domain.HarnessOpenCode, Mode: domain.SessionModeChat,
 		Metadata: domain.SessionMetadata{
-			WorkspacePath: "/ws/session-1", Branch: "ao/session-1",
+			WorkspacePath: "/ws/session-1", Branch: "open-agents/session-1",
 			AgentSessionID: "native-1", ProviderConversationID: "native-1",
 			LatestUserPrompt:            "poisoned user checkpoint",
 			LatestAssistantUpdate:       "poisoned assistant checkpoint",

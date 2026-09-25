@@ -12,7 +12,7 @@
 
 ## Global Constraints
 
-- Never use `sudo` or a `curl | shell` pipeline. Official HTTPS scripts must be downloaded completely with size, redirect, and timeout bounds before AO executes the saved file with a fixed interpreter.
+- Never use `sudo` or a `curl | shell` pipeline. Official HTTPS scripts must be downloaded completely with size, redirect, and timeout bounds before Open Agents executes the saved file with a fixed interpreter.
 - Installer stdin is closed and recipes use noninteractive modes where supported.
 - The client sends only a server-issued method identifier, never argv or shell text.
 - Verification resolves the exact binary through the canonical harness adapter and does not probe authentication.
@@ -163,5 +163,5 @@
 - [ ] Run `git diff --check`, focused Go tests, `cd backend && go test ./...`, `npm run frontend:typecheck`, and `cd frontend && npm run build`.
 - [ ] Confirm API/sqlc regeneration leaves no drift and inspect the final diff for unrelated main regressions or generated-artifact mismatches.
 - [ ] Push the PR branch and confirm GitHub reports PR #4221 mergeable with checks started.
-- [ ] Launch the native AO Electron app using the repository's desktop-development workflow and verify the Harness Settings page renders.
+- [ ] Launch the native Open Agents Electron app using the repository's desktop-development workflow and verify the Harness Settings page renders.
 - [ ] Report the exact verification results and any remaining external CI state.

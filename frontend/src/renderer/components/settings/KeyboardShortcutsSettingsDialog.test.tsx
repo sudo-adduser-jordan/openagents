@@ -21,8 +21,8 @@ describe("KeyboardShortcutsSettingsDialog", () => {
 	beforeEach(() => {
 		persistBindings.mockClear();
 		setRecording.mockClear();
-		window.ao!.keybindings.set = persistBindings;
-		window.ao!.keybindings.setRecording = setRecording;
+		window.openAgents!.keybindings.set = persistBindings;
+		window.openAgents!.keybindings.setRecording = setRecording;
 		useKeybindingsStore.setState({ overrides: {}, loaded: true });
 	});
 

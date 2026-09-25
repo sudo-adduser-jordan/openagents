@@ -86,7 +86,7 @@ let stateDir = "";
 const hostPlatform = Object.getOwnPropertyDescriptor(process, "platform")!;
 beforeEach(() => {
   Object.defineProperty(process, "platform", { value: "linux" });
-  stateDir = mkdtempSync(nodePath.join(os.tmpdir(), "ao-updater-state-"));
+  stateDir = mkdtempSync(nodePath.join(os.tmpdir(), "open-agents-updater-state-"));
 });
 afterEach(() => {
   Object.defineProperty(process, "platform", hostPlatform);
@@ -228,11 +228,11 @@ describe("macOS differential update policy", () => {
     updaterEvents.get("update-available")?.({
       version: "1.2.3",
       files: [
-        { url: "AO-darwin-arm64.zip", size: 1000 },
-        { url: "AO-darwin-x64.zip", size: 1000 },
+        { url: "Open Agents-darwin-arm64.zip", size: 1000 },
+        { url: "Open Agents-darwin-x64.zip", size: 1000 },
       ],
     });
-    autoUpdater.logger.info("Differential download: https://example.test/AO.zip?token=secret");
+    autoUpdater.logger.info("Differential download: https://example.test/Open Agents.zip?token=secret");
     autoUpdater.logger.error("Cannot download differentially, fallback to full download: checksum mismatch");
     updaterEvents.get("download-progress")?.({
       percent: 25,
@@ -344,7 +344,7 @@ async function importAutoUpdater(
   // suppressed (automatic) status push apart from one the user sees.
   const sent: { channel: string; payload: unknown }[] = [];
   // The renderer is reached through the injected shell sink, never by walking
-  // BrowserWindow.getAllWindows(): the AO shell is a BaseWindow hosting a
+  // BrowserWindow.getAllWindows(): the Open Agents shell is a BaseWindow hosting a
   // WebContentsView (#3750), so that registry is empty in the real app and
   // enumerating it silently dropped every push. Keeping the mock registry empty
   // here means every test in this file exercises the real delivery path.
@@ -355,7 +355,6 @@ async function importAutoUpdater(
     getAllWindows: vi.fn(() => [] as unknown[]),
   };
   const statusMessages = () => sent.filter((m) => m.channel === "updates:status");
-  vi.doMock("electron-updater", () => ({ autoUpdater }));
   vi.doMock("electron", () => ({
     autoUpdater: nativeAutoUpdater,
     app: {
@@ -365,6 +364,17 @@ async function importAutoUpdater(
     BrowserWindow,
     dialog,
   }));
+  // The orchestration tests use one updater double on every platform. The
+  // differential transport has its own suite; loading its real MacUpdater here
+  // would require a live Electron app object in Node.
+  vi.doMock("./mac-differential-v2-updater", () => ({
+    MacDifferentialV2Updater: class {
+      constructor() {
+        return autoUpdater;
+      }
+    },
+  }));
+  vi.doMock("electron-updater", () => ({ autoUpdater }));
   let persisted = typeof settings === "function" ? undefined : settings;
   const readUpdateSettings =
     typeof settings === "function"
@@ -401,6 +411,9 @@ async function importAutoUpdater(
       options.reconcileFeaturePin ??
       ((current: UpdateSettings) =>
         Promise.resolve({ settings: current, cleared: false })),
+  }));
+  vi.doMock("../../scripts/mac-differential-rollout.json", () => ({
+    default: { enabled: options.rolloutReady ?? true },
   }));
   const module = await import("./auto-updater");
   module.setRendererSink(() => ({ send: rendererSend }));
@@ -482,7 +495,7 @@ describe("startAutoUpdates", () => {
       updaterEvents.get("update-downloaded")?.({ version: "2.1.0" });
       await flushMicrotasks();
       const failure = new Error(
-        "ditto: Could not lstat /Users/test/Library/Caches/dev.agent-orchestrator.desktop.ShipIt/update.abc/Agent Orchestrator.app/Contents/Resources/acp-runtime/node_modules/.bin/node-which: No such file or directory",
+        "ditto: Could not lstat /Users/test/Library/Caches/dev.openagents.desktop.ShipIt/update.abc/Open Agents.app/Contents/Resources/acp-runtime/node_modules/.bin/node-which: No such file or directory",
       );
       updaterEvents.get("error")?.(failure);
       nativeAutoUpdater.emit("error", failure);
@@ -518,7 +531,7 @@ describe("startAutoUpdates", () => {
       const { module, autoUpdater, updaterEvents } = await importAutoUpdater();
       await module.checkForUpdatesNow(stateDir);
       updaterEvents.get("update-downloaded")?.({ version: "2.1.0" });
-      const error = new Error("ditto: /cache/app.ShipIt/update.abc/AO.app/Contents/Resources/._app.asar__: No such file or directory");
+      const error = new Error("ditto: /cache/app.ShipIt/update.abc/Open Agents.app/Contents/Resources/._app.asar__: No such file or directory");
       autoUpdater.checkForUpdates.mockImplementationOnce(async () => {
         updaterEvents.get("checking-for-update")?.();
         updaterEvents.get("error")?.(error);
@@ -537,13 +550,13 @@ describe("startAutoUpdates", () => {
     }
   });
 
-  it("handles a reject-only native failure before AO has recorded a staged build", async () => {
+  it("handles a reject-only native failure before Open Agents has recorded a staged build", async () => {
     const restore = stubProcess("darwin", "/usr/local/bin/node");
     try {
       const { module, autoUpdater } = await importAutoUpdater();
       await module.checkForUpdatesNow(stateDir);
       autoUpdater.downloadUpdate.mockRejectedValue(new Error(
-        "ditto: /cache/app.ShipIt/update.abc/AO.app/Contents/Resources/._app.asar__: No such file or directory",
+        "ditto: /cache/app.ShipIt/update.abc/Open Agents.app/Contents/Resources/._app.asar__: No such file or directory",
       ));
       await module.downloadUpdateNow("failed-download");
       expect(module.getUpdateStatus()).toMatchObject({ state: "error", requestId: "failed-download", message: expect.stringContaining("prepare the update") });
@@ -563,7 +576,7 @@ describe("startAutoUpdates", () => {
       readUpdateSettings.mockReturnValueOnce(pendingSettings.promise);
       updaterEvents.get("update-downloaded")?.({ version: "2.1.0" });
       updaterEvents.get("error")?.(new Error(
-        "ditto: /cache/app.ShipIt/update.abc/AO.app/Contents/Resources/._app.asar__: No such file or directory",
+        "ditto: /cache/app.ShipIt/update.abc/Open Agents.app/Contents/Resources/._app.asar__: No such file or directory",
       ));
       pendingSettings.resolve({ enabled: true, channel: "latest", nightlyAck: false, feature: null });
       await flushMicrotasks();
@@ -581,7 +594,7 @@ describe("startAutoUpdates", () => {
       await module.checkForUpdatesNow(stateDir);
       updaterEvents.get("update-downloaded")?.({ version: "2.1.0" });
       updaterEvents.get("error")?.(new Error(
-        "ditto: /cache/app.ShipIt/update.abc/AO.app/Contents/Resources/._app.asar__: No such file or directory",
+        "ditto: /cache/app.ShipIt/update.abc/Open Agents.app/Contents/Resources/._app.asar__: No such file or directory",
       ));
       updaterEvents.get("update-downloaded")?.({ version: "2.2.0" });
       await new Promise((resolve) => setTimeout(resolve, 50));
@@ -598,7 +611,7 @@ describe("startAutoUpdates", () => {
     try {
       const { module, autoUpdater, updaterEvents } = await importAutoUpdater();
       await module.checkForUpdatesNow(stateDir);
-      const failure = new Error("ditto: /cache/app.ShipIt/update.abc/AO.app/Contents/Resources/._app.asar__: No such file or directory");
+      const failure = new Error("ditto: /cache/app.ShipIt/update.abc/Open Agents.app/Contents/Resources/._app.asar__: No such file or directory");
       autoUpdater.downloadUpdate.mockImplementation(async () => {
         updaterEvents.get("update-downloaded")?.({ version: "2.2.0" });
       });
@@ -679,11 +692,11 @@ describe("startAutoUpdates", () => {
           ? "nightly-linux.yml"
           : "nightly.yml";
     const resourcesPath = mkdtempSync(
-      nodePath.join(os.tmpdir(), "ao-nightly-feed-"),
+      nodePath.join(os.tmpdir(), "open-agents-nightly-feed-"),
     );
     writeFileSync(
       nodePath.join(resourcesPath, "app-update.yml"),
-      "provider: github\nowner: Untrivial-ai\nrepo: agent-orchestrator\n",
+      "provider: github\nowner: sudo-adduser-jordan\nrepo: open-agents\n",
     );
     const originalResourcesPath = Object.getOwnPropertyDescriptor(
       process,
@@ -700,7 +713,7 @@ describe("startAutoUpdates", () => {
             tag_name: "v1.0.1-nightly.202608231518",
             draft: false,
             prerelease: true,
-            assets: [{ name: "Agent.Orchestrator.dmg" }],
+            assets: [{ name: "open-agents-darwin-arm64.dmg" }],
           },
           {
             tag_name: "v1.0.1-nightly.202608231517",
@@ -731,20 +744,20 @@ describe("startAutoUpdates", () => {
       await module.checkForUpdatesNow(stateDir);
 
       expect(fetchMock).toHaveBeenCalledWith(
-        "https://api.github.com/repos/Untrivial-ai/agent-orchestrator/releases?per_page=100",
+        "https://api.github.com/repos/sudo-adduser-jordan/open-agents/releases?per_page=100",
         expect.objectContaining({ signal: expect.any(AbortSignal) }),
       );
       expect(autoUpdater.setFeedURL).toHaveBeenNthCalledWith(1, {
         provider: "generic",
-        url: "https://github.com/Untrivial-ai/agent-orchestrator/releases/download/v1.0.1-nightly.202608231517",
+        url: "https://github.com/sudo-adduser-jordan/open-agents/releases/download/v1.0.1-nightly.202608231517",
         channel: "nightly",
         useMultipleRangeRequest: false,
       });
       expect(autoUpdater.checkForUpdates).toHaveBeenCalledTimes(1);
       expect(autoUpdater.setFeedURL).toHaveBeenNthCalledWith(2, {
         provider: "github",
-        owner: "Untrivial-ai",
-        repo: "agent-orchestrator",
+        owner: "sudo-adduser-jordan",
+        repo: "open-agents",
       });
     } finally {
       if (originalResourcesPath) {
@@ -764,11 +777,11 @@ describe("startAutoUpdates", () => {
           ? "nightly-linux.yml"
           : "nightly.yml";
     const resourcesPath = mkdtempSync(
-      nodePath.join(os.tmpdir(), "ao-nightly-feed-"),
+      nodePath.join(os.tmpdir(), "open-agents-nightly-feed-"),
     );
     writeFileSync(
       nodePath.join(resourcesPath, "app-update.yml"),
-      "provider: github\nowner: Untrivial-ai\nrepo: agent-orchestrator\n",
+      "provider: github\nowner: sudo-adduser-jordan\nrepo: open-agents\n",
     );
     const originalResourcesPath = Object.getOwnPropertyDescriptor(
       process,
@@ -785,7 +798,7 @@ describe("startAutoUpdates", () => {
             tag_name: "v1.0.1-nightly.202608231518",
             draft: false,
             prerelease: true,
-            assets: [{ name: "Agent.Orchestrator.dmg" }],
+            assets: [{ name: "open-agents-darwin-arm64.dmg" }],
           },
           {
             tag_name: "v1.0.1-nightly.202608231517",
@@ -816,12 +829,12 @@ describe("startAutoUpdates", () => {
       await module.checkForUpdatesNow(stateDir);
 
       expect(fetchMock).toHaveBeenCalledWith(
-        "https://api.github.com/repos/Untrivial-ai/agent-orchestrator/releases?per_page=100",
+        "https://api.github.com/repos/sudo-adduser-jordan/open-agents/releases?per_page=100",
         expect.objectContaining({ signal: expect.any(AbortSignal) }),
       );
       expect(autoUpdater.setFeedURL).toHaveBeenNthCalledWith(1, {
         provider: "generic",
-        url: "https://github.com/Untrivial-ai/agent-orchestrator/releases/download/v1.0.1-nightly.202608231517",
+        url: "https://github.com/sudo-adduser-jordan/open-agents/releases/download/v1.0.1-nightly.202608231517",
         channel: "nightly",
         useMultipleRangeRequest: false,
       });
@@ -832,7 +845,7 @@ describe("startAutoUpdates", () => {
         expect.objectContaining({ headers: expect.objectContaining({ "If-None-Match": '"release-v1"' }) }),
       );
       expect(autoUpdater.setFeedURL).toHaveBeenNthCalledWith(3, expect.objectContaining({
-        url: "https://github.com/Untrivial-ai/agent-orchestrator/releases/download/v1.0.1-nightly.202608231517",
+        url: "https://github.com/sudo-adduser-jordan/open-agents/releases/download/v1.0.1-nightly.202608231517",
       }));
       fetchMock.mockResolvedValueOnce(new Response(JSON.stringify([{
         tag_name: "v1.0.2-nightly.202608241000", draft: false, prerelease: true,
@@ -840,13 +853,13 @@ describe("startAutoUpdates", () => {
       }]), { status: 200, headers: { etag: '"release-v2"' } }));
       await module.checkForUpdatesNow(stateDir);
       expect(autoUpdater.setFeedURL).toHaveBeenNthCalledWith(5, expect.objectContaining({
-        url: "https://github.com/Untrivial-ai/agent-orchestrator/releases/download/v1.0.2-nightly.202608241000",
+        url: "https://github.com/sudo-adduser-jordan/open-agents/releases/download/v1.0.2-nightly.202608241000",
       }));
       expect(autoUpdater.checkForUpdates).toHaveBeenCalledTimes(3);
       expect(autoUpdater.setFeedURL).toHaveBeenNthCalledWith(2, {
         provider: "github",
-        owner: "Untrivial-ai",
-        repo: "agent-orchestrator",
+        owner: "sudo-adduser-jordan",
+        repo: "open-agents",
       });
     } finally {
       if (originalResourcesPath) {
@@ -869,10 +882,10 @@ describe("startAutoUpdates", () => {
         : process.platform === "linux"
           ? "nightly-linux.yml"
           : "nightly.yml";
-    const resourcesPath = mkdtempSync(nodePath.join(os.tmpdir(), "ao-nightly-notes-"));
+    const resourcesPath = mkdtempSync(nodePath.join(os.tmpdir(), "open-agents-nightly-notes-"));
     writeFileSync(
       nodePath.join(resourcesPath, "app-update.yml"),
-      "provider: github\nowner: Untrivial-ai\nrepo: agent-orchestrator\n",
+      "provider: github\nowner: sudo-adduser-jordan\nrepo: open-agents\n",
     );
     const originalResourcesPath = Object.getOwnPropertyDescriptor(process, "resourcesPath");
     Object.defineProperty(process, "resourcesPath", { configurable: true, value: resourcesPath });
@@ -928,11 +941,11 @@ describe("startAutoUpdates", () => {
           ? "nightly-linux.yml"
           : "nightly.yml";
     const resourcesPath = mkdtempSync(
-      nodePath.join(os.tmpdir(), "ao-nightly-feed-"),
+      nodePath.join(os.tmpdir(), "open-agents-nightly-feed-"),
     );
     writeFileSync(
       nodePath.join(resourcesPath, "app-update.yml"),
-      "provider: github\nowner: Untrivial-ai\nrepo: agent-orchestrator\n",
+      "provider: github\nowner: sudo-adduser-jordan\nrepo: open-agents\n",
     );
     const originalResourcesPath = Object.getOwnPropertyDescriptor(
       process,
@@ -952,7 +965,7 @@ describe("startAutoUpdates", () => {
             tag_name: "v1.0.1-nightly.202608231518",
             draft: false,
             prerelease: true,
-            assets: [{ name: "Agent.Orchestrator.dmg" }],
+            assets: [{ name: "open-agents-darwin-arm64.dmg" }],
           },
           {
             tag_name: "v1.0.1-nightly.202608231517",
@@ -978,7 +991,7 @@ describe("startAutoUpdates", () => {
 
       expect(autoUpdater.setFeedURL).toHaveBeenNthCalledWith(1, {
         provider: "generic",
-        url: "https://github.com/Untrivial-ai/agent-orchestrator/releases/download/v1.0.1-nightly.202608231517",
+        url: "https://github.com/sudo-adduser-jordan/open-agents/releases/download/v1.0.1-nightly.202608231517",
         channel: "nightly",
         useMultipleRangeRequest: false,
       });
@@ -986,8 +999,8 @@ describe("startAutoUpdates", () => {
       // Later background checks start from the normal provider again.
       expect(autoUpdater.setFeedURL).toHaveBeenNthCalledWith(2, {
         provider: "github",
-        owner: "Untrivial-ai",
-        repo: "agent-orchestrator",
+        owner: "sudo-adduser-jordan",
+        repo: "open-agents",
       });
     } finally {
       if (originalResourcesPath) {
@@ -1007,11 +1020,11 @@ describe("startAutoUpdates", () => {
           ? "pr4473-linux.yml"
           : "pr4473.yml";
     const resourcesPath = mkdtempSync(
-      nodePath.join(os.tmpdir(), "ao-feature-feed-"),
+      nodePath.join(os.tmpdir(), "open-agents-feature-feed-"),
     );
     writeFileSync(
       nodePath.join(resourcesPath, "app-update.yml"),
-      "provider: github\nowner: Untrivial-ai\nrepo: agent-orchestrator\n",
+      "provider: github\nowner: sudo-adduser-jordan\nrepo: open-agents\n",
     );
     const originalResourcesPath = Object.getOwnPropertyDescriptor(
       process,
@@ -1028,7 +1041,7 @@ describe("startAutoUpdates", () => {
             tag_name: "v1.0.0-pr4473.202608271543",
             draft: false,
             prerelease: true,
-            assets: [{ name: "Agent.Orchestrator.dmg" }],
+            assets: [{ name: "open-agents-darwin-arm64.dmg" }],
           },
           {
             tag_name: "v1.0.0-pr4473.202608271542",
@@ -1060,15 +1073,15 @@ describe("startAutoUpdates", () => {
 
       expect(autoUpdater.setFeedURL).toHaveBeenNthCalledWith(1, {
         provider: "generic",
-        url: "https://github.com/Untrivial-ai/agent-orchestrator/releases/download/v1.0.0-pr4473.202608271542",
+        url: "https://github.com/sudo-adduser-jordan/open-agents/releases/download/v1.0.0-pr4473.202608271542",
         channel: "pr4473",
         useMultipleRangeRequest: false,
       });
       expect(autoUpdater.checkForUpdates).toHaveBeenCalledTimes(1);
       expect(autoUpdater.setFeedURL).toHaveBeenNthCalledWith(2, {
         provider: "github",
-        owner: "Untrivial-ai",
-        repo: "agent-orchestrator",
+        owner: "sudo-adduser-jordan",
+        repo: "open-agents",
       });
     } finally {
       if (originalResourcesPath) {
@@ -1637,7 +1650,7 @@ describe("startAutoUpdates", () => {
     vi.spyOn(console, "info").mockImplementation(() => undefined);
     const { module, updaterEvents } = await importAutoUpdater();
     const err = new Error(
-      'Cannot find latest-mac.yml in the latest release artifacts (https://github.com/AgentWrapper/agent-orchestrator/releases/download/v0.10.1/latest-mac.yml):\nHttpError: 404 "method: GET url: https://github.com/AgentWrapper/agent-orchestrator/releases/download/v0.10.1/latest-mac.yml"',
+      'Cannot find latest-mac.yml in the latest release artifacts (https://github.com/sudo-adduser-jordan/open-agents/releases/download/v0.10.1/latest-mac.yml):\nHttpError: 404 "method: GET url: https://github.com/sudo-adduser-jordan/open-agents/releases/download/v0.10.1/latest-mac.yml"',
     );
 
     await module.checkForUpdatesNow(stateDir);
@@ -1655,7 +1668,7 @@ describe("startAutoUpdates", () => {
     vi.spyOn(console, "error").mockImplementation(() => undefined);
     const { module, autoUpdater, updaterEvents } = await importAutoUpdater();
     const err = new Error(
-      'Cannot find latest-mac.yml in the latest release artifacts (https://github.com/AgentWrapper/agent-orchestrator/releases/download/v0.10.1/latest-mac.yml):\nHttpError: 404 "method: GET url: https://github.com/AgentWrapper/agent-orchestrator/releases/download/v0.10.1/latest-mac.yml"',
+      'Cannot find latest-mac.yml in the latest release artifacts (https://github.com/sudo-adduser-jordan/open-agents/releases/download/v0.10.1/latest-mac.yml):\nHttpError: 404 "method: GET url: https://github.com/sudo-adduser-jordan/open-agents/releases/download/v0.10.1/latest-mac.yml"',
     );
     autoUpdater.downloadUpdate.mockImplementationOnce(() => {
       updaterEvents.get("error")?.(err);
@@ -1674,7 +1687,7 @@ describe("startAutoUpdates", () => {
     vi.spyOn(console, "info").mockImplementation(() => undefined);
     const { module, autoUpdater } = await importAutoUpdater();
     const err = new Error(
-      'Cannot find latest-mac.yml in the latest release artifacts (https://github.com/AgentWrapper/agent-orchestrator/releases/download/v0.10.1/latest-mac.yml):\nHttpError: 404 "method: GET url: https://github.com/AgentWrapper/agent-orchestrator/releases/download/v0.10.1/latest-mac.yml"',
+      'Cannot find latest-mac.yml in the latest release artifacts (https://github.com/sudo-adduser-jordan/open-agents/releases/download/v0.10.1/latest-mac.yml):\nHttpError: 404 "method: GET url: https://github.com/sudo-adduser-jordan/open-agents/releases/download/v0.10.1/latest-mac.yml"',
     );
     autoUpdater.checkForUpdates.mockRejectedValueOnce(err);
 
@@ -1691,7 +1704,7 @@ describe("startAutoUpdates", () => {
     vi.spyOn(console, "error").mockImplementation(() => undefined);
     const { module, autoUpdater } = await importAutoUpdater();
     const err = new Error(
-      'Cannot find latest-mac.yml in the latest release artifacts (https://github.com/AgentWrapper/agent-orchestrator/releases/download/v0.10.1/latest-mac.yml):\nHttpError: 404 "method: GET url: https://github.com/AgentWrapper/agent-orchestrator/releases/download/v0.10.1/latest-mac.yml"',
+      'Cannot find latest-mac.yml in the latest release artifacts (https://github.com/sudo-adduser-jordan/open-agents/releases/download/v0.10.1/latest-mac.yml):\nHttpError: 404 "method: GET url: https://github.com/sudo-adduser-jordan/open-agents/releases/download/v0.10.1/latest-mac.yml"',
     );
     autoUpdater.downloadUpdate.mockRejectedValueOnce(err);
 
@@ -1707,7 +1720,7 @@ describe("startAutoUpdates", () => {
     vi.spyOn(console, "info").mockImplementation(() => undefined);
     const { module, updaterEvents } = await importAutoUpdater();
     const err = new Error(
-      'Cannot find latest-mac.yml in the latest release artifacts (https://github.com/AgentWrapper/agent-orchestrator/releases/download/v0.10.1/latest-mac.yml):\nHttpError: 404 "method: GET url: https://github.com/AgentWrapper/agent-orchestrator/releases/download/v0.10.1/latest-mac.yml"',
+      'Cannot find latest-mac.yml in the latest release artifacts (https://github.com/sudo-adduser-jordan/open-agents/releases/download/v0.10.1/latest-mac.yml):\nHttpError: 404 "method: GET url: https://github.com/sudo-adduser-jordan/open-agents/releases/download/v0.10.1/latest-mac.yml"',
     );
 
     await module.checkForUpdatesNow(stateDir);
@@ -1729,7 +1742,7 @@ describe("startAutoUpdates", () => {
     vi.spyOn(console, "info").mockImplementation(() => undefined);
     const { module, autoUpdater, updaterEvents } = await importAutoUpdater();
     const err = new Error(
-      'Cannot find latest-mac.yml in the latest release artifacts (https://github.com/AgentWrapper/agent-orchestrator/releases/download/v0.10.1/latest-mac.yml):\nHttpError: 404 "method: GET url: https://github.com/AgentWrapper/agent-orchestrator/releases/download/v0.10.1/latest-mac.yml"',
+      'Cannot find latest-mac.yml in the latest release artifacts (https://github.com/sudo-adduser-jordan/open-agents/releases/download/v0.10.1/latest-mac.yml):\nHttpError: 404 "method: GET url: https://github.com/sudo-adduser-jordan/open-agents/releases/download/v0.10.1/latest-mac.yml"',
     );
 
     await module.checkForUpdatesNow(stateDir);
@@ -1750,7 +1763,7 @@ describe("startAutoUpdates", () => {
     const { module, autoUpdater, updaterEvents, statusMessages } =
       await importAutoUpdater();
     const err = new Error(
-      'Cannot find latest-mac.yml in the latest release artifacts (https://github.com/AgentWrapper/agent-orchestrator/releases/download/v0.10.1/latest-mac.yml):\nHttpError: 404 "method: GET url: https://github.com/AgentWrapper/agent-orchestrator/releases/download/v0.10.1/latest-mac.yml"',
+      'Cannot find latest-mac.yml in the latest release artifacts (https://github.com/sudo-adduser-jordan/open-agents/releases/download/v0.10.1/latest-mac.yml):\nHttpError: 404 "method: GET url: https://github.com/sudo-adduser-jordan/open-agents/releases/download/v0.10.1/latest-mac.yml"',
     );
     autoUpdater.checkForUpdates.mockImplementationOnce(() => {
       updaterEvents.get("update-downloaded")?.({ version: "2.1.0" });
@@ -1781,7 +1794,7 @@ describe("startAutoUpdates", () => {
   it("still surfaces non-manifest 404 errors", async () => {
     const { module, updaterEvents } = await importAutoUpdater();
     const err = new Error(
-      'HttpError: 404 "method: GET url: https://github.com/AgentWrapper/agent-orchestrator/releases/download/v0.10.1/some-file.png"',
+      'HttpError: 404 "method: GET url: https://github.com/sudo-adduser-jordan/open-agents/releases/download/v0.10.1/some-file.png"',
     );
 
     await module.checkForUpdatesNow(stateDir);
@@ -3131,18 +3144,18 @@ function stubProcess(platform: NodeJS.Platform, execPath: string): () => void {
 // Builds a real bundle-shaped tree so the writability checks run against the
 // filesystem rather than a stub. Returns the exec path inside it.
 function makeBundle(): { root: string; bundle: string; execPath: string } {
-  const root = mkdtempSync(nodePath.join(os.tmpdir(), "ao-updater-perm-"));
-  const bundle = nodePath.join(root, "Agent Orchestrator.app");
+  const root = mkdtempSync(nodePath.join(os.tmpdir(), "open-agents-updater-perm-"));
+  const bundle = nodePath.join(root, "Open Agents.app");
   mkdirSync(nodePath.join(bundle, "Contents", "MacOS"), { recursive: true });
   return {
     root,
     bundle,
-    execPath: nodePath.join(bundle, "Contents", "MacOS", "agent-orchestrator"),
+    execPath: nodePath.join(bundle, "Contents", "MacOS", "open-agents"),
   };
 }
 
 const TRANSLOCATED_EXEC_PATH =
-  "/private/var/folders/hg/vkmz93d1T/T/AppTranslocation/0AC4-11EE/d/Agent Orchestrator.app/Contents/MacOS/agent-orchestrator";
+  "/private/var/folders/hg/vkmz93d1T/T/AppTranslocation/0AC4-11EE/d/Open Agents.app/Contents/MacOS/open-agents";
 
 describe("quitAndInstallUpdate", () => {
   afterEach(() => {
@@ -3232,7 +3245,7 @@ describe("quitAndInstallUpdate", () => {
     }
   });
 
-  it.each(["no longer available", "download failed"])("keeps AO open when restart preparation is %s", async (failure) => {
+  it.each(["no longer available", "download failed"])("keeps Open Agents open when restart preparation is %s", async (failure) => {
     const restore = stubProcess("darwin", "/usr/bin/node");
     try {
       writeFileSync(nodePath.join(stateDir, "staged-update.json"), JSON.stringify({ version: "2.1.0", stagedAt: Date.now(), channel: "latest" }));
@@ -3516,7 +3529,7 @@ describe("install-on-quit policy", () => {
     try {
       const { module, autoUpdater } = await importAutoUpdater();
 
-      await module.startAutoUpdates("/tmp/ao-state");
+      await module.startAutoUpdates("/tmp/open-agents-state");
 
       expect(autoUpdater.autoInstallOnAppQuit).toBe(false);
     } finally {
@@ -3524,7 +3537,7 @@ describe("install-on-quit policy", () => {
     }
   });
 
-  // Regression: dropping a stale staged build stopped AO advertising it, but
+  // Regression: dropping a stale staged build stopped Open Agents advertising it, but
   // the build itself stayed in the cache with install-on-quit armed. On Windows
   // and Linux BaseUpdater.addQuitHandler re-reads autoInstallOnAppQuit at quit
   // time, so quitting before the replacement landed installed the channel the
@@ -3602,7 +3615,7 @@ describe("install-on-quit policy", () => {
     try {
       const { module, autoUpdater } = await importAutoUpdater();
 
-      await module.startAutoUpdates("/tmp/ao-state");
+      await module.startAutoUpdates("/tmp/open-agents-state");
 
       expect(autoUpdater.autoInstallOnAppQuit).toBe(true);
     } finally {
@@ -3761,8 +3774,8 @@ describe("channel downgrade safety", () => {
 // so the retry never re-downloads and never re-verifies.
 describe("staged install rejection", () => {
   const rejection = new Error(
-    "Code signature at URL file:///Users/x/Library/Caches/dev.agent-orchestrator.desktop.ShipIt/" +
-      "update.M9ZvE0X/Agent%20Orchestrator.app/ did not pass validation: " +
+    "Code signature at URL file:///Users/x/Library/Caches/dev.openagents.desktop.ShipIt/" +
+      "update.M9ZvE0X/Open%20Agents.app/ did not pass validation: " +
       "code failed to satisfy specified code requirement(s)",
   );
 
@@ -4030,7 +4043,7 @@ describe("staged install rejection", () => {
     updaterEvents.get("error")?.(
       new Error(
         "Code signature at URL file:///Users/graycup/Library/Caches/" +
-          "dev.agent-orchestrator.desktop.ShipIt/update.lmaIGgc/Agent%20Orchestrator.app/ " +
+          "dev.openagents.desktop.ShipIt/update.lmaIGgc/Open%20Agents.app/ " +
           "did not pass validation: code object is not signed at all",
       ),
     );
@@ -4054,7 +4067,7 @@ describe("staged install rejection", () => {
     updaterEvents.get("error")?.(
       new Error(
         "Failed to get static code for bundle file:///Users/x/Library/Caches/" +
-          "dev.agent-orchestrator.desktop.ShipIt/update.M9ZvE0X/Agent%20Orchestrator.app/",
+          "dev.openagents.desktop.ShipIt/update.M9ZvE0X/Open%20Agents.app/",
       ),
     );
 
@@ -4077,7 +4090,7 @@ describe("staged install rejection", () => {
     updaterEvents.get("error")?.(
       new Error(
         "EACCES: permission denied, open '/Users/x/Library/Caches/" +
-          "dev.agent-orchestrator.desktop.ShipIt/ShipItState.plist'",
+          "dev.openagents.desktop.ShipIt/ShipItState.plist'",
       ),
     );
 
@@ -4107,15 +4120,15 @@ describe("staged install rejection", () => {
 // and the macOS update-hop e2e job silently stopped being runnable, which is
 // how #4254 reached users with no update-hop coverage at all.
 describe("e2e staging sentinel", () => {
-  const originalSentinel = process.env.AO_E2E_UPDATE_SENTINEL;
+  const originalSentinel = process.env.OPEN_AGENTS_E2E_UPDATE_SENTINEL;
   afterEach(() => {
-    if (originalSentinel === undefined) delete process.env.AO_E2E_UPDATE_SENTINEL;
-    else process.env.AO_E2E_UPDATE_SENTINEL = originalSentinel;
+    if (originalSentinel === undefined) delete process.env.OPEN_AGENTS_E2E_UPDATE_SENTINEL;
+    else process.env.OPEN_AGENTS_E2E_UPDATE_SENTINEL = originalSentinel;
   });
 
   it("writes the sentinel from the NATIVE updater's update-downloaded", async () => {
     const sentinel = nodePath.join(stateDir, "sentinel.json");
-    process.env.AO_E2E_UPDATE_SENTINEL = sentinel;
+    process.env.OPEN_AGENTS_E2E_UPDATE_SENTINEL = sentinel;
     const { module, nativeUpdaterEvents, updaterEvents } =
       await importAutoUpdater(undefined, { nativeReadyManually: true });
 
@@ -4134,21 +4147,21 @@ describe("e2e staging sentinel", () => {
   });
 
   it("registers no sentinel writer when the env var is unset", async () => {
-    delete process.env.AO_E2E_UPDATE_SENTINEL;
+    delete process.env.OPEN_AGENTS_E2E_UPDATE_SENTINEL;
     const sentinel = nodePath.join(stateDir, "sentinel.json");
     const { module, nativeUpdaterEvents } = await importAutoUpdater();
     await module.checkForUpdatesNow(stateDir);
     // The sentinel was never wired at import (env unset), so a native
     // update-downloaded writes nothing even if the env var is set afterwards.
     // (Other native handlers, e.g. the macOS restart handler, may exist.)
-    process.env.AO_E2E_UPDATE_SENTINEL = sentinel;
+    process.env.OPEN_AGENTS_E2E_UPDATE_SENTINEL = sentinel;
     nativeUpdaterEvents.get("update-downloaded")?.({}, "notes", "2.1.0");
-    delete process.env.AO_E2E_UPDATE_SENTINEL;
+    delete process.env.OPEN_AGENTS_E2E_UPDATE_SENTINEL;
     expect(existsSync(sentinel)).toBe(false);
   });
 });
 
-// The AO shell is a BaseWindow hosting the UI in a WebContentsView (#3750), and
+// The Open Agents shell is a BaseWindow hosting the UI in a WebContentsView (#3750), and
 // BrowserWindow.getAllWindows() only ever returns BrowserWindow instances. The
 // updater walked that registry to push status, so from 2026-08-09 it matched
 // nothing and every push was dropped. `invoke` still answered its own sender, so
@@ -4315,7 +4328,7 @@ it("sizes the staging disk requirement from the downloaded archive", async () =>
     await module.checkForUpdatesNow(stateDir);
     updaterEvents.get("update-downloaded")?.({
       version: "2.0.0",
-      files: [{ url: "AO.zip", size: 300 * 1024 * 1024 }],
+      files: [{ url: "Open Agents.zip", size: 300 * 1024 * 1024 }],
     });
     // A 300 MiB archive needs a few times its size to unpack and swap, still
     // well under the 2 GiB cap a flat floor would have demanded.

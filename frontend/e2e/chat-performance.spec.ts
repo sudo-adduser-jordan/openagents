@@ -14,7 +14,7 @@ declare global {
 
 test.describe("live renderer performance workloads", () => {
 	test.skip(
-		process.env.AO_PERF_BENCH !== "1",
+		process.env.OPEN_AGENTS_PERF_BENCH !== "1",
 		"Opt-in benchmark; timings are evidence, not hardware-dependent CI assertions",
 	);
 	test.use({ viewport: { width: 1440, height: 1000 } });
@@ -38,7 +38,7 @@ test.describe("live renderer performance workloads", () => {
 			if ("exact" in result) expect(result.exact).toBe(true);
 			if ("textPreserved" in result) expect(result.textPreserved).toBe(true);
 			if ("mountedTurns" in result) expect(result.mountedTurns).toBe(250);
-			const label = process.env.AO_PERF_LABEL ?? "sample";
+			const label = process.env.OPEN_AGENTS_PERF_LABEL ?? "sample";
 			const record = {
 				label,
 				commit: execFileSync("git", ["rev-parse", "HEAD"], {
@@ -61,7 +61,7 @@ test.describe("live renderer performance workloads", () => {
 				body: JSON.stringify(record, null, 2),
 				contentType: "application/json",
 			});
-			const output = process.env.AO_PERF_DIR;
+			const output = process.env.OPEN_AGENTS_PERF_DIR;
 			if (output) {
 				await mkdir(output, { recursive: true });
 				await writeFile(

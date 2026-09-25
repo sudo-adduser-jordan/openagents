@@ -14,7 +14,7 @@ import {
 
 const listed = [
 	{ id: "scratch", name: "Scratch" },
-	{ id: "ao", name: "AO" },
+	{ id: "open-agents", name: "Open Agents" },
 ];
 
 const session = (projectId: string, over: Partial<DashboardSession> = {}): DashboardSession =>
@@ -30,7 +30,7 @@ describe("resolveActiveProject", () => {
 	});
 
 	it("keeps a filter the daemon still lists", () => {
-		expect(resolveActiveProject("ao", listed, true)).toBe("ao");
+		expect(resolveActiveProject("open-agents", listed, true)).toBe("open-agents");
 	});
 
 	it("leaves all projects alone", () => {
@@ -42,14 +42,14 @@ describe("resolveActiveProject", () => {
 	// nothing about the project — dropping the filter there would discard a
 	// choice on every cold start.
 	it("does not judge against a list that has not landed", () => {
-		expect(resolveActiveProject("ao", [], false)).toBe("ao");
+		expect(resolveActiveProject("open-agents", [], false)).toBe("open-agents");
 	});
 
 	// A daemon that lists nothing IS evidence, and it is not the same state:
 	// sessions outlive their project, so there can still be sessions this
 	// filter hides.
 	it("rejects the filter when the daemon answers with no projects at all", () => {
-		expect(resolveActiveProject("ao", [], true)).toBe("all");
+		expect(resolveActiveProject("open-agents", [], true)).toBe("all");
 	});
 });
 
@@ -59,11 +59,11 @@ describe("resolveSpawnProject", () => {
 	});
 
 	it("keeps a selected project until the daemon project list is known", () => {
-		expect(resolveSpawnProject("ao", undefined, "ao", [], false)).toBe("ao");
+		expect(resolveSpawnProject("open-agents", undefined, "open-agents", [], false)).toBe("open-agents");
 	});
 
 	it("re-seeds from the only remaining project after the selected project disappears", () => {
-		expect(resolveSpawnProject("removed", undefined, ALL_PROJECTS, [listed[1]], true)).toBe("ao");
+		expect(resolveSpawnProject("removed", undefined, ALL_PROJECTS, [listed[1]], true)).toBe("open-agents");
 	});
 
 	it("prefers a valid route project when the sheet has no selection", () => {
@@ -73,7 +73,7 @@ describe("resolveSpawnProject", () => {
 
 describe("activeProjectLabel", () => {
 	it("names the project when the daemon lists it", () => {
-		expect(activeProjectLabel("ao", listed, true)).toBe("AO");
+		expect(activeProjectLabel("open-agents", listed, true)).toBe("Open Agents");
 	});
 
 	it("calls the unfiltered board All projects", () => {
@@ -107,29 +107,29 @@ describe("filteredEmptyCopy", () => {
 			archived("scratch"),
 			archived("scratch"),
 		];
-		expect(filteredEmptyCopy("ao", listed, true, sessions)).toEqual({
+		expect(filteredEmptyCopy("open-agents", listed, true, sessions)).toEqual({
 			title: "No agents in this project",
-			message: "Filtered to AO. 3 agents are in other projects.",
+			message: "Filtered to Open Agents. 3 agents are in other projects.",
 		});
 	});
 
 	it("reads as a sentence for one hidden agent", () => {
-		expect(filteredEmptyCopy("ao", listed, true, [session("scratch")])?.message).toBe("Filtered to AO. 1 agent is in other projects.");
+		expect(filteredEmptyCopy("open-agents", listed, true, [session("scratch")])?.message).toBe("Filtered to Open Agents. 1 agent is in other projects.");
 	});
 
 	// Everything else terminated: "0 agents are in other projects" would argue
 	// against the button beside it, and the archive row is what Show all reveals.
 	it("says so when the other projects hold only archived sessions", () => {
-		expect(filteredEmptyCopy("ao", listed, true, [archived("scratch"), archived("scratch")])?.message).toBe(
-			"Filtered to AO. Other projects have only archived sessions.",
+		expect(filteredEmptyCopy("open-agents", listed, true, [archived("scratch"), archived("scratch")])?.message).toBe(
+			"Filtered to Open Agents. Other projects have only archived sessions.",
 		);
 	});
 
 	// The ordinary empty state, or the board itself, is the right thing to show.
 	it("is null when the filter is All, a session is visible, or nothing is hidden", () => {
 		expect(filteredEmptyCopy("all", listed, true, [session("scratch")])).toBeNull();
-		expect(filteredEmptyCopy("ao", listed, true, [session("ao"), session("scratch")])).toBeNull();
-		expect(filteredEmptyCopy("ao", listed, true, [])).toBeNull();
+		expect(filteredEmptyCopy("open-agents", listed, true, [session("open-agents"), session("scratch")])).toBeNull();
+		expect(filteredEmptyCopy("open-agents", listed, true, [])).toBeNull();
 	});
 
 	// Once the list has landed a stale filter applies as All, so it hides nothing.

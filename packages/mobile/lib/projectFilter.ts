@@ -74,8 +74,8 @@ export function projectsForMachine(state: KnownProjects, activeMachine: string):
 /**
  * The board's project filter, checked against what the daemon actually has.
  *
- * `ao.activeProject` is restored from storage and outlives the project it
- * names: `ao project rm` on the desktop, or pairing the phone with a machine
+ * `openAgents.activeProject` is restored from storage and outlives the project it
+ * names: `open-agents project rm` on the desktop, or pairing the phone with a machine
  * whose projects differ, leaves the filter pointing at an id no session will
  * ever carry. The board then filters everything out, the spawn sheet sends the
  * dead id to the daemon and shows its 404, and nothing says the board is
@@ -103,7 +103,7 @@ export function resolveActiveProject(
 	// of the trade: a cold start applies it for the tick before the list lands,
 	// where clearing it would silently discard a choice the daemon may well
 	// still honour. A list that names nothing IS evidence, though — sessions
-	// outlive their project (`ao project rm` kills the live ones and archives
+	// outlive their project (`open-agents project rm` kills the live ones and archives
 	// the project; the records stay listed), so a daemon with no projects can
 	// still have sessions this filter would hide.
 	if (!projectsKnown) return activeProjectId;

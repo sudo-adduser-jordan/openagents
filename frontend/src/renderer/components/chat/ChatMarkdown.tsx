@@ -281,7 +281,7 @@ const COMPONENTS: Components = {
 		</li>
 	),
 	// Read-only on purpose. The checkbox reflects what the agent wrote; clicking it
-	// would imply AO could change the agent's plan, which it cannot.
+	// would imply Open Agents could change the agent's plan, which it cannot.
 	input: ({ checked, type }) =>
 		type === "checkbox" ? (
 			<input
@@ -338,7 +338,7 @@ const COMPONENTS: Components = {
 	strong: ({ children }) => <strong className="font-semibold text-foreground">{children}</strong>,
 	del: ({ children }) => <del className="text-muted-foreground">{children}</del>,
 
-	// Match terminal links: a plain HTTP(S) click uses the session's AO Browser;
+	// Match terminal links: a plain HTTP(S) click uses the session's Open Agents Browser;
 	// Cmd/Ctrl- or Option/Alt-click and non-web schemes use the system browser,
 	// and right-click offers the system browser and copying the address.
 	a: MarkdownLink,

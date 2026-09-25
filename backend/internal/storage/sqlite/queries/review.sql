@@ -88,7 +88,7 @@ SELECT id, review_id, session_id, harness, pr_url, target_sha, status, verdict, 
 FROM review_run WHERE session_id = ? AND batch_id = ? ORDER BY created_at ASC, id ASC;
 
 -- name: ListCurrentHeadReviewRunsBySession :many
--- AO review passes recorded against each PR's CURRENT head commit. Passes for
+-- Open Agents review passes recorded against each PR's CURRENT head commit. Passes for
 -- an earlier head are excluded here so a stale run can never decide the
 -- session's Kanban column. The latest same-head pass per (pr, harness) wins,
 -- so a superseded retry cannot outvote the rerun that replaced it.

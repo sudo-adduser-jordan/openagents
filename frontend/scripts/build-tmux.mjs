@@ -276,7 +276,7 @@ function verifyPortableLinkage(binary, buildPrefix) {
 }
 
 function verifyTerminfoAttach(binary) {
-	const identity = `ao-tmux-smoke-${process.pid}`;
+	const identity = `open-agents-tmux-smoke-${process.pid}`;
 	const socket = join(tmpdir(), `${identity}.sock`);
 	const session = "terminfo";
 	const missingTerminfo = join(tmpdir(), identity, "missing-terminfo");
@@ -319,7 +319,7 @@ function shellQuote(value) {
 }
 
 function run(command, args, options = {}) {
-	const capture = options.capture || process.env.AO_VERBOSE_NATIVE_BUILD !== "1";
+	const capture = options.capture || process.env.OPEN_AGENTS_VERBOSE_NATIVE_BUILD !== "1";
 	const result = spawnSync(command, args, {
 		cwd: options.cwd,
 		env: options.env,

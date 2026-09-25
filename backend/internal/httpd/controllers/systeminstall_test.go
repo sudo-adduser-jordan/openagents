@@ -10,9 +10,9 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/aoagents/agent-orchestrator/backend/internal/config"
-	"github.com/aoagents/agent-orchestrator/backend/internal/httpd"
-	"github.com/aoagents/agent-orchestrator/backend/internal/service/systeminstall"
+	"github.com/sudo-adduser-jordan/open-agents/backend/internal/config"
+	"github.com/sudo-adduser-jordan/open-agents/backend/internal/httpd"
+	"github.com/sudo-adduser-jordan/open-agents/backend/internal/service/systeminstall"
 )
 
 type fakeInstaller struct {
@@ -68,7 +68,7 @@ func TestAgentInstallRoutes(t *testing.T) {
 	installer := &fakeInstaller{
 		plans:     []systeminstall.AgentPlan{{AgentID: "opencode", Available: true, Automatic: true, Method: "npm"}},
 		startJob:  systeminstall.Job{Target: systeminstall.TargetOpencode, Status: systeminstall.StatusInstalling, Method: "npm"},
-		agentJobs: []systeminstall.Job{{Target: systeminstall.TargetOpencode, Status: systeminstall.StatusInterrupted, Method: "npm", Error: "AO restarted"}},
+		agentJobs: []systeminstall.Job{{Target: systeminstall.TargetOpencode, Status: systeminstall.StatusInterrupted, Method: "npm", Error: "Open Agents restarted"}},
 		verifyJob: systeminstall.Job{Target: systeminstall.TargetOpencode, Status: systeminstall.StatusVerifying},
 	}
 	srv := httptest.NewServer(httpd.NewRouterWithControl(config.Config{}, log, nil, httpd.APIDeps{

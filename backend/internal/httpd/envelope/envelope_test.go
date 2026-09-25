@@ -9,8 +9,8 @@ import (
 	"net/http/httptest"
 	"testing"
 
-	"github.com/aoagents/agent-orchestrator/backend/internal/httpd/apierr"
-	"github.com/aoagents/agent-orchestrator/backend/internal/ports"
+	"github.com/sudo-adduser-jordan/open-agents/backend/internal/httpd/apierr"
+	"github.com/sudo-adduser-jordan/open-agents/backend/internal/ports"
 )
 
 // codeErr mimics the modernc.org/sqlite error surface (a Code() int method)

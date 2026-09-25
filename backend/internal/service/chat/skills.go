@@ -4,8 +4,8 @@ import (
 	"context"
 	"errors"
 
-	"github.com/aoagents/agent-orchestrator/backend/internal/domain"
-	"github.com/aoagents/agent-orchestrator/backend/internal/ports"
+	"github.com/sudo-adduser-jordan/open-agents/backend/internal/domain"
+	"github.com/sudo-adduser-jordan/open-agents/backend/internal/ports"
 )
 
 // ErrSkillsUnsupported reports a driver whose provider cannot enumerate skills.
@@ -18,7 +18,7 @@ var ErrSkillsUnsupported = errors.New("chat driver cannot list skills")
 //
 // Read from the live conversation for the same reason models are: skills come from
 // the user's own Codex config and the repo's own files, both of which change
-// without AO being told. A list AO cached at build time would offer commands that
+// without Open Agents being told. A list Open Agents cached at build time would offer commands that
 // no longer exist and hide ones the user just wrote.
 func (s *Service) Skills(ctx context.Context, id domain.SessionID) ([]ports.ChatSkill, error) {
 	if _, err := s.requireChatSession(ctx, id); err != nil {

@@ -8,7 +8,7 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/aoagents/agent-orchestrator/backend/internal/ports"
+	"github.com/sudo-adduser-jordan/open-agents/backend/internal/ports"
 )
 
 // TestWorkspaceIntegrationStashApplyRoundTrip is the primary correctness test
@@ -68,8 +68,8 @@ func TestWorkspaceIntegrationStashApplyRoundTrip(t *testing.T) {
 	if ref == "" {
 		t.Fatal("StashUncommitted returned empty ref for dirty worktree")
 	}
-	if !strings.HasPrefix(ref, "refs/ao/preserved/") {
-		t.Fatalf("ref = %q, want refs/ao/preserved/... prefix", ref)
+	if !strings.HasPrefix(ref, "refs/open-agents/preserved/") {
+		t.Fatalf("ref = %q, want refs/open-agents/preserved/... prefix", ref)
 	}
 
 	// ForceDestroy: simulate session close.

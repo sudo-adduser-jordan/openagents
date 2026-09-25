@@ -1,5 +1,5 @@
 import { expect, test } from "@playwright/test";
-import type { AoBridge } from "../src/preload";
+import type { OpenAgentsBridge } from "../src/preload";
 import { agentReadiness } from "../src/renderer/test/agent-readiness-fixtures";
 import { installFakeAgent } from "./support/fake-bridge";
 
@@ -38,7 +38,7 @@ test("renderer: importing an alias opens the registered project without starting
 	});
 	await page.goto("/#/");
 	await page.evaluate((path) => {
-		const bridge = (window as unknown as { ao: AoBridge }).ao;
+		const bridge = (window as unknown as { openAgents: OpenAgentsBridge }).openAgents;
 		bridge.app.chooseDirectory = async () => path;
 		bridge.app.getRepositoryBranch = async () => "main";
 	}, selectedPath);

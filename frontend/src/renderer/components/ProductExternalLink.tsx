@@ -1,5 +1,5 @@
 import { AppLink } from "./AppLink";
-import type { ExternalLinkProps } from "@aoagents/product-ui";
+import type { ExternalLinkProps } from "@openagents/product-ui";
 
 export function ProductExternalLink({
 	ariaLabel,

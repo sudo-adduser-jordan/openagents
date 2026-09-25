@@ -6,7 +6,7 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/aoagents/agent-orchestrator/backend/internal/domain"
+	"github.com/sudo-adduser-jordan/open-agents/backend/internal/domain"
 )
 
 // fakeTracker is a minimal ports.Tracker implementation for testing dispatch

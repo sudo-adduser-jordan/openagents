@@ -2,7 +2,7 @@ import { expect, test } from "@playwright/test";
 import { installFakeAgent } from "./support/fake-bridge";
 
 const sessionId = "queued-attachments";
-const path = ".ao/attachments/attachment-queue.png";
+const path = ".open-agents/attachments/attachment-queue.png";
 const png = "iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mP8/x8AAwMCAO+jRZkAAAAASUVORK5CYII=";
 
 test("queued image edits preserve attachments and the ordinary draft @T0", async ({ page }) => {

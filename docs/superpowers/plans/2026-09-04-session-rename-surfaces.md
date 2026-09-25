@@ -243,7 +243,7 @@ Expected: exit 0 with renderer, preload, and Electron main bundles produced succ
 
 ```bash
 git push -u fork codex/session-rename-surfaces
-gh pr create --repo AgentWrapper/agent-orchestrator \
+gh pr create --repo sudo-adduser-jordan/open-agents \
   --base main \
   --head Pulkit7070:codex/session-rename-surfaces \
   --title "feat(ui): rename sessions from navigation surfaces" \
@@ -264,7 +264,7 @@ The PR body must summarize both interaction surfaces, list the exact tests run, 
 
 - [ ] **Step 5: Launch the real Electron app from this checkout**
 
-Follow `.agents/skills/ao-desktop-dev/SKILL.md` to select the correct isolated/real-data launch mode, start the repository's Electron development app, and leave it running so the user can rename a real session from both surfaces.
+Follow `.agents/skills/open-agents-desktop-dev/SKILL.md` to select the correct isolated/real-data launch mode, start the repository's Electron development app, and leave it running so the user can rename a real session from both surfaces.
 
 - [ ] **Step 6: Report the PR number and local app state**
 

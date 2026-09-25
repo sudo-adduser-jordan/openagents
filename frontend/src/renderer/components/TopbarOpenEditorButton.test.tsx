@@ -25,8 +25,8 @@ const availableState: EditorHandoffState = {
 };
 
 function setState(state: EditorHandoffState) {
-	window.ao!.editorHandoff.getState = vi.fn().mockResolvedValue(state);
-	window.ao!.editorHandoff.open = openMock;
+	window.openAgents!.editorHandoff.getState = vi.fn().mockResolvedValue(state);
+	window.openAgents!.editorHandoff.open = openMock;
 }
 
 function renderButton(
@@ -57,8 +57,8 @@ describe("TopbarOpenEditorButton", () => {
 			.fn()
 			.mockResolvedValueOnce(availableState)
 			.mockResolvedValue({ ...availableState, workspaceAvailable: false, unavailableReason: "Session workspace is not available" });
-		window.ao!.editorHandoff.getState = getState;
-		window.ao!.editorHandoff.open = vi.fn().mockRejectedValue(
+		window.openAgents!.editorHandoff.getState = getState;
+		window.openAgents!.editorHandoff.open = vi.fn().mockRejectedValue(
 			new Error("Error invoking remote method 'editorHandoff:open': Error: Session workspace is not available"),
 		);
 		renderButton();
@@ -78,7 +78,7 @@ describe("TopbarOpenEditorButton", () => {
 	// that whole string into the actions row.
 	it("shows the reason, not Electron's remote-method wrapper, when the open fails", async () => {
 		setState(availableState);
-		window.ao!.editorHandoff.open = vi.fn().mockRejectedValue(
+		window.openAgents!.editorHandoff.open = vi.fn().mockRejectedValue(
 			new Error("Error invoking remote method 'editorHandoff:open': Error: Session workspace is not available"),
 		);
 		renderButton();
@@ -188,7 +188,7 @@ describe("TopbarOpenEditorButton", () => {
 					unavailableReason: "Session workspace is not available.",
 				})
 				.mockResolvedValue(availableState);
-			window.ao!.editorHandoff.getState = getState;
+			window.openAgents!.editorHandoff.getState = getState;
 			renderButton({ sessionCreatedAt: new Date().toISOString() });
 
 			await act(async () => {});
@@ -227,7 +227,7 @@ describe("TopbarOpenEditorButton", () => {
 				workspaceAvailable: false,
 				unavailableReason: "Session workspace is not available.",
 			});
-			window.ao!.editorHandoff.getState = getState;
+			window.openAgents!.editorHandoff.getState = getState;
 			renderButton({ sessionCreatedAt: new Date().toISOString() });
 
 			await act(async () => {});
@@ -254,7 +254,7 @@ describe("TopbarOpenEditorButton", () => {
 			workspaceAvailable: false,
 			unavailableReason: "Session workspace is not available.",
 		});
-		window.ao!.editorHandoff.getState = getState;
+		window.openAgents!.editorHandoff.getState = getState;
 		renderButton({ sessionCreatedAt: new Date().toISOString(), sessionTerminated: true });
 
 		expect(await screen.findByRole("alert")).toHaveTextContent("Session workspace is not available.");

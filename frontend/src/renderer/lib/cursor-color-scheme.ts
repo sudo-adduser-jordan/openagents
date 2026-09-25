@@ -1,6 +1,6 @@
 // Cursor Agent registers DEC mode 2031 and listens on stdin for ESC [ ? 997 ; 1 n
 // (dark) or 997 ; 2 n (light). It may also emit those sequences on stdout as
-// probes; AO must answer on stdin with the live scheme notification.
+// probes; Open Agents must answer on stdin with the live scheme notification.
 
 export type ColorScheme = "light" | "dark";
 

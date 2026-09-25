@@ -44,7 +44,7 @@ describe("WindowTitlebar", () => {
   beforeEach(() => {
     navigateMock.mockReset();
     actionMock = vi.fn(async (_action: string) => undefined);
-    window.ao!.menu.action = actionMock;
+    window.openAgents!.menu.action = actionMock;
     document.documentElement.removeAttribute("style");
   });
 
@@ -115,8 +115,8 @@ describe("WindowTitlebar", () => {
 
   it("switches the maximize control to a restore icon when the window is maximized", async () => {
     let reportMaximized: ((maximized: boolean) => void) | undefined;
-    window.ao!.window.isMaximized = vi.fn().mockResolvedValue(false);
-    window.ao!.window.onMaximized = (listener) => {
+    window.openAgents!.window.isMaximized = vi.fn().mockResolvedValue(false);
+    window.openAgents!.window.onMaximized = (listener) => {
       reportMaximized = listener;
       return () => undefined;
     };
@@ -160,7 +160,7 @@ describe("WindowTitlebar", () => {
     const { WindowTitlebar } = await loadWindowTitlebar();
 
     const notifyShellFocus = vi.fn();
-    window.ao!.menu.notifyShellFocus = notifyShellFocus;
+    window.openAgents!.menu.notifyShellFocus = notifyShellFocus;
 
     const { unmount } = render(
       <TooltipProvider>
@@ -197,7 +197,7 @@ describe("WindowTitlebar", () => {
 
     expect(css).toContain(".platform-windows .window-titlebar__controls");
     expect(css).toMatch(
-      /html\[data-native-browser-composition="true"\]\[data-ao-platform="win32"\] \.browser-popout-overlay,\s*html\[data-native-browser-composition="true"\]\[data-ao-platform="win32"\] \.files-popout-overlay\s*{\s*top: var\(--size-window-titlebar\);/s,
+      /html\[data-native-browser-composition="true"\]\[data-open-agents-platform="win32"\] \.browser-popout-overlay,\s*html\[data-native-browser-composition="true"\]\[data-open-agents-platform="win32"\] \.files-popout-overlay\s*{\s*top: var\(--size-window-titlebar\);/s,
     );
     expect(css).toMatch(
       /body:has\(#root \.platform-windows\) > \.browser-popout-overlay,\s*body:has\(#root \.platform-windows\) > \.files-popout-overlay\s*{\s*top: var\(--size-window-titlebar\);/s,

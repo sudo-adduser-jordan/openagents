@@ -1,4 +1,4 @@
-// Package gitlab observes GitLab merge requests for AO's SCM integrations.
+// Package gitlab observes GitLab merge requests for Open Agents's SCM integrations.
 //
 // It implements the provider-neutral scm.Provider interface using the GitLab
 // REST API v4. REST (rather than GraphQL) is a deliberate choice: it provides
@@ -47,7 +47,7 @@
 //
 // # Authentication
 //
-// Tokens are resolved from AO_GITLAB_TOKEN, GITLAB_TOKEN, or by shelling out
+// Tokens are resolved from OPEN_AGENTS_GITLAB_TOKEN, GITLAB_TOKEN, or by shelling out
 // to `glab auth status --show-token`. The Authorization: Bearer header is used
 // for REST requests because it works for both OAuth2 tokens and personal access
 // tokens.

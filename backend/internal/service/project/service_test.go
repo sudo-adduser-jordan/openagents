@@ -14,14 +14,14 @@ import (
 	"testing"
 	"time"
 
-	"github.com/aoagents/agent-orchestrator/backend/internal/adapters/workspace/gitworktree"
-	"github.com/aoagents/agent-orchestrator/backend/internal/domain"
-	"github.com/aoagents/agent-orchestrator/backend/internal/gitdefault"
-	"github.com/aoagents/agent-orchestrator/backend/internal/httpd/apierr"
-	"github.com/aoagents/agent-orchestrator/backend/internal/ports"
-	"github.com/aoagents/agent-orchestrator/backend/internal/service/importer"
-	"github.com/aoagents/agent-orchestrator/backend/internal/service/project"
-	"github.com/aoagents/agent-orchestrator/backend/internal/storage/sqlite/sqlitetest"
+	"github.com/sudo-adduser-jordan/open-agents/backend/internal/adapters/workspace/gitworktree"
+	"github.com/sudo-adduser-jordan/open-agents/backend/internal/domain"
+	"github.com/sudo-adduser-jordan/open-agents/backend/internal/gitdefault"
+	"github.com/sudo-adduser-jordan/open-agents/backend/internal/httpd/apierr"
+	"github.com/sudo-adduser-jordan/open-agents/backend/internal/ports"
+	"github.com/sudo-adduser-jordan/open-agents/backend/internal/service/importer"
+	"github.com/sudo-adduser-jordan/open-agents/backend/internal/service/project"
+	"github.com/sudo-adduser-jordan/open-agents/backend/internal/storage/sqlite/sqlitetest"
 )
 
 // newManager builds a Manager over a real, isolated sqlite store cloned from a
@@ -133,7 +133,7 @@ func gitRepoWithOriginHead(t *testing.T, defaultBranch, featureBranch string) st
 
 func commitEmpty(t *testing.T, dir string) {
 	t.Helper()
-	if out, err := exec.Command("git", "-C", dir, "-c", "user.email=ao@example.com", "-c", "user.name=AO Test", "commit", "--allow-empty", "-m", "initial").CombinedOutput(); err != nil {
+	if out, err := exec.Command("git", "-C", dir, "-c", "user.email=open-agents@example.com", "-c", "user.name=Open Agents Test", "commit", "--allow-empty", "-m", "initial").CombinedOutput(); err != nil {
 		t.Fatalf("git commit: %v (%s)", err, out)
 	}
 }
@@ -170,41 +170,41 @@ func TestManager_AddListGetRemove(t *testing.T) {
 		t.Fatalf("List() = %v, %v; want empty", got, err)
 	}
 
-	proj, err := m.Add(ctx, project.AddInput{Path: repo, ProjectID: ptr("ao"), Name: ptr("Agent Orchestrator")})
+	proj, err := m.Add(ctx, project.AddInput{Path: repo, ProjectID: ptr("open-agents"), Name: ptr("Open Agents")})
 	if err != nil {
 		t.Fatalf("Add: %v", err)
 	}
-	if proj.ID != "ao" || proj.Name != "Agent Orchestrator" || proj.Path != repo || proj.DefaultBranch != domain.DefaultBranchAuto {
+	if proj.ID != "open-agents" || proj.Name != "Open Agents" || proj.Path != repo || proj.DefaultBranch != domain.DefaultBranchAuto {
 		t.Fatalf("Add returned %#v", proj)
 	}
 
 	list, err := m.List(ctx)
-	if err != nil || len(list) != 1 || list[0].ID != "ao" {
-		t.Fatalf("List() = %v, %v; want [ao]", list, err)
+	if err != nil || len(list) != 1 || list[0].ID != "open-agents" {
+		t.Fatalf("List() = %v, %v; want [open-agents]", list, err)
 	}
 
-	res, err := m.Get(ctx, "ao")
+	res, err := m.Get(ctx, "open-agents")
 	if err != nil {
 		t.Fatalf("Get: %v", err)
 	}
-	if res.Status != "ok" || res.Project == nil || res.Project.ID != "ao" {
+	if res.Status != "ok" || res.Project == nil || res.Project.ID != "open-agents" {
 		t.Fatalf("Get = %#v", res)
 	}
 
-	rm, err := m.Remove(ctx, "ao")
+	rm, err := m.Remove(ctx, "open-agents")
 	if err != nil {
 		t.Fatalf("Remove: %v", err)
 	}
-	if rm.ProjectID != "ao" || rm.RemovedStorageDir {
+	if rm.ProjectID != "open-agents" || rm.RemovedStorageDir {
 		t.Fatalf("Remove = %#v", rm)
 	}
 	if list, _ := m.List(ctx); len(list) != 0 {
 		t.Fatalf("active list after remove = %d, want 0", len(list))
 	}
-	_, err = m.Get(ctx, "ao")
+	_, err = m.Get(ctx, "open-agents")
 	wantCode(t, err, "PROJECT_NOT_FOUND")
 
-	_, err = m.Remove(ctx, "ao")
+	_, err = m.Remove(ctx, "open-agents")
 	wantCode(t, err, "PROJECT_NOT_FOUND")
 }
 
@@ -366,7 +366,7 @@ func TestManager_CleanupPreparedClonePreservesRegisteredProject(t *testing.T) {
 	if err != nil {
 		t.Fatalf("Add: %v", err)
 	}
-	marker := filepath.Join(cloned.Path, ".git", ".ao-clone-prepared")
+	marker := filepath.Join(cloned.Path, ".git", ".open-agents-clone-prepared")
 	if _, err := os.Stat(marker); !errors.Is(err, os.ErrNotExist) {
 		t.Fatalf("successful registration retained preparation marker: %v", err)
 	}
@@ -400,7 +400,7 @@ func TestManager_PrepareCloneCancellationLeavesNoCheckout(t *testing.T) {
 	if _, err := os.Stat(filepath.Join(destinationParent, filepath.Base(source))); !errors.Is(err, os.ErrNotExist) {
 		t.Fatalf("cancelled clone destination exists: %v", err)
 	}
-	if temporary, err := filepath.Glob(filepath.Join(destinationParent, ".ao-clone-*")); err != nil || len(temporary) != 0 {
+	if temporary, err := filepath.Glob(filepath.Join(destinationParent, ".open-agents-clone-*")); err != nil || len(temporary) != 0 {
 		t.Fatalf("temporary clone directories = %#v, %v", temporary, err)
 	}
 }
@@ -466,7 +466,7 @@ func TestManager_CloneCleansUpFailedAndEmptyCheckouts(t *testing.T) {
 	if _, err := os.Stat(filepath.Join(destinationParent, "empty-repository")); !errors.Is(err, os.ErrNotExist) {
 		t.Fatalf("empty clone destination still exists: %v", err)
 	}
-	if temporary, err := filepath.Glob(filepath.Join(destinationParent, ".ao-clone-*")); err != nil || len(temporary) != 0 {
+	if temporary, err := filepath.Glob(filepath.Join(destinationParent, ".open-agents-clone-*")); err != nil || len(temporary) != 0 {
 		t.Fatalf("temporary clone directories = %#v, %v", temporary, err)
 	}
 }
@@ -525,16 +525,16 @@ func TestManager_RemoveTeardownsBeforeArchive(t *testing.T) {
 	teardown := &fakeProjectTeardowner{}
 	m := project.NewWithDeps(project.Deps{Store: store, Sessions: teardown})
 
-	if _, err := m.Add(ctx, project.AddInput{Path: gitRepo(t), ProjectID: ptr("ao")}); err != nil {
+	if _, err := m.Add(ctx, project.AddInput{Path: gitRepo(t), ProjectID: ptr("open-agents")}); err != nil {
 		t.Fatalf("Add: %v", err)
 	}
-	if _, err := m.Remove(ctx, "ao"); err != nil {
+	if _, err := m.Remove(ctx, "open-agents"); err != nil {
 		t.Fatalf("Remove: %v", err)
 	}
-	if len(teardown.projects) != 1 || teardown.projects[0] != "ao" {
-		t.Fatalf("teardown projects = %#v, want [ao]", teardown.projects)
+	if len(teardown.projects) != 1 || teardown.projects[0] != "open-agents" {
+		t.Fatalf("teardown projects = %#v, want [open-agents]", teardown.projects)
 	}
-	_, err = m.Get(ctx, "ao")
+	_, err = m.Get(ctx, "open-agents")
 	wantCode(t, err, "PROJECT_NOT_FOUND")
 }
 
@@ -548,13 +548,13 @@ func TestManager_RemoveDoesNotArchiveWhenTeardownFails(t *testing.T) {
 	boom := errors.New("teardown failed")
 	m := project.NewWithDeps(project.Deps{Store: store, Sessions: &fakeProjectTeardowner{err: boom}})
 
-	if _, err := m.Add(ctx, project.AddInput{Path: gitRepo(t), ProjectID: ptr("ao")}); err != nil {
+	if _, err := m.Add(ctx, project.AddInput{Path: gitRepo(t), ProjectID: ptr("open-agents")}); err != nil {
 		t.Fatalf("Add: %v", err)
 	}
-	if _, err := m.Remove(ctx, "ao"); !errors.Is(err, boom) {
+	if _, err := m.Remove(ctx, "open-agents"); !errors.Is(err, boom) {
 		t.Fatalf("Remove err = %v, want teardown failure", err)
 	}
-	if got, err := m.Get(ctx, "ao"); err != nil || got.Project == nil || got.Project.ID != "ao" {
+	if got, err := m.Get(ctx, "open-agents"); err != nil || got.Project == nil || got.Project.ID != "open-agents" {
 		t.Fatalf("project after failed remove = %#v, %v; want still active", got, err)
 	}
 }
@@ -564,13 +564,13 @@ func TestManager_DefaultsWhenUnconfigured(t *testing.T) {
 	m := newManager(t)
 	repo := gitRepo(t)
 
-	if _, err := m.Add(ctx, project.AddInput{Path: repo, ProjectID: ptr("ao")}); err != nil {
+	if _, err := m.Add(ctx, project.AddInput{Path: repo, ProjectID: ptr("open-agents")}); err != nil {
 		t.Fatalf("Add: %v", err)
 	}
 
 	// A remoteless project stays in automatic mode instead of deriving a default
 	// from its current checkout. The empty config remains unpersisted.
-	got, err := m.Get(ctx, "ao")
+	got, err := m.Get(ctx, "open-agents")
 	if err != nil {
 		t.Fatalf("Get: %v", err)
 	}
@@ -591,8 +591,8 @@ func TestManager_DefaultsWhenUnconfigured(t *testing.T) {
 	if err != nil || len(list) != 1 {
 		t.Fatalf("List = %v, %v", list, err)
 	}
-	if list[0].SessionPrefix != "ao" {
-		t.Fatalf("default session prefix = %q, want derived 'ao'", list[0].SessionPrefix)
+	if list[0].SessionPrefix != "open-agents" {
+		t.Fatalf("default session prefix = %q, want derived 'open-agents'", list[0].SessionPrefix)
 	}
 }
 
@@ -606,11 +606,11 @@ func TestManager_GetUsesConfiguredDefaultHarness(t *testing.T) {
 	m := project.NewWithDeps(project.Deps{Store: store, DefaultHarness: domain.HarnessOpenCode})
 	repo := gitRepo(t)
 
-	if _, err := m.Add(ctx, project.AddInput{Path: repo, ProjectID: ptr("ao")}); err != nil {
+	if _, err := m.Add(ctx, project.AddInput{Path: repo, ProjectID: ptr("open-agents")}); err != nil {
 		t.Fatalf("Add: %v", err)
 	}
 
-	got, err := m.Get(ctx, "ao")
+	got, err := m.Get(ctx, "open-agents")
 	if err != nil {
 		t.Fatalf("Get: %v", err)
 	}
@@ -627,7 +627,7 @@ func TestManager_AddDoesNotTreatCurrentBranchAsAutomaticDefault(t *testing.T) {
 	m := newManager(t)
 	repo := gitRepoOnBranch(t, "master")
 
-	proj, err := m.Add(ctx, project.AddInput{Path: repo, ProjectID: ptr("ao")})
+	proj, err := m.Add(ctx, project.AddInput{Path: repo, ProjectID: ptr("open-agents")})
 	if err != nil {
 		t.Fatalf("Add: %v", err)
 	}
@@ -639,7 +639,7 @@ func TestManager_AddDoesNotTreatCurrentBranchAsAutomaticDefault(t *testing.T) {
 		t.Fatalf("automatic branch selection should not pin config, got %#v", proj.Config)
 	}
 
-	got, err := m.Get(ctx, "ao")
+	got, err := m.Get(ctx, "open-agents")
 	if err != nil {
 		t.Fatalf("Get: %v", err)
 	}
@@ -651,7 +651,7 @@ func TestManager_AddDoesNotTreatCurrentBranchAsAutomaticDefault(t *testing.T) {
 	mainRepo := gitRepoOnBranch(t, "trunk")
 	proj2, err := m.Add(ctx, project.AddInput{
 		Path:      mainRepo,
-		ProjectID: ptr("ao2"),
+		ProjectID: ptr("open-agents-2"),
 		Config:    &domain.ProjectConfig{DefaultBranch: "release"},
 	})
 	if err != nil {
@@ -670,7 +670,7 @@ func TestManager_AddPrefersOriginHeadOverCheckedOutBranch(t *testing.T) {
 	m := newManager(t)
 	repo := gitRepoWithOriginHead(t, "main", "fix/pr-attachment")
 
-	proj, err := m.Add(ctx, project.AddInput{Path: repo, ProjectID: ptr("ao")})
+	proj, err := m.Add(ctx, project.AddInput{Path: repo, ProjectID: ptr("open-agents")})
 	if err != nil {
 		t.Fatalf("Add: %v", err)
 	}
@@ -688,7 +688,7 @@ func TestManager_AddPrefersOriginHeadNonMain(t *testing.T) {
 	m := newManager(t)
 	repo := gitRepoWithOriginHead(t, "master", "fix/pr-attachment")
 
-	proj, err := m.Add(ctx, project.AddInput{Path: repo, ProjectID: ptr("ao")})
+	proj, err := m.Add(ctx, project.AddInput{Path: repo, ProjectID: ptr("open-agents")})
 	if err != nil {
 		t.Fatalf("Add: %v", err)
 	}
@@ -702,7 +702,7 @@ func TestManager_UpdateSettings(t *testing.T) {
 	m := newManager(t)
 	repo := gitRepo(t)
 
-	if _, err := m.Add(ctx, project.AddInput{Path: repo, ProjectID: ptr("ao")}); err != nil {
+	if _, err := m.Add(ctx, project.AddInput{Path: repo, ProjectID: ptr("open-agents")}); err != nil {
 		t.Fatalf("Add: %v", err)
 	}
 
@@ -713,14 +713,14 @@ func TestManager_UpdateSettings(t *testing.T) {
 		OrchestratorRules: "Delegate implementation.",
 		AgentConfig:       domain.AgentConfig{Model: "gpt-5.6"},
 	}
-	proj, err := m.UpdateSettings(ctx, "ao", project.UpdateSettingsInput{
-		DisplayName: "  AO Project  ",
+	proj, err := m.UpdateSettings(ctx, "open-agents", project.UpdateSettingsInput{
+		DisplayName: "  Open Agents Project  ",
 		Config:      cfg,
 	})
 	if err != nil {
 		t.Fatalf("UpdateSettings: %v", err)
 	}
-	if proj.Name != "AO Project" || proj.Config == nil || proj.Config.AgentConfig.Model != "gpt-5.6" {
+	if proj.Name != "Open Agents Project" || proj.Config == nil || proj.Config.AgentConfig.Model != "gpt-5.6" {
 		t.Fatalf("returned project = %#v", proj)
 	}
 	if proj.DefaultBranch != "develop" {
@@ -728,11 +728,11 @@ func TestManager_UpdateSettings(t *testing.T) {
 	}
 
 	// Both values persist and show up together on a fresh Get.
-	got, err := m.Get(ctx, "ao")
+	got, err := m.Get(ctx, "open-agents")
 	if err != nil {
 		t.Fatalf("Get: %v", err)
 	}
-	if got.Project == nil || got.Project.Name != "AO Project" || got.Project.Config == nil || got.Project.Config.Env["FOO"] != "bar" {
+	if got.Project == nil || got.Project.Name != "Open Agents Project" || got.Project.Config == nil || got.Project.Config.Env["FOO"] != "bar" {
 		t.Fatalf("Get project = %#v", got.Project)
 	}
 	if got.Project.Config.AgentRules != "Run focused tests." || got.Project.Config.OrchestratorRules != "Delegate implementation." {
@@ -740,22 +740,22 @@ func TestManager_UpdateSettings(t *testing.T) {
 	}
 
 	// Invalid fields are rejected before either value is persisted.
-	_, err = m.UpdateSettings(ctx, "ao", project.UpdateSettingsInput{
+	_, err = m.UpdateSettings(ctx, "open-agents", project.UpdateSettingsInput{
 		DisplayName: "Should Not Persist",
 		Config:      domain.ProjectConfig{AgentConfig: domain.AgentConfig{Permissions: "yolo"}},
 	})
 	wantCode(t, err, "INVALID_PROJECT_CONFIG")
-	got, err = m.Get(ctx, "ao")
+	got, err = m.Get(ctx, "open-agents")
 	if err != nil {
 		t.Fatalf("Get after rejected update: %v", err)
 	}
-	if got.Project == nil || got.Project.Name != "AO Project" || got.Project.Config == nil || got.Project.Config.AgentConfig.Model != "gpt-5.6" {
+	if got.Project == nil || got.Project.Name != "Open Agents Project" || got.Project.Config == nil || got.Project.Config.AgentConfig.Model != "gpt-5.6" {
 		t.Fatalf("project changed after rejected update = %#v", got.Project)
 	}
-	_, err = m.UpdateSettings(ctx, "ao", project.UpdateSettingsInput{DisplayName: "  ", Config: cfg})
+	_, err = m.UpdateSettings(ctx, "open-agents", project.UpdateSettingsInput{DisplayName: "  ", Config: cfg})
 	wantCode(t, err, "DISPLAY_NAME_REQUIRED")
 
-	_, err = m.UpdateSettings(ctx, "ao", project.UpdateSettingsInput{
+	_, err = m.UpdateSettings(ctx, "open-agents", project.UpdateSettingsInput{
 		DisplayName: strings.Repeat("x", 21),
 		Config:      cfg,
 	})
@@ -775,7 +775,7 @@ func TestManager_ListIncludesOnlySummarySafeProjectConfig(t *testing.T) {
 		Env:           map[string]string{"GITHUB_TOKEN": "secret"},
 		Orchestrator:  domain.RoleOverride{Harness: domain.HarnessOpenCode},
 	}
-	if _, err := m.Add(ctx, project.AddInput{Path: repo, ProjectID: ptr("ao"), Config: &cfg}); err != nil {
+	if _, err := m.Add(ctx, project.AddInput{Path: repo, ProjectID: ptr("open-agents"), Config: &cfg}); err != nil {
 		t.Fatalf("Add: %v", err)
 	}
 
@@ -796,21 +796,21 @@ func TestManager_ReaddAfterRemove(t *testing.T) {
 	m := newManager(t)
 	repo := gitRepo(t)
 
-	if _, err := m.Add(ctx, project.AddInput{Path: repo, ProjectID: ptr("ao")}); err != nil {
+	if _, err := m.Add(ctx, project.AddInput{Path: repo, ProjectID: ptr("open-agents")}); err != nil {
 		t.Fatalf("first Add: %v", err)
 	}
-	if _, err := m.Remove(ctx, "ao"); err != nil {
+	if _, err := m.Remove(ctx, "open-agents"); err != nil {
 		t.Fatalf("Remove: %v", err)
 	}
-	if _, err := m.Add(ctx, project.AddInput{Path: repo, ProjectID: ptr("ao2")}); err != nil {
+	if _, err := m.Add(ctx, project.AddInput{Path: repo, ProjectID: ptr("open-agents-2")}); err != nil {
 		t.Fatalf("re-add same path after remove: %v", err)
 	}
 
 	otherRepo := gitRepo(t)
-	if _, err := m.Remove(ctx, "ao2"); err != nil {
-		t.Fatalf("Remove ao2: %v", err)
+	if _, err := m.Remove(ctx, "open-agents-2"); err != nil {
+		t.Fatalf("Remove open-agents-2: %v", err)
 	}
-	if _, err := m.Add(ctx, project.AddInput{Path: otherRepo, ProjectID: ptr("ao2")}); err != nil {
+	if _, err := m.Add(ctx, project.AddInput{Path: otherRepo, ProjectID: ptr("open-agents-2")}); err != nil {
 		t.Fatalf("re-add same id at different path after remove: %v", err)
 	}
 }
@@ -846,7 +846,7 @@ func TestManager_InitializeRepositoryRecovery(t *testing.T) {
 			t.Fatalf("Add after init: %v", err)
 		}
 		if proj.DefaultBranch != domain.DefaultBranchName {
-			t.Fatalf("AO-initialized default branch = %q, want %q", proj.DefaultBranch, domain.DefaultBranchName)
+			t.Fatalf("Open Agents-initialized default branch = %q, want %q", proj.DefaultBranch, domain.DefaultBranchName)
 		}
 	})
 
@@ -962,8 +962,8 @@ func TestManager_InitializeRepositoryRecovery(t *testing.T) {
 			filepath.Join(home, "Desktop"),
 			filepath.Join(home, "Documents"),
 			filepath.Join(home, "Downloads"),
-			filepath.Join(home, ".ao"),
-			filepath.Join(home, ".ao", "data"),
+			filepath.Join(home, ".open-agents"),
+			filepath.Join(home, ".open-agents", "data"),
 		}
 		for _, path := range paths {
 			if err := os.MkdirAll(path, 0o755); err != nil {
@@ -977,11 +977,11 @@ func TestManager_InitializeRepositoryRecovery(t *testing.T) {
 		}
 	})
 
-	t.Run("folder inside AO-managed worktrees is rejected before init", func(t *testing.T) {
+	t.Run("folder inside Open Agents-managed worktrees is rejected before init", func(t *testing.T) {
 		home := t.TempDir()
 		t.Setenv("HOME", home)
 		t.Setenv("USERPROFILE", home)
-		dir := filepath.Join(home, ".ao", "data", "worktrees", "project", "session")
+		dir := filepath.Join(home, ".open-agents", "data", "worktrees", "project", "session")
 		if err := os.MkdirAll(dir, 0o755); err != nil {
 			t.Fatal(err)
 		}
@@ -989,7 +989,7 @@ func TestManager_InitializeRepositoryRecovery(t *testing.T) {
 		_, err := m.InitializeRepository(ctx, project.InitializeRepositoryInput{Path: dir})
 		wantCode(t, err, "PROJECT_SETUP_PATH_UNSAFE")
 		if _, statErr := os.Lstat(filepath.Join(dir, ".git")); !errors.Is(statErr, os.ErrNotExist) {
-			t.Fatalf("unexpected .git after rejected AO worktree setup: %v", statErr)
+			t.Fatalf("unexpected .git after rejected Open Agents worktree setup: %v", statErr)
 		}
 	})
 
@@ -1077,7 +1077,7 @@ func TestManager_AddValidationAndConflicts(t *testing.T) {
 	_, err = m.Add(ctx, project.AddInput{Path: unborn})
 	wantCode(t, err, "PROJECT_UNBORN")
 	// An embedded ".." passes the id pattern but would yield an invalid git
-	// branch (ao/a..b-1) at spawn time; reject it up front as a clear 400.
+	// branch (open-agents/a..b-1) at spawn time; reject it up front as a clear 400.
 	_, err = m.Add(ctx, project.AddInput{Path: gitRepo(t), ProjectID: ptr("a..b")})
 	wantCode(t, err, "INVALID_PROJECT_ID")
 
@@ -1300,10 +1300,10 @@ func TestManager_GetUpdateRemoveErrors(t *testing.T) {
 
 func configureCommitter(t *testing.T) {
 	t.Helper()
-	t.Setenv("GIT_AUTHOR_NAME", "AO Test")
-	t.Setenv("GIT_AUTHOR_EMAIL", "ao@example.com")
-	t.Setenv("GIT_COMMITTER_NAME", "AO Test")
-	t.Setenv("GIT_COMMITTER_EMAIL", "ao@example.com")
+	t.Setenv("GIT_AUTHOR_NAME", "Open Agents Test")
+	t.Setenv("GIT_AUTHOR_EMAIL", "open-agents@example.com")
+	t.Setenv("GIT_COMMITTER_NAME", "Open Agents Test")
+	t.Setenv("GIT_COMMITTER_EMAIL", "open-agents@example.com")
 }
 
 func gitRepoWithCommit(t *testing.T, dir string) string {
@@ -1364,7 +1364,7 @@ func TestManager_AddWorkspaceInsideAncestorRepo(t *testing.T) {
 		t.Fatalf("Kind = %q, want workspace", proj.Kind)
 	}
 	if proj.DefaultBranch != domain.DefaultBranchName {
-		t.Fatalf("AO-initialized workspace root default = %q, want %q", proj.DefaultBranch, domain.DefaultBranchName)
+		t.Fatalf("Open Agents-initialized workspace root default = %q, want %q", proj.DefaultBranch, domain.DefaultBranchName)
 	}
 	if len(proj.WorkspaceRepos) != 2 {
 		t.Fatalf("expected 2 child repos, got %d", len(proj.WorkspaceRepos))
@@ -1472,7 +1472,7 @@ func TestManager_AddWorkspaceDoesNotRequireChildDefaultCheckout(t *testing.T) {
 	}
 }
 
-func TestManager_AddWorkspacePreservesAOInitializedChildDefaultBranchWithoutRemoteHead(t *testing.T) {
+func TestManager_AddWorkspacePreservesOpenAgentsInitializedChildDefaultBranchWithoutRemoteHead(t *testing.T) {
 	configureCommitter(t)
 	ctx := context.Background()
 	store, err := sqlitetest.Open(t.TempDir())
@@ -1493,7 +1493,7 @@ func TestManager_AddWorkspacePreservesAOInitializedChildDefaultBranchWithoutRemo
 	if out, err := exec.Command("git", "-C", child, "add", "-A").CombinedOutput(); err != nil {
 		t.Fatalf("git add child: %v (%s)", err, out)
 	}
-	if out, err := exec.Command("git", "-C", child, "-c", "user.name=Agent Orchestrator", "-c", "user.email=ao@example.com", "commit", "--allow-empty", "-m", "initial commit").CombinedOutput(); err != nil {
+	if out, err := exec.Command("git", "-C", child, "-c", "user.name=Open Agents", "-c", "user.email=open-agents@example.com", "commit", "--allow-empty", "-m", "initial commit").CombinedOutput(); err != nil {
 		t.Fatalf("git commit child: %v (%s)", err, out)
 	}
 	if out, err := exec.Command("git", "-C", child, "config", "--local", gitdefault.ManagedDefaultConfigKey, domain.DefaultBranchName).CombinedOutput(); err != nil {
@@ -1642,7 +1642,7 @@ func TestManager_AddWorkspaceAdoptsExistingParent(t *testing.T) {
 		t.Fatalf("git log: %v (%s)", err, logOut)
 	}
 	lines := strings.Split(strings.TrimSpace(string(logOut)), "\n")
-	// Expect: AO workspace commit + "add gitignore" + "initial" = 3 commits.
+	// Expect: Open Agents workspace commit + "add gitignore" + "initial" = 3 commits.
 	if len(lines) != 3 {
 		t.Fatalf("expected 3 commits, got %d:\n%s", len(lines), logOut)
 	}
@@ -1972,14 +1972,14 @@ func TestManager_CanonicalRepositoryConfigPersistence(t *testing.T) {
 func TestManager_SetPermissionsPreservesConfig(t *testing.T) {
 	ctx := context.Background()
 	m := newManager(t)
-	if _, err := m.Add(ctx, project.AddInput{Path: gitRepo(t), ProjectID: ptr("ao")}); err != nil {
+	if _, err := m.Add(ctx, project.AddInput{Path: gitRepo(t), ProjectID: ptr("open-agents")}); err != nil {
 		t.Fatal(err)
 	}
 	cfg := domain.ProjectConfig{DefaultBranch: "develop", Env: map[string]string{"KEEP": "yes"}, AgentRules: "keep rules", AgentConfig: domain.AgentConfig{Model: "base", Permissions: domain.PermissionModeDefault}, Worker: domain.RoleOverride{AgentConfig: domain.AgentConfig{Model: "worker", Permissions: domain.PermissionModeAcceptEdits}}, Orchestrator: domain.RoleOverride{AgentConfig: domain.AgentConfig{Model: "orchestrator", Permissions: domain.PermissionModeBypassPermissions}}}
-	if _, err := m.UpdateSettings(ctx, "ao", project.UpdateSettingsInput{DisplayName: "Keep name", Config: cfg}); err != nil {
+	if _, err := m.UpdateSettings(ctx, "open-agents", project.UpdateSettingsInput{DisplayName: "Keep name", Config: cfg}); err != nil {
 		t.Fatal(err)
 	}
-	got, err := m.SetPermissions(ctx, "ao", project.SetPermissionsInput{Permissions: domain.PermissionModeAuto})
+	got, err := m.SetPermissions(ctx, "open-agents", project.SetPermissionsInput{Permissions: domain.PermissionModeAuto})
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -1992,7 +1992,7 @@ func TestManager_SetPermissionsPreservesConfig(t *testing.T) {
 	for _, tc := range []struct {
 		id   string
 		mode domain.PermissionMode
-	}{{"missing", domain.PermissionModeAuto}, {"../bad", domain.PermissionModeAuto}, {"ao", ""}, {"ao", "invalid"}} {
+	}{{"missing", domain.PermissionModeAuto}, {"../bad", domain.PermissionModeAuto}, {"open-agents", ""}, {"open-agents", "invalid"}} {
 		if _, err := m.SetPermissions(ctx, domain.ProjectID(tc.id), project.SetPermissionsInput{Permissions: tc.mode}); err == nil {
 			t.Fatalf("accepted %#v", tc)
 		}
@@ -2087,7 +2087,7 @@ func TestEmptyCloneOnboardingCreatesFirstWorkspace(t *testing.T) {
 			if err != nil {
 				t.Fatal(err)
 			}
-			info, err := ws.Create(ctx, ports.WorkspaceConfig{ProjectID: registered.ID, SessionID: "first", Branch: "ao/first"})
+			info, err := ws.Create(ctx, ports.WorkspaceConfig{ProjectID: registered.ID, SessionID: "first", Branch: "open-agents/first"})
 			if err != nil {
 				t.Fatalf("first workspace: %v", err)
 			}

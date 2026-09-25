@@ -26,7 +26,7 @@ func migrationFixture(t *testing.T, version int64) func(*testing.T) string {
 		}
 	}()
 	upTo(t, db, version)
-	// VACUUM INTO includes committed WAL contents. Copying the live ao.db file
+	// VACUUM INTO includes committed WAL contents. Copying the live open-agents.db file
 	// directly can silently omit the schema or ledger we just created.
 	snapshotPath := filepath.Join(sourceDir, "snapshot.db")
 	if _, err := db.Exec(`VACUUM INTO ?`, snapshotPath); err != nil {
@@ -39,7 +39,7 @@ func migrationFixture(t *testing.T, version int64) func(*testing.T) string {
 	return func(t *testing.T) string {
 		t.Helper()
 		dataDir := t.TempDir()
-		if err := os.WriteFile(filepath.Join(dataDir, "ao.db"), snapshot, 0o600); err != nil {
+		if err := os.WriteFile(filepath.Join(dataDir, "open-agents.db"), snapshot, 0o600); err != nil {
 			t.Fatalf("clone migration fixture: %v", err)
 		}
 		return dataDir

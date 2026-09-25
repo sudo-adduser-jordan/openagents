@@ -14,7 +14,7 @@ import (
 	"strings"
 	"time"
 
-	"github.com/aoagents/agent-orchestrator/backend/internal/ports"
+	"github.com/sudo-adduser-jordan/open-agents/backend/internal/ports"
 )
 
 // Adapter implements the host executable and command-runner ports.
@@ -31,7 +31,7 @@ var (
 	_ ports.InstallCapabilityProbe = Adapter{}
 )
 
-// New creates a host adapter whose installer scratch space stays inside AO's
+// New creates a host adapter whose installer scratch space stays inside Open Agents's
 // configured data directory.
 func New(dataDir string) Adapter {
 	return newAdapter(dataDir, http.DefaultClient)
@@ -157,7 +157,7 @@ func pathWritable(ctx context.Context, path string) (bool, error) {
 			return false, err
 		}
 		if _, err := os.Stat(path); err == nil {
-			file, createErr := os.CreateTemp(path, ".ao-write-check-*")
+			file, createErr := os.CreateTemp(path, ".open-agents-write-check-*")
 			if createErr != nil {
 				return false, nil //nolint:nilerr // inability to create the probe file means not writable.
 			}

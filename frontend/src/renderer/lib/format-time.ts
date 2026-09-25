@@ -1,4 +1,4 @@
-import { formatTimeCompact as formatPortableTimeCompact } from "@aoagents/product-ui";
+import { formatTimeCompact as formatPortableTimeCompact } from "@openagents/product-ui";
 
 export function formatTimeCompact(isoDate: string | null | undefined): string {
 	return formatPortableTimeCompact(isoDate);

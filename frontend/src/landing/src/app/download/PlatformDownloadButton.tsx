@@ -6,7 +6,7 @@ import {
   DOWNLOAD_URL_MAC_ARM64,
   DOWNLOAD_URL_MAC_X64,
   DOWNLOAD_URL_WINDOWS,
-} from "@ao/shared/constants";
+} from "@openagents/shared/constants";
 import { FaApple, FaLinux, FaWindows } from "react-icons/fa";
 import { isMacPlatform, Platform, usePlatform } from "../hooks/useOS";
 

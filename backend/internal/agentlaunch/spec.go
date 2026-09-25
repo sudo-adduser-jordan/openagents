@@ -8,7 +8,7 @@ import (
 )
 
 // EnvSpecPath is the environment variable that holds the path to the launch spec file.
-const EnvSpecPath = "AO_LAUNCH_SPEC"
+const EnvSpecPath = "OPEN_AGENTS_LAUNCH_SPEC"
 
 // Spec describes the agent process the launcher trampoline should exec.
 type Spec struct {
@@ -19,7 +19,7 @@ type Spec struct {
 
 // WriteTemp serialises spec to a temporary JSON file and returns its path.
 func WriteTemp(spec Spec) (string, error) {
-	file, err := os.CreateTemp(os.TempDir(), "ao-launch-*.json")
+	file, err := os.CreateTemp(os.TempDir(), "open-agents-launch-*.json")
 	if err != nil {
 		return "", fmt.Errorf("create launch spec: %w", err)
 	}

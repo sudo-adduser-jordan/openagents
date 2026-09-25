@@ -1,10 +1,10 @@
-# Agent Orchestrator — Mobile
+# Open Agents — Mobile
 
-Expo (expo-router) mobile supervisor for Agent Orchestrator. Four tabs — Kanban, PRs,
+Expo (expo-router) mobile supervisor for Open Agents. Four tabs — Kanban, PRs,
 Orchestrator, Settings — plus a Chat-first spawn flow, a native conversation surface,
 the existing live terminal, and a preview browser. Chat sessions expose durable history,
 streaming activity, approvals, provider controls, attachments, voice input, and a plain
-worktree-shell escape hatch. It is a **thin client**: it talks to the AO daemon running on your
+worktree-shell escape hatch. It is a **thin client**: it talks to the Open Agents daemon running on your
 computer over your local network (or Tailscale). It never runs agents itself.
 
 > **Development builds only — Expo Go is not supported.** The app depends on native modules,
@@ -46,7 +46,7 @@ name. Background: [`docs/adr/0001-lan-listener-for-mobile.md`](../../docs/adr/00
 
 | For             | You need                                                                              |
 | --------------- | ------------------------------------------------------------------------------------- |
-| Everything      | Node 20+, and AO running on your machine (desktop app, or the daemon from source)     |
+| Everything      | Node 20+, and Open Agents running on your machine (desktop app, or the daemon from source)     |
 | Phone ↔ machine | Same Wi-Fi network, or both on the same Tailnet                                       |
 | iOS build       | macOS, Xcode 16+, an Apple ID (a free one gives a 7-day signing profile), a USB cable |
 | Android build   | Android Studio (SDK + platform-tools for `adb`), a USB cable                          |
@@ -71,7 +71,7 @@ Two rules worth knowing before you fight an install:
 
 Nothing on the phone works until the desktop opens the LAN bridge. Do this first.
 
-**1. Start the desktop app.** Either launch the packaged AO app, or run it from source
+**1. Start the desktop app.** Either launch the packaged Open Agents app, or run it from source
 (it starts its own daemon):
 
 ```bash
@@ -122,8 +122,8 @@ gitignored** — the run commands prebuild them for you.
    npx expo run:ios --device      # pick your iPhone from the list
    ```
 
-   If Xcode rejects the bundle identifier or team, open `ios/AO.xcworkspace`, select the
-   **AO** target → **Signing & Capabilities**, choose your personal team and let Xcode manage
+   If Xcode rejects the bundle identifier or team, open `ios/Open Agents.xcworkspace`, select the
+   **Open Agents** target → **Signing & Capabilities**, choose your personal team and let Xcode manage
    signing, then re-run the command.
 
 4. On first launch iOS asks for **Local Network** access. Allow it, or the app cannot reach
@@ -332,13 +332,13 @@ Play Store** checks on demand.
   only once the new build is *live* on the store, not merely approved. iOS has no
   equivalent channel and Apple discourages blocking, so iOS is nudge-only.
 - **Version floor.** Two EAS environment variables let a release be declared
-  without shipping app code: `EXPO_PUBLIC_AO_MIN_APP_VERSION` (below it, the
-  update stops being optional) and `EXPO_PUBLIC_AO_LATEST_APP_VERSION` (below it,
+  without shipping app code: `EXPO_PUBLIC_OPEN_AGENTS_MIN_APP_VERSION` (below it, the
+  update stops being optional) and `EXPO_PUBLIC_OPEN_AGENTS_LATEST_APP_VERSION` (below it,
   the usual once-a-day nudge). Both unset means the floor is inert, which is how
   it ships. Move one and publish:
 
   ```bash
-  eas env:create --environment production --name EXPO_PUBLIC_AO_MIN_APP_VERSION --value 1.3.0 --visibility plaintext
+  eas env:create --environment production --name EXPO_PUBLIC_OPEN_AGENTS_MIN_APP_VERSION --value 1.3.0 --visibility plaintext
   eas update --channel production --environment production -m "raise the floor to 1.3.0" --rollout-percentage 10
   ```
 
@@ -375,7 +375,7 @@ Play Store** checks on demand.
 | Locked out after repeated failures                | The bridge locks out a source after 5 failed attempts. Wait it out, or toggle Connect Mobile off and on.                                                     |
 | `adb devices` shows `unauthorized`                | Re-accept the USB debugging prompt on the phone.                                                                                                             |
 | iOS app installs, then closes immediately         | Untrusted developer profile: **Settings → General → VPN & Device Management → trust your Apple ID**.                                                         |
-| App runs but can't reach the daemon (iOS)         | The Local Network prompt was denied: **Settings → Privacy & Security → Local Network → AO** → on.                                                            |
+| App runs but can't reach the daemon (iOS)         | The Local Network prompt was denied: **Settings → Privacy & Security → Local Network → Open Agents** → on.                                                            |
 | Phone can't reach Metro                           | `adb reverse tcp:8081 tcp:8081` (Android), or `npx expo start --tunnel` (either platform).                                                                   |
 | An update never arrives                           | Its runtime version differs from the build's — a native change since that build. Compare `runtimeversion:resolve` with the runtime shown in a bug-report body. |
 | Terminal renders blank                            | The xterm WebView is patched via `patch-package`; confirm `postinstall` ran (`npx patch-package`).                                                           |
@@ -400,7 +400,7 @@ lib/
   pairFlow.ts        applies a scanned code — race endpoints, verify, store the host
   store.tsx          app state + connection polling
   theme.ts, ui.tsx   design primitives
-scripts/             ao-phone-proxy.js — superseded by Connect Mobile, kept for reference
+scripts/             open-agents-phone-proxy.js — superseded by Connect Mobile, kept for reference
 ```
 
 ## Verify

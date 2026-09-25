@@ -15,7 +15,7 @@ import (
 
 	"github.com/coder/websocket"
 
-	"github.com/aoagents/agent-orchestrator/backend/internal/mobilebridge"
+	"github.com/sudo-adduser-jordan/open-agents/backend/internal/mobilebridge"
 )
 
 func startShutdownTestLAN(t *testing.T, handler http.Handler) (*LANManager, string) {

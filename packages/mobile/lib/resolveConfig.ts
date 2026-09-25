@@ -1,15 +1,14 @@
 import type { ConnectResult } from "./connect";
 import { loadConfig, saveConfig, type ServerConfig } from "./config";
 import type { Host } from "./hosts";
-import { activeHost, migrateLegacyConfig } from "./hosts";
+import { activeHost } from "./hosts";
 import { connectToHost } from "./connectRuntime";
 
 export type ResolveDeps = {
-	migrate: () => Promise<void>;
 	/** The machine to talk to: an explicit selection, else the most recent. */
 	activeHost: () => Promise<Host | null>;
 	connect: (hostId: string) => Promise<ConnectResult>;
-	loadLegacyConfig: () => Promise<ServerConfig>;
+	loadStoredConfig: () => Promise<ServerConfig>;
 	/** Writes the winning endpoint back to storage. */
 	persist: (config: ServerConfig) => Promise<void>;
 };
@@ -30,10 +29,6 @@ export type ResolveDeps = {
  */
 export async function resolveActiveConfig(deps: ResolveDeps): Promise<ServerConfig | null> {
 	try {
-		// Before looking for machines, bring any pre-existing single-server
-		// pairing into the list — otherwise an upgrading user looks unpaired.
-		await deps.migrate();
-
 		const host = await deps.activeHost();
 		if (host) {
 			const result = await deps.connect(host.id);
@@ -51,16 +46,15 @@ export async function resolveActiveConfig(deps: ResolveDeps): Promise<ServerConf
 		// Falling through to the stored config: a resolution failure must not
 		// leave the app with no connection at all.
 	}
-	return await deps.loadLegacyConfig();
+	return await deps.loadStoredConfig();
 }
 
 /** The production dependency set. */
 export function runtimeResolveDeps(): ResolveDeps {
 	return {
-		migrate: migrateLegacyConfig,
 		activeHost,
 		connect: connectToHost,
-		loadLegacyConfig: loadConfig,
+		loadStoredConfig: loadConfig,
 		persist: saveConfig,
 	};
 }

@@ -5,7 +5,7 @@ import {
 	SessionsArchiveView,
 	SessionsBoardGridView,
 	archiveToggleOffsetClassName,
-} from "@aoagents/product-ui";
+} from "@openagents/product-ui";
 import { AlertTriangle, LayoutDashboard, RotateCw } from "lucide-react";
 import {
 	type WorkspaceSession,

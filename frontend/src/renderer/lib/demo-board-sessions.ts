@@ -19,7 +19,7 @@ export function demoBoardSessions(workspaceId: string): WorkspaceSession[] {
 		{
 			...base,
 			activity: { state: "active", lastActivityAt: demoUpdatedAt },
-			branch: "ao/demo-building",
+			branch: "open-agents/demo-building",
 			id: "demo-building",
 			kanbanColumn: "building",
 			status: "working",
@@ -27,7 +27,7 @@ export function demoBoardSessions(workspaceId: string): WorkspaceSession[] {
 		},
 		{
 			...base,
-			branch: "ao/demo-ci-failing",
+			branch: "open-agents/demo-ci-failing",
 			displayStatus: "Fixing CI failures",
 			id: "demo-ci-failing",
 			kanbanColumn: "validating",
@@ -48,7 +48,7 @@ export function demoBoardSessions(workspaceId: string): WorkspaceSession[] {
 		},
 		{
 			...base,
-			branch: "ao/demo-review",
+			branch: "open-agents/demo-review",
 			displayStatus: "Needs human review",
 			id: "demo-needs-review",
 			kanbanColumn: "needs_review",
@@ -69,7 +69,7 @@ export function demoBoardSessions(workspaceId: string): WorkspaceSession[] {
 		},
 		{
 			...base,
-			branch: "ao/demo-ready",
+			branch: "open-agents/demo-ready",
 			displayStatus: "Ready to merge",
 			id: "demo-ready",
 			kanbanColumn: "ready",
@@ -91,7 +91,7 @@ export function demoBoardSessions(workspaceId: string): WorkspaceSession[] {
 		{
 			...base,
 			activity: { state: "blocked", lastActivityAt: demoUpdatedAt },
-			branch: "ao/demo-blocked",
+			branch: "open-agents/demo-blocked",
 			displayStatus: "Blocked",
 			id: "demo-blocked",
 			kanbanColumn: "building",

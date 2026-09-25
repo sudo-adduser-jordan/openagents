@@ -1,9 +1,9 @@
 import { describe, expect, it } from "vitest";
 
 import {
-	AO_REVIEW_RUN_STATUSES,
-	AO_REVIEW_STATES,
-	AO_REVIEW_VERDICTS,
+	OPEN_AGENTS_REVIEW_RUN_STATUSES,
+	OPEN_AGENTS_REVIEW_STATES,
+	OPEN_AGENTS_REVIEW_VERDICTS,
 	CI_STATES,
 	MERGEABILITY_STATES,
 	PULL_REQUEST_CHECK_STATUSES,
@@ -28,9 +28,9 @@ describe("raw SCM models", () => {
 		]);
 		expect(REVIEW_DECISIONS).toEqual(["none", "approved", "changes_requested", "review_required"]);
 		expect(MERGEABILITY_STATES).toEqual(["unknown", "mergeable", "conflicting", "blocked", "unstable"]);
-		expect(AO_REVIEW_RUN_STATUSES).toEqual(["running", "complete", "delivered", "failed", "cancelled"]);
-		expect(AO_REVIEW_VERDICTS).toEqual(["", "approved", "changes_requested"]);
-		expect(AO_REVIEW_STATES).toEqual([
+		expect(OPEN_AGENTS_REVIEW_RUN_STATUSES).toEqual(["running", "complete", "delivered", "failed", "cancelled"]);
+		expect(OPEN_AGENTS_REVIEW_VERDICTS).toEqual(["", "approved", "changes_requested"]);
+		expect(OPEN_AGENTS_REVIEW_STATES).toEqual([
 			"needs_review",
 			"running",
 			"up_to_date",
@@ -39,7 +39,7 @@ describe("raw SCM models", () => {
 		]);
 	});
 
-	it("represents provider observations separately from AO review execution", () => {
+	it("represents provider observations separately from Open Agents review execution", () => {
 		const pullRequest = {
 			url: "github://o/r/pull/7",
 			number: 7,

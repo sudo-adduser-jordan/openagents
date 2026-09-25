@@ -14,14 +14,14 @@ import (
 	"sync"
 	"time"
 
-	"github.com/aoagents/agent-orchestrator/backend/internal/adapters/tracker/httpkit"
-	"github.com/aoagents/agent-orchestrator/backend/internal/domain"
-	"github.com/aoagents/agent-orchestrator/backend/internal/ports"
+	"github.com/sudo-adduser-jordan/open-agents/backend/internal/adapters/tracker/httpkit"
+	"github.com/sudo-adduser-jordan/open-agents/backend/internal/domain"
+	"github.com/sudo-adduser-jordan/open-agents/backend/internal/ports"
 )
 
 const (
 	defaultBaseURL   = "https://api.github.com"
-	defaultUserAgent = "ao-agent-orchestrator/tracker-github"
+	defaultUserAgent = "open-agents/tracker-github"
 
 	// Status labels used by humans (and other tooling) on GitHub Issues.
 	// Get's reverse mapping recognizes them so an externally-labeled issue

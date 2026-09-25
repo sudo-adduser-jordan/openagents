@@ -5,13 +5,13 @@ import (
 	"testing"
 	"time"
 
-	"github.com/aoagents/agent-orchestrator/backend/internal/domain"
-	"github.com/aoagents/agent-orchestrator/backend/internal/ports"
+	"github.com/sudo-adduser-jordan/open-agents/backend/internal/domain"
+	"github.com/sudo-adduser-jordan/open-agents/backend/internal/ports"
 )
 
 func TestPoll_WorkspaceLegacyBranches(t *testing.T) {
 	for _, origin := range []string{"", "https://github.com/o/r.git"} {
-		for _, branch := range []string{"ao/p-1", "ao/p-1-2"} {
+		for _, branch := range []string{"open-agents/p-1", "open-agents/p-1-2"} {
 			t.Run(origin+"/"+branch, func(t *testing.T) {
 				store := testStoreWithSession()
 				store.sessions[0].Metadata.Branch = branch
@@ -65,7 +65,7 @@ func TestPoll_WorkspaceRepositoryBoundaries(t *testing.T) {
 	} {
 		t.Run(tc.name, func(t *testing.T) {
 			store := testStoreWithSession()
-			store.sessions[0].Metadata.Branch = "ao/p-1-2"
+			store.sessions[0].Metadata.Branch = "open-agents/p-1-2"
 			store.projects["p"] = domain.ProjectRecord{ID: "p", Kind: tc.kind, RepoOriginURL: tc.origin}
 			if tc.childOrigin != "" {
 				store.workspaceRepos = map[string][]domain.WorkspaceRepoRecord{"p": {{Name: "api", RelativePath: "api", RepoOriginURL: tc.childOrigin}}}
@@ -74,7 +74,7 @@ func TestPoll_WorkspaceRepositoryBoundaries(t *testing.T) {
 			prObs.Repo = "o/api"
 			prObs.PR.URL = "https://github.com/o/api/pull/12"
 			prObs.PR.HTMLURL = prObs.PR.URL
-			prObs.PR.SourceBranch = "ao/p-1-2-fix"
+			prObs.PR.SourceBranch = "open-agents/p-1-2-fix"
 			prObs.PR.HeadRepo = tc.headRepo
 			provider := &fakeProvider{
 				repoGuards:   map[string]ports.SCMGuardResult{prKey(testAPIRepo, 0): {ETag: "api-v1"}},
@@ -96,35 +96,35 @@ func TestMatchSession_WorkspaceOwnership(t *testing.T) {
 	workspace := func(id, branch string) sessionRepo {
 		return sessionRepo{session: domain.SessionRecord{ID: domain.SessionID(id)}, branch: branch, workspace: true}
 	}
-	bare := workspace("p-1", "ao/p-1")
-	collision := workspace("p-1", "ao/p-1-2")
-	next := workspace("p-1-2", "ao/p-1-2")
+	bare := workspace("p-1", "open-agents/p-1")
+	collision := workspace("p-1", "open-agents/p-1-2")
+	next := workspace("p-1-2", "open-agents/p-1-2")
 	for _, tc := range []struct {
 		name, source string
 		candidates   []sessionRepo
 		want         domain.SessionID
 	}{
-		{"bare hyphen sibling", "ao/p-1-fix", []sessionRepo{bare}, "p-1"},
-		{"collision suffix sibling", "ao/p-1-2-fix", []sessionRepo{collision}, "p-1"},
-		{"exact", "ao/p-1", []sessionRepo{bare}, "p-1"},
-		{"stacked descendant", "ao/p-1/topic/stack", []sessionRepo{bare}, "p-1"},
-		{"root slash sibling", "ao/p-1/fix", []sessionRepo{workspace("p-1", "ao/p-1/root")}, "p-1"},
+		{"bare hyphen sibling", "open-agents/p-1-fix", []sessionRepo{bare}, "p-1"},
+		{"collision suffix sibling", "open-agents/p-1-2-fix", []sessionRepo{collision}, "p-1"},
+		{"exact", "open-agents/p-1", []sessionRepo{bare}, "p-1"},
+		{"stacked descendant", "open-agents/p-1/topic/stack", []sessionRepo{bare}, "p-1"},
+		{"root slash sibling", "open-agents/p-1/fix", []sessionRepo{workspace("p-1", "open-agents/p-1/root")}, "p-1"},
 		{"custom exact", "feature/a", []sessionRepo{workspace("p-1", "feature/a")}, "p-1"},
 		{"custom stack", "feature/a/stack", []sessionRepo{workspace("p-1", "feature/a")}, "p-1"},
 		{"custom sibling excluded", "feature/b", []sessionRepo{workspace("p-1", "feature/a")}, ""},
 		{"custom hyphen excluded", "feature/a-fix", []sessionRepo{workspace("p-1", "feature/a")}, ""},
-		{"unvalidated AO branch excluded", "ao/other-fix", []sessionRepo{workspace("p-1", "ao/other")}, ""},
-		{"topic hyphen excluded", "ao/p-1-topic-fix", []sessionRepo{workspace("p-1", "ao/p-1-topic")}, ""},
-		{"padded collision excluded", "ao/p-1-02-fix", []sessionRepo{workspace("p-1", "ao/p-1-02")}, ""},
-		{"next session excluded", "ao/p-10-fix", []sessionRepo{bare}, ""},
-		{"empty topic excluded", "ao/p-1-", []sessionRepo{bare}, ""},
-		{"single repo excluded", "ao/p-1-fix", []sessionRepo{{session: bare.session, branch: bare.branch}}, ""},
-		{"exact owner beats hyphen", "ao/p-1-fix", []sessionRepo{bare, workspace("explicit", "ao/p-1-fix")}, "explicit"},
-		{"longest hyphen owner", "ao/p-1-2-fix", []sessionRepo{bare, next}, "p-1-2"},
-		{"longest stacked owner", "ao/p-1-fix/stack", []sessionRepo{bare, workspace("explicit", "ao/p-1-fix")}, "explicit"},
-		{"ambiguous exact", "ao/p-1-2", []sessionRepo{collision, next}, ""},
-		{"ambiguous hyphen", "ao/p-1-2-fix", []sessionRepo{bare, collision, next}, ""},
-		{"duplicate scan same owner", "ao/p-1-fix", []sessionRepo{bare, bare}, "p-1"},
+		{"unvalidated Open Agents branch excluded", "open-agents/other-fix", []sessionRepo{workspace("p-1", "open-agents/other")}, ""},
+		{"topic hyphen excluded", "open-agents/p-1-topic-fix", []sessionRepo{workspace("p-1", "open-agents/p-1-topic")}, ""},
+		{"padded collision excluded", "open-agents/p-1-02-fix", []sessionRepo{workspace("p-1", "open-agents/p-1-02")}, ""},
+		{"next session excluded", "open-agents/p-10-fix", []sessionRepo{bare}, ""},
+		{"empty topic excluded", "open-agents/p-1-", []sessionRepo{bare}, ""},
+		{"single repo excluded", "open-agents/p-1-fix", []sessionRepo{{session: bare.session, branch: bare.branch}}, ""},
+		{"exact owner beats hyphen", "open-agents/p-1-fix", []sessionRepo{bare, workspace("explicit", "open-agents/p-1-fix")}, "explicit"},
+		{"longest hyphen owner", "open-agents/p-1-2-fix", []sessionRepo{bare, next}, "p-1-2"},
+		{"longest stacked owner", "open-agents/p-1-fix/stack", []sessionRepo{bare, workspace("explicit", "open-agents/p-1-fix")}, "explicit"},
+		{"ambiguous exact", "open-agents/p-1-2", []sessionRepo{collision, next}, ""},
+		{"ambiguous hyphen", "open-agents/p-1-2-fix", []sessionRepo{bare, collision, next}, ""},
+		{"duplicate scan same owner", "open-agents/p-1-fix", []sessionRepo{bare, bare}, "p-1"},
 	} {
 		t.Run(tc.name, func(t *testing.T) {
 			for i := 0; i < 2; i++ {

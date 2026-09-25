@@ -9,10 +9,10 @@ import (
 	"testing"
 	"time"
 
-	"github.com/aoagents/agent-orchestrator/backend/internal/domain"
-	"github.com/aoagents/agent-orchestrator/backend/internal/ports"
-	"github.com/aoagents/agent-orchestrator/backend/internal/storage/sqlite"
-	"github.com/aoagents/agent-orchestrator/backend/internal/storage/sqlite/sqlitetest"
+	"github.com/sudo-adduser-jordan/open-agents/backend/internal/domain"
+	"github.com/sudo-adduser-jordan/open-agents/backend/internal/ports"
+	"github.com/sudo-adduser-jordan/open-agents/backend/internal/storage/sqlite"
+	"github.com/sudo-adduser-jordan/open-agents/backend/internal/storage/sqlite/sqlitetest"
 )
 
 // --- fakes ---
@@ -940,7 +940,7 @@ func TestCancelKeepsRunsRunningWhenReviewerCancelFailsAndHandleIsAlive(t *testin
 
 func TestRestoreReviewerUsesSelectedHarnessSessionAndKillsOtherActivePane(t *testing.T) {
 	// A review row written before the opencode-only strip can still carry a
-	// harness AO no longer selects; restoring must destroy its stale terminal.
+	// harness Open Agents no longer selects; restoring must destroy its stale terminal.
 	legacyHarness := domain.ReviewerHarness("codex")
 	store := &fakeStore{
 		review: &domain.Review{ID: "rev-1", SessionID: "mer-1", Harness: legacyHarness, ReviewerHandleID: "codex-pane", AgentSessionID: "codex-native"},

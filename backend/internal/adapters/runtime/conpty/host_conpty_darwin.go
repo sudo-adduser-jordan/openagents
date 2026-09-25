@@ -33,7 +33,7 @@ type darwinPTYConn struct {
 const darwinPTYCloseGrace = 500 * time.Millisecond
 
 func newConPTY(cwd, shellCmd string, shellArgs []string) (ptyConn, error) {
-	// shellCmd and shellArgs are the runtime launch argv assembled by AO's
+	// shellCmd and shellArgs are the runtime launch argv assembled by Open Agents's
 	// trusted agent adapter, not input interpreted by a shell.
 	cmd := exec.Command(shellCmd, shellArgs...) // #nosec G702 -- intentional direct argv execution
 	cmd.Dir = cwd
@@ -85,7 +85,7 @@ func (c *darwinPTYConn) Close() error {
 			case <-c.doneC:
 			default:
 				// The PTY child is a session leader. Signal its process group so
-				// descendants cannot outlive a terminal AO explicitly destroys.
+				// descendants cannot outlive a terminal Open Agents explicitly destroys.
 				pgid := c.cmd.Process.Pid
 				_ = syscall.Kill(-pgid, syscall.SIGTERM)
 				if !waitForDarwinProcessGroupExit(pgid, darwinPTYCloseGrace) {

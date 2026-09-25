@@ -282,7 +282,7 @@ function BoardCard({ card, isPulsing }: { card: Card; isPulsing: boolean }) {
 		? isReviewFlag ? "border-[#f87171]/70" : "border-[#fb923c]/60"
 		: "border-[var(--preview-border)]";
 	const badgeColor = isReviewFlag ? "bg-[#f87171]" : "bg-[#fb923c]";
-	const attentionAnim = isWaiting && isPulsing ? "ao-attention-pulse" : "";
+	const attentionAnim = isWaiting && isPulsing ? "open-agents-attention-pulse" : "";
 	const isTestCard = card.column === "staging" && !!card.testResults;
 
 	return (
@@ -531,12 +531,12 @@ export function FleetBoardDemo() {
 				style={{ ...featurePreviewTokens, ...canvasStyle, fontFamily: "var(--font-geist-sans), ui-sans-serif, system-ui, sans-serif" }}
 			>
 				<style>{`
-					@keyframes ao-attention-pulse-frames {
+					@keyframes open-agents-attention-pulse-frames {
 						0%, 100% { box-shadow: 0 0 0 0 rgba(251, 146, 60, 0.35); }
 						50%       { box-shadow: 0 0 0 4px rgba(251, 146, 60, 0); }
 					}
-					.ao-attention-pulse { animation: ao-attention-pulse-frames 2.2s ease-in-out infinite; }
-					@media (prefers-reduced-motion: reduce) { .ao-attention-pulse { animation: none; } }
+					.open-agents-attention-pulse { animation: open-agents-attention-pulse-frames 2.2s ease-in-out infinite; }
+					@media (prefers-reduced-motion: reduce) { .open-agents-attention-pulse { animation: none; } }
 				`}</style>
 				<LayoutGroup>
 					<div className="grid h-full min-h-0 grid-cols-4 divide-x divide-[var(--preview-border)] overflow-hidden">

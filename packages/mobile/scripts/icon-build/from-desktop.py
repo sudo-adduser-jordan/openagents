@@ -19,7 +19,7 @@ exactly as the desktop shows them. This script:
 
 Outputs (1024px unless noted):
   icon.png                     full-bleed square, iOS <=18 / Expo Go / Android legacy
-  AO.icon/                     Icon Composer bundle for iOS 26: Ruto over the face
+  open-agents.icon/            Icon Composer bundle for iOS 26: Ruto over the face
   android-icon-background.png  adaptive-icon background (the face shade)
   android-icon-foreground.png  adaptive-icon foreground, Ruto inside the safe circle
   android-icon-monochrome.png  Android 13+ themed-icon silhouette
@@ -213,7 +213,7 @@ def srgb(c):
 def main():
     src = Image.open(sys.argv[1]).convert("RGBA")
     out = Path(sys.argv[2])
-    (out / "AO.icon" / "Assets").mkdir(parents=True, exist_ok=True)
+    (out / "open-agents.icon" / "Assets").mkdir(parents=True, exist_ok=True)
 
     rect = tile_rect(src)
     coef = fit_face(src, rect)
@@ -225,8 +225,8 @@ def main():
     icon = face.convert("RGBA")
     icon.alpha_composite(ruto_ios)
     icon.convert("RGB").save(out / "icon.png")
-    ruto_ios.save(out / "AO.icon" / "Assets" / "ruto.png")
-    face.save(out / "AO.icon" / "Assets" / "face.png")
+    ruto_ios.save(out / "open-agents.icon" / "Assets" / "ruto.png")
+    face.save(out / "open-agents.icon" / "Assets" / "face.png")
 
     # Icon Composer ignores a linear-gradient fill's orientation and always runs
     # it top to bottom, so it cannot reproduce the face's diagonal shade. The
@@ -260,7 +260,7 @@ def main():
         ],
         "supported-platforms": {"circles": ["watchOS"], "squares": ["iOS", "macOS"]},
     }
-    (out / "AO.icon" / "icon.json").write_text(json.dumps(icon_json, indent=2) + "\n")
+    (out / "open-agents.icon" / "icon.json").write_text(json.dumps(icon_json, indent=2) + "\n")
 
     # --- Android adaptive: tile -> 72dp viewport, shrunk to the 66dp circle ---
     tile_px = SIZE * ANDROID_VIEWPORT

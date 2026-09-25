@@ -20,7 +20,7 @@ import { buildPairingOffer, pairingCodeUrl } from "../../lib/pairing-payload";
  */
 
 /** Matches the base ConnectMobileContent builds real codes on. */
-export const PAIRING_LINK_BASE_FOR_SCRAMBLE = "aomobile://pair";
+export const PAIRING_LINK_BASE_FOR_SCRAMBLE = "open-agents-mobile://pair";
 
 /** Deterministic, so a re-render reproduces the stack instead of reshuffling. */
 function pseudoRandom(seed: number): () => number {

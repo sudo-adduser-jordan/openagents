@@ -10,10 +10,10 @@ import (
 	"testing"
 	"time"
 
-	"github.com/aoagents/agent-orchestrator/backend/internal/domain"
-	"github.com/aoagents/agent-orchestrator/backend/internal/ports"
-	chatsvc "github.com/aoagents/agent-orchestrator/backend/internal/service/chat"
-	"github.com/aoagents/agent-orchestrator/backend/internal/storage/sqlite/store"
+	"github.com/sudo-adduser-jordan/open-agents/backend/internal/domain"
+	"github.com/sudo-adduser-jordan/open-agents/backend/internal/ports"
+	chatsvc "github.com/sudo-adduser-jordan/open-agents/backend/internal/service/chat"
+	"github.com/sudo-adduser-jordan/open-agents/backend/internal/storage/sqlite/store"
 )
 
 // Steering scenarios.
@@ -699,7 +699,7 @@ func TestSteerWaitsForTheProviderToAcknowledgeTheTurn(t *testing.T) {
 	}
 }
 
-// The provider names the turn its guidance joined, and AO attributes the row to
+// The provider names the turn its guidance joined, and Open Agents attributes the row to
 // that turn rather than to the one it asked about. Same id in practice; asserted so
 // a provider that answered differently could not be silently misfiled.
 func TestSteerRecordsTheTurnTheProviderNames(t *testing.T) {
@@ -718,7 +718,7 @@ func TestSteerRecordsTheTurnTheProviderNames(t *testing.T) {
 	}
 }
 
-// Promoting a selected queued turn must use AO's durable content, attach it to
+// Promoting a selected queued turn must use Open Agents's durable content, attach it to
 // the running provider turn, and remove only that source turn from the visible
 // queue. If this regresses to queue-head-only behavior, the second message below
 // is never the one the provider receives.

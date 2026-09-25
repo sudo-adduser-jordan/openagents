@@ -18,7 +18,7 @@ export type TurnSettingRow = {
 	/**
 	 * How the provider categorised this control. Derived once, from the option
 	 * itself — the summary used to re-guess it from the label and missed a Mode
-	 * option called "Mode", so it showed AO's approvalMode while the sheet was
+	 * option called "Mode", so it showed Open Agents' approvalMode while the sheet was
 	 * editing the provider's.
 	 */
 	providerKind?: ProviderTurnControlKind;

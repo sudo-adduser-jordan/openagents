@@ -32,7 +32,7 @@ import type {
 	AttachableTerminal,
 	TerminalUserInputSource,
 } from "../hooks/useTerminalSession";
-import { aoBridge } from "../lib/bridge";
+import { openAgentsBridge } from "../lib/bridge";
 import { isDialogOrMenuOpen } from "../lib/dom-selectors";
 import { TERMINAL_FONT_SIZE_DEFAULT } from "../lib/design-tokens";
 import { isWebLink, openLinkInSystemBrowser } from "../lib/external-link-policy";
@@ -84,7 +84,7 @@ export type XtermTerminalProps = {
 	onVisibleSize?: (cols: number, rows: number) => void;
 	/** Hidden retained terminals keep parsing output but expose no UI overlays. */
 	isVisible?: boolean;
-	/** Cursor Agent understands AO's terminal color protocol; generic terminals do not. */
+	/** Cursor Agent understands Open Agents's terminal color protocol; generic terminals do not. */
 	supportsCursorColorScheme?: boolean;
 	/** Move keyboard focus into xterm when a controller needs human input. */
 	focusRequested?: boolean;
@@ -279,7 +279,7 @@ type XtermInternal = Terminal & {
 };
 
 type DevXtermHost = HTMLDivElement & {
-	__aoXtermForTest?: Terminal;
+	__openAgentsXtermForTest?: Terminal;
 };
 
 type TerminalContextMenuState = {
@@ -288,7 +288,7 @@ type TerminalContextMenuState = {
 	x: number;
 	y: number;
 	// The web link under the cursor when the menu opened, if any — enables the
-	// "Open in system browser" item (left-click opens it in the AO Browser).
+	// "Open in system browser" item (left-click opens it in the Open Agents Browser).
 	link: string | null;
 };
 
@@ -505,7 +505,7 @@ export function XtermTerminal(props: XtermTerminalProps) {
 			const next = focused && Boolean(callbacksRef.current.onChangeFontSize);
 			if (next === reportedFocused) return;
 			reportedFocused = next;
-			aoBridge.terminal.setFocused(next);
+			openAgentsBridge.terminal.setFocused(next);
 		};
 		const handleFocusIn = () => reportFocused(true);
 		const handleFocusOut = (event: FocusEvent) => {
@@ -515,12 +515,12 @@ export function XtermTerminal(props: XtermTerminalProps) {
 		};
 		host.addEventListener("focusin", handleFocusIn);
 		host.addEventListener("focusout", handleFocusOut);
-		const disposeFontSizeShortcut = aoBridge.terminal.onFontSizeShortcut((delta) => {
+		const disposeFontSizeShortcut = openAgentsBridge.terminal.onFontSizeShortcut((delta) => {
 			if (!terminalHasFocus(host)) return;
 			callbacksRef.current.onChangeFontSize?.(delta);
 		});
 		const activateLink = (event: MouseEvent, uri: string) => {
-			// Left-click on a web link opens it inside the AO Browser panel (the
+			// Left-click on a web link opens it inside the Open Agents Browser panel (the
 			// parent decides how). Non-web schemes (mailto:, etc.) still go to the OS
 			// via the main process's window-open handler. Right-click to open a web
 			// link in the system browser instead — see the context menu below. Cmd-click
@@ -606,7 +606,7 @@ export function XtermTerminal(props: XtermTerminalProps) {
 		// infer it from a hidden viewport element whose scrollTop can lag.
 		// Vite removes this development-only seam from packaged builds.
 		if (import.meta.env.DEV) {
-			(host as DevXtermHost).__aoXtermForTest = term;
+			(host as DevXtermHost).__openAgentsXtermForTest = term;
 		}
 		// xterm 5 has no public scrollbar-width option. Keep its private FitAddon
 		// reservation aligned with our CSS: a stable 7px macOS gutter, and no
@@ -713,7 +713,7 @@ export function XtermTerminal(props: XtermTerminalProps) {
 			const selection = term.getSelection();
 			if (!selection) return false;
 			options?.clipboardData?.setData("text/plain", selection);
-			void aoBridge.clipboard
+			void openAgentsBridge.clipboard
 				.writeText(selection)
 				.then(() => {
 					showCopiedToastRef.current();
@@ -827,7 +827,7 @@ export function XtermTerminal(props: XtermTerminalProps) {
 			suppressPasteTimer = window.setTimeout(clearSuppressNativePaste, SUPPRESS_NATIVE_PASTE_MS);
 		};
 		const pasteFromClipboard = () => {
-			void aoBridge.clipboard
+			void openAgentsBridge.clipboard
 				.readText()
 				.then(pasteText)
 				.catch((error) => {
@@ -1222,7 +1222,7 @@ export function XtermTerminal(props: XtermTerminalProps) {
 				for (const file of files) {
 					try {
 						const bytes = new Uint8Array(await file.arrayBuffer());
-						const saved = await aoBridge.terminal.saveDroppedFile({ name: file.name, bytes });
+						const saved = await openAgentsBridge.terminal.saveDroppedFile({ name: file.name, bytes });
 						if (saved) paths.push(saved);
 					} catch (error) {
 						console.warn("Unable to attach dropped file", error);
@@ -1352,11 +1352,11 @@ export function XtermTerminal(props: XtermTerminalProps) {
 
 		return () => {
 			disposed = true;
-			if (reportedFocused) aoBridge.terminal.setFocused(false);
+			if (reportedFocused) openAgentsBridge.terminal.setFocused(false);
 			disposeFontSizeShortcut();
 			host.removeEventListener("focusin", handleFocusIn);
 			host.removeEventListener("focusout", handleFocusOut);
-			delete (host as DevXtermHost).__aoXtermForTest;
+			delete (host as DevXtermHost).__openAgentsXtermForTest;
 			termRef.current = null;
 			if (searchAddonRef.current === searchAddon) searchAddonRef.current = null;
 			fitRef.current = null;
@@ -1406,7 +1406,7 @@ export function XtermTerminal(props: XtermTerminalProps) {
 			// disposing the renderer before that queued sync runs makes xterm read the
 			// now-missing renderer dimensions. Queue disposal behind xterm's task so
 			// the terminal remains internally valid until its own initialization work
-			// has drained. All AO listeners and attachment state are already detached.
+			// has drained. All Open Agents listeners and attachment state are already detached.
 			window.setTimeout(() => {
 				try {
 					term.dispose();
@@ -1582,13 +1582,13 @@ export function XtermTerminal(props: XtermTerminalProps) {
 								setContextMenuOpen(false);
 								if (link) props.onLinkOpen?.(link);
 							}}>
-								{"Open in ao browser"}
+								{"Open in open-agents browser"}
 							</DropdownMenuItem>
 							<DropdownMenuItem
 								onSelect={() => {
 									const { link } = contextMenu;
 									setContextMenuOpen(false);
-									if (link) void aoBridge.app.openExternal(link);
+									if (link) void openAgentsBridge.app.openExternal(link);
 								}}
 							>
 								{"Open in external browser"}
@@ -1597,7 +1597,7 @@ export function XtermTerminal(props: XtermTerminalProps) {
 							<DropdownMenuItem onSelect={() => {
 								const { link } = contextMenu;
 								setContextMenuOpen(false);
-								if (link) void aoBridge.clipboard.writeText(link);
+								if (link) void openAgentsBridge.clipboard.writeText(link);
 							}}>
 								{"Copy link"}
 							</DropdownMenuItem>

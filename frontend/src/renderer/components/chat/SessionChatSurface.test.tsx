@@ -363,7 +363,7 @@ describe("SessionChatSurface link routing", () => {
 		});
 	});
 
-	it("opens a plain Chat link in the active worker AO Browser", async () => {
+	it("opens a plain Chat link in the active worker Open Agents Browser", async () => {
 		const user = userEvent.setup();
 		const queryClient = new QueryClient({
 			defaultOptions: { queries: { retry: false }, mutations: { retry: false } },
@@ -569,7 +569,7 @@ describe("SessionChatSurface link routing", () => {
 		expect(postMock).not.toHaveBeenCalled();
 	});
 
-	it("opens each plain Chat link in a new AO Browser tab", async () => {
+	it("opens each plain Chat link in a new Open Agents Browser tab", async () => {
 		const user = userEvent.setup();
 		const openInNewTab = vi.fn().mockResolvedValue(undefined);
 		const queryClient = new QueryClient({

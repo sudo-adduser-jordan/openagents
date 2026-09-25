@@ -45,7 +45,7 @@ function fixtureBytes(seed, size = 512_000) {
 }
 
 function zipBytes(payload) {
-	const dir = mkdtempSync(join(tmpdir(), "ao-zip-fixture-"));
+	const dir = mkdtempSync(join(tmpdir(), "open-agents-zip-fixture-"));
 	temporaryDirectories.push(dir);
 	const source = join(dir, "fixture.bin");
 	const archive = join(dir, "fixture.zip");
@@ -57,10 +57,10 @@ function zipBytes(payload) {
 
 async function runDownload(arch, failure = "none", disabled = false, cycle = {}) {
 	const version = cycle.version ?? "2.0.0";
-	const dir = cycle.dir ?? mkdtempSync(join(tmpdir(), "ao-mac-blockmap-"));
+	const dir = cycle.dir ?? mkdtempSync(join(tmpdir(), "open-agents-mac-blockmap-"));
 	temporaryDirectories.push(dir);
 	const oldFile = join(dir, "update.zip");
-	const newFile = join(dir, `AO-darwin-${arch}-${version}.zip`);
+	const newFile = join(dir, `Open Agents-darwin-${arch}-${version}.zip`);
 	const oldPayload = fixtureBytes(arch);
 	const newPayload = Buffer.from(oldPayload);
 	fixtureBytes(`${arch}:${version}:patch`, 48_000).copy(newPayload, 180_000);
@@ -115,7 +115,7 @@ async function runDownload(arch, failure = "none", disabled = false, cycle = {})
 	await new Promise(resolve => server.listen(0, "127.0.0.1", resolve));
 	try {
 		const base = `http://127.0.0.1:${server.address().port}`;
-		const url = new URL(`${base}/AO-darwin-${arch}-${version}.zip`);
+		const url = new URL(`${base}/Open Agents-darwin-${arch}-${version}.zip`);
 		const file = { url, info: { url: url.href, ...targetInfo } };
 		const provider = {
 			resolveFiles: () => [file],
@@ -234,7 +234,7 @@ describe("MacUpdater reconstruction and full fallback", () => {
 		expect(result.handedOff).toHaveLength(1);
 	});
 
-	// Stock 6.8.9 remains unsafe on 416. Current AO cannot enter that worker;
+	// Stock 6.8.9 remains unsafe on 416. Current Open Agents cannot enter that worker;
 	// the separate v2 MacUpdater suite tests real range failures through its
 	// declared subclass extension, with no stock differential call.
 	it("keeps stock HTTP 416 unreachable for the current disabled client", async () => {

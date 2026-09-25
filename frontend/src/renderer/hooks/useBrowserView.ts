@@ -61,14 +61,14 @@ type UseBrowserViewOptions = {
 	 */
 	terminated?: boolean;
 	/**
-	 * Preview target driven by the daemon (via `ao preview`, streamed over CDC).
+	 * Preview target driven by the daemon (via `open-agents preview`, streamed over CDC).
 	 * When set, the view navigates here automatically; an empty value clears it.
 	 */
 	previewUrl?: string;
 	/**
-	 * Monotonic counter the daemon bumps on every `ao preview` call, even when
+	 * Monotonic counter the daemon bumps on every `open-agents preview` call, even when
 	 * previewUrl is unchanged. The view re-navigates whenever it advances, so a
-	 * repeated `ao preview <same-url>` still refreshes (and CDC replays of an
+	 * repeated `open-agents preview <same-url>` still refreshes (and CDC replays of an
 	 * unrelated session update, which leave it unchanged, are ignored).
 	 */
 	previewRevision?: number;
@@ -254,7 +254,7 @@ export function useBrowserView({
 	const overlayOpenRef = useRef(false);
 	const tabNoticeTimerRef = useRef<number | null>(null);
 	const tabsStateRef = useRef(tabsState);
-	const hasNativeBrowser = Boolean(window.ao?.browser);
+	const hasNativeBrowser = Boolean(window.openAgents?.browser);
 
 	useEffect(() => {
 		activeRef.current = active;
@@ -292,7 +292,7 @@ export function useBrowserView({
 
 	const sendHiddenBounds = useCallback((id = viewIdRef.current) => {
 		if (!id) return;
-		window.ao?.browser.setBounds({
+		window.openAgents?.browser.setBounds({
 			viewId: id,
 			rect: HIDDEN_RECT,
 			visible: false,
@@ -324,7 +324,7 @@ export function useBrowserView({
 			rect,
 			visible: rect.width > 0 && rect.height > 0,
 		};
-		window.ao?.browser.setBounds(payload);
+		window.openAgents?.browser.setBounds(payload);
 	}, [sendHiddenBounds]);
 
 	const cancelScheduledMeasure = useCallback(() => {
@@ -345,7 +345,7 @@ export function useBrowserView({
 
 	// A ResizeObserver only fires on size changes, so a position-only layout shift
 	// leaves the native overlay at stale bounds: entering/leaving pop-out moves the
-	// slot into a different panel, and opening the inspector (what `ao preview`
+	// slot into a different panel, and opening the inspector (what `open-agents preview`
 	// does) reflows the slot's x without changing the observed node's box size.
 	// Neither fires the observer, so the view visibly spills over the sidebar/
 	// terminal until an unrelated window resize re-measures it. Re-measure now and
@@ -439,18 +439,18 @@ export function useBrowserView({
 				viewIdRef.current = "";
 			};
 		}
-		window.ao?.browser.ensure(sessionId).then((state) => {
+		window.openAgents?.browser.ensure(sessionId).then((state) => {
 			if (disposed) return;
 			viewIdRef.current = state.viewId;
 			setViewId(state.viewId);
 			setNavState(state);
-			void window.ao?.browser
+			void window.openAgents?.browser
 				.getProfile(state.viewId)
 				.then((profile) => {
 					if (!disposed && viewIdRef.current === profile.viewId) setProfileState(profile);
 				})
 				.catch(() => undefined);
-			void window.ao?.browser
+			void window.openAgents?.browser
 				.getTabs(state.viewId)
 				.then((tabs) => {
 					if (!disposed && viewIdRef.current === tabs.viewId) setTabsState(tabs);
@@ -463,7 +463,7 @@ export function useBrowserView({
 			const id = viewIdRef.current;
 			if (id) {
 				if (annotationModeRef.current) {
-					void window.ao?.browser.setAnnotationMode({
+					void window.openAgents?.browser.setAnnotationMode({
 						viewId: id,
 						enabled: false,
 					});
@@ -481,14 +481,14 @@ export function useBrowserView({
 	]);
 
 	useEffect(() => {
-		return window.ao?.browser.onNavState((state) => {
+		return window.openAgents?.browser.onNavState((state) => {
 			if (state.viewId !== viewIdRef.current) return;
 			setNavState(state);
 		});
 	}, []);
 
 	useEffect(() => {
-		return window.ao?.browser.onTabsState((state) => {
+		return window.openAgents?.browser.onTabsState((state) => {
 			if (state.viewId !== viewIdRef.current) return;
 			setTabsState(state);
 			const change = state.change;
@@ -526,21 +526,21 @@ export function useBrowserView({
 	const reorderTabs = useCallback((orderedIds: string[]) => setTabOrder(orderedIds), []);
 
 	useEffect(() => {
-		return window.ao?.browser.onDevToolsState((state) => {
+		return window.openAgents?.browser.onDevToolsState((state) => {
 			if (state.viewId !== viewIdRef.current) return;
 			setDevtoolsState(state);
 		});
 	}, []);
 
 	useEffect(() => {
-		return window.ao?.browser.onProfileState((state) => {
+		return window.openAgents?.browser.onProfileState((state) => {
 			if (state.viewId !== viewIdRef.current) return;
 			setProfileState(state);
 		});
 	}, []);
 
 	useEffect(() => {
-		return window.ao?.browser.onAgentActivity((state) => {
+		return window.openAgents?.browser.onAgentActivity((state) => {
 			if (state.viewId !== viewIdRef.current) return;
 			setAgentBrowserActive(state.active);
 			setAgentBrowserActivity(state);
@@ -587,7 +587,7 @@ export function useBrowserView({
 				overlayOpenRef.current = open;
 				// The live page never moves or becomes a bitmap. Reordering the explicit
 				// transparent shell is the complete overlay handoff for menus/dialogs.
-				window.ao?.browser.setOverlayOpen(open);
+				window.openAgents?.browser.setOverlayOpen(open);
 			}
 			if (!wasResizing && isResizing) {
 				// Sidebar resize started: measure bounds to track the animation
@@ -627,7 +627,7 @@ export function useBrowserView({
 		return () => {
 			observer.disconnect();
 			resizeObserver.disconnect();
-			window.ao?.browser.setOverlayOpen(false);
+			window.openAgents?.browser.setOverlayOpen(false);
 			overlayOpenRef.current = false;
 		};
 	}, [hasNativeBrowser, scheduleSettleMeasure]);
@@ -669,7 +669,7 @@ export function useBrowserView({
 				return;
 			}
 			const styles = getComputedStyle(document.documentElement);
-			await window.ao!.browser.setAnnotationMode({
+			await window.openAgents!.browser.setAnnotationMode({
 				viewId: id,
 				enabled,
 				theme: {
@@ -692,7 +692,7 @@ export function useBrowserView({
 		async (action: BrowserAnnotationActionInput["action"]) => {
 			const id = viewIdRef.current;
 			if (!id || !hasNativeBrowser) return;
-			await window.ao!.browser.annotationAction({ viewId: id, action });
+			await window.openAgents!.browser.annotationAction({ viewId: id, action });
 		},
 		[hasNativeBrowser],
 	);
@@ -702,7 +702,7 @@ export function useBrowserView({
 			const viewId = viewIdRef.current;
 			if (!viewId || !hasNativeBrowser) return;
 			try {
-				const state = await window.ao!.browser.selectTab({ viewId, tabId });
+				const state = await window.openAgents!.browser.selectTab({ viewId, tabId });
 				if (viewIdRef.current === state.viewId) setTabsState(state);
 			} catch {
 				// Fire-and-forget from the rail (`void onSelectTab(...)`) — without
@@ -724,7 +724,7 @@ export function useBrowserView({
 			// handleCloseTab in BrowserPanel.tsx otherwise).
 			const closing = tabsStateRef.current.tabs.find((tab) => tab.id === tabId);
 			try {
-				const state = await window.ao!.browser.closeTab({ viewId, tabId });
+				const state = await window.openAgents!.browser.closeTab({ viewId, tabId });
 				if (viewIdRef.current !== state.viewId) return;
 				setTabsState(state);
 				// Only remember it once the main process confirms it's actually gone —
@@ -746,7 +746,7 @@ export function useBrowserView({
 				// reports failure) — resync instead of leaving this tab's row
 				// showing in the rail after it's genuinely gone, which just
 				// re-fails identically on every retry.
-				window.ao?.browser
+				window.openAgents?.browser
 					.getTabs(viewId)
 					.then((state) => {
 						if (viewIdRef.current === state.viewId) setTabsState(state);
@@ -762,13 +762,13 @@ export function useBrowserView({
 			if (!hasNativeBrowser) return;
 			let viewId = viewIdRef.current;
 			if (!viewId) {
-				const ensured = await window.ao!.browser.ensure(sessionId);
+				const ensured = await window.openAgents!.browser.ensure(sessionId);
 				viewId = ensured.viewId;
 				viewIdRef.current = viewId;
 				setViewId(viewId);
 				setNavState(ensured);
 			}
-			const state = await window.ao!.browser.openTab({ viewId, url });
+			const state = await window.openAgents!.browser.openTab({ viewId, url });
 			if (viewIdRef.current === state.viewId) setTabsState(state);
 		},
 		[hasNativeBrowser, sessionId],
@@ -778,7 +778,7 @@ export function useBrowserView({
 			if (!hasNativeBrowser) return;
 			let id = viewIdRef.current;
 			if (!id) {
-				const ensured = await window.ao!.browser.ensure(sessionId);
+				const ensured = await window.openAgents!.browser.ensure(sessionId);
 				id = ensured.viewId;
 				viewIdRef.current = id;
 				setViewId(id);
@@ -789,7 +789,7 @@ export function useBrowserView({
 			// navigation/title updates, so refresh it before deciding whether this URL
 			// already has a tab and should be selected instead of duplicated.
 			try {
-				const next = await window.ao!.browser.getTabs(id);
+				const next = await window.openAgents!.browser.getTabs(id);
 				tabs = next.tabs;
 				if (viewIdRef.current === id) setTabsState(next);
 			} catch {
@@ -803,7 +803,7 @@ export function useBrowserView({
 			}
 			const activeTab = tabs.find((tab) => tab.active);
 			if (activeTab && isBlankTabUrl(activeTab.url)) {
-				const state = await window.ao!.browser.navigate({ viewId: id, url });
+				const state = await window.openAgents!.browser.navigate({ viewId: id, url });
 				if (viewIdRef.current === state.viewId) setNavState(state);
 				return;
 			}
@@ -834,7 +834,7 @@ export function useBrowserView({
 			const id = viewIdRef.current;
 			if (!id || !hasNativeBrowser) return;
 			try {
-				const next = await window.ao!.browser.devtools({
+				const next = await window.openAgents!.browser.devtools({
 					viewId: id,
 					operation,
 					placement,
@@ -854,8 +854,8 @@ export function useBrowserView({
 			if (payload.viewId !== viewIdRef.current) return;
 			setAnnotationModeState(false);
 		};
-		const offSubmit = window.ao?.browser.onAnnotationSubmit(handleDone);
-		const offCancel = window.ao?.browser.onAnnotationCancel(handleDone);
+		const offSubmit = window.openAgents?.browser.onAnnotationSubmit(handleDone);
+		const offCancel = window.openAgents?.browser.onAnnotationCancel(handleDone);
 		return () => {
 			offSubmit?.();
 			offCancel?.();
@@ -863,7 +863,7 @@ export function useBrowserView({
 	}, []);
 
 	useEffect(() => {
-		const offState = window.ao?.browser.onAnnotationState((payload) => {
+		const offState = window.openAgents?.browser.onAnnotationState((payload) => {
 			if (payload.viewId !== viewIdRef.current) return;
 			setAnnotationState({
 				count: payload.count,
@@ -886,12 +886,12 @@ export function useBrowserView({
 				setNavState((current) => ({
 					...current,
 					url: normalized,
-					title: normalized ? "AO preview" : "",
+					title: normalized ? "Open Agents preview" : "",
 					isLoading: false,
 				}));
 				return Promise.resolve();
 			}
-			return withView((id) => window.ao!.browser.navigate({ viewId: id, url }));
+			return withView((id) => window.openAgents!.browser.navigate({ viewId: id, url }));
 		},
 		[hasNativeBrowser, withView],
 	);
@@ -906,11 +906,11 @@ export function useBrowserView({
 			}));
 			return Promise.resolve();
 		}
-		return withView((id) => window.ao!.browser.clear(id));
+		return withView((id) => window.openAgents!.browser.clear(id));
 	}, [hasNativeBrowser, withView]);
 
 	// Drive the view from the daemon-set preview target. Current daemons key
-	// this on previewRevision (bumped on every `ao preview` call); older daemons
+	// this on previewRevision (bumped on every `open-agents preview` call); older daemons
 	// did not send it, so fall back to URL changes for compatibility.
 	useEffect(() => {
 		// During a session switch React still renders once with the prior
@@ -936,12 +936,12 @@ export function useBrowserView({
 		const id = viewIdRef.current;
 		if (!id) return;
 		if (annotationModeRef.current) {
-			void window.ao?.browser.setAnnotationMode({ viewId: id, enabled: false });
+			void window.openAgents?.browser.setAnnotationMode({ viewId: id, enabled: false });
 			setAnnotationModeState(false);
 		}
 		overlayOpenRef.current = false;
 		sendHiddenBounds(id);
-		window.ao?.browser.destroy(id);
+		window.openAgents?.browser.destroy(id);
 		viewIdRef.current = "";
 		setViewId("");
 		setNavState(EMPTY_NAV_STATE);
@@ -970,10 +970,10 @@ export function useBrowserView({
 		navState: stateBelongsToSession ? navState : EMPTY_NAV_STATE,
 		slotRef,
 		navigate,
-		goBack: () => (hasNativeBrowser ? withView((id) => window.ao!.browser.goBack(id)) : Promise.resolve()),
-		goForward: () => (hasNativeBrowser ? withView((id) => window.ao!.browser.goForward(id)) : Promise.resolve()),
-		reload: () => (hasNativeBrowser ? withView((id) => window.ao!.browser.reload(id)) : Promise.resolve()),
-		stop: () => (hasNativeBrowser ? withView((id) => window.ao!.browser.stop(id)) : Promise.resolve()),
+		goBack: () => (hasNativeBrowser ? withView((id) => window.openAgents!.browser.goBack(id)) : Promise.resolve()),
+		goForward: () => (hasNativeBrowser ? withView((id) => window.openAgents!.browser.goForward(id)) : Promise.resolve()),
+		reload: () => (hasNativeBrowser ? withView((id) => window.openAgents!.browser.reload(id)) : Promise.resolve()),
+		stop: () => (hasNativeBrowser ? withView((id) => window.openAgents!.browser.stop(id)) : Promise.resolve()),
 		tabs: stateBelongsToSession ? tabs : [],
 		activeTabId: stateBelongsToSession ? tabsState.activeTabId : "",
 		tabNotice: stateBelongsToSession ? tabNotice : "",

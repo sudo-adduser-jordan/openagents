@@ -8,7 +8,7 @@ import (
 	"sync"
 	"time"
 
-	aoprocess "github.com/aoagents/agent-orchestrator/backend/internal/process"
+	openagentsprocess "github.com/sudo-adduser-jordan/open-agents/backend/internal/process"
 )
 
 // TokenSource yields a GitHub bearer token on demand. Production wires this
@@ -42,7 +42,7 @@ func (s StaticTokenSource) Token(context.Context) (string, error) {
 
 // EnvTokenSource reads the first non-empty value from the listed env vars,
 // falling back to GITHUB_TOKEN. Order matters: a project-scoped variable
-// (AO_GITHUB_TOKEN) should win over the global default.
+// (OPEN_AGENTS_GITHUB_TOKEN) should win over the global default.
 type EnvTokenSource struct {
 	EnvVars []string
 }
@@ -170,7 +170,7 @@ func (s *GHTokenSource) ttl() time.Duration {
 }
 
 func ghAuthToken(ctx context.Context) (string, error) {
-	out, err := aoprocess.CommandContext(ctx, "gh", "auth", "token").Output()
+	out, err := openagentsprocess.CommandContext(ctx, "gh", "auth", "token").Output()
 	if err != nil {
 		return "", err
 	}

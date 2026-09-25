@@ -5,7 +5,7 @@ import (
 	"net/http/httptest"
 	"testing"
 
-	"github.com/aoagents/agent-orchestrator/backend/internal/config"
+	"github.com/sudo-adduser-jordan/open-agents/backend/internal/config"
 )
 
 // TestCORS exercises the allowlist boundary on a real router: trusted origins
@@ -51,9 +51,9 @@ func TestCORS(t *testing.T) {
 		{
 			name:       "isolated localhost preview origin allowed",
 			method:     http.MethodGet,
-			headers:    map[string]string{"Origin": "http://ao-preview.mfxs2mi.localhost:5181"},
+			headers:    map[string]string{"Origin": "http://open-agents-preview.mfxs2mi.localhost:5181"},
 			wantStatus: http.StatusOK,
-			wantACAO:   "http://ao-preview.mfxs2mi.localhost:5181",
+			wantACAO:   "http://open-agents-preview.mfxs2mi.localhost:5181",
 		},
 		{
 			// localhost in the host position of a non-loopback origin must not
@@ -77,7 +77,7 @@ func TestCORS(t *testing.T) {
 		{
 			name:       "localhost suffix lookalike rejected",
 			method:     http.MethodGet,
-			headers:    map[string]string{"Origin": "http://ao-preview.localhost.evil.example"},
+			headers:    map[string]string{"Origin": "http://open-agents-preview.localhost.evil.example"},
 			wantStatus: http.StatusForbidden,
 			wantACAO:   "",
 		},

@@ -10,7 +10,7 @@ import (
 	"testing"
 	"time"
 
-	"github.com/aoagents/agent-orchestrator/backend/pkg/contract"
+	"github.com/sudo-adduser-jordan/open-agents/backend/pkg/contract"
 )
 
 func TestSCMContractJSONUsesProviderNeutralFields(t *testing.T) {
@@ -96,19 +96,19 @@ func TestSharedSCMVocabulariesMatchProductUI(t *testing.T) {
 			string(contract.MergeConflicting), string(contract.MergeBlocked),
 			string(contract.MergeUnstable),
 		}},
-		{"AOReviewRunStatus", "AO_REVIEW_RUN_STATUSES", []string{
-			string(contract.AOReviewRunRunning), string(contract.AOReviewRunComplete),
-			string(contract.AOReviewRunDelivered), string(contract.AOReviewRunFailed),
-			string(contract.AOReviewRunCancelled),
+		{"OpenAgentsReviewRunStatus", "OPEN_AGENTS_REVIEW_RUN_STATUSES", []string{
+			string(contract.OpenAgentsReviewRunRunning), string(contract.OpenAgentsReviewRunComplete),
+			string(contract.OpenAgentsReviewRunDelivered), string(contract.OpenAgentsReviewRunFailed),
+			string(contract.OpenAgentsReviewRunCancelled),
 		}},
-		{"AOReviewVerdict", "AO_REVIEW_VERDICTS", []string{
-			string(contract.AOReviewVerdictNone), string(contract.AOReviewVerdictApproved),
-			string(contract.AOReviewVerdictChangesRequested),
+		{"OpenAgentsReviewVerdict", "OPEN_AGENTS_REVIEW_VERDICTS", []string{
+			string(contract.OpenAgentsReviewVerdictNone), string(contract.OpenAgentsReviewVerdictApproved),
+			string(contract.OpenAgentsReviewVerdictChangesRequested),
 		}},
-		{"AOReviewState", "AO_REVIEW_STATES", []string{
-			string(contract.AOReviewNeedsReview), string(contract.AOReviewRunning),
-			string(contract.AOReviewUpToDate), string(contract.AOReviewChangesRequested),
-			string(contract.AOReviewIneligible),
+		{"OpenAgentsReviewState", "OPEN_AGENTS_REVIEW_STATES", []string{
+			string(contract.OpenAgentsReviewNeedsReview), string(contract.OpenAgentsReviewRunning),
+			string(contract.OpenAgentsReviewUpToDate), string(contract.OpenAgentsReviewChangesRequested),
+			string(contract.OpenAgentsReviewIneligible),
 		}},
 	}
 

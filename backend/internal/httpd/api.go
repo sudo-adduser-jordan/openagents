@@ -7,16 +7,16 @@ import (
 	"github.com/go-chi/chi/v5"
 	"github.com/go-chi/chi/v5/middleware"
 
-	"github.com/aoagents/agent-orchestrator/backend/internal/attachmentstore"
-	"github.com/aoagents/agent-orchestrator/backend/internal/cdc"
-	"github.com/aoagents/agent-orchestrator/backend/internal/config"
-	"github.com/aoagents/agent-orchestrator/backend/internal/httpd/apispec"
-	"github.com/aoagents/agent-orchestrator/backend/internal/httpd/controllers"
-	"github.com/aoagents/agent-orchestrator/backend/internal/httpd/envelope"
-	"github.com/aoagents/agent-orchestrator/backend/internal/presence"
-	prsvc "github.com/aoagents/agent-orchestrator/backend/internal/service/pr"
-	projectsvc "github.com/aoagents/agent-orchestrator/backend/internal/service/project"
-	reviewsvc "github.com/aoagents/agent-orchestrator/backend/internal/service/review"
+	"github.com/sudo-adduser-jordan/open-agents/backend/internal/attachmentstore"
+	"github.com/sudo-adduser-jordan/open-agents/backend/internal/cdc"
+	"github.com/sudo-adduser-jordan/open-agents/backend/internal/config"
+	"github.com/sudo-adduser-jordan/open-agents/backend/internal/httpd/apispec"
+	"github.com/sudo-adduser-jordan/open-agents/backend/internal/httpd/controllers"
+	"github.com/sudo-adduser-jordan/open-agents/backend/internal/httpd/envelope"
+	"github.com/sudo-adduser-jordan/open-agents/backend/internal/presence"
+	prsvc "github.com/sudo-adduser-jordan/open-agents/backend/internal/service/pr"
+	projectsvc "github.com/sudo-adduser-jordan/open-agents/backend/internal/service/project"
+	reviewsvc "github.com/sudo-adduser-jordan/open-agents/backend/internal/service/review"
 )
 
 // APIDeps bundles every service the API layer's controllers depend on.

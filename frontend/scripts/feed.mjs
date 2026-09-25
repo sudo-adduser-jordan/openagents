@@ -13,7 +13,7 @@ import { createHash } from "node:crypto";
 import { writeBlockmap } from "./blockmap.mjs";
 
 // selectInstallers picks the versioned, auto-updatable installers from a release
-// download dir, grouped by platform/arch. Excludes the ao-start aliases (no
+// download dir, grouped by platform/arch. Excludes the open-agents-start aliases (no
 // version string in their names) and deb/rpm (system-package-managed). The mac
 // arch split keys on the literal "arm64" substring, the same discriminator the
 // updater (MacUpdater.filterFilesForArch) uses.

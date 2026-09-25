@@ -211,7 +211,7 @@ function Sidebar({
 				? variant === "floating" || variant === "inset"
 					? "calc(var(--sidebar-width-icon) + 1rem)"
 					: "var(--sidebar-width-icon)"
-				: "var(--ao-sidebar-w, var(--sidebar-width))";
+				: "var(--open-agents-sidebar-w, var(--sidebar-width))";
 
 	// Several React HTML event types conflict with Motion's overloaded versions.
 	// Cast once so callers can keep passing through plain div props.
@@ -248,7 +248,7 @@ function Sidebar({
 					// Prefer top/bottom over inset-y so callers can clear titlebar chrome
 					// with `top-(--sidebar-chrome-offset)` without fighting inset-y-0.
 					// DO NOT restore `inset-y-0` + `h-svh` — under-topbar offset then clips wrong.
-					"fixed top-0 bottom-0 z-chrome hidden w-(--ao-sidebar-w,var(--sidebar-width)) md:flex",
+					"fixed top-0 bottom-0 z-chrome hidden w-(--open-agents-sidebar-w,var(--sidebar-width)) md:flex",
 					side === "left" ? "left-0" : "right-0",
 					// Adjust the padding for floating and inset variants.
 					variant === "floating" || variant === "inset"

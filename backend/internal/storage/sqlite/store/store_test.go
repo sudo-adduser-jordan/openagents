@@ -9,10 +9,10 @@ import (
 	"testing"
 	"time"
 
-	"github.com/aoagents/agent-orchestrator/backend/internal/domain"
-	"github.com/aoagents/agent-orchestrator/backend/internal/ports"
-	"github.com/aoagents/agent-orchestrator/backend/internal/storage/sqlite"
-	"github.com/aoagents/agent-orchestrator/backend/internal/storage/sqlite/sqlitetest"
+	"github.com/sudo-adduser-jordan/open-agents/backend/internal/domain"
+	"github.com/sudo-adduser-jordan/open-agents/backend/internal/ports"
+	"github.com/sudo-adduser-jordan/open-agents/backend/internal/storage/sqlite"
+	"github.com/sudo-adduser-jordan/open-agents/backend/internal/storage/sqlite/sqlitetest"
 )
 
 func newTestStore(t *testing.T) *sqlite.Store {
@@ -132,7 +132,7 @@ func TestSessionPersistsDeterministicHandoffInputs(t *testing.T) {
 	rec.Metadata.LatestAssistantUpdate = "The generation fence is implemented; the test is unfinished."
 	rec.Metadata.LatestAssistantUpdateAt = rec.CreatedAt.Add(2 * time.Minute)
 	rec.Metadata.NativeIdentityObservedAt = rec.CreatedAt.Add(3 * time.Minute)
-	rec.Metadata.NativeTranscriptPath = "/ao/transcripts/claude/session.jsonl"
+	rec.Metadata.NativeTranscriptPath = "/open-agents/transcripts/claude/session.jsonl"
 	rec.Metadata.AgentSessionID = "native-session-1"
 	rec.Metadata.AgentSessionIDLaunchID = "launch-1"
 	rec.Metadata.ConversationCheckpointState = domain.ConversationCheckpointComplete
@@ -167,7 +167,7 @@ func TestSessionPersistsDeterministicHandoffInputs(t *testing.T) {
 	got.Metadata.LatestAssistantUpdate = "The regression test has been added."
 	got.Metadata.LatestAssistantUpdateAt = got.Metadata.LatestAssistantUpdateAt.Add(time.Minute)
 	got.Metadata.NativeIdentityObservedAt = got.Metadata.NativeIdentityObservedAt.Add(time.Minute)
-	got.Metadata.NativeTranscriptPath = "/ao/transcripts/codex/session.jsonl"
+	got.Metadata.NativeTranscriptPath = "/open-agents/transcripts/codex/session.jsonl"
 	got.Metadata.AgentSessionIDLaunchID = "launch-2"
 	got.Metadata.ConversationCheckpointState = domain.ConversationCheckpointPrompt
 	got.Metadata.ConversationCheckpointGeneration = "launch-2"
@@ -437,7 +437,7 @@ func TestProjectScratchKindAndArchivedCount(t *testing.T) {
 	if err := s.UpsertProject(ctx, domain.ProjectRecord{
 		ID:           "scratch",
 		DisplayName:  "Scratch",
-		Path:         "/ao/scratch/default",
+		Path:         "/open-agents/scratch/default",
 		Kind:         domain.ProjectKindScratch,
 		RegisteredAt: now,
 	}); err != nil {
@@ -520,16 +520,16 @@ func TestSessionCreateAssignsPerProjectID(t *testing.T) {
 	s := newTestStore(t)
 	ctx := context.Background()
 	seedProject(t, s, "mer")
-	seedProject(t, s, "ao")
+	seedProject(t, s, "open-agents")
 
 	r1, err := s.CreateSession(ctx, sampleRecord("mer"))
 	if err != nil {
 		t.Fatal(err)
 	}
 	r2, _ := s.CreateSession(ctx, sampleRecord("mer"))
-	r3, _ := s.CreateSession(ctx, sampleRecord("ao"))
-	if r1.ID != "mer-1" || r2.ID != "mer-2" || r3.ID != "ao-1" {
-		t.Fatalf("ids = %s, %s, %s; want mer-1, mer-2, ao-1", r1.ID, r2.ID, r3.ID)
+	r3, _ := s.CreateSession(ctx, sampleRecord("open-agents"))
+	if r1.ID != "mer-1" || r2.ID != "mer-2" || r3.ID != "open-agents-1" {
+		t.Fatalf("ids = %s, %s, %s; want mer-1, mer-2, open-agents-1", r1.ID, r2.ID, r3.ID)
 	}
 	got, ok, err := s.GetSession(ctx, "mer-1")
 	if err != nil || !ok {
@@ -1701,7 +1701,7 @@ func TestSetSessionPreviewURLBumpsRevisionAndFiresCDCOnSameURL(t *testing.T) {
 	}
 
 	// Both sets fire session_updated even though the URL never changed — the
-	// revision bump is what trips the trigger, so a same-URL `ao preview` re-run
+	// revision bump is what trips the trigger, so a same-URL `open-agents preview` re-run
 	// still reaches the browser panel.
 	evs, err := s.EventsAfter(ctx, base, 100)
 	if err != nil {
@@ -1842,8 +1842,8 @@ func TestSessionWorktreesRoundTrip(t *testing.T) {
 		t.Fatalf("create session: %v", err)
 	}
 	rows := []domain.SessionWorktreeRecord{
-		{SessionID: rec.ID, RepoName: domain.RootWorkspaceRepoName, Branch: "ao/ws-1", BaseSHA: "root-base", BaseRef: "refs/remotes/origin/trunk", WorktreePath: "/managed/ws/ws-1", State: "active"},
-		{SessionID: rec.ID, RepoName: "api", Branch: "ao/ws-1", BaseSHA: "api-base", BaseRef: "refs/remotes/origin/dev", WorktreePath: "/managed/ws/ws-1/api", PreservedRef: "refs/ao/preserved/ws-1", State: "removed"},
+		{SessionID: rec.ID, RepoName: domain.RootWorkspaceRepoName, Branch: "open-agents/ws-1", BaseSHA: "root-base", BaseRef: "refs/remotes/origin/trunk", WorktreePath: "/managed/ws/ws-1", State: "active"},
+		{SessionID: rec.ID, RepoName: "api", Branch: "open-agents/ws-1", BaseSHA: "api-base", BaseRef: "refs/remotes/origin/dev", WorktreePath: "/managed/ws/ws-1/api", PreservedRef: "refs/open-agents/preserved/ws-1", State: "removed"},
 	}
 	for _, row := range rows {
 		if err := s.UpsertSessionWorktree(ctx, row); err != nil {
@@ -1858,7 +1858,7 @@ func TestSessionWorktreesRoundTrip(t *testing.T) {
 		t.Fatalf("worktrees = %#v, want %#v", got, rows)
 	}
 	one, ok, err := s.GetSessionWorktree(ctx, rec.ID, "api")
-	if err != nil || !ok || one.PreservedRef != "refs/ao/preserved/ws-1" {
+	if err != nil || !ok || one.PreservedRef != "refs/open-agents/preserved/ws-1" {
 		t.Fatalf("get api = %#v ok=%v err=%v", one, ok, err)
 	}
 	rows[1].State = "active"
@@ -1897,7 +1897,7 @@ func TestUpsertSessionWorktreeEmptyStateDefaultsToActive(t *testing.T) {
 	row := domain.SessionWorktreeRecord{
 		SessionID:    rec.ID,
 		RepoName:     domain.RootWorkspaceRepoName,
-		Branch:       "ao/sw-1",
+		Branch:       "open-agents/sw-1",
 		BaseSHA:      "abc123",
 		WorktreePath: "/managed/sw/sw-1",
 	}

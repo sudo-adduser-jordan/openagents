@@ -338,7 +338,7 @@ export type BrowserViewHost = {
 	execute: (sessionId: string, action: string, args?: Record<string, unknown>, signal?: AbortSignal) => Promise<unknown>;
 	// webContents of the most recently focused browser panel (or null); the titlebar menu targets it for Edit/Reload/Zoom/DevTools.
 	getLastFocusedPanelContents: () => WebContents | null;
-	/** Toggle Chromium DevTools for the last focused AO browser panel. */
+	/** Toggle Chromium DevTools for the last focused Open Agents browser panel. */
 	toggleDevToolsForLastFocused: () => Promise<BrowserDevToolsState | null>;
 	// Drop the remembered panel; call when the shell gains focus for a real reason so a stale panel stops absorbing menu actions.
 	forgetLastFocusedPanel: () => void;
@@ -738,7 +738,7 @@ export function createBrowserViewHost(options: BrowserViewHostOptions): BrowserV
 				// Deliberately not the setWindowOpenHandler createWindow path: Electron's
 				// openGuestWindow requires the returned webContents to be one IT created
 				// from the options it computed for this exact guest-window-open event.
-				// AO's tabs are WebContentsViews created through its own createTab/openTab,
+				// Open Agents's tabs are WebContentsViews created through its own createTab/openTab,
 				// with no such linkage — returning one there throws "Invalid webContents.
 				// Created window should be connected to webContents passed with options
 				// object" and crashes the whole app on every link click. Deny the guest
@@ -824,7 +824,7 @@ export function createBrowserViewHost(options: BrowserViewHostOptions): BrowserV
 				// A non-persist: Electron partition is memory-only. Every tab in
 				// this worker shares it, while a fresh worker runtime receives a
 				// different partition even if a session ID is ever reused.
-				profilePartition: profileId ? browserProfilePartition(profileId) : `ao-browser-${randomUUID()}`,
+				profilePartition: profileId ? browserProfilePartition(profileId) : `open-agents-browser-${randomUUID()}`,
 				tabs: new Map(),
 				activeTabId: "",
 				nextTabNumber: 1,
@@ -911,7 +911,7 @@ export function createBrowserViewHost(options: BrowserViewHostOptions): BrowserV
 
 	// Electron reuses one Session for every worker attached to the same named
 	// profile. Register one watcher on that shared object, then route each event
-	// back to the owning AO worker by webContentsId. Never broadcast an event to
+	// back to the owning Open Agents worker by webContentsId. Never broadcast an event to
 	// every worker sharing the profile.
 	const registerBrowserSignalWatcher = (session: BrowserSessionEntry): void => {
 		const firstTab = session.tabs.values().next().value;
@@ -1024,7 +1024,7 @@ export function createBrowserViewHost(options: BrowserViewHostOptions): BrowserV
 				} catch (resyncError) {
 					if (!isAgentBrowserCommandFailure(resyncError)) throw resyncError;
 					// Still desynced after asking it to refresh — accept the drift
-					// rather than wedge the session forever. AO's own tab state
+					// rather than wedge the session forever. Open Agents's own tab state
 					// (WebContentsView activation/close) doesn't depend on this and is
 					// unaffected either way; only the automation runtime's targeting of
 					// *this* tab stays stale until a future tab-new/tab-close resyncs
@@ -1080,7 +1080,7 @@ export function createBrowserViewHost(options: BrowserViewHostOptions): BrowserV
 			// rejecting afterward corrupted every caller that inferred "tab
 			// exists" from "call succeeded": a dead localhost dev server (the
 			// overwhelmingly common case for Recently Closed entries — that's
-			// what ao preview produces) left reopenClosedTab's cap-failure
+			// what open-agents preview produces) left reopenClosedTab's cap-failure
 			// rollback treating the failed load as "nothing happened," which
 			// resurrected the entry and restored it, forever, on every retry,
 			// while the tab it claimed didn't exist sat open with an error page.
@@ -1449,7 +1449,7 @@ export function createBrowserViewHost(options: BrowserViewHostOptions): BrowserV
 			return;
 		}
 		// Keep the initialized blank target available to automation, but let the
-		// renderer show AO's empty-page UI instead of Chromium's white about:blank.
+		// renderer show Open Agents's empty-page UI instead of Chromium's white about:blank.
 		const currentURL = entry.view.webContents.getURL();
 		if (!currentURL || currentURL === "about:blank") {
 			applyBrowserViewBounds(entry.view, session.bounds, false);
@@ -1534,7 +1534,7 @@ export function createBrowserViewHost(options: BrowserViewHostOptions): BrowserV
 		return pushNavState(options, entry);
 	};
 
-	// clear resets the view to a blank page (`ao preview clear`). about:blank is
+	// clear resets the view to a blank page (`open-agents preview clear`). about:blank is
 	// loaded directly, bypassing the URL allowlist — it carries no content and
 	// readNavState normalizes it back to an empty url so the panel shows its
 	// empty state.
@@ -1690,7 +1690,7 @@ export function createBrowserViewHost(options: BrowserViewHostOptions): BrowserV
 		const nextActiveTabId = session.tabs.has(activeTabId) ? activeTabId : tabs[0]!.tabId;
 		activateTab(session, nextActiveTabId, false);
 		// A newly-created agent-browser runtime starts on the provider's first
-		// target, regardless of which human tab AO restored as active. Preserve
+		// target, regardless of which human tab Open Agents restored as active. Preserve
 		// that distinction so the next agent command selects the right target.
 		session.nativeActiveTabId = tabs[0]!.tabId;
 	};
@@ -1761,7 +1761,7 @@ export function createBrowserViewHost(options: BrowserViewHostOptions): BrowserV
 			session.profileId = normalizedRequestedProfileId;
 			session.profilePartition = normalizedRequestedProfileId
 				? browserProfilePartition(normalizedRequestedProfileId)
-				: `ao-browser-${randomUUID()}`;
+				: `open-agents-browser-${randomUUID()}`;
 			await rebuildSessionTabs(session, savedTabs, previousActiveTabId, previousNextTabNumber, assertCurrentSession);
 			registerBrowserSignalWatcher(session);
 			pushTabsState(options, session);
@@ -2151,12 +2151,12 @@ export function createBrowserViewHost(options: BrowserViewHostOptions): BrowserV
 				// The automation runtime's own internal tab registry can drift from
 				// session.tabs over a long-running session (observed in practice as
 				// "Tab t5 not found; run `agent-browser tab` to list open tabs" even
-				// though session.tabs.has(input.tabId) above just confirmed AO still
-				// tracks it) — the runtime is a separate process AO doesn't fully
+				// though session.tabs.has(input.tabId) above just confirmed Open Agents still
+				// tracks it) — the runtime is a separate process Open Agents doesn't fully
 				// control the internal bookkeeping of. Letting that failure bubble up
 				// left the tab stuck open with no way for the user to close it at all.
 				// The user's intent is unambiguous either way: close this tab. Fall
-				// back to AO's own close path, which only depends on session.tabs and
+				// back to Open Agents's own close path, which only depends on session.tabs and
 				// the real WebContentsView, not the runtime's registry.
 				if (!isAgentBrowserCommandFailure(error)) throw error;
 				// runAction("tab-close") can partially succeed: the CDP bridge's own
@@ -2811,7 +2811,7 @@ function wireNavEvents(
 		if (errorCode === -3) return;
 		// A page can contain third-party images, frames, or scripts that fail
 		// independently. Only a main-frame failure means the browser page itself
-		// should be replaced with AO's error state.
+		// should be replaced with Open Agents's error state.
 		if (isMainFrame === false) return;
 		cancelAnnotation(options, entry, "navigation");
 		if (isActive()) entry.view.setVisible?.(false);
@@ -3396,7 +3396,7 @@ function normalizeAgentBrowserURL(input: string): string {
 		throw browserError("BROWSER_URL_FORBIDDEN", "Agent browser commands cannot open local files");
 	}
 	if (!/^https?:\/\//i.test(raw) && !isLocalhostLike(raw) && !looksLikeHost(raw)) {
-		throw browserError("INVALID_URL", "ao browser open requires an explicit http(s) URL or hostname");
+		throw browserError("INVALID_URL", "open-agents browser open requires an explicit http(s) URL or hostname");
 	}
 	const normalized = normalizeBrowserURL(raw);
 	if (normalized.protocol !== "http:" && normalized.protocol !== "https:") {

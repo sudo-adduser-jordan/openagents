@@ -11,24 +11,24 @@ import (
 	"strings"
 	"time"
 
-	"github.com/aoagents/agent-orchestrator/backend/internal/domain"
-	"github.com/aoagents/agent-orchestrator/backend/internal/ports"
-	sessionmanager "github.com/aoagents/agent-orchestrator/backend/internal/session_manager"
+	"github.com/sudo-adduser-jordan/open-agents/backend/internal/domain"
+	"github.com/sudo-adduser-jordan/open-agents/backend/internal/ports"
+	sessionmanager "github.com/sudo-adduser-jordan/open-agents/backend/internal/session_manager"
 )
 
 const cancelInterruptDelay = 150 * time.Millisecond
 
 const defaultReviewerInitialDelay = 500 * time.Millisecond
 
-const reviewerTaskMessagePrefix = "Read and follow the AO review task in `"
+const reviewerTaskMessagePrefix = "Read and follow the Open Agents review task in `"
 
-// EnvRunFile points reviewer-local AO CLI calls at the live daemon run-file.
-const EnvRunFile = "AO_RUN_FILE"
+// EnvRunFile points reviewer-local Open Agents CLI calls at the live daemon run-file.
+const EnvRunFile = "OPEN_AGENTS_RUN_FILE"
 
-// EnvAOCommandWarning records why AO could not guarantee a reviewer-local `ao`
+// EnvOpenAgentsCommandWarning records why Open Agents could not guarantee a reviewer-local `open-agents`
 // command. Review launch remains best-effort so provider reviews can still be
 // posted and later reconciled, but this makes the degraded path diagnosable.
-const EnvAOCommandWarning = "AO_REVIEW_AO_COMMAND_WARNING"
+const EnvOpenAgentsCommandWarning = "OPEN_AGENTS_REVIEW_OPEN_AGENTS_COMMAND_WARNING"
 
 // Launcher spawns, re-notifies, and probes a reviewer over a worker's worktree.
 // It is the side of the engine that talks to the reviewer registry and runtime;
@@ -141,16 +141,16 @@ func WithAgentAuth(auth agentAuthResolver) LauncherOption {
 
 // WithExecutable overrides os.Executable for reviewer PATH pinning. Production
 // leaves this unset; tests use it to model the daemon binary that should make a
-// bare `ao review submit` available inside reviewer panes.
+// bare `open-agents review submit` available inside reviewer panes.
 func WithExecutable(executable func() (string, error)) LauncherOption {
 	return func(l *agentLauncher) {
 		l.executable = executable
 	}
 }
 
-// WithRunFilePath pins reviewer-local AO CLI calls to this daemon's run-file.
-// This is intentionally separate from AO_DATA_DIR: the CLI discovers the live
-// daemon from AO_RUN_FILE, not from the durable data directory.
+// WithRunFilePath pins reviewer-local Open Agents CLI calls to this daemon's run-file.
+// This is intentionally separate from OPEN_AGENTS_DATA_DIR: the CLI discovers the live
+// daemon from OPEN_AGENTS_RUN_FILE, not from the durable data directory.
 func WithRunFilePath(path string) LauncherOption {
 	return func(l *agentLauncher) {
 		l.runFile = path
@@ -297,7 +297,7 @@ func (l *agentLauncher) prepareInvocation(ctx context.Context, spec LaunchSpec) 
 	}
 	systemPath := filepath.Join(promptRoot, "system.md")
 	systemPrompt := strings.TrimRight(inv.SystemPrompt, "\n") + "\n\n" +
-		"AO stores each review task in an immutable file. Whenever AO asks you to start a review task, " +
+		"Open Agents stores each review task in an immutable file. Whenever Open Agents asks you to start a review task, " +
 		"read the exact file path in that request first and follow it completely.\n"
 	if err := os.WriteFile(systemPath, []byte(systemPrompt), 0o600); err != nil {
 		return ports.ReviewInvocation{}, fmt.Errorf("write reviewer system prompt: %w", err)
@@ -317,14 +317,14 @@ func (l *agentLauncher) prepareIdleInvocation(spec LaunchSpec) (ports.ReviewInvo
 	promptRoot := filepath.Join(l.dataDir, "prompts", string(spec.WorkerID), "reviewer")
 	systemPath := filepath.Join(promptRoot, "system.md")
 	systemPrompt := reviewSystemPrompt() + "\n\n" +
-		"AO may restore your terminal before a new review task exists. In that state, wait for AO to send a review task file path before reviewing or submitting results.\n"
+		"Open Agents may restore your terminal before a new review task exists. In that state, wait for Open Agents to send a review task file path before reviewing or submitting results.\n"
 	if err := os.MkdirAll(promptRoot, 0o700); err != nil {
 		return ports.ReviewInvocation{}, fmt.Errorf("create reviewer prompt directory: %w", err)
 	}
 	if err := os.WriteFile(systemPath, []byte(systemPrompt), 0o600); err != nil {
 		return ports.ReviewInvocation{}, fmt.Errorf("write reviewer system prompt: %w", err)
 	}
-	prompt := fmt.Sprintf("Reviewer terminal restored for worker session %s.\n\n%s\n\nWait for AO to send the next review task file path before submitting a new review.", spec.WorkerID, previousReviewHistoryText(spec.PreviousRuns))
+	prompt := fmt.Sprintf("Reviewer terminal restored for worker session %s.\n\n%s\n\nWait for Open Agents to send the next review task file path before submitting a new review.", spec.WorkerID, previousReviewHistoryText(spec.PreviousRuns))
 	return ports.ReviewInvocation{
 		ReviewerID:       reviewerHandleID(spec.WorkerID),
 		WorkerSessionID:  spec.WorkerID,
@@ -538,9 +538,9 @@ func (l *agentLauncher) runtimeEnv(ctx context.Context, spec LaunchSpec, argv []
 		env[k] = v
 	}
 	delete(env, sessionmanager.EnvSessionID)
-	env["AO_REVIEW_SESSION_ID"] = spec.ReviewSessionID
-	env["AO_REVIEW_WORKER_SESSION_ID"] = string(spec.WorkerID)
-	env["AO_REVIEW_HARNESS"] = string(spec.Harness)
+	env["OPEN_AGENTS_REVIEW_SESSION_ID"] = spec.ReviewSessionID
+	env["OPEN_AGENTS_REVIEW_WORKER_SESSION_ID"] = string(spec.WorkerID)
+	env["OPEN_AGENTS_REVIEW_HARNESS"] = string(spec.Harness)
 	if strings.TrimSpace(spec.LaunchID) != "" {
 		env[sessionmanager.EnvRuntimeLaunchID] = spec.LaunchID
 	}
@@ -551,54 +551,54 @@ func (l *agentLauncher) runtimeEnv(ctx context.Context, spec LaunchSpec, argv []
 	}
 	// pinnedDir is whichever directory ends up at the head of PATH here, so the
 	// launch-binary prepend below can put it back rather than letting a foreign
-	// `ao` beside the agent binary win a bare `ao` inside the reviewer pane.
+	// `open-agents` beside the agent binary win a bare `open-agents` inside the reviewer pane.
 	pinnedDir := ""
 	path, err := sessionmanager.HookPATH(l.executable, os.Getenv, env, l.dataDir)
 	if err == nil {
 		env["PATH"] = path
 		pinnedDir = sessionmanager.PinnedHookDir(l.executable, l.dataDir)
-	} else if shimDir, shimErr := l.ensureAOShimDir(); shimErr == nil {
+	} else if shimDir, shimErr := l.ensureOpenAgentsShimDir(); shimErr == nil {
 		env["PATH"] = prependPathDir(shimDir, env["PATH"])
 		pinnedDir = shimDir
 	} else {
-		env[EnvAOCommandWarning] = fmt.Sprintf("PATH pin failed: %v; AO shim fallback failed: %v", err, shimErr)
+		env[EnvOpenAgentsCommandWarning] = fmt.Sprintf("PATH pin failed: %v; Open Agents shim fallback failed: %v", err, shimErr)
 	}
 	sessionmanager.AugmentRuntimePATHForLaunchBinary(ctx, env, argv, exec.LookPath, pinnedDir)
 	return env
 }
 
-func (l *agentLauncher) ensureAOShimDir() (string, error) {
+func (l *agentLauncher) ensureOpenAgentsShimDir() (string, error) {
 	if strings.TrimSpace(l.dataDir) == "" {
-		return "", fmt.Errorf("reviewer AO shim data directory is required")
+		return "", fmt.Errorf("reviewer Open Agents shim data directory is required")
 	}
 	exe, err := l.executable()
 	if err != nil {
-		return "", fmt.Errorf("resolve AO executable: %w", err)
+		return "", fmt.Errorf("resolve Open Agents executable: %w", err)
 	}
 	if !filepath.IsAbs(exe) {
 		exe, err = filepath.Abs(exe)
 		if err != nil {
-			return "", fmt.Errorf("make AO executable absolute: %w", err)
+			return "", fmt.Errorf("make Open Agents executable absolute: %w", err)
 		}
 	}
 	shimDir := filepath.Join(l.dataDir, "reviewer-runtime", "bin")
 	if err := os.MkdirAll(shimDir, 0o700); err != nil {
-		return "", fmt.Errorf("create reviewer AO shim directory: %w", err)
+		return "", fmt.Errorf("create reviewer Open Agents shim directory: %w", err)
 	}
-	shimPath := filepath.Join(shimDir, "ao")
+	shimPath := filepath.Join(shimDir, "open-agents")
 	if runtime.GOOS == "windows" {
 		shimPath += ".cmd"
 	}
-	if err := os.WriteFile(shimPath, []byte(aoShimScript(exe)), 0o600); err != nil {
-		return "", fmt.Errorf("write reviewer AO shim: %w", err)
+	if err := os.WriteFile(shimPath, []byte(openAgentsShimScript(exe)), 0o600); err != nil {
+		return "", fmt.Errorf("write reviewer Open Agents shim: %w", err)
 	}
-	if err := os.Chmod(shimPath, 0o700); err != nil { // #nosec G302 -- the reviewer shim must be executable by the AO user.
-		return "", fmt.Errorf("mark reviewer AO shim executable: %w", err)
+	if err := os.Chmod(shimPath, 0o700); err != nil { // #nosec G302 -- the reviewer shim must be executable by the Open Agents user.
+		return "", fmt.Errorf("mark reviewer Open Agents shim executable: %w", err)
 	}
 	return shimDir, nil
 }
 
-func aoShimScript(executable string) string {
+func openAgentsShimScript(executable string) string {
 	if runtime.GOOS == "windows" {
 		return "@echo off\r\n\"" + executable + "\" %*\r\n"
 	}

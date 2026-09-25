@@ -3,10 +3,10 @@ import { resolveDesktopDataDir } from "./data-dir";
 
 describe("resolveDesktopDataDir", () => {
 	it("resolves one absolute data directory against the daemon launch cwd", () => {
-		expect(resolveDesktopDataDir({ AO_DATA_DIR: "relative-data" }, "/home/ao", "/work/checkout", false)).toBe(
+		expect(resolveDesktopDataDir({ OPEN_AGENTS_DATA_DIR: "relative-data" }, "/home/open-agents", "/work/checkout", false)).toBe(
 			"/work/checkout/relative-data",
 		);
-		expect(resolveDesktopDataDir({}, "/home/ao", "/work/checkout", true)).toBe("/home/ao/.ao/data");
-		expect(resolveDesktopDataDir({}, "/home/ao", "/work/checkout", false)).toBe("/home/ao/.ao/dev/data");
+		expect(resolveDesktopDataDir({}, "/home/open-agents", "/work/checkout", true)).toBe("/home/open-agents/.open-agents/data");
+		expect(resolveDesktopDataDir({}, "/home/open-agents", "/work/checkout", false)).toBe("/home/open-agents/.open-agents/dev/data");
 	});
 });

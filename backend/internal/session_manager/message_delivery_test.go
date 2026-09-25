@@ -7,7 +7,7 @@ import (
 	"testing"
 	"time"
 
-	"github.com/aoagents/agent-orchestrator/backend/internal/domain"
+	"github.com/sudo-adduser-jordan/open-agents/backend/internal/domain"
 )
 
 type synchronizedSessionStore struct {
@@ -56,7 +56,7 @@ func TestWaitForMessageDeliveryReadyWaitsForTerminalIdleMarker(t *testing.T) {
 	st := newFakeStore()
 	st.sessions["orch"] = domain.SessionRecord{
 		ID:        "orch",
-		ProjectID: "ao",
+		ProjectID: "open-agents",
 		Kind:      domain.KindOrchestrator,
 		Harness:   domain.HarnessOpenCode,
 		Mode:      domain.SessionModeTUI,
@@ -78,7 +78,7 @@ func TestWaitForMessageDeliveryReadyHonorsContextWhileTerminalStarts(t *testing.
 	st := newFakeStore()
 	st.sessions["orch"] = domain.SessionRecord{
 		ID:        "orch",
-		ProjectID: "ao",
+		ProjectID: "open-agents",
 		Kind:      domain.KindOrchestrator,
 		Harness:   domain.HarnessOpenCode,
 		Mode:      domain.SessionModeTUI,
@@ -99,7 +99,7 @@ func TestWaitForMessageDeliveryReadyAcceptsProvenEmptyComposer(t *testing.T) {
 	st := newFakeStore()
 	st.sessions["orch"] = domain.SessionRecord{
 		ID:        "orch",
-		ProjectID: "ao",
+		ProjectID: "open-agents",
 		Kind:      domain.KindOrchestrator,
 		Harness:   domain.HarnessOpenCode,
 		Mode:      domain.SessionModeTUI,
@@ -118,7 +118,7 @@ func TestWaitForMessageDeliveryReadyAcceptsProvenEmptyComposerWhileWaitingInput(
 	st := newFakeStore()
 	st.sessions["orch"] = domain.SessionRecord{
 		ID:        "orch",
-		ProjectID: "ao",
+		ProjectID: "open-agents",
 		Kind:      domain.KindOrchestrator,
 		Harness:   domain.HarnessOpenCode,
 		Mode:      domain.SessionModeTUI,
@@ -139,7 +139,7 @@ func TestWaitForMessageDeliveryReadyRejectsWaitingInputWithoutExplicitCapability
 	st := newFakeStore()
 	st.sessions["orch"] = domain.SessionRecord{
 		ID:        "orch",
-		ProjectID: "ao",
+		ProjectID: "open-agents",
 		Kind:      domain.KindOrchestrator,
 		Harness:   domain.HarnessOpenCode,
 		Mode:      domain.SessionModeTUI,

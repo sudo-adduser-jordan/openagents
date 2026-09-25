@@ -63,7 +63,7 @@ import { setChatDraftBoundary } from "../../lib/chat-draft-boundary";
 import { sameContent, useStableList } from "../../lib/stable-list";
 import { useTabScrollEdges } from "../../hooks/useTabScrollEdges";
 import { apiErrorCode, getApiBaseUrl, subscribeApiBaseUrl } from "../../lib/api-client";
-import { aoBridge } from "../../lib/bridge";
+import { openAgentsBridge } from "../../lib/bridge";
 import { isDialogOrMenuOpen } from "../../lib/dom-selectors";
 import {
 	TERMINAL_FONT_SIZE_DEFAULT,
@@ -145,7 +145,7 @@ const CHAT_FONT_SIZE_DEFAULT = 14;
 
 // Reviewer panes share the terminal font-size preference with CenterPane, so a
 // reviewer opened inside the Chat surface matches a reviewer opened in TUI mode.
-const terminalFontSizeStorageKey = "ao.terminal.fontSize";
+const terminalFontSizeStorageKey = "open-agents.terminal.fontSize";
 const WHEEL_ZOOM_THRESHOLD = 80;
 const WHEEL_ZOOM_RESET_MS = 250;
 
@@ -265,7 +265,7 @@ export interface ChatWorkspaceProps {
 	snapshot: ConversationSnapshot;
 	/** The session title from the sidebar (matches what users see in the left sidebar) */
 	sessionTitle?: string;
-	/** The AO role using this shared conversation surface. */
+	/** The Open Agents role using this shared conversation surface. */
 	sessionRole?: SessionKind;
 	/** Session-level actions owned above the conversation surface. */
 	headerActions?: ReactNode;
@@ -318,13 +318,13 @@ export interface ChatWorkspaceProps {
 	onOpenShell?: () => void;
 	openingShell?: boolean;
 	shellError?: string;
-	/** Open an HTTP(S) link in this session's AO Browser panel. */
+	/** Open an HTTP(S) link in this session's Open Agents Browser panel. */
 	onLinkOpen?: (url: string) => void;
 	/** A send or decision is in flight. */
 	busy?: boolean;
 	/** The provider's model catalog. Empty hides the model control. */
 	models?: ChatModel[];
-	/** The AO session this surface renders for. Used to attach the reviewer pane. */
+	/** The Open Agents session this surface renders for. Used to attach the reviewer pane. */
 	session?: WorkspaceSession;
 	/** Refresh the owning workspace cache after the shared primary tab is renamed. */
 	onSessionRenamed?: () => void | Promise<void>;
@@ -1057,7 +1057,7 @@ function ChatWorkspaceContent({
 
 	useEffect(
 		() =>
-			aoBridge.app.onCloseShellTerminalShortcut(() => {
+			openAgentsBridge.app.onCloseShellTerminalShortcut(() => {
 				if (activeWorkspaceTab?.onClose) activeWorkspaceTab.onClose();
 				else if (shellTarget) onCloseShellTerminal?.(shellTarget.handleId);
 			}),
@@ -1065,8 +1065,8 @@ function ChatWorkspaceContent({
 	);
 
 	useEffect(() => {
-		const disposePrevious = aoBridge.app.onPreviousTabShortcut(() => selectAdjacentTab(-1));
-		const disposeNext = aoBridge.app.onNextTabShortcut(() => selectAdjacentTab(1));
+		const disposePrevious = openAgentsBridge.app.onPreviousTabShortcut(() => selectAdjacentTab(-1));
+		const disposeNext = openAgentsBridge.app.onNextTabShortcut(() => selectAdjacentTab(1));
 		return () => {
 			disposePrevious();
 			disposeNext();
@@ -1074,10 +1074,10 @@ function ChatWorkspaceContent({
 	}, [selectAdjacentTab]);
 
 	useEffect(() => {
-		aoBridge.app.setCloseShellTerminalShortcutEnabled(
+		openAgentsBridge.app.setCloseShellTerminalShortcutEnabled(
 			Boolean(activeWorkspaceTab?.onClose) || Boolean(shellTarget && onCloseShellTerminal),
 		);
-		return () => aoBridge.app.setCloseShellTerminalShortcutEnabled(false);
+		return () => openAgentsBridge.app.setCloseShellTerminalShortcutEnabled(false);
 	}, [activeWorkspaceTab, onCloseShellTerminal, shellTarget]);
 
 	// Offered only while the agent is idle. The daemon refuses a rollback mid-turn,
@@ -3543,12 +3543,12 @@ function TimelineItem({
 		return <CompactionMarker activity={item} />;
 	}
 	// Read by the event, not the kind: a steer is stored as a `system` activity
-	// because that is AO's only durable write that can attach to a turn in flight,
+	// because that is Open Agents's only durable write that can attach to a turn in flight,
 	// but it is the user speaking and the timeline shows it that way.
 	if (isSteer(item)) {
 		return <SteerMessage activity={item} sessionId={sessionId} apiBaseUrl={apiBaseUrl} />;
 	}
-	// A plan whose turn AO never correlated — one from before this controller
+	// A plan whose turn Open Agents never correlated — one from before this controller
 	// started. The turn-level checklist cannot show it, so the row carries it.
 	if (item.activityKind === "plan") {
 		const plan = activityPlan(item);
@@ -3748,9 +3748,9 @@ function groupByTurn(snapshot: ConversationSnapshot): TimelineGroup[] {
 	for (const item of snapshot.items) {
 		if (item.turnId === undefined) {
 			// Consecutive turn-less items share one group rather than getting one each.
-			// A provider can run a turn AO never dispatched — a compaction, or a turn
+			// A provider can run a turn Open Agents never dispatched — a compaction, or a turn
 			// resumed inside the provider's own history — and every item it emits then
-			// correlates to no AO turn. One group per item made `runsOf` see no two
+			// correlates to no Open Agents turn. One group per item made `runsOf` see no two
 			// adjacent activities, so a wall of tool calls stopped collapsing and the
 			// conversation turned back into a log. Grouping must not depend on
 			// correlation succeeding.

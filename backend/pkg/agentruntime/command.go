@@ -1,5 +1,5 @@
 // Package agentruntime contains the provider-specific process mechanics shared
-// by AO's desktop adapters and remote Linux workers.
+// by Open Agents's desktop adapters and remote Linux workers.
 package agentruntime
 
 import (
@@ -16,7 +16,7 @@ const (
 	HarnessOpenCode Harness = "opencode"
 )
 
-// PermissionPolicy is AO's provider-neutral approval policy.
+// PermissionPolicy is Open Agents's provider-neutral approval policy.
 type PermissionPolicy string
 
 // Provider-neutral permission policies.
@@ -110,7 +110,7 @@ func BuildRestoreCommand(cfg RestoreConfig) ([]string, bool, error) {
 
 // RestoreIdentity resolves the native provider identity used by a restore.
 // opencode resumes only through the plugin-captured session id; there is no
-// deterministic derivation from the AO session id.
+// deterministic derivation from the Open Agents session id.
 func RestoreIdentity(harness Harness, sessionID string, metadata map[string]string) (string, bool) {
 	if identity := strings.TrimSpace(metadata[MetadataKeyAgentSessionID]); identity != "" {
 		return identity, true
@@ -143,7 +143,7 @@ func PermissionPolicyForMode(mode SessionMode) PermissionPolicy {
 	}
 }
 
-// OpenCodePermissionArgs maps AO policy onto opencode's single approval flag.
+// OpenCodePermissionArgs maps Open Agents policy onto opencode's single approval flag.
 // opencode exposes only --dangerously-skip-permissions (no graduated
 // accept-edits / auto modes), so bypass-permissions requests the flag and every
 // other policy defers to opencode's own permission config.
@@ -157,10 +157,10 @@ func OpenCodePermissionArgs(policy PermissionPolicy) []string {
 // buildOpenCodeLaunch mirrors the opencode desktop adapter's launch argv:
 //
 //	opencode [--dangerously-skip-permissions] [--model <model>]
-//	         [--agent <ao-agent>] [--prompt <prompt>]
+//	         [--agent <open-agents-agent>] [--prompt <prompt>]
 //
-// opencode has no CLI flag to set a system prompt, so AO writes an opencode
-// config that defines the generated AO agent (see OpenCodeAgentName, whose name
+// opencode has no CLI flag to set a system prompt, so Open Agents writes an opencode
+// config that defines the generated Open Agents agent (see OpenCodeAgentName, whose name
 // the caller must match in that config) and selects it with --agent. The initial
 // task prompt is delivered via --prompt (its argument, so a leading "-" is not
 // read as a flag).
@@ -180,7 +180,7 @@ func buildOpenCodeLaunch(cfg LaunchConfig) []string {
 	return cmd
 }
 
-// buildOpenCodeRestore re-applies the permission flag and AO agent selection
+// buildOpenCodeRestore re-applies the permission flag and Open Agents agent selection
 // before resuming an existing opencode session by its plugin-captured id.
 func buildOpenCodeRestore(cfg RestoreConfig, identity string) []string {
 	cmd := []string{cfg.Binary}
@@ -199,11 +199,11 @@ func buildOpenCodeRestore(cfg RestoreConfig, identity string) []string {
 	return cmd
 }
 
-// OpenCodeAgentName derives the AO-owned agent name written into the generated
+// OpenCodeAgentName derives the Open Agents-owned agent name written into the generated
 // opencode config and selected with --agent. It mirrors the desktop adapter's
 // naming so a config written by one side works with a launcher on the other.
 func OpenCodeAgentName(sessionID string) string {
-	const fallback = "ao-system-prompt"
+	const fallback = "open-agents-system-prompt"
 	trimmed := strings.TrimSpace(sessionID)
 	if trimmed == "" {
 		return fallback
@@ -225,5 +225,5 @@ func OpenCodeAgentName(sessionID string) string {
 	if name == "" {
 		return fallback
 	}
-	return "ao-" + name
+	return "open-agents-" + name
 }

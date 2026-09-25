@@ -3,7 +3,7 @@ package activitydispatch
 import (
 	"testing"
 
-	"github.com/aoagents/agent-orchestrator/backend/internal/domain"
+	"github.com/sudo-adduser-jordan/open-agents/backend/internal/domain"
 )
 
 // Every deriver key must be a known harness name. SupportsHarness equates

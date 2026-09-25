@@ -82,7 +82,7 @@ describe("formatBrowserAnnotationMessage", () => {
 		expect(message).toContain('Comment: Try this treatment.');
 		expect(message).toContain('- Text color: "rgb(0, 0, 0)" → "#e34b63"');
 		expect(message).toContain('- Width: "140px" → "89px"');
-		expect(message).toContain("Visual adjustments are already previewed in AO's shared browser");
+		expect(message).toContain("Visual adjustments are already previewed in Open Agents's shared browser");
 		expect(message).toMatch(/\n<\/browser_annotations>$/);
 		expect(message).not.toContain("Browser handoff:");
 		expect(message).not.toContain("Do not");
@@ -101,12 +101,12 @@ describe("formatBrowserAnnotationMessage", () => {
 			updatedAt: "2026-09-10T12:00:00.000Z",
 		});
 
-		const message = formatBrowserAnnotationMessage(submitPayload(session), { screenshotPaths: [".ao/attachments/example.png"] });
+		const message = formatBrowserAnnotationMessage(submitPayload(session), { screenshotPaths: [".open-agents/attachments/example.png"] });
 
 		expect(message).toContain("Comment: Why is this disabled?");
 		expect(message).toContain("Address the feedback below according to its wording");
 		expect(message).toContain("Reference screenshots:");
-		expect(message).toContain(".ao/attachments/example.png");
+		expect(message).toContain(".open-agents/attachments/example.png");
 	});
 
 	it("does not invent an empty note for an adjustment", () => {
@@ -145,7 +145,7 @@ describe("formatBrowserAnnotationMessage", () => {
 		});
 
 		const parsed = parseBrowserAnnotationMessage(
-			formatBrowserAnnotationMessage(submitPayload(session), { screenshotPaths: [".ao/attachments/example.png"] }),
+			formatBrowserAnnotationMessage(submitPayload(session), { screenshotPaths: [".open-agents/attachments/example.png"] }),
 		);
 
 		expect(parsed).toEqual({

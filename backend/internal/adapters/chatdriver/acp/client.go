@@ -12,16 +12,16 @@ import (
 	acpsdk "github.com/coder/acp-go-sdk"
 	"github.com/google/uuid"
 
-	"github.com/aoagents/agent-orchestrator/backend/internal/adapters/chatdriver/commanddetail"
-	"github.com/aoagents/agent-orchestrator/backend/internal/adapters/chatdriver/persistenthost"
-	"github.com/aoagents/agent-orchestrator/backend/internal/domain"
-	"github.com/aoagents/agent-orchestrator/backend/internal/ports"
+	"github.com/sudo-adduser-jordan/open-agents/backend/internal/adapters/chatdriver/commanddetail"
+	"github.com/sudo-adduser-jordan/open-agents/backend/internal/adapters/chatdriver/persistenthost"
+	"github.com/sudo-adduser-jordan/open-agents/backend/internal/domain"
+	"github.com/sudo-adduser-jordan/open-agents/backend/internal/ports"
 )
 
-// AO deliberately advertises neither client-side filesystem nor terminal
+// Open Agents deliberately advertises neither client-side filesystem nor terminal
 // capabilities. Agent tools run inside the worktree; routing those operations
 // through Electron or the daemon would create a second execution/security model
-// beside AO's existing one.
+// beside Open Agents's existing one.
 func (c *conversation) ReadTextFile(context.Context, acpsdk.ReadTextFileRequest) (acpsdk.ReadTextFileResponse, error) {
 	return acpsdk.ReadTextFileResponse{}, errClientCapability
 }
@@ -98,7 +98,7 @@ func (c *conversation) RequestPermission(
 	}, nil
 }
 
-// RequestApproval parks a provider extension on AO's durable approval flow.
+// RequestApproval parks a provider extension on Open Agents's durable approval flow.
 func (c *conversation) RequestApproval(
 	ctx context.Context,
 	params ClientApprovalRequest,
@@ -187,7 +187,7 @@ func approvalToolDetail(tool acpsdk.ToolCallUpdate, activityKind domain.Activity
 	return encoded
 }
 
-// UnstableCreateElicitation bridges ACP's structured input request into AO's
+// UnstableCreateElicitation bridges ACP's structured input request into Open Agents's
 // ordinary durable conversation/event path. The JSON-RPC call remains parked
 // until a client answers, exactly like a permission request, but it has a
 // separate response contract so form data can never be mistaken for consent.
@@ -227,7 +227,7 @@ func (c *conversation) UnstableCreateElicitation(
 	return acpInputResponse(response), nil
 }
 
-// RequestInput parks a provider extension on AO's durable structured-input flow.
+// RequestInput parks a provider extension on Open Agents's durable structured-input flow.
 func (c *conversation) RequestInput(
 	ctx context.Context,
 	request ports.ChatInputRequest,
@@ -298,7 +298,7 @@ func stableACPRequestID(meta map[string]any) string {
 	return strings.TrimSpace(requestID)
 }
 
-// UpdatePlan publishes a provider extension plan on the active AO turn.
+// UpdatePlan publishes a provider extension plan on the active Open Agents turn.
 func (c *conversation) UpdatePlan(plan *domain.ConversationPlan) {
 	c.mu.Lock()
 	turnID := c.activeTurn
@@ -350,7 +350,7 @@ func (c *conversation) UnstableCompleteElicitation(
 	acpsdk.UnstableCompleteElicitationNotification,
 ) error {
 	// URL completion describes provider-side progress after the user has already
-	// consented. The actionable AO request was resolved when that consent was sent.
+	// consented. The actionable Open Agents request was resolved when that consent was sent.
 	return nil
 }
 
@@ -805,7 +805,7 @@ func acpFilePatch(path string, oldText *string, newText string) string {
 	return strings.Join(lines, "\n")
 }
 
-// toolOutputText translates ACP's provider-defined rawOutput into AO's neutral
+// toolOutputText translates ACP's provider-defined rawOutput into Open Agents's neutral
 // command-detail contract, where output is always text. ACP deliberately permits
 // any JSON value here; OpenCode, for example, wraps the text as
 // {"output":"...","metadata":{...}}. Persisting that object unchanged makes the
@@ -836,7 +836,7 @@ func toolOutputText(raw any) string {
 }
 
 // rawCommandFromInput extracts the verbatim shell command from a tool's
-// provider-defined rawInput so execute activities can carry AO's neutral command
+// provider-defined rawInput so execute activities can carry Open Agents's neutral command
 // detail without making the provider object itself part of that contract.
 // Providers wrap the command differently (a Bash tool call carries
 // {"command": "..."}); anything unrecognizable stays empty rather than putting

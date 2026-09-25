@@ -60,7 +60,7 @@ function renderSection() {
 
 describe("HarnessSettingsSection", () => {
 	beforeEach(async () => {
-		window.ao!.clipboard.writeText = vi.fn().mockResolvedValue(undefined);
+		window.openAgents!.clipboard.writeText = vi.fn().mockResolvedValue(undefined);
 		vi.spyOn(apiClient, "GET").mockImplementation(async (path) => {
 			if (path === "/api/v1/agents/readiness") return { data: catalog } as never;
 			if (path === "/api/v1/agents/installers") return { data: plans } as never;

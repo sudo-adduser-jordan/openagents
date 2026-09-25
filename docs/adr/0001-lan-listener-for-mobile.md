@@ -11,7 +11,7 @@ a loopback-only sidecar. Do not make the bind host configurable or expose it bey
 — the OS guarantees nothing off-box can reach it.
 
 We want a physical phone to use the app over the local network. The only prior
-mechanism was a standalone Node proxy (`ao-phone-proxy.js`) run by hand, with
+mechanism was a standalone Node proxy (`open-agents-phone-proxy.js`) run by hand, with
 IP trust-on-first-connect and no password. The user rejected the proxy approach and
 asked for an in-app "Connect Mobile" feature.
 
@@ -45,8 +45,8 @@ Security posture:
   **home-network-only** and the UI says so. The Pairing QR therefore carries only
   host+port (non-secret); the Connection Password is delivered out-of-band (read off
   the desktop screen, typed into the phone), so a captured QR alone cannot connect.
-- State persists to `~/.ao/mobile/config.json` (atomic write), honoring the
-  "all state under `~/.ao`" rule. The listener re-binds on the default port with an
+- State persists to `~/.open-agents/mobile/config.json` (atomic write), honoring the
+  "all state under `~/.open-agents`" rule. The listener re-binds on the default port with an
   ephemeral fallback; the QR always reflects the actually-bound port.
 
 ## Consequences

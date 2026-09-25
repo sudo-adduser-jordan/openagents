@@ -45,17 +45,17 @@ func newPreviewCommand(ctx *commandContext) *cobra.Command {
 		Long: "Open a URL in the desktop browser panel for the current session.\n\n" +
 			"With no argument it opens the workspace's static entry point, falling\n" +
 			"back to this session's existing preview target when no entry point exists.\n" +
-			"A workspace-root-relative Markdown or HTML path opens through AO's isolated\n" +
-			"file preview. Use `ao preview start` for a configured dev server and\n" +
-			"`ao preview clear` to empty the panel.",
-		Example: `  ao preview
-  ao preview README.md
-  ao preview http://localhost:5173
-  ao preview start
-  ao preview start web
-  ao preview status
-  ao preview stop
-  ao preview clear`,
+			"A workspace-root-relative Markdown or HTML path opens through Open Agents's isolated\n" +
+			"file preview. Use `open-agents preview start` for a configured dev server and\n" +
+			"`open-agents preview clear` to empty the panel.",
+		Example: `  open-agents preview
+  open-agents preview README.md
+  open-agents preview http://localhost:5173
+  open-agents preview start
+  open-agents preview start web
+  open-agents preview status
+  open-agents preview stop
+  open-agents preview clear`,
 		Args: atMostOneArg,
 		RunE: func(cmd *cobra.Command, args []string) error {
 			var target string
@@ -76,7 +76,7 @@ func newPreviewCommand(ctx *commandContext) *cobra.Command {
 	var startJSON bool
 	startCmd := &cobra.Command{
 		Use:   "start [configuration]",
-		Short: "Start a session-owned dev server from .ao/launch.json and open its preview",
+		Short: "Start a session-owned dev server from .open-agents/launch.json and open its preview",
 		Args:  atMostOneArg,
 		RunE: func(cmd *cobra.Command, args []string) error {
 			configuration := ""
@@ -136,7 +136,7 @@ func (c *commandContext) openPreview(ctx context.Context, target string) error {
 }
 
 // clearPreview empties the desktop browser panel for the current session
-// (`ao preview clear`) by deleting the session's stored preview target.
+// (`open-agents preview clear`) by deleting the session's stored preview target.
 func (c *commandContext) clearPreview(ctx context.Context) error {
 	path, err := sessionPreviewPath()
 	if err != nil {
@@ -146,9 +146,9 @@ func (c *commandContext) clearPreview(ctx context.Context) error {
 }
 
 func sessionPreviewPath() (string, error) {
-	sessionID := strings.TrimSpace(os.Getenv("AO_SESSION_ID"))
+	sessionID := strings.TrimSpace(os.Getenv("OPEN_AGENTS_SESSION_ID"))
 	if sessionID == "" {
-		return "", usageError{errors.New("ao preview must run inside an AO session (AO_SESSION_ID is not set)")}
+		return "", usageError{errors.New("open-agents preview must run inside an Open Agents session (OPEN_AGENTS_SESSION_ID is not set)")}
 	}
 	// PathEscape: session ids are already "-"/digit safe, but keep the URL
 	// well-formed regardless.
@@ -216,9 +216,9 @@ func (c *commandContext) stopPreviewServer(ctx context.Context) (previewServerSt
 }
 
 func previewServerHeaders() (map[string]string, error) {
-	capability := strings.TrimSpace(os.Getenv("AO_BROWSER_CAPABILITY"))
+	capability := strings.TrimSpace(os.Getenv("OPEN_AGENTS_BROWSER_CAPABILITY"))
 	if capability == "" {
-		return nil, usageError{errors.New("ao preview server commands require the owning session capability (AO_BROWSER_CAPABILITY is not set)")}
+		return nil, usageError{errors.New("open-agents preview server commands require the owning session capability (OPEN_AGENTS_BROWSER_CAPABILITY is not set)")}
 	}
 	return map[string]string{browserCapabilityHeader: capability}, nil
 }

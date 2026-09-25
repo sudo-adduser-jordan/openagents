@@ -19,8 +19,8 @@ import (
 	"sync"
 	"time"
 
-	"github.com/aoagents/agent-orchestrator/backend/internal/domain"
-	"github.com/aoagents/agent-orchestrator/backend/internal/ports"
+	"github.com/sudo-adduser-jordan/open-agents/backend/internal/domain"
+	"github.com/sudo-adduser-jordan/open-agents/backend/internal/ports"
 )
 
 var (
@@ -32,7 +32,7 @@ var (
 	ErrInstallActive = errors.New("systeminstall: harness install operation already active")
 )
 
-// Target is one of the fixed install targets AO knows how to install.
+// Target is one of the fixed install targets Open Agents knows how to install.
 type Target string
 
 // The exhaustive set of installable targets. No other value is ever accepted.
@@ -550,7 +550,7 @@ func (s *Service) StartAgentOperation(ctx context.Context, target Target, method
 }
 
 // TryBeginHarnessUse prevents a harness session launch from racing replacement
-// of the harness executable. AO never auto-replaces opencode's binary during a
+// of the harness executable. Open Agents never auto-replaces opencode's binary during a
 // launch, so the gate never blocks; it exists to keep the session manager's
 // harness-use boundary uniform.
 func (s *Service) TryBeginHarnessUse(domain.AgentHarness) (func(), bool) {
@@ -1040,7 +1040,7 @@ func (s *Service) planTmux() Plan {
 	case "windows":
 		return Plan{
 			Target: TargetTmux, Unsupported: true,
-			Reason: "tmux is not required on Windows; AO uses the built-in ConPTY terminal runtime instead.",
+			Reason: "tmux is not required on Windows; Open Agents uses the built-in ConPTY terminal runtime instead.",
 		}
 	case "darwin":
 		return s.planBrew(TargetTmux, "tmux")
@@ -1142,7 +1142,7 @@ func (p requestPlanner) planNPM(target Target) Plan {
 		}
 		if !npm.PrefixWritable {
 			plan.Unsupported = true
-			plan.Reason = fmt.Sprintf("npm's global prefix %s is not writable by the current user. Configure a user-owned prefix; AO will not use sudo.", prefix)
+			plan.Reason = fmt.Sprintf("npm's global prefix %s is not writable by the current user. Configure a user-owned prefix; Open Agents will not use sudo.", prefix)
 			return plan
 		}
 		if s.goos == "windows" {
@@ -1200,7 +1200,7 @@ func (s *Service) planOpencode() Plan {
 	}
 	return Plan{
 		Target: TargetOpencode, Unsupported: true, Method: "manual",
-		Reason: "AO does not automatically execute opencode's mutable remote installer script.",
+		Reason: "Open Agents does not automatically execute opencode's mutable remote installer script.",
 	}
 }
 
@@ -1238,7 +1238,7 @@ func (p requestPlanner) planHomebrew(target Target, pkg string, cask bool) Plan 
 			return Plan{Target: target, Unsupported: true, Method: "homebrew", Reason: "Homebrew's installation prefix could not be resolved."}
 		}
 		if !homebrew.PrefixWritable {
-			return Plan{Target: target, Unsupported: true, Method: "homebrew", Reason: fmt.Sprintf("Homebrew's prefix %s is not writable by the current user. Repair Homebrew ownership; AO will not use sudo.", prefix)}
+			return Plan{Target: target, Unsupported: true, Method: "homebrew", Reason: fmt.Sprintf("Homebrew's prefix %s is not writable by the current user. Repair Homebrew ownership; Open Agents will not use sudo.", prefix)}
 		}
 		if cask {
 			installed = homebrewPackageInstalled(homebrew.Casks, pkg)
@@ -1292,7 +1292,7 @@ var linuxPackageManagers = []string{"apt-get", "dnf", "pacman", "zypper", "apk"}
 // available package manager. pkgFor lets a target use a different package
 // name on a given manager (e.g. gh is "github-cli" on pacman).
 //
-// AO deliberately never elevates privileges on the user's behalf (no auto
+// Open Agents deliberately never elevates privileges on the user's behalf (no auto
 // sudo, no pkexec): every one of apt-get/dnf/pacman/zypper install requires
 // root, so running the resolved command as the desktop user is guaranteed to
 // fail with a permission error. Rather than expose a button that always
@@ -1306,7 +1306,7 @@ func (s *Service) planLinuxPackage(target Target, pkgFor func(mgr string) string
 		argv := linuxInstallArgv(mgr, pkgFor(mgr))
 		return Plan{
 			Target: target, Command: argv, Manager: mgr, NeedsRoot: true, Unsupported: true,
-			Reason: "AO cannot ask for your administrator password. Run the command below in a terminal.",
+			Reason: "Open Agents cannot ask for your administrator password. Run the command below in a terminal.",
 		}
 	}
 	return Plan{

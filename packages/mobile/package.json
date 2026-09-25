@@ -1,8 +1,13 @@
 {
-	"name": "@agent-orchestrator/mobile",
+	"name": "@openagents/mobile",
 	"version": "0.0.0",
 	"private": true,
-	"description": "Expo mobile supervisor for Agent Orchestrator",
+	"description": "Expo mobile supervisor for Open Agents",
+	"repository": {
+		"type": "git",
+		"url": "https://github.com/sudo-adduser-jordan/open-agents",
+		"directory": "packages/mobile"
+	},
 	"main": "expo-router/entry",
 	"scripts": {
 		"start": "expo start",

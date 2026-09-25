@@ -1,4 +1,4 @@
-import { COMPANY } from "@ao/shared/constants";
+import { COMPANY } from "@openagents/shared/constants";
 
 
 export const dynamic = "force-static";

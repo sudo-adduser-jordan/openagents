@@ -58,7 +58,7 @@ const englishLabels: Record<SessionPresentationMessageKey, string> = {
 	"column.building": "Building",
 	// Deliberate: this lane is the review-feedback loop, not a queue of PRs
 	// awaiting a first human review. It groups the daemon's validating and
-	// needs_review columns -- the same loop seen from either side, AO turning it
+	// needs_review columns -- the same loop seen from either side, Open Agents turning it
 	// or a person taking the next turn -- under one lane.
 	"column.review": "Review",
 	"column.ready": "Ready",

@@ -4,7 +4,7 @@ import { installFakeAgent, installFakeBridge } from "./support/fake-bridge";
 // INS/DMN/BRD/SET RENDERER SMOKE (issue #2483, renderer slice).
 //
 // Scope — read this before trusting a green run. These run under `dev:web`
-// (VITE_NO_ELECTRON=1) with an injected `window.ao` (installFakeBridge /
+// (VITE_NO_ELECTRON=1) with an injected `window.openAgents` (installFakeBridge /
 // installFakeAgent) plus a fake CDC/SSE stream and workspace snapshot. They
 // assert the renderer's rendering + interaction logic ONLY. They do NOT exercise
 // the real daemon, storage, API, preload, PTY, or filesystem — those boundaries
@@ -70,7 +70,7 @@ test("renderer: first-run home renders with the app launched @T0 @INS", async ({
 test("renderer: reflects a ready daemon (data dir + config initialized) @T0 @INS", async ({ page }) => {
 	// Renderer proxy: reaching "ready" with a REST port means the daemon
 	// initialized its data dir + config skeleton (a not-ready daemon never
-	// advertises a port). Asserting the on-disk ~/.ao layout itself belongs to
+	// advertises a port). Asserting the on-disk ~/.open-agents layout itself belongs to
 	// the backend/daemon suite, not this renderer harness — see report.
 	await installFakeBridge(page, { daemonState: "ready", daemonPort: 8080 });
 	await page.goto("/");
@@ -103,7 +103,7 @@ test("renderer: daemon health reflected with a hydrated board @T0 @DMN", async (
 	// board hydrates with sessions rather than an error/empty shell.
 	//
 	// Use installFakeAgent so the session card is served through the
-	// window.__aoFakeAgent.snapshot() workspace seam (the daemon-backed source),
+	// window.__openAgentsFakeAgent.snapshot() workspace seam (the daemon-backed source),
 	// not the static mockWorkspaces fallback — otherwise the card would render
 	// regardless of the daemon and the "daemon → has data" link would be a false
 	// green.
@@ -136,7 +136,7 @@ test("renderer: board state rehydrates after a renderer relaunch @T0 @DMN", asyn
 	// (reload), i.e. the app rebuilds from the daemon rather than in-memory state.
 	//
 	// Use installFakeAgent (not installFakeBridge): its board data is read through
-	// the `window.__aoFakeAgent.snapshot()` workspace seam — the same source the
+	// the `window.__openAgentsFakeAgent.snapshot()` workspace seam — the same source the
 	// real daemon fills — so the reload genuinely re-reads from the daemon-backed
 	// source. installFakeBridge alone would fall back to the static mockWorkspaces
 	// import, and the reload would pass by re-reading the same mock (false green).
@@ -159,7 +159,7 @@ test("renderer: board state rehydrates after a renderer relaunch @T0 @DMN", asyn
 
 // #2483 BRD-001.
 test("renderer: board renders all status columns @T0 @BRD", async ({ page }) => {
-	await page.goto("/#/projects/ao-demo");
+	await page.goto("/#/projects/open-agents-demo");
 	const columns = page.getByTestId("board-column");
 	await expect(columns).toHaveCount(4);
 	// Left→right delivery flow: building → validating → in review → ready.
@@ -176,8 +176,8 @@ test("renderer: route nav home to board to session detail and back @T0 @BRD", as
 	await expect(page.getByText("Jump back right in")).toBeVisible();
 
 	// → project board
-	await page.locator('[data-sidebar="menu-button"]').filter({ hasText: "ao-demo" }).first().click();
-	await expect(page).toHaveURL(/projects\/ao-demo/);
+	await page.locator('[data-sidebar="menu-button"]').filter({ hasText: "open-agents-demo" }).first().click();
+	await expect(page).toHaveURL(/projects\/open-agents-demo/);
 	await expect(page.getByTestId("board")).toBeVisible();
 
 	// → session detail (open the first card on the board)
@@ -187,7 +187,7 @@ test("renderer: route nav home to board to session detail and back @T0 @BRD", as
 
 	// ← back to the project board
 	await page.goBack();
-	await expect(page).toHaveURL(/projects\/ao-demo$/);
+	await expect(page).toHaveURL(/projects\/open-agents-demo$/);
 	await expect(page.getByTestId("board")).toBeVisible();
 });
 

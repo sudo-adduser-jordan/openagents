@@ -101,7 +101,7 @@ describe("SessionInterfaceSwitchButton", () => {
 
 	it("replaces progress with a non-interactive warning when target shutdown is unconfirmed", () => {
 		const detail =
-			"AO could not confirm the target controller stopped. Restart AO to retry shutdown before restoring the original interface.";
+			"Open Agents could not confirm the target controller stopped. Restart Open Agents to retry shutdown before restoring the original interface.";
 		render(
 			<TooltipProvider>
 				<SessionInterfaceSwitchButton
@@ -208,7 +208,7 @@ describe("SessionInterfaceTransitionNotice", () => {
 		"keeps unconfirmed target shutdown visible without unsafe recovery or dismissal actions (%s)",
 		(noticeAcknowledgedAt) => {
 			const detail =
-				"AO could not confirm the target controller stopped. Restart AO to retry shutdown before restoring the original interface. target still running";
+				"Open Agents could not confirm the target controller stopped. Restart Open Agents to retry shutdown before restoring the original interface. target still running";
 			render(
 				<SessionInterfaceTransitionNotice
 					transition={{
@@ -243,7 +243,7 @@ describe("SessionInterfaceTransitionNotice", () => {
 		);
 
 		expect(screen.getByRole("alert")).toHaveTextContent(
-			"AO could not confirm the target controller stopped. Restart AO to retry shutdown before restoring the original interface.",
+			"Open Agents could not confirm the target controller stopped. Restart Open Agents to retry shutdown before restoring the original interface.",
 		);
 		expect(screen.queryByText(/original interface remains available/)).not.toBeInTheDocument();
 	});
@@ -256,14 +256,14 @@ describe("SessionInterfaceTransitionNotice", () => {
 				transition={{
 					...transition("failed"),
 					errorCode: "TARGET_HISTORY_UNSETTLED",
-					errorDetail: "Interface switch failed (AO-2L): target history is not settled.",
+					errorDetail: "Interface switch failed (Open Agents-2L): target history is not settled.",
 				}}
 				onDismiss={onDismiss}
 				onRetry={onRetry}
 			/>,
 		);
 
-		expect(screen.getByRole("alert")).toHaveTextContent("AO-2L");
+		expect(screen.getByRole("alert")).toHaveTextContent("Open Agents-2L");
 		fireEvent.click(screen.getByRole("button", { name: "Retry switch to Chat UI" }));
 		expect(onRetry).toHaveBeenCalledOnce();
 		expect(screen.queryByRole("button", { name: "Use provider history and switch" })).not.toBeInTheDocument();
@@ -280,7 +280,7 @@ describe("SessionInterfaceTransitionNotice", () => {
 				transition={{
 					...transition("failed"),
 					errorCode: "TARGET_HISTORY_UNTRUSTED_TEXT_MISMATCH",
-					errorDetail: "Interface switch failed (AO-2L): legacy checkpoint text did not match.",
+					errorDetail: "Interface switch failed (Open Agents-2L): legacy checkpoint text did not match.",
 				}}
 				onDismiss={onDismiss}
 				onRetry={onRetry}
@@ -288,7 +288,7 @@ describe("SessionInterfaceTransitionNotice", () => {
 			/>,
 		);
 
-		expect(screen.getByRole("alert")).toHaveTextContent("AO-2L");
+		expect(screen.getByRole("alert")).toHaveTextContent("Open Agents-2L");
 		fireEvent.click(screen.getByRole("button", { name: "Retry switch to Chat UI" }));
 		fireEvent.click(screen.getByRole("button", { name: "Use provider history and switch" }));
 		fireEvent.click(screen.getByRole("button", { name: "Stay in Terminal" }));
@@ -307,7 +307,7 @@ describe("SessionInterfaceTransitionNotice", () => {
 					...transition("recovery_required"),
 					historyPolicy: "provider_history",
 					errorCode: "DAEMON_RESTARTED",
-					errorDetail: "AO restored Terminal after the daemon restarted.",
+					errorDetail: "Open Agents restored Terminal after the daemon restarted.",
 				}}
 				onDismiss={onDismiss}
 				onRetry={onRetry}
@@ -315,7 +315,7 @@ describe("SessionInterfaceTransitionNotice", () => {
 			/>,
 		);
 
-		expect(screen.getByRole("status")).toHaveTextContent("AO restored Terminal");
+		expect(screen.getByRole("status")).toHaveTextContent("Open Agents restored Terminal");
 		fireEvent.click(screen.getByRole("button", { name: "Retry switch to Chat UI" }));
 		fireEvent.click(screen.getByRole("button", { name: "Use provider history and switch" }));
 		fireEvent.click(screen.getByRole("button", { name: "Stay in Terminal" }));
@@ -324,13 +324,13 @@ describe("SessionInterfaceTransitionNotice", () => {
 		expect(onDismiss).toHaveBeenCalledOnce();
 	});
 
-	it("announces a rejected recovery attempt once inside AO-2L", () => {
+	it("announces a rejected recovery attempt once inside Open Agents-2L", () => {
 		render(
 			<SessionInterfaceTransitionNotice
 				transition={{
 					...transition("failed"),
 					errorCode: "TARGET_HISTORY_UNTRUSTED_TEXT_MISMATCH",
-					errorDetail: "Interface switch failed (AO-2L).",
+					errorDetail: "Interface switch failed (Open Agents-2L).",
 				}}
 				onDismiss={vi.fn()}
 				onRetry={vi.fn()}
@@ -340,19 +340,19 @@ describe("SessionInterfaceTransitionNotice", () => {
 
 		const [announcement] = screen.getAllByRole("alert");
 		expect(screen.getAllByRole("alert")).toHaveLength(1);
-		expect(announcement).toHaveTextContent("Interface switch failed (AO-2L).");
+		expect(announcement).toHaveTextContent("Interface switch failed (Open Agents-2L).");
 		expect(announcement).toHaveTextContent(
 			"Recovery attempt failed: Terminal history changed; retry with a fresh choice.",
 		);
 	});
 
-	it("announces a notice dismissal failure once inside AO-2L", () => {
+	it("announces a notice dismissal failure once inside Open Agents-2L", () => {
 		render(
 			<SessionInterfaceTransitionNotice
 				transition={{
 					...transition("failed"),
 					errorCode: "TARGET_HISTORY_UNSETTLED",
-					errorDetail: "Interface switch failed (AO-2L).",
+					errorDetail: "Interface switch failed (Open Agents-2L).",
 				}}
 				onDismiss={vi.fn()}
 				dismissError="Dismiss request was rejected."
@@ -361,7 +361,7 @@ describe("SessionInterfaceTransitionNotice", () => {
 
 		const [announcement] = screen.getAllByRole("alert");
 		expect(screen.getAllByRole("alert")).toHaveLength(1);
-		expect(announcement).toHaveTextContent("Interface switch failed (AO-2L).");
+		expect(announcement).toHaveTextContent("Interface switch failed (Open Agents-2L).");
 		expect(announcement).toHaveTextContent("Could not dismiss this message. Try again.");
 	});
 
@@ -372,7 +372,7 @@ describe("SessionInterfaceTransitionNotice", () => {
 				transition={{
 					...transition("failed"),
 					errorCode: "DRAIN_DRAFT_PRESENT",
-					errorDetail: "AO found unsent text and left the source untouched.",
+					errorDetail: "Open Agents found unsent text and left the source untouched.",
 				}}
 				onDismiss={vi.fn()}
 				onSwitchWithInterrupt={onSwitchWithInterrupt}
@@ -393,7 +393,7 @@ describe("SessionInterfaceTransitionNotice", () => {
 				transition={{
 					...transition("failed"),
 					errorCode: "DRAIN_DECISION_PENDING",
-					errorDetail: "AO found a provider decision waiting in Terminal.",
+					errorDetail: "Open Agents found a provider decision waiting in Terminal.",
 				}}
 				onDismiss={vi.fn()}
 				onSwitchWithInterrupt={onSwitchWithInterrupt}
@@ -429,7 +429,7 @@ describe("SessionInterfaceTransitionNotice", () => {
 				transition={{
 					...transition("failed"),
 					errorCode: "DRAIN_QUIESCENCE_UNVERIFIED",
-					errorDetail: "AO could not classify the current Terminal screen.",
+					errorDetail: "Open Agents could not classify the current Terminal screen.",
 				}}
 				onDismiss={vi.fn()}
 				onSwitchWithInterrupt={vi.fn()}

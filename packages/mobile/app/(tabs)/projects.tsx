@@ -125,7 +125,7 @@ export default function ProjectsScreen() {
 								action={<Button title="Retry" icon="refresh-cw" variant="ghost" onPress={onRefresh} />}
 							/>
 						) : (
-							<EmptyState icon="folder" title="No projects" message="Add a project in AO to get started." />
+							<EmptyState icon="folder" title="No projects" message="Add a project in Open Agents to get started." />
 						)
 					}
 				/>

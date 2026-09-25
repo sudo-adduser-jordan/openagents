@@ -1,16 +1,16 @@
 {
-	"name": "agent-orchestrator",
-	"productName": "Agent Orchestrator",
+	"name": "open-agents",
+	"productName": "Open Agents",
 	"version": "0.13.0",
 	"private": true,
-	"description": "Electron + TypeScript frontend for the agent-orchestrator rewrite",
-	"author": "Agent Orchestrator",
+	"description": "Electron + TypeScript frontend for the open-agents rewrite",
+	"author": "Open Agents",
 	"license": "MIT",
-	"homepage": "https://github.com/aoagents/agent-orchestrator",
+	"homepage": "https://github.com/sudo-adduser-jordan/open-agents",
 	"main": ".vite/build/main.js",
 	"repository": {
 		"type": "git",
-		"url": "https://github.com/aoagents/agent-orchestrator"
+		"url": "https://github.com/sudo-adduser-jordan/open-agents"
 	},
 	"scripts": {
 		"build:acp-runtime": "node ./scripts/build-acp-runtime.mjs",
@@ -57,7 +57,7 @@
 		"app-builder-lib": "^26.15.3",
 		"electron": "^33.4.11",
 		"jsdom": "^29.1.1",
-		"openapi-typescript": "^7.13.0",
+		"openapi-typescript": "7.4.4",
 		"playwright": "^1.60.0",
 		"tailwindcss": "^4.3.0",
 		"tw-animate-css": "^1.4.0",
@@ -66,13 +66,13 @@
 		"vitest": "^4.1.8"
 	},
 	"dependencies": {
-		"@aoagents/product-ui": "file:../packages/product-ui",
 		"@dnd-kit/core": "^6.3.1",
 		"@dnd-kit/sortable": "^10.0.0",
 		"@dnd-kit/utilities": "^3.2.2",
 		"@fontsource-variable/geist": "^5.3.0",
 		"@fontsource-variable/geist-mono": "^5.3.0",
 		"@lexical/react": "^0.49.0",
+		"@openagents/product-ui": "file:../packages/product-ui",
 		"@pierre/diffs": "1.4.1",
 		"@radix-ui/react-dialog": "^1.1.16",
 		"@radix-ui/react-slot": "^1.2.5",

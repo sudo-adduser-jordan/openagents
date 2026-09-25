@@ -13,12 +13,12 @@ import (
 	"testing"
 	"time"
 
-	"github.com/aoagents/agent-orchestrator/backend/internal/config"
-	"github.com/aoagents/agent-orchestrator/backend/internal/domain"
-	"github.com/aoagents/agent-orchestrator/backend/internal/httpd"
-	"github.com/aoagents/agent-orchestrator/backend/internal/ports"
-	chatsvc "github.com/aoagents/agent-orchestrator/backend/internal/service/chat"
-	"github.com/aoagents/agent-orchestrator/backend/internal/storage/sqlite/store"
+	"github.com/sudo-adduser-jordan/open-agents/backend/internal/config"
+	"github.com/sudo-adduser-jordan/open-agents/backend/internal/domain"
+	"github.com/sudo-adduser-jordan/open-agents/backend/internal/httpd"
+	"github.com/sudo-adduser-jordan/open-agents/backend/internal/ports"
+	chatsvc "github.com/sudo-adduser-jordan/open-agents/backend/internal/service/chat"
+	"github.com/sudo-adduser-jordan/open-agents/backend/internal/storage/sqlite/store"
 )
 
 // historyRecorder is a provider double that CAN do the history operations, so a test
@@ -83,7 +83,7 @@ func (h *historyRecorder) lastForkAnchor() *string {
 }
 
 // SetTitle records the name and, like the real provider, reports it back on the event
-// stream. That echo is the only path by which a title reaches AO's rows.
+// stream. That echo is the only path by which a title reaches Open Agents's rows.
 func (h *historyRecorder) SetTitle(_ context.Context, title string) error {
 	h.mu.Lock()
 	if h.setTitleErr != nil {
@@ -176,7 +176,7 @@ func requireBranchPoint(
 	t.Fatalf("snapshot has no branch point for turn %s: %+v", turnID, snapshot.BranchPoints)
 }
 
-// The end-to-end shape of an undo: the provider is asked to forget, and AO's timeline
+// The end-to-end shape of an undo: the provider is asked to forget, and Open Agents's timeline
 // stops showing what it forgot.
 func TestRollbackDiscardsTheTurnAndEverythingAfterIt(t *testing.T) {
 	recorder := newHistoryRecorder()
@@ -196,8 +196,8 @@ func TestRollbackDiscardsTheTurnAndEverythingAfterIt(t *testing.T) {
 		t.Errorf("discarded = %d, want 1", discarded)
 	}
 
-	// The provider is named by ITS turn id, not AO's: they are different namespaces
-	// and sending AO's would roll back nothing.
+	// The provider is named by ITS turn id, not Open Agents's: they are different namespaces
+	// and sending Open Agents's would roll back nothing.
 	if targets := recorder.rollbackTargets(); len(targets) != 1 || targets[0] != "provider-turn-2" {
 		t.Fatalf("provider rollback targets = %v, want [provider-turn-2]", targets)
 	}
@@ -257,7 +257,7 @@ func TestRollbackRemovesLaterLegacyCompactionState(t *testing.T) {
 	}
 }
 
-// Refused, not raced. A rollback while the agent is mid-turn would leave AO hiding
+// Refused, not raced. A rollback while the agent is mid-turn would leave Open Agents hiding
 // rows the agent is still writing into, so the check happens before the provider is
 // asked at all.
 func TestRollbackIsRefusedWhileATurnIsRunning(t *testing.T) {
@@ -309,7 +309,7 @@ func TestRollbackReportsAnUnsupportedDriver(t *testing.T) {
 	}
 }
 
-// A turn the provider never accepted holds no provider history. Hiding AO's rows for
+// A turn the provider never accepted holds no provider history. Hiding Open Agents's rows for
 // it would leave the agent remembering more than the timeline shows, which is the
 // exact disagreement rollback exists to prevent.
 func TestRollbackRefusesATurnTheProviderNeverAccepted(t *testing.T) {
@@ -374,7 +374,7 @@ func TestRollbackClassifiesAProviderRefusal(t *testing.T) {
 		t.Errorf("err = %v, want the provider's explanation carried through", err)
 	}
 
-	// And AO hid nothing: the provider still remembers the turn.
+	// And Open Agents hid nothing: the provider still remembers the turn.
 	snapshot, err := h.st.LoadConversationSnapshot(ctx, h.ctrl.ConversationID())
 	if err != nil {
 		t.Fatalf("load snapshot: %v", err)
@@ -385,7 +385,7 @@ func TestRollbackClassifiesAProviderRefusal(t *testing.T) {
 	}
 }
 
-// The title round trip: AO asks, the provider confirms on its own event, and only
+// The title round trip: Open Agents asks, the provider confirms on its own event, and only
 // then does the session label move. Nothing is written optimistically.
 func TestSetTitleFlowsThroughTheProviderIntoTheSessionName(t *testing.T) {
 	recorder := newHistoryRecorder()
@@ -416,7 +416,7 @@ func TestSetTitleFlowsThroughTheProviderIntoTheSessionName(t *testing.T) {
 	}
 }
 
-// A title AO never asked for still lands: another client naming the thread is how a
+// A title Open Agents never asked for still lands: another client naming the thread is how a
 // provider-derived title arrives at all.
 func TestAProviderRenameFromElsewhereNamesTheSession(t *testing.T) {
 	recorder := newHistoryRecorder()
@@ -456,7 +456,7 @@ func TestAProviderTitleDoesNotOverwriteAUserRename(t *testing.T) {
 	}
 }
 
-// Clearing the thread name is not a reason to strip AO's label.
+// Clearing the thread name is not a reason to strip Open Agents's label.
 func TestAClearedProviderTitleLeavesTheSessionNameAlone(t *testing.T) {
 	recorder := newHistoryRecorder()
 	h := newHarnessWithConversation(t, recorder)
@@ -697,7 +697,7 @@ func newEditHarnessWithOptions(
 	ctrl, err := svc.Start(context.Background(), chatsvc.StartConfig{
 		SessionID: testSession, ProjectID: testProject, Kind: domain.KindWorker,
 		Harness: domain.HarnessOpenCode, WorkspacePath: workspace,
-		Env:          map[string]string{"AO_EDIT_TEST": "yes", "AO_BROWSER_CAPABILITY": "stale"},
+		Env:          map[string]string{"OPEN_AGENTS_EDIT_TEST": "yes", "OPEN_AGENTS_BROWSER_CAPABILITY": "stale"},
 		SystemPrompt: "preserved prompt", PrepareControllerEnv: prepare,
 	})
 	if err != nil {
@@ -731,8 +731,8 @@ func TestEditAndBranchActivationRotateControllerCredentialsAfterStoppingSource(t
 			t.Fatalf("credential rotation %d ran while source state was %q", prepareCalls, expectedStopped.State())
 		}
 		return map[string]string{
-			"AO_EDIT_TEST":          "yes",
-			"AO_BROWSER_CAPABILITY": fmt.Sprintf("token-%d", prepareCalls),
+			"OPEN_AGENTS_EDIT_TEST":          "yes",
+			"OPEN_AGENTS_BROWSER_CAPABILITY": fmt.Sprintf("token-%d", prepareCalls),
 		}, nil
 	}
 	h, _, driver := newEditHarnessWithControllerEnv(t, true, prepare)
@@ -750,7 +750,7 @@ func TestEditAndBranchActivationRotateControllerCredentialsAfterStoppingSource(t
 		t.Fatalf("EditMessage: %v", err)
 	}
 	driver.mu.Lock()
-	if got := driver.startConfigs[len(driver.startConfigs)-1].Env["AO_BROWSER_CAPABILITY"]; got != "token-2" {
+	if got := driver.startConfigs[len(driver.startConfigs)-1].Env["OPEN_AGENTS_BROWSER_CAPABILITY"]; got != "token-2" {
 		driver.mu.Unlock()
 		t.Fatalf("edited controller capability = %q, want token-2", got)
 	}
@@ -780,7 +780,7 @@ func TestEditAndBranchActivationRotateControllerCredentialsAfterStoppingSource(t
 	driver.mu.Lock()
 	lastResume := driver.resumeCalls[len(driver.resumeCalls)-1]
 	driver.mu.Unlock()
-	if got := lastResume.Env["AO_BROWSER_CAPABILITY"]; got != "token-3" {
+	if got := lastResume.Env["OPEN_AGENTS_BROWSER_CAPABILITY"]; got != "token-3" {
 		t.Fatalf("activated controller capability = %q, want token-3", got)
 	}
 	mu.Lock()
@@ -1759,7 +1759,7 @@ func TestEditMessageForksBeforeMiddlePromptAndReusesStoredContent(t *testing.T) 
 	driver.mu.Lock()
 	starts := append([]ports.ChatStartConfig(nil), driver.startConfigs...)
 	driver.mu.Unlock()
-	if len(resumes) != 1 || resumes[0].WorkspacePath == "" || resumes[0].Env["AO_EDIT_TEST"] != "yes" ||
+	if len(resumes) != 1 || resumes[0].WorkspacePath == "" || resumes[0].Env["OPEN_AGENTS_EDIT_TEST"] != "yes" ||
 		resumes[0].SystemPrompt != "preserved prompt" || resumes[0].ProviderScopeID == "" ||
 		len(starts) != 1 || resumes[0].ProviderScopeID != starts[0].ProviderScopeID {
 		t.Fatalf("resume config = %#v", resumes)

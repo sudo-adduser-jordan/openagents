@@ -3,8 +3,8 @@
  *
  * Shown as the "Preview" tab alongside a markdown file's "Diff" in
  * `WorkspaceDiffView.tsx`. Styled with `github-markdown-css` (`.markdown-body`)
- * rather than AO's own design system — a deliberate, scoped exception for this
- * one view, since the whole point is to look like GitHub, not like AO chrome.
+ * rather than Open Agents's own design system — a deliberate, scoped exception for this
+ * one view, since the whole point is to look like GitHub, not like Open Agents chrome.
  *
  * Two choices carried over from `ChatMarkdown.tsx`, for the same reasons:
  *
@@ -20,8 +20,8 @@
  *
  * No explicit light/dark plumbing is needed for `github-markdown-css`: its
  * combined stylesheet follows `prefers-color-scheme`, and `main.ts` already
- * drives Electron's `nativeTheme.themeSource` from AO's own theme preference,
- * so this renderer's `prefers-color-scheme` already tracks AO's theme, not the
+ * drives Electron's `nativeTheme.themeSource` from Open Agents's own theme preference,
+ * so this renderer's `prefers-color-scheme` already tracks Open Agents's theme, not the
  * raw OS setting. (In `npm run dev:web` there is no `nativeTheme`, so it follows
  * the OS directly.)
  */

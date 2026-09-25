@@ -7,7 +7,7 @@ import (
 )
 
 func TestMigrateRecognizesPreLedgeredPRCommentReviewID(t *testing.T) {
-	db, err := sql.Open("sqlite", "file:"+filepath.Join(t.TempDir(), "ao.db")+pragmas)
+	db, err := sql.Open("sqlite", "file:"+filepath.Join(t.TempDir(), "open-agents.db")+pragmas)
 	if err != nil {
 		t.Fatalf("open sqlite: %v", err)
 	}
@@ -57,7 +57,7 @@ WHERE version_id = 106 AND is_applied = 1`).Scan(&applied106); err != nil {
 }
 
 func TestMigrateRepairsMissingPRCommentReviewIDWhenVersionAlreadyClaimed(t *testing.T) {
-	db, err := sql.Open("sqlite", "file:"+filepath.Join(t.TempDir(), "ao.db")+pragmas)
+	db, err := sql.Open("sqlite", "file:"+filepath.Join(t.TempDir(), "open-agents.db")+pragmas)
 	if err != nil {
 		t.Fatalf("open sqlite: %v", err)
 	}

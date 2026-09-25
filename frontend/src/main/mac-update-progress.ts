@@ -17,7 +17,7 @@ async function atomicJSON(file: string, value: unknown): Promise<void> {
 	await rename(temporary, file);
 }
 
-/** The helper is copied outside the .app so Squirrel never counts it as AO. */
+/** The helper is copied outside the .app so Squirrel never counts it as Open Agents. */
 export async function startMacUpdateProgress(options: {
 	stateDir: string;
 	resourcesPath: string;
@@ -34,9 +34,9 @@ export async function startMacUpdateProgress(options: {
 		startedAt: Date.now(),
 	};
 	await atomicJSON(path.join(attempt, "request.json"), request);
-	const executable = path.join(attempt, "ao-update-progress");
+	const executable = path.join(attempt, "open-agents-update-progress");
 	// Preserve the signer's executable bytes. Never re-sign or modify them here.
-	await copyFile(path.join(options.resourcesPath, "update-helper", "ao-update-progress"), executable);
+	await copyFile(path.join(options.resourcesPath, "update-helper", "open-agents-update-progress"), executable);
 	const child = spawn(executable, [attempt], {
 		detached: true,
 		stdio: ["ignore", "pipe", "ignore"],
@@ -46,7 +46,7 @@ export async function startMacUpdateProgress(options: {
 	child.once("exit", () => { exited = true; });
 	child.on("error", (error) => { processError = error; });
 	const assertAlive = () => {
-		if (exited || processError) throw new Error("The update progress window closed before installation. AO has stayed open. Please retry.");
+		if (exited || processError) throw new Error("The update progress window closed before installation. Open Agents has stayed open. Please retry.");
 	};
 	await new Promise<void>((resolve, reject) => {
 		let output = "";
@@ -59,17 +59,17 @@ export async function startMacUpdateProgress(options: {
 			child.removeListener("exit", onExit);
 			child.stdout?.removeListener("data", onData);
 			if (error) {
-				child.kill(); // Only our own helper; AO remains open on failure.
+				child.kill(); // Only our own helper; Open Agents remains open on failure.
 				reject(error);
 			} else resolve();
 		};
 		const onError = (error: Error) => finish(error);
-		const onExit = () => finish(new Error("The update progress window could not start. AO has stayed open."));
+		const onExit = () => finish(new Error("The update progress window could not start. Open Agents has stayed open."));
 		const onData = (chunk: Buffer) => {
 			output += chunk.toString();
 			if (output.includes("READY\n")) finish();
 		};
-		const timer = setTimeout(() => finish(new Error("The update progress window did not respond. AO has stayed open.")), 10_000);
+		const timer = setTimeout(() => finish(new Error("The update progress window did not respond. Open Agents has stayed open.")), 10_000);
 		child.once("error", onError);
 		child.once("exit", onExit);
 		child.stdout?.on("data", onData);

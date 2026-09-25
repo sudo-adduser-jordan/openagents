@@ -43,7 +43,7 @@ func migratedDatabaseSnapshotLocked(t *testing.T, version int64) []byte {
 		base = migratedDatabaseSnapshotLocked(t, baseVersion)
 	}
 
-	databasePath := filepath.Join(t.TempDir(), "ao.db")
+	databasePath := filepath.Join(t.TempDir(), "open-agents.db")
 	if len(base) > 0 {
 		if err := os.WriteFile(databasePath, base, 0o600); err != nil {
 			t.Fatalf("copy migration %d checkpoint: %v", baseVersion, err)
@@ -67,7 +67,7 @@ func migratedDatabaseSnapshotLocked(t *testing.T, version int64) []byte {
 
 func openMigratedDatabaseCopy(t *testing.T, version int64) *sql.DB {
 	t.Helper()
-	databasePath := filepath.Join(t.TempDir(), "ao.db")
+	databasePath := filepath.Join(t.TempDir(), "open-agents.db")
 	if err := os.WriteFile(databasePath, migratedDatabaseSnapshot(t, version), 0o600); err != nil {
 		t.Fatalf("copy migration %d checkpoint: %v", version, err)
 	}

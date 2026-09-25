@@ -6,8 +6,8 @@ import (
 	"fmt"
 	"time"
 
-	"github.com/aoagents/agent-orchestrator/backend/internal/cdc"
-	"github.com/aoagents/agent-orchestrator/backend/internal/storage/sqlite/gen"
+	"github.com/sudo-adduser-jordan/open-agents/backend/internal/cdc"
+	"github.com/sudo-adduser-jordan/open-agents/backend/internal/storage/sqlite/gen"
 )
 
 // EventsAfter implements cdc.Source over the SQLite change_log table.

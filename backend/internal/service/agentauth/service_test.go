@@ -8,8 +8,8 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/aoagents/agent-orchestrator/backend/internal/httpd/apierr"
-	"github.com/aoagents/agent-orchestrator/backend/internal/service/shellterm"
+	"github.com/sudo-adduser-jordan/open-agents/backend/internal/httpd/apierr"
+	"github.com/sudo-adduser-jordan/open-agents/backend/internal/service/shellterm"
 )
 
 func TestStartRejectsUnstartablePlans(t *testing.T) {

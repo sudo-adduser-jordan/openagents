@@ -308,7 +308,7 @@ describe("AssistantMessage streaming", () => {
 
 describe("ActivityRow", () => {
 	it("renders inline code in provider activity titles without literal backticks", () => {
-		const path = "/Users/sachin/.ao/worktrees/murdock/docs/system-design.html";
+		const path = "/Users/sachin/.open-agents/worktrees/murdock/docs/system-design.html";
 		const { container } = render(
 			<ActivityRow activity={{
 				kind: "activity", id: "edit-title", sequence: 1, revision: 0,

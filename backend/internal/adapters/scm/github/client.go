@@ -14,13 +14,13 @@ import (
 	"sync"
 	"time"
 
-	"github.com/aoagents/agent-orchestrator/backend/internal/ports"
+	"github.com/sudo-adduser-jordan/open-agents/backend/internal/ports"
 )
 
 const (
 	defaultRESTBaseURL = "https://api.github.com"
 	defaultGraphQLURL  = "https://api.github.com/graphql"
-	defaultUserAgent   = "ao-agent-orchestrator/scm-github"
+	defaultUserAgent   = "open-agents/scm-github"
 )
 
 // Sentinel errors. Provider-level callers should match on these via

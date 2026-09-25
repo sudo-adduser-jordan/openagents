@@ -10,7 +10,7 @@ import (
 func TestLoadDefaults(t *testing.T) {
 	// Clear every recognised var so we observe pure defaults regardless of the
 	// surrounding environment.
-	for _, k := range []string{"AO_PORT", "AO_REQUEST_TIMEOUT", "AO_SHUTDOWN_TIMEOUT", "AO_RUN_FILE", "AO_DATA_DIR", "AO_AGENT", "AO_ALLOWED_ORIGINS"} {
+	for _, k := range []string{"OPEN_AGENTS_PORT", "OPEN_AGENTS_REQUEST_TIMEOUT", "OPEN_AGENTS_SHUTDOWN_TIMEOUT", "OPEN_AGENTS_RUN_FILE", "OPEN_AGENTS_DATA_DIR", "OPEN_AGENTS_AGENT", "OPEN_AGENTS_ALLOWED_ORIGINS"} {
 		t.Setenv(k, "")
 	}
 
@@ -37,18 +37,18 @@ func TestLoadDefaults(t *testing.T) {
 	if err != nil {
 		t.Fatalf("UserHomeDir: %v", err)
 	}
-	wantRunFilePath := filepath.Join(homeDir, ".ao", "running.json")
+	wantRunFilePath := filepath.Join(homeDir, ".open-agents", "running.json")
 	if cfg.RunFilePath != wantRunFilePath {
 		t.Errorf("RunFilePath = %q, want %q", cfg.RunFilePath, wantRunFilePath)
 	}
 	if cfg.DataDir == "" {
 		t.Error("DataDir is empty, want a resolved default path")
 	}
-	wantDataDir := filepath.Join(homeDir, ".ao", "data")
+	wantDataDir := filepath.Join(homeDir, ".open-agents", "data")
 	if cfg.DataDir != wantDataDir {
 		t.Errorf("DataDir = %q, want %q", cfg.DataDir, wantDataDir)
 	}
-	if wantStateDir := filepath.Join(homeDir, ".ao"); cfg.StateDir != wantStateDir {
+	if wantStateDir := filepath.Join(homeDir, ".open-agents"); cfg.StateDir != wantStateDir {
 		t.Errorf("StateDir = %q, want %q", cfg.StateDir, wantStateDir)
 	}
 }
@@ -57,8 +57,8 @@ func TestLoadAbsolutizesRelativeOverrides(t *testing.T) {
 	// A relative override must be resolved to absolute at Load time. The daemon
 	// chdir's into its data dir at startup, so a relative path left as-is would
 	// be re-resolved against the new cwd and double-nest state.
-	t.Setenv("AO_RUN_FILE", "rel-running.json")
-	t.Setenv("AO_DATA_DIR", "rel-data")
+	t.Setenv("OPEN_AGENTS_RUN_FILE", "rel-running.json")
+	t.Setenv("OPEN_AGENTS_DATA_DIR", "rel-data")
 
 	cfg, err := Load()
 	if err != nil {
@@ -87,14 +87,14 @@ func TestLoadAbsolutizesRelativeOverrides(t *testing.T) {
 
 func TestLoadOverrides(t *testing.T) {
 	overrideDir := t.TempDir()
-	runFilePath := filepath.Join(overrideDir, "ao-test-running.json")
-	dataDir := filepath.Join(overrideDir, "ao-test-data")
+	runFilePath := filepath.Join(overrideDir, "open-agents-test-running.json")
+	dataDir := filepath.Join(overrideDir, "open-agents-test-data")
 
-	t.Setenv("AO_PORT", "4002")
-	t.Setenv("AO_REQUEST_TIMEOUT", "5s")
-	t.Setenv("AO_SHUTDOWN_TIMEOUT", "3s")
-	t.Setenv("AO_RUN_FILE", runFilePath)
-	t.Setenv("AO_DATA_DIR", dataDir)
+	t.Setenv("OPEN_AGENTS_PORT", "4002")
+	t.Setenv("OPEN_AGENTS_REQUEST_TIMEOUT", "5s")
+	t.Setenv("OPEN_AGENTS_SHUTDOWN_TIMEOUT", "3s")
+	t.Setenv("OPEN_AGENTS_RUN_FILE", runFilePath)
+	t.Setenv("OPEN_AGENTS_DATA_DIR", dataDir)
 
 	cfg, err := Load()
 	if err != nil {
@@ -125,16 +125,16 @@ func TestLoadInvalid(t *testing.T) {
 		name string
 		env  map[string]string
 	}{
-		{"non-numeric port", map[string]string{"AO_PORT": "abc"}},
-		{"port out of range", map[string]string{"AO_PORT": "70000"}},
-		{"bad request timeout", map[string]string{"AO_REQUEST_TIMEOUT": "soon"}},
-		{"bad shutdown timeout", map[string]string{"AO_SHUTDOWN_TIMEOUT": "later"}},
-		{"zero request timeout", map[string]string{"AO_REQUEST_TIMEOUT": "0s"}},
-		{"negative request timeout", map[string]string{"AO_REQUEST_TIMEOUT": "-1s"}},
-		{"zero shutdown timeout", map[string]string{"AO_SHUTDOWN_TIMEOUT": "0s"}},
-		{"negative shutdown timeout", map[string]string{"AO_SHUTDOWN_TIMEOUT": "-5s"}},
-		{"null origin", map[string]string{"AO_ALLOWED_ORIGINS": "app://renderer,null"}},
-		{"wildcard origin", map[string]string{"AO_ALLOWED_ORIGINS": "*"}},
+		{"non-numeric port", map[string]string{"OPEN_AGENTS_PORT": "abc"}},
+		{"port out of range", map[string]string{"OPEN_AGENTS_PORT": "70000"}},
+		{"bad request timeout", map[string]string{"OPEN_AGENTS_REQUEST_TIMEOUT": "soon"}},
+		{"bad shutdown timeout", map[string]string{"OPEN_AGENTS_SHUTDOWN_TIMEOUT": "later"}},
+		{"zero request timeout", map[string]string{"OPEN_AGENTS_REQUEST_TIMEOUT": "0s"}},
+		{"negative request timeout", map[string]string{"OPEN_AGENTS_REQUEST_TIMEOUT": "-1s"}},
+		{"zero shutdown timeout", map[string]string{"OPEN_AGENTS_SHUTDOWN_TIMEOUT": "0s"}},
+		{"negative shutdown timeout", map[string]string{"OPEN_AGENTS_SHUTDOWN_TIMEOUT": "-5s"}},
+		{"null origin", map[string]string{"OPEN_AGENTS_ALLOWED_ORIGINS": "app://renderer,null"}},
+		{"wildcard origin", map[string]string{"OPEN_AGENTS_ALLOWED_ORIGINS": "*"}},
 	}
 	for _, tc := range tests {
 		t.Run(tc.name, func(t *testing.T) {
@@ -150,7 +150,7 @@ func TestLoadInvalid(t *testing.T) {
 
 func TestLoadAllowedOrigins(t *testing.T) {
 	t.Run("default includes the packaged renderer origin", func(t *testing.T) {
-		t.Setenv("AO_ALLOWED_ORIGINS", "")
+		t.Setenv("OPEN_AGENTS_ALLOWED_ORIGINS", "")
 		cfg, err := Load()
 		if err != nil {
 			t.Fatalf("Load: %v", err)
@@ -167,7 +167,7 @@ func TestLoadAllowedOrigins(t *testing.T) {
 	})
 
 	t.Run("override replaces defaults and trims entries", func(t *testing.T) {
-		t.Setenv("AO_ALLOWED_ORIGINS", " app://renderer , http://localhost:9999 ,")
+		t.Setenv("OPEN_AGENTS_ALLOWED_ORIGINS", " app://renderer , http://localhost:9999 ,")
 		cfg, err := Load()
 		if err != nil {
 			t.Fatalf("Load: %v", err)
@@ -186,7 +186,7 @@ func TestLoadAllowedOrigins(t *testing.T) {
 
 func TestLoadGitLabDefaults(t *testing.T) {
 	// Clear the GitLab config vars so we observe pure defaults.
-	for _, k := range []string{"AO_GITLAB_ALLOWED_HOSTS", "AO_GITLAB_HOST_TOKENS"} {
+	for _, k := range []string{"OPEN_AGENTS_GITLAB_ALLOWED_HOSTS", "OPEN_AGENTS_GITLAB_HOST_TOKENS"} {
 		t.Setenv(k, "")
 	}
 	cfg, err := Load()
@@ -215,7 +215,7 @@ func TestLoadGitLabAllowedHosts(t *testing.T) {
 	}
 	for _, tc := range tests {
 		t.Run(tc.name, func(t *testing.T) {
-			t.Setenv("AO_GITLAB_ALLOWED_HOSTS", tc.env)
+			t.Setenv("OPEN_AGENTS_GITLAB_ALLOWED_HOSTS", tc.env)
 			cfg, err := Load()
 			if err != nil {
 				t.Fatalf("Load: %v", err)
@@ -277,7 +277,7 @@ func TestLoadGitLabHostTokens(t *testing.T) {
 	}
 	for _, tc := range tests {
 		t.Run(tc.name, func(t *testing.T) {
-			t.Setenv("AO_GITLAB_HOST_TOKENS", tc.env)
+			t.Setenv("OPEN_AGENTS_GITLAB_HOST_TOKENS", tc.env)
 			cfg, err := Load()
 			if err != nil {
 				t.Fatalf("Load: %v", err)
@@ -308,10 +308,10 @@ func TestLoadGitLabInvalidHostTokens(t *testing.T) {
 	}
 	for _, tc := range tests {
 		t.Run(tc.name, func(t *testing.T) {
-			t.Setenv("AO_GITLAB_HOST_TOKENS", tc.env)
+			t.Setenv("OPEN_AGENTS_GITLAB_HOST_TOKENS", tc.env)
 			_, err := Load()
 			if err == nil {
-				t.Fatal("Load() = nil error, want error for malformed AO_GITLAB_HOST_TOKENS")
+				t.Fatal("Load() = nil error, want error for malformed OPEN_AGENTS_GITLAB_HOST_TOKENS")
 			}
 		})
 	}

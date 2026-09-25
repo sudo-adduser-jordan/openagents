@@ -8,7 +8,7 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/aoagents/agent-orchestrator/backend/internal/domain"
+	"github.com/sudo-adduser-jordan/open-agents/backend/internal/domain"
 )
 
 func TestListWorkspaceTreeSingleRepoListsOneLevelWithStatus(t *testing.T) {
@@ -22,10 +22,10 @@ func TestListWorkspaceTreeSingleRepoListsOneLevelWithStatus(t *testing.T) {
 	writeWorkspaceFile(t, repo, "node_modules/cache.txt", "ignored\n")
 
 	st := newFakeStore()
-	st.sessions["ao-1"] = domain.SessionRecord{ID: "ao-1", Metadata: domain.SessionMetadata{WorkspacePath: repo}}
+	st.sessions["open-agents-1"] = domain.SessionRecord{ID: "open-agents-1", Metadata: domain.SessionMetadata{WorkspacePath: repo}}
 	svc := &Service{store: st}
 
-	root, err := svc.ListWorkspaceTree(context.Background(), "ao-1", "")
+	root, err := svc.ListWorkspaceTree(context.Background(), "open-agents-1", "")
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -58,7 +58,7 @@ func TestListWorkspaceTreeSingleRepoListsOneLevelWithStatus(t *testing.T) {
 		t.Fatal("gitignored node_modules directory was listed")
 	}
 
-	src, err := svc.ListWorkspaceTree(context.Background(), "ao-1", "src")
+	src, err := svc.ListWorkspaceTree(context.Background(), "open-agents-1", "src")
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -73,7 +73,7 @@ func TestListWorkspaceTreeSingleRepoListsOneLevelWithStatus(t *testing.T) {
 		t.Fatalf("src/util.go = %#v, want added file", e)
 	}
 
-	empty, err := svc.ListWorkspaceTree(context.Background(), "ao-1", "does-not-exist")
+	empty, err := svc.ListWorkspaceTree(context.Background(), "open-agents-1", "does-not-exist")
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -90,13 +90,13 @@ func TestListWorkspaceTreeWorkspaceProjectChildRepo(t *testing.T) {
 		t.Fatal(err)
 	}
 	runGit(t, child, "init")
-	runGit(t, child, "config", "user.email", "ao@example.com")
-	runGit(t, child, "config", "user.name", "AO Tests")
+	runGit(t, child, "config", "user.email", "open-agents@example.com")
+	runGit(t, child, "config", "user.name", "Open Agents Tests")
 	writeWorkspaceFile(t, child, "service.go", "package api\n")
 	runGit(t, child, "add", ".")
 	runGit(t, child, "commit", "-m", "initial child")
 	childBase := strings.TrimSpace(runGit(t, child, "rev-parse", "HEAD"))
-	runGit(t, child, "switch", "-c", "ao/work")
+	runGit(t, child, "switch", "-c", "open-agents/work")
 	writeWorkspaceFile(t, child, "service.go", "package api\n\nfunc Added() {}\n")
 	runGit(t, child, "add", "service.go")
 	runGit(t, child, "commit", "-m", "child change")
@@ -192,10 +192,10 @@ func TestListWorkspaceTreeGlobalCapNotPerDirectory(t *testing.T) {
 		writeWorkspaceFile(t, repo, filepath.Join("many", fmt.Sprintf("file-%05d.txt", i)), "x\n")
 	}
 	st := newFakeStore()
-	st.sessions["ao-1"] = domain.SessionRecord{ID: "ao-1", Metadata: domain.SessionMetadata{WorkspacePath: repo}}
+	st.sessions["open-agents-1"] = domain.SessionRecord{ID: "open-agents-1", Metadata: domain.SessionMetadata{WorkspacePath: repo}}
 	svc := &Service{store: st}
 
-	root, err := svc.ListWorkspaceTree(context.Background(), "ao-1", "")
+	root, err := svc.ListWorkspaceTree(context.Background(), "open-agents-1", "")
 	if err != nil {
 		t.Fatal(err)
 	}

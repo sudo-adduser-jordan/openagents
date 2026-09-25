@@ -11,9 +11,9 @@ afterEach(() => isWindowsPlatform.mockReturnValue(false));
 
 const shell: ShellTerminal = {
 	handleId: "shellterm-1",
-	projectId: "ao",
-	workingDir: "/repos/ao",
-	title: "ao",
+	projectId: "open-agents",
+	workingDir: "/repos/open-agents",
+	title: "open-agents",
 	createdAt: "2026-07-24T10:00:00Z",
 };
 
@@ -39,7 +39,7 @@ function renderTab(overrides: Partial<Parameters<typeof ShellTerminalTab>[0]> = 
 describe("ShellTerminalTab rename", () => {
 	it("commits a new title on Enter", () => {
 		const { onRename } = renderTab();
-		fireEvent.doubleClick(screen.getByRole("tab", { name: "ao" }));
+		fireEvent.doubleClick(screen.getByRole("tab", { name: "open-agents" }));
 		const input = screen.getByRole("textbox", { name: /rename terminal/i });
 		fireEvent.change(input, { target: { value: "deploy" } });
 		fireEvent.keyDown(input, { key: "Enter" });
@@ -48,7 +48,7 @@ describe("ShellTerminalTab rename", () => {
 
 	it("commits on blur", () => {
 		const { onRename } = renderTab();
-		fireEvent.doubleClick(screen.getByRole("tab", { name: "ao" }));
+		fireEvent.doubleClick(screen.getByRole("tab", { name: "open-agents" }));
 		const input = screen.getByRole("textbox", { name: /rename terminal/i });
 		fireEvent.change(input, { target: { value: "logs" } });
 		fireEvent.blur(input);
@@ -57,17 +57,17 @@ describe("ShellTerminalTab rename", () => {
 
 	it("discards on Escape and leaves the title unchanged", () => {
 		const { onRename } = renderTab();
-		fireEvent.doubleClick(screen.getByRole("tab", { name: "ao" }));
+		fireEvent.doubleClick(screen.getByRole("tab", { name: "open-agents" }));
 		const input = screen.getByRole("textbox", { name: /rename terminal/i });
 		fireEvent.change(input, { target: { value: "throwaway" } });
 		fireEvent.keyDown(input, { key: "Escape" });
 		expect(onRename).not.toHaveBeenCalled();
-		expect(screen.getByRole("tab", { name: "ao" })).toBeInTheDocument();
+		expect(screen.getByRole("tab", { name: "open-agents" })).toBeInTheDocument();
 	});
 
 	it("discards an empty or unchanged title", () => {
 		const { onRename } = renderTab();
-		fireEvent.doubleClick(screen.getByRole("tab", { name: "ao" }));
+		fireEvent.doubleClick(screen.getByRole("tab", { name: "open-agents" }));
 		const input = screen.getByRole("textbox", { name: /rename terminal/i });
 		fireEvent.change(input, { target: { value: "   " } });
 		fireEvent.keyDown(input, { key: "Enter" });
@@ -76,19 +76,19 @@ describe("ShellTerminalTab rename", () => {
 
 	it("does not enter edit mode when rename is not wired", () => {
 		renderTab({ onRename: undefined });
-		fireEvent.doubleClick(screen.getByRole("tab", { name: "ao" }));
+		fireEvent.doubleClick(screen.getByRole("tab", { name: "open-agents" }));
 		expect(screen.queryByRole("textbox")).not.toBeInTheDocument();
 	});
 
 	it("selects the tab on single click", () => {
 		const { onSelect } = renderTab();
-		fireEvent.click(screen.getByRole("tab", { name: "ao" }));
+		fireEvent.click(screen.getByRole("tab", { name: "open-agents" }));
 		expect(onSelect).toHaveBeenCalled();
 	});
 
 	it("makes the full connected tile the semantic selection button", () => {
 		const { onSelect } = renderTab({ appearance: "connected" });
-		const tab = screen.getByRole("tab", { name: "ao" });
+		const tab = screen.getByRole("tab", { name: "open-agents" });
 		expect(tab).toHaveClass("h-full", "min-w-0", "px-2", "cursor-pointer", "focus-visible:outline-2");
 		fireEvent.click(tab);
 		expect(onSelect).toHaveBeenCalledOnce();
@@ -97,7 +97,7 @@ describe("ShellTerminalTab rename", () => {
 	it("reveals close in the terminal glyph's slot on hover", () => {
 		renderTab({ appearance: "connected", isActive: true });
 
-		const closeButton = screen.getByRole("button", { name: "Close terminal ao" });
+		const closeButton = screen.getByRole("button", { name: "Close terminal open-agents" });
 		expect(closeButton.parentElement).toHaveClass("absolute", "inset-y-0", "left-2");
 		expect(closeButton).toHaveClass(
 			"opacity-0",
@@ -106,14 +106,14 @@ describe("ShellTerminalTab rename", () => {
 		);
 		expect(closeButton).not.toHaveClass("transition-opacity", "transition-[opacity,background,color]");
 		expect(closeButton).not.toHaveClass("w-control-sm");
-		expect(screen.getByRole("tab", { name: "ao" }).querySelector("svg")).toHaveClass("group-hover:opacity-0");
-		expect(screen.getByRole("tab", { name: "ao" })).toHaveAttribute("aria-selected", "true");
+		expect(screen.getByRole("tab", { name: "open-agents" }).querySelector("svg")).toHaveClass("group-hover:opacity-0");
+		expect(screen.getByRole("tab", { name: "open-agents" })).toHaveAttribute("aria-selected", "true");
 	});
 
 	it("hugs the truncated title instead of a fixed connected width", () => {
 		renderTab({ appearance: "connected", isActive: false });
 
-		const tab = screen.getByRole("tab", { name: "ao" });
+		const tab = screen.getByRole("tab", { name: "open-agents" });
 		expect(tab.classList.contains("min-w-0")).toBe(true);
 		expect(tab.classList.contains("text-left")).toBe(true);
 		const frame = tab.closest("[data-terminal-tab-frame]");
@@ -127,19 +127,19 @@ describe("ShellTerminalTab rename", () => {
 	it("uses a neutral active surface with a strong foreground selection line", () => {
 		renderTab({ appearance: "connected", isActive: true });
 
-		expect(screen.getByRole("tab", { name: "ao" }).closest("[data-terminal-tab-frame]")).toHaveClass(
+		expect(screen.getByRole("tab", { name: "open-agents" }).closest("[data-terminal-tab-frame]")).toHaveClass(
 			"h-full",
 			"self-stretch",
 			"bg-overlay",
 		);
 		expect(screen.getByTestId("active-terminal-tab-indicator")).toHaveClass("bottom-0", "h-0.5");
-		expect(screen.getByRole("tab", { name: "ao" }).closest("[data-terminal-tab-frame]")).not.toHaveClass("rounded-md", "before:bg-accent", "after:h-px");
+		expect(screen.getByRole("tab", { name: "open-agents" }).closest("[data-terminal-tab-frame]")).not.toHaveClass("rounded-md", "before:bg-accent", "after:h-px");
 	});
 
 	it("matches the shared inactive tab hover surface", () => {
 		renderTab({ appearance: "connected", isActive: false });
 
-		expect(screen.getByRole("tab", { name: "ao" }).closest("[data-terminal-tab-frame]")).toHaveClass(
+		expect(screen.getByRole("tab", { name: "open-agents" }).closest("[data-terminal-tab-frame]")).toHaveClass(
 			"h-full",
 			"self-stretch",
 			"hover:bg-raised",
@@ -155,7 +155,7 @@ describe("ShellTerminalTab rename", () => {
 
 	it("closes from the glyph slot without selecting the tab", () => {
 		const { onClose, onSelect } = renderTab({ appearance: "connected" });
-		fireEvent.click(screen.getByRole("button", { name: "Close terminal ao" }));
+		fireEvent.click(screen.getByRole("button", { name: "Close terminal open-agents" }));
 		expect(onClose).toHaveBeenCalledOnce();
 		expect(onSelect).not.toHaveBeenCalled();
 	});
@@ -163,14 +163,14 @@ describe("ShellTerminalTab rename", () => {
 	it("optically centers the auxiliary terminal glyph with its label", () => {
 		renderTab({ appearance: "connected" });
 
-		expect(screen.getByRole("tab", { name: "ao" }).querySelector("svg")?.parentElement).not.toHaveClass("-translate-y-px");
+		expect(screen.getByRole("tab", { name: "open-agents" }).querySelector("svg")?.parentElement).not.toHaveClass("-translate-y-px");
 	});
 });
 
 describe("ShellTerminalTab rename gesture per platform", () => {
 	it("macOS/Linux: double-click enters edit, right-click does not", () => {
 		renderTab(); // isWindowsPlatform() defaults to false
-		const tab = screen.getByRole("tab", { name: "ao" });
+		const tab = screen.getByRole("tab", { name: "open-agents" });
 		fireEvent.contextMenu(tab);
 		expect(screen.queryByRole("textbox")).not.toBeInTheDocument();
 		fireEvent.doubleClick(tab);
@@ -179,7 +179,7 @@ describe("ShellTerminalTab rename gesture per platform", () => {
 
 	it("macOS/Linux: two quick clicks enter edit even without a native dblclick (trackpad)", () => {
 		renderTab();
-		const tab = screen.getByRole("tab", { name: "ao" });
+		const tab = screen.getByRole("tab", { name: "open-agents" });
 		// Two plain clicks, no dblclick event — mimics a trackpad double-tap that
 		// the OS delivers as separate clicks.
 		fireEvent.click(tab, { detail: 1 });
@@ -191,7 +191,7 @@ describe("ShellTerminalTab rename gesture per platform", () => {
 	it("Windows: right-click enters edit, double-click does not", () => {
 		isWindowsPlatform.mockReturnValue(true);
 		renderTab();
-		const tab = screen.getByRole("tab", { name: "ao" });
+		const tab = screen.getByRole("tab", { name: "open-agents" });
 		fireEvent.doubleClick(tab);
 		expect(screen.queryByRole("textbox")).not.toBeInTheDocument();
 		fireEvent.contextMenu(tab);

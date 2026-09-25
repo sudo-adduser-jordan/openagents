@@ -5,7 +5,7 @@ import os from "node:os";
 import path from "node:path";
 import { lstat } from "node:fs/promises";
 import {
-	AO_BUNDLE_ID,
+	OPEN_AGENTS_BUNDLE_ID,
 	findStaleAppCopies,
 	isUnchangedStaleAppCopy,
 	readBundleMetadata,
@@ -17,11 +17,11 @@ import {
 	type StaleAppCopy,
 } from "./stale-app-copies";
 
-const RUNNING_PATH = "/Applications/Agent Orchestrator.app";
+const RUNNING_PATH = "/Applications/Open Agents.app";
 const RUNNING_VERSION = "0.13.1-nightly.202609121623";
-const DOWNLOADS_COPY = "/Users/user/Downloads/Agent Orchestrator.app";
-const DESKTOP_COPY = "/Users/user/Desktop/Agent Orchestrator.app";
-const STAGED_PATH = "/Users/user/Downloads/Agent Orchestrator.app.ao-retiring-test";
+const DOWNLOADS_COPY = "/Users/user/Downloads/Open Agents.app";
+const DESKTOP_COPY = "/Users/user/Desktop/Open Agents.app";
+const STAGED_PATH = "/Users/user/Downloads/Open Agents.app.open-agents-retiring-test";
 const ORIGINAL_IDENTITY = { device: 1, inode: 10 };
 
 describe("readBundleMetadata", () => {
@@ -32,18 +32,18 @@ describe("readBundleMetadata", () => {
 	});
 
 	it("reads the exact identifier and version from Info.plist", async () => {
-		const directory = await mkdtemp(path.join(os.tmpdir(), "ao-stale-copy-"));
+		const directory = await mkdtemp(path.join(os.tmpdir(), "open-agents-stale-copy-"));
 		temporaryDirectories.push(directory);
-		const bundle = path.join(directory, "Agent Orchestrator.app");
+		const bundle = path.join(directory, "Open Agents.app");
 		await mkdir(path.join(bundle, "Contents"), { recursive: true });
 		await writeFile(path.join(bundle, "Contents", "Info.plist"), `<?xml version="1.0"?>
 <plist><dict>
-<key>CFBundleIdentifier</key><string>${AO_BUNDLE_ID}</string>
+<key>CFBundleIdentifier</key><string>${OPEN_AGENTS_BUNDLE_ID}</string>
 <key>CFBundleShortVersionString</key><string>0.10.3</string>
 </dict></plist>`);
 
 		await expect(readBundleMetadata(bundle)).resolves.toEqual({
-			bundleId: AO_BUNDLE_ID,
+			bundleId: OPEN_AGENTS_BUNDLE_ID,
 			version: "0.10.3",
 		});
 	});
@@ -57,9 +57,9 @@ describe("stageStaleAppCopy", () => {
 	});
 
 	async function makeBundle(): Promise<{ directory: string; bundle: string; copy: StaleAppCopy }> {
-		const directory = await mkdtemp(path.join(os.tmpdir(), "ao-stage-"));
+		const directory = await mkdtemp(path.join(os.tmpdir(), "open-agents-stage-"));
 		temporaryDirectories.push(directory);
-		const bundle = path.join(directory, "Agent Orchestrator.app");
+		const bundle = path.join(directory, "Open Agents.app");
 		await mkdir(bundle, { recursive: true });
 		const stats = await lstat(bundle);
 		return { directory, bundle, copy: { path: bundle, version: "0.10.3", device: stats.dev, inode: stats.ino } };
@@ -101,15 +101,15 @@ describe("findStaleAppCopies", () => {
 		};
 	}
 
-	it("finds valid older AO copies only in Downloads and Desktop", async () => {
+	it("finds valid older Open Agents copies only in Downloads and Desktop", async () => {
 		const deps = dependencies({
 			identities: {
 				[DOWNLOADS_COPY]: ORIGINAL_IDENTITY,
 				[DESKTOP_COPY]: { device: 1, inode: 11 },
 			},
 			metadata: {
-				[DOWNLOADS_COPY]: { bundleId: AO_BUNDLE_ID, version: "0.10.3" },
-				[DESKTOP_COPY]: { bundleId: AO_BUNDLE_ID, version: "0.12.0" },
+				[DOWNLOADS_COPY]: { bundleId: OPEN_AGENTS_BUNDLE_ID, version: "0.10.3" },
+				[DESKTOP_COPY]: { bundleId: OPEN_AGENTS_BUNDLE_ID, version: "0.12.0" },
 			},
 		});
 
@@ -125,11 +125,11 @@ describe("findStaleAppCopies", () => {
 
 	it.each([
 		["another app", ORIGINAL_IDENTITY, { bundleId: "com.example.other", version: "0.10.3" }],
-		["an unreadable version", ORIGINAL_IDENTITY, { bundleId: AO_BUNDLE_ID, version: null }],
-		["an invalid version", ORIGINAL_IDENTITY, { bundleId: AO_BUNDLE_ID, version: "broken" }],
-		["the same version", ORIGINAL_IDENTITY, { bundleId: AO_BUNDLE_ID, version: RUNNING_VERSION }],
-		["a newer version", ORIGINAL_IDENTITY, { bundleId: AO_BUNDLE_ID, version: "0.14.0" }],
-		["a symlink or regular file", null, { bundleId: AO_BUNDLE_ID, version: "0.10.3" }],
+		["an unreadable version", ORIGINAL_IDENTITY, { bundleId: OPEN_AGENTS_BUNDLE_ID, version: null }],
+		["an invalid version", ORIGINAL_IDENTITY, { bundleId: OPEN_AGENTS_BUNDLE_ID, version: "broken" }],
+		["the same version", ORIGINAL_IDENTITY, { bundleId: OPEN_AGENTS_BUNDLE_ID, version: RUNNING_VERSION }],
+		["a newer version", ORIGINAL_IDENTITY, { bundleId: OPEN_AGENTS_BUNDLE_ID, version: "0.14.0" }],
+		["a symlink or regular file", null, { bundleId: OPEN_AGENTS_BUNDLE_ID, version: "0.10.3" }],
 	] as const)("leaves %s untouched", async (_label, identity, metadata) => {
 		const deps = dependencies({
 			identities: { [DOWNLOADS_COPY]: identity },
@@ -171,7 +171,7 @@ describe("isUnchangedStaleAppCopy", () => {
 			stale,
 			STAGED_PATH,
 			RUNNING_VERSION,
-			dependencies(ORIGINAL_IDENTITY, { bundleId: AO_BUNDLE_ID, version: " v0.10.3 " }),
+			dependencies(ORIGINAL_IDENTITY, { bundleId: OPEN_AGENTS_BUNDLE_ID, version: " v0.10.3 " }),
 		)).resolves.toBe(true);
 	});
 
@@ -180,7 +180,7 @@ describe("isUnchangedStaleAppCopy", () => {
 			stale,
 			STAGED_PATH,
 			RUNNING_VERSION,
-			dependencies(ORIGINAL_IDENTITY, { bundleId: AO_BUNDLE_ID, version: "0.11.0" }),
+			dependencies(ORIGINAL_IDENTITY, { bundleId: OPEN_AGENTS_BUNDLE_ID, version: "0.11.0" }),
 		)).resolves.toBe(false);
 	});
 
@@ -188,7 +188,7 @@ describe("isUnchangedStaleAppCopy", () => {
 		const fileIdentity = vi.fn(async () => ORIGINAL_IDENTITY);
 		await isUnchangedStaleAppCopy(stale, STAGED_PATH, RUNNING_VERSION, {
 			fileIdentity,
-			readMetadata: async () => ({ bundleId: AO_BUNDLE_ID, version: "0.10.3" }),
+			readMetadata: async () => ({ bundleId: OPEN_AGENTS_BUNDLE_ID, version: "0.10.3" }),
 		});
 		expect(fileIdentity).toHaveBeenCalledWith(STAGED_PATH);
 	});
@@ -313,7 +313,7 @@ describe("retireStaleAppCopies", () => {
 		let identity = ORIGINAL_IDENTITY;
 		const dependencies = {
 			fileIdentity: async () => identity,
-			readMetadata: async () => ({ bundleId: AO_BUNDLE_ID, version: "0.10.3" }),
+			readMetadata: async () => ({ bundleId: OPEN_AGENTS_BUNDLE_ID, version: "0.10.3" }),
 		};
 		const restore = vi.fn(async () => undefined);
 		const trashItem = vi.fn(async () => undefined);

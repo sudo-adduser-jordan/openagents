@@ -57,7 +57,7 @@ func setWindowSizeLargestArgs(id string) []string {
 	return []string{"set-option", "-t", id, "window-size", "largest"}
 }
 
-// panePIDArgs returns the pid of tmux's direct pane process. AO walks its
+// panePIDArgs returns the pid of tmux's direct pane process. Open Agents walks its
 // descendants to find the exact supervisor for the current launch. The bare
 // session target keeps this independent of base-index / pane-base-index
 // (see respawnPaneArgs, #4656).

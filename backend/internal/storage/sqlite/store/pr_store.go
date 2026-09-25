@@ -8,9 +8,9 @@ import (
 	"strings"
 	"time"
 
-	"github.com/aoagents/agent-orchestrator/backend/internal/domain"
-	"github.com/aoagents/agent-orchestrator/backend/internal/ports"
-	"github.com/aoagents/agent-orchestrator/backend/internal/storage/sqlite/gen"
+	"github.com/sudo-adduser-jordan/open-agents/backend/internal/domain"
+	"github.com/sudo-adduser-jordan/open-agents/backend/internal/ports"
+	"github.com/sudo-adduser-jordan/open-agents/backend/internal/storage/sqlite/gen"
 )
 
 // The pr / pr_checks / pr_comment rows are modelled by domain.PullRequest /

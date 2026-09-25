@@ -31,7 +31,7 @@ func TestOpenPreMigratedSucceedsForMigratedDatabase(t *testing.T) {
 // goose_db_version table or no applied rows).
 func TestOpenPreMigratedRejectsNewEmptyDatabase(t *testing.T) {
 	dataDir := t.TempDir()
-	if err := createEmptyDatabase(filepath.Join(dataDir, "ao.db")); err != nil {
+	if err := createEmptyDatabase(filepath.Join(dataDir, "open-agents.db")); err != nil {
 		t.Fatalf("create empty database: %v", err)
 	}
 
@@ -75,7 +75,7 @@ func TestOpenPreMigratedRejectsStaleMigrationVersion(t *testing.T) {
 // returning the raw *sql.DB handle (caller must close it).
 func openMigratedTestDBIn(t *testing.T, dataDir string) *sql.DB {
 	t.Helper()
-	db, err := sql.Open("sqlite", "file:"+filepath.Join(dataDir, "ao.db")+pragmas)
+	db, err := sql.Open("sqlite", "file:"+filepath.Join(dataDir, "open-agents.db")+pragmas)
 	if err != nil {
 		t.Fatalf("open sqlite: %v", err)
 	}
@@ -92,7 +92,7 @@ func openRawDB(dataDir string) (*sql.DB, error) {
 	if err := os.MkdirAll(dataDir, 0o750); err != nil {
 		return nil, err
 	}
-	db, err := sql.Open("sqlite", "file:"+filepath.Join(dataDir, "ao.db")+pragmas)
+	db, err := sql.Open("sqlite", "file:"+filepath.Join(dataDir, "open-agents.db")+pragmas)
 	if err != nil {
 		return nil, err
 	}

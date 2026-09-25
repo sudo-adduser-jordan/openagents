@@ -8,7 +8,7 @@ import type { UpdateDownloadedEvent } from "electron-updater/out/types";
 import type { MacV2TrustedKey } from "./mac-differential-v2-protocol";
 import { authorizeMacV2Target, MacV2CleanupError, reconstructMacV2, verifyMacV2LocalFile } from "./mac-differential-v2-transfer";
 
-const MAC_V2_CACHE_AUTHORIZATION = "ao-diff-v2-cache.json";
+const MAC_V2_CACHE_AUTHORIZATION = "open-agents-diff-v2-cache.json";
 class MacV2CacheAuthorizationError extends Error {}
 
 export interface MacV2UpdaterOptions {

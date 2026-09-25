@@ -13,9 +13,9 @@ import (
 	"sync"
 	"time"
 
-	"github.com/aoagents/agent-orchestrator/backend/internal/domain"
-	"github.com/aoagents/agent-orchestrator/backend/internal/ports"
-	"github.com/aoagents/agent-orchestrator/backend/internal/sessionguard"
+	"github.com/sudo-adduser-jordan/open-agents/backend/internal/domain"
+	"github.com/sudo-adduser-jordan/open-agents/backend/internal/ports"
+	"github.com/sudo-adduser-jordan/open-agents/backend/internal/sessionguard"
 )
 
 type sessionStore interface {
@@ -150,7 +150,7 @@ func WithNotificationSink(sink notificationSink) Option {
 }
 
 // WithContainerReaper wires the container leg of #2652: MarkTerminated will
-// force-remove the terminated session's ao.session-labeled Docker containers,
+// force-remove the terminated session's open-agents.session-labeled Docker containers,
 // unless the project opts out via ProjectConfig.ContainerReap.Disabled.
 func WithContainerReaper(reaper ports.ContainerReaper, projects projectConfigLoader) Option {
 	return func(m *Manager) {
@@ -247,7 +247,7 @@ type Manager struct {
 func New(store sessionStore, messenger ports.AgentMessenger, opts ...Option) *Manager {
 	// UTC so activity-driven LastActivityAt/UpdatedAt match spawn-stamped
 	// timestamps (the session manager clock is UTC too); a local clock here left
-	// `ao session get` showing created in UTC but updated in local time. A
+	// `open-agents session get` showing created in UTC but updated in local time. A
 	// WithClock option may still override this in tests.
 	clock := func() time.Time { return time.Now().UTC() }
 	m := &Manager{
@@ -300,7 +300,7 @@ func (m *Manager) SetSessionInputLease(lease sessionguard.InputLease) {
 }
 
 // SetSessionOperationGate prevents observation-driven terminal facts from
-// racing AO's deliberate provider replacement/relaunch operations.
+// racing Open Agents's deliberate provider replacement/relaunch operations.
 func (m *Manager) SetSessionOperationGate(gate sessionOperationGate) {
 	m.operationGateMu.Lock()
 	m.operationGate = gate
@@ -515,7 +515,7 @@ func (m *Manager) ApplyActivitySignal(ctx context.Context, id domain.SessionID, 
 	// events, so accepting a field merely because it is non-empty can promote an
 	// unrelated message into a hard native-history checkpoint. Missing event
 	// provenance is untrusted as well: these text fields and Event were introduced
-	// together on AO's activity wire contract.
+	// together on Open Agents's activity wire contract.
 	switch s.Event {
 	case "user-prompt-submit":
 		s.LatestAssistantUpdate = ""
@@ -526,7 +526,7 @@ func (m *Manager) ApplyActivitySignal(ctx context.Context, id domain.SessionID, 
 		s.LatestAssistantUpdate = ""
 		s.ProviderTurnID = ""
 	}
-	// A response or Stop hook produced by AO's optional source handoff request
+	// A response or Stop hook produced by Open Agents's optional source handoff request
 	// may contain last_assistant_message without echoing the internal prompt.
 	// The semantic outcome may already be received, rejected, timed out, or
 	// failed before the provider emits its final Stop hook.
@@ -976,7 +976,7 @@ func (m *Manager) restoreToolFlightLocked(id domain.SessionID, snapshot *toolFli
 // turn-boundary clearing (fail-safe).
 const maxInflightTools = 128
 
-// isToolUseEvent reports whether the AO hook event is one of the tool-use
+// isToolUseEvent reports whether the Open Agents hook event is one of the tool-use
 // trio whose signals must not demote a sticky state on their own.
 func isToolUseEvent(event string) bool {
 	return event == "pre-tool-use" || isPostToolUseEvent(event)
@@ -984,7 +984,7 @@ func isToolUseEvent(event string) bool {
 
 func isPostToolUseEvent(event string) bool {
 	// post-tool-use-fail is retained for Kimchi hook files installed before the
-	// adapter switched to AO's canonical failure event name.
+	// adapter switched to Open Agents's canonical failure event name.
 	return event == "post-tool-use" || event == "post-tool-use-failure" || event == "post-tool-use-fail"
 }
 
@@ -1427,7 +1427,7 @@ func (m *Manager) changeControllerEpoch(
 	next.Metadata.ControllerGeneration = ""
 	if !restore && target == domain.SessionModeTUI {
 		// The checkpoint admitted the source Terminal transcript into Chat. Once
-		// Chat hands ownership back, newer Chat turns are represented by AO's
+		// Chat hands ownership back, newer Chat turns are represented by Open Agents's
 		// durable high-water facts; retaining the old Terminal text would compare
 		// it against the latest provider turn on the next round trip and fail a
 		// valid replay closed. A new TUI main-turn hook establishes fresh text.
@@ -1522,8 +1522,8 @@ func (m *Manager) MarkTerminated(ctx context.Context, id domain.SessionID) error
 // MarkTerminated call - Kill, daemon-shutdown teardown, Cleanup,
 // RetireForReplacement, and tracker-driven termination - funnels through
 // here, so this single hook covers every terminal-state path rather than
-// only explicit ao session kill. Best-effort: logged on failure, never
-// returned, matching the rest of AO's terminal-state teardown. Standalone
+// only explicit open-agents session kill. Best-effort: logged on failure, never
+// returned, matching the rest of Open Agents's terminal-state teardown. Standalone
 // sessions have no project-level opt-out, so they use the default reap-enabled
 // policy. For project sessions, a project-load error skips reaping rather than
 // guessing - the package's stated bias is to spare on ambiguity, not to reap on
@@ -1629,7 +1629,7 @@ func mergeMetadata(base, in domain.SessionMetadata) domain.SessionMetadata {
 	set(&base.BrowserCapabilityVerifier, in.BrowserCapabilityVerifier)
 	// The chat controller's resume handle. Without this a restart has no thread to
 	// resume and the conversation is stranded — the provider still holds it, but
-	// AO no longer knows its id.
+	// Open Agents no longer knows its id.
 	set(&base.ProviderConversationID, in.ProviderConversationID)
 	// Assigned rather than set: a relaunch rotates the generation, and the whole
 	// point is that the new value replaces the old one so events from the

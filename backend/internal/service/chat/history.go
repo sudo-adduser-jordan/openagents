@@ -11,8 +11,8 @@ import (
 	"unicode"
 	"unicode/utf8"
 
-	"github.com/aoagents/agent-orchestrator/backend/internal/domain"
-	"github.com/aoagents/agent-orchestrator/backend/internal/ports"
+	"github.com/sudo-adduser-jordan/open-agents/backend/internal/domain"
+	"github.com/sudo-adduser-jordan/open-agents/backend/internal/ports"
 )
 
 const nativeEditHandoffLimit = 45 * time.Second
@@ -20,8 +20,8 @@ const nativeEditHandoffLimit = 45 * time.Second
 // Conversation history operations: rollback, fork, and the thread title.
 //
 // The three share one property that shapes everything here: they change the
-// provider's own record of the conversation, not AO's view of it. Rollback is the
-// sharp one — it changes what the agent REMEMBERS — so AO's durable rows have to
+// provider's own record of the conversation, not Open Agents's view of it. Rollback is the
+// sharp one — it changes what the agent REMEMBERS — so Open Agents's durable rows have to
 // follow, or the timeline goes on showing prose the agent cannot recall.
 //
 // Each is optional on the driver and feature-detected, following the Models
@@ -42,7 +42,7 @@ var (
 	// the turn ends, which is why it is separate from every other refusal here.
 	ErrTurnRunning = errors.New("cannot roll back while a turn is running")
 	// ErrTurnNotRollbackable reports a turn the provider never accepted. There is
-	// no provider history to discard, so an undo would only hide AO's own rows and
+	// no provider history to discard, so an undo would only hide Open Agents's own rows and
 	// leave the agent remembering more than the timeline shows.
 	ErrTurnNotRollbackable = errors.New("turn was never dispatched to the provider")
 	// ErrTurnProviderMismatch reports a durable turn owned by an earlier agent
@@ -58,7 +58,7 @@ var (
 	// ErrEditTurnInvalid reports a prompt that cannot be safely reconstructed from
 	// durable history, including malformed legacy structured content.
 	ErrEditTurnInvalid = errors.New("conversation turn cannot be edited")
-	// ErrEditDeliveryUncertain means AO reserved the edit handle but cannot prove
+	// ErrEditDeliveryUncertain means Open Agents reserved the edit handle but cannot prove
 	// whether provider delivery and the durable branch result committed together.
 	ErrEditDeliveryUncertain = errors.New("edit delivery is uncertain")
 	// ErrEditIdempotencyConflict refuses reuse of one edit handle for a different
@@ -101,13 +101,13 @@ func classify(err error) error {
 const maxTitleRunes = 80
 
 // Rollback discards a turn and everything after it, from the agent's memory and
-// from AO's timeline.
+// from Open Agents's timeline.
 //
 // Refused while a turn is running, and refused BEFORE the provider is asked. The
 // provider refuses this too, but relying on that alone would make the outcome a
-// race: AO would have already decided to hide rows by the time it learned it could
+// race: Open Agents would have already decided to hide rows by the time it learned it could
 // not. The controller holds its dispatch lock across the check and the call, so
-// within AO the answer cannot change underneath.
+// within Open Agents the answer cannot change underneath.
 func (s *Service) Rollback(ctx context.Context, id domain.SessionID, turnID string) (int, error) {
 	if _, err := s.requireChatSession(ctx, id); err != nil {
 		return 0, err
@@ -125,8 +125,8 @@ func (s *Service) Rollback(ctx context.Context, id domain.SessionID, turnID stri
 // ForkConversation branches this session's provider conversation and returns the
 // new provider handle.
 //
-// Deliberately not reachable over HTTP yet, and the reason is not effort. AO's
-// schema allows one conversation per session, so a fork has to become a second AO
+// Deliberately not reachable over HTTP yet, and the reason is not effort. Open Agents's
+// schema allows one conversation per session, so a fork has to become a second Open Agents
 // session — and a second session gets a fresh worktree, while the provider's own
 // documentation is explicit that a fork copies conversation history and does NOT
 // revert or copy the file changes the agent made. The forked agent would remember
@@ -602,7 +602,7 @@ func withoutInternalReplayContent(content []ports.ChatContent) []ports.ChatConte
 // the connection failed, so deleting and blindly retrying it could execute the
 // work twice. Keeping the failed turn makes that uncertainty durable and leaves
 // both alternatives navigable after restart. A provider-declared refusal is
-// conclusive, so AO safely returns the user to the source branch.
+// conclusive, so Open Agents safely returns the user to the source branch.
 func (s *Service) sendEditedMessage(
 	ctx context.Context,
 	sourceBranchID, activeBranchID string,
@@ -1088,8 +1088,8 @@ func (s *Service) installStartedBranchController(
 
 // SetTitle names the provider's thread and returns the normalized title.
 //
-// Nothing is written to AO's rows here. The provider answers, then emits its own
-// rename notification, and the projection applies it — so the title AO stores is
+// Nothing is written to Open Agents's rows here. The provider answers, then emits its own
+// rename notification, and the projection applies it — so the title Open Agents stores is
 // always one the provider confirmed. Writing it optimistically as well would give
 // one fact two authors and no way to tell which lost.
 func (s *Service) SetTitle(ctx context.Context, id domain.SessionID, title string) (string, error) {
@@ -1114,7 +1114,7 @@ func (s *Service) SetTitle(ctx context.Context, id domain.SessionID, title strin
 	return normalized, nil
 }
 
-// NormalizeTitle reduces a title to the one-line label AO is willing to show.
+// NormalizeTitle reduces a title to the one-line label Open Agents is willing to show.
 //
 // The rules come from the automatic-semantic-task-titles design: one line, no
 // wrapper punctuation, no trailing punctuation, and a hard length bound. They are
@@ -1123,7 +1123,7 @@ func (s *Service) SetTitle(ctx context.Context, id domain.SessionID, title strin
 // often enough that a client would otherwise render them.
 //
 // Over-length input is truncated at a word boundary rather than rejected: the
-// provider already accepted the name, and refusing to display a title AO's own
+// provider already accepted the name, and refusing to display a title Open Agents's own
 // session is now carrying would leave the two disagreeing.
 func NormalizeTitle(raw string) string {
 	title := raw

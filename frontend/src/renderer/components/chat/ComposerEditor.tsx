@@ -64,7 +64,7 @@ export type ComposerEditorHandle = {
 type TokenKind = "skill" | "file";
 
 const completionHandledEvents = new WeakSet<Event>();
-const PROGRAMMATIC_TEXT_UPDATE_TAG = "ao:composer-programmatic-text";
+const PROGRAMMATIC_TEXT_UPDATE_TAG = "open-agents:composer-programmatic-text";
 
 type SerializedComposerTokenNode = Spread<
 	{
@@ -384,7 +384,7 @@ export const ComposerEditor = forwardRef<
 	ref,
 ) {
 	const initialConfig = {
-		namespace: "AOChatComposer",
+		namespace: "OpenAgentsChatComposer",
 		nodes: [ComposerTokenNode],
 		editable: !disabled,
 		theme: { paragraph: "m-0" },

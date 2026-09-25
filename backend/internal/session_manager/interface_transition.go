@@ -9,8 +9,8 @@ import (
 	"strings"
 	"time"
 
-	"github.com/aoagents/agent-orchestrator/backend/internal/domain"
-	"github.com/aoagents/agent-orchestrator/backend/internal/ports"
+	"github.com/sudo-adduser-jordan/open-agents/backend/internal/domain"
+	"github.com/sudo-adduser-jordan/open-agents/backend/internal/ports"
 )
 
 const (
@@ -27,9 +27,9 @@ const (
 )
 
 var (
-	errDrainQuiescenceUnverified = errors.New("AO could not verify that the terminal was idle after the latest input. The source interface was left untouched; retry after the terminal settles")
-	errDrainDraftPresent         = errors.New("AO found unsent text in the terminal composer. The source interface was left untouched; submit or clear the draft and retry, or choose Discard draft and switch")
-	errDrainDecisionPending      = errors.New("AO found a provider decision waiting in Terminal. The source interface was left untouched; answer it in Terminal and retry, or choose Cancel request and switch")
+	errDrainQuiescenceUnverified = errors.New("Open Agents could not verify that the terminal was idle after the latest input. The source interface was left untouched; retry after the terminal settles")
+	errDrainDraftPresent         = errors.New("Open Agents found unsent text in the terminal composer. The source interface was left untouched; submit or clear the draft and retry, or choose Discard draft and switch")
+	errDrainDecisionPending      = errors.New("Open Agents found a provider decision waiting in Terminal. The source interface was left untouched; answer it in Terminal and retry, or choose Cancel request and switch")
 )
 
 // interfaceTransitionStore is optional so the existing narrow Manager Store
@@ -499,7 +499,7 @@ func (m *Manager) runInterfaceTransition(
 	// be proven stopped, do not launch either controller: recovery is safer than
 	// two writers racing on one native conversation.
 	if err := m.stopSourceControllerConclusive(rec); err != nil {
-		detail := "AO could not prove that the old controller stopped. Restart AO to reconcile this session before sending more work: " + err.Error()
+		detail := "Open Agents could not prove that the old controller stopped. Restart Open Agents to reconcile this session before sending more work: " + err.Error()
 		_ = m.finishInterfaceTransition(transition.ID, domain.SessionInterfaceTransitionRecovery,
 			"SOURCE_STOP_UNCERTAIN", detail)
 		return
@@ -640,7 +640,7 @@ func (m *Manager) nativeConversationID(
 // reserved native id is not enough: both are also observable when persistence
 // is lagging or broken after real work. Chat requires durable emptiness — an
 // empty root conversation, or no conversation at all; TUI requires an
-// untouched initial composer. AO must have no hook-derived conversation facts
+// untouched initial composer. Open Agents must have no hook-derived conversation facts
 // that contradict either proof.
 func (m *Manager) nativeConversationNotStarted(
 	ctx context.Context,
@@ -1254,7 +1254,7 @@ func (m *Manager) retainUnconfirmedTransitionTarget(transition domain.SessionInt
 	// Keep the durable input fence and startup-recovery record. Terminalizing the
 	// saga would let ordinary restore adopt a target that never passed admission.
 	if err := m.moveInterfaceTransition(transition.ID, domain.SessionInterfaceTransitionTargetStarting,
-		"TARGET_STOP_UNCONFIRMED", "AO could not confirm the target controller stopped. Restart AO to retry shutdown before restoring the original interface. "+cause.Error()); err != nil {
+		"TARGET_STOP_UNCONFIRMED", "Open Agents could not confirm the target controller stopped. Restart Open Agents to retry shutdown before restoring the original interface. "+cause.Error()); err != nil {
 		m.logger.Error("interface transition: retain unconfirmed target shutdown", "transition", transition.ID, "error", err)
 		return fmt.Errorf("persist unconfirmed target for transition %s: %w", transition.ID, err)
 	}
@@ -1341,7 +1341,7 @@ func (m *Manager) deliverTransitionMessages(
 	lastTerminalInputAt, releaseTerminalInput := m.beginTerminalInputDrain(rec)
 	if releaseTerminalInput != nil {
 		defer releaseTerminalInput()
-		// Closing the raw-input gate and rechecking readiness makes queued AO
+		// Closing the raw-input gate and rechecking readiness makes queued Open Agents
 		// delivery the next instruction accepted by the TUI controller.
 		if _, err := m.waitForTransitionDeliveryReady(ctx, transition.SessionID, lastTerminalInputAt); err != nil {
 			return fmt.Errorf("recheck transition %s delivery readiness: %w", transition.ID, err)
@@ -1603,7 +1603,7 @@ func (m *Manager) recoverInterfaceTransitions(ctx context.Context, transitionID 
 				return nil, ctx.Err()
 			}
 		}
-		detail := "The daemon restarted during the interface switch; AO recovered the session from its last committed mode."
+		detail := "The daemon restarted during the interface switch; Open Agents recovered the session from its last committed mode."
 		if (transition.SourceMode == domain.SessionModeTUI && transition.TargetMode == domain.SessionModeChat) ||
 			transition.ErrorCode == "TARGET_STOP_UNCONFIRMED" {
 			rec, found, readErr := m.store.GetSession(ctx, transition.SessionID)
@@ -1636,9 +1636,9 @@ func (m *Manager) recoverInterfaceTransitions(ctx context.Context, transitionID 
 					return nil, fmt.Errorf("recover transition %s source mode: session changed", transition.ID)
 				}
 				if transition.SourceMode == domain.SessionModeTUI {
-					detail = "The daemon restarted during the interface switch; AO restored Terminal so native history can be replayed safely on retry."
+					detail = "The daemon restarted during the interface switch; Open Agents restored Terminal so native history can be replayed safely on retry."
 				} else {
-					detail = "The daemon restarted during the interface switch; AO confirmed the failed Terminal controller stopped and restored Chat ownership."
+					detail = "The daemon restarted during the interface switch; Open Agents confirmed the failed Terminal controller stopped and restored Chat ownership."
 				}
 			}
 		}

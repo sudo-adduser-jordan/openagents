@@ -42,7 +42,7 @@ func TestNormalizeWorkflowModeFallsBackToPlanning(t *testing.T) {
 }
 
 // Requested workflow modes are parsed strictly so a toggle request naming a
-// stage AO cannot place fails loudly instead of silently landing in planning.
+// stage Open Agents cannot place fails loudly instead of silently landing in planning.
 func TestParseWorkflowModeRejectsUnknownInsteadOfFallingBack(t *testing.T) {
 	if _, err := ParseWorkflowMode("review"); err == nil {
 		t.Fatal("ParseWorkflowMode(\"review\") = nil error, want a rejection")

@@ -1,7 +1,7 @@
 # Daemon environment: the GUI-launch PATH/credentials problem
 
 Status: proposed
-Scope: desktop (Electron) launch of the AO daemon on macOS (and any GUI-launched
+Scope: desktop (Electron) launch of the Open Agents daemon on macOS (and any GUI-launched
 desktop platform)
 
 ## Summary
@@ -26,13 +26,13 @@ session (it execs `tmux`, which runs the session agent CLI — `opencode`), and 
 (`runtimeEnv` -> `HookPATH(m.executable, os.Getenv, ...)` in
 `backend/internal/session_manager/manager.go`).
 
-AO keeps an AO-only directory first after adding agent and Node runtime
+Open Agents keeps an Open Agents-only directory first after adding agent and Node runtime
 directories, including opencode Chat provider launches, and applies the same pin
 to reviewer and shell-terminal launches.
 Interactive login shells can still reorder `PATH` through user startup files,
 so this is a launch invariant and a best-effort convenience inside a shell.
-When the install directory contains other executable tools, AO creates an
-`ao` shim under its resolved absolute data directory instead of promoting those
+When the install directory contains other executable tools, Open Agents creates an
+`open-agents` shim under its resolved absolute data directory instead of promoting those
 sibling tools. Windows provides both command-shell and Git Bash compatible
 entries in that isolated directory.
 
@@ -98,7 +98,7 @@ Forwarding the environment is not the bug. The daemon and agents genuinely need:
 - shell-exported credentials (`ANTHROPIC_API_KEY`, `OPENAI_API_KEY`, `GH_TOKEN`,
   ...);
 - locale/proxy (`LANG`, `LC_*`, `HTTPS_PROXY`);
-- AO's own vars (`AO_DATA_DIR`, `AO_RUN_FILE`, session ids).
+- Open Agents's own vars (`OPEN_AGENTS_DATA_DIR`, `OPEN_AGENTS_RUN_FILE`, session ids).
 
 The bug is the _source_ of what we forward: under a GUI launch, `process.env` is
 launchd's minimal env, not the shell's. The fix is to forward a _good_ base env,
@@ -128,7 +128,7 @@ into key/value pairs and merge it under the existing forwarded env so explicit
 overrides still win:
 
 ```
-finalEnv = { ...shellEnv, ...process.env, AO_*: defaults }
+finalEnv = { ...shellEnv, ...process.env, OPEN_AGENTS_*: defaults }
 ```
 
 ### Worked example
@@ -166,7 +166,7 @@ parent that hands env to the daemon.
   honor bash/fish.
 - **Isolate the payload.** Interactive shells can print banners/motd/prompts to
   stdout. Bracket the real output with a sentinel and read only after it:
-  `zsh -ilc 'echo __AO_ENV_START__; env -0'`.
+  `zsh -ilc 'echo __OPEN_AGENTS_ENV_START__; env -0'`.
 - **No stdin, with a timeout.** Run with `</dev/null` and a ~2-3s timeout so a
   misconfigured rc that waits for input cannot hang startup.
 - **Fallback on any failure.** If the probe fails, times out, or exits nonzero,
@@ -205,10 +205,10 @@ it. We shell out once to the user's own shell and adopt its result.
 - `frontend/scripts/build-tmux.mjs` - pinned, checksum-verified static dependency
   build copied into the macOS/Linux package.
 - `frontend/src/shared/bundled-tmux.ts` and `frontend/src/main.ts` - packaged
-  resource resolution, durable versioned staging under the AO data directory,
-  and `AO_TMUX_BINARY`/AO-owned socket injection.
+  resource resolution, durable versioned staging under the Open Agents data directory,
+  and `OPEN_AGENTS_TMUX_BINARY`/Open Agents-owned socket injection.
 - `backend/internal/adapters/runtime/tmux/tmux.go` - honors
-  `AO_TMUX_BINARY`; standalone runs fall back to `exec.LookPath("tmux")`.
+  `OPEN_AGENTS_TMUX_BINARY`; standalone runs fall back to `exec.LookPath("tmux")`.
 - `backend/internal/observe/reaper/reaper.go`,
   `backend/internal/lifecycle/runtime.go` - liveness -> termination
   (`ProbeFailed` never terminates, so a daemon that cannot run `tmux` strands

@@ -47,7 +47,7 @@ describe("useFileAttachments", () => {
 						resolve(
 							attachments.map((attachment) => ({
 								...attachment,
-								stagedPath: `.ao/attachments/${attachment.name}`,
+								stagedPath: `.open-agents/attachments/${attachment.name}`,
 							})),
 						);
 					});
@@ -140,7 +140,7 @@ describe("useFileAttachments", () => {
 					bytes: 8,
 					name: "discard-me.txt",
 					data: "AQ==",
-					stagedPath: ".ao/attachments/discard-me.txt",
+					stagedPath: ".open-agents/attachments/discard-me.txt",
 				},
 			]);
 			await pending;
@@ -189,7 +189,7 @@ describe("useFileAttachments", () => {
 				prepareAttachments: async (attachments) =>
 					attachments.map((attachment) => ({
 						...attachment,
-						stagedPath: `.ao/attachments/${attachment.name}`,
+						stagedPath: `.open-agents/attachments/${attachment.name}`,
 					})),
 			}),
 		);
@@ -207,7 +207,7 @@ describe("useFileAttachments", () => {
 					mimeType: "text/plain",
 					bytes: 8,
 					name: "old.txt",
-					stagedPath: ".ao/attachments/old.txt",
+					stagedPath: ".open-agents/attachments/old.txt",
 				},
 			]);
 			await oldPending;
@@ -252,9 +252,9 @@ describe("useFileAttachments", () => {
 
 		act(() => discardPendingFileAttachmentsForSession(sessionId));
 		await act(async () => {
-			releases.get("first")?.([{ id: "first", mimeType: "text/plain", bytes: 8, name: "first.txt", stagedPath: ".ao/attachments/first.txt" }]);
-			releases.get("replacement")?.([{ id: "replacement", mimeType: "text/plain", bytes: 8, name: "replacement.txt", stagedPath: ".ao/attachments/replacement.txt" }]);
-			releases.get("other")?.([{ id: "other", mimeType: "text/plain", bytes: 8, name: "other.txt", stagedPath: ".ao/attachments/other.txt" }]);
+			releases.get("first")?.([{ id: "first", mimeType: "text/plain", bytes: 8, name: "first.txt", stagedPath: ".open-agents/attachments/first.txt" }]);
+			releases.get("replacement")?.([{ id: "replacement", mimeType: "text/plain", bytes: 8, name: "replacement.txt", stagedPath: ".open-agents/attachments/replacement.txt" }]);
+			releases.get("other")?.([{ id: "other", mimeType: "text/plain", bytes: 8, name: "other.txt", stagedPath: ".open-agents/attachments/other.txt" }]);
 			await Promise.all([firstPending, replacementPending, otherPending]);
 		});
 
@@ -302,7 +302,7 @@ describe("useFileAttachments", () => {
 					mimeType: "text/plain",
 					bytes: 8,
 					name: "before-confirmation.txt",
-					stagedPath: ".ao/attachments/before-confirmation.txt",
+					stagedPath: ".open-agents/attachments/before-confirmation.txt",
 				},
 			]);
 			await beforeConfirmation;
@@ -315,7 +315,7 @@ describe("useFileAttachments", () => {
 					mimeType: "text/plain",
 					bytes: 8,
 					name: "after-confirmation.txt",
-					stagedPath: ".ao/attachments/after-confirmation.txt",
+					stagedPath: ".open-agents/attachments/after-confirmation.txt",
 				},
 			]);
 			await afterConfirmation;

@@ -12,8 +12,8 @@ import (
 	"testing"
 	"time"
 
-	"github.com/aoagents/agent-orchestrator/backend/internal/domain"
-	"github.com/aoagents/agent-orchestrator/backend/internal/ports"
+	"github.com/sudo-adduser-jordan/open-agents/backend/internal/domain"
+	"github.com/sudo-adduser-jordan/open-agents/backend/internal/ports"
 )
 
 // -- fakeRunner test seam --
@@ -107,15 +107,15 @@ func TestNewPicksUpShellFromEnv(t *testing.T) {
 }
 
 func TestNewPrefersBundledTmuxFromEnv(t *testing.T) {
-	t.Setenv("AO_TMUX_BINARY", "/opt/ao/resources/tmux/bin/tmux")
+	t.Setenv("OPEN_AGENTS_TMUX_BINARY", "/opt/open-agents/resources/tmux/bin/tmux")
 	r := New(Options{})
-	if got := r.binary; got != "/opt/ao/resources/tmux/bin/tmux" {
+	if got := r.binary; got != "/opt/open-agents/resources/tmux/bin/tmux" {
 		t.Fatalf("binary = %q, want bundled tmux", got)
 	}
 }
 
 func TestNewExplicitBinaryOverridesBundledTmuxEnv(t *testing.T) {
-	t.Setenv("AO_TMUX_BINARY", "/opt/ao/resources/tmux/bin/tmux")
+	t.Setenv("OPEN_AGENTS_TMUX_BINARY", "/opt/open-agents/resources/tmux/bin/tmux")
 	r := New(Options{Binary: "tmux-test"})
 	if got := r.binary; got != "tmux-test" {
 		t.Fatalf("binary = %q, want explicit option", got)
@@ -123,7 +123,7 @@ func TestNewExplicitBinaryOverridesBundledTmuxEnv(t *testing.T) {
 }
 
 func TestNewUsesAppOwnedTmuxSocketFromEnv(t *testing.T) {
-	t.Setenv("AO_TMUX_SOCKET_NAME", "ao")
+	t.Setenv("OPEN_AGENTS_TMUX_SOCKET_NAME", "open-agents")
 	r := New(Options{Binary: "tmux-test"})
 	fr := &fakeRunner{}
 	r.runner = fr
@@ -131,7 +131,7 @@ func TestNewUsesAppOwnedTmuxSocketFromEnv(t *testing.T) {
 	if _, err := r.run(context.Background(), "list-sessions"); err != nil {
 		t.Fatalf("run: %v", err)
 	}
-	if got, want := fr.calls[0].args, []string{"-L", "ao", "list-sessions"}; !reflect.DeepEqual(got, want) {
+	if got, want := fr.calls[0].args, []string{"-L", "open-agents", "list-sessions"}; !reflect.DeepEqual(got, want) {
 		t.Fatalf("args = %#v, want %#v", got, want)
 	}
 }
@@ -147,8 +147,8 @@ func TestNewUsesSystemTmuxForLegacyDefaultSocket(t *testing.T) {
 		t.Fatal(err)
 	}
 	t.Setenv("PATH", binDir)
-	t.Setenv("AO_TMUX_BINARY", bundledTmux)
-	t.Setenv("AO_TMUX_SOCKET_NAME", "ao")
+	t.Setenv("OPEN_AGENTS_TMUX_BINARY", bundledTmux)
+	t.Setenv("OPEN_AGENTS_TMUX_SOCKET_NAME", "open-agents")
 
 	r := New(Options{})
 	if got := r.binary; got != bundledTmux {
@@ -165,8 +165,8 @@ func TestNewLeavesLegacyTmuxUnavailableWithoutSystemTmux(t *testing.T) {
 		t.Fatal(err)
 	}
 	t.Setenv("PATH", t.TempDir())
-	t.Setenv("AO_TMUX_BINARY", bundledTmux)
-	t.Setenv("AO_TMUX_SOCKET_NAME", "ao")
+	t.Setenv("OPEN_AGENTS_TMUX_BINARY", bundledTmux)
+	t.Setenv("OPEN_AGENTS_TMUX_SOCKET_NAME", "open-agents")
 
 	r := New(Options{})
 	if got := r.legacyBinary; got != "" {
@@ -349,7 +349,7 @@ func TestCreateIssuesNewSessionAndStatusOff(t *testing.T) {
 		SessionID:     "sess-1",
 		WorkspacePath: "/tmp/ws",
 		Argv:          []string{"echo", "hi"},
-		Env:           map[string]string{"AO_SESSION_ID": "sess-1"},
+		Env:           map[string]string{"OPEN_AGENTS_SESSION_ID": "sess-1"},
 	})
 	if err != nil {
 		t.Fatalf("Create: %v", err)
@@ -440,7 +440,7 @@ func TestCreateCommandTerminalExitsWhenCommandCompletes(t *testing.T) {
 	_, err := r.Create(context.Background(), ports.RuntimeConfig{
 		SessionID:               "command-1",
 		WorkspacePath:           "/tmp/ws",
-		Argv:                    []string{"ao", "codex-login"},
+		Argv:                    []string{"open-agents", "codex-login"},
 		ExitOnCommandCompletion: true,
 	})
 	if err != nil {
@@ -474,10 +474,10 @@ func TestCreateLaunchCommandExportsEnvVars(t *testing.T) {
 		WorkspacePath: "/tmp/ws",
 		Argv:          []string{"myagent"},
 		Env: map[string]string{
-			"AO_SESSION_ID": "sess-1",
-			"COLORTERM":     "ansi",
-			"ODD":           "can't",
-			"PATH":          "/custom/bin:/usr/bin",
+			"OPEN_AGENTS_SESSION_ID": "sess-1",
+			"COLORTERM":              "ansi",
+			"ODD":                    "can't",
+			"PATH":                   "/custom/bin:/usr/bin",
 		},
 	})
 	if err != nil {
@@ -487,7 +487,7 @@ func TestCreateLaunchCommandExportsEnvVars(t *testing.T) {
 	launchCmd := args[len(args)-1]
 	for _, want := range []string{
 		"unset NO_COLOR;",
-		"export AO_SESSION_ID='sess-1';",
+		"export OPEN_AGENTS_SESSION_ID='sess-1';",
 		"export COLORTERM='truecolor';",
 		"export ODD='can'\\''t';",
 		"export PATH='/custom/bin:/usr/bin';",
@@ -720,7 +720,7 @@ func TestRestartRespawnsExistingPaneAndPreservesHandle(t *testing.T) {
 		SessionID:     "sess-1",
 		WorkspacePath: "/tmp/ws",
 		Argv:          []string{"codex", "resume", "native-1"},
-		Env:           map[string]string{"AO_SESSION_ID": "sess-1"},
+		Env:           map[string]string{"OPEN_AGENTS_SESSION_ID": "sess-1"},
 	}
 
 	got, err := r.Restart(context.Background(), handle, cfg)
@@ -760,7 +760,7 @@ func TestIsAliveAdoptsSessionFromLegacyDefaultSocket(t *testing.T) {
 	r := New(Options{
 		Binary:       "bundled-tmux-test",
 		LegacyBinary: "system-tmux-test",
-		SocketName:   "ao",
+		SocketName:   "open-agents",
 		Timeout:      time.Second,
 	})
 	fr := &fakeRunnerSequence{results: []fakeRunnerResult{
@@ -779,7 +779,7 @@ func TestIsAliveAdoptsSessionFromLegacyDefaultSocket(t *testing.T) {
 		}
 	}
 	want := [][]string{
-		append([]string{"-L", "ao"}, hasSessionArgs("sess-1")...),
+		append([]string{"-L", "open-agents"}, hasSessionArgs("sess-1")...),
 		append([]string{"-L", "default"}, hasSessionArgs("sess-1")...),
 		append([]string{"-L", "default"}, hasSessionArgs("sess-1")...),
 		append([]string{"-L", "default"}, hasSessionArgs("sess-1")...),
@@ -807,12 +807,12 @@ func TestIsAliveAdoptsLegacyDefaultSessionWhenNamedSocketDoesNotExist(t *testing
 	r := New(Options{
 		Binary:       "bundled-tmux-test",
 		LegacyBinary: "system-tmux-test",
-		SocketName:   "ao",
+		SocketName:   "open-agents",
 		Timeout:      time.Second,
 	})
 	fr := &fakeRunnerSequence{results: []fakeRunnerResult{
 		{
-			out: []byte("error connecting to /private/tmp/tmux-501/ao (No such file or directory)"),
+			out: []byte("error connecting to /private/tmp/tmux-501/open-agents (No such file or directory)"),
 			err: &exec.ExitError{},
 		},
 		{}, // legacy default-socket discovery
@@ -825,7 +825,7 @@ func TestIsAliveAdoptsLegacyDefaultSessionWhenNamedSocketDoesNotExist(t *testing
 		t.Fatalf("IsAlive = (%v, %v), want (true, nil)", alive, err)
 	}
 	want := [][]string{
-		append([]string{"-L", "ao"}, hasSessionArgs("sess-1")...),
+		append([]string{"-L", "open-agents"}, hasSessionArgs("sess-1")...),
 		append([]string{"-L", "default"}, hasSessionArgs("sess-1")...),
 		append([]string{"-L", "default"}, hasSessionArgs("sess-1")...),
 	}
@@ -847,11 +847,11 @@ func TestIsAliveKeepsAmbiguousNamedSocketFailureInNamedNamespace(t *testing.T) {
 	r := New(Options{
 		Binary:       "bundled-tmux-test",
 		LegacyBinary: "system-tmux-test",
-		SocketName:   "ao",
+		SocketName:   "open-agents",
 		Timeout:      time.Second,
 	})
 	connectionRefused := fakeRunnerResult{
-		out: []byte("error connecting to /private/tmp/tmux-501/ao (Connection refused)"),
+		out: []byte("error connecting to /private/tmp/tmux-501/open-agents (Connection refused)"),
 		err: &exec.ExitError{},
 	}
 	fr := &fakeRunnerSequence{results: []fakeRunnerResult{connectionRefused, connectionRefused}}
@@ -871,14 +871,14 @@ func TestIsAliveKeepsAmbiguousNamedSocketFailureInNamedNamespace(t *testing.T) {
 		if call.name != "bundled-tmux-test" {
 			t.Fatalf("call %d binary = %q, want bundled-tmux-test", i, call.name)
 		}
-		if len(call.args) < 2 || call.args[0] != "-L" || call.args[1] != "ao" {
-			t.Fatalf("call %d args = %#v, want named ao socket", i, call.args)
+		if len(call.args) < 2 || call.args[0] != "-L" || call.args[1] != "open-agents" {
+			t.Fatalf("call %d args = %#v, want named open-agents socket", i, call.args)
 		}
 	}
 }
 
 func TestIsAliveReportsMissingLegacyClientAsProbeInconclusive(t *testing.T) {
-	r := New(Options{Binary: "bundled-tmux-test", SocketName: "ao", Timeout: time.Second})
+	r := New(Options{Binary: "bundled-tmux-test", SocketName: "open-agents", Timeout: time.Second})
 	r.legacyBinary = ""
 	fr := &fakeRunnerSequence{results: []fakeRunnerResult{
 		{out: []byte("can't find session: sess-1"), err: &exec.ExitError{}},
@@ -901,7 +901,7 @@ func TestIsAliveReportsIncompatibleLegacyClientAsProbeInconclusive(t *testing.T)
 	r := New(Options{
 		Binary:       "bundled-tmux-test",
 		LegacyBinary: "system-tmux-test",
-		SocketName:   "ao",
+		SocketName:   "open-agents",
 		Timeout:      time.Second,
 	})
 	fr := &fakeRunnerSequence{results: []fakeRunnerResult{
@@ -929,7 +929,7 @@ func TestIsAliveReportsTransientLegacyConnectionAsProbeInconclusive(t *testing.T
 	r := New(Options{
 		Binary:       "bundled-tmux-test",
 		LegacyBinary: "system-tmux-test",
-		SocketName:   "ao",
+		SocketName:   "open-agents",
 		Timeout:      time.Second,
 	})
 	fr := &fakeRunnerSequence{results: []fakeRunnerResult{
@@ -995,7 +995,7 @@ func TestDestroyIsIdempotentWhenBothMigrationSocketsAbsent(t *testing.T) {
 	r := New(Options{
 		Binary:       "bundled-tmux-test",
 		LegacyBinary: "system-tmux-test",
-		SocketName:   "ao",
+		SocketName:   "open-agents",
 		Timeout:      time.Second,
 	})
 	absent := fakeRunnerResult{
@@ -1054,7 +1054,7 @@ func TestIsSupervisedProcessAliveFindsExactDescendant(t *testing.T) {
 	r, fr := newTestRuntime(0)
 	fr.outputs = [][]byte{
 		[]byte("100\n"),
-		[]byte("100 1 /bin/sh -c launch\n101 100 /opt/ao agent-process supervise --session sess-1 --launch launch-2 -- codex\n102 101 codex\n"),
+		[]byte("100 1 /bin/sh -c launch\n101 100 /opt/open-agents agent-process supervise --session sess-1 --launch launch-2 -- codex\n102 101 codex\n"),
 	}
 
 	alive, err := r.IsSupervisedProcessAlive(context.Background(), ports.RuntimeHandle{ID: "sess-1"}, ports.SupervisedProcessRef{
@@ -1070,7 +1070,7 @@ func TestIsSupervisedProcessAliveFindsExactDescendant(t *testing.T) {
 }
 
 func TestIsSupervisedProcessAliveRejectsStaleAndUnrelatedProcesses(t *testing.T) {
-	entries, err := parseProcessTable("100 1 /bin/sh\n101 100 /opt/ao agent-process supervise --session sess-1 --launch launch-old -- codex\n102 101 codex\n200 1 /opt/ao agent-process supervise --session sess-1 --launch launch-new -- codex\n201 200 codex\n")
+	entries, err := parseProcessTable("100 1 /bin/sh\n101 100 /opt/open-agents agent-process supervise --session sess-1 --launch launch-old -- codex\n102 101 codex\n200 1 /opt/open-agents agent-process supervise --session sess-1 --launch launch-new -- codex\n201 200 codex\n")
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -1086,7 +1086,7 @@ func TestIsSupervisedProcessAliveRejectsStaleAndUnrelatedProcesses(t *testing.T)
 }
 
 func TestExactSupervisedWorkloadRejectsSupervisorReportingExitedChild(t *testing.T) {
-	entries, err := parseProcessTable("100 1 /bin/sh\n101 100 /opt/ao agent-process supervise --session sess-1 --launch launch-2 -- codex\n")
+	entries, err := parseProcessTable("100 1 /bin/sh\n101 100 /opt/open-agents agent-process supervise --session sess-1 --launch launch-2 -- codex\n")
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -1128,7 +1128,7 @@ func TestProbeFencedRuntimeExactProcessMatchIsAlive(t *testing.T) {
 	fr.outputs = [][]byte{
 		nil,
 		[]byte("100\n"),
-		[]byte("100 1 /bin/zsh -i\n101 100 /opt/ao agent-process supervise --session sess-1 --launch launch-2 -- codex\n102 101 codex worker\n"),
+		[]byte("100 1 /bin/zsh -i\n101 100 /opt/open-agents agent-process supervise --session sess-1 --launch launch-2 -- codex\n102 101 codex worker\n"),
 	}
 
 	got := r.ProbeFencedRuntime(context.Background(), ports.FencedRuntimeRef{
@@ -1144,7 +1144,7 @@ func TestProbeFencedRuntimeAmbiguousIdentityIsUnknown(t *testing.T) {
 	fr.outputs = [][]byte{
 		nil,
 		[]byte("100\n"),
-		[]byte("100 1 /bin/zsh -i\n101 100 /opt/ao agent-process supervise --session sess-1 --launch launch-other -- codex\n102 101 codex worker\n"),
+		[]byte("100 1 /bin/zsh -i\n101 100 /opt/open-agents agent-process supervise --session sess-1 --launch launch-other -- codex\n102 101 codex worker\n"),
 	}
 
 	got := r.ProbeFencedRuntime(context.Background(), ports.FencedRuntimeRef{
@@ -1160,7 +1160,7 @@ func TestProbeFencedRuntimeExactSupervisorWithoutChildIsDead(t *testing.T) {
 	fr.outputs = [][]byte{
 		nil,
 		[]byte("100\n"),
-		[]byte("100 1 /bin/zsh -i\n101 100 /opt/ao agent-process supervise --session sess-1 --launch launch-2 -- codex\n"),
+		[]byte("100 1 /bin/zsh -i\n101 100 /opt/open-agents agent-process supervise --session sess-1 --launch launch-2 -- codex\n"),
 	}
 
 	got := r.ProbeFencedRuntime(context.Background(), ports.FencedRuntimeRef{
@@ -1208,7 +1208,7 @@ func TestProbeFencedRuntimeMultipleSupervisorGenerationsIsUnknown(t *testing.T) 
 	fr.outputs = [][]byte{
 		nil,
 		[]byte("100\n"),
-		[]byte("100 1 /bin/zsh -i\n101 100 /opt/ao agent-process supervise --session sess-1 --launch launch-2 -- codex\n201 100 /opt/ao agent-process supervise --session sess-1 --launch launch-other -- codex\n202 201 codex worker\n"),
+		[]byte("100 1 /bin/zsh -i\n101 100 /opt/open-agents agent-process supervise --session sess-1 --launch launch-2 -- codex\n201 100 /opt/open-agents agent-process supervise --session sess-1 --launch launch-other -- codex\n202 201 codex worker\n"),
 	}
 
 	got := r.ProbeFencedRuntime(context.Background(), ports.FencedRuntimeRef{
@@ -1387,7 +1387,7 @@ func TestIsAliveReportsUnavailableWhenBothSocketsAbsent(t *testing.T) {
 	r := New(Options{
 		Binary:       "bundled-tmux-test",
 		LegacyBinary: "system-tmux-test",
-		SocketName:   "ao",
+		SocketName:   "open-agents",
 		Timeout:      time.Second,
 	})
 	absent := fakeRunnerResult{
@@ -1784,12 +1784,12 @@ func TestAttachCommandReturnsExpectedArgv(t *testing.T) {
 }
 
 func TestAttachCommandUsesAppOwnedSocket(t *testing.T) {
-	r := New(Options{Binary: "/opt/ao/resources/tmux/bin/tmux", SocketName: "ao", Timeout: time.Second})
+	r := New(Options{Binary: "/opt/open-agents/resources/tmux/bin/tmux", SocketName: "open-agents", Timeout: time.Second})
 	argv, err := r.attachCommand(ports.RuntimeHandle{ID: "sess-1"})
 	if err != nil {
 		t.Fatalf("AttachCommand: %v", err)
 	}
-	want := []string{"/opt/ao/resources/tmux/bin/tmux", "-L", "ao", "-u", "-T", "RGB", "attach-session", "-t", "sess-1"}
+	want := []string{"/opt/open-agents/resources/tmux/bin/tmux", "-L", "open-agents", "-u", "-T", "RGB", "attach-session", "-t", "sess-1"}
 	if !reflect.DeepEqual(argv, want) {
 		t.Fatalf("argv = %#v, want %#v", argv, want)
 	}
@@ -1797,9 +1797,9 @@ func TestAttachCommandUsesAppOwnedSocket(t *testing.T) {
 
 func TestAttachCommandUsesSystemTmuxForLegacyDefaultSocket(t *testing.T) {
 	r := New(Options{
-		Binary:       "/opt/ao/resources/tmux/bin/tmux",
+		Binary:       "/opt/open-agents/resources/tmux/bin/tmux",
 		LegacyBinary: "/opt/homebrew/bin/tmux",
-		SocketName:   "ao",
+		SocketName:   "open-agents",
 		Timeout:      time.Second,
 	})
 	argv := r.attachCommandForSocket("sess-1", "")

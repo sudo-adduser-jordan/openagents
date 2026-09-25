@@ -13,9 +13,9 @@ import (
 	"testing"
 	"time"
 
-	"github.com/aoagents/agent-orchestrator/backend/internal/adapters/runtime/conpty/ptyregistry"
-	"github.com/aoagents/agent-orchestrator/backend/internal/domain"
-	"github.com/aoagents/agent-orchestrator/backend/internal/ports"
+	"github.com/sudo-adduser-jordan/open-agents/backend/internal/adapters/runtime/conpty/ptyregistry"
+	"github.com/sudo-adduser-jordan/open-agents/backend/internal/domain"
+	"github.com/sudo-adduser-jordan/open-agents/backend/internal/ports"
 )
 
 // livePID returns a PID that is guaranteed to be alive (the current process).
@@ -348,7 +348,7 @@ func fakeSpawnerFor(t *testing.T, hosts map[string]*inProcHost, fakePID int) hos
 }
 
 // ---------------------------------------------------------------------------
-// Redirect ptyregistry to a temp HOME so tests don't pollute ~/.ao
+// Redirect ptyregistry to a temp HOME so tests don't pollute ~/.open-agents
 // ---------------------------------------------------------------------------
 
 func isolateRegistry(t *testing.T) {
@@ -411,7 +411,7 @@ func TestCreate_RegistersSession(t *testing.T) {
 
 // TestCreate_RunFilePathScopesRegistryToInstanceDir verifies Create honors
 // Options.RunFilePath, registering into that instance's own registry file
-// instead of the ~/.ao default. This is the fix for two AO daemon instances
+// instead of the ~/.open-agents default. This is the fix for two Open Agents daemon instances
 // on one machine (e.g. a headless dev daemon and the desktop app) silently
 // sharing one pty-host registry and cross-wiring same-named sessions.
 func TestCreate_RunFilePathScopesRegistryToInstanceDir(t *testing.T) {
@@ -721,7 +721,7 @@ func TestSupervisedProcessExitKeepsHostAlive(t *testing.T) {
 	handle, err := rt.Create(ctx, ports.RuntimeConfig{
 		SessionID:     "sess-supervised",
 		WorkspacePath: "/tmp/w",
-		Argv:          []string{"ao", "agent-process", "supervise"},
+		Argv:          []string{"open-agents", "agent-process", "supervise"},
 		Env:           map[string]string{runtimeLaunchIDEnv: "launch-current"},
 	})
 	if err != nil {

@@ -30,8 +30,8 @@ ORDER BY target;
 UPDATE agent_install_jobs
 SET status = 'interrupted',
     error = CASE
-        WHEN error = '' THEN 'AO restarted before this job completed.'
-        ELSE error || '\nAO restarted before this job completed.'
+        WHEN error = '' THEN 'Open Agents restarted before this job completed.'
+        ELSE error || '\nOpen Agents restarted before this job completed.'
     END,
     finished_at = ?,
     updated_at = ?

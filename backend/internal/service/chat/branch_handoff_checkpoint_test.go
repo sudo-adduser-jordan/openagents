@@ -8,11 +8,11 @@ import (
 	"testing"
 	"time"
 
-	"github.com/aoagents/agent-orchestrator/backend/internal/domain"
-	"github.com/aoagents/agent-orchestrator/backend/internal/lifecycle"
-	"github.com/aoagents/agent-orchestrator/backend/internal/ports"
-	chatsvc "github.com/aoagents/agent-orchestrator/backend/internal/service/chat"
-	"github.com/aoagents/agent-orchestrator/backend/internal/storage/sqlite/store"
+	"github.com/sudo-adduser-jordan/open-agents/backend/internal/domain"
+	"github.com/sudo-adduser-jordan/open-agents/backend/internal/lifecycle"
+	"github.com/sudo-adduser-jordan/open-agents/backend/internal/ports"
+	chatsvc "github.com/sudo-adduser-jordan/open-agents/backend/internal/service/chat"
+	"github.com/sudo-adduser-jordan/open-agents/backend/internal/storage/sqlite/store"
 )
 
 func TestOriginalBranchTUIRoundtripDoesNotInheritEditedBranchCheckpoint(t *testing.T) {

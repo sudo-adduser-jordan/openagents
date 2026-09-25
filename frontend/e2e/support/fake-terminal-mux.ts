@@ -22,7 +22,7 @@ export type FakeTerminalMuxController = {
 
 declare global {
 	interface Window {
-		__aoFakeTerminalMux?: FakeTerminalMuxController;
+		__openAgentsFakeTerminalMux?: FakeTerminalMuxController;
 	}
 }
 
@@ -185,7 +185,7 @@ export async function installFakeTerminalMux(
 
 		(window as unknown as { WebSocket: typeof WebSocket }).WebSocket =
 			FakeWebSocket as unknown as typeof WebSocket;
-		window.__aoFakeTerminalMux = {
+		window.__openAgentsFakeTerminalMux = {
 			disconnect: (handleId) => {
 				for (const socket of sockets) socket.disconnect(handleId);
 			},

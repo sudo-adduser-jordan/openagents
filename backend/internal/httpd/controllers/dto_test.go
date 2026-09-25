@@ -6,9 +6,9 @@ import (
 	"testing"
 	"time"
 
-	"github.com/aoagents/agent-orchestrator/backend/internal/domain"
-	"github.com/aoagents/agent-orchestrator/backend/internal/httpd/controllers"
-	sessionsvc "github.com/aoagents/agent-orchestrator/backend/internal/service/session"
+	"github.com/sudo-adduser-jordan/open-agents/backend/internal/domain"
+	"github.com/sudo-adduser-jordan/open-agents/backend/internal/httpd/controllers"
+	sessionsvc "github.com/sudo-adduser-jordan/open-agents/backend/internal/service/session"
 )
 
 func TestNewSessionPRSummaryMapsProviderReviewEntries(t *testing.T) {

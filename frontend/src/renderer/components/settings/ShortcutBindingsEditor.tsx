@@ -13,7 +13,7 @@ import {
 	type ShortcutBinding,
 } from "../../../shared/shortcuts";
 import { isMacPlatform } from "../../lib/platform";
-import { aoBridge } from "../../lib/bridge";
+import { openAgentsBridge } from "../../lib/bridge";
 import { cn } from "../../lib/utils";
 import { useKeybindingsStore } from "../../stores/keybindings-store";
 import { Button } from "../ui/button";
@@ -128,7 +128,7 @@ export function ShortcutBindingsEditor({
 			surfaceActiveRef.current = false;
 			recordingRequestRef.current += 1;
 			if (toastTimerRef.current !== undefined) window.clearTimeout(toastTimerRef.current);
-			void aoBridge.keybindings.setRecording(false);
+			void openAgentsBridge.keybindings.setRecording(false);
 		},
 		[],
 	);
@@ -136,14 +136,14 @@ export function ShortcutBindingsEditor({
 	useEffect(() => {
 		if (surfaceActive) return;
 		setRecordingState(null);
-		void aoBridge.keybindings.setRecording(false);
+		void openAgentsBridge.keybindings.setRecording(false);
 	}, [surfaceActive]);
 
 	useEffect(() => {
 		if (!recording) return;
 		const handleBlur = () => {
 			setRecordingState(null);
-			void aoBridge.keybindings.setRecording(false);
+			void openAgentsBridge.keybindings.setRecording(false);
 		};
 		window.addEventListener("blur", handleBlur);
 		return () => window.removeEventListener("blur", handleBlur);
@@ -153,9 +153,9 @@ export function ShortcutBindingsEditor({
 		const request = recordingRequestRef.current + 1;
 		recordingRequestRef.current = request;
 		try {
-			await aoBridge.keybindings.setRecording(true);
+			await openAgentsBridge.keybindings.setRecording(true);
 			if (!surfaceActiveRef.current || request !== recordingRequestRef.current) {
-				await aoBridge.keybindings.setRecording(false);
+				await openAgentsBridge.keybindings.setRecording(false);
 				return;
 			}
 			setRecordingState(next);
@@ -170,7 +170,7 @@ export function ShortcutBindingsEditor({
 	const endRecording = () => {
 		recordingRequestRef.current += 1;
 		setRecordingState(null);
-		void aoBridge.keybindings.setRecording(false);
+		void openAgentsBridge.keybindings.setRecording(false);
 	};
 
 	const filteredShortcuts = useMemo(() => {

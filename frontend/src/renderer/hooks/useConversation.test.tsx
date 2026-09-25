@@ -49,14 +49,14 @@ function deferred<T>() {
 it("preserves queued-edit API error codes for delivery recovery", async () => {
 	const refusal = { code: "CHAT_QUEUED_EDIT_CONFLICT", message: "Queued message changed" };
 	postMock.mockResolvedValue({ data: undefined, error: refusal });
-	const { result } = renderHook(() => useConversationCommands("ao-1"), { wrapper });
+	const { result } = renderHook(() => useConversationCommands("open-agents-1"), { wrapper });
 	await expect(result.current.editQueuedTurn("queued-1", "edited")).rejects.toBe(refusal);
 });
 
 /** The provider state the daemon now serves, in wire shape. */
 const WIRE = {
 	conversationId: "conv-1",
-	sessionId: "ao-1",
+	sessionId: "open-agents-1",
 	harness: "codex",
 	mode: "chat",
 	controller: "ready",
@@ -119,7 +119,7 @@ it("renders a retained-history boundary between exchanges from the daemon snapsh
 			detail: { event: "context.boundary", reason: "native_terminal_handoff" }, createdAt: "2026-09-13T00:01:00Z" }],
 	}, error: undefined });
 	function LiveConversation() {
-		const { snapshot } = useConversation("ao-1");
+		const { snapshot } = useConversation("open-agents-1");
 		return snapshot ? <TooltipProvider><ChatWorkspace snapshot={snapshot} /></TooltipProvider> : null;
 	}
 	render(<LiveConversation />, { wrapper });
@@ -141,7 +141,7 @@ describe("accepted conversation sends", () => {
 		const HookWrapper = ({ children }: { children: ReactNode }) => (
 			<QueryClientProvider client={queryClient}>{children}</QueryClientProvider>
 		);
-		const { result } = renderHook(() => useConversationCommands("ao-local-echo"), {
+		const { result } = renderHook(() => useConversationCommands("open-agents-local-echo"), {
 			wrapper: HookWrapper,
 		});
 
@@ -176,7 +176,7 @@ describe("accepted conversation sends", () => {
 		}>();
 		postMock.mockImplementation(
 			(_path: string, request: { params: { path: { sessionId: string } } }) =>
-				request.params.path.sessionId === "ao-1"
+				request.params.path.sessionId === "open-agents-1"
 					? firstResponse.promise
 					: Promise.resolve({ data: { turnId: "turn-2" }, error: undefined }),
 		);
@@ -188,14 +188,14 @@ describe("accepted conversation sends", () => {
 		);
 		const { result, rerender } = renderHook(
 			({ sessionId }) => useConversationCommands(sessionId),
-			{ initialProps: { sessionId: "ao-1" }, wrapper: HookWrapper },
+			{ initialProps: { sessionId: "open-agents-1" }, wrapper: HookWrapper },
 		);
 
 		let firstSend!: Promise<unknown>;
 		act(() => {
 			firstSend = result.current.send("first session work");
 		});
-		rerender({ sessionId: "ao-2" });
+		rerender({ sessionId: "open-agents-2" });
 		await act(async () => {
 			await result.current.send("second session work");
 		});
@@ -205,7 +205,7 @@ describe("accepted conversation sends", () => {
 		});
 
 		expect(result.current.pendingAcceptedTurnId).toBe("turn-2");
-		rerender({ sessionId: "ao-1" });
+		rerender({ sessionId: "open-agents-1" });
 		expect(result.current.pendingAcceptedTurnId).toBe("turn-1");
 	});
 
@@ -221,7 +221,7 @@ describe("accepted conversation sends", () => {
 		const HookWrapper = ({ children }: { children: ReactNode }) => (
 			<QueryClientProvider client={queryClient}>{children}</QueryClientProvider>
 		);
-		const firstMount = renderHook(() => useConversationCommands("ao-in-flight-remount"), {
+		const firstMount = renderHook(() => useConversationCommands("open-agents-in-flight-remount"), {
 			wrapper: HookWrapper,
 		});
 
@@ -234,7 +234,7 @@ describe("accepted conversation sends", () => {
 		});
 		firstMount.unmount();
 
-		const secondMount = renderHook(() => useConversationCommands("ao-in-flight-remount"), {
+		const secondMount = renderHook(() => useConversationCommands("open-agents-in-flight-remount"), {
 			wrapper: HookWrapper,
 		});
 		expect(secondMount.result.current.busy).toBe(true);
@@ -262,7 +262,7 @@ describe("accepted conversation sends", () => {
 		const HookWrapper = ({ children }: { children: ReactNode }) => (
 			<QueryClientProvider client={queryClient}>{children}</QueryClientProvider>
 		);
-		const { result } = renderHook(() => useConversationCommands("ao-send-failure"), {
+		const { result } = renderHook(() => useConversationCommands("open-agents-send-failure"), {
 			wrapper: HookWrapper,
 		});
 
@@ -287,7 +287,7 @@ describe("accepted conversation sends", () => {
 		const HookWrapper = ({ children }: { children: ReactNode }) => (
 			<QueryClientProvider client={queryClient}>{children}</QueryClientProvider>
 		);
-		const firstMount = renderHook(() => useConversationCommands("ao-duplicate-send"), {
+		const firstMount = renderHook(() => useConversationCommands("open-agents-duplicate-send"), {
 			wrapper: HookWrapper,
 		});
 
@@ -295,7 +295,7 @@ describe("accepted conversation sends", () => {
 			await firstMount.result.current.send("idempotent retry");
 		});
 		firstMount.unmount();
-		const secondMount = renderHook(() => useConversationCommands("ao-duplicate-send"), {
+		const secondMount = renderHook(() => useConversationCommands("open-agents-duplicate-send"), {
 			wrapper: HookWrapper,
 		});
 
@@ -315,7 +315,7 @@ describe("accepted conversation sends", () => {
 		const HookWrapper = ({ children }: { children: ReactNode }) => (
 			<QueryClientProvider client={queryClient}>{children}</QueryClientProvider>
 		);
-		const firstMount = renderHook(() => useConversationCommands("ao-refresh-failure"), {
+		const firstMount = renderHook(() => useConversationCommands("open-agents-refresh-failure"), {
 			wrapper: HookWrapper,
 		});
 
@@ -330,7 +330,7 @@ describe("accepted conversation sends", () => {
 		expect(sendError).toBeUndefined();
 
 		firstMount.unmount();
-		const secondMount = renderHook(() => useConversationCommands("ao-refresh-failure"), {
+		const secondMount = renderHook(() => useConversationCommands("open-agents-refresh-failure"), {
 			wrapper: HookWrapper,
 		});
 		expect(secondMount.result.current.pendingAcceptedTurnId).toBe("turn-refresh-failed");
@@ -353,7 +353,7 @@ describe("accepted conversation sends", () => {
 		const HookWrapper = ({ children }: { children: ReactNode }) => (
 			<QueryClientProvider client={queryClient}>{children}</QueryClientProvider>
 		);
-		const { result } = renderHook(() => useConversationCommands("ao-queue-chain"), {
+		const { result } = renderHook(() => useConversationCommands("open-agents-queue-chain"), {
 			wrapper: HookWrapper,
 		});
 
@@ -387,7 +387,7 @@ describe("accepted conversation sends", () => {
 		const HookWrapper = ({ children }: { children: ReactNode }) => (
 			<QueryClientProvider client={queryClient}>{children}</QueryClientProvider>
 		);
-		const { result } = renderHook(() => useConversationCommands("ao-overlap"), {
+		const { result } = renderHook(() => useConversationCommands("open-agents-overlap"), {
 			wrapper: HookWrapper,
 		});
 
@@ -426,7 +426,7 @@ describe("accepted conversation sends", () => {
 		const HookWrapper = ({ children }: { children: ReactNode }) => (
 			<QueryClientProvider client={queryClient}>{children}</QueryClientProvider>
 		);
-		const firstMount = renderHook(() => useConversationCommands("ao-remount"), {
+		const firstMount = renderHook(() => useConversationCommands("open-agents-remount"), {
 			wrapper: HookWrapper,
 		});
 
@@ -438,7 +438,7 @@ describe("accepted conversation sends", () => {
 		});
 		firstMount.unmount();
 
-		const secondMount = renderHook(() => useConversationCommands("ao-remount"), {
+		const secondMount = renderHook(() => useConversationCommands("open-agents-remount"), {
 			wrapper: HookWrapper,
 		});
 		expect(secondMount.result.current.pendingAcceptedTurnId).toBe("turn-after-remount");
@@ -469,7 +469,7 @@ describe("session-scoped conversation commands", () => {
 		);
 		const { result, rerender } = renderHook(
 			({ sessionId }) => useConversationCommands(sessionId),
-			{ initialProps: { sessionId: "ao-send-a" }, wrapper: HookWrapper },
+			{ initialProps: { sessionId: "open-agents-send-a" }, wrapper: HookWrapper },
 		);
 
 		let request!: Promise<unknown>;
@@ -478,7 +478,7 @@ describe("session-scoped conversation commands", () => {
 		});
 		await waitFor(() => expect(result.current.busy).toBe(true));
 
-		rerender({ sessionId: "ao-send-b" });
+		rerender({ sessionId: "open-agents-send-b" });
 		expect(result.current.busy).toBe(false);
 		expect(result.current.error).toBeUndefined();
 
@@ -486,8 +486,8 @@ describe("session-scoped conversation commands", () => {
 		await act(async () => {
 			await request;
 		});
-		expect(invalidate).toHaveBeenCalledWith({ queryKey: ["conversation", "ao-send-a"] });
-		expect(invalidate).not.toHaveBeenCalledWith({ queryKey: ["conversation", "ao-send-b"] });
+		expect(invalidate).toHaveBeenCalledWith({ queryKey: ["conversation", "open-agents-send-a"] });
+		expect(invalidate).not.toHaveBeenCalledWith({ queryKey: ["conversation", "open-agents-send-b"] });
 		expect(result.current.pendingAcceptedTurnId).toBeUndefined();
 	});
 
@@ -506,7 +506,7 @@ describe("session-scoped conversation commands", () => {
 		);
 		const { result, rerender } = renderHook(
 			({ sessionId }) => useConversationCommands(sessionId),
-			{ initialProps: { sessionId: "ao-command-a" }, wrapper: HookWrapper },
+			{ initialProps: { sessionId: "open-agents-command-a" }, wrapper: HookWrapper },
 		);
 
 		act(() => {
@@ -514,15 +514,15 @@ describe("session-scoped conversation commands", () => {
 		});
 		await waitFor(() => expect(result.current.busy).toBe(true));
 
-		rerender({ sessionId: "ao-command-b" });
+		rerender({ sessionId: "open-agents-command-b" });
 		expect(result.current.busy).toBe(false);
 		expect(result.current.error).toBeUndefined();
 
 		response.resolve({ data: undefined, error: { code: "CHAT_NO_ACTIVE_TURN" } });
 		await waitFor(() => {
-			expect(invalidate).toHaveBeenCalledWith({ queryKey: ["conversation", "ao-command-a"] });
+			expect(invalidate).toHaveBeenCalledWith({ queryKey: ["conversation", "open-agents-command-a"] });
 		});
-		expect(invalidate).not.toHaveBeenCalledWith({ queryKey: ["conversation", "ao-command-b"] });
+		expect(invalidate).not.toHaveBeenCalledWith({ queryKey: ["conversation", "open-agents-command-b"] });
 		expect(result.current.busy).toBe(false);
 		expect(result.current.error).toBeUndefined();
 	});
@@ -548,7 +548,7 @@ describe("session-scoped conversation commands", () => {
 			);
 			const { result, rerender } = renderHook(
 				({ sessionId }) => useConversationCommands(sessionId),
-				{ initialProps: { sessionId: "ao-turn-a" }, wrapper: HookWrapper },
+				{ initialProps: { sessionId: "open-agents-turn-a" }, wrapper: HookWrapper },
 			);
 
 			let request!: Promise<unknown>;
@@ -563,7 +563,7 @@ describe("session-scoped conversation commands", () => {
 				expect(result.current.pendingAcceptedTurnId).toBeUndefined();
 			});
 
-			rerender({ sessionId: "ao-turn-b" });
+			rerender({ sessionId: "open-agents-turn-b" });
 			expect(result.current.busy).toBe(false);
 			expect(result.current.pendingAcceptedTurnId).toBeUndefined();
 
@@ -581,15 +581,15 @@ describe("session-scoped conversation commands", () => {
 				await request;
 			});
 
-			expect(invalidate).toHaveBeenCalledWith({ queryKey: ["conversation", "ao-turn-a"] });
-			expect(invalidate).not.toHaveBeenCalledWith({ queryKey: ["conversation", "ao-turn-b"] });
+			expect(invalidate).toHaveBeenCalledWith({ queryKey: ["conversation", "open-agents-turn-a"] });
+			expect(invalidate).not.toHaveBeenCalledWith({ queryKey: ["conversation", "open-agents-turn-b"] });
 			expect(result.current.busy).toBe(false);
 			expect(result.current.pendingAcceptedTurnId).toBeUndefined();
 
 			act(() => result.current.acknowledgeAcceptedTurn(acceptedTurnId));
 			expect(result.current.pendingAcceptedTurnId).toBeUndefined();
 
-			rerender({ sessionId: "ao-turn-a" });
+			rerender({ sessionId: "open-agents-turn-a" });
 			expect(result.current.busy).toBe(false);
 			expect(result.current.pendingAcceptedTurnId).toBe(acceptedTurnId);
 
@@ -619,7 +619,7 @@ describe("session-scoped conversation commands", () => {
 			const HookWrapper = ({ children }: { children: ReactNode }) => (
 				<QueryClientProvider client={queryClient}>{children}</QueryClientProvider>
 			);
-			const { result } = renderHook(() => useConversationCommands("ao-turn-failure"), {
+			const { result } = renderHook(() => useConversationCommands("open-agents-turn-failure"), {
 				wrapper: HookWrapper,
 			});
 
@@ -650,7 +650,7 @@ describe("provider catalog controller epochs", () => {
 		const queryClient = new QueryClient({
 			defaultOptions: { queries: { retry: false }, mutations: { retry: false } },
 		});
-		const queryKey = conversationConfigOptionsQueryKey("ao-1");
+		const queryKey = conversationConfigOptionsQueryKey("open-agents-1");
 		queryClient.setQueryData(queryKey, [{ id: "model", currentValue: "source" }]);
 		let resolvePatch!: (value: {
 			data: { options: Array<{ id: string; currentValue: string }> };
@@ -664,7 +664,7 @@ describe("provider catalog controller epochs", () => {
 		const Wrapper = ({ children }: { children: ReactNode }) => (
 			<QueryClientProvider client={queryClient}>{children}</QueryClientProvider>
 		);
-		const { result } = renderHook(() => useConversationConfigOptions("ao-1", false), {
+		const { result } = renderHook(() => useConversationConfigOptions("open-agents-1", false), {
 			wrapper: Wrapper,
 		});
 
@@ -673,7 +673,7 @@ describe("provider catalog controller epochs", () => {
 			mutation = result.current.setOption("model", { value: "source-next" });
 		});
 		await waitFor(() => expect(patchMock).toHaveBeenCalledOnce());
-		act(() => clearConversationProviderCatalogs(queryClient, "ao-1"));
+		act(() => clearConversationProviderCatalogs(queryClient, "open-agents-1"));
 		expect(queryClient.getQueryData(queryKey)).toBeUndefined();
 
 		resolvePatch({
@@ -728,7 +728,7 @@ describe("useConversation snapshot mapping", () => {
 			error: undefined,
 		});
 
-		const { result } = renderHook(() => useConversation("ao-1"), { wrapper });
+		const { result } = renderHook(() => useConversation("open-agents-1"), { wrapper });
 		await waitFor(() => expect(result.current.snapshot).toBeDefined());
 
 		expect(result.current.snapshot).toMatchObject({
@@ -752,7 +752,7 @@ describe("useConversation snapshot mapping", () => {
 	it("maps the provider state the timeline cannot express", async () => {
 		getMock.mockResolvedValue({ data: WIRE, error: undefined });
 
-		const { result } = renderHook(() => useConversation("ao-1"), { wrapper });
+		const { result } = renderHook(() => useConversation("open-agents-1"), { wrapper });
 		await waitFor(() => expect(result.current.snapshot).toBeDefined());
 		const snapshot = result.current.snapshot!;
 
@@ -792,7 +792,7 @@ describe("useConversation snapshot mapping", () => {
 			error: undefined,
 		});
 
-		const { result } = renderHook(() => useConversation("ao-1"), { wrapper });
+		const { result } = renderHook(() => useConversation("open-agents-1"), { wrapper });
 		await waitFor(() => expect(result.current.snapshot).toBeDefined());
 
 		expect(result.current.snapshot!.turns[0]).toMatchObject({
@@ -809,7 +809,7 @@ describe("useConversation snapshot mapping", () => {
 			error: undefined,
 		});
 
-		const { result } = renderHook(() => useConversation("ao-1"), { wrapper });
+		const { result } = renderHook(() => useConversation("open-agents-1"), { wrapper });
 		await waitFor(() => expect(result.current.snapshot).toBeDefined());
 
 		expect(result.current.snapshot!.modelReroute).toBeUndefined();
@@ -822,7 +822,7 @@ describe("useConversation snapshot mapping", () => {
 describe("conversation branching commands", () => {
 	it("threads caller-owned idempotency ids through send, steer, and inline edit", async () => {
 		postMock.mockResolvedValue({ data: {}, error: undefined });
-		const { result } = renderHook(() => useConversationCommands("ao-1"), { wrapper });
+		const { result } = renderHook(() => useConversationCommands("open-agents-1"), { wrapper });
 
 		await act(async () => {
 			await result.current.send({ text: "send once", clientMessageId: "send-stable-1" });
@@ -846,7 +846,7 @@ describe("conversation branching commands", () => {
 
 	it("edits through the dedicated endpoint without rolling back", async () => {
 		postMock.mockResolvedValue({ data: {}, error: undefined });
-		const { result } = renderHook(() => useConversationCommands("ao-1"), { wrapper });
+		const { result } = renderHook(() => useConversationCommands("open-agents-1"), { wrapper });
 
 		await act(async () => {
 			await result.current.editMessage("turn-2", "edited prompt");
@@ -855,7 +855,7 @@ describe("conversation branching commands", () => {
 		expect(postMock).toHaveBeenCalledWith(
 			"/api/v1/sessions/{sessionId}/conversation/turns/{turnId}/edit",
 			expect.objectContaining({
-				params: { path: { sessionId: "ao-1", turnId: "turn-2" } },
+				params: { path: { sessionId: "open-agents-1", turnId: "turn-2" } },
 				body: expect.objectContaining({ text: "edited prompt" }),
 			}),
 		);
@@ -868,7 +868,7 @@ describe("conversation branching commands", () => {
 		apiErrorCodeMock.mockReturnValue("CHAT_EDIT_REJECTED");
 		apiErrorMessageMock.mockReturnValue("provider rejected edited prompt");
 		postMock.mockResolvedValue({ data: undefined, error: { code: "CHAT_EDIT_REJECTED" } });
-		const { result } = renderHook(() => useConversationCommands("ao-1"), { wrapper });
+		const { result } = renderHook(() => useConversationCommands("open-agents-1"), { wrapper });
 
 		await expect(
 			result.current.editMessage("turn-2", "keep this edit", "edit-rejected-1"),
@@ -882,7 +882,7 @@ describe("conversation branching commands", () => {
 		apiErrorCodeMock.mockReturnValue("CHAT_EDIT_UNCERTAIN");
 		const failure = { code: "CHAT_EDIT_UNCERTAIN" };
 		postMock.mockResolvedValue({ data: undefined, error: failure });
-		const { result } = renderHook(() => useConversationCommands("ao-1"), { wrapper });
+		const { result } = renderHook(() => useConversationCommands("open-agents-1"), { wrapper });
 
 		await expect(
 			result.current.editMessage("turn-2", "do not redispatch", "edit-uncertain-1"),
@@ -893,7 +893,7 @@ describe("conversation branching commands", () => {
 		apiErrorCodeMock.mockReturnValue("CHAT_EDIT_IDEMPOTENCY_CONFLICT");
 		const failure = { code: "CHAT_EDIT_IDEMPOTENCY_CONFLICT" };
 		postMock.mockResolvedValue({ data: undefined, error: failure });
-		const { result } = renderHook(() => useConversationCommands("ao-1"), { wrapper });
+		const { result } = renderHook(() => useConversationCommands("open-agents-1"), { wrapper });
 
 		await expect(
 			result.current.editMessage("turn-2", "do not unlock this edit", "edit-conflict-1"),
@@ -902,7 +902,7 @@ describe("conversation branching commands", () => {
 
 	it("activates an existing branch", async () => {
 		postMock.mockResolvedValue({ data: {}, error: undefined });
-		const { result } = renderHook(() => useConversationCommands("ao-1"), { wrapper });
+		const { result } = renderHook(() => useConversationCommands("open-agents-1"), { wrapper });
 
 		await act(async () => {
 			await result.current.activateBranch("branch-previous");
@@ -910,7 +910,7 @@ describe("conversation branching commands", () => {
 
 		expect(postMock).toHaveBeenCalledWith(
 			"/api/v1/sessions/{sessionId}/conversation/branches/{branchId}/activate",
-			{ params: { path: { sessionId: "ao-1", branchId: "branch-previous" } } },
+			{ params: { path: { sessionId: "open-agents-1", branchId: "branch-previous" } } },
 		);
 	});
 });
@@ -921,7 +921,7 @@ describe("steering refusals", () => {
 			data: { providerTurnId: "provider-1", activityId: "activity-1" },
 			error: undefined,
 		});
-		const { result } = renderHook(() => useConversationCommands("ao-1"), { wrapper });
+		const { result } = renderHook(() => useConversationCommands("open-agents-1"), { wrapper });
 
 		await act(async () => {
 			await result.current.steer("inspect this", [
@@ -932,7 +932,7 @@ describe("steering refusals", () => {
 		expect(postMock).toHaveBeenCalledWith(
 			"/api/v1/sessions/{sessionId}/conversation/steer",
 			{
-				params: { path: { sessionId: "ao-1" } },
+				params: { path: { sessionId: "open-agents-1" } },
 				body: {
 					text: "inspect this",
 					attachments: [{ mimeType: "image/png", data: "aW1hZ2U=" }],
@@ -956,7 +956,7 @@ describe("steering refusals", () => {
 		const HookWrapper = ({ children }: { children: ReactNode }) => (
 			<QueryClientProvider client={queryClient}>{children}</QueryClientProvider>
 		);
-		const { result } = renderHook(() => useConversationCommands("ao-1"), { wrapper: HookWrapper });
+		const { result } = renderHook(() => useConversationCommands("open-agents-1"), { wrapper: HookWrapper });
 
 		let steerDone!: Promise<unknown>;
 		act(() => {
@@ -981,13 +981,13 @@ describe("steering refusals", () => {
 			data: { sourceTurnId: "queued-2", providerTurnId: "provider-1", activityId: "activity-1" },
 			error: undefined,
 		});
-		const { result } = renderHook(() => useConversationCommands("ao-1"), { wrapper });
+		const { result } = renderHook(() => useConversationCommands("open-agents-1"), { wrapper });
 		await act(async () => {
 			await result.current.promoteQueuedTurn("queued-2");
 		});
 		expect(postMock).toHaveBeenCalledWith(
 			"/api/v1/sessions/{sessionId}/conversation/turns/{turnId}/steer",
-			{ params: { path: { sessionId: "ao-1", turnId: "queued-2" } } },
+			{ params: { path: { sessionId: "open-agents-1", turnId: "queued-2" } } },
 		);
 	});
 
@@ -996,7 +996,7 @@ describe("steering refusals", () => {
 		apiErrorMessageMock.mockReturnValue("a compaction turn is running.");
 		postMock.mockResolvedValue({ data: undefined, error: { code } });
 
-		const { result } = renderHook(() => useConversationCommands("ao-1"), { wrapper });
+		const { result } = renderHook(() => useConversationCommands("open-agents-1"), { wrapper });
 		await act(async () => {
 			await result.current.steer("go left").catch(() => {});
 		});
@@ -1017,7 +1017,7 @@ describe("steering refusals", () => {
 			data: undefined,
 			error: { code: "CHAT_NO_ACTIVE_TURN" },
 		});
-		const { result } = renderHook(() => useConversationCommands("ao-1"), { wrapper });
+		const { result } = renderHook(() => useConversationCommands("open-agents-1"), { wrapper });
 		let outcome: Awaited<ReturnType<typeof result.current.steer>> | undefined;
 
 		await act(async () => {
@@ -1035,7 +1035,7 @@ describe("steering refusals", () => {
 		apiErrorMessageMock.mockReturnValue("the session is switching interfaces");
 		const failure = { code: "CHAT_INTERFACE_TRANSITION" };
 		postMock.mockResolvedValue({ data: undefined, error: failure });
-		const { result } = renderHook(() => useConversationCommands("ao-1"), { wrapper });
+		const { result } = renderHook(() => useConversationCommands("open-agents-1"), { wrapper });
 
 		await expect(result.current.steer("wait for the switch", undefined, "transition-steer-1")).resolves.toEqual({
 			status: "not-accepted",
@@ -1048,7 +1048,7 @@ describe("steering refusals", () => {
 		apiErrorMessageMock.mockReturnValue("the provider may have received this guidance");
 		const failure = { code: "CHAT_STEER_UNCERTAIN" };
 		postMock.mockResolvedValue({ data: undefined, error: failure });
-		const { result } = renderHook(() => useConversationCommands("ao-1"), { wrapper });
+		const { result } = renderHook(() => useConversationCommands("open-agents-1"), { wrapper });
 
 		await expect(
 			act(async () => result.current.steer("do not redispatch", undefined, "steer-unknown-1")),
@@ -1080,7 +1080,7 @@ describe("tool server reload refusals", () => {
 		apiErrorCodeMock.mockReturnValue("CHAT_MCP_RELOAD_UNSUPPORTED");
 		postMock.mockResolvedValue({ data: undefined, error: { code: "CHAT_MCP_RELOAD_UNSUPPORTED" } });
 
-		const { result } = renderHook(() => useConversationCommands("ao-1"), { wrapper });
+		const { result } = renderHook(() => useConversationCommands("open-agents-1"), { wrapper });
 		await act(async () => {
 			await result.current.reloadMcpServers().catch(() => {});
 		});
@@ -1097,7 +1097,7 @@ describe("tool server reload refusals", () => {
 		apiErrorMessageMock.mockReturnValue("a turn is running");
 		postMock.mockResolvedValue({ data: undefined, error: { code: "CHAT_TURN_RUNNING" } });
 
-		const { result } = renderHook(() => useConversationCommands("ao-1"), { wrapper });
+		const { result } = renderHook(() => useConversationCommands("open-agents-1"), { wrapper });
 		await act(async () => {
 			await result.current.reloadMcpServers().catch(() => {});
 		});
@@ -1118,7 +1118,7 @@ describe("controller recovery", () => {
 		});
 		const invalidateSpy = vi.spyOn(QueryClient.prototype, "invalidateQueries");
 
-		const { result } = renderHook(() => useConversationCommands("ao-1"), { wrapper });
+		const { result } = renderHook(() => useConversationCommands("open-agents-1"), { wrapper });
 		act(() => {
 			result.current.interrupt();
 		});
@@ -1126,9 +1126,9 @@ describe("controller recovery", () => {
 		await waitFor(() => {
 			expect(postMock).toHaveBeenCalledWith(
 				"/api/v1/sessions/{sessionId}/conversation/interrupt",
-				{ params: { path: { sessionId: "ao-1" } } },
+				{ params: { path: { sessionId: "open-agents-1" } } },
 			);
-			expect(invalidateSpy).toHaveBeenCalledWith({ queryKey: ["conversation", "ao-1"] });
+			expect(invalidateSpy).toHaveBeenCalledWith({ queryKey: ["conversation", "open-agents-1"] });
 		});
 		invalidateSpy.mockRestore();
 	});
@@ -1137,15 +1137,15 @@ describe("controller recovery", () => {
 		postMock.mockResolvedValue({ data: {}, error: undefined, response: { status: 200 } });
 		const invalidateSpy = vi.spyOn(QueryClient.prototype, "invalidateQueries");
 
-		const { result } = renderHook(() => useConversationCommands("ao-1"), { wrapper });
+		const { result } = renderHook(() => useConversationCommands("open-agents-1"), { wrapper });
 		await act(async () => {
 			await result.current.resumeAgent();
 		});
 
 		expect(postMock).toHaveBeenCalledWith("/api/v1/sessions/{sessionId}/resume-agent", {
-			params: { path: { sessionId: "ao-1" } },
+			params: { path: { sessionId: "open-agents-1" } },
 		});
-		expect(invalidateSpy).toHaveBeenCalledWith({ queryKey: ["conversation", "ao-1"] });
+		expect(invalidateSpy).toHaveBeenCalledWith({ queryKey: ["conversation", "open-agents-1"] });
 		expect(invalidateSpy).toHaveBeenCalledWith({ queryKey: workspaceQueryKey });
 		invalidateSpy.mockRestore();
 	});
@@ -1171,7 +1171,7 @@ describe("useConversationSkills polling", () => {
 				defaultOptions: { queries: { retry: false } },
 			});
 
-			renderHook(() => useConversationSkills("ao-skills", true), {
+			renderHook(() => useConversationSkills("open-agents-skills", true), {
 				wrapper: skillsWrapper(queryClient),
 			});
 
@@ -1200,7 +1200,7 @@ describe("useConversationSkills polling", () => {
 				defaultOptions: { queries: { retry: false } },
 			});
 
-			renderHook(() => useConversationSkills("ao-skills-ok", true), {
+			renderHook(() => useConversationSkills("open-agents-skills-ok", true), {
 				wrapper: skillsWrapper(queryClient),
 			});
 

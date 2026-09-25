@@ -10,7 +10,7 @@ import (
 // the shared historical schema only once. VACUUM INTO snapshots real migrations
 // (including WAL contents), not a hand-maintained or globally cached fixture.
 func TestMigrateCheckpointProvenance(t *testing.T) {
-	db, err := sql.Open("sqlite", "file:"+filepath.Join(t.TempDir(), "ao.db")+pragmas)
+	db, err := sql.Open("sqlite", "file:"+filepath.Join(t.TempDir(), "open-agents.db")+pragmas)
 	if err != nil {
 		t.Fatal(err)
 	}

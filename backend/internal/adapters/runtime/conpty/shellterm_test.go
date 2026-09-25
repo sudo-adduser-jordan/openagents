@@ -8,8 +8,8 @@ import (
 	"testing"
 	"time"
 
-	"github.com/aoagents/agent-orchestrator/backend/internal/ports"
-	"github.com/aoagents/agent-orchestrator/backend/internal/service/shellterm"
+	"github.com/sudo-adduser-jordan/open-agents/backend/internal/ports"
+	"github.com/sudo-adduser-jordan/open-agents/backend/internal/service/shellterm"
 )
 
 func TestIsChildAlivePreservesInconclusiveStatus(t *testing.T) {

@@ -194,7 +194,7 @@ function setupBridge() {
 			annotationStateListeners.forEach((listener) => listener(state));
 		},
 	};
-	window.ao = { ...window.ao!, browser: bridge };
+	window.openAgents = { ...window.openAgents!, browser: bridge };
 	return bridge;
 }
 
@@ -1412,7 +1412,7 @@ describe("useBrowserView", () => {
 		rerender({ previewUrl: "http://localhost:5173/", previewRevision: 1 });
 		expect(bridge.navigate).toHaveBeenCalledTimes(1);
 
-		// Re-running `ao preview` with the SAME url bumps the revision and must
+		// Re-running `open-agents preview` with the SAME url bumps the revision and must
 		// re-navigate (refresh) — the regression this issue fixes.
 		rerender({ previewUrl: "http://localhost:5173/", previewRevision: 2 });
 		await waitFor(() => expect(bridge.navigate).toHaveBeenCalledTimes(2));
@@ -1492,7 +1492,7 @@ describe("useBrowserView", () => {
 		expect(bridge.navigate).toHaveBeenCalledTimes(1);
 		expect(bridge.clear).not.toHaveBeenCalled();
 
-		// A genuine new `ao preview` (revision bump) still takes over.
+		// A genuine new `open-agents preview` (revision bump) still takes over.
 		rerender({
 			sessionId: "sess-1",
 			previewUrl: "http://localhost:5217/",
@@ -1571,8 +1571,8 @@ describe("useBrowserView", () => {
 	it("re-applies the preview on remount without a native browser, whose view state does not survive", async () => {
 		// In web/mock mode navState is component-local, so remounting with an
 		// already-consumed trigger must still restore the static preview.
-		const original = window.ao;
-		window.ao = undefined;
+		const original = window.openAgents;
+		window.openAgents = undefined;
 		try {
 			const props = {
 				sessionId: "sess-1",
@@ -1589,7 +1589,7 @@ describe("useBrowserView", () => {
 			await waitFor(() => expect(second.result.current.navState.url).toBe("http://localhost:5217/"));
 			second.unmount();
 		} finally {
-			window.ao = original;
+			window.openAgents = original;
 		}
 	});
 
@@ -1669,7 +1669,7 @@ describe("useBrowserView", () => {
 		expect(bridge.navigate).toHaveBeenCalledTimes(2);
 	});
 
-	it("clears the view when the preview is reset (ao preview clear) and does not navigate", async () => {
+	it("clears the view when the preview is reset (open-agents preview clear) and does not navigate", async () => {
 		const bridge = setupBridge();
 		const { rerender } = renderHook(
 			({ previewUrl, previewRevision }) =>
@@ -1689,7 +1689,7 @@ describe("useBrowserView", () => {
 		);
 		await waitFor(() => expect(bridge.navigate).toHaveBeenCalledTimes(1));
 
-		// `ao preview clear` empties previewUrl and bumps the revision.
+		// `open-agents preview clear` empties previewUrl and bumps the revision.
 		rerender({ previewUrl: undefined, previewRevision: 2 });
 		await waitFor(() => expect(bridge.clear).toHaveBeenCalledWith("42:sess-1"));
 		expect(bridge.navigate).toHaveBeenCalledTimes(1);

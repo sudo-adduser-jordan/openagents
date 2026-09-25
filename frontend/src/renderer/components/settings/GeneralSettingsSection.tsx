@@ -14,7 +14,7 @@ import type { TerminalShellKind } from "../../../shared/ui-locale";
 import { isWindowsPlatform } from "../../lib/platform";
 
 /**
- * Default interface for new sessions. Daemon-owned so `ao spawn` and mobile
+ * Default interface for new sessions. Daemon-owned so `open-agents spawn` and mobile
  * resolve the same value. Only affects sessions created afterwards — a
  * session's interface is fixed when it is born.
  */
@@ -102,7 +102,7 @@ function TerminalShellRows() {
 					onChange={setCustomPath}
 					onCommit={(path) => void setPreference({ kind: "custom", path })}
 					onCancel={() => setCustomPath(preference.path ?? "")}
-					placeholder="C:\\path\\to\\shell.exe"
+					placeholder="C:\path\to\shell.exe"
 				/>
 			) : null}
 			{saveError ? (

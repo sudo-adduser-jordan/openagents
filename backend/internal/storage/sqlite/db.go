@@ -18,7 +18,7 @@ import (
 
 	"github.com/pressly/goose/v3"
 
-	sqlitestore "github.com/aoagents/agent-orchestrator/backend/internal/storage/sqlite/store"
+	sqlitestore "github.com/sudo-adduser-jordan/open-agents/backend/internal/storage/sqlite/store"
 
 	// modernc.org/sqlite is the pure-Go (CGO-free) SQLite driver — chosen so the
 	// daemon cross-compiles and ships as a static binary with no libsqlite/CGO
@@ -51,14 +51,14 @@ const maxReaders = 8
 // SQLite URI parameters/fragments. Both pools and read-only opens must address
 // the same literal file, including percent signs and Windows drive paths.
 func databaseURI(dataDir string) string {
-	file := url.URL{Path: filepath.Join(dataDir, "ao.db")}
+	file := url.URL{Path: filepath.Join(dataDir, "open-agents.db")}
 	return "file:" + file.EscapedPath()
 }
 
 // An older raw file: URI may have stored this directory's data elsewhere. Do
 // not silently replace that database with an empty one after fixing the URI.
 func checkLegacyDatabasePath(dataDir string) error {
-	intended := filepath.Join(dataDir, "ao.db")
+	intended := filepath.Join(dataDir, "open-agents.db")
 	if _, err := os.Stat(intended); err == nil {
 		return nil
 	} else if !errors.Is(err, os.ErrNotExist) {
@@ -107,7 +107,7 @@ func checkLegacyDatabasePath(dataDir string) error {
 		return fmt.Errorf("inspect legacy database: %w", readErr)
 	}
 	if n == len(header) && string(header[:]) == "SQLite format 3\x00" {
-		return fmt.Errorf("legacy SQLite path parsing stored data at %q; refusing to create an empty database at %q: stop AO and recover the legacy database explicitly before retrying", legacy, intended)
+		return fmt.Errorf("legacy SQLite path parsing stored data at %q; refusing to create an empty database at %q: stop Open Agents and recover the legacy database explicitly before retrying", legacy, intended)
 	}
 	return nil
 }
@@ -1582,7 +1582,7 @@ func reconcileSchema(db *sql.DB) error {
 		return fmt.Errorf("schema verification: inspect session revision fence: %w", err)
 	}
 	if revisionColumn > 0 && revisionTrigger != 1 {
-		return errors.New("schema verification: sessions_revision_update trigger is missing; restore the session revision trigger before starting AO")
+		return errors.New("schema verification: sessions_revision_update trigger is missing; restore the session revision trigger before starting Open Agents")
 	}
 	return nil
 }

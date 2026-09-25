@@ -60,7 +60,7 @@ function clickPage(element: Element): void {
 }
 
 function overlayRoot(): ShadowRoot {
-	const host = document.querySelector<HTMLDivElement>("[data-ao-annotation-root]");
+	const host = document.querySelector<HTMLDivElement>("[data-open-agents-annotation-root]");
 	if (!host?.shadowRoot) throw new Error("annotation overlay was not rendered");
 	return host.shadowRoot;
 }

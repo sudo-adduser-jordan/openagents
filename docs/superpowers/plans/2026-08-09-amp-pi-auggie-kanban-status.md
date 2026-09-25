@@ -2,9 +2,9 @@
 
 > **For agentic workers:** REQUIRED SUB-SKILL: Use superpowers:subagent-driven-development (recommended) or superpowers:executing-plans to implement this plan task-by-task. Steps use checkbox (`- [ ]`) syntax for tracking.
 
-**Goal:** Make Amp, Pi, and Auggie sessions report normalized live activity and native restore IDs to AO's Kanban pipeline.
+**Goal:** Make Amp, Pi, and Auggie sessions report normalized live activity and native restore IDs to Open Agents's Kanban pipeline.
 
-**Architecture:** Each adapter installs the smallest native workspace integration supported by its CLI and emits JSON into `ao hooks <agent> <event>`. Adapter-local derivers translate native events into the existing AO activity states, while the shared dispatch registry makes all three harnesses signal-capable.
+**Architecture:** Each adapter installs the smallest native workspace integration supported by its CLI and emits JSON into `open-agents hooks <agent> <event>`. Adapter-local derivers translate native events into the existing Open Agents activity states, while the shared dispatch registry makes all three harnesses signal-capable.
 
 **Tech Stack:** Go 1.x adapters and tests, generated TypeScript plugin/extension source, JSON hook configuration, POSIX shell or Windows command wrappers.
 
@@ -29,7 +29,7 @@
 
 **Interfaces:**
 - Consumes: Amp `session.start`, `agent.start`, `agent.end`, and `PluginThread.state` events.
-- Produces: `amp.DeriveActivityState(event string, payload []byte) (domain.ActivityState, bool)` and `ao hooks amp ...` callbacks.
+- Produces: `amp.DeriveActivityState(event string, payload []byte) (domain.ActivityState, bool)` and `open-agents hooks amp ...` callbacks.
 
 - [ ] **Step 1: Add failing Amp derivation tests**
 
@@ -57,7 +57,7 @@ Add payload-aware `thread-state` mapping. Extend the existing plugin with a boun
 
 - [ ] **Step 4: Add failing plugin-source and `SessionInfo` tests**
 
-Assert the generated source contains `session.start`, `agent.end`, `thread.state.subscribe`, `ao hooks amp`, bounded timeout handling, and the original hidden prompt injection. Assert `SessionInfo` returns `agentSessionId` through `agentbase.StandardSessionInfo`.
+Assert the generated source contains `session.start`, `agent.end`, `thread.state.subscribe`, `open-agents hooks amp`, bounded timeout handling, and the original hidden prompt injection. Assert `SessionInfo` returns `agentSessionId` through `agentbase.StandardSessionInfo`.
 
 - [ ] **Step 5: Run Amp tests until green**
 
@@ -74,11 +74,11 @@ Run: `cd backend && go test ./internal/adapters/agent/amp`
 
 **Interfaces:**
 - Consumes: Pi `session_start`, `before_agent_start`, `agent_end`, `agent_settled`, and `session_shutdown` extension events.
-- Produces: `.pi/extensions/ao-activity.ts`, explicit `--extension <path>` launch/restore arguments, and `pi.DeriveActivityState`.
+- Produces: `.pi/extensions/open-agents-activity.ts`, explicit `--extension <path>` launch/restore arguments, and `pi.DeriveActivityState`.
 
 - [ ] **Step 1: Add failing Pi hook-installation, launch, restore, session-info, and derivation tests**
 
-Assert installation creates an AO-managed extension without changing foreign extension files; launch and restore argv contain `--extension <workspace>/.pi/extensions/ao-activity.ts`; event mapping is `session-start -> idle`, `user-prompt-submit -> active`, `stop -> idle`, and `session-end -> exited`.
+Assert installation creates an Open Agents-managed extension without changing foreign extension files; launch and restore argv contain `--extension <workspace>/.pi/extensions/open-agents-activity.ts`; event mapping is `session-start -> idle`, `user-prompt-submit -> active`, `stop -> idle`, and `session-end -> exited`.
 
 - [ ] **Step 2: Run the Pi tests and confirm the new expectations fail**
 
@@ -86,7 +86,7 @@ Run: `cd backend && go test ./internal/adapters/agent/pi`
 
 - [ ] **Step 3: Implement managed Pi extension installation and command wiring**
 
-Write the extension atomically with an AO sentinel, gitignore only AO's file, explicitly load it on launch/restore, and refuse to overwrite a foreign file at the managed path.
+Write the extension atomically with an Open Agents sentinel, gitignore only Open Agents's file, explicitly load it on launch/restore, and refuse to overwrite a foreign file at the managed path.
 
 - [ ] **Step 4: Implement Pi derivation and standard session metadata**
 
@@ -107,11 +107,11 @@ Run: `cd backend && go test ./internal/adapters/agent/pi`
 
 **Interfaces:**
 - Consumes: Auggie matcher-group hooks in `.augment/settings.local.json` and JSON payloads containing `conversation_id` and `agent_stop_cause`.
-- Produces: executable `.augment/ao-hooks/ao-<event>.sh` or `.cmd` wrappers and `auggie.DeriveActivityState`.
+- Produces: executable `.augment/open-agents-hooks/open-agents-<event>.sh` or `.cmd` wrappers and `auggie.DeriveActivityState`.
 
 - [ ] **Step 1: Add failing Auggie installation and derivation tests**
 
-Assert AO hooks are merged without losing unrelated settings/user hooks; wrapper scripts are executable on Unix; repeated installation is idempotent; and Stop payload causes map correctly.
+Assert Open Agents hooks are merged without losing unrelated settings/user hooks; wrapper scripts are executable on Unix; repeated installation is idempotent; and Stop payload causes map correctly.
 
 - [ ] **Step 2: Run the Auggie tests and confirm the new expectations fail**
 
@@ -119,7 +119,7 @@ Run: `cd backend && go test ./internal/adapters/agent/auggie`
 
 - [ ] **Step 3: Implement wrapper generation and hooks-json reconciliation**
 
-Use `hooksjson.Manager` with workspace-specific absolute commands for `SessionStart`, `PreToolUse`, `PostToolUse`, `Stop`, and `SessionEnd`. Write scripts atomically and ignore only AO-managed files.
+Use `hooksjson.Manager` with workspace-specific absolute commands for `SessionStart`, `PreToolUse`, `PostToolUse`, `Stop`, and `SessionEnd`. Write scripts atomically and ignore only Open Agents-managed files.
 
 - [ ] **Step 4: Implement Auggie derivation and standard session metadata**
 

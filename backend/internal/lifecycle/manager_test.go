@@ -9,8 +9,8 @@ import (
 	"testing"
 	"time"
 
-	"github.com/aoagents/agent-orchestrator/backend/internal/domain"
-	"github.com/aoagents/agent-orchestrator/backend/internal/ports"
+	"github.com/sudo-adduser-jordan/open-agents/backend/internal/domain"
+	"github.com/sudo-adduser-jordan/open-agents/backend/internal/ports"
 )
 
 var ctx = context.Background()
@@ -1193,7 +1193,7 @@ func TestActivity_CoordinationPromptFollowedByPromptlessStopDoesNotAdvanceCheckp
 	rec.Metadata.ConversationCheckpointNativeID = "native-1"
 	store.sessions[rec.ID] = rec
 
-	// The hook client recognizes AO's continuation kickoff and therefore omits
+	// The hook client recognizes Open Agents's continuation kickoff and therefore omits
 	// its text. Lifecycle must still carry that ineligible turn boundary across
 	// to the provider's later Stop, which need not echo the prompt.
 	if err := m.ApplyActivitySignal(ctx, rec.ID, ports.ActivitySignal{
@@ -1207,7 +1207,7 @@ func TestActivity_CoordinationPromptFollowedByPromptlessStopDoesNotAdvanceCheckp
 	if err := m.ApplyActivitySignal(ctx, rec.ID, ports.ActivitySignal{
 		Valid: true, State: domain.ActivityIdle, Event: "stop",
 		LaunchID: "terminal-generation", AgentSessionID: "native-1",
-		LatestAssistantUpdate: "AO continuation acknowledged",
+		LatestAssistantUpdate: "Open Agents continuation acknowledged",
 		Timestamp:             coordinationPromptAt.Add(time.Second),
 	}); err != nil {
 		t.Fatalf("apply promptless coordination Stop: %v", err)
@@ -1238,7 +1238,7 @@ func TestActivity_StopWithoutCurrentPromptNeverPairsWithPriorTurn(t *testing.T) 
 	store.sessions[rec.ID] = rec
 
 	// The current turn's UserPromptSubmit was lost. Stop must not combine its
-	// assistant with the only prompt AO has, which belongs to the prior turn. The
+	// assistant with the only prompt Open Agents has, which belongs to the prior turn. The
 	// older coherent checkpoint stays intact while a hard unresolved-boundary
 	// witness records that replay cannot safely stop there.
 	if err := m.ApplyActivitySignal(ctx, rec.ID, ports.ActivitySignal{
@@ -1858,7 +1858,7 @@ func TestCommitControllerEpochAllowsExplicitFreshHandoff(t *testing.T) {
 
 // TestMarkSpawned_StampsUTCActivity locks the lifecycle clock to UTC so
 // activity-driven timestamps match the session manager's spawn timestamps. A
-// local clock here left `ao session get` showing created in UTC but updated in
+// local clock here left `open-agents session get` showing created in UTC but updated in
 // local time.
 func TestMarkSpawned_StampsUTCActivity(t *testing.T) {
 	m, st, _ := newManager()
@@ -2265,7 +2265,7 @@ func TestPRObservation_MergeConflictNudgesAgent(t *testing.T) {
 }
 
 // TestPRObservation_MergeConflictReArmsAfterConflictClears is the regression
-// test for #4528: AO notified on the first conflict but never again, because
+// test for #4528: Open Agents notified on the first conflict but never again, because
 // the "merge-conflict:<url>" = "conflicting" signature sendOnce persists was
 // never cleared. A PR rebased clean and then made conflicting again by a
 // base-branch advance was silently swallowed as a duplicate.
@@ -2913,8 +2913,8 @@ func TestPRObservation_StackedChildConflictSuppressed(t *testing.T) {
 	m, st, msg := newManager()
 	st.sessions["mer-1"] = working("mer-1")
 	st.prs["mer-1"] = []domain.PullRequest{
-		{URL: "parent", SourceBranch: "ao/x", TargetBranch: "main"},
-		{URL: "child", SourceBranch: "ao/x/auth", TargetBranch: "ao/x"},
+		{URL: "parent", SourceBranch: "open-agents/x", TargetBranch: "main"},
+		{URL: "child", SourceBranch: "open-agents/x/auth", TargetBranch: "open-agents/x"},
 	}
 	o := ports.PRObservation{Fetched: true, URL: "child", Mergeability: domain.MergeConflicting}
 	if err := m.ApplyPRObservation(ctx, "mer-1", o); err != nil {
@@ -2931,8 +2931,8 @@ func TestPRObservation_BottomOfStackConflictNudges(t *testing.T) {
 	m, st, msg := newManager()
 	st.sessions["mer-1"] = working("mer-1")
 	st.prs["mer-1"] = []domain.PullRequest{
-		{URL: "parent", SourceBranch: "ao/x", TargetBranch: "main"},
-		{URL: "child", SourceBranch: "ao/x/auth", TargetBranch: "ao/x"},
+		{URL: "parent", SourceBranch: "open-agents/x", TargetBranch: "main"},
+		{URL: "child", SourceBranch: "open-agents/x/auth", TargetBranch: "open-agents/x"},
 	}
 	o := ports.PRObservation{Fetched: true, URL: "parent", Mergeability: domain.MergeConflicting}
 	if err := m.ApplyPRObservation(ctx, "mer-1", o); err != nil {
@@ -3961,7 +3961,7 @@ func newManagerWithContainerReaper(cr ports.ContainerReaper, pl projectConfigLoa
 // shared teardown path: MarkTerminated must reap the terminated session's
 // containers, covering every terminal-state path (Kill, daemon shutdown,
 // Cleanup, RetireForReplacement, tracker-driven termination) through this one
-// choke point rather than only explicit ao session kill.
+// choke point rather than only explicit open-agents session kill.
 func TestMarkTerminated_ReapsContainers(t *testing.T) {
 	cr := &fakeLifecycleContainerReaper{removed: 2}
 	pl := &fakeProjectConfigLoader{projects: map[string]domain.ProjectRecord{
@@ -4017,7 +4017,7 @@ func TestMarkTerminated_ReapsContainersAgainWhenAlreadyTerminated(t *testing.T) 
 
 // TestMarkTerminated_ContainerReapFailureDoesNotFailTermination asserts the
 // best-effort contract: a container reaper error must never fail
-// MarkTerminated, matching every other best-effort teardown step in AO.
+// MarkTerminated, matching every other best-effort teardown step in Open Agents.
 func TestMarkTerminated_ContainerReapFailureDoesNotFailTermination(t *testing.T) {
 	cr := &fakeLifecycleContainerReaper{err: errors.New("docker rm: permission denied")}
 	pl := &fakeProjectConfigLoader{projects: map[string]domain.ProjectRecord{
@@ -4082,7 +4082,7 @@ func TestMarkTerminated_ProjectLoadErrorSkipsRatherThanReaps(t *testing.T) {
 }
 
 // TestMarkTerminated_NilReaperSkipsWithoutProjectLookup confirms nil wiring
-// (the common case — most AO installs run without Docker) skips reaping
+// (the common case — most Open Agents installs run without Docker) skips reaping
 // cleanly without even attempting a project lookup.
 func TestMarkTerminated_NilReaperSkipsWithoutProjectLookup(t *testing.T) {
 	m, st, _ := newManager() // newManager wires no container reaper at all
@@ -4098,7 +4098,7 @@ func TestMarkTerminated_NilReaperSkipsWithoutProjectLookup(t *testing.T) {
 
 // TestMarkTerminated_MissingProjectSkipsRatherThanReaps is the regression for
 // failing open on a missing project record: GetProject returning ok=false,
-// err=nil is ambiguity (AO cannot know whether ContainerReap.Disabled would
+// err=nil is ambiguity (Open Agents cannot know whether ContainerReap.Disabled would
 // have applied), not a green light to reap. Must be treated the same as the
 // error path.
 func TestMarkTerminated_MissingProjectSkipsRatherThanReaps(t *testing.T) {
@@ -4173,7 +4173,7 @@ func TestRuntimeObservation_WorkloadDeathAloneDoesNotReap(t *testing.T) {
 // mergeMetadata is an explicit allowlist, so a field added to SessionMetadata
 // without a line here is silently dropped on every spawn and restore. That
 // happened to the chat resume handle: the provider still held the conversation,
-// but AO forgot its id, so no restart could ever resume it — and nothing failed
+// but Open Agents forgot its id, so no restart could ever resume it — and nothing failed
 // loudly, the column was just empty.
 func TestMarkSpawnedPersistsChatControllerFacts(t *testing.T) {
 	ctx := context.Background()
@@ -4233,7 +4233,7 @@ func TestMarkSpawnedPersistsChatControllerFacts(t *testing.T) {
 // Model is the same allowlist omission as the chat resume handle above, one
 // field over: it is declared on SessionMetadata, has its own sessions.model
 // column, and is read back by the API — but mergeMetadata never copied it, so
-// every `ao spawn --model X` persisted an empty model and the session reported
+// every `open-agents spawn --model X` persisted an empty model and the session reported
 // no model at all.
 func TestMarkSpawnedPersistsResolvedModel(t *testing.T) {
 	ctx := context.Background()

@@ -177,7 +177,7 @@ describe("ChatComposer steering", () => {
 	it("stages attachment-only drafts and includes them in steer", async () => {
 		const onSteer = vi.fn().mockResolvedValue(undefined);
 		const onSend = vi.fn();
-		const stage = vi.fn().mockResolvedValue([".ao/attachments/shot.png"]);
+		const stage = vi.fn().mockResolvedValue([".open-agents/attachments/shot.png"]);
 		composer({ onSteer, onSend, onStageAttachments: stage, nativeImages: true });
 
 		const field = screen.getByRole("combobox");
@@ -188,7 +188,7 @@ describe("ChatComposer steering", () => {
 		await userEvent.keyboard("{Control>}{Enter}{/Control}");
 		await waitFor(() => expect(stage).toHaveBeenCalledOnce());
 		expect(onSteer).toHaveBeenCalledWith(
-			"Attached files (read these files in the workspace):\n- .ao/attachments/shot.png",
+			"Attached files (read these files in the workspace):\n- .open-agents/attachments/shot.png",
 			[{ mimeType: "image/png", data: expect.any(String) }],
 		);
 		expect(onSend).not.toHaveBeenCalled();
@@ -217,7 +217,7 @@ describe("ChatComposer steering", () => {
 			finishSteer = resolve;
 		});
 		const onSteer = vi.fn(() => steerPromise);
-		const stage = vi.fn().mockResolvedValue([".ao/attachments/slow.png"]);
+		const stage = vi.fn().mockResolvedValue([".open-agents/attachments/slow.png"]);
 		composer({ onSteer, onStageAttachments: stage, nativeImages: true });
 
 		const field = screen.getByRole("combobox");
@@ -239,7 +239,7 @@ describe("ChatComposer steering", () => {
 		await waitFor(() => expect(stage).toHaveBeenCalledOnce());
 		await waitFor(() =>
 			expect(onSteer).toHaveBeenCalledWith(
-				"inspect this\n\nAttached files (read these files in the workspace):\n- .ao/attachments/slow.png",
+				"inspect this\n\nAttached files (read these files in the workspace):\n- .open-agents/attachments/slow.png",
 				[{ mimeType: "image/png", data: "iVBORw==" }],
 			),
 		);
@@ -616,7 +616,7 @@ describe("ChatWorkspace steering", () => {
 							...item,
 							detail: {
 								...item.detail,
-								text: "inspect this\n\nAttached files (read these files in the workspace):\n- .ao/attachments/attachment-steer123.png",
+								text: "inspect this\n\nAttached files (read these files in the workspace):\n- .open-agents/attachments/attachment-steer123.png",
 								content: undefined,
 							},
 						}
@@ -630,7 +630,7 @@ describe("ChatWorkspace steering", () => {
 		expect(image).toHaveAttribute(
 			"src",
 			expect.stringContaining(
-				"/api/v1/sessions/ao-14/preview/files/.ao/attachments/attachment-steer123.png",
+				"/api/v1/sessions/open-agents-14/preview/files/.open-agents/attachments/attachment-steer123.png",
 			),
 		);
 		expect(screen.getByText("inspect this")).toBeInTheDocument();
@@ -646,7 +646,7 @@ describe("ChatWorkspace steering", () => {
 							...item,
 							detail: {
 								...item.detail,
-								text: "inspect this\n\nAttached files (read these files in the workspace):\n- .ao/attachments/attachment-steer123.png",
+								text: "inspect this\n\nAttached files (read these files in the workspace):\n- .open-agents/attachments/attachment-steer123.png",
 								content: [
 									{ type: "image", data: "Zmlyc3Q=", mimeType: "image/png" },
 									{ type: "image", data: "c2Vjb25k", mimeType: "image/png" },

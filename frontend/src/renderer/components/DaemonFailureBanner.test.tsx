@@ -1,6 +1,6 @@
 import { act, fireEvent, render, screen, waitFor } from "@testing-library/react";
 import { afterEach, describe, expect, it, vi } from "vitest";
-import { aoBridge } from "../lib/bridge";
+import { openAgentsBridge } from "../lib/bridge";
 import { DaemonFailureBanner } from "./DaemonFailureBanner";
 
 describe("DaemonFailureBanner", () => {
@@ -15,14 +15,14 @@ describe("DaemonFailureBanner", () => {
 				status={{
 					state: "stopped",
 					code: "exited",
-					message: "AO daemon exited with code 1",
+					message: "Open Agents daemon exited with code 1",
 					details: "go: go.mod requires go >= 1.25.7",
 				}}
 			/>,
 		);
 
-		expect(screen.getByRole("alert")).toHaveTextContent("AO daemon failed to start");
-		expect(screen.getByRole("alert")).toHaveTextContent("AO daemon exited with code 1");
+		expect(screen.getByRole("alert")).toHaveTextContent("Open Agents daemon failed to start");
+		expect(screen.getByRole("alert")).toHaveTextContent("Open Agents daemon exited with code 1");
 		expect(screen.getByText("exited")).toBeInTheDocument();
 		expect(screen.getByRole("button", { name: "Restart daemon" })).toBeInTheDocument();
 		fireEvent.click(screen.getByRole("button", { name: "Show details" }));
@@ -69,14 +69,14 @@ describe("DaemonFailureBanner", () => {
 			<DaemonFailureBanner
 				status={{
 					state: "starting",
-					message: "AO daemon is still starting. Session recovery can take a while.",
+					message: "Open Agents daemon is still starting. Session recovery can take a while.",
 					details: "restoring session mer-3",
 				}}
 			/>,
 		);
 
-		expect(screen.getByRole("status")).toHaveTextContent("AO daemon is not ready yet");
-		expect(screen.getByRole("status")).toHaveTextContent("AO daemon is still starting");
+		expect(screen.getByRole("status")).toHaveTextContent("Open Agents daemon is not ready yet");
+		expect(screen.getByRole("status")).toHaveTextContent("Open Agents daemon is still starting");
 		expect(screen.queryByRole("alert")).not.toBeInTheDocument();
 		expect(screen.queryByRole("button", { name: "Restart daemon" })).not.toBeInTheDocument();
 		fireEvent.click(screen.getByRole("button", { name: "Show details" }));
@@ -86,13 +86,13 @@ describe("DaemonFailureBanner", () => {
 
 
 	it("restarts a daemon that timed out during startup", async () => {
-		const restart = vi.spyOn(aoBridge.daemon, "restart").mockResolvedValue({ state: "starting" });
+		const restart = vi.spyOn(openAgentsBridge.daemon, "restart").mockResolvedValue({ state: "starting" });
 		render(
 			<DaemonFailureBanner
 				status={{
 					state: "error",
 					code: "not_ready",
-					message: "AO daemon did not finish starting within 30 seconds.",
+					message: "Open Agents daemon did not finish starting within 30 seconds.",
 				}}
 			/>,
 		);
@@ -103,7 +103,7 @@ describe("DaemonFailureBanner", () => {
 	});
 
 	it("shows a restart failure inline", async () => {
-		vi.spyOn(aoBridge.daemon, "restart").mockRejectedValue(new Error("Daemon did not stop"));
+		vi.spyOn(openAgentsBridge.daemon, "restart").mockRejectedValue(new Error("Daemon did not stop"));
 		render(<DaemonFailureBanner status={{ state: "error", code: "not_ready" }} />);
 
 		fireEvent.click(screen.getByRole("button", { name: "Restart daemon" }));

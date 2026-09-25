@@ -8,9 +8,9 @@ import (
 	"net/http/httptest"
 	"testing"
 
-	"github.com/aoagents/agent-orchestrator/backend/internal/config"
-	"github.com/aoagents/agent-orchestrator/backend/internal/httpd"
-	prsvc "github.com/aoagents/agent-orchestrator/backend/internal/service/pr"
+	"github.com/sudo-adduser-jordan/open-agents/backend/internal/config"
+	"github.com/sudo-adduser-jordan/open-agents/backend/internal/httpd"
+	prsvc "github.com/sudo-adduser-jordan/open-agents/backend/internal/service/pr"
 )
 
 type fakePRService struct {

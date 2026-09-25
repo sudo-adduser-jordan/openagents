@@ -13,7 +13,7 @@ function render(ui: ReactElement) {
 
 // These cover the two signal rules this surface exists to keep: a changed-file
 // list never claims to be complete when it was cut, and command output only adds
-// a warning when AO actually stopped storing it.
+// a warning when Open Agents actually stopped storing it.
 
 function diff(overrides: Partial<TurnDiff> = {}): TurnDiff {
 	return {
@@ -83,7 +83,7 @@ describe("TurnChangedFiles", () => {
 						activityKind: "command",
 						status: "completed",
 						summary: "Ran command",
-						detail: { cwd: "/Users/me/.ao/dev/data/worktrees/demo/demo-1", command: "ls" },
+						detail: { cwd: "/Users/me/.open-agents/dev/data/worktrees/demo/demo-1", command: "ls" },
 						createdAt: new Date().toISOString(),
 					},
 				]}
@@ -95,7 +95,7 @@ describe("TurnChangedFiles", () => {
 	});
 
 	it("preserves duplicate-disambiguating suffixes for absolute turn diff paths", async () => {
-		const cwd = "/Users/me/.ao/dev/data/worktrees/demo/demo-1";
+		const cwd = "/Users/me/.open-agents/dev/data/worktrees/demo/demo-1";
 		const onOpenFile = vi.fn();
 		render(
 			<TurnChangedFiles
@@ -153,7 +153,7 @@ describe("TurnChangedFiles", () => {
 						detail: {
 							files: [
 								{
-									path: "/Users/vaanyagoel/.ao/dev/data/worktrees/wexaai/wexaai-21/random_words_1.txt",
+									path: "/Users/vaanyagoel/.open-agents/dev/data/worktrees/wexaai/wexaai-21/random_words_1.txt",
 									status: "added",
 									additions: 50,
 									deletions: 0,
@@ -167,7 +167,7 @@ describe("TurnChangedFiles", () => {
 		);
 		await user.hover(screen.getByText("random_words_1.txt"));
 		expect(await screen.findByRole("tooltip")).toHaveTextContent(
-			"~/.ao/dev/data/worktrees/wexaai/wexaai-21/random_words_1.txt",
+			"~/.open-agents/dev/data/worktrees/wexaai/wexaai-21/random_words_1.txt",
 		);
 	});
 
@@ -187,7 +187,7 @@ describe("TurnChangedFiles", () => {
 						activityKind: "command",
 						status: "completed",
 						summary: "Ran command",
-						detail: { cwd: "/Users/me/.ao/dev/data/worktrees/demo/demo-1", command: "ls" },
+						detail: { cwd: "/Users/me/.open-agents/dev/data/worktrees/demo/demo-1", command: "ls" },
 						createdAt: new Date().toISOString(),
 					},
 				]}
@@ -195,7 +195,7 @@ describe("TurnChangedFiles", () => {
 		);
 		await user.hover(screen.getByText("notes.txt"));
 		expect(await screen.findByRole("tooltip")).toHaveTextContent(
-			"~/.ao/dev/data/worktrees/demo/demo-1/notes.txt",
+			"~/.open-agents/dev/data/worktrees/demo/demo-1/notes.txt",
 		);
 	});
 
@@ -218,7 +218,7 @@ describe("TurnChangedFiles", () => {
 
 	it("says the list was cut rather than presenting it as the whole change", () => {
 		render(<TurnChangedFiles diff={diff({ truncated: true })} onReview={() => {}} />);
-		expect(screen.getByText(/changed more files than AO lists/i)).toBeInTheDocument();
+		expect(screen.getByText(/changed more files than Open Agents lists/i)).toBeInTheDocument();
 		expect(screen.getByText(/Use Review for the whole change/i)).toBeInTheDocument();
 	});
 
@@ -308,7 +308,7 @@ describe("ActivityRow command output", () => {
 			/>,
 		);
 		await userEvent.click(screen.getByRole("button"));
-		expect(screen.getByText(/printed more than AO stores/i)).toBeInTheDocument();
+		expect(screen.getByText(/printed more than Open Agents stores/i)).toBeInTheDocument();
 	});
 
 	it("keeps a finished command collapsed so the timeline stays readable", () => {
@@ -444,7 +444,7 @@ describe("ActivityRow command labels", () => {
 				activity={commandActivity(
 					{
 						command:
-							"sed -n '1,240p' ~/.ao/dev/data/skills/using-ao/SKILL.md && sed -n '1,240p' ~/.ao/dev/data/skills/other/SKILL.md",
+							"sed -n '1,240p' ~/.open-agents/dev/data/skills/using-open-agents/SKILL.md && sed -n '1,240p' ~/.open-agents/dev/data/skills/other/SKILL.md",
 						output: "skill contents",
 					},
 					"completed",

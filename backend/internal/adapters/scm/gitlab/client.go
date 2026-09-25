@@ -14,7 +14,7 @@ import (
 	"sync"
 	"time"
 
-	"github.com/aoagents/agent-orchestrator/backend/internal/ports"
+	"github.com/sudo-adduser-jordan/open-agents/backend/internal/ports"
 )
 
 var (
@@ -28,7 +28,7 @@ var (
 
 // RateLimitError carries the structured backoff hints from a GitLab 429
 // response. GitLab sends Retry-After (seconds) and/or RateLimit-Reset (Unix
-// epoch seconds) headers; AO uses these to apply a provider-level cooldown so
+// epoch seconds) headers; Open Agents uses these to apply a provider-level cooldown so
 // the observer does not keep polling every 30s while rate-limited (review
 // finding #4). Callers that only need the category use errors.Is(err,
 // ErrRateLimited); callers needing the exact backoff use errors.As.
@@ -73,7 +73,7 @@ func (e *RateLimitError) GetResetAt() time.Time {
 const (
 	defaultRESTBaseURL = "https://gitlab.com/api/v4"
 	cacheMaxEntries    = 512
-	defaultUserAgent   = "ao-gitlab-scm/1"
+	defaultUserAgent   = "open-agents-gitlab-scm/1"
 	// defaultHTTPTimeout bounds every REST call so a hung GitLab API endpoint
 	// does not block the observer's polling goroutine indefinitely (review
 	// finding #4). Matches the observer's DefaultTickInterval.
@@ -448,7 +448,7 @@ var ErrPaginationURLRejected = fmt.Errorf("gitlab scm: pagination URL rejected")
 // host, port, and API base path as restBase, and rejects HTTPS-to-HTTP
 // downgrades. The host check implicitly enforces the per-host trust boundary
 // from ticket 01: a client's restBase is already scoped to an allowlisted host
-// (gitlab.com or an entry in AO_GITLAB_ALLOWED_HOSTS), so any next URL whose
+// (gitlab.com or an entry in OPEN_AGENTS_GITLAB_ALLOWED_HOSTS), so any next URL whose
 // host differs from restBase's host is, by construction, not in the allowlist
 // for this client and is rejected before the Authorization header is attached.
 //

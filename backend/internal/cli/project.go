@@ -251,7 +251,7 @@ func newProjectAddCommand(ctx *commandContext) *cobra.Command {
 		Long: "Register a local git repo as a project so sessions can be spawned in it.\n\n" +
 			"The path must be an existing git repository on disk. With --as-workspace, " +
 			"the path may be a parent folder containing direct child git repositories; " +
-			"AO initializes/adopts the parent as the root repo and gitignores children.",
+			"Open Agents initializes/adopts the parent as the root repo and gitignores children.",
 		Args: noArgs,
 		RunE: func(cmd *cobra.Command, args []string) error {
 			if opts.path == "" {
@@ -488,7 +488,7 @@ func writeProjectList(cmd *cobra.Command, projects []projectSummary) error {
 		if _, err := fmt.Fprintln(out, "No projects registered."); err != nil {
 			return err
 		}
-		_, err := fmt.Fprintln(out, "Run `ao project add --path <path>` to register one.")
+		_, err := fmt.Fprintln(out, "Run `open-agents project add --path <path>` to register one.")
 		return err
 	}
 

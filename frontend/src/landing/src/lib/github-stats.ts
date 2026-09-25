@@ -1,4 +1,4 @@
-import { COMPANY, GITHUB_STARS_URL } from "@ao/shared/constants";
+import { COMPANY, GITHUB_STARS_URL } from "@openagents/shared/constants";
 import { env } from "@/env";
 
 export interface GitHubRepoStats {

@@ -30,18 +30,18 @@ func TestMigration0120NormalizesLocalZoneActivityTimestamps(t *testing.T) {
 	}{
 		// Monotonic reading and an east-of-UTC zone: the shape a bare time.Now()
 		// leaves behind, and the one that reproduced the stranded switch.
-		{"ao-1", "2026-06-28 18:45:08.349363 +0800 CST m=+25660.013723251", "2026-06-28 10:45:08.349363 +0000 UTC"},
+		{"open-agents-1", "2026-06-28 18:45:08.349363 +0800 CST m=+25660.013723251", "2026-06-28 10:45:08.349363 +0000 UTC"},
 		// Same, with the fractional second one digit shorter — Go trims trailing
 		// zeros, which moves the offset's position in the string.
-		{"ao-2", "2026-07-02 18:05:06.42722 +0800 CST m=+3515.018840501", "2026-07-02 10:05:06.42722 +0000 UTC"},
+		{"open-agents-2", "2026-07-02 18:05:06.42722 +0800 CST m=+3515.018840501", "2026-07-02 10:05:06.42722 +0000 UTC"},
 		// Local zone without any monotonic reading; equally uncomparable.
-		{"ao-3", "2026-08-12 22:14:57.047745 +0700 +07", "2026-08-12 15:14:57.047745 +0000 UTC"},
+		{"open-agents-3", "2026-08-12 22:14:57.047745 +0700 +07", "2026-08-12 15:14:57.047745 +0000 UTC"},
 		// Crossing back over midnight.
-		{"ao-4", "2026-07-27 07:03:53.393954 +0800 CST m=+50790.035115335", "2026-07-26 23:03:53.393954 +0000 UTC"},
+		{"open-agents-4", "2026-07-27 07:03:53.393954 +0800 CST m=+50790.035115335", "2026-07-26 23:03:53.393954 +0000 UTC"},
 		// West of UTC shifts forward instead.
-		{"ao-5", "2026-07-27 07:03:53.393954 -0500 EST m=+50790.035115335", "2026-07-27 12:03:53.393954 +0000 UTC"},
+		{"open-agents-5", "2026-07-27 07:03:53.393954 -0500 EST m=+50790.035115335", "2026-07-27 12:03:53.393954 +0000 UTC"},
 		// Already canonical: must be left byte-for-byte alone.
-		{"ao-6", "2026-07-27 07:03:53.393954 +0000 UTC", "2026-07-27 07:03:53.393954 +0000 UTC"},
+		{"open-agents-6", "2026-07-27 07:03:53.393954 +0000 UTC", "2026-07-27 07:03:53.393954 +0000 UTC"},
 	}
 	for n, s := range seed {
 		if _, err := db.Exec(`INSERT INTO sessions (id, project_id, num, kind, activity_state, activity_last_at, is_terminated, created_at, updated_at)

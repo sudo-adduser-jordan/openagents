@@ -148,7 +148,7 @@ graph TD
 - sqlc generated rows
 - External system payloads (GitHub, tmux, agent-specific)
 
-**Rule of thumb:** If AO would still use the concept after replacing HTTP, CLI, SQLite, GitHub, tmux, and every agent adapter, it belongs in domain.
+**Rule of thumb:** If Open Agents would still use the concept after replacing HTTP, CLI, SQLite, GitHub, tmux, and every agent adapter, it belongs in domain.
 
 ---
 
@@ -559,7 +559,7 @@ graph TD
 
 ### `internal/cli`
 
-**Purpose:** User-facing `ao` command. Thin client over the daemon HTTP API.
+**Purpose:** User-facing `open-agents` command. Thin client over the daemon HTTP API.
 
 ```mermaid
 graph LR
@@ -613,7 +613,7 @@ graph TD
 **Adapter principles:**
 
 - Adapters are leaves in the import graph
-- Adapters translate external behavior into AO ports/domain concepts
+- Adapters translate external behavior into Open Agents ports/domain concepts
 - Adapters should not own product workflows
 - All adapter-written files must be gitignored
 
@@ -684,22 +684,22 @@ graph LR
 
     Config -->|provides| Settings[Settings]
 
-    Settings --> Port[AO_PORT]
-    Settings --> Timeout[AO_REQUEST_TIMEOUT]
-    Settings --> DataDir[AO_DATA_DIR]
-    Settings --> RunFile[AO_RUN_FILE]
-    Settings --> Agent[AO_AGENT]
+    Settings --> Port[OPEN_AGENTS_PORT]
+    Settings --> Timeout[OPEN_AGENTS_REQUEST_TIMEOUT]
+    Settings --> DataDir[OPEN_AGENTS_DATA_DIR]
+    Settings --> RunFile[OPEN_AGENTS_RUN_FILE]
+    Settings --> Agent[OPEN_AGENTS_AGENT]
 
 ```
 
 **Key environment variables:**
 
-- `AO_PORT` — HTTP bind port (default: 3001)
-- `AO_REQUEST_TIMEOUT` — Per-request timeout (default: 60s)
-- `AO_SHUTDOWN_TIMEOUT` — Graceful shutdown cap (default: 10s)
-- `AO_RUN_FILE` — PID/port handshake (default: ~/.ao/running.json)
-- `AO_DATA_DIR` — SQLite data directory (default: ~/.ao/data)
-- `AO_AGENT` — Compatibility agent adapter (default: opencode)
+- `OPEN_AGENTS_PORT` — HTTP bind port (default: 3001)
+- `OPEN_AGENTS_REQUEST_TIMEOUT` — Per-request timeout (default: 60s)
+- `OPEN_AGENTS_SHUTDOWN_TIMEOUT` — Graceful shutdown cap (default: 10s)
+- `OPEN_AGENTS_RUN_FILE` — PID/port handshake (default: ~/.open-agents/running.json)
+- `OPEN_AGENTS_DATA_DIR` — SQLite data directory (default: ~/.open-agents/data)
+- `OPEN_AGENTS_AGENT` — Compatibility agent adapter (default: opencode)
 - `GITHUB_TOKEN` — GitHub authentication
 
 ---
@@ -898,7 +898,7 @@ type MyFeature interface {
 // In internal/adapters/myfeature/impl.go
 package impl
 
-import "github.com/aoagents/agent-orchestrator/backend/internal/ports"
+import "github.com/sudo-adduser-jordan/open-agents/backend/internal/ports"
 
 type Impl struct { ... }
 

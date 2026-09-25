@@ -8,14 +8,14 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/aoagents/agent-orchestrator/backend/internal/domain"
-	"github.com/aoagents/agent-orchestrator/backend/internal/httpd/apierr"
+	"github.com/sudo-adduser-jordan/open-agents/backend/internal/domain"
+	"github.com/sudo-adduser-jordan/open-agents/backend/internal/httpd/apierr"
 )
 
 func workspaceReviewService(t *testing.T, repo string) *Service {
 	t.Helper()
 	store := newFakeStore()
-	store.sessions["ao-1"] = domain.SessionRecord{ID: "ao-1", Metadata: domain.SessionMetadata{WorkspacePath: repo}}
+	store.sessions["open-agents-1"] = domain.SessionRecord{ID: "open-agents-1", Metadata: domain.SessionMetadata{WorkspacePath: repo}}
 	return &Service{store: store}
 }
 
@@ -40,7 +40,7 @@ func TestWorkspaceFileRevisionUsesSectionSpecificSides(t *testing.T) {
 	}
 	for _, tc := range tests {
 		t.Run(tc.name, func(t *testing.T) {
-			got, err := svc.GetWorkspaceFileRevision(context.Background(), "ao-1", "README.md", tc.scope, tc.side, "", "")
+			got, err := svc.GetWorkspaceFileRevision(context.Background(), "open-agents-1", "README.md", tc.scope, tc.side, "", "")
 			if err != nil {
 				t.Fatal(err)
 			}
@@ -59,14 +59,14 @@ func TestWorkspaceFileRevisionRepresentsAbsentUntrackedBeforeSide(t *testing.T) 
 	writeWorkspaceFile(t, repo, "notes.txt", "new\n")
 	svc := workspaceReviewService(t, repo)
 
-	before, err := svc.GetWorkspaceFileRevision(context.Background(), "ao-1", "notes.txt", WorkspaceDiffUntracked, WorkspaceBlobBefore, "", "")
+	before, err := svc.GetWorkspaceFileRevision(context.Background(), "open-agents-1", "notes.txt", WorkspaceDiffUntracked, WorkspaceBlobBefore, "", "")
 	if err != nil {
 		t.Fatal(err)
 	}
 	if before.Exists || before.Content != "" || before.Revision != "" {
 		t.Fatalf("before = %#v, want explicit absent side", before)
 	}
-	after, err := svc.GetWorkspaceFileRevision(context.Background(), "ao-1", "notes.txt", WorkspaceDiffUntracked, WorkspaceBlobAfter, "", "")
+	after, err := svc.GetWorkspaceFileRevision(context.Background(), "open-agents-1", "notes.txt", WorkspaceDiffUntracked, WorkspaceBlobAfter, "", "")
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -80,12 +80,12 @@ func TestGetWorkspaceDiffsBatchesPathsAndHonorsWhitespace(t *testing.T) {
 	writeWorkspaceFile(t, repo, "README.md", "goodbye\n")
 	writeWorkspaceFile(t, repo, "src/app.go", "package main\n\nfunc main() {}\n")
 	svc := workspaceReviewService(t, repo)
-	files, err := svc.ListWorkspaceFiles(context.Background(), "ao-1")
+	files, err := svc.ListWorkspaceFiles(context.Background(), "open-agents-1")
 	if err != nil {
 		t.Fatal(err)
 	}
 
-	got, err := svc.GetWorkspaceDiffs(context.Background(), "ao-1", WorkspaceDiffInput{
+	got, err := svc.GetWorkspaceDiffs(context.Background(), "open-agents-1", WorkspaceDiffInput{
 		Scope: WorkspaceDiffCombined, Paths: []string{"README.md", "src/app.go"}, ContextLines: 3,
 		IgnoreWhitespace: true, WorkspaceVersion: files.WorkspaceVersion,
 	})
@@ -106,7 +106,7 @@ func TestGetWorkspaceDiffsBatchesPathsAndHonorsWhitespace(t *testing.T) {
 func TestCommitReviewUsesOnlyTheSelectedCommit(t *testing.T) {
 	repo := newWorkspaceRepo(t)
 	base := strings.TrimSpace(runGit(t, repo, "rev-parse", "HEAD"))
-	runGit(t, repo, "switch", "-c", "ao/commit-review")
+	runGit(t, repo, "switch", "-c", "open-agents/commit-review")
 	writeWorkspaceFile(t, repo, "README.md", "first commit\n")
 	runGit(t, repo, "add", "README.md")
 	runGit(t, repo, "commit", "-m", "first change")
@@ -116,9 +116,9 @@ func TestCommitReviewUsesOnlyTheSelectedCommit(t *testing.T) {
 	runGit(t, repo, "commit", "-m", "second change")
 
 	store := newFakeStore()
-	store.sessions["ao-1"] = domain.SessionRecord{ID: "ao-1", Metadata: domain.SessionMetadata{Branch: "ao/commit-review", WorkspacePath: repo, DiffBaseSHA: base, DiffBaseRef: "main"}}
+	store.sessions["open-agents-1"] = domain.SessionRecord{ID: "open-agents-1", Metadata: domain.SessionMetadata{Branch: "open-agents/commit-review", WorkspacePath: repo, DiffBaseSHA: base, DiffBaseRef: "main"}}
 	svc := &Service{store: store}
-	files, err := svc.ListWorkspaceFiles(context.Background(), "ao-1")
+	files, err := svc.ListWorkspaceFiles(context.Background(), "open-agents-1")
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -126,7 +126,7 @@ func TestCommitReviewUsesOnlyTheSelectedCommit(t *testing.T) {
 		t.Fatalf("commits = %+v, want newest first", files.Commits)
 	}
 
-	diffs, err := svc.GetWorkspaceDiffs(context.Background(), "ao-1", WorkspaceDiffInput{
+	diffs, err := svc.GetWorkspaceDiffs(context.Background(), "open-agents-1", WorkspaceDiffInput{
 		Scope: WorkspaceDiffCommitted, CommitSHA: first, Paths: []string{"README.md"}, ContextLines: 3, WorkspaceVersion: files.WorkspaceVersion,
 	})
 	if err != nil {
@@ -136,14 +136,14 @@ func TestCommitReviewUsesOnlyTheSelectedCommit(t *testing.T) {
 		t.Fatalf("selected commit patch = %q", diffs.Groups[0].Patch)
 	}
 
-	detail, err := svc.GetWorkspaceFileAtCommit(context.Background(), "ao-1", "README.md", first)
+	detail, err := svc.GetWorkspaceFileAtCommit(context.Background(), "open-agents-1", "README.md", first)
 	if err != nil {
 		t.Fatal(err)
 	}
 	if detail.Content != "first commit\n" || !strings.Contains(detail.Diff, "+first commit") || detail.Editable {
 		t.Fatalf("selected commit detail = %#v", detail)
 	}
-	after, err := svc.GetWorkspaceFileRevisionAtCommit(context.Background(), "ao-1", "README.md", WorkspaceBlobAfter, files.WorkspaceVersion, "", first)
+	after, err := svc.GetWorkspaceFileRevisionAtCommit(context.Background(), "open-agents-1", "README.md", WorkspaceBlobAfter, files.WorkspaceVersion, "", first)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -155,7 +155,7 @@ func TestCommitReviewUsesOnlyTheSelectedCommit(t *testing.T) {
 func TestCommitReviewRejectsCommitOutsideComparison(t *testing.T) {
 	repo := newWorkspaceRepo(t)
 	svc := workspaceReviewService(t, repo)
-	_, err := svc.GetWorkspaceDiffs(context.Background(), "ao-1", WorkspaceDiffInput{
+	_, err := svc.GetWorkspaceDiffs(context.Background(), "open-agents-1", WorkspaceDiffInput{
 		Scope: WorkspaceDiffCommitted, CommitSHA: strings.Repeat("a", 40), Paths: []string{"README.md"}, ContextLines: 3,
 	})
 	var apiError *apierr.Error
@@ -167,7 +167,7 @@ func TestCommitReviewRejectsCommitOutsideComparison(t *testing.T) {
 func TestGetWorkspaceDiffsRejectsStaleWorkspaceVersion(t *testing.T) {
 	repo := newWorkspaceRepo(t)
 	svc := workspaceReviewService(t, repo)
-	_, err := svc.GetWorkspaceDiffs(context.Background(), "ao-1", WorkspaceDiffInput{
+	_, err := svc.GetWorkspaceDiffs(context.Background(), "open-agents-1", WorkspaceDiffInput{
 		Scope: WorkspaceDiffCombined, Paths: []string{"README.md"}, ContextLines: 3, WorkspaceVersion: "stale",
 	})
 	var apiError *apierr.Error
@@ -180,7 +180,7 @@ func TestWorkspaceFileRevisionRejectsStaleWorkspaceVersion(t *testing.T) {
 	repo := newWorkspaceRepo(t)
 	svc := workspaceReviewService(t, repo)
 
-	_, err := svc.GetWorkspaceFileRevision(context.Background(), "ao-1", "README.md", WorkspaceDiffCombined, WorkspaceBlobAfter, "stale", "")
+	_, err := svc.GetWorkspaceFileRevision(context.Background(), "open-agents-1", "README.md", WorkspaceDiffCombined, WorkspaceBlobAfter, "stale", "")
 	var apiError *apierr.Error
 	if !errors.As(err, &apiError) || apiError.Code != "WORKSPACE_SNAPSHOT_STALE" {
 		t.Fatalf("error = %#v, want WORKSPACE_SNAPSHOT_STALE", err)
@@ -204,14 +204,14 @@ func TestSearchWorkspaceFilesReturnsPaginatedPathMatches(t *testing.T) {
 	writeWorkspaceFile(t, repo, "docs/beta.md", "c\n")
 	svc := workspaceReviewService(t, repo)
 
-	first, err := svc.SearchWorkspaceFiles(context.Background(), "ao-1", "ALPHA", "", 1)
+	first, err := svc.SearchWorkspaceFiles(context.Background(), "open-agents-1", "ALPHA", "", 1)
 	if err != nil {
 		t.Fatal(err)
 	}
 	if len(first.Results) != 1 || first.NextCursor == "" || !strings.Contains(first.Results[0].Path, "alpha") {
 		t.Fatalf("first page = %#v", first)
 	}
-	second, err := svc.SearchWorkspaceFiles(context.Background(), "ao-1", "alpha", first.NextCursor, 1)
+	second, err := svc.SearchWorkspaceFiles(context.Background(), "open-agents-1", "alpha", first.NextCursor, 1)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -227,8 +227,8 @@ func workspaceChildRepo(t *testing.T, root, name, content string) string {
 		t.Fatal(err)
 	}
 	runGit(t, dir, "init")
-	runGit(t, dir, "config", "user.email", "ao@example.com")
-	runGit(t, dir, "config", "user.name", "AO Tests")
+	runGit(t, dir, "config", "user.email", "open-agents@example.com")
+	runGit(t, dir, "config", "user.name", "Open Agents Tests")
 	writeWorkspaceFile(t, dir, "service.go", content)
 	runGit(t, dir, "add", ".")
 	runGit(t, dir, "commit", "-m", "initial "+name)
@@ -292,12 +292,12 @@ func TestGetWorkspaceDiffsCombinesUntrackedAndTrackedPathsInOneRepo(t *testing.T
 	writeWorkspaceFile(t, repo, "README.md", "goodbye\n")
 	writeWorkspaceFile(t, repo, "notes.txt", "new notes\n")
 	svc := workspaceReviewService(t, repo)
-	files, err := svc.ListWorkspaceFiles(context.Background(), "ao-1")
+	files, err := svc.ListWorkspaceFiles(context.Background(), "open-agents-1")
 	if err != nil {
 		t.Fatal(err)
 	}
 
-	got, err := svc.GetWorkspaceDiffs(context.Background(), "ao-1", WorkspaceDiffInput{
+	got, err := svc.GetWorkspaceDiffs(context.Background(), "open-agents-1", WorkspaceDiffInput{
 		Scope: WorkspaceDiffCombined, Paths: []string{"README.md", "notes.txt"}, ContextLines: 3,
 		WorkspaceVersion: files.WorkspaceVersion,
 	})

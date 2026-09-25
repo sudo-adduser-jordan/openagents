@@ -2,15 +2,7 @@
 import { expect, test } from "vitest";
 import worker from "./domain-redirect-worker.mjs";
 
-test.each([
-  "ao-agents.com",
-  "www.ao-agents.com",
-  "aoagents.dev",
-  "www.aoagents.dev",
-  "useao.dev",
-  "www.useao.dev",
-  "www.orchestrator.inc",
-])(
+test.each(["www.orchestrator.inc"])(
   "%s redirects HTTP and HTTPS while preserving encoded paths and query parameters",
   (host) => {
     for (const protocol of ["http:", "https:"]) {
@@ -29,10 +21,10 @@ test.each([
 
 test.each([
   "orchestrator.inc",
-  "api.ao-agents.com",
   "api.aoagents.dev",
-  "ao-agents.com.evil.test",
-  "aoagents.dev.evil.test",
+  "staging-api.aoagents.dev",
+  "status.aoagents.dev",
+  "orchestrator.inc.evil.test",
 ])(
   "%s is not redirected",
   (host) => {

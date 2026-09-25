@@ -512,7 +512,7 @@ enabled is true only when:
 ~~~text
 valid telemetry events consent token
 AND a Sentry DSN is configured and validated
-AND ao.agent_switch.failure is not kill-switched
+AND open-agents.agent_switch.failure is not kill-switched
 ~~~
 
 destination_fingerprint is SHA-256 over the validated normalized scheme, host,
@@ -522,8 +522,8 @@ at classification time.
 
 ### Authoritative consent and cross-process protocol
 
-The durable desktop user choice lives in AO_DATA_DIR/telemetry_policy.json,
-which resolves under ~/.ao. The file contains only schema_version,
+The durable desktop user choice lives in OPEN_AGENTS_DATA_DIR/telemetry_policy.json,
+which resolves under ~/.open-agents. The file contains only schema_version,
 events_enabled, consent_generation, consent_production_enabled, and updated_at
 and is written atomically with mode 0600. consent_production_enabled records
 whether the release gate was open when the choice was written; version 1
@@ -560,11 +560,11 @@ for a surface:
 
 ~~~text
 desktop main/renderer = stored events_enabled
-                        AND AO_TELEMETRY_RENDERER is not off
-                        AND ao.agent_switch.visibility_failure is not kill-switched
+                        AND OPEN_AGENTS_TELEMETRY_RENDERER is not off
+                        AND open-agents.agent_switch.visibility_failure is not kill-switched
 
 daemon switch stream = stored events_enabled
-                       AND AO_TELEMETRY_EVENTS is on
+                       AND OPEN_AGENTS_TELEMETRY_EVENTS is on
                        AND DSN is configured
                        AND stream kill switch is absent
 ~~~
@@ -572,7 +572,7 @@ daemon switch stream = stored events_enabled
 A directly launched headless daemon never writes the desktop policy file. Its
 exact truth table is:
 
-| Policy file | AO_TELEMETRY_EVENTS | Effective headless choice |
+| Policy file | OPEN_AGENTS_TELEMETRY_EVENTS | Effective headless choice |
 | --- | --- | --- |
 | valid off | any value | off |
 | valid on | explicit on | on with the file generation |
@@ -587,7 +587,7 @@ become a competing durable generation writer.
 
 Startup ordering is:
 
-1. Electron main resolves AO_DATA_DIR and reads or materializes the policy
+1. Electron main resolves OPEN_AGENTS_DATA_DIR and reads or materializes the policy
    before initializing the desktop Sentry transport or renderer capture intake.
 2. Renderer bootstrap carries events_enabled and consent_generation. Renderers
    never own a network Sentry client or DSN; when enabled they send only typed,
@@ -1484,7 +1484,7 @@ visibility_presentation
 Electron main is the single visibility-report owner. Renderers send typed health,
 expected-presentation, presentation-acknowledgement, cancellation, focus, and
 online-state signals through preload IPC; they do not call Sentry directly for
-agent-switch visibility. Main chooses the most recently focused live AO window
+agent-switch visibility. Main chooses the most recently focused live Open Agents window
 as the owner. Background windows cannot report, and changing focus cancels the
 old owner's timer before the new owner can start one.
 
@@ -1966,7 +1966,7 @@ Test:
 - Fetched row missing its presentation.
 - Multiple mounts/windows.
 - Focus transfer between windows and background-window suppression.
-- ao.agent_switch.visibility_failure kill-switch suppression in Electron main.
+- open-agents.agent_switch.visibility_failure kill-switch suppression in Electron main.
 - Exact 15-second active and 60-second history timers.
 - Five healthy minutes before a visibility recurrence can report again.
 - Presentation token acknowledged from useLayoutEffect, cancelled by navigation,

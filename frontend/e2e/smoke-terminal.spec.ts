@@ -1,6 +1,6 @@
 import { expect, test } from "@playwright/test";
 
-// #2483 TRM-001, RENDERER SLICE. Under dev:web there is no window.ao and no PTY,
+// #2483 TRM-001, RENDERER SLICE. Under dev:web there is no window.openAgents and no PTY,
 // so TerminalPane renders its deterministic browser-preview transcript (the
 // data-testid="session-terminal" surface) seeded from lib/mock-data.ts. This
 // proves the renderer attaches the terminal surface and paints a stream; the real
@@ -9,7 +9,7 @@ import { expect, test } from "@playwright/test";
 // work. Not the canonical T0/P0 gate.
 
 test("renderer: terminal attaches on session detail and renders a stream @T0 @TRM", async ({ page }) => {
-	await page.goto("/#/projects/ao-demo/sessions/demo-working");
+	await page.goto("/#/projects/open-agents-demo/sessions/demo-working");
 	await expect(page.getByTestId("session-detail")).toBeVisible();
 
 	const terminal = page.getByTestId("session-terminal");

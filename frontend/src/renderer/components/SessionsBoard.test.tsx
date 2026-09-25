@@ -3,7 +3,7 @@ import { act, render, screen, waitFor, within } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 import type { WorkspaceSession, WorkspaceSummary } from "../types/workspace";
-import { toKanbanColumn } from "@aoagents/product-ui";
+import { toKanbanColumn } from "@openagents/product-ui";
 
 // Instant motion updates so height tweens do not leave tests waiting on timers.
 vi.mock("motion/react", async (importOriginal) => {
@@ -65,7 +65,7 @@ vi.mock("../lib/api-client", () => ({
 }));
 
 vi.mock("../lib/bridge", () => ({
-	aoBridge: {
+	openAgentsBridge: {
 		clipboard: {
 			writeText: vi.fn(),
 		},
@@ -84,7 +84,7 @@ vi.mock("../lib/platform", async (importOriginal) => {
 	};
 });
 
-import { archiveToggleHeightClassName, archiveToggleOffsetClassName } from "@aoagents/product-ui";
+import { archiveToggleHeightClassName, archiveToggleOffsetClassName } from "@openagents/product-ui";
 import { SessionsBoard } from "./SessionsBoard";
 import { toBoardSessionPresentation } from "./SessionsBoardAdapters";
 import { TooltipProvider } from "./ui/tooltip";
@@ -119,7 +119,7 @@ beforeEach(() => {
 	postMock.mockReset().mockResolvedValue({ data: {} });
 	workspaceQueryMock.mockReset().mockReturnValue({ data: [], isError: false });
 	usageQueryMock.mockReset().mockReturnValue({ data: new Map() });
-	window.localStorage.removeItem("ao.board.archive.layout");
+	window.localStorage.removeItem("open-agents.board.archive.layout");
 	boardActionsInPanelMock.mockReset().mockReturnValue(false);
 });
 
@@ -194,7 +194,7 @@ describe("SessionsBoard", () => {
 							workspaceName: "solkit-ui",
 							title: "test",
 							provider: "opencode",
-							branch: "ao/dev/solkit-ui-5/root",
+							branch: "open-agents/dev/solkit-ui-5/root",
 							status: "running",
 							activity: { state: "working", lastActivityAt: "2026-01-01T00:00:00Z" },
 							updatedAt: "2026-01-01T00:00:00Z",
@@ -296,7 +296,7 @@ describe("SessionsBoard", () => {
 							workspaceName: "radic",
 							title: "brand-font-pipeline",
 							provider: "opencode",
-							branch: "ao/radic-5",
+							branch: "open-agents/radic-5",
 							status: "idle",
 							activity: { state: "idle", lastActivityAt: "2026-01-01T00:00:00Z" },
 							updatedAt: "2026-01-01T00:00:00Z",
@@ -639,7 +639,7 @@ describe("SessionsBoard", () => {
 							workspaceName: "radic",
 							title: "idle-card-task",
 							provider: "opencode",
-							branch: "ao/radic-5",
+							branch: "open-agents/radic-5",
 							status: "idle",
 							activity: { state: "idle", lastActivityAt: "2026-01-01T00:00:00Z" },
 							updatedAt: "2026-01-01T00:00:00Z",
@@ -651,7 +651,7 @@ describe("SessionsBoard", () => {
 							workspaceName: "radic",
 							title: "no-signal-card-task",
 							provider: "opencode",
-							branch: "ao/radic-6",
+							branch: "open-agents/radic-6",
 							status: "no_signal",
 							activity: { state: "idle", lastActivityAt: "2026-01-01T00:00:00Z" },
 							updatedAt: "2026-01-01T00:00:00Z",
@@ -663,7 +663,7 @@ describe("SessionsBoard", () => {
 							workspaceName: "radic",
 							title: "draft-card-task",
 							provider: "opencode",
-							branch: "ao/radic-7",
+							branch: "open-agents/radic-7",
 							status: "draft",
 							activity: { state: "idle", lastActivityAt: "2026-01-01T00:00:00Z" },
 							updatedAt: "2026-01-01T00:00:00Z",
@@ -704,7 +704,7 @@ describe("SessionsBoard", () => {
 						workspaceName: "radic",
 						title: "agent-exited-task",
 						provider: "opencode",
-						branch: "ao/exited",
+						branch: "open-agents/exited",
 						status: "exited",
 						// What the daemon derives for a worker with no PR, whatever its
 						// runtime status. Set explicitly so this covers the daemon path,
@@ -747,7 +747,7 @@ describe("SessionsBoard", () => {
 							workspaceName: "radic",
 							title: "p1 active",
 							provider: "opencode",
-							branch: "ao/radic-active",
+							branch: "open-agents/radic-active",
 							status: "working",
 							activity: { state: "active", lastActivityAt: "2026-01-01T00:00:00Z" },
 							updatedAt: "2026-01-01T00:00:00Z",
@@ -759,7 +759,7 @@ describe("SessionsBoard", () => {
 							workspaceName: "radic",
 							title: "p1 idle",
 							provider: "opencode",
-							branch: "ao/radic-idle",
+							branch: "open-agents/radic-idle",
 							status: "idle",
 							activity: { state: "idle", lastActivityAt: "2026-01-01T00:00:00Z" },
 							updatedAt: "2026-01-01T00:00:00Z",
@@ -778,7 +778,7 @@ describe("SessionsBoard", () => {
 							workspaceName: "other",
 							title: "p2 active",
 							provider: "opencode",
-							branch: "ao/other-active",
+							branch: "open-agents/other-active",
 							status: "working",
 							activity: { state: "active", lastActivityAt: "2026-01-01T00:00:00Z" },
 							updatedAt: "2026-01-01T00:00:00Z",
@@ -790,7 +790,7 @@ describe("SessionsBoard", () => {
 							workspaceName: "other",
 							title: "p2 idle",
 							provider: "opencode",
-							branch: "ao/other-idle",
+							branch: "open-agents/other-idle",
 							status: "idle",
 							activity: { state: "idle", lastActivityAt: "2026-01-01T00:00:00Z" },
 							updatedAt: "2026-01-01T00:00:00Z",
@@ -867,7 +867,7 @@ describe("SessionsBoard", () => {
 		);
 		// Agent shown as its brand logo with an accessible name (not a text label).
 		expect(within(terminatedCard!).getByRole("img", { name: "opencode" })).toBeInTheDocument();
-		expect(screen.getByText("ao/dead-worker")).toBeInTheDocument();
+		expect(screen.getByText("open-agents/dead-worker")).toBeInTheDocument();
 		expect(within(terminatedCard!).queryByText("github:INT-17")).not.toBeInTheDocument();
 		expect(within(terminatedCard!).getByRole("link", { name: "PR #42 merged" })).toHaveAttribute(
 			"href",
@@ -877,13 +877,13 @@ describe("SessionsBoard", () => {
 			"href",
 			"https://github.com/example/radic/pull/41",
 		);
-		expect(within(terminatedCard!).getByRole("button", { name: "Copy branch ao/dead-worker" })).toBeInTheDocument();
+		expect(within(terminatedCard!).getByRole("button", { name: "Copy branch open-agents/dead-worker" })).toBeInTheDocument();
 		const divider = terminatedCard!.querySelector("div.border-t.border-border");
 		expect(divider).not.toBeNull();
 		const mergedPrLink = within(terminatedCard!).getByRole("link", { name: "PR #42 merged" });
 		expect(divider!.compareDocumentPosition(mergedPrLink) & Node.DOCUMENT_POSITION_PRECEDING).not.toBe(0);
 		expect(
-			screen.getByText("ao/dead-worker").compareDocumentPosition(divider!) & Node.DOCUMENT_POSITION_FOLLOWING,
+			screen.getByText("open-agents/dead-worker").compareDocumentPosition(divider!) & Node.DOCUMENT_POSITION_FOLLOWING,
 		).not.toBe(0);
 		expect(screen.getByRole("button", { name: "Restore dead worker" })).toBeInTheDocument();
 
@@ -941,7 +941,7 @@ describe("SessionsBoard", () => {
 	});
 
 	it("renders archived sessions as a grid even when rows were previously saved", async () => {
-		window.localStorage.setItem("ao.board.archive.layout", "rows");
+		window.localStorage.setItem("open-agents.board.archive.layout", "rows");
 		workspaceQueryMock.mockReturnValue({
 			data: [workspaceWithSessions([terminatedSession()])],
 			isError: false,
@@ -1221,7 +1221,7 @@ describe("SessionsBoard", () => {
 						status: "working",
 						kanbanColumn: "building",
 					}),
-					// Mergeable on the card, but no AO loop is turning it, so the
+					// Mergeable on the card, but no Open Agents loop is turning it, so the
 					// review-feedback loop is on a person's turn. It joins the same
 					// Review lane as the validating worker.
 					boardSession({
@@ -1656,7 +1656,7 @@ function boardSession(
 		workspaceId: "p1",
 		workspaceName: "radic",
 		provider: "opencode",
-		branch: `ao/${overrides.id}`,
+		branch: `open-agents/${overrides.id}`,
 		kanbanColumn: toKanbanColumn(undefined, overrides.status),
 		updatedAt: "2026-01-01T00:00:00Z",
 		prs: [],
@@ -1673,7 +1673,7 @@ function terminatedSession(overrides: Partial<WorkspaceSession> = {}): Workspace
 		issueId: "github:INT-17",
 		provider: "opencode",
 		kind: "worker",
-		branch: "ao/dead-worker",
+		branch: "open-agents/dead-worker",
 		status: "terminated",
 		kanbanColumn: "archive",
 		isTerminated: true,

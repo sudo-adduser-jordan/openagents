@@ -11,9 +11,9 @@ import (
 	"testing"
 	"time"
 
-	"github.com/aoagents/agent-orchestrator/backend/internal/adapters/runtime/tmux"
-	"github.com/aoagents/agent-orchestrator/backend/internal/domain"
-	"github.com/aoagents/agent-orchestrator/backend/internal/ports"
+	"github.com/sudo-adduser-jordan/open-agents/backend/internal/adapters/runtime/tmux"
+	"github.com/sudo-adduser-jordan/open-agents/backend/internal/domain"
+	"github.com/sudo-adduser-jordan/open-agents/backend/internal/ports"
 )
 
 // TestAttachmentStreamsRealTmuxPane attaches a real PTY to a real tmux session
@@ -26,12 +26,12 @@ func TestAttachmentStreamsRealTmuxPane(t *testing.T) {
 	// See TestAttachmentReattachAdoptsNewSize: tmux needs a usable TERM to attach.
 	t.Setenv("TERM", "xterm-256color")
 
-	name := "ao-term-it-" + strconv.Itoa(os.Getpid())
+	name := "open-agents-term-it-" + strconv.Itoa(os.Getpid())
 	rt := tmux.New(tmux.Options{Timeout: 10 * time.Second})
 	handle, err := rt.Create(context.Background(), ports.RuntimeConfig{
 		SessionID:     domain.SessionID(name),
 		WorkspacePath: t.TempDir(),
-		Argv:          []string{"sh", "-lc", "printf AO_READY\\n; exec sh -i"},
+		Argv:          []string{"sh", "-lc", "printf OPEN_AGENTS_READY\\n; exec sh -i"},
 	})
 	if err != nil {
 		t.Fatalf("Create: %v", err)
@@ -45,8 +45,8 @@ func TestAttachmentStreamsRealTmuxPane(t *testing.T) {
 	go a.run(ctx)
 
 	// Type a unique marker and expect it echoed back through the PTY.
-	eventually(t, 3*time.Second, func() bool { return a.writeLeased([]byte("echo AO_MARKER_42\n"), nil) == nil })
-	eventually(t, 5*time.Second, func() bool { return strings.Contains(got.string(), "AO_MARKER_42") })
+	eventually(t, 3*time.Second, func() bool { return a.writeLeased([]byte("echo OPEN_AGENTS_MARKER_42\n"), nil) == nil })
+	eventually(t, 5*time.Second, func() bool { return strings.Contains(got.string(), "OPEN_AGENTS_MARKER_42") })
 
 	// Kill the session: the attachment must observe it as gone and not re-attach.
 	if err := rt.Destroy(context.Background(), handle); err != nil {
@@ -69,12 +69,12 @@ func TestAttachmentReattachAdoptsNewSize(t *testing.T) {
 	// none, so set it here to match the real environment.
 	t.Setenv("TERM", "xterm-256color")
 
-	name := "ao-term-size-it-" + strconv.Itoa(os.Getpid())
+	name := "open-agents-term-size-it-" + strconv.Itoa(os.Getpid())
 	rt := tmux.New(tmux.Options{Timeout: 10 * time.Second})
 	handle, err := rt.Create(context.Background(), ports.RuntimeConfig{
 		SessionID:     domain.SessionID(name),
 		WorkspacePath: t.TempDir(),
-		Argv:          []string{"sh", "-lc", "printf AO_READY\\n; exec sh -i"},
+		Argv:          []string{"sh", "-lc", "printf OPEN_AGENTS_READY\\n; exec sh -i"},
 	})
 	if err != nil {
 		t.Fatalf("Create: %v", err)

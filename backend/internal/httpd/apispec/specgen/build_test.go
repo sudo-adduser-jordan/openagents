@@ -8,8 +8,8 @@ import (
 
 	"gopkg.in/yaml.v3"
 
-	"github.com/aoagents/agent-orchestrator/backend/internal/httpd/apispec"
-	"github.com/aoagents/agent-orchestrator/backend/internal/httpd/apispec/specgen"
+	"github.com/sudo-adduser-jordan/open-agents/backend/internal/httpd/apispec"
+	"github.com/sudo-adduser-jordan/open-agents/backend/internal/httpd/apispec/specgen"
 )
 
 type openAPISchemaNode struct {
@@ -108,7 +108,7 @@ func TestBuild_UsageModelStaysUnsplitByProvider(t *testing.T) {
 
 	// One model is one row. The billing provider is not a product
 	// distinction, so it must not reappear here and split a model apart by
-	// AO's own attribution state.
+	// Open Agents's own attribution state.
 	model := doc.Components.Schemas["UsageModelResponse"]
 	if slices.Contains(model.Required, "providerId") {
 		t.Fatalf("UsageModelResponse still exposes providerId: %v", model.Required)

@@ -12,7 +12,7 @@ const execFileAsync = promisify(execFile);
 const tempRoots: string[] = [];
 
 async function tempDir(): Promise<string> {
-	const dir = await mkdtemp(path.join(os.tmpdir(), "ao-import-scan-"));
+	const dir = await mkdtemp(path.join(os.tmpdir(), "open-agents-import-scan-"));
 	tempRoots.push(dir);
 	return dir;
 }
@@ -22,10 +22,10 @@ async function git(args: string[], cwd?: string): Promise<string> {
 		cwd,
 		env: {
 			...process.env,
-			GIT_AUTHOR_NAME: "AO Test",
-			GIT_AUTHOR_EMAIL: "ao@example.com",
-			GIT_COMMITTER_NAME: "AO Test",
-			GIT_COMMITTER_EMAIL: "ao@example.com",
+			GIT_AUTHOR_NAME: "Open Agents Test",
+			GIT_AUTHOR_EMAIL: "open-agents@example.com",
+			GIT_COMMITTER_NAME: "Open Agents Test",
+			GIT_COMMITTER_EMAIL: "open-agents@example.com",
 		},
 	});
 	return String(stdout).trim();
@@ -57,7 +57,7 @@ describe("scanImportFolder", () => {
 		const nested = path.join(parent, "new-workspace");
 		await mkdir(nested);
 		expect(await resolveCheckedOutBranch(parent)).toBe("trunk");
-		// AO will initialize this folder on main; an ancestor's trunk must not
+		// Open Agents will initialize this folder on main; an ancestor's trunk must not
 		// become an explicit default that the new workspace root cannot resolve.
 		expect(await resolveCheckedOutBranch(nested)).toBeUndefined();
 	});
@@ -81,7 +81,7 @@ describe("scanImportFolder", () => {
 			}),
 		]);
 		expect(scan.setupWarning).toContain("Selected folder is inside an existing Git repository at ");
-		expect(scan.setupWarning).toContain("AO will initialize this folder as a separate repository.");
+		expect(scan.setupWarning).toContain("Open Agents will initialize this folder as a separate repository.");
 	});
 
 	it("reports a true project repository root as importable", async () => {
@@ -214,9 +214,9 @@ describe("scanImportFolder", () => {
 		);
 	});
 
-	it("reports folders inside AO-managed worktrees before offering setup", async () => {
+	it("reports folders inside Open Agents-managed worktrees before offering setup", async () => {
 		const home = await tempDir();
-		const selected = path.join(home, ".ao", "data", "worktrees", "project", "session");
+		const selected = path.join(home, ".open-agents", "data", "worktrees", "project", "session");
 		await mkdir(selected, { recursive: true });
 
 		const scan = await scanImportFolder(selected, "project", { homeDir: home });
@@ -226,7 +226,7 @@ describe("scanImportFolder", () => {
 				path: selected,
 				relativePath: ".",
 				status: "error",
-				reason: "Selected folder is inside AO's internal data directory. Select a project folder outside ~/.ao.",
+				reason: "Selected folder is inside Open Agents's internal data directory. Select a project folder outside ~/.open-agents.",
 			}),
 		]);
 	});

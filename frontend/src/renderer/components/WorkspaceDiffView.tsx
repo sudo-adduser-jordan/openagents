@@ -601,9 +601,9 @@ function LineFeedbackButton({
 	return <LineFeedbackButtonControl expanded={active} label={label} onClick={onClick} />;
 }
 
-// The single AO line-feedback affordance used by both the original diff rows
+// The single Open Agents line-feedback affordance used by both the original diff rows
 // and the Pierre-backed viewers. Pierre only provides the hovered-line slot;
-// the control, styling, and annotation behavior remain AO-owned.
+// the control, styling, and annotation behavior remain Open Agents-owned.
 export function LineFeedbackButtonControl({
 	expanded = false,
 	gutter = false,

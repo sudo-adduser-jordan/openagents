@@ -62,7 +62,7 @@ func AppendNativeCheckpoint(encoded, nativeID string, observation NativeCheckpoi
 // Its exact attachment to the native user UUID, not hook prompt_id or text,
 // identifies a queued submission. It grants no instructions or permissions.
 func NativeSubmissionContext(id string) string {
-	return "AO transcript correlation ID: " + id + "."
+	return "Open Agents transcript correlation ID: " + id + "."
 }
 
 // NativeCheckpointTextMatches understands the bounded head/tail representation
@@ -73,6 +73,6 @@ func NativeCheckpointTextMatches(checkpoint, replayed string) bool {
 	if checkpoint == replayed {
 		return true
 	}
-	parts := strings.Split(checkpoint, "\n[... truncated by AO ...]\n")
+	parts := strings.Split(checkpoint, "\n[... truncated by Open Agents ...]\n")
 	return len(parts) == 2 && strings.HasPrefix(replayed, parts[0]) && strings.HasSuffix(replayed, parts[1])
 }

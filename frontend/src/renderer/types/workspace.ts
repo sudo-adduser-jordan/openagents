@@ -10,7 +10,7 @@ import {
 	type SessionActivityState,
 	type SessionStatus,
 	type WorkflowMode,
-} from "@aoagents/product-ui";
+} from "@openagents/product-ui";
 
 import type { ReviewerHarnessId } from "../lib/reviewer-harnesses";
 
@@ -88,7 +88,7 @@ export type WorkspaceSession = {
 	 * Board lane derived by the daemon from durable delivery facts (PR
 	 * lifecycle, review runs, review ownership). `validating` and
 	 * `needs_review` are the same review-feedback loop seen from either side:
-	 * AO turning it, or a person taking the next turn. The board groups by this
+	 * Open Agents turning it, or a person taking the next turn. The board groups by this
 	 * and never re-derives a lane from {@link status}. For a daemon too old to
 	 * send one, {@link toKanbanColumn} keeps the placement the status already
 	 * implied rather than inventing a new one.
@@ -132,12 +132,12 @@ export type WorkspaceSession = {
 	/** Raw agent lifecycle activity from the daemon. */
 	activity?: SessionActivity;
 	/**
-	 * Live preview target set by the daemon (via `ao preview`) and streamed over
+	 * Live preview target set by the daemon (via `open-agents preview`) and streamed over
 	 * CDC. When non-empty, the browser panel opens and navigates here.
 	 */
 	previewUrl?: string;
 	/**
-	 * Monotonic counter the daemon bumps on every `ao preview` call (even when
+	 * Monotonic counter the daemon bumps on every `open-agents preview` call (even when
 	 * previewUrl is unchanged), so the browser panel can re-navigate / refresh on
 	 * a repeated preview of the same target.
 	 */

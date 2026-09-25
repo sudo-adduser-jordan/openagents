@@ -16,7 +16,7 @@ describe("ReauthBanner", () => {
 			expect(screen.getByText("opencode auth login")).toBeInTheDocument();
 		},
 	);
-	it("names the command, because re-authenticating is not something AO can do", () => {
+	it("names the command, because re-authenticating is not something Open Agents can do", () => {
 		render(
 			<ReauthBanner
 				account={{
@@ -62,13 +62,13 @@ describe("ReauthBanner", () => {
 });
 
 describe("ThreadStateBanner", () => {
-	it("reports a provider-side fault as the provider's, not AO's connection", () => {
+	it("reports a provider-side fault as the provider's, not Open Agents's connection", () => {
 		render(<ThreadStateBanner threadState={{ status: "system_error" }} />);
 		expect(screen.getByText(/thread hit an internal error/i)).toBeInTheDocument();
-		expect(screen.getByText(/not in AO's connection to it/)).toBeInTheDocument();
+		expect(screen.getByText(/not in Open Agents's connection to it/)).toBeInTheDocument();
 	});
 
-	it("reports a closed thread as history AO kept and the agent did not", () => {
+	it("reports a closed thread as history Open Agents kept and the agent did not", () => {
 		render(<ThreadStateBanner threadState={{ status: "closed" }} />);
 		expect(screen.getByText(/closed this thread/i)).toBeInTheDocument();
 	});

@@ -24,7 +24,7 @@ export function StoreUpdateSheet({
 					<Feather name="download-cloud" size={24} color={t.blue} />
 				</View>
 				<View style={styles.copy}>
-					<Text style={[styles.title, { color: t.textPrimary }]}>A newer AO is ready</Text>
+					<Text style={[styles.title, { color: t.textPrimary }]}>A newer Open Agents is ready</Text>
 					<Text style={[styles.message, { color: t.textSecondary }]}>Update the native app for the latest compatibility, fixes, and system integrations.</Text>
 				</View>
 				<View style={styles.actions}>

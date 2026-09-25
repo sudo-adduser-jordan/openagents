@@ -69,7 +69,7 @@ export function RestoreUnavailableDialog({ open, session, onOpenChange, onRecrea
 					<div className={settingsDialogHeaderClass}>
 						<Dialog.Title className="settings-dialog-title">{"Session can no longer be restored"}</Dialog.Title>
 						<Dialog.Description className="text-control text-settings-muted">
-							{orchestrator ? "This orchestrator has no saved agent session to resume. You can create a new orchestrator while AO preserves any workspace data it cannot safely clean." : "This session has no saved agent session or prompt to resume from."}
+							{orchestrator ? "This orchestrator has no saved agent session to resume. You can create a new orchestrator while Open Agents preserves any workspace data it cannot safely clean." : "This session has no saved agent session or prompt to resume from."}
 						</Dialog.Description>
 					</div>
 					{error ? (

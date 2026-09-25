@@ -13,7 +13,7 @@ import (
 )
 
 func TestSharedWindowsInstallSelectsOnlyCanonicalAO(t *testing.T) {
-	if os.Getenv("AO_TEST_PIN_CHILD") == "1" {
+	if os.Getenv("OPEN_AGENTS_TEST_PIN_CHILD") == "1" {
 		exe, err := os.Executable()
 		if err != nil {
 			t.Fatal(err)
@@ -31,12 +31,12 @@ func TestSharedWindowsInstallSelectsOnlyCanonicalAO(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	for _, path := range []string{filepath.Join(shared, "ao.exe"), filepath.Join(shared, "node.exe"), filepath.Join(agent, "ao.exe"), filepath.Join(agent, "node.exe")} {
+	for _, path := range []string{filepath.Join(shared, "open-agents.exe"), filepath.Join(shared, "node.exe"), filepath.Join(agent, "open-agents.exe"), filepath.Join(agent, "node.exe")} {
 		if err := os.WriteFile(path, binary, 0o700); err != nil {
 			t.Fatal(err)
 		} //nolint:gosec // executable test fixture
 	}
-	canonical := filepath.Join(shared, "ao.exe")
+	canonical := filepath.Join(shared, "open-agents.exe")
 	executable := func() (string, error) { return canonical, nil }
 	path, err := PinnedPATH(executable, os.Getenv, map[string]string{"PATH": agent + ";" + shared + ";" + os.Getenv("PATH")}, dataDir)
 	if err != nil {
@@ -44,14 +44,14 @@ func TestSharedWindowsInstallSelectsOnlyCanonicalAO(t *testing.T) {
 	}
 	env := map[string]string{"PATH": path}
 	AugmentRuntimePATHForLaunchBinary(context.Background(), env, []string{filepath.Join(agent, "agent.exe")}, exec.LookPath, PinnedDir(executable, dataDir))
-	cmd := exec.CommandContext(context.Background(), os.Getenv("ComSpec"), "/d", "/c", "call ao -test.run=^TestSharedWindowsInstallSelectsOnlyCanonicalAO$ & node -test.run=^TestSharedWindowsInstallSelectsOnlyCanonicalAO$")
+	cmd := exec.CommandContext(context.Background(), os.Getenv("ComSpec"), "/d", "/c", "call open-agents -test.run=^TestSharedWindowsInstallSelectsOnlyCanonicalAO$ & node -test.run=^TestSharedWindowsInstallSelectsOnlyCanonicalAO$")
 	for _, entry := range os.Environ() {
 		key, _, _ := strings.Cut(entry, "=")
 		if !strings.EqualFold(key, "PATH") {
 			cmd.Env = append(cmd.Env, entry)
 		}
 	}
-	cmd.Env = append(cmd.Env, "PATH="+env["PATH"], "AO_TEST_PIN_CHILD=1")
+	cmd.Env = append(cmd.Env, "PATH="+env["PATH"], "OPEN_AGENTS_TEST_PIN_CHILD=1")
 	cmd.Dir = t.TempDir()
 	output, err := cmd.CombinedOutput()
 	if err != nil || !containsSameExecutable(t, string(output), canonical) || !strings.Contains(string(output), "IDENTITY="+filepath.Join(agent, "node.exe")) {
@@ -61,17 +61,17 @@ func TestSharedWindowsInstallSelectsOnlyCanonicalAO(t *testing.T) {
 	if err != nil {
 		t.Fatal("Windows regression requires Git Bash: ", err)
 	}
-	bashCmd := exec.CommandContext(context.Background(), bash, "--noprofile", "--norc", "-c", "ao -test.run=^TestSharedWindowsInstallSelectsOnlyCanonicalAO$")
+	bashCmd := exec.CommandContext(context.Background(), bash, "--noprofile", "--norc", "-c", "open-agents -test.run=^TestSharedWindowsInstallSelectsOnlyCanonicalAO$")
 	bashCmd.Env = cmd.Env
 	bashCmd.Dir = t.TempDir()
 	bashOutput, err := bashCmd.CombinedOutput()
 	if err != nil || !containsSameExecutable(t, string(bashOutput), canonical) {
-		t.Fatalf("Git Bash AO selection: %v\n%s", err, bashOutput)
+		t.Fatalf("Git Bash Open Agents selection: %v\n%s", err, bashOutput)
 	}
 }
 
-func TestWindowsAOExecutableFallsBackToCopyAcrossFilesystems(t *testing.T) {
-	if os.Getenv("AO_TEST_PIN_CHILD") == "1" {
+func TestWindowsOpenAgentsExecutableFallsBackToCopyAcrossFilesystems(t *testing.T) {
+	if os.Getenv("OPEN_AGENTS_TEST_PIN_CHILD") == "1" {
 		exe, err := os.Executable()
 		if err != nil {
 			t.Fatal(err)
@@ -83,7 +83,7 @@ func TestWindowsAOExecutableFallsBackToCopyAcrossFilesystems(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	canonical := filepath.Join(t.TempDir(), "ao.exe")
+	canonical := filepath.Join(t.TempDir(), "open-agents.exe")
 	binary, err := os.ReadFile(exe)
 	if err != nil {
 		t.Fatal(err)
@@ -93,7 +93,7 @@ func TestWindowsAOExecutableFallsBackToCopyAcrossFilesystems(t *testing.T) {
 	}
 	shimDir := t.TempDir()
 	linkCalls := 0
-	if err := ensureWindowsAOExecutableWithLink(shimDir, canonical, func(string, string) error {
+	if err := ensureWindowsOpenAgentsExecutableWithLink(shimDir, canonical, func(string, string) error {
 		linkCalls++
 		return errors.New("cross-volume link")
 	}); err != nil {
@@ -102,26 +102,26 @@ func TestWindowsAOExecutableFallsBackToCopyAcrossFilesystems(t *testing.T) {
 	if linkCalls != 1 {
 		t.Fatalf("link calls = %d, want forced cross-volume attempt", linkCalls)
 	}
-	shim := filepath.Join(shimDir, "ao.exe")
+	shim := filepath.Join(shimDir, "open-agents.exe")
 	shimBinary, err := os.ReadFile(shim)
 	if err != nil || !bytes.Equal(shimBinary, binary) {
-		t.Fatalf("copied AO executable: %v, identical=%v", err, bytes.Equal(shimBinary, binary))
+		t.Fatalf("copied Open Agents executable: %v, identical=%v", err, bytes.Equal(shimBinary, binary))
 	}
 	bash, err := exec.LookPath("bash")
 	if err != nil {
 		t.Fatal("Windows regression requires Git Bash: ", err)
 	}
-	cmd := exec.CommandContext(context.Background(), bash, "--noprofile", "--norc", "-c", "ao -test.run=^TestWindowsAOExecutableFallsBackToCopyAcrossFilesystems$")
+	cmd := exec.CommandContext(context.Background(), bash, "--noprofile", "--norc", "-c", "open-agents -test.run=^TestWindowsOpenAgentsExecutableFallsBackToCopyAcrossFilesystems$")
 	for _, entry := range os.Environ() {
 		key, _, _ := strings.Cut(entry, "=")
 		if !strings.EqualFold(key, "PATH") {
 			cmd.Env = append(cmd.Env, entry)
 		}
 	}
-	cmd.Env = append(cmd.Env, "PATH="+shimDir+";"+os.Getenv("PATH"), "AO_TEST_PIN_CHILD=1")
+	cmd.Env = append(cmd.Env, "PATH="+shimDir+";"+os.Getenv("PATH"), "OPEN_AGENTS_TEST_PIN_CHILD=1")
 	output, err := cmd.CombinedOutput()
 	if err != nil || !strings.Contains(strings.ToLower(string(output)), strings.ToLower("IDENTITY="+shim)) {
-		t.Fatalf("Git Bash copied AO selection: %v\n%s", err, output)
+		t.Fatalf("Git Bash copied Open Agents selection: %v\n%s", err, output)
 	}
 }
 

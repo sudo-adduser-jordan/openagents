@@ -1,9 +1,9 @@
 ---
 title: Review loop
-description: Route GitHub feedback to workers and run dedicated AO reviewer agents.
+description: Route GitHub feedback to workers and run dedicated Open Agents reviewer agents.
 ---
 
-AO supports two complementary review loops: observing feedback already posted on a claimed GitHub PR, and launching an AO reviewer agent against a worker's PR.
+Open Agents supports two complementary review loops: observing feedback already posted on a claimed GitHub PR, and launching an Open Agents reviewer agent against a worker's PR.
 
 ## GitHub feedback
 
@@ -14,18 +14,18 @@ Delivery follows the session interface:
 - Chat receives a durable provider turn in the conversation.
 - Terminal UI receives the message through the running agent session.
 
-Feedback is signature-deduplicated. AO does not repeat an unchanged comment set on every poll.
+Feedback is signature-deduplicated. Open Agents does not repeat an unchanged comment set on every poll.
 
-## AO reviewer agents
+## Open Agents reviewer agents
 
-Configure reviewers in project settings. Codex and OpenCode are supported reviewer harnesses. If the project has no reviewer configured, AO reuses a review-capable worker harness or falls back to Codex.
+Configure reviewers in project settings. Codex and OpenCode are supported reviewer harnesses. If the project has no reviewer configured, Open Agents reuses a review-capable worker harness or falls back to Codex.
 
 From the desktop, open the worker and use the Reviews section in the inspector. From the CLI:
 
 ```bash
-ao review trigger <worker-session-id>
-ao review ls <worker-session-id>
-ao review cancel <worker-session-id>
+open-agents review trigger <worker-session-id>
+open-agents review ls <worker-session-id>
+open-agents review cancel <worker-session-id>
 ```
 
 Reviewer runs are separate from worker sessions. Their verdict and body are recorded against the worker and can be delivered back to it through the review API.
@@ -39,18 +39,18 @@ Reviewer runs are separate from worker sessions. Their verdict and body are reco
 
 ## Approval and merge
 
-Approval plus passing checks contributes to merge readiness. AO creates a durable merge-ready notification but does not automatically merge from a reaction rule. Merge explicitly in the desktop or with:
+Approval plus passing checks contributes to merge readiness. Open Agents creates a durable merge-ready notification but does not automatically merge from a reaction rule. Merge explicitly in the desktop or with:
 
 ```bash
-ao pr merge <pr-number>
+open-agents pr merge <pr-number>
 ```
 
 Resolve review comments explicitly when appropriate:
 
 ```bash
-ao pr resolve-comments <pr-number> [comment-id...]
+open-agents pr resolve-comments <pr-number> [comment-id...]
 ```
 
 ## Current limits
 
-There is no `ao review-check` command, configurable review polling throttle, `bugbot-comments` reaction, or YAML retry budget in the current rewrite. The GitHub observer and AO review-run system are the supported paths.
+There is no `open-agents review-check` command, configurable review polling throttle, `bugbot-comments` reaction, or YAML retry budget in the current rewrite. The GitHub observer and Open Agents review-run system are the supported paths.

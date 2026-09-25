@@ -1,10 +1,10 @@
-import type { ProjectSource } from "@aoagents/product-ui";
+import type { ProjectSource } from "@openagents/product-ui";
 import { useNavigate } from "@tanstack/react-router";
 import { AlertTriangle, Bot, Folder, Folders, FolderOpen, GitFork, Star } from "lucide-react";
 import { useMemo, useState, type ReactNode } from "react";
 import { useSystemRequirementsGate } from "../hooks/useSystemRequirementsGate";
 import { useWorkspaceQuery } from "../hooks/useWorkspaceQuery";
-import { aoBridge } from "../lib/bridge";
+import { openAgentsBridge } from "../lib/bridge";
 import { getProjectLastOpenedAt } from "../lib/project-history";
 import { usesPreviewWorkspaceData } from "../lib/preview-mode";
 import { useShell } from "../lib/shell-context";
@@ -35,7 +35,7 @@ import { Badge } from "./ui/badge";
  * - Section titles share {@link HOME_SECTION_TITLE_CLASS}; keep Jump back /
  *   Recent projects visually paired.
  */
-const GITHUB_REPOSITORY_URL = "https://github.com/Untrivial-ai/agent-orchestrator";
+const GITHUB_REPOSITORY_URL = "https://github.com/sudo-adduser-jordan/open-agents";
 const RECENT_PROJECT_LIMIT = 3;
 const HOME_BUTTON_CLASS =
 	"flex w-full items-center gap-3 rounded-lg bg-[var(--color-bg-import-card)] px-4 py-3 text-left transition-[scale] duration-fast ease-out hover:bg-interactive-hover hover:text-foreground active:scale-[0.96] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring/60 motion-reduce:transform-none";
@@ -205,7 +205,7 @@ export function HomePage() {
 							{/* Quiet text link — not TopbarButton / accent. Dashed underline only on hover. */}
 							<button
 								className="inline-flex shrink-0 items-center gap-1.5 border-b border-dashed border-transparent pb-px text-sm text-muted-foreground hover:border-current hover:text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring/60"
-								onClick={() => void aoBridge.app.openExternal(GITHUB_REPOSITORY_URL)}
+								onClick={() => void openAgentsBridge.app.openExternal(GITHUB_REPOSITORY_URL)}
 								type="button"
 							>
 								<Star className="size-3.5" strokeWidth={1.8} aria-hidden="true" />

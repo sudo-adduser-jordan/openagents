@@ -13,7 +13,7 @@ import {
 describe("ui-settings", () => {
 	let dir: string;
 	beforeEach(async () => {
-		dir = await mkdtemp(path.join(os.tmpdir(), "ao-ui-settings-"));
+		dir = await mkdtemp(path.join(os.tmpdir(), "open-agents-ui-settings-"));
 	});
 	afterEach(async () => {
 		await rm(dir, { recursive: true, force: true });

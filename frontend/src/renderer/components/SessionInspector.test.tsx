@@ -751,7 +751,7 @@ describe("SessionInspector PR section", () => {
     ).toBeInTheDocument();
     expect(
       screen.getByRole("button", {
-        name: "When disabled, AO keeps this session open after all pull requests merge.",
+        name: "When disabled, Open Agents keeps this session open after all pull requests merge.",
       }),
     ).toBeInTheDocument();
 
@@ -1996,13 +1996,13 @@ describe("SessionInspector summary reviews", () => {
     expect(
       await screen.findByRole("button", { name: "Run review" }),
     ).toBeInTheDocument();
-    expect(screen.queryByText("AO code reviews")).not.toBeInTheDocument();
+    expect(screen.queryByText("Open Agents code reviews")).not.toBeInTheDocument();
     expect(
       screen.queryByText("Reviews on the pull request"),
     ).not.toBeInTheDocument();
   });
 
-  it("hides AO code reviews until a review run has been triggered", async () => {
+  it("hides Open Agents code reviews until a review run has been triggered", async () => {
     mockCommonGets([], "", [reviewState(3, "needs_review", "abc123")]);
 
     renderWithQuery(<SessionInspector session={session([pr(3, "open")])} />);
@@ -2011,11 +2011,11 @@ describe("SessionInspector summary reviews", () => {
     expect(
       await screen.findByRole("button", { name: "Review latest commit" }),
     ).toBeInTheDocument();
-    expect(screen.queryByText("AO code reviews")).not.toBeInTheDocument();
+    expect(screen.queryByText("Open Agents code reviews")).not.toBeInTheDocument();
     expect(screen.queryByText("Reviewable change 3")).not.toBeInTheDocument();
   });
 
-  it("shows AO code reviews for verdict-only review states", async () => {
+  it("shows Open Agents code reviews for verdict-only review states", async () => {
     mockCommonGets([], "reviewer-pane", [
       reviewState(3, "changes_requested", "abc123"),
     ]);
@@ -2143,7 +2143,7 @@ describe("SessionInspector summary reviews", () => {
     ).not.toBeInTheDocument();
   });
 
-  it("renders AO review summaries as Markdown", async () => {
+  it("renders Open Agents review summaries as Markdown", async () => {
     mockCommonGets([], "reviewer-pane", [
       {
         ...reviewState(3, "up_to_date", "abc123"),
@@ -2178,7 +2178,7 @@ describe("SessionInspector summary reviews", () => {
     expect(screen.queryByRole("link", { name: /View on PR/ })).not.toBeInTheDocument();
   });
 
-  it("opens an AO review in Browser and sends its summary to the worker", async () => {
+  it("opens an Open Agents review in Browser and sends its summary to the worker", async () => {
     const reviewUrl = "https://github.com/acme/repo/pull/3#pullrequestreview-98765";
     mockCommonGets([], "reviewer-pane", [
       {
@@ -2196,7 +2196,7 @@ describe("SessionInspector summary reviews", () => {
     await openReviewsSection();
 
     await userEvent.click(await screen.findByRole("button", { name: "Review actions" }));
-    await userEvent.click(screen.getByRole("button", { name: "Open in AO Browser" }));
+    await userEvent.click(screen.getByRole("button", { name: "Open in Open Agents Browser" }));
 
     await waitFor(() =>
       expect(postMock).toHaveBeenCalledWith("/api/v1/sessions/{sessionId}/preview", {
@@ -2222,18 +2222,18 @@ describe("SessionInspector summary reviews", () => {
     });
   });
 
-  it("shows inline comments on their exact AO review pass without duplicating them externally", async () => {
+  it("shows inline comments on their exact Open Agents review pass without duplicating them externally", async () => {
     const onOpenReviewFile = vi.fn();
     const currentRun = {
       ...approvedReview,
-      body: "Current AO review.",
+      body: "Current Open Agents review.",
       githubReviewId: "111",
       prUrl: "https://example.com/pr/3",
     };
     const previousRun = {
       ...approvedReview,
       id: "run-previous",
-      body: "Earlier AO review.",
+      body: "Earlier Open Agents review.",
       githubReviewId: "222",
       prUrl: "https://example.com/pr/3",
       createdAt: "2026-06-15T10:06:00Z",
@@ -2374,7 +2374,7 @@ describe("SessionInspector summary reviews", () => {
     ["cancelled", "approved", "Review needed", "Review latest commit"],
     ["running", "approved", "Reviewing...", "Stop review"],
   ] as const)(
-    "keeps the current AO review state clear while the current head is %s",
+    "keeps the current Open Agents review state clear while the current head is %s",
     async (status, previousVerdict, runLabel, actionLabel) => {
       const current = {
         ...reviewState(
@@ -2519,13 +2519,13 @@ describe("SessionInspector summary reviews", () => {
     ).toHaveLength(2);
     expect(comments).toHaveTextContent("a.ts:3");
     expect(comments).toHaveTextContent("a.ts:9");
-    // AO's runs and the PR's own reviews share one section keyed by PR, so the
-    // unresolved count rides the same row as the AO verdict.
+    // Open Agents's runs and the PR's own reviews share one section keyed by PR, so the
+    // unresolved count rides the same row as the Open Agents verdict.
     expect(screen.getByText("Review summary")).toBeInTheDocument();
     expect(
       screen.queryByText("Reviews on the pull request"),
     ).not.toBeInTheDocument();
-    expect(screen.queryByText("AO code reviews")).not.toBeInTheDocument();
+    expect(screen.queryByText("Open Agents code reviews")).not.toBeInTheDocument();
     expect(
       screen.queryByText("No unresolved threads."),
     ).not.toBeInTheDocument();
@@ -2778,7 +2778,7 @@ describe("SessionInspector summary reviews", () => {
     ).toHaveLength(2);
   });
 
-  it("marks an AO review using its stored injection decision", async () => {
+  it("marks an Open Agents review using its stored injection decision", async () => {
     mockCommonGets([], "reviewer-pane", [
       {
         ...reviewState(3, "up_to_date", "abc123"),
@@ -3355,7 +3355,7 @@ describe("SessionInspector summary reviews", () => {
     renderWithQuery(<SessionInspector session={session([pr(3, "open")])} />);
     await openReviewsSection();
 
-    // AO runs one reviewer per worker, so a second harness cannot start
+    // Open Agents runs one reviewer per worker, so a second harness cannot start
     // alongside it. Say so rather than silently ignoring the choice.
     expect(screen.getByText("Review in progress · OpenCode")).toBeInTheDocument();
     expect(

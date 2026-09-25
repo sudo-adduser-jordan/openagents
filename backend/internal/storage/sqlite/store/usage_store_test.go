@@ -12,10 +12,10 @@ import (
 	"testing"
 	"time"
 
-	"github.com/aoagents/agent-orchestrator/backend/internal/cdc"
-	"github.com/aoagents/agent-orchestrator/backend/internal/domain"
-	"github.com/aoagents/agent-orchestrator/backend/internal/storage/sqlite"
-	"github.com/aoagents/agent-orchestrator/backend/internal/storage/sqlite/sqlitetest"
+	"github.com/sudo-adduser-jordan/open-agents/backend/internal/cdc"
+	"github.com/sudo-adduser-jordan/open-agents/backend/internal/domain"
+	"github.com/sudo-adduser-jordan/open-agents/backend/internal/storage/sqlite"
+	"github.com/sudo-adduser-jordan/open-agents/backend/internal/storage/sqlite/sqlitetest"
 )
 
 func TestUsageBindingAndSourceIdempotency(t *testing.T) {
@@ -464,7 +464,7 @@ func TestApplyUsageChunkPersistsProviderSplitsAndPassiveCosts(t *testing.T) {
 		t.Fatalf("apply priced source event: %v", err)
 	}
 
-	raw, err := sql.Open("sqlite", "file:"+filepath.Join(dataDir, "ao.db"))
+	raw, err := sql.Open("sqlite", "file:"+filepath.Join(dataDir, "open-agents.db"))
 	if err != nil {
 		t.Fatalf("open raw sqlite: %v", err)
 	}
@@ -552,7 +552,7 @@ func TestApplyUsageChunkLegacyNullProviderReplayUsesGenericTokenFacts(t *testing
 	sess := seedUsageSession(t, s, domain.HarnessOpenCode)
 	now := time.Unix(1700000000, 0).UTC()
 	source := seedUsageSource(t, s, sess, now)
-	raw, err := sql.Open("sqlite", "file:"+filepath.Join(dataDir, "ao.db"))
+	raw, err := sql.Open("sqlite", "file:"+filepath.Join(dataDir, "open-agents.db"))
 	if err != nil {
 		t.Fatalf("open raw sqlite: %v", err)
 	}
@@ -761,7 +761,7 @@ func TestApplyUsageChunkProviderUsageEnrichmentAdvancesCursorWithoutDuplicate(t 
 
 func readStoredProviderUsage(t *testing.T, dataDir, sourceEventKey string) string {
 	t.Helper()
-	raw, err := sql.Open("sqlite", "file:"+filepath.Join(dataDir, "ao.db"))
+	raw, err := sql.Open("sqlite", "file:"+filepath.Join(dataDir, "open-agents.db"))
 	if err != nil {
 		t.Fatalf("open raw sqlite: %v", err)
 	}
@@ -885,7 +885,7 @@ func TestUsageAggregatesMergeProvidersPerModel(t *testing.T) {
 	}
 
 	// One model is one row even when two providers served it; splitting the row
-	// only ever exposed AO's own attribution state as a duplicate model.
+	// only ever exposed Open Agents's own attribution state as a duplicate model.
 	models, err := s.ListUsageModelAggregates(ctx, sess.ID)
 	mustNoError(t, err)
 	if len(models) != 1 || models[0].ModelID != "shared-model" {
@@ -1320,7 +1320,7 @@ func mustNoError(t testing.TB, err error, context ...string) {
 func TestApplyUsageChunkRehomesAnOpenDuplicateToTheReplacementSource(t *testing.T) {
 	dataDir := t.TempDir()
 	s := sqlitetest.MustOpenAt(t, dataDir)
-	raw, err := sql.Open("sqlite", "file:"+filepath.Join(dataDir, "ao.db"))
+	raw, err := sql.Open("sqlite", "file:"+filepath.Join(dataDir, "open-agents.db"))
 	mustNoError(t, err, "open raw sqlite")
 	t.Cleanup(func() { _ = raw.Close() })
 	ctx := context.Background()
@@ -1391,7 +1391,7 @@ func TestApplyUsageChunkRehomesAnOpenDuplicateToTheReplacementSource(t *testing.
 func TestApplyUsageChunkRehomesAnInferredDuplicateToTheReplacementSource(t *testing.T) {
 	dataDir := t.TempDir()
 	s := sqlitetest.MustOpenAt(t, dataDir)
-	raw, err := sql.Open("sqlite", "file:"+filepath.Join(dataDir, "ao.db"))
+	raw, err := sql.Open("sqlite", "file:"+filepath.Join(dataDir, "open-agents.db"))
 	mustNoError(t, err, "open raw sqlite")
 	t.Cleanup(func() { _ = raw.Close() })
 	ctx := context.Background()
@@ -1491,7 +1491,7 @@ func TestApplyUsageChunkPromotesRehomedInferenceToObservedProvider(t *testing.T)
 		ByteOffset: 10, State: domain.UsageSourceActive, UpdatedAt: now.Add(2 * time.Second),
 	}, []domain.ModelUsageEvent{observed}), "promote replayed event to observed Z.AI")
 
-	raw, err := sql.Open("sqlite", "file:"+filepath.Join(dataDir, "ao.db"))
+	raw, err := sql.Open("sqlite", "file:"+filepath.Join(dataDir, "open-agents.db"))
 	mustNoError(t, err, "open raw sqlite")
 	t.Cleanup(func() { _ = raw.Close() })
 	var sourceID, inputCost, cachedCost, outputCost, total int64

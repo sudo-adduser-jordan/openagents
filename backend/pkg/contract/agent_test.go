@@ -9,7 +9,7 @@ import (
 	"slices"
 	"testing"
 
-	"github.com/aoagents/agent-orchestrator/backend/pkg/contract"
+	"github.com/sudo-adduser-jordan/open-agents/backend/pkg/contract"
 )
 
 var agentCapabilities = []contract.AgentCapability{

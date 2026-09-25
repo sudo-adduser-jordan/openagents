@@ -1,6 +1,6 @@
 import { fireEvent } from "@testing-library/react";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
-import { aoBridge } from "./bridge";
+import { openAgentsBridge } from "./bridge";
 import { handleModifierLinkClick, isWorkspaceHtmlLink, openLinkInSystemBrowser } from "./external-link-policy";
 
 describe("external link policy", () => {
@@ -15,7 +15,7 @@ describe("external link policy", () => {
 	});
 
 	it("opens Option/Alt-clicked anchors externally after their own handlers run", () => {
-		const openExternal = vi.spyOn(aoBridge.app, "openExternal").mockResolvedValue(undefined);
+		const openExternal = vi.spyOn(openAgentsBridge.app, "openExternal").mockResolvedValue(undefined);
 		const ownHandler = vi.fn();
 		const anchor = document.body.appendChild(document.createElement("a"));
 		anchor.href = "https://docs.example.com/guide";
@@ -28,7 +28,7 @@ describe("external link policy", () => {
 	});
 
 	it("leaves plain and already-handled clicks alone", () => {
-		const openExternal = vi.spyOn(aoBridge.app, "openExternal").mockResolvedValue(undefined);
+		const openExternal = vi.spyOn(openAgentsBridge.app, "openExternal").mockResolvedValue(undefined);
 		const anchor = document.body.appendChild(document.createElement("a"));
 		anchor.href = "https://docs.example.com/guide";
 		anchor.addEventListener("click", (event) => event.preventDefault());
@@ -56,7 +56,7 @@ describe("external link policy", () => {
 
 	it("logs system-browser bridge failures", async () => {
 		const error = new Error("IPC unavailable");
-		vi.spyOn(aoBridge.app, "openExternal").mockRejectedValue(error);
+		vi.spyOn(openAgentsBridge.app, "openExternal").mockRejectedValue(error);
 		const warn = vi.spyOn(console, "warn").mockImplementation(() => undefined);
 
 		await openLinkInSystemBrowser("https://docs.example.com");

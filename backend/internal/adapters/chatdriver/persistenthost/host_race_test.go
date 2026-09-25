@@ -30,8 +30,8 @@ func TestConnectOrStartConcurrentStaleProbeDoesNotStartRivalHost(t *testing.T) {
 	t.Cleanup(func() { _ = ln.Close() })
 	startLog := filepath.Join(t.TempDir(), "providers.log")
 	cfg := Config{SessionID: sessionID, DataDir: dataDir, Workdir: t.TempDir(),
-		Env:  append(os.Environ(), "AO_START_LOG="+startLog),
-		Argv: []string{"/bin/sh", "-c", `echo $$ >> "$AO_START_LOG"; exec cat`}}
+		Env:  append(os.Environ(), "OPEN_AGENTS_START_LOG="+startLog),
+		Argv: []string{"/bin/sh", "-c", `echo $$ >> "$OPEN_AGENTS_START_LOG"; exec cat`}}
 	stale := Descriptor{
 		Version: ProtocolVersion, SessionID: sessionID, OwnershipFingerprint: cfg.OwnershipFingerprint,
 		Address: ln.Addr().String(), Token: "stale", PID: 2147483647, StartedAt: time.Now(),

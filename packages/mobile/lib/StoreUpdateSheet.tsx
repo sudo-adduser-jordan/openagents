@@ -30,7 +30,7 @@ export function StoreUpdateSheet({
 				<Host matchContents={{ vertical: true }} style={{ width: "100%" }} colorScheme={scheme} seedColor={t.blue}>
 					<Column spacing={22} style={{ width: "100%" }}>
 						<Column spacing={8} style={{ width: "100%" }}>
-							<NativeText textStyle={{ color: t.textPrimary, fontSize: 20, fontWeight: "700" }}>A newer AO is ready</NativeText>
+							<NativeText textStyle={{ color: t.textPrimary, fontSize: 20, fontWeight: "700" }}>A newer Open Agents is ready</NativeText>
 							<NativeText textStyle={{ color: t.textSecondary, fontSize: 14 }}>
 								Update the native app for the latest compatibility, fixes, and system integrations.
 							</NativeText>

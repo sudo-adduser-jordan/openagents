@@ -1,4 +1,4 @@
-import { COMPANY } from "@ao/shared/constants";
+import { COMPANY } from "@openagents/shared/constants";
 import { FAQ_ITEMS } from "@/app/components/FAQSection/constants";
 import {
   buildDeveloperResourcesSection,
@@ -51,7 +51,7 @@ export function GET() {
     `- Support: ${COMPANY.MAIL_TO.replace("mailto:", "")}`,
     `- Founders: ${COMPANY.FOUNDERS_EMAIL}`,
     `- [Discord](${COMPANY.DISCORD_URL})`,
-    `- [X](${COMPANY.X_URL})`,
+    ...(COMPANY.X_URL ? [`- [X](${COMPANY.X_URL})`] : []),
     "",
   ];
 

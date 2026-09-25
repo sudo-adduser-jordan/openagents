@@ -5,14 +5,14 @@ import (
 	"strings"
 	"time"
 
-	"github.com/aoagents/agent-orchestrator/backend/internal/ports"
-	aoprocess "github.com/aoagents/agent-orchestrator/backend/internal/process"
+	"github.com/sudo-adduser-jordan/open-agents/backend/internal/ports"
+	openagentsprocess "github.com/sudo-adduser-jordan/open-agents/backend/internal/process"
 )
 
 // CmdRunner runs the command and returns the combined stdout/stderr.
 // It is exposed as a package variable to allow mocking in tests.
 var CmdRunner = func(ctx context.Context, name string, arg ...string) ([]byte, error) {
-	return aoprocess.CommandContext(ctx, name, arg...).CombinedOutput()
+	return openagentsprocess.CommandContext(ctx, name, arg...).CombinedOutput()
 }
 
 // CLIStatus runs bounded local CLI probes and classifies their output.

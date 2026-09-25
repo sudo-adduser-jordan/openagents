@@ -2,7 +2,7 @@ openapi: 3.1.0
 info:
   description: Loopback-only HTTP surface served by the Go daemon. Generated from
     Go (code-first) — do not edit by hand; run `go generate ./...`.
-  title: Agent Orchestrator HTTP daemon
+  title: Open Agents HTTP daemon
   version: 0.1.0-route-shell
 servers:
 - description: Local daemon (loopback only)
@@ -517,11 +517,13 @@ paths:
     post:
       operationId: executeBrowserCommand
       parameters:
-      - description: Opaque browser capability injected into the owning AO worker.
+      - description: Opaque browser capability injected into the owning Open Agents
+          worker.
         in: header
-        name: X-AO-Browser-Capability
+        name: X-OPEN-AGENTS-Browser-Capability
         schema:
-          description: Opaque browser capability injected into the owning AO worker.
+          description: Opaque browser capability injected into the owning Open Agents
+            worker.
           type: string
       requestBody:
         content:
@@ -585,17 +587,19 @@ paths:
     get:
       operationId: getBrowserStatus
       parameters:
-      - description: AO session identifier.
+      - description: Open Agents session identifier.
         in: query
         name: sessionId
         schema:
-          description: AO session identifier.
+          description: Open Agents session identifier.
           type: string
-      - description: Opaque browser capability injected into the owning AO worker.
+      - description: Opaque browser capability injected into the owning Open Agents
+          worker.
         in: header
-        name: X-AO-Browser-Capability
+        name: X-OPEN-AGENTS-Browser-Capability
         schema:
-          description: Opaque browser capability injected into the owning AO worker.
+          description: Opaque browser capability injected into the owning Open Agents
+            worker.
           type: string
       responses:
         "200":
@@ -794,55 +798,6 @@ paths:
       summary: Identify the daemon so a client can confirm which machine answered
       tags:
       - identity
-  /api/v1/import:
-    get:
-      operationId: getImportStatus
-      responses:
-        "200":
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/ImportStatusResponse'
-          description: OK
-        "500":
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/APIError'
-          description: Internal Server Error
-        "501":
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/APIError'
-          description: Not Implemented
-      summary: Check whether a legacy AO install is available to import
-      tags:
-      - import
-    post:
-      operationId: runImport
-      responses:
-        "200":
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/ImportRunResponse'
-          description: OK
-        "500":
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/APIError'
-          description: Internal Server Error
-        "501":
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/APIError'
-          description: Not Implemented
-      summary: Run the legacy AO project import through the daemon store
-      tags:
-      - import
   /api/v1/imports/prepare-git:
     post:
       operationId: prepareImportGit
@@ -3491,13 +3446,14 @@ paths:
         schema:
           description: Session identifier, e.g. project-1.
           type: string
-      - description: AO conversation turn identifier, from the snapshot's turns array.
+      - description: Open Agents conversation turn identifier, from the snapshot's
+          turns array.
         in: path
         name: turnId
         required: true
         schema:
-          description: AO conversation turn identifier, from the snapshot's turns
-            array.
+          description: Open Agents conversation turn identifier, from the snapshot's
+            turns array.
           type: string
       responses:
         "204":
@@ -3540,13 +3496,14 @@ paths:
         schema:
           description: Session identifier, e.g. project-1.
           type: string
-      - description: AO conversation turn identifier, from the snapshot's turns array.
+      - description: Open Agents conversation turn identifier, from the snapshot's
+          turns array.
         in: path
         name: turnId
         required: true
         schema:
-          description: AO conversation turn identifier, from the snapshot's turns
-            array.
+          description: Open Agents conversation turn identifier, from the snapshot's
+            turns array.
           type: string
       requestBody:
         content:
@@ -3605,13 +3562,14 @@ paths:
         schema:
           description: Session identifier, e.g. project-1.
           type: string
-      - description: AO conversation turn identifier, from the snapshot's turns array.
+      - description: Open Agents conversation turn identifier, from the snapshot's
+          turns array.
         in: path
         name: turnId
         required: true
         schema:
-          description: AO conversation turn identifier, from the snapshot's turns
-            array.
+          description: Open Agents conversation turn identifier, from the snapshot's
+            turns array.
           type: string
       requestBody:
         content:
@@ -3666,13 +3624,14 @@ paths:
         schema:
           description: Session identifier, e.g. project-1.
           type: string
-      - description: AO conversation turn identifier, from the snapshot's turns array.
+      - description: Open Agents conversation turn identifier, from the snapshot's
+          turns array.
         in: path
         name: turnId
         required: true
         schema:
-          description: AO conversation turn identifier, from the snapshot's turns
-            array.
+          description: Open Agents conversation turn identifier, from the snapshot's
+            turns array.
           type: string
       responses:
         "202":
@@ -3725,13 +3684,14 @@ paths:
         schema:
           description: Session identifier, e.g. project-1.
           type: string
-      - description: AO conversation turn identifier, from the snapshot's turns array.
+      - description: Open Agents conversation turn identifier, from the snapshot's
+          turns array.
         in: path
         name: turnId
         required: true
         schema:
-          description: AO conversation turn identifier, from the snapshot's turns
-            array.
+          description: Open Agents conversation turn identifier, from the snapshot's
+            turns array.
           type: string
       responses:
         "200":
@@ -3778,13 +3738,14 @@ paths:
         schema:
           description: Session identifier, e.g. project-1.
           type: string
-      - description: AO conversation turn identifier, from the snapshot's turns array.
+      - description: Open Agents conversation turn identifier, from the snapshot's
+          turns array.
         in: path
         name: turnId
         required: true
         schema:
-          description: AO conversation turn identifier, from the snapshot's turns
-            array.
+          description: Open Agents conversation turn identifier, from the snapshot's
+            turns array.
           type: string
       responses:
         "202":
@@ -3868,7 +3829,7 @@ paths:
               schema:
                 $ref: '#/components/schemas/APIError'
           description: Not Implemented
-      summary: Exit the agent while preserving its AO session
+      summary: Exit the agent while preserving its Open Agents session
       tags:
       - sessions
   /api/v1/sessions/{sessionId}/interface-transition:
@@ -4514,11 +4475,13 @@ paths:
         schema:
           description: Session identifier, e.g. project-1.
           type: string
-      - description: Opaque browser capability injected into the owning AO worker.
+      - description: Opaque browser capability injected into the owning Open Agents
+          worker.
         in: header
-        name: X-AO-Browser-Capability
+        name: X-OPEN-AGENTS-Browser-Capability
         schema:
-          description: Opaque browser capability injected into the owning AO worker.
+          description: Opaque browser capability injected into the owning Open Agents
+            worker.
           type: string
       responses:
         "200":
@@ -4570,11 +4533,13 @@ paths:
         schema:
           description: Session identifier, e.g. project-1.
           type: string
-      - description: Opaque browser capability injected into the owning AO worker.
+      - description: Opaque browser capability injected into the owning Open Agents
+          worker.
         in: header
-        name: X-AO-Browser-Capability
+        name: X-OPEN-AGENTS-Browser-Capability
         schema:
-          description: Opaque browser capability injected into the owning AO worker.
+          description: Opaque browser capability injected into the owning Open Agents
+            worker.
           type: string
       responses:
         "200":
@@ -4626,11 +4591,13 @@ paths:
         schema:
           description: Session identifier, e.g. project-1.
           type: string
-      - description: Opaque browser capability injected into the owning AO worker.
+      - description: Opaque browser capability injected into the owning Open Agents
+          worker.
         in: header
-        name: X-AO-Browser-Capability
+        name: X-OPEN-AGENTS-Browser-Capability
         schema:
-          description: Opaque browser capability injected into the owning AO worker.
+          description: Opaque browser capability injected into the owning Open Agents
+            worker.
           type: string
       requestBody:
         content:
@@ -4699,8 +4666,8 @@ paths:
               schema:
                 $ref: '#/components/schemas/APIError'
           description: Gateway Timeout
-      summary: Start a session-owned server from .ao/launch.json and open its application
-        preview
+      summary: Start a session-owned server from .open-agents/launch.json and open
+        its application preview
       tags:
       - sessions
   /api/v1/sessions/{sessionId}/restore:
@@ -8284,40 +8251,6 @@ components:
       - hostId
       - apiVersion
       type: object
-    ImportReport:
-      properties:
-        dryRun:
-          type: boolean
-        notes:
-          items:
-            type: string
-          type: array
-        projectsImported:
-          type: integer
-        projectsSkipped:
-          type: integer
-      required:
-      - dryRun
-      - projectsImported
-      - projectsSkipped
-      type: object
-    ImportRunResponse:
-      properties:
-        report:
-          $ref: '#/components/schemas/ImportReport'
-      required:
-      - report
-      type: object
-    ImportStatusResponse:
-      properties:
-        available:
-          type: boolean
-        legacyRoot:
-          type: string
-      required:
-      - available
-      - legacyRoot
-      type: object
     ImportValidationInput:
       properties:
         importKind:
@@ -10015,13 +9948,15 @@ components:
           description: Native agent session identifier used to resume its transcript.
           type: string
         conversationCheckpointOrigin:
-          description: Whether the main-turn boundary came from a human or AO coordination.
+          description: Whether the main-turn boundary came from a human or Open Agents
+            coordination.
           enum:
           - human
           - coordination
           type: string
         event:
-          description: AO hook sub-command that produced this state (e.g. post-tool-use).
+          description: Open Agents hook sub-command that produced this state (e.g.
+            post-tool-use).
           type: string
         latestAssistantUpdate:
           description: Latest assistant update exposed by the provider hook.
@@ -10032,7 +9967,7 @@ components:
           maxLength: 16384
           type: string
         launchId:
-          description: AO process generation that produced the signal.
+          description: Open Agents process generation that produced the signal.
           type: string
         observedAt:
           description: Time the local hook process observed the event, before delivery
@@ -10053,7 +9988,7 @@ components:
           - exited
           type: string
         submissionId:
-          description: AO prompt-hook context correlation UUID, when supported.
+          description: Open Agents prompt-hook context correlation UUID, when supported.
           maxLength: 36
           type: string
         toolName:
@@ -10133,10 +10068,10 @@ components:
           description: Native reviewer session identifier used to resume its transcript.
           type: string
         event:
-          description: AO hook sub-command that produced this signal.
+          description: Open Agents hook sub-command that produced this signal.
           type: string
         launchId:
-          description: AO process generation that produced the signal.
+          description: Open Agents process generation that produced the signal.
           type: string
         state:
           description: Reviewer activity state reported by a hook. Used for reviewer-pane
@@ -10540,7 +10475,7 @@ components:
     SubmitReviewInput:
       properties:
         body:
-          description: Review body recorded by AO. Required for changes_requested.
+          description: Review body recorded by Open Agents. Required for changes_requested.
           type: string
         githubReviewId:
           description: Id of the GitHub PR review the reviewer posted, if any.
@@ -10560,7 +10495,7 @@ components:
     SubmitReviewItem:
       properties:
         body:
-          description: Review body recorded by AO. Required for changes_requested.
+          description: Review body recorded by Open Agents. Required for changes_requested.
           type: string
         githubReviewId:
           description: Id of the GitHub PR review the reviewer posted, if any.
@@ -11227,13 +11162,13 @@ tags:
   name: reviews
 - description: Durable dashboard notifications
   name: notifications
-- description: Token usage telemetry for AO sessions
+- description: Token usage telemetry for Open Agents sessions
   name: usage
 - description: Mobile push-device registration for OS push notifications
   name: push
 - description: Server-sent CDC event stream with durable replay
   name: events
-- description: Legacy AO project import (availability probe and run)
+- description: Project-folder import validation and Git preparation
   name: import
 - description: Developer-only maintenance operations
   name: dev

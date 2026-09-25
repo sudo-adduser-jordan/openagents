@@ -15,11 +15,11 @@ import (
 	"strings"
 	"time"
 
-	"github.com/aoagents/agent-orchestrator/backend/internal/httpd/apierr"
-	"github.com/aoagents/agent-orchestrator/backend/internal/ports"
-	agentsvc "github.com/aoagents/agent-orchestrator/backend/internal/service/agent"
-	"github.com/aoagents/agent-orchestrator/backend/internal/service/shellterm"
-	"github.com/aoagents/agent-orchestrator/backend/internal/tmuxbin"
+	"github.com/sudo-adduser-jordan/open-agents/backend/internal/httpd/apierr"
+	"github.com/sudo-adduser-jordan/open-agents/backend/internal/ports"
+	agentsvc "github.com/sudo-adduser-jordan/open-agents/backend/internal/service/agent"
+	"github.com/sudo-adduser-jordan/open-agents/backend/internal/service/shellterm"
+	"github.com/sudo-adduser-jordan/open-agents/backend/internal/tmuxbin"
 )
 
 // Requirement is one named startup gate check.
@@ -87,7 +87,7 @@ func NewWithLookPath(harnesses HarnessCatalog, lookPath func(string) (string, er
 	return New(harnesses, executableFinderFunc(lookPath))
 }
 
-// CheckStartup runs only the inexpensive prerequisite probes needed before AO
+// CheckStartup runs only the inexpensive prerequisite probes needed before Open Agents
 // presents its primary session UI. It deliberately excludes authentication
 // probes because they can invoke CLIs or credential stores and must not delay
 // first render.
@@ -175,19 +175,19 @@ func (s *Service) checkGit() Requirement {
 
 func (s *Service) checkTmux() Requirement {
 	if runtime.GOOS == "windows" {
-		// tmux is a macOS/Linux-only requirement: AO uses the built-in ConPTY
+		// tmux is a macOS/Linux-only requirement: Open Agents uses the built-in ConPTY
 		// terminal runtime on Windows instead, so this always passes there.
 		return Requirement{
 			ID: "tmux", Label: "tmux", Satisfied: true, Required: true,
-			Detail: "Not required on Windows — AO uses the built-in ConPTY terminal runtime instead of tmux.",
+			Detail: "Not required on Windows — Open Agents uses the built-in ConPTY terminal runtime instead of tmux.",
 		}
 	}
-	configured := strings.TrimSpace(os.Getenv("AO_TMUX_BINARY"))
+	configured := strings.TrimSpace(os.Getenv("OPEN_AGENTS_TMUX_BINARY"))
 	resolution, err := tmuxbin.ResolveWith(configured, os.Executable, s.executables.LookPath)
 	if err != nil || resolution.Path == "" {
 		detail := "tmux was not found on PATH; it is required on macOS/Linux to start sessions."
 		if configured != "" {
-			detail = "AO's bundled tmux is missing or not executable: " + configured
+			detail = "Open Agents's bundled tmux is missing or not executable: " + configured
 		}
 		return Requirement{
 			ID: "tmux", Label: "tmux", Required: true,
@@ -232,14 +232,14 @@ func (s *Service) checkStartupHarness(ctx context.Context) Requirement {
 }
 
 // checkGH probes for the GitHub CLI. It is advisory only (Required: false):
-// agent sessions use it to open pull requests and read issues, but AO itself
+// agent sessions use it to open pull requests and read issues, but Open Agents itself
 // never depends on it, so its absence must never block Ready.
 func (s *Service) checkGH() Requirement {
 	path, err := s.executables.LookPath("gh")
 	if err != nil || path == "" {
 		return Requirement{
 			ID: "gh", Label: "gh",
-			Detail: "gh was not found on PATH. It lets agent sessions open pull requests and read issues, but AO runs fine without it.",
+			Detail: "gh was not found on PATH. It lets agent sessions open pull requests and read issues, but Open Agents runs fine without it.",
 		}
 	}
 	return Requirement{ID: "gh", Label: "gh", Satisfied: true, Detail: path}

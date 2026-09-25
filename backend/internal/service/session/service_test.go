@@ -13,10 +13,10 @@ import (
 	"testing"
 	"time"
 
-	"github.com/aoagents/agent-orchestrator/backend/internal/domain"
-	"github.com/aoagents/agent-orchestrator/backend/internal/httpd/apierr"
-	"github.com/aoagents/agent-orchestrator/backend/internal/ports"
-	sessionmanager "github.com/aoagents/agent-orchestrator/backend/internal/session_manager"
+	"github.com/sudo-adduser-jordan/open-agents/backend/internal/domain"
+	"github.com/sudo-adduser-jordan/open-agents/backend/internal/httpd/apierr"
+	"github.com/sudo-adduser-jordan/open-agents/backend/internal/ports"
+	sessionmanager "github.com/sudo-adduser-jordan/open-agents/backend/internal/session_manager"
 )
 
 type fakeAgentReadiness struct {
@@ -117,8 +117,8 @@ func newWorkspaceRepo(t *testing.T) string {
 	t.Helper()
 	dir := t.TempDir()
 	runGit(t, dir, "init")
-	runGit(t, dir, "config", "user.email", "ao@example.com")
-	runGit(t, dir, "config", "user.name", "AO Tests")
+	runGit(t, dir, "config", "user.email", "open-agents@example.com")
+	runGit(t, dir, "config", "user.name", "Open Agents Tests")
 	writeWorkspaceFile(t, dir, ".gitignore", "node_modules/\n")
 	writeWorkspaceFile(t, dir, "README.md", "hello\n")
 	writeWorkspaceFile(t, dir, "src/app.go", "package main\n")
@@ -698,13 +698,13 @@ func TestListWorkspaceFilesReturnsTrackedAndUntrackedStatus(t *testing.T) {
 	writeWorkspaceFile(t, repo, "notes.txt", "agent note\n")
 	writeWorkspaceFile(t, repo, "node_modules/cache.txt", "ignored\n")
 	st := newFakeStore()
-	st.sessions["ao-1"] = domain.SessionRecord{
-		ID:       "ao-1",
+	st.sessions["open-agents-1"] = domain.SessionRecord{
+		ID:       "open-agents-1",
 		Metadata: domain.SessionMetadata{WorkspacePath: repo},
 		Activity: domain.Activity{State: domain.ActivityActive},
 	}
 
-	got, err := (&Service{store: st}).ListWorkspaceFiles(context.Background(), "ao-1")
+	got, err := (&Service{store: st}).ListWorkspaceFiles(context.Background(), "open-agents-1")
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -712,8 +712,8 @@ func TestListWorkspaceFilesReturnsTrackedAndUntrackedStatus(t *testing.T) {
 	for _, file := range got.Files {
 		byPath[file.Path] = file
 	}
-	if got.SessionID != "ao-1" {
-		t.Fatalf("session id = %q, want ao-1", got.SessionID)
+	if got.SessionID != "open-agents-1" {
+		t.Fatalf("session id = %q, want open-agents-1", got.SessionID)
 	}
 	if byPath["README.md"].Status != WorkspaceFileModified {
 		t.Fatalf("README status = %q, want modified", byPath["README.md"].Status)
@@ -742,13 +742,13 @@ func TestListWorkspaceFilesRepoUnavailableWrapsSentinel(t *testing.T) {
 		t.Fatal(err)
 	}
 	st := newFakeStore()
-	st.sessions["ao-1"] = domain.SessionRecord{
-		ID:       "ao-1",
+	st.sessions["open-agents-1"] = domain.SessionRecord{
+		ID:       "open-agents-1",
 		Metadata: domain.SessionMetadata{WorkspacePath: repo},
 		Activity: domain.Activity{State: domain.ActivityActive},
 	}
 
-	_, err := (&Service{store: st}).ListWorkspaceFiles(context.Background(), "ao-1")
+	_, err := (&Service{store: st}).ListWorkspaceFiles(context.Background(), "open-agents-1")
 	if err == nil {
 		t.Fatal("ListWorkspaceFiles succeeded with a missing repository")
 	}
@@ -799,9 +799,9 @@ func TestGetWorkspaceFileReturnsContentAndDiff(t *testing.T) {
 	repo := newWorkspaceRepo(t)
 	writeWorkspaceFile(t, repo, "README.md", "goodbye\nupdated\n")
 	st := newFakeStore()
-	st.sessions["ao-1"] = domain.SessionRecord{ID: "ao-1", Metadata: domain.SessionMetadata{WorkspacePath: repo}}
+	st.sessions["open-agents-1"] = domain.SessionRecord{ID: "open-agents-1", Metadata: domain.SessionMetadata{WorkspacePath: repo}}
 
-	got, err := (&Service{store: st}).GetWorkspaceFile(context.Background(), "ao-1", "README.md", "")
+	got, err := (&Service{store: st}).GetWorkspaceFile(context.Background(), "open-agents-1", "README.md", "")
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -829,9 +829,9 @@ func TestGetWorkspaceFileReportsImageMediaType(t *testing.T) {
 	runGit(t, repo, "commit", "-m", "add logo")
 	writeWorkspaceFile(t, repo, "docs/logo.png", pngBytes("after"))
 	st := newFakeStore()
-	st.sessions["ao-1"] = domain.SessionRecord{ID: "ao-1", Metadata: domain.SessionMetadata{WorkspacePath: repo}}
+	st.sessions["open-agents-1"] = domain.SessionRecord{ID: "open-agents-1", Metadata: domain.SessionMetadata{WorkspacePath: repo}}
 
-	got, err := (&Service{store: st}).GetWorkspaceFile(context.Background(), "ao-1", "docs/logo.png", "")
+	got, err := (&Service{store: st}).GetWorkspaceFile(context.Background(), "open-agents-1", "docs/logo.png", "")
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -848,9 +848,9 @@ func TestGetWorkspaceFileLeavesTextFilesWithoutImageMediaType(t *testing.T) {
 	// An SVG is text, so it keeps its line diff instead of an image preview.
 	writeWorkspaceFile(t, repo, "docs/icon.svg", "<svg></svg>\n")
 	st := newFakeStore()
-	st.sessions["ao-1"] = domain.SessionRecord{ID: "ao-1", Metadata: domain.SessionMetadata{WorkspacePath: repo}}
+	st.sessions["open-agents-1"] = domain.SessionRecord{ID: "open-agents-1", Metadata: domain.SessionMetadata{WorkspacePath: repo}}
 
-	got, err := (&Service{store: st}).GetWorkspaceFile(context.Background(), "ao-1", "docs/icon.svg", "")
+	got, err := (&Service{store: st}).GetWorkspaceFile(context.Background(), "open-agents-1", "docs/icon.svg", "")
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -866,17 +866,17 @@ func TestGetWorkspaceFileBlobReturnsBothSides(t *testing.T) {
 	runGit(t, repo, "commit", "-m", "add logo")
 	writeWorkspaceFile(t, repo, "docs/logo.png", pngBytes("after"))
 	st := newFakeStore()
-	st.sessions["ao-1"] = domain.SessionRecord{ID: "ao-1", Metadata: domain.SessionMetadata{WorkspacePath: repo}}
+	st.sessions["open-agents-1"] = domain.SessionRecord{ID: "open-agents-1", Metadata: domain.SessionMetadata{WorkspacePath: repo}}
 	svc := &Service{store: st}
 
-	before, err := svc.GetWorkspaceFileBlob(context.Background(), "ao-1", "docs/logo.png", WorkspaceBlobBefore)
+	before, err := svc.GetWorkspaceFileBlob(context.Background(), "open-agents-1", "docs/logo.png", WorkspaceBlobBefore)
 	if err != nil {
 		t.Fatal(err)
 	}
 	if string(before.Data) != pngBytes("before") || before.MediaType != "image/png" {
 		t.Fatalf("before blob = %q (%s)", before.Data, before.MediaType)
 	}
-	after, err := svc.GetWorkspaceFileBlob(context.Background(), "ao-1", "docs/logo.png", WorkspaceBlobAfter)
+	after, err := svc.GetWorkspaceFileBlob(context.Background(), "open-agents-1", "docs/logo.png", WorkspaceBlobAfter)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -910,10 +910,10 @@ func TestGetWorkspaceFileBlobHasNoBeforeSideForAddedFile(t *testing.T) {
 	repo := newWorkspaceRepo(t)
 	writeWorkspaceFile(t, repo, "docs/logo.png", pngBytes("new"))
 	st := newFakeStore()
-	st.sessions["ao-1"] = domain.SessionRecord{ID: "ao-1", Metadata: domain.SessionMetadata{WorkspacePath: repo}}
+	st.sessions["open-agents-1"] = domain.SessionRecord{ID: "open-agents-1", Metadata: domain.SessionMetadata{WorkspacePath: repo}}
 	svc := &Service{store: st}
 
-	if _, err := svc.GetWorkspaceFileBlob(context.Background(), "ao-1", "docs/logo.png", WorkspaceBlobBefore); err == nil {
+	if _, err := svc.GetWorkspaceFileBlob(context.Background(), "open-agents-1", "docs/logo.png", WorkspaceBlobBefore); err == nil {
 		t.Fatal("before blob for an added file: want error, got nil")
 	} else {
 		var e *apierr.Error
@@ -921,7 +921,7 @@ func TestGetWorkspaceFileBlobHasNoBeforeSideForAddedFile(t *testing.T) {
 			t.Fatalf("err = %v, want apierr.NotFound WORKSPACE_BLOB_NOT_FOUND", err)
 		}
 	}
-	after, err := svc.GetWorkspaceFileBlob(context.Background(), "ao-1", "docs/logo.png", WorkspaceBlobAfter)
+	after, err := svc.GetWorkspaceFileBlob(context.Background(), "open-agents-1", "docs/logo.png", WorkspaceBlobAfter)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -939,20 +939,20 @@ func TestGetWorkspaceFileBlobHasNoAfterSideForDeletedFile(t *testing.T) {
 		t.Fatal(err)
 	}
 	st := newFakeStore()
-	st.sessions["ao-1"] = domain.SessionRecord{ID: "ao-1", Metadata: domain.SessionMetadata{WorkspacePath: repo}}
+	st.sessions["open-agents-1"] = domain.SessionRecord{ID: "open-agents-1", Metadata: domain.SessionMetadata{WorkspacePath: repo}}
 	svc := &Service{store: st}
 
-	before, err := svc.GetWorkspaceFileBlob(context.Background(), "ao-1", "docs/logo.png", WorkspaceBlobBefore)
+	before, err := svc.GetWorkspaceFileBlob(context.Background(), "open-agents-1", "docs/logo.png", WorkspaceBlobBefore)
 	if err != nil {
 		t.Fatal(err)
 	}
 	if string(before.Data) != pngBytes("before") {
 		t.Fatalf("before blob = %q", before.Data)
 	}
-	if _, err := svc.GetWorkspaceFileBlob(context.Background(), "ao-1", "docs/logo.png", WorkspaceBlobAfter); err == nil {
+	if _, err := svc.GetWorkspaceFileBlob(context.Background(), "open-agents-1", "docs/logo.png", WorkspaceBlobAfter); err == nil {
 		t.Fatal("after blob for a deleted file: want error, got nil")
 	}
-	detail, err := svc.GetWorkspaceFile(context.Background(), "ao-1", "docs/logo.png", "")
+	detail, err := svc.GetWorkspaceFile(context.Background(), "open-agents-1", "docs/logo.png", "")
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -968,9 +968,9 @@ func TestGetWorkspaceFileBlobReadsRenamedFileFromPreviousPath(t *testing.T) {
 	runGit(t, repo, "commit", "-m", "add logo")
 	runGit(t, repo, "mv", "docs/logo.png", "docs/brand.png")
 	st := newFakeStore()
-	st.sessions["ao-1"] = domain.SessionRecord{ID: "ao-1", Metadata: domain.SessionMetadata{WorkspacePath: repo}}
+	st.sessions["open-agents-1"] = domain.SessionRecord{ID: "open-agents-1", Metadata: domain.SessionMetadata{WorkspacePath: repo}}
 
-	before, err := (&Service{store: st}).GetWorkspaceFileBlob(context.Background(), "ao-1", "docs/brand.png", WorkspaceBlobBefore)
+	before, err := (&Service{store: st}).GetWorkspaceFileBlob(context.Background(), "open-agents-1", "docs/brand.png", WorkspaceBlobBefore)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -986,20 +986,20 @@ func TestGetWorkspaceFileBlobTypesRenamedBeforeSideByItsOwnPath(t *testing.T) {
 	runGit(t, repo, "commit", "-m", "add logo")
 	runGit(t, repo, "mv", "docs/logo.png", "docs/logo.gif")
 	st := newFakeStore()
-	st.sessions["ao-1"] = domain.SessionRecord{ID: "ao-1", Metadata: domain.SessionMetadata{WorkspacePath: repo}}
+	st.sessions["open-agents-1"] = domain.SessionRecord{ID: "open-agents-1", Metadata: domain.SessionMetadata{WorkspacePath: repo}}
 	svc := &Service{store: st}
 
 	// A rename that changes the extension must not type the historical bytes by
 	// the new path: the controller sends nosniff, so a PNG labelled image/gif
 	// never renders.
-	before, err := svc.GetWorkspaceFileBlob(context.Background(), "ao-1", "docs/logo.gif", WorkspaceBlobBefore)
+	before, err := svc.GetWorkspaceFileBlob(context.Background(), "open-agents-1", "docs/logo.gif", WorkspaceBlobBefore)
 	if err != nil {
 		t.Fatal(err)
 	}
 	if before.MediaType != "image/png" {
 		t.Fatalf("before mediaType = %q, want image/png", before.MediaType)
 	}
-	after, err := svc.GetWorkspaceFileBlob(context.Background(), "ao-1", "docs/logo.gif", WorkspaceBlobAfter)
+	after, err := svc.GetWorkspaceFileBlob(context.Background(), "open-agents-1", "docs/logo.gif", WorkspaceBlobAfter)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -1015,9 +1015,9 @@ func TestGetWorkspaceFileBlobRejectsRenameFromANonImagePath(t *testing.T) {
 	runGit(t, repo, "commit", "-m", "add blob")
 	runGit(t, repo, "mv", "docs/logo.bin", "docs/logo.png")
 	st := newFakeStore()
-	st.sessions["ao-1"] = domain.SessionRecord{ID: "ao-1", Metadata: domain.SessionMetadata{WorkspacePath: repo}}
+	st.sessions["open-agents-1"] = domain.SessionRecord{ID: "open-agents-1", Metadata: domain.SessionMetadata{WorkspacePath: repo}}
 
-	_, err := (&Service{store: st}).GetWorkspaceFileBlob(context.Background(), "ao-1", "docs/logo.png", WorkspaceBlobBefore)
+	_, err := (&Service{store: st}).GetWorkspaceFileBlob(context.Background(), "open-agents-1", "docs/logo.png", WorkspaceBlobBefore)
 	var e *apierr.Error
 	if !errors.As(err, &e) || e.Kind != apierr.KindInvalid || e.Code != "UNSUPPORTED_WORKSPACE_BLOB" {
 		t.Fatalf("err = %v, want apierr.Invalid UNSUPPORTED_WORKSPACE_BLOB", err)
@@ -1027,9 +1027,9 @@ func TestGetWorkspaceFileBlobRejectsRenameFromANonImagePath(t *testing.T) {
 func TestGetWorkspaceFileBlobRejectsNonImagePaths(t *testing.T) {
 	repo := newWorkspaceRepo(t)
 	st := newFakeStore()
-	st.sessions["ao-1"] = domain.SessionRecord{ID: "ao-1", Metadata: domain.SessionMetadata{WorkspacePath: repo}}
+	st.sessions["open-agents-1"] = domain.SessionRecord{ID: "open-agents-1", Metadata: domain.SessionMetadata{WorkspacePath: repo}}
 
-	_, err := (&Service{store: st}).GetWorkspaceFileBlob(context.Background(), "ao-1", "README.md", WorkspaceBlobAfter)
+	_, err := (&Service{store: st}).GetWorkspaceFileBlob(context.Background(), "open-agents-1", "README.md", WorkspaceBlobAfter)
 	var e *apierr.Error
 	if !errors.As(err, &e) || e.Kind != apierr.KindInvalid || e.Code != "UNSUPPORTED_WORKSPACE_BLOB" {
 		t.Fatalf("err = %v, want apierr.Invalid UNSUPPORTED_WORKSPACE_BLOB", err)
@@ -1039,9 +1039,9 @@ func TestGetWorkspaceFileBlobRejectsNonImagePaths(t *testing.T) {
 func TestGetWorkspaceFileBlobRejectsUnknownSide(t *testing.T) {
 	repo := newWorkspaceRepo(t)
 	st := newFakeStore()
-	st.sessions["ao-1"] = domain.SessionRecord{ID: "ao-1", Metadata: domain.SessionMetadata{WorkspacePath: repo}}
+	st.sessions["open-agents-1"] = domain.SessionRecord{ID: "open-agents-1", Metadata: domain.SessionMetadata{WorkspacePath: repo}}
 
-	_, err := (&Service{store: st}).GetWorkspaceFileBlob(context.Background(), "ao-1", "docs/logo.png", "sideways")
+	_, err := (&Service{store: st}).GetWorkspaceFileBlob(context.Background(), "open-agents-1", "docs/logo.png", "sideways")
 	var e *apierr.Error
 	if !errors.As(err, &e) || e.Kind != apierr.KindInvalid || e.Code != "INVALID_WORKSPACE_BLOB_SIDE" {
 		t.Fatalf("err = %v, want apierr.Invalid INVALID_WORKSPACE_BLOB_SIDE", err)
@@ -1051,23 +1051,23 @@ func TestGetWorkspaceFileBlobRejectsUnknownSide(t *testing.T) {
 func TestWorkspaceFilesIncludeCommittedBranchDiffAgainstRecordedBase(t *testing.T) {
 	repo := newWorkspaceRepo(t)
 	base := strings.TrimSpace(runGit(t, repo, "rev-parse", "HEAD"))
-	runGit(t, repo, "switch", "-c", "ao/work")
+	runGit(t, repo, "switch", "-c", "open-agents/work")
 	writeWorkspaceFile(t, repo, "README.md", "hello\ncommitted change\n")
 	runGit(t, repo, "add", "README.md")
 	runGit(t, repo, "commit", "-m", "agent change")
 
 	st := newFakeStore()
-	st.sessions["ao-1"] = domain.SessionRecord{
-		ID: "ao-1",
+	st.sessions["open-agents-1"] = domain.SessionRecord{
+		ID: "open-agents-1",
 		Metadata: domain.SessionMetadata{
-			Branch:        "ao/work",
+			Branch:        "open-agents/work",
 			WorkspacePath: repo,
 			DiffBaseSHA:   base,
 			DiffBaseRef:   "main",
 		},
 	}
 
-	files, err := (&Service{store: st}).ListWorkspaceFiles(context.Background(), "ao-1")
+	files, err := (&Service{store: st}).ListWorkspaceFiles(context.Background(), "open-agents-1")
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -1086,7 +1086,7 @@ func TestWorkspaceFilesIncludeCommittedBranchDiffAgainstRecordedBase(t *testing.
 		t.Fatalf("compare metadata = mode:%q sha:%q ref:%q, want base %s main", files.CompareMode, files.CompareBaseSHA, files.CompareBaseRef, base)
 	}
 
-	detail, err := (&Service{store: st}).GetWorkspaceFile(context.Background(), "ao-1", "README.md", "")
+	detail, err := (&Service{store: st}).GetWorkspaceFile(context.Background(), "open-agents-1", "README.md", "")
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -1105,7 +1105,7 @@ func TestWorkspaceFilesRecomputesRecordedRefAfterBaseMoves(t *testing.T) {
 	repo := newWorkspaceRepo(t)
 	runGit(t, repo, "branch", "-M", "main")
 	oldBase := strings.TrimSpace(runGit(t, repo, "rev-parse", "HEAD"))
-	runGit(t, repo, "switch", "-c", "ao/work")
+	runGit(t, repo, "switch", "-c", "open-agents/work")
 	writeWorkspaceFile(t, repo, "agent.go", "package main\n")
 	runGit(t, repo, "add", "agent.go")
 	runGit(t, repo, "commit", "-m", "agent change")
@@ -1114,12 +1114,12 @@ func TestWorkspaceFilesRecomputesRecordedRefAfterBaseMoves(t *testing.T) {
 	runGit(t, repo, "add", "mainonly.go")
 	runGit(t, repo, "commit", "-m", "main moved")
 	newBase := strings.TrimSpace(runGit(t, repo, "rev-parse", "HEAD"))
-	runGit(t, repo, "switch", "ao/work")
+	runGit(t, repo, "switch", "open-agents/work")
 	runGit(t, repo, "rebase", "main")
 
 	st := newFakeStore()
-	st.sessions["ao-1"] = domain.SessionRecord{
-		ID: "ao-1",
+	st.sessions["open-agents-1"] = domain.SessionRecord{
+		ID: "open-agents-1",
 		Metadata: domain.SessionMetadata{
 			WorkspacePath: repo,
 			DiffBaseSHA:   oldBase,
@@ -1127,7 +1127,7 @@ func TestWorkspaceFilesRecomputesRecordedRefAfterBaseMoves(t *testing.T) {
 		},
 	}
 
-	files, err := (&Service{store: st}).ListWorkspaceFiles(context.Background(), "ao-1")
+	files, err := (&Service{store: st}).ListWorkspaceFiles(context.Background(), "open-agents-1")
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -1147,7 +1147,7 @@ func TestWorkspaceFilesRecomputesRecordedRefAfterBaseMoves(t *testing.T) {
 }
 
 // TestWorkspaceFilesExcludeMainChangesMergedInAfterStaleOriginRef reproduces a
-// file-count inflation bug: AO never runs `git fetch` against a session
+// file-count inflation bug: Open Agents never runs `git fetch` against a session
 // worktree, so its refs/remotes/origin/main tracking ref can go stale relative
 // to the real upstream. When the branch later merges a newer main in (e.g. to
 // resolve a merge conflict), recomputing the compare base from that stale ref
@@ -1158,7 +1158,7 @@ func TestWorkspaceFilesExcludeMainChangesMergedInAfterStaleOriginRef(t *testing.
 	repo := newWorkspaceRepo(t)
 	runGit(t, repo, "branch", "-M", "main")
 
-	// M1: a commit lands on main before the session spawns. AO records this
+	// M1: a commit lands on main before the session spawns. Open Agents records this
 	// as the session's origin/main tracking ref at spawn time.
 	writeWorkspaceFile(t, repo, "unrelated-1.go", "package main\n")
 	runGit(t, repo, "add", "unrelated-1.go")
@@ -1167,13 +1167,13 @@ func TestWorkspaceFilesExcludeMainChangesMergedInAfterStaleOriginRef(t *testing.
 	runGit(t, repo, "update-ref", "refs/remotes/origin/main", m1)
 
 	// The session's feature branch forks from here and makes its own change.
-	runGit(t, repo, "switch", "-c", "ao/work")
+	runGit(t, repo, "switch", "-c", "open-agents/work")
 	writeWorkspaceFile(t, repo, "pr-file.go", "package main\n")
 	runGit(t, repo, "add", "pr-file.go")
 	runGit(t, repo, "commit", "-m", "pr change")
 
 	// M2: an unrelated PR merges into main after the session spawned. Nothing
-	// in AO refreshes refs/remotes/origin/main, so it still points at M1.
+	// in Open Agents refreshes refs/remotes/origin/main, so it still points at M1.
 	runGit(t, repo, "switch", "main")
 	writeWorkspaceFile(t, repo, "unrelated-2.go", "package main\n")
 	runGit(t, repo, "add", "unrelated-2.go")
@@ -1182,26 +1182,26 @@ func TestWorkspaceFilesExcludeMainChangesMergedInAfterStaleOriginRef(t *testing.
 
 	// The developer resolves a conflict by merging current main into their
 	// branch. HEAD gains M2 as an ancestor, but the stale tracking ref doesn't move.
-	runGit(t, repo, "switch", "ao/work")
+	runGit(t, repo, "switch", "open-agents/work")
 	runGit(t, repo, "merge", "main", "-m", "merge main to resolve conflict")
 
 	st := newFakeStore()
 	st.projects["proj"] = domain.ProjectRecord{ID: "proj", Config: domain.ProjectConfig{DefaultBranch: "main"}}
-	st.sessions["ao-1"] = domain.SessionRecord{
-		ID:        "ao-1",
+	st.sessions["open-agents-1"] = domain.SessionRecord{
+		ID:        "open-agents-1",
 		ProjectID: "proj",
 		Metadata: domain.SessionMetadata{
 			WorkspacePath: repo,
 			DiffBaseRef:   "origin/main",
 		},
 	}
-	// AO's own PR sync has observed GitHub's current base tip (M2) even though
+	// Open Agents's own PR sync has observed GitHub's current base tip (M2) even though
 	// the local origin/main tracking ref hasn't moved.
-	st.prs["ao-1"] = []domain.PullRequest{
-		{URL: "pr", SessionID: "ao-1", Number: 1, TargetBranch: "main", BaseSHA: m2},
+	st.prs["open-agents-1"] = []domain.PullRequest{
+		{URL: "pr", SessionID: "open-agents-1", Number: 1, TargetBranch: "main", BaseSHA: m2},
 	}
 
-	files, err := (&Service{store: st}).ListWorkspaceFiles(context.Background(), "ao-1")
+	files, err := (&Service{store: st}).ListWorkspaceFiles(context.Background(), "open-agents-1")
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -1236,7 +1236,7 @@ func newDivergentForcePushRepo(t *testing.T) (repo, head, staleRef, replacementB
 	runGit(t, repo, "update-ref", "refs/remotes/origin/main", b)
 
 	// The session forks from B and makes its own change.
-	runGit(t, repo, "switch", "-c", "ao/work")
+	runGit(t, repo, "switch", "-c", "open-agents/work")
 	writeWorkspaceFile(t, repo, "pr-file.go", "package main\n")
 	runGit(t, repo, "add", "pr-file.go")
 	runGit(t, repo, "commit", "-m", "pr change")
@@ -1254,7 +1254,7 @@ func newDivergentForcePushRepo(t *testing.T) (repo, head, staleRef, replacementB
 	// The session merges the force-pushed main in, so HEAD now retains B
 	// (through its own fork point) and X (through this merge) without B and
 	// X being ancestors of each other.
-	runGit(t, repo, "switch", "ao/work")
+	runGit(t, repo, "switch", "open-agents/work")
 	runGit(t, repo, "merge", "main", "-m", "merge force-pushed main")
 	h := strings.TrimSpace(runGit(t, repo, "rev-parse", "HEAD"))
 
@@ -1266,17 +1266,17 @@ func TestWorkspaceFilesCompareForcePushDivergentHistoryPrefersPRWhenHeadMatches(
 
 	st := newFakeStore()
 	st.projects["proj"] = domain.ProjectRecord{ID: "proj", Config: domain.ProjectConfig{DefaultBranch: "main"}}
-	st.sessions["ao-1"] = domain.SessionRecord{
-		ID:        "ao-1",
+	st.sessions["open-agents-1"] = domain.SessionRecord{
+		ID:        "open-agents-1",
 		ProjectID: "proj",
 		Metadata:  domain.SessionMetadata{WorkspacePath: repo, DiffBaseRef: "origin/main"},
 	}
 	// The PR sync has observed the exact commit the Files tab is displaying.
-	st.prs["ao-1"] = []domain.PullRequest{
-		{URL: "pr", SessionID: "ao-1", Number: 1, TargetBranch: "main", BaseSHA: replacementBase, HeadSHA: head},
+	st.prs["open-agents-1"] = []domain.PullRequest{
+		{URL: "pr", SessionID: "open-agents-1", Number: 1, TargetBranch: "main", BaseSHA: replacementBase, HeadSHA: head},
 	}
 
-	files, err := (&Service{store: st}).ListWorkspaceFiles(context.Background(), "ao-1")
+	files, err := (&Service{store: st}).ListWorkspaceFiles(context.Background(), "open-agents-1")
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -1300,19 +1300,19 @@ func TestWorkspaceFilesCompareForcePushDivergentHistoryKeepsLocalWhenPRHeadStale
 
 	st := newFakeStore()
 	st.projects["proj"] = domain.ProjectRecord{ID: "proj", Config: domain.ProjectConfig{DefaultBranch: "main"}}
-	st.sessions["ao-1"] = domain.SessionRecord{
-		ID:        "ao-1",
+	st.sessions["open-agents-1"] = domain.SessionRecord{
+		ID:        "open-agents-1",
 		ProjectID: "proj",
 		Metadata:  domain.SessionMetadata{WorkspacePath: repo, DiffBaseRef: "origin/main"},
 	}
 	// The persisted PR snapshot is stale: it still names an earlier local
 	// commit, not the branch's current HEAD (which has since merged the
 	// force-pushed main).
-	st.prs["ao-1"] = []domain.PullRequest{
-		{URL: "pr", SessionID: "ao-1", Number: 1, TargetBranch: "main", BaseSHA: replacementBase, HeadSHA: "0000000000000000000000000000000000dead"},
+	st.prs["open-agents-1"] = []domain.PullRequest{
+		{URL: "pr", SessionID: "open-agents-1", Number: 1, TargetBranch: "main", BaseSHA: replacementBase, HeadSHA: "0000000000000000000000000000000000dead"},
 	}
 
-	files, err := (&Service{store: st}).ListWorkspaceFiles(context.Background(), "ao-1")
+	files, err := (&Service{store: st}).ListWorkspaceFiles(context.Background(), "open-agents-1")
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -1351,24 +1351,24 @@ func TestWorkspaceFilesCompareKeepsNewerRefCandidateOverOlderPR(t *testing.T) {
 	newer := strings.TrimSpace(runGit(t, repo, "rev-parse", "HEAD"))
 	runGit(t, repo, "update-ref", "refs/remotes/origin/main", newer)
 
-	runGit(t, repo, "switch", "-c", "ao/work")
+	runGit(t, repo, "switch", "-c", "open-agents/work")
 	writeWorkspaceFile(t, repo, "pr-file.go", "package main\n")
 	runGit(t, repo, "add", "pr-file.go")
 	runGit(t, repo, "commit", "-m", "pr change")
 
 	st := newFakeStore()
 	st.projects["proj"] = domain.ProjectRecord{ID: "proj", Config: domain.ProjectConfig{DefaultBranch: "main"}}
-	st.sessions["ao-1"] = domain.SessionRecord{
-		ID:        "ao-1",
+	st.sessions["open-agents-1"] = domain.SessionRecord{
+		ID:        "open-agents-1",
 		ProjectID: "proj",
 		Metadata:  domain.SessionMetadata{WorkspacePath: repo, DiffBaseRef: "origin/main"},
 	}
 	// The PR sync hasn't caught up to main's latest commit yet.
-	st.prs["ao-1"] = []domain.PullRequest{
-		{URL: "pr", SessionID: "ao-1", Number: 1, TargetBranch: "main", BaseSHA: older},
+	st.prs["open-agents-1"] = []domain.PullRequest{
+		{URL: "pr", SessionID: "open-agents-1", Number: 1, TargetBranch: "main", BaseSHA: older},
 	}
 
-	files, err := (&Service{store: st}).ListWorkspaceFiles(context.Background(), "ao-1")
+	files, err := (&Service{store: st}).ListWorkspaceFiles(context.Background(), "open-agents-1")
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -1398,7 +1398,7 @@ func TestWorkspaceFilesCompareMissingRefKeepsRecordedSHAOverOlderPR(t *testing.T
 	runGit(t, repo, "commit", "-m", "newer recorded point")
 	recorded := strings.TrimSpace(runGit(t, repo, "rev-parse", "HEAD"))
 
-	runGit(t, repo, "switch", "-c", "ao/work")
+	runGit(t, repo, "switch", "-c", "open-agents/work")
 	writeWorkspaceFile(t, repo, "pr-file.go", "package main\n")
 	runGit(t, repo, "add", "pr-file.go")
 	runGit(t, repo, "commit", "-m", "pr change")
@@ -1406,17 +1406,17 @@ func TestWorkspaceFilesCompareMissingRefKeepsRecordedSHAOverOlderPR(t *testing.T
 	st := newFakeStore()
 	st.projects["proj"] = domain.ProjectRecord{ID: "proj", Config: domain.ProjectConfig{DefaultBranch: "main"}}
 	// No DiffBaseRef recorded — only the spawn-time recorded SHA.
-	st.sessions["ao-1"] = domain.SessionRecord{
-		ID:        "ao-1",
+	st.sessions["open-agents-1"] = domain.SessionRecord{
+		ID:        "open-agents-1",
 		ProjectID: "proj",
 		Metadata:  domain.SessionMetadata{WorkspacePath: repo, DiffBaseSHA: recorded},
 	}
 	// A stale PR snapshot whose base predates the session's recorded base.
-	st.prs["ao-1"] = []domain.PullRequest{
-		{URL: "pr", SessionID: "ao-1", Number: 1, TargetBranch: "main", BaseSHA: older},
+	st.prs["open-agents-1"] = []domain.PullRequest{
+		{URL: "pr", SessionID: "open-agents-1", Number: 1, TargetBranch: "main", BaseSHA: older},
 	}
 
-	files, err := (&Service{store: st}).ListWorkspaceFiles(context.Background(), "ao-1")
+	files, err := (&Service{store: st}).ListWorkspaceFiles(context.Background(), "open-agents-1")
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -1447,23 +1447,23 @@ func TestWorkspaceFilesCompareRejectsPRBaseWithNoCommonAncestor(t *testing.T) {
 	unrelated := strings.TrimSpace(runGit(t, repo, "rev-parse", "HEAD"))
 
 	runGit(t, repo, "checkout", "main")
-	runGit(t, repo, "switch", "-c", "ao/work")
+	runGit(t, repo, "switch", "-c", "open-agents/work")
 	writeWorkspaceFile(t, repo, "pr-file.go", "package main\n")
 	runGit(t, repo, "add", "pr-file.go")
 	runGit(t, repo, "commit", "-m", "pr change")
 
 	st := newFakeStore()
 	st.projects["proj"] = domain.ProjectRecord{ID: "proj", Config: domain.ProjectConfig{DefaultBranch: "main"}}
-	st.sessions["ao-1"] = domain.SessionRecord{
-		ID:        "ao-1",
+	st.sessions["open-agents-1"] = domain.SessionRecord{
+		ID:        "open-agents-1",
 		ProjectID: "proj",
 		Metadata:  domain.SessionMetadata{WorkspacePath: repo, DiffBaseSHA: base, DiffBaseRef: "main"},
 	}
-	st.prs["ao-1"] = []domain.PullRequest{
-		{URL: "pr", SessionID: "ao-1", Number: 1, TargetBranch: "main", BaseSHA: unrelated},
+	st.prs["open-agents-1"] = []domain.PullRequest{
+		{URL: "pr", SessionID: "open-agents-1", Number: 1, TargetBranch: "main", BaseSHA: unrelated},
 	}
 
-	files, err := (&Service{store: st}).ListWorkspaceFiles(context.Background(), "ao-1")
+	files, err := (&Service{store: st}).ListWorkspaceFiles(context.Background(), "open-agents-1")
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -1507,16 +1507,16 @@ func TestWorkspaceFilesCompareRejectsPRBaseWithNoCommonAncestorAndNoLocalCandida
 	st := newFakeStore()
 	st.projects["proj"] = domain.ProjectRecord{ID: "proj", Config: domain.ProjectConfig{DefaultBranch: "does-not-exist"}}
 	// No recorded ref, no recorded SHA: the PR base is the only candidate.
-	st.sessions["ao-1"] = domain.SessionRecord{
-		ID:        "ao-1",
+	st.sessions["open-agents-1"] = domain.SessionRecord{
+		ID:        "open-agents-1",
 		ProjectID: "proj",
 		Metadata:  domain.SessionMetadata{WorkspacePath: repo},
 	}
-	st.prs["ao-1"] = []domain.PullRequest{
-		{URL: "pr", SessionID: "ao-1", Number: 1, TargetBranch: "does-not-exist", BaseSHA: unrelated},
+	st.prs["open-agents-1"] = []domain.PullRequest{
+		{URL: "pr", SessionID: "open-agents-1", Number: 1, TargetBranch: "does-not-exist", BaseSHA: unrelated},
 	}
 
-	files, err := (&Service{store: st}).ListWorkspaceFiles(context.Background(), "ao-1")
+	files, err := (&Service{store: st}).ListWorkspaceFiles(context.Background(), "open-agents-1")
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -1536,7 +1536,7 @@ func TestWorkspaceFilesPRFallbackPrefersDefaultTargetPR(t *testing.T) {
 	repo := newWorkspaceRepo(t)
 	runGit(t, repo, "branch", "-M", "main")
 	rootBase := strings.TrimSpace(runGit(t, repo, "rev-parse", "HEAD"))
-	runGit(t, repo, "switch", "-c", "ao/root")
+	runGit(t, repo, "switch", "-c", "open-agents/root")
 	writeWorkspaceFile(t, repo, "lower.go", "package main\n")
 	runGit(t, repo, "add", "lower.go")
 	runGit(t, repo, "commit", "-m", "lower stack change")
@@ -1547,17 +1547,17 @@ func TestWorkspaceFilesPRFallbackPrefersDefaultTargetPR(t *testing.T) {
 
 	st := newFakeStore()
 	st.projects["mer"] = domain.ProjectRecord{ID: "mer", Config: domain.ProjectConfig{DefaultBranch: "main"}}
-	st.sessions["ao-1"] = domain.SessionRecord{
-		ID:        "ao-1",
+	st.sessions["open-agents-1"] = domain.SessionRecord{
+		ID:        "open-agents-1",
 		ProjectID: "mer",
 		Metadata:  domain.SessionMetadata{WorkspacePath: repo},
 	}
-	st.prs["ao-1"] = []domain.PullRequest{
-		{URL: "child", SessionID: "ao-1", Number: 2, TargetBranch: "ao/root", BaseSHA: childBase, UpdatedAt: time.Unix(200, 0)},
-		{URL: "root", SessionID: "ao-1", Number: 1, TargetBranch: "main", BaseSHA: rootBase, UpdatedAt: time.Unix(100, 0)},
+	st.prs["open-agents-1"] = []domain.PullRequest{
+		{URL: "child", SessionID: "open-agents-1", Number: 2, TargetBranch: "open-agents/root", BaseSHA: childBase, UpdatedAt: time.Unix(200, 0)},
+		{URL: "root", SessionID: "open-agents-1", Number: 1, TargetBranch: "main", BaseSHA: rootBase, UpdatedAt: time.Unix(100, 0)},
 	}
 
-	files, err := (&Service{store: st}).ListWorkspaceFiles(context.Background(), "ao-1")
+	files, err := (&Service{store: st}).ListWorkspaceFiles(context.Background(), "open-agents-1")
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -1577,7 +1577,7 @@ func TestWorkspaceFilesPRFallbackUsesMergeBaseWhenTargetBranchAdvances(t *testin
 	repo := newWorkspaceRepo(t)
 	runGit(t, repo, "branch", "-M", "main")
 	forkBase := strings.TrimSpace(runGit(t, repo, "rev-parse", "HEAD"))
-	runGit(t, repo, "switch", "-c", "ao/work")
+	runGit(t, repo, "switch", "-c", "open-agents/work")
 	writeWorkspaceFile(t, repo, "worker.go", "package main\n")
 	runGit(t, repo, "add", "worker.go")
 	runGit(t, repo, "commit", "-m", "worker change")
@@ -1586,20 +1586,20 @@ func TestWorkspaceFilesPRFallbackUsesMergeBaseWhenTargetBranchAdvances(t *testin
 	runGit(t, repo, "add", "mainonly.go")
 	runGit(t, repo, "commit", "-m", "main advanced independently")
 	prBaseSHA := strings.TrimSpace(runGit(t, repo, "rev-parse", "HEAD"))
-	runGit(t, repo, "switch", "ao/work")
+	runGit(t, repo, "switch", "open-agents/work")
 
 	st := newFakeStore()
 	st.projects["mer"] = domain.ProjectRecord{ID: "mer", Config: domain.ProjectConfig{DefaultBranch: "main"}}
-	st.sessions["ao-1"] = domain.SessionRecord{
-		ID:        "ao-1",
+	st.sessions["open-agents-1"] = domain.SessionRecord{
+		ID:        "open-agents-1",
 		ProjectID: "mer",
 		Metadata:  domain.SessionMetadata{WorkspacePath: repo},
 	}
-	st.prs["ao-1"] = []domain.PullRequest{
-		{URL: "pr", SessionID: "ao-1", Number: 1, TargetBranch: "main", BaseSHA: prBaseSHA, UpdatedAt: time.Unix(100, 0)},
+	st.prs["open-agents-1"] = []domain.PullRequest{
+		{URL: "pr", SessionID: "open-agents-1", Number: 1, TargetBranch: "main", BaseSHA: prBaseSHA, UpdatedAt: time.Unix(100, 0)},
 	}
 
-	files, err := (&Service{store: st}).ListWorkspaceFiles(context.Background(), "ao-1")
+	files, err := (&Service{store: st}).ListWorkspaceFiles(context.Background(), "open-agents-1")
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -1621,17 +1621,17 @@ func TestWorkspaceFilesPRFallbackUsesMergeBaseWhenTargetBranchAdvances(t *testin
 func TestWorkspaceFilesReportCommittedDeletionsAgainstRecordedBase(t *testing.T) {
 	repo := newWorkspaceRepo(t)
 	base := strings.TrimSpace(runGit(t, repo, "rev-parse", "HEAD"))
-	runGit(t, repo, "switch", "-c", "ao/work")
+	runGit(t, repo, "switch", "-c", "open-agents/work")
 	runGit(t, repo, "rm", "src/app.go")
 	runGit(t, repo, "commit", "-m", "delete app")
 
 	st := newFakeStore()
-	st.sessions["ao-1"] = domain.SessionRecord{
-		ID:       "ao-1",
+	st.sessions["open-agents-1"] = domain.SessionRecord{
+		ID:       "open-agents-1",
 		Metadata: domain.SessionMetadata{WorkspacePath: repo, DiffBaseSHA: base, DiffBaseRef: "main"},
 	}
 
-	files, err := (&Service{store: st}).ListWorkspaceFiles(context.Background(), "ao-1")
+	files, err := (&Service{store: st}).ListWorkspaceFiles(context.Background(), "open-agents-1")
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -1643,7 +1643,7 @@ func TestWorkspaceFilesReportCommittedDeletionsAgainstRecordedBase(t *testing.T)
 		t.Fatalf("src/app.go summary = %#v, want deleted", byPath["src/app.go"])
 	}
 
-	detail, err := (&Service{store: st}).GetWorkspaceFile(context.Background(), "ao-1", "src/app.go", "")
+	detail, err := (&Service{store: st}).GetWorkspaceFile(context.Background(), "open-agents-1", "src/app.go", "")
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -1655,19 +1655,19 @@ func TestWorkspaceFilesReportCommittedDeletionsAgainstRecordedBase(t *testing.T)
 func TestWorkspaceFilesKeepBaseStatusWhenCommittedAddedFileIsModified(t *testing.T) {
 	repo := newWorkspaceRepo(t)
 	base := strings.TrimSpace(runGit(t, repo, "rev-parse", "HEAD"))
-	runGit(t, repo, "switch", "-c", "ao/work")
+	runGit(t, repo, "switch", "-c", "open-agents/work")
 	writeWorkspaceFile(t, repo, "new.go", "package main\n")
 	runGit(t, repo, "add", "new.go")
 	runGit(t, repo, "commit", "-m", "add file")
 	writeWorkspaceFile(t, repo, "new.go", "package main\n\nfunc Later() {}\n")
 
 	st := newFakeStore()
-	st.sessions["ao-1"] = domain.SessionRecord{
-		ID:       "ao-1",
+	st.sessions["open-agents-1"] = domain.SessionRecord{
+		ID:       "open-agents-1",
 		Metadata: domain.SessionMetadata{WorkspacePath: repo, DiffBaseSHA: base, DiffBaseRef: "main"},
 	}
 
-	files, err := (&Service{store: st}).ListWorkspaceFiles(context.Background(), "ao-1")
+	files, err := (&Service{store: st}).ListWorkspaceFiles(context.Background(), "open-agents-1")
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -1691,7 +1691,7 @@ func workspaceSectionPaths(files []WorkspaceFileSummary) map[string]bool {
 func TestWorkspaceFileSectionsSplitByGitState(t *testing.T) {
 	repo := newWorkspaceRepo(t)
 	base := strings.TrimSpace(runGit(t, repo, "rev-parse", "HEAD"))
-	runGit(t, repo, "switch", "-c", "ao/work")
+	runGit(t, repo, "switch", "-c", "open-agents/work")
 
 	// Committed since base.
 	writeWorkspaceFile(t, repo, "committed.go", "package main\n")
@@ -1707,17 +1707,17 @@ func TestWorkspaceFileSectionsSplitByGitState(t *testing.T) {
 	writeWorkspaceFile(t, repo, "scratch.txt", "untracked note\n")
 
 	st := newFakeStore()
-	st.sessions["ao-1"] = domain.SessionRecord{
-		ID: "ao-1",
+	st.sessions["open-agents-1"] = domain.SessionRecord{
+		ID: "open-agents-1",
 		Metadata: domain.SessionMetadata{
-			Branch:        "ao/work",
+			Branch:        "open-agents/work",
 			WorkspacePath: repo,
 			DiffBaseSHA:   base,
 			DiffBaseRef:   "main",
 		},
 	}
 
-	files, err := (&Service{store: st}).ListWorkspaceFiles(context.Background(), "ao-1")
+	files, err := (&Service{store: st}).ListWorkspaceFiles(context.Background(), "open-agents-1")
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -1766,13 +1766,13 @@ func TestWorkspaceFileDiffScopedToSection(t *testing.T) {
 	writeWorkspaceFile(t, repo, "README.md", "hello\nstaged addition\nunstaged addition\n")
 
 	st := newFakeStore()
-	st.sessions["ao-1"] = domain.SessionRecord{
-		ID:       "ao-1",
+	st.sessions["open-agents-1"] = domain.SessionRecord{
+		ID:       "open-agents-1",
 		Metadata: domain.SessionMetadata{WorkspacePath: repo},
 	}
 	svc := &Service{store: st}
 
-	staged, err := svc.GetWorkspaceFile(context.Background(), "ao-1", "README.md", WorkspaceFileSectionStaged)
+	staged, err := svc.GetWorkspaceFile(context.Background(), "open-agents-1", "README.md", WorkspaceFileSectionStaged)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -1780,7 +1780,7 @@ func TestWorkspaceFileDiffScopedToSection(t *testing.T) {
 		t.Fatalf("staged diff = %q, want only the staged hunk", staged.Diff)
 	}
 
-	unstaged, err := svc.GetWorkspaceFile(context.Background(), "ao-1", "README.md", WorkspaceFileSectionUnstaged)
+	unstaged, err := svc.GetWorkspaceFile(context.Background(), "open-agents-1", "README.md", WorkspaceFileSectionUnstaged)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -1801,9 +1801,9 @@ func TestWorkspaceFilesAheadReportsPushCount(t *testing.T) {
 	runGit(t, repo, "commit", "-m", "local ahead commit")
 
 	st := newFakeStore()
-	st.sessions["ao-1"] = domain.SessionRecord{ID: "ao-1", Metadata: domain.SessionMetadata{WorkspacePath: repo}}
+	st.sessions["open-agents-1"] = domain.SessionRecord{ID: "open-agents-1", Metadata: domain.SessionMetadata{WorkspacePath: repo}}
 
-	files, err := (&Service{store: st}).ListWorkspaceFiles(context.Background(), "ao-1")
+	files, err := (&Service{store: st}).ListWorkspaceFiles(context.Background(), "open-agents-1")
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -1830,9 +1830,9 @@ func TestWorkspaceFilesBehindReportsPullCount(t *testing.T) {
 	runGit(t, repo, "reset", "--hard", "HEAD~1")
 
 	st := newFakeStore()
-	st.sessions["ao-1"] = domain.SessionRecord{ID: "ao-1", Metadata: domain.SessionMetadata{WorkspacePath: repo}}
+	st.sessions["open-agents-1"] = domain.SessionRecord{ID: "open-agents-1", Metadata: domain.SessionMetadata{WorkspacePath: repo}}
 
-	files, err := (&Service{store: st}).ListWorkspaceFiles(context.Background(), "ao-1")
+	files, err := (&Service{store: st}).ListWorkspaceFiles(context.Background(), "open-agents-1")
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -1847,9 +1847,9 @@ func TestWorkspaceFilesBehindReportsPullCount(t *testing.T) {
 func TestWorkspaceFilesAheadBehindNilWithoutUpstream(t *testing.T) {
 	repo := newWorkspaceRepo(t)
 	st := newFakeStore()
-	st.sessions["ao-1"] = domain.SessionRecord{ID: "ao-1", Metadata: domain.SessionMetadata{WorkspacePath: repo}}
+	st.sessions["open-agents-1"] = domain.SessionRecord{ID: "open-agents-1", Metadata: domain.SessionMetadata{WorkspacePath: repo}}
 
-	files, err := (&Service{store: st}).ListWorkspaceFiles(context.Background(), "ao-1")
+	files, err := (&Service{store: st}).ListWorkspaceFiles(context.Background(), "open-agents-1")
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -1861,13 +1861,13 @@ func TestWorkspaceFilesAheadBehindNilWithoutUpstream(t *testing.T) {
 func TestWorkspaceFilesReportRenamesAgainstRecordedBase(t *testing.T) {
 	repo := newWorkspaceRepo(t)
 	base := strings.TrimSpace(runGit(t, repo, "rev-parse", "HEAD"))
-	runGit(t, repo, "switch", "-c", "ao/work")
+	runGit(t, repo, "switch", "-c", "open-agents/work")
 	runGit(t, repo, "mv", "src/app.go", "src/main.go")
 	runGit(t, repo, "commit", "-m", "rename app")
 
 	st := newFakeStore()
-	st.sessions["ao-1"] = domain.SessionRecord{
-		ID: "ao-1",
+	st.sessions["open-agents-1"] = domain.SessionRecord{
+		ID: "open-agents-1",
 		Metadata: domain.SessionMetadata{
 			WorkspacePath: repo,
 			DiffBaseSHA:   base,
@@ -1875,7 +1875,7 @@ func TestWorkspaceFilesReportRenamesAgainstRecordedBase(t *testing.T) {
 		},
 	}
 
-	files, err := (&Service{store: st}).ListWorkspaceFiles(context.Background(), "ao-1")
+	files, err := (&Service{store: st}).ListWorkspaceFiles(context.Background(), "open-agents-1")
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -1890,7 +1890,7 @@ func TestWorkspaceFilesReportRenamesAgainstRecordedBase(t *testing.T) {
 		t.Fatalf("renamed summary = %#v, want R src/app.go -> src/main.go", renamed)
 	}
 
-	detail, err := (&Service{store: st}).GetWorkspaceFile(context.Background(), "ao-1", "src/main.go", "")
+	detail, err := (&Service{store: st}).GetWorkspaceFile(context.Background(), "open-agents-1", "src/main.go", "")
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -1910,13 +1910,13 @@ func TestWorkspaceFilesIncludeWorkspaceProjectChildRepoDiffs(t *testing.T) {
 		t.Fatal(err)
 	}
 	runGit(t, child, "init")
-	runGit(t, child, "config", "user.email", "ao@example.com")
-	runGit(t, child, "config", "user.name", "AO Tests")
+	runGit(t, child, "config", "user.email", "open-agents@example.com")
+	runGit(t, child, "config", "user.name", "Open Agents Tests")
 	writeWorkspaceFile(t, child, "service.go", "package api\n")
 	runGit(t, child, "add", ".")
 	runGit(t, child, "commit", "-m", "initial child")
 	childBase := strings.TrimSpace(runGit(t, child, "rev-parse", "HEAD"))
-	runGit(t, child, "switch", "-c", "ao/work")
+	runGit(t, child, "switch", "-c", "open-agents/work")
 	writeWorkspaceFile(t, child, "service.go", "package api\n\nfunc Added() {}\n")
 	runGit(t, child, "add", "service.go")
 	runGit(t, child, "commit", "-m", "child change")
@@ -1981,14 +1981,14 @@ func TestWorkspaceProjectChildRepoRecomputesBaseAfterRebase(t *testing.T) {
 		t.Fatal(err)
 	}
 	runGit(t, child, "init")
-	runGit(t, child, "config", "user.email", "ao@example.com")
-	runGit(t, child, "config", "user.name", "AO Tests")
+	runGit(t, child, "config", "user.email", "open-agents@example.com")
+	runGit(t, child, "config", "user.name", "Open Agents Tests")
 	writeWorkspaceFile(t, child, "service.go", "package api\n")
 	runGit(t, child, "add", ".")
 	runGit(t, child, "commit", "-m", "initial child")
 	runGit(t, child, "branch", "-M", "main")
 	oldChildBase := strings.TrimSpace(runGit(t, child, "rev-parse", "HEAD"))
-	runGit(t, child, "switch", "-c", "ao/work")
+	runGit(t, child, "switch", "-c", "open-agents/work")
 	writeWorkspaceFile(t, child, "agent.go", "package api\n\nfunc Agent() {}\n")
 	runGit(t, child, "add", "agent.go")
 	runGit(t, child, "commit", "-m", "agent change")
@@ -1997,7 +1997,7 @@ func TestWorkspaceProjectChildRepoRecomputesBaseAfterRebase(t *testing.T) {
 	runGit(t, child, "add", "baseonly.go")
 	runGit(t, child, "commit", "-m", "base moved")
 	newChildBase := strings.TrimSpace(runGit(t, child, "rev-parse", "HEAD"))
-	runGit(t, child, "switch", "ao/work")
+	runGit(t, child, "switch", "open-agents/work")
 	runGit(t, child, "rebase", "main")
 
 	st := newFakeStore()
@@ -2039,7 +2039,7 @@ func TestWorkspaceProjectChildRepoRecomputesBaseAfterRebase(t *testing.T) {
 func TestWorkspaceProjectCompareModeStaysBaseWithPartialFallback(t *testing.T) {
 	root := newWorkspaceRepo(t)
 	rootBase := strings.TrimSpace(runGit(t, root, "rev-parse", "HEAD"))
-	runGit(t, root, "switch", "-c", "ao/work")
+	runGit(t, root, "switch", "-c", "open-agents/work")
 	writeWorkspaceFile(t, root, "root.go", "package main\n")
 	runGit(t, root, "add", "root.go")
 	runGit(t, root, "commit", "-m", "root change")
@@ -2048,8 +2048,8 @@ func TestWorkspaceProjectCompareModeStaysBaseWithPartialFallback(t *testing.T) {
 		t.Fatal(err)
 	}
 	runGit(t, child, "init")
-	runGit(t, child, "config", "user.email", "ao@example.com")
-	runGit(t, child, "config", "user.name", "AO Tests")
+	runGit(t, child, "config", "user.email", "open-agents@example.com")
+	runGit(t, child, "config", "user.name", "Open Agents Tests")
 	writeWorkspaceFile(t, child, "scratch.go", "package api\n")
 	runGit(t, child, "add", ".")
 	runGit(t, child, "commit", "-m", "initial child")
@@ -2267,9 +2267,9 @@ func TestGetWorkspaceFileMarksOversizedTextAsNotEditable(t *testing.T) {
 func TestGetWorkspaceFileRejectsTraversal(t *testing.T) {
 	repo := newWorkspaceRepo(t)
 	st := newFakeStore()
-	st.sessions["ao-1"] = domain.SessionRecord{ID: "ao-1", Metadata: domain.SessionMetadata{WorkspacePath: repo}}
+	st.sessions["open-agents-1"] = domain.SessionRecord{ID: "open-agents-1", Metadata: domain.SessionMetadata{WorkspacePath: repo}}
 
-	_, err := (&Service{store: st}).GetWorkspaceFile(context.Background(), "ao-1", "../secrets.txt", "")
+	_, err := (&Service{store: st}).GetWorkspaceFile(context.Background(), "open-agents-1", "../secrets.txt", "")
 	var e *apierr.Error
 	if !errors.As(err, &e) || e.Kind != apierr.KindInvalid || e.Code != "INVALID_WORKSPACE_PATH" {
 		t.Fatalf("err = %v, want bad request INVALID_WORKSPACE_PATH", err)
@@ -2282,9 +2282,9 @@ func TestGetWorkspaceFileRejectsIntermediateSymlinkEscape(t *testing.T) {
 	writeWorkspaceFile(t, outside, "secret.txt", "outside workspace\n")
 	linkWorkspaceDir(t, outside, filepath.Join(repo, "link"))
 	st := newFakeStore()
-	st.sessions["ao-1"] = domain.SessionRecord{ID: "ao-1", Metadata: domain.SessionMetadata{WorkspacePath: repo}}
+	st.sessions["open-agents-1"] = domain.SessionRecord{ID: "open-agents-1", Metadata: domain.SessionMetadata{WorkspacePath: repo}}
 
-	_, err := (&Service{store: st}).GetWorkspaceFile(context.Background(), "ao-1", "link/secret.txt", "")
+	_, err := (&Service{store: st}).GetWorkspaceFile(context.Background(), "open-agents-1", "link/secret.txt", "")
 	var e *apierr.Error
 	if !errors.As(err, &e) || e.Kind != apierr.KindInvalid || e.Code != "INVALID_WORKSPACE_PATH" {
 		t.Fatalf("err = %v, want bad request INVALID_WORKSPACE_PATH", err)
@@ -2295,14 +2295,14 @@ func TestUpdateWorkspaceFileReplacesExistingTextWithOptimisticFingerprint(t *tes
 	repo := newWorkspaceRepo(t)
 	writeWorkspaceFile(t, repo, "notes.txt", "before\n")
 	st := newFakeStore()
-	st.sessions["ao-1"] = domain.SessionRecord{ID: "ao-1", Metadata: domain.SessionMetadata{WorkspacePath: repo}}
+	st.sessions["open-agents-1"] = domain.SessionRecord{ID: "open-agents-1", Metadata: domain.SessionMetadata{WorkspacePath: repo}}
 	svc := &Service{store: st, workspaceCache: newWorkspaceCache(workspaceCacheTTL, time.Now)}
 
-	before, err := svc.GetWorkspaceFile(context.Background(), "ao-1", "notes.txt", "")
+	before, err := svc.GetWorkspaceFile(context.Background(), "open-agents-1", "notes.txt", "")
 	if err != nil {
 		t.Fatal(err)
 	}
-	after, err := svc.UpdateWorkspaceFile(context.Background(), "ao-1", UpdateWorkspaceFileInput{
+	after, err := svc.UpdateWorkspaceFile(context.Background(), "open-agents-1", UpdateWorkspaceFileInput{
 		Path:                    "notes.txt",
 		Content:                 "after\n",
 		ExpectedFileFingerprint: before.FileFingerprint,
@@ -2323,10 +2323,10 @@ func TestUpdateWorkspaceFileRejectsStaleFingerprintWithoutWriting(t *testing.T) 
 	repo := newWorkspaceRepo(t)
 	writeWorkspaceFile(t, repo, "notes.txt", "current\n")
 	st := newFakeStore()
-	st.sessions["ao-1"] = domain.SessionRecord{ID: "ao-1", Metadata: domain.SessionMetadata{WorkspacePath: repo}}
+	st.sessions["open-agents-1"] = domain.SessionRecord{ID: "open-agents-1", Metadata: domain.SessionMetadata{WorkspacePath: repo}}
 	svc := &Service{store: st, workspaceCache: newWorkspaceCache(workspaceCacheTTL, time.Now)}
 
-	_, err := svc.UpdateWorkspaceFile(context.Background(), "ao-1", UpdateWorkspaceFileInput{
+	_, err := svc.UpdateWorkspaceFile(context.Background(), "open-agents-1", UpdateWorkspaceFileInput{
 		Path:                    "notes.txt",
 		Content:                 "replacement\n",
 		ExpectedFileFingerprint: "stale",
@@ -3136,7 +3136,7 @@ func TestToAPIErrorMapsWorkspaceBranchSentinels(t *testing.T) {
 		{"runtime prerequisite missing", fmt.Errorf("spawn: %w: tmux required on macOS/Linux but not in PATH", ports.ErrRuntimePrerequisite), apierr.KindInvalid, "RUNTIME_PREREQUISITE_MISSING"},
 		{"Windows command line too long", fmt.Errorf("spawn: %w: escaped command line is 32769 UTF-16 code units", ports.ErrRuntimeCommandLineTooLong), apierr.KindInvalid, "WINDOWS_COMMAND_LINE_TOO_LONG"},
 		{"runtime workspace cwd mismatch", fmt.Errorf("spawn mer-1: runtime: %w: session mer-1 started in \"/deleted/shipit\", want \"/tmp/ws\"", ports.ErrRuntimeWorkspaceCwdMismatch), apierr.KindConflict, "WORKSPACE_CWD_MISMATCH"},
-		{"workspace locked", fmt.Errorf("restore mer-1: %w: \"/tmp/ws\" (branch \"ao/mer-1\") is registered but its directory is missing", ports.ErrWorkspaceLocked), apierr.KindConflict, "WORKSPACE_LOCKED"},
+		{"workspace locked", fmt.Errorf("restore mer-1: %w: \"/tmp/ws\" (branch \"open-agents/mer-1\") is registered but its directory is missing", ports.ErrWorkspaceLocked), apierr.KindConflict, "WORKSPACE_LOCKED"},
 		{"unknown harness", fmt.Errorf("spawn: %w: %q", sessionmanager.ErrUnknownHarness, "bogus"), apierr.KindInvalid, "UNKNOWN_HARNESS"},
 		{"missing harness", fmt.Errorf("spawn: %w: configure project worker.agent or pass --harness", sessionmanager.ErrMissingHarness), apierr.KindInvalid, "AGENT_REQUIRED"},
 		{"harness install active", fmt.Errorf("spawn: %w", sessionmanager.ErrHarnessInstallActive), apierr.KindConflict, "HARNESS_INSTALL_ACTIVE"},
@@ -3597,7 +3597,7 @@ func TestSpawnOrchestratorVerifiesReplacementHarness(t *testing.T) {
 			ProjectID: "mer",
 			Kind:      domain.KindOrchestrator,
 			Harness:   "codex",
-			Metadata:  domain.SessionMetadata{Branch: "ao/mer-orchestrator"},
+			Metadata:  domain.SessionMetadata{Branch: "open-agents/mer-orchestrator"},
 		},
 	}
 	svc := &Service{manager: fc, store: st}
@@ -4525,8 +4525,8 @@ func TestListPRSummariesCollapsesTransferredRepoAliases(t *testing.T) {
 	st := newFakeStore()
 	st.sessions["mer-1"] = domain.SessionRecord{ID: "mer-1", ProjectID: "mer", Kind: domain.KindWorker}
 	now := time.Date(2026, 7, 31, 10, 0, 0, 0, time.UTC)
-	oldURL := "https://github.com/AgentWrapper/agent-orchestrator/pull/3193"
-	newURL := "https://github.com/Untrivial-ai/agent-orchestrator/pull/3193"
+	oldURL := "https://github.com/previous-owner/open-agents/pull/3193"
+	newURL := "https://github.com/sudo-adduser-jordan/open-agents/pull/3193"
 	stList := &multiPRFakeStore{fakeStore: st, prs: []domain.PullRequest{
 		{
 			URL:          oldURL,
@@ -4534,8 +4534,8 @@ func TestListPRSummariesCollapsesTransferredRepoAliases(t *testing.T) {
 			Number:       3193,
 			Provider:     "github",
 			Host:         "github.com",
-			Repo:         "AgentWrapper/agent-orchestrator",
-			SourceBranch: "ao/mer-1/fix-sigpipe",
+			Repo:         "previous-owner/open-agents",
+			SourceBranch: "open-agents/mer-1/fix-sigpipe",
 			TargetBranch: "main",
 			HeadSHA:      "same-head",
 			Title:        "old alias",
@@ -4549,8 +4549,8 @@ func TestListPRSummariesCollapsesTransferredRepoAliases(t *testing.T) {
 			Number:       3193,
 			Provider:     "github",
 			Host:         "github.com",
-			Repo:         "Untrivial-ai/agent-orchestrator",
-			SourceBranch: "ao/mer-1/fix-sigpipe",
+			Repo:         "sudo-adduser-jordan/open-agents",
+			SourceBranch: "open-agents/mer-1/fix-sigpipe",
 			TargetBranch: "main",
 			HeadSHA:      "same-head",
 			Title:        "new alias",
@@ -4630,21 +4630,21 @@ func TestDeduplicatePRFactsCollapsesTransferredRepoAliasesWithSameHead(t *testin
 	now := time.Date(2026, 7, 31, 10, 0, 0, 0, time.UTC)
 	got := deduplicatePRFacts([]domain.PRFacts{
 		{
-			URL:                      "https://github.com/AgentWrapper/agent-orchestrator/pull/3193",
+			URL:                      "https://github.com/previous-owner/open-agents/pull/3193",
 			Number:                   3193,
 			ReviewComments:           true,
 			ExternalChangesRequested: true,
 			ExternalComments:         true,
-			SourceBranch:             "ao/mer-1/fix-sigpipe",
+			SourceBranch:             "open-agents/mer-1/fix-sigpipe",
 			TargetBranch:             "main",
 			HeadSHA:                  "same-head",
 			UpdatedAt:                now,
 		},
 		{
-			URL:              "https://github.com/Untrivial-ai/agent-orchestrator/pull/3193",
+			URL:              "https://github.com/sudo-adduser-jordan/open-agents/pull/3193",
 			Number:           3193,
 			ExternalApproved: true,
-			SourceBranch:     "ao/mer-1/fix-sigpipe",
+			SourceBranch:     "open-agents/mer-1/fix-sigpipe",
 			TargetBranch:     "main",
 			HeadSHA:          "same-head",
 			UpdatedAt:        now.Add(time.Minute),
@@ -4653,7 +4653,7 @@ func TestDeduplicatePRFactsCollapsesTransferredRepoAliasesWithSameHead(t *testin
 	if len(got) != 1 {
 		t.Fatalf("facts = %d, want transferred aliases collapsed: %+v", len(got), got)
 	}
-	if got[0].URL != "https://github.com/Untrivial-ai/agent-orchestrator/pull/3193" ||
+	if got[0].URL != "https://github.com/sudo-adduser-jordan/open-agents/pull/3193" ||
 		!got[0].ReviewComments ||
 		!got[0].ExternalChangesRequested ||
 		!got[0].ExternalComments ||
@@ -4671,14 +4671,14 @@ func TestToSessionWithFactsRemapsTransferredAliasReviewRuns(t *testing.T) {
 		AutoReviewEnabled: true,
 		AutoInjectReview:  true,
 	}
-	oldURL := "https://github.com/AgentWrapper/agent-orchestrator/pull/3193"
-	newURL := "https://github.com/Untrivial-ai/agent-orchestrator/pull/3193"
+	oldURL := "https://github.com/previous-owner/open-agents/pull/3193"
+	newURL := "https://github.com/sudo-adduser-jordan/open-agents/pull/3193"
 	st.prFacts[rec.ID] = []domain.PRFacts{
 		{
 			URL:                      oldURL,
 			Number:                   3193,
 			Review:                   domain.ReviewRequired,
-			SourceBranch:             "ao/mer-1/fix-sigpipe",
+			SourceBranch:             "open-agents/mer-1/fix-sigpipe",
 			TargetBranch:             "main",
 			HeadSHA:                  "same-head",
 			UpdatedAt:                rec.UpdatedAt,
@@ -4688,7 +4688,7 @@ func TestToSessionWithFactsRemapsTransferredAliasReviewRuns(t *testing.T) {
 			URL:          newURL,
 			Number:       3193,
 			Review:       domain.ReviewRequired,
-			SourceBranch: "ao/mer-1/fix-sigpipe",
+			SourceBranch: "open-agents/mer-1/fix-sigpipe",
 			TargetBranch: "main",
 			HeadSHA:      "same-head",
 			UpdatedAt:    rec.UpdatedAt.Add(time.Minute),
@@ -4727,14 +4727,14 @@ func TestToSessionWithFactsCanonicalAliasRunSupersedesOlderAliasRun(t *testing.T
 		AutoReviewEnabled: true,
 		AutoInjectReview:  true,
 	}
-	oldURL := "https://github.com/AgentWrapper/agent-orchestrator/pull/4000"
-	newURL := "https://github.com/Untrivial-ai/agent-orchestrator/pull/4000"
+	oldURL := "https://github.com/previous-owner/open-agents/pull/4000"
+	newURL := "https://github.com/sudo-adduser-jordan/open-agents/pull/4000"
 	st.prFacts[rec.ID] = []domain.PRFacts{
 		{
 			URL:          oldURL,
 			Number:       4000,
 			Review:       domain.ReviewRequired,
-			SourceBranch: "ao/mer-2/fix-review",
+			SourceBranch: "open-agents/mer-2/fix-review",
 			TargetBranch: "main",
 			HeadSHA:      "same-head",
 			UpdatedAt:    rec.UpdatedAt,
@@ -4743,7 +4743,7 @@ func TestToSessionWithFactsCanonicalAliasRunSupersedesOlderAliasRun(t *testing.T
 			URL:          newURL,
 			Number:       4000,
 			Review:       domain.ReviewRequired,
-			SourceBranch: "ao/mer-2/fix-review",
+			SourceBranch: "open-agents/mer-2/fix-review",
 			TargetBranch: "main",
 			HeadSHA:      "same-head",
 			UpdatedAt:    rec.UpdatedAt.Add(time.Minute),

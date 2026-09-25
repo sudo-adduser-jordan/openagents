@@ -8,8 +8,8 @@ import (
 	"strings"
 	"unicode/utf8"
 
-	"github.com/aoagents/agent-orchestrator/backend/internal/domain"
-	"github.com/aoagents/agent-orchestrator/backend/internal/ports"
+	"github.com/sudo-adduser-jordan/open-agents/backend/internal/domain"
+	"github.com/sudo-adduser-jordan/open-agents/backend/internal/ports"
 )
 
 // Steering: guidance delivered into a turn that is already running.
@@ -45,9 +45,9 @@ var (
 	// settled, or been claimed by another promotion.
 	ErrTurnNotQueued = errors.New("turn is not queued")
 	// ErrPromotionUncertain prevents automatic redelivery after the provider may
-	// have accepted guidance but AO could not durably record the result.
+	// have accepted guidance but Open Agents could not durably record the result.
 	ErrPromotionUncertain = errors.New("queued turn promotion delivery is uncertain")
-	// ErrSteerDeliveryUncertain means AO reserved an idempotency handle but cannot
+	// ErrSteerDeliveryUncertain means Open Agents reserved an idempotency handle but cannot
 	// prove whether the provider accepted it. Reusing the handle is safe and must
 	// never contact the provider again; inventing a fresh handle is not.
 	ErrSteerDeliveryUncertain = errors.New("steer delivery is uncertain")
@@ -329,7 +329,7 @@ func (c *Controller) rejectSteerBeforeDispatch(
 // exactly that window, the second after someone realizes they sent the wrong thing,
 // so the same helper Interrupt uses to ride out that gap is used here.
 //
-// AO durably reserves a caller-supplied client handle before provider I/O. A
+// Open Agents durably reserves a caller-supplied client handle before provider I/O. A
 // definitive refusal settles that handle as rejected, success records the visible
 // activity and accepted result atomically, and any gap between those facts remains
 // uncertain forever. That fail-closed state is what makes a retry unable to deliver
@@ -430,7 +430,7 @@ func (c *Controller) steerLocked(ctx context.Context, msg ports.ChatUserMessage)
 	if msg.ClientMessageID == "" {
 		activityID, recordErr := c.recordSteer(ctx, landed, msg)
 		if recordErr != nil {
-			// The guidance IS with the agent; only AO's record of it failed. Reporting the
+			// The guidance IS with the agent; only Open Agents's record of it failed. Reporting the
 			// error rather than swallowing it, because a steer the timeline never mentions
 			// is a conversation whose next answer has no visible cause.
 			return SteerResult{ProviderTurnID: landed}, recordErr
@@ -592,7 +592,7 @@ func classifySteerRejection(
 ) (domain.ConversationSteerRejectionKind, bool, error) {
 	switch {
 	case errors.Is(err, ports.ErrChatNoSteerableTurn):
-		// The turn ended, or was replaced, between AO's check and the provider's.
+		// The turn ended, or was replaced, between Open Agents's check and the provider's.
 		// The provider is the authority on that, and losing the race is ordinary.
 		return domain.ConversationSteerRejectedNoActiveTurn, true, ErrNoActiveTurn
 	case errors.Is(err, ports.ErrChatTurnNotSteerable):
@@ -612,7 +612,7 @@ func classifySteerRejection(
 // recordSteer writes the guidance onto the turn that took it.
 //
 // It lands as an activity, not as a message, and the reason is structural rather
-// than semantic: a steer joins a turn that is already running, and AO's only durable
+// than semantic: a steer joins a turn that is already running, and Open Agents's only durable
 // write that can attach to a turn in flight is the activity row. AppendUserMessage
 // opens a NEW turn — using it here would mint a second turn row that the drain loop
 // would later dispatch as its own turn, sending the user's correction twice. The row
@@ -621,7 +621,7 @@ func classifySteerRejection(
 // identified by their discriminator instead of by the general `system` kind.
 //
 // The provider's own echo is not the record. It replays the guidance as a
-// `userMessage` item on the turn, but the driver drops those: AO records what the
+// `userMessage` item on the turn, but the driver drops those: Open Agents records what the
 // user said when it accepts the request, and re-emitting the echo would show it
 // twice.
 func (c *Controller) recordSteer(
@@ -673,7 +673,7 @@ func makeSteerActivity(
 		Detail:  encoded,
 		// A synthetic item key, so a client retrying with the same idempotency
 		// handle updates this row instead of adding a second one. Prefixed because
-		// this id is AO's, not the provider's, and the two share a column.
+		// this id is Open Agents's, not the provider's, and the two share a column.
 		ProviderItemID: steerItemID(msg.ClientMessageID),
 	}, nil
 }

@@ -14,7 +14,7 @@ import type { Floor } from "./storeUpdate";
 
 export const VERSION_FLOOR: Floor = {
 	/** Below this the update stops being optional — see the interlock in `tierOf`. */
-	min: process.env.EXPO_PUBLIC_AO_MIN_APP_VERSION ?? "",
+	min: process.env.EXPO_PUBLIC_OPEN_AGENTS_MIN_APP_VERSION ?? "",
 	/** Below this we mention it once a day. The only lever iOS has before listing. */
-	latest: process.env.EXPO_PUBLIC_AO_LATEST_APP_VERSION ?? "",
+	latest: process.env.EXPO_PUBLIC_OPEN_AGENTS_LATEST_APP_VERSION ?? "",
 };

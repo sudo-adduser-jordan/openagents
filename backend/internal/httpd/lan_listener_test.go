@@ -11,11 +11,11 @@ import (
 
 	"github.com/go-chi/chi/v5"
 
-	"github.com/aoagents/agent-orchestrator/backend/internal/domain"
-	"github.com/aoagents/agent-orchestrator/backend/internal/httpd/controllers"
-	"github.com/aoagents/agent-orchestrator/backend/internal/mobilebridge"
-	"github.com/aoagents/agent-orchestrator/backend/internal/ports"
-	agentsvc "github.com/aoagents/agent-orchestrator/backend/internal/service/agent"
+	"github.com/sudo-adduser-jordan/open-agents/backend/internal/domain"
+	"github.com/sudo-adduser-jordan/open-agents/backend/internal/httpd/controllers"
+	"github.com/sudo-adduser-jordan/open-agents/backend/internal/mobilebridge"
+	"github.com/sudo-adduser-jordan/open-agents/backend/internal/ports"
+	agentsvc "github.com/sudo-adduser-jordan/open-agents/backend/internal/service/agent"
 )
 
 func TestLANManagerAuthGatesSharedHandler(t *testing.T) {
@@ -75,9 +75,9 @@ func TestLANManagerBlocksLoopbackOnlyControlRoutes(t *testing.T) {
 		"/api/v1/mobile/devices/i1",
 		"/api/v1/dev/import-projects",
 		"/api/v1/browser/status",
-		"/api/v1/desktop/sessions/ao-1/workspace",
+		"/api/v1/desktop/sessions/open-agents-1/workspace",
 		"/api/v1/system/install/tmux",
-		"/api/v1/sessions/ao-1/preview/server",
+		"/api/v1/sessions/open-agents-1/preview/server",
 	}
 	for _, path := range blocked {
 		req, _ := http.NewRequest(http.MethodGet, fmt.Sprintf("http://127.0.0.1:%d%s", port, path), nil)

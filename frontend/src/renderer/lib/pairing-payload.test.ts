@@ -41,20 +41,20 @@ describe("pairingCodeUrl", () => {
 	// scanned https link must not put the connection token into web logs or a
 	// referrer header.
 	it("puts the payload in the fragment, not the query", () => {
-		const url = pairingCodeUrl(buildPairingOffer(base), "https://aoagents.dev/pair");
+		const url = pairingCodeUrl(buildPairingOffer(base), "https://api.aoagents.dev/pair");
 
-		expect(url.split("#")[0]).toBe("https://aoagents.dev/pair");
+		expect(url.split("#")[0]).toBe("https://api.aoagents.dev/pair");
 		expect(url.split("#")[0]).not.toContain("pw-123");
 	});
 
 	it("survives a round trip back to the original offer", () => {
 		const offer = buildPairingOffer(base);
-		expect(decodeFragment(pairingCodeUrl(offer, "aomobile://pair"))).toEqual(offer);
+		expect(decodeFragment(pairingCodeUrl(offer, "open-agents-mobile://pair"))).toEqual(offer);
 	});
 
 	// Padding is stripped to keep the QR small; the phone restores it.
 	it("emits unpadded base64url so the QR stays small", () => {
-		const code = pairingCodeUrl(buildPairingOffer(base), "aomobile://pair").split("#")[1];
+		const code = pairingCodeUrl(buildPairingOffer(base), "open-agents-mobile://pair").split("#")[1];
 
 		expect(code).not.toContain("=");
 		expect(code).not.toContain("+");

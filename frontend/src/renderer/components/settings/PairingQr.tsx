@@ -18,7 +18,7 @@ export const QR_RESOLVE_MS = 260;
 /** One pass through the decoy stack. Unhurried on purpose: a fast shuffle
  *  reads as a glitch, a slow one as something being worked out.
  *
- *  MUST match the ao-qr-decoy animation duration in styles.css — the per-layer
+ *  MUST match the open-agents-qr-decoy animation duration in styles.css — the per-layer
  *  delays below are phase offsets within this cycle, and they only produce the
  *  intended overlap if both agree. */
 export const QR_SCRAMBLE_CYCLE_MS = 4800;
@@ -77,12 +77,12 @@ export const PairingQr = memo(function PairingQr({
 			    and shrank the modules for nothing. */}
 			<div className="relative aspect-square w-full overflow-hidden rounded-md bg-white">
 				{/* Drifts only while waiting: a code being scanned must hold still. */}
-				<div className={cn("absolute inset-0", !resolved && "ao-qr-drift")}>
+				<div className={cn("absolute inset-0", !resolved && "open-agents-qr-drift")}>
 					{scrambling &&
 						decoys.map((code, i) => (
 							<div
 								key={code}
-								className={cn("ao-qr-decoy absolute inset-0", resolved && "ao-qr-decoy--settling")}
+								className={cn("open-agents-qr-decoy absolute inset-0", resolved && "open-agents-qr-decoy--settling")}
 								style={
 									resolved
 										? undefined
@@ -90,20 +90,20 @@ export const PairingQr = memo(function PairingQr({
 								}
 								aria-hidden="true"
 							>
-								<StyledQRCode value={code} size={size} className="ao-qr-visual block size-full [&_svg]:size-full" />
+								<StyledQRCode value={code} size={size} className="open-agents-qr-visual block size-full [&_svg]:size-full" />
 							</div>
 						))}
 					{value && (
 						<div
 							key={value}
-							className="ao-qr-resolved absolute inset-0"
+							className="open-agents-qr-resolved absolute inset-0"
 							style={{ animationDuration: `${QR_RESOLVE_MS}ms` }}
 						>
 							<StyledQRCode
 								value={value}
 								data-qr-value={value}
 								size={size}
-											className="ao-qr-visual block size-full [&_svg]:size-full"
+											className="open-agents-qr-visual block size-full [&_svg]:size-full"
 							/>
 						</div>
 					)}

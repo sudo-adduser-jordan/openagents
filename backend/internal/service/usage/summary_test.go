@@ -4,7 +4,7 @@ import (
 	"context"
 	"testing"
 
-	"github.com/aoagents/agent-orchestrator/backend/internal/domain"
+	"github.com/sudo-adduser-jordan/open-agents/backend/internal/domain"
 )
 
 type usageSummaryStoreStub struct {
@@ -123,4 +123,3 @@ func TestSummaryReaderGetReturnsUnavailableMetricsWithoutEvents(t *testing.T) {
 		t.Fatalf("empty usage = %+v", got)
 	}
 }
-

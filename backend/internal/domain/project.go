@@ -7,7 +7,7 @@ const (
 	ProjectKindSingleRepo ProjectKind = "single_repo"
 	// ProjectKindWorkspace is a parent root-as-repo plus child repositories.
 	ProjectKindWorkspace ProjectKind = "workspace"
-	// ProjectKindScratch is AO-managed plain-directory work for first-run use.
+	// ProjectKindScratch is Open Agents-managed plain-directory work for first-run use.
 	ProjectKindScratch ProjectKind = "scratch"
 	// RootWorkspaceRepoName is the reserved repo_name used for the parent root repo.
 	RootWorkspaceRepoName = "__root__"
@@ -33,7 +33,7 @@ type ProjectRecord struct {
 	RegisteredAt  time.Time
 	ArchivedAt    time.Time
 	Kind          ProjectKind
-	// Config holds the typed per-project configuration AO resolves at spawn. An
+	// Config holds the typed per-project configuration Open Agents resolves at spawn. An
 	// IsZero value means unset.
 	Config ProjectConfig
 }

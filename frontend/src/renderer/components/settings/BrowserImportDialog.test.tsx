@@ -1,8 +1,8 @@
 import { render, screen, waitFor } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { afterEach, describe, expect, it, vi } from "vitest";
-import type { AoBridge } from "../../../preload";
-import { aoBridge } from "../../lib/bridge";
+import type { OpenAgentsBridge } from "../../../preload";
+import { openAgentsBridge } from "../../lib/bridge";
 import { BrowserImportDialog } from "./BrowserImportDialog";
 import type { BrowserImportWarning } from "../../../shared/browser-profile-import";
 
@@ -40,20 +40,20 @@ const safariSource = {
 };
 
 describe("BrowserImportDialog", () => {
-	const originalBridge = aoBridge.browserProfiles;
+	const originalBridge = openAgentsBridge.browserProfiles;
 
 	afterEach(() => {
-		aoBridge.browserProfiles = originalBridge;
+		openAgentsBridge.browserProfiles = originalBridge;
 	});
 
-	it("guides a detected profile into a new AO profile and reports completion", async () => {
+	it("guides a detected profile into a new Open Agents profile and reports completion", async () => {
 		const importedProfile = {
 			id: "11111111-1111-4111-8111-111111111111",
 			name: "Google Chrome",
 			createdAt: "2026-01-01T00:00:00.000Z",
 			updatedAt: "2026-01-01T00:00:00.000Z",
 		};
-		const bridge: AoBridge["browserProfiles"] = {
+		const bridge: OpenAgentsBridge["browserProfiles"] = {
 			list: vi.fn(async () => ({ profiles: [] })),
 			create: vi.fn(),
 			rename: vi.fn(),
@@ -73,7 +73,7 @@ describe("BrowserImportDialog", () => {
 			})),
 			onImportProgress: vi.fn(() => () => undefined),
 		};
-		aoBridge.browserProfiles = bridge;
+		openAgentsBridge.browserProfiles = bridge;
 		const onImported = vi.fn();
 
 		render(<BrowserImportDialog onImported={onImported} onOpenChange={() => undefined} open />);
@@ -109,7 +109,7 @@ describe("BrowserImportDialog", () => {
 	});
 
 	it("clears a failed import when choosing another browser", async () => {
-		const bridge: AoBridge["browserProfiles"] = {
+		const bridge: OpenAgentsBridge["browserProfiles"] = {
 			list: vi.fn(async () => ({ profiles: [] })),
 			create: vi.fn(),
 			rename: vi.fn(),
@@ -119,7 +119,7 @@ describe("BrowserImportDialog", () => {
 			import: vi.fn(async () => { throw new Error("Firefox cookie data is unavailable."); }),
 			onImportProgress: vi.fn(() => () => undefined),
 		};
-		aoBridge.browserProfiles = bridge;
+		openAgentsBridge.browserProfiles = bridge;
 		const onImported = vi.fn();
 
 		render(<BrowserImportDialog onImported={onImported} onOpenChange={() => undefined} open />);
@@ -139,7 +139,7 @@ describe("BrowserImportDialog", () => {
 	});
 
 	it("reports an empty result without a success banner", async () => {
-		aoBridge.browserProfiles = {
+		openAgentsBridge.browserProfiles = {
 			...originalBridge,
 			discoverImportSources: vi.fn(async () => ({ sources: [source] })),
 			import: vi.fn(async () => ({ sourceName: source.name, entries: [] })),
@@ -162,7 +162,7 @@ describe("BrowserImportDialog", () => {
 			{ code: "isolated-cookies-skipped", count: 3 },
 			...(failure ? [{ code: "cookie-write-failed" as const, count: 1 }] : []),
 		];
-		aoBridge.browserProfiles = {
+		openAgentsBridge.browserProfiles = {
 			...originalBridge,
 			discoverImportSources: vi.fn(async () => ({ sources: [source] })),
 			import: vi.fn(async () => ({ sourceName: source.name, entries: [{
@@ -181,7 +181,7 @@ describe("BrowserImportDialog", () => {
 		expect(details).not.toHaveAttribute("open");
 		expect(details).toHaveTextContent("2 expired cookies were skipped.");
 		expect(details).toHaveTextContent("3 cookies tied to isolated browser contexts");
-		if (failure) expect(screen.getByText("AO could not write 1 cookies to the new profile.").closest("details")).toBeNull();
+		if (failure) expect(screen.getByText("Open Agents could not write 1 cookies to the new profile.").closest("details")).toBeNull();
 		await userEvent.click(summary);
 		expect(details).toHaveAttribute("open");
 		expect(details).toHaveTextContent("Some sites may ask you to sign in again.");
@@ -189,7 +189,7 @@ describe("BrowserImportDialog", () => {
 
 	it("preserves an import failure across translation updates", async () => {
 		const discover = vi.fn(async () => ({ sources: [source] }));
-		aoBridge.browserProfiles = {
+		openAgentsBridge.browserProfiles = {
 			...originalBridge,
 			discoverImportSources: discover,
 			import: vi.fn(async () => { throw new Error("Import failed; please retry."); }),
@@ -208,7 +208,7 @@ describe("BrowserImportDialog", () => {
 
 	it("explains how to recover when a source browser database cannot be opened", async () => {
 		const braveSource = { ...source, name: "Brave" };
-		const bridge: AoBridge["browserProfiles"] = {
+		const bridge: OpenAgentsBridge["browserProfiles"] = {
 			list: vi.fn(async () => ({ profiles: [] })),
 			create: vi.fn(),
 			rename: vi.fn(),
@@ -220,21 +220,21 @@ describe("BrowserImportDialog", () => {
 			}),
 			onImportProgress: vi.fn(() => () => undefined),
 		};
-		aoBridge.browserProfiles = bridge;
+		openAgentsBridge.browserProfiles = bridge;
 
 		render(<BrowserImportDialog onImported={() => undefined} onOpenChange={() => undefined} open />);
 		await screen.findByText("Brave");
 		await userEvent.click(screen.getByRole("button", { name: "Start import" }));
 
 		const alert = await screen.findByRole("alert");
-		expect(alert).toHaveTextContent("AO couldn't access Brave's profile database");
+		expect(alert).toHaveTextContent("Open Agents couldn't access Brave's profile database");
 		expect(alert).toHaveTextContent("Fully close Brave, including background processes, then try again");
 		expect(alert).toHaveTextContent("Encrypted cookies are handled separately");
 		expect(alert).not.toHaveTextContent("Error invoking remote method");
 	});
 
 	it("points Safari users to Full Disk Access when macOS blocks its data", async () => {
-		const bridge: AoBridge["browserProfiles"] = {
+		const bridge: OpenAgentsBridge["browserProfiles"] = {
 			list: vi.fn(async () => ({ profiles: [] })),
 			create: vi.fn(),
 			rename: vi.fn(),
@@ -244,19 +244,19 @@ describe("BrowserImportDialog", () => {
 			import: vi.fn(async () => { throw new Error("EPERM: operation not permitted"); }),
 			onImportProgress: vi.fn(() => () => undefined),
 		};
-		aoBridge.browserProfiles = bridge;
+		openAgentsBridge.browserProfiles = bridge;
 
 		render(<BrowserImportDialog onImported={() => undefined} onOpenChange={() => undefined} open />);
 		await screen.findByText("Safari");
 		await userEvent.click(screen.getByRole("button", { name: "Start import" }));
 
 		expect(await screen.findByRole("alert")).toHaveTextContent(
-			"Privacy & Security > Full Disk Access, allow AO, then restart AO",
+			"Privacy & Security > Full Disk Access, allow Open Agents, then restart Open Agents",
 		);
 	});
 
 	it("keeps discovery failures visible and disables import", async () => {
-		const bridge: AoBridge["browserProfiles"] = {
+		const bridge: OpenAgentsBridge["browserProfiles"] = {
 			list: vi.fn(async () => ({ profiles: [] })),
 			create: vi.fn(),
 			rename: vi.fn(),
@@ -266,7 +266,7 @@ describe("BrowserImportDialog", () => {
 			import: vi.fn(),
 			onImportProgress: vi.fn(() => () => undefined),
 		};
-		aoBridge.browserProfiles = bridge;
+		openAgentsBridge.browserProfiles = bridge;
 
 		render(<BrowserImportDialog onImported={() => undefined} onOpenChange={() => undefined} open />);
 		expect(await screen.findByRole("alert")).toHaveTextContent("Browser discovery failed.");

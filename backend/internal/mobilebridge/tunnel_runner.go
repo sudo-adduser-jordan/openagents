@@ -10,7 +10,7 @@ import (
 	"net"
 	"time"
 
-	aoprocess "github.com/aoagents/agent-orchestrator/backend/internal/process"
+	openagentsprocess "github.com/sudo-adduser-jordan/open-agents/backend/internal/process"
 )
 
 // TunnelRunner supervises one managed cloudflared connector: spawn, stream its
@@ -70,7 +70,7 @@ func (t *TunnelRunner) runOnce(ctx context.Context) error {
 		return fmt.Errorf("reserve metrics port: %w", err)
 	}
 
-	cmd := aoprocess.CommandContext(ctx, t.Binary, CloudflaredArgs(t.LocalPort, metricsPort)...)
+	cmd := openagentsprocess.CommandContext(ctx, t.Binary, CloudflaredArgs(t.LocalPort, metricsPort)...)
 	// cloudflared logs to stderr; the hostname is only available there.
 	stderr, err := cmd.StderrPipe()
 	if err != nil {

@@ -345,7 +345,7 @@ Expected: exit 0.
 
 - [ ] **Step 3: Restart the real Electron checkout**
 
-Use the `ao-desktop-dev` workflow. Because this task changes renderer code only, hot reload may apply, but restart the existing checkout-scoped Forge process if dependency optimization or stale renderer state obscures the result. Confirm renderer `http://localhost:5173`, daemon `127.0.0.1:3002`, and successful session/file API traffic.
+Use the `open-agents-desktop-dev` workflow. Because this task changes renderer code only, hot reload may apply, but restart the existing checkout-scoped Forge process if dependency optimization or stale renderer state obscures the result. Confirm renderer `http://localhost:5173`, daemon `127.0.0.1:3002`, and successful session/file API traffic.
 
 - [ ] **Step 4: Exercise the native flow**
 

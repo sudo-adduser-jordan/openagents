@@ -9,10 +9,10 @@ import (
 	"strings"
 	"time"
 
-	workeragent "github.com/aoagents/agent-orchestrator/backend/internal/adapters/agent/opencode"
-	"github.com/aoagents/agent-orchestrator/backend/internal/adapters/reviewer/agentrestore"
-	"github.com/aoagents/agent-orchestrator/backend/internal/domain"
-	"github.com/aoagents/agent-orchestrator/backend/internal/ports"
+	workeragent "github.com/sudo-adduser-jordan/open-agents/backend/internal/adapters/agent/opencode"
+	"github.com/sudo-adduser-jordan/open-agents/backend/internal/adapters/reviewer/agentrestore"
+	"github.com/sudo-adduser-jordan/open-agents/backend/internal/domain"
+	"github.com/sudo-adduser-jordan/open-agents/backend/internal/ports"
 )
 
 // Reviewer is the opencode code-review adapter.
@@ -37,7 +37,7 @@ var _ ports.ReviewerRestorer = (*Reviewer)(nil)
 // ReviewCommand launches the reviewer with an inline permission policy that
 // permits inspection and the two reporting commands while denying edits and
 // every other tool. Production launches provide the system role through an
-// AO-owned prompt file; direct callers without one retain the inline fallback.
+// Open Agents-owned prompt file; direct callers without one retain the inline fallback.
 func (r *Reviewer) ReviewCommand(ctx context.Context, inv ports.ReviewInvocation) (ports.ReviewCommandSpec, error) {
 	prompt := inv.Prompt
 	if inv.SystemPromptFile == "" {
@@ -65,7 +65,7 @@ func (r *Reviewer) ReviewCommand(ctx context.Context, inv ports.ReviewInvocation
 }
 
 // buildReviewerConfig keeps OpenCode read-only while allowing it to read the
-// AO-owned task prompts outside the worker checkout. The exception is scoped
+// Open Agents-owned task prompts outside the worker checkout. The exception is scoped
 // to the stable reviewer prompt root so a long-lived process can read future
 // request-scoped tasks; every other external path remains denied.
 func buildReviewerConfig(taskPromptRoot string) (string, error) {
@@ -75,15 +75,15 @@ func buildReviewerConfig(taskPromptRoot string) (string, error) {
 		"glob": "allow",
 		"grep": "allow",
 		"bash": map[string]string{
-			"*":                             "deny",
-			"gh api *":                      "allow",
-			"git diff*":                     "allow",
-			"git log*":                      "allow",
-			"git show*":                     "allow",
-			"git status*":                   "allow",
-			"ao review submit *":            "allow",
-			"printf * | gh api *":           "allow",
-			"printf * | ao review submit *": "allow",
+			"*":                                      "deny",
+			"gh api *":                               "allow",
+			"git diff*":                              "allow",
+			"git log*":                               "allow",
+			"git show*":                              "allow",
+			"git status*":                            "allow",
+			"open-agents review submit *":            "allow",
+			"printf * | gh api *":                    "allow",
+			"printf * | open-agents review submit *": "allow",
 		},
 	}
 	if taskPromptRoot != "" {

@@ -15,7 +15,7 @@ import (
 	"testing"
 	"time"
 
-	"github.com/aoagents/agent-orchestrator/backend/internal/adapters/agent/registry"
+	"github.com/sudo-adduser-jordan/open-agents/backend/internal/adapters/agent/registry"
 )
 
 func TestDoctorChecksGitVersion(t *testing.T) {
@@ -57,7 +57,7 @@ func TestDoctorFailsWhenGitMissing(t *testing.T) {
 
 func TestDoctorChecksTmuxVersion(t *testing.T) {
 	if runtime.GOOS == "windows" {
-		t.Skip("ao doctor emits a conpty check on Windows, not tmux")
+		t.Skip("open-agents doctor emits a conpty check on Windows, not tmux")
 	}
 	setConfigEnv(t)
 	c := doctorContext(t, map[string]string{"git": "/bin/git", "tmux": "/bin/tmux"}, func(_ context.Context, name string, args ...string) ([]byte, error) {
@@ -76,14 +76,14 @@ func TestDoctorChecksTmuxVersion(t *testing.T) {
 	})
 
 	check := findDoctorCheck(t, c.runDoctor(context.Background()), "tmux")
-	if check.Level != doctorPass || !strings.Contains(check.Message, "3.3a") || !strings.Contains(check.Message, "system for this ao process") {
+	if check.Level != doctorPass || !strings.Contains(check.Message, "3.3a") || !strings.Contains(check.Message, "system for this open-agents process") {
 		t.Fatalf("tmux check = %+v, want PASS with system source and version", check)
 	}
 }
 
 func TestDoctorPrefersAndReportsConfiguredTmux(t *testing.T) {
 	if runtime.GOOS == "windows" {
-		t.Skip("ao doctor emits a conpty check on Windows, not tmux")
+		t.Skip("open-agents doctor emits a conpty check on Windows, not tmux")
 	}
 	setConfigEnv(t)
 	bundled := filepath.Join(t.TempDir(), "resources", "tmux", "bin", "tmux")
@@ -101,10 +101,10 @@ func TestDoctorPrefersAndReportsConfiguredTmux(t *testing.T) {
 			return nil, nil
 		}
 	})
-	t.Setenv("AO_TMUX_BINARY", bundled)
+	t.Setenv("OPEN_AGENTS_TMUX_BINARY", bundled)
 
 	check := findDoctorCheck(t, c.runDoctor(context.Background()), "tmux")
-	if check.Level != doctorPass || !strings.Contains(check.Message, bundled) || !strings.Contains(check.Message, "configured for this ao process") || !strings.Contains(check.Message, "3.5a") {
+	if check.Level != doctorPass || !strings.Contains(check.Message, bundled) || !strings.Contains(check.Message, "configured for this open-agents process") || !strings.Contains(check.Message, "3.5a") {
 		t.Fatalf("tmux check = %+v, want PASS with configured source and version", check)
 	}
 }
@@ -113,7 +113,7 @@ func TestDoctorPrefersAndReportsConfiguredTmux(t *testing.T) {
 // but the version command fails.
 func TestDoctorChecksTmuxVersionFailsOnError(t *testing.T) {
 	if runtime.GOOS == "windows" {
-		t.Skip("ao doctor emits a conpty check on Windows, not tmux")
+		t.Skip("open-agents doctor emits a conpty check on Windows, not tmux")
 	}
 	setConfigEnv(t)
 	c := doctorContext(t, map[string]string{"git": "/bin/git", "tmux": "/bin/tmux"}, func(_ context.Context, name string, _ ...string) ([]byte, error) {
@@ -131,7 +131,7 @@ func TestDoctorChecksTmuxVersionFailsOnError(t *testing.T) {
 
 func TestDoctorWarnsWhenTmuxMissing(t *testing.T) {
 	if runtime.GOOS == "windows" {
-		t.Skip("ao doctor emits a conpty check on Windows, not tmux")
+		t.Skip("open-agents doctor emits a conpty check on Windows, not tmux")
 	}
 	setConfigEnv(t)
 	c := doctorContext(t, map[string]string{"git": "/bin/git"}, func(context.Context, string, ...string) ([]byte, error) {
@@ -180,12 +180,12 @@ func TestDoctorChecksGitHubTokenFromEnv(t *testing.T) {
 	c := doctorContext(t, map[string]string{"git": "/bin/git"}, func(context.Context, string, ...string) ([]byte, error) {
 		return []byte("git version 2.43.0\n"), nil
 	})
-	t.Setenv("AO_GITHUB_TOKEN", "env-token")
+	t.Setenv("OPEN_AGENTS_GITHUB_TOKEN", "env-token")
 	c.deps.HTTPClient = srv.Client()
 	c.deps.DoctorGitHubRESTBase = srv.URL
 
 	check := findDoctorCheck(t, c.runDoctor(context.Background()), "github-token")
-	if check.Level != doctorPass || !strings.Contains(check.Message, "AO_GITHUB_TOKEN") || !strings.Contains(check.Message, "repo, read:org") {
+	if check.Level != doctorPass || !strings.Contains(check.Message, "OPEN_AGENTS_GITHUB_TOKEN") || !strings.Contains(check.Message, "repo, read:org") {
 		t.Fatalf("github-token check = %+v, want PASS with source and scopes", check)
 	}
 }
@@ -245,12 +245,12 @@ func TestDoctorChecksGitLabTokenFromEnv(t *testing.T) {
 	c := doctorContext(t, map[string]string{"git": "/bin/git"}, func(context.Context, string, ...string) ([]byte, error) {
 		return []byte("git version 2.43.0\n"), nil
 	})
-	t.Setenv("AO_GITLAB_TOKEN", "env-token")
+	t.Setenv("OPEN_AGENTS_GITLAB_TOKEN", "env-token")
 	c.deps.HTTPClient = srv.Client()
 	c.deps.DoctorGitLabRESTBase = srv.URL
 
 	check := findDoctorCheck(t, c.runDoctor(context.Background()), "gitlab-token")
-	if check.Level != doctorPass || !strings.Contains(check.Message, "AO_GITLAB_TOKEN") || !strings.Contains(check.Message, "gitlab-user") {
+	if check.Level != doctorPass || !strings.Contains(check.Message, "OPEN_AGENTS_GITLAB_TOKEN") || !strings.Contains(check.Message, "gitlab-user") {
 		t.Fatalf("gitlab-token check = %+v, want PASS with source and username", check)
 	}
 }
@@ -465,25 +465,25 @@ func TestDoctorNewVersionedHarnessPassesWithVersion(t *testing.T) {
 
 func clearDoctorGitHubEnv(t *testing.T) {
 	t.Helper()
-	t.Setenv("AO_GITHUB_TOKEN", "")
+	t.Setenv("OPEN_AGENTS_GITHUB_TOKEN", "")
 	t.Setenv("GITHUB_TOKEN", "")
 	t.Setenv("GH_TOKEN", "")
 }
 
 func clearDoctorGitLabEnv(t *testing.T) {
 	t.Helper()
-	t.Setenv("AO_GITLAB_TOKEN", "")
+	t.Setenv("OPEN_AGENTS_GITLAB_TOKEN", "")
 	t.Setenv("GITLAB_TOKEN", "")
 }
 
-// TestDoctorChecksAOBinaryIdentity covers the `ao-binary` check: workspace
-// hooks invoke a bare `ao hooks <agent> <event>`, so doctor must surface when
-// the `ao` on PATH is not the running binary (e.g. a legacy CLI without the
+// TestDoctorChecksOpenAgentsBinaryIdentity covers the `open-agents-binary` check: workspace
+// hooks invoke a bare `open-agents hooks <agent> <event>`, so doctor must surface when
+// the `open-agents` on PATH is not the running binary (e.g. a legacy CLI without the
 // hooks command shadowing the Go one).
-func TestDoctorChecksAOBinaryIdentity(t *testing.T) {
+func TestDoctorChecksOpenAgentsBinaryIdentity(t *testing.T) {
 	dir := t.TempDir()
-	self := filepath.Join(dir, "ao")
-	other := filepath.Join(dir, "ao-legacy")
+	self := filepath.Join(dir, "open-agents")
+	other := filepath.Join(dir, "open-agents-legacy")
 	for _, p := range []string{self, other} {
 		if err := os.WriteFile(p, []byte("#!/bin/sh\n"), 0o755); err != nil { //nolint:gosec // test fixture must be executable-shaped
 			t.Fatal(err)
@@ -491,7 +491,7 @@ func TestDoctorChecksAOBinaryIdentity(t *testing.T) {
 	}
 	selfExe := func() (string, error) { return self, nil }
 
-	daemon := filepath.Join(dir, "ao-bundled")
+	daemon := filepath.Join(dir, "open-agents-bundled")
 	if err := os.WriteFile(daemon, []byte("#!/bin/sh\n"), 0o755); err != nil { //nolint:gosec // test fixture must be executable-shaped
 		t.Fatal(err)
 	}
@@ -504,16 +504,16 @@ func TestDoctorChecksAOBinaryIdentity(t *testing.T) {
 		wantLevel  doctorLevel
 		wantIn     string
 	}{
-		{"ao in PATH is this binary", selfExe, "", map[string]string{"ao": self}, doctorPass, "this binary"},
-		{"ao in PATH is a different binary", selfExe, "", map[string]string{"ao": other}, doctorWarn, "not this binary"},
-		{"ao missing from PATH", selfExe, "", map[string]string{}, doctorWarn, "not found in PATH"},
-		{"running executable unresolvable", func() (string, error) { return "", errors.New("no exe") }, "", map[string]string{"ao": self}, doctorWarn, "could not resolve"},
+		{"open-agents in PATH is this binary", selfExe, "", map[string]string{"open-agents": self}, doctorPass, "this binary"},
+		{"open-agents in PATH is a different binary", selfExe, "", map[string]string{"open-agents": other}, doctorWarn, "not this binary"},
+		{"open-agents missing from PATH", selfExe, "", map[string]string{}, doctorWarn, "not found in PATH"},
+		{"running executable unresolvable", func() (string, error) { return "", errors.New("no exe") }, "", map[string]string{"open-agents": self}, doctorWarn, "could not resolve"},
 		// The running daemon is the authority: doctor may itself BE the
 		// shadowing copy, so comparing against its own executable would call
 		// the shadow a match. Both paths must be named in the warning.
-		{"ao in PATH shadows the running daemon", selfExe, daemon, map[string]string{"ao": self}, doctorWarn, "shadows the running daemon's binary " + daemon},
-		{"ao in PATH is the running daemon's binary", selfExe, daemon, map[string]string{"ao": daemon}, doctorPass, "the running daemon's binary"},
-		{"daemon binary resolves even when doctor's own does not", func() (string, error) { return "", errors.New("no exe") }, daemon, map[string]string{"ao": daemon}, doctorPass, "the running daemon's binary"},
+		{"open-agents in PATH shadows the running daemon", selfExe, daemon, map[string]string{"open-agents": self}, doctorWarn, "shadows the running daemon's binary " + daemon},
+		{"open-agents in PATH is the running daemon's binary", selfExe, daemon, map[string]string{"open-agents": daemon}, doctorPass, "the running daemon's binary"},
+		{"daemon binary resolves even when doctor's own does not", func() (string, error) { return "", errors.New("no exe") }, daemon, map[string]string{"open-agents": daemon}, doctorPass, "the running daemon's binary"},
 	}
 	for _, tc := range cases {
 		t.Run(tc.name, func(t *testing.T) {
@@ -529,32 +529,32 @@ func TestDoctorChecksAOBinaryIdentity(t *testing.T) {
 				ProcessAlive: func(int) bool { return false },
 			}
 			c := &commandContext{deps: deps.withDefaults()}
-			check := c.checkAOBinary(tc.daemonExe)
+			check := c.checkOpenAgentsBinary(tc.daemonExe)
 			if check.Level != tc.wantLevel || !strings.Contains(check.Message, tc.wantIn) {
-				t.Fatalf("ao-binary check = %+v, want level %s with %q", check, tc.wantLevel, tc.wantIn)
+				t.Fatalf("open-agents-binary check = %+v, want level %s with %q", check, tc.wantLevel, tc.wantIn)
 			}
 		})
 	}
 }
 
-// TestDoctorIncludesAOBinaryCheck asserts runDoctor actually surfaces the
-// ao-binary check, so the identity probe cannot silently fall out of the report.
-func TestDoctorIncludesAOBinaryCheck(t *testing.T) {
+// TestDoctorIncludesOpenAgentsBinaryCheck asserts runDoctor actually surfaces the
+// open-agents-binary check, so the identity probe cannot silently fall out of the report.
+func TestDoctorIncludesOpenAgentsBinaryCheck(t *testing.T) {
 	setConfigEnv(t)
 	c := doctorContext(t, map[string]string{"git": "/bin/git"}, func(context.Context, string, ...string) ([]byte, error) {
 		return []byte("git version 2.43.0\n"), nil
 	})
 
-	// doctorContext's LookPath has no "ao", so the check lands as a WARN.
-	check := findDoctorCheck(t, c.runDoctor(context.Background()), "ao-binary")
+	// doctorContext's LookPath has no "open-agents", so the check lands as a WARN.
+	check := findDoctorCheck(t, c.runDoctor(context.Background()), "open-agents-binary")
 	if check.Level != doctorWarn || !strings.Contains(check.Message, "not found in PATH") {
-		t.Fatalf("ao-binary check = %+v, want WARN for missing ao", check)
+		t.Fatalf("open-agents-binary check = %+v, want WARN for missing open-agents", check)
 	}
 }
 
 func doctorContext(t *testing.T, paths map[string]string, commandOutput func(context.Context, string, ...string) ([]byte, error)) *commandContext {
 	t.Helper()
-	t.Setenv("AO_TMUX_BINARY", "")
+	t.Setenv("OPEN_AGENTS_TMUX_BINARY", "")
 	clearDoctorGitHubEnv(t)
 	clearDoctorGitLabEnv(t)
 	deps := Deps{
@@ -619,8 +619,8 @@ func TestDoctorHooksLogStates(t *testing.T) {
 	t.Run("recent failures warn", func(t *testing.T) {
 		cfg := setConfigEnv(t)
 		writeHooksLogLines(t, cfg.dataDir,
-			time.Now().Add(-48*time.Hour).UTC().Format(time.RFC3339)+" session=old ao hooks opencode stop: stale",
-			time.Now().Add(-time.Hour).UTC().Format(time.RFC3339)+" session=mer-1 ao hooks opencode stop: connection refused",
+			time.Now().Add(-48*time.Hour).UTC().Format(time.RFC3339)+" session=old open-agents hooks opencode stop: stale",
+			time.Now().Add(-time.Hour).UTC().Format(time.RFC3339)+" session=mer-1 open-agents hooks opencode stop: connection refused",
 		)
 		c := doctorContext(t, map[string]string{"git": "/bin/git"}, gitOnly)
 		check := findDoctorCheck(t, c.runDoctor(context.Background()), "hooks-log")
@@ -632,7 +632,7 @@ func TestDoctorHooksLogStates(t *testing.T) {
 	t.Run("only stale failures pass", func(t *testing.T) {
 		cfg := setConfigEnv(t)
 		writeHooksLogLines(t, cfg.dataDir,
-			time.Now().Add(-72*time.Hour).UTC().Format(time.RFC3339)+" session=old ao hooks opencode stop: stale",
+			time.Now().Add(-72*time.Hour).UTC().Format(time.RFC3339)+" session=old open-agents hooks opencode stop: stale",
 		)
 		c := doctorContext(t, map[string]string{"git": "/bin/git"}, gitOnly)
 		check := findDoctorCheck(t, c.runDoctor(context.Background()), "hooks-log")

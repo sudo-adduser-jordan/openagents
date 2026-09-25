@@ -12,17 +12,17 @@ import (
 	"testing"
 	"time"
 
-	"github.com/aoagents/agent-orchestrator/backend/internal/adapters"
-	"github.com/aoagents/agent-orchestrator/backend/internal/adapters/runtime/runtimeselect"
-	"github.com/aoagents/agent-orchestrator/backend/internal/adapters/runtime/tmux"
-	"github.com/aoagents/agent-orchestrator/backend/internal/cdc"
-	"github.com/aoagents/agent-orchestrator/backend/internal/config"
-	"github.com/aoagents/agent-orchestrator/backend/internal/domain"
-	"github.com/aoagents/agent-orchestrator/backend/internal/lifecycle"
-	"github.com/aoagents/agent-orchestrator/backend/internal/ports"
-	"github.com/aoagents/agent-orchestrator/backend/internal/service/systeminstall"
-	sessionmanager "github.com/aoagents/agent-orchestrator/backend/internal/session_manager"
-	"github.com/aoagents/agent-orchestrator/backend/internal/storage/sqlite/sqlitetest"
+	"github.com/sudo-adduser-jordan/open-agents/backend/internal/adapters"
+	"github.com/sudo-adduser-jordan/open-agents/backend/internal/adapters/runtime/runtimeselect"
+	"github.com/sudo-adduser-jordan/open-agents/backend/internal/adapters/runtime/tmux"
+	"github.com/sudo-adduser-jordan/open-agents/backend/internal/cdc"
+	"github.com/sudo-adduser-jordan/open-agents/backend/internal/config"
+	"github.com/sudo-adduser-jordan/open-agents/backend/internal/domain"
+	"github.com/sudo-adduser-jordan/open-agents/backend/internal/lifecycle"
+	"github.com/sudo-adduser-jordan/open-agents/backend/internal/ports"
+	"github.com/sudo-adduser-jordan/open-agents/backend/internal/service/systeminstall"
+	sessionmanager "github.com/sudo-adduser-jordan/open-agents/backend/internal/session_manager"
+	"github.com/sudo-adduser-jordan/open-agents/backend/internal/storage/sqlite/sqlitetest"
 )
 
 type wiringReadinessProvider struct {
@@ -411,11 +411,11 @@ func TestWiring_StartSessionSpawnsScratchWithoutGitRepo(t *testing.T) {
 // must tolerate a true-nil ports.Tracker so Spawn's issue-context guard fires
 // instead of dereferencing a typed-nil *github.Tracker. The pre-fix wiring
 // assigned the typed-nil return of newGitHubTracker directly, and
-// `ao spawn --issue` panicked on the first lookup. The multi-tracker is now
+// `open-agents spawn --issue` panicked on the first lookup. The multi-tracker is now
 // built once in Run and passed in (see newMultiTracker); this test exercises
 // the service-side nil-guard directly.
 func TestStartSession_SpawnDoesNotPanicWhenNoTrackerToken(t *testing.T) {
-	t.Setenv("AO_GITHUB_TOKEN", "")
+	t.Setenv("OPEN_AGENTS_GITHUB_TOKEN", "")
 	t.Setenv("GITHUB_TOKEN", "")
 
 	ctx := context.Background()
@@ -493,20 +493,20 @@ func TestStartTrackerIntake_RunsEvenWithoutEnabledProjects(t *testing.T) {
 	}
 }
 
-func TestGhTokenSourcePrefersAOGitHubToken(t *testing.T) {
-	t.Setenv("AO_GITHUB_TOKEN", "ao-token")
+func TestGhTokenSourcePrefersOpenAgentsGitHubToken(t *testing.T) {
+	t.Setenv("OPEN_AGENTS_GITHUB_TOKEN", "open-agents-token")
 	t.Setenv("GITHUB_TOKEN", "github-token")
 	token, err := (&ghTokenSource{}).Token(context.Background())
 	if err != nil {
 		t.Fatal(err)
 	}
-	if token != "ao-token" {
-		t.Fatalf("token = %q, want AO_GITHUB_TOKEN", token)
+	if token != "open-agents-token" {
+		t.Fatalf("token = %q, want OPEN_AGENTS_GITHUB_TOKEN", token)
 	}
 }
 
 func TestGhTokenSourceFallsBackToGITHUBToken(t *testing.T) {
-	t.Setenv("AO_GITHUB_TOKEN", "")
+	t.Setenv("OPEN_AGENTS_GITHUB_TOKEN", "")
 	t.Setenv("GITHUB_TOKEN", "github-token")
 	token, err := (&ghTokenSource{}).Token(context.Background())
 	if err != nil {
@@ -528,7 +528,7 @@ func (c *captureRuntimeSender) SendMessage(_ context.Context, handle ports.Runti
 	return nil
 }
 
-// TestWiring_SessionMessengerSendsToRuntimePane asserts the daemon wires ao
+// TestWiring_SessionMessengerSendsToRuntimePane asserts the daemon wires open-agents
 // send to the live runtime pane and resolves the handle from the shared store.
 func TestWiring_SessionMessengerSendsToRuntimePane(t *testing.T) {
 	store, err := sqlitetest.Open(t.TempDir())
@@ -547,7 +547,7 @@ func TestWiring_SessionMessengerSendsToRuntimePane(t *testing.T) {
 	rec, err := store.CreateSession(ctx, domain.SessionRecord{
 		ProjectID: "p", Kind: domain.KindWorker,
 		Activity: domain.Activity{State: domain.ActivityIdle, LastActivityAt: time.Now()},
-		Metadata: domain.SessionMetadata{RuntimeHandleID: "ao-1/terminal_0"},
+		Metadata: domain.SessionMetadata{RuntimeHandleID: "open-agents-1/terminal_0"},
 	})
 	if err != nil {
 		t.Fatal(err)
@@ -555,8 +555,8 @@ func TestWiring_SessionMessengerSendsToRuntimePane(t *testing.T) {
 	if err := messenger.Send(ctx, rec.ID, "hello agent"); err != nil {
 		t.Fatalf("messenger.Send: %v", err)
 	}
-	if runtime.handle.ID != "ao-1/terminal_0" {
-		t.Fatalf("handle = %q, want ao-1/terminal_0", runtime.handle.ID)
+	if runtime.handle.ID != "open-agents-1/terminal_0" {
+		t.Fatalf("handle = %q, want open-agents-1/terminal_0", runtime.handle.ID)
 	}
 	if runtime.message != "hello agent" {
 		t.Fatalf("message = %q, want hello agent", runtime.message)
@@ -617,7 +617,7 @@ func TestWiring_SessionMessengerRejectsTerminatedSession(t *testing.T) {
 		ProjectID: "p", Kind: domain.KindWorker,
 		IsTerminated: true,
 		Activity:     domain.Activity{State: domain.ActivityIdle, LastActivityAt: time.Now()},
-		Metadata:     domain.SessionMetadata{RuntimeHandleID: "ao-1/terminal_0"},
+		Metadata:     domain.SessionMetadata{RuntimeHandleID: "open-agents-1/terminal_0"},
 	})
 	if err != nil {
 		t.Fatal(err)
@@ -960,7 +960,7 @@ func (r *selectableRuntime) SendMessage(context.Context, ports.RuntimeHandle, st
 // interface wrapping a nil pointer), which would bypass the session service's
 // `tracker == nil` guard and panic on first call.
 func TestWiring_NewMultiTracker_NeverTypedNilWhenNoGitHubToken(t *testing.T) {
-	t.Setenv("AO_GITHUB_TOKEN", "")
+	t.Setenv("OPEN_AGENTS_GITHUB_TOKEN", "")
 	t.Setenv("GITHUB_TOKEN", "")
 
 	log := slog.New(slog.NewTextHandler(io.Discard, nil))
@@ -978,8 +978,8 @@ func TestWiring_NewMultiTracker_NeverTypedNilWhenNoGitHubToken(t *testing.T) {
 // (GitLab token missing), the multi-tracker still returns a non-nil
 // ports.Tracker that serves GitHub issue lookups.
 func TestWiring_NewMultiTracker_ReturnsNonNilWhenGitHubHasToken(t *testing.T) {
-	t.Setenv("AO_GITHUB_TOKEN", "gh-test-token")
-	t.Setenv("AO_GITLAB_TOKEN", "")
+	t.Setenv("OPEN_AGENTS_GITHUB_TOKEN", "gh-test-token")
+	t.Setenv("OPEN_AGENTS_GITLAB_TOKEN", "")
 	t.Setenv("GITLAB_TOKEN", "")
 
 	log := slog.New(slog.NewTextHandler(io.Discard, nil))

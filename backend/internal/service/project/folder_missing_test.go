@@ -6,9 +6,9 @@ import (
 	"os/exec"
 	"testing"
 
-	"github.com/aoagents/agent-orchestrator/backend/internal/domain"
-	"github.com/aoagents/agent-orchestrator/backend/internal/service/project"
-	"github.com/aoagents/agent-orchestrator/backend/internal/storage/sqlite/sqlitetest"
+	"github.com/sudo-adduser-jordan/open-agents/backend/internal/domain"
+	"github.com/sudo-adduser-jordan/open-agents/backend/internal/service/project"
+	"github.com/sudo-adduser-jordan/open-agents/backend/internal/storage/sqlite/sqlitetest"
 )
 
 // T1. FolderMissing false when directory exists (happy path).
@@ -18,7 +18,7 @@ func TestFolderMissing_FalseWhenDirectoryExists(t *testing.T) {
 	m := newManager(t)
 	repo := gitRepoWithCommit(t, t.TempDir())
 
-	_, err := m.Add(ctx, project.AddInput{Path: repo, ProjectID: ptr("ao")})
+	_, err := m.Add(ctx, project.AddInput{Path: repo, ProjectID: ptr("open-agents")})
 	if err != nil {
 		t.Fatalf("Add: %v", err)
 	}
@@ -27,14 +27,14 @@ func TestFolderMissing_FalseWhenDirectoryExists(t *testing.T) {
 	if err != nil {
 		t.Fatalf("List: %v", err)
 	}
-	if len(list) != 1 || list[0].ID != "ao" {
-		t.Fatalf("List = %#v, want [ao]", list)
+	if len(list) != 1 || list[0].ID != "open-agents" {
+		t.Fatalf("List = %#v, want [open-agents]", list)
 	}
 	if list[0].FolderMissing {
 		t.Fatal("List FolderMissing = true, want false")
 	}
 
-	res, err := m.Get(ctx, "ao")
+	res, err := m.Get(ctx, "open-agents")
 	if err != nil {
 		t.Fatalf("Get: %v", err)
 	}
@@ -53,7 +53,7 @@ func TestFolderMissing_LifecycleDeleteAndRecovery(t *testing.T) {
 	m := newManager(t)
 	repo := gitRepoWithCommit(t, t.TempDir())
 
-	if _, err := m.Add(ctx, project.AddInput{Path: repo, ProjectID: ptr("ao")}); err != nil {
+	if _, err := m.Add(ctx, project.AddInput{Path: repo, ProjectID: ptr("open-agents")}); err != nil {
 		t.Fatalf("Add: %v", err)
 	}
 	// Initially present.
@@ -76,7 +76,7 @@ func TestFolderMissing_LifecycleDeleteAndRecovery(t *testing.T) {
 	}
 
 	// Assert FolderMissing true via Get.
-	res, err := m.Get(ctx, "ao")
+	res, err := m.Get(ctx, "open-agents")
 	if err != nil {
 		t.Fatalf("Get after delete: %v", err)
 	}
@@ -107,7 +107,7 @@ func TestFolderMissing_LifecycleDeleteAndRecovery(t *testing.T) {
 	}
 
 	// Assert FolderMissing false again via Get.
-	res2, err := m.Get(ctx, "ao")
+	res2, err := m.Get(ctx, "open-agents")
 	if err != nil {
 		t.Fatalf("Get after recovery: %v", err)
 	}
@@ -123,7 +123,7 @@ func TestFolderMissing_NonDirectoryFileCountsAsMissing(t *testing.T) {
 	m := newManager(t)
 	repo := gitRepoWithCommit(t, t.TempDir())
 
-	if _, err := m.Add(ctx, project.AddInput{Path: repo, ProjectID: ptr("ao")}); err != nil {
+	if _, err := m.Add(ctx, project.AddInput{Path: repo, ProjectID: ptr("open-agents")}); err != nil {
 		t.Fatalf("Add: %v", err)
 	}
 
@@ -143,7 +143,7 @@ func TestFolderMissing_NonDirectoryFileCountsAsMissing(t *testing.T) {
 		t.Fatalf("List with file at path = %#v, want FolderMissing=true", list)
 	}
 
-	res, err := m.Get(ctx, "ao")
+	res, err := m.Get(ctx, "open-agents")
 	if err != nil {
 		t.Fatalf("Get: %v", err)
 	}
@@ -159,7 +159,7 @@ func TestFolderMissing_MissingFolderFallsBackToAutoBranch(t *testing.T) {
 	m := newManager(t)
 	repo := gitRepoWithCommit(t, t.TempDir())
 
-	proj, err := m.Add(ctx, project.AddInput{Path: repo, ProjectID: ptr("ao")})
+	proj, err := m.Add(ctx, project.AddInput{Path: repo, ProjectID: ptr("open-agents")})
 	if err != nil {
 		t.Fatalf("Add: %v", err)
 	}
@@ -172,7 +172,7 @@ func TestFolderMissing_MissingFolderFallsBackToAutoBranch(t *testing.T) {
 		t.Fatalf("RemoveAll: %v", err)
 	}
 
-	res, err := m.Get(ctx, "ao")
+	res, err := m.Get(ctx, "open-agents")
 	if err != nil {
 		t.Fatalf("Get: %v", err)
 	}
@@ -197,7 +197,7 @@ func TestFolderMissing_RemoveAfterExternalDeletion(t *testing.T) {
 	m := project.NewWithDeps(project.Deps{Store: store, Sessions: teardown})
 
 	repo := gitRepoWithCommit(t, t.TempDir())
-	if _, err := m.Add(ctx, project.AddInput{Path: repo, ProjectID: ptr("ao")}); err != nil {
+	if _, err := m.Add(ctx, project.AddInput{Path: repo, ProjectID: ptr("open-agents")}); err != nil {
 		t.Fatalf("Add: %v", err)
 	}
 
@@ -212,17 +212,17 @@ func TestFolderMissing_RemoveAfterExternalDeletion(t *testing.T) {
 	}
 
 	// Remove must succeed even though the folder is gone.
-	rm, err := m.Remove(ctx, "ao")
+	rm, err := m.Remove(ctx, "open-agents")
 	if err != nil {
 		t.Fatalf("Remove: %v", err)
 	}
-	if rm.ProjectID != "ao" {
-		t.Fatalf("Remove ProjectID = %q, want ao", rm.ProjectID)
+	if rm.ProjectID != "open-agents" {
+		t.Fatalf("Remove ProjectID = %q, want open-agents", rm.ProjectID)
 	}
 
 	// Teardowner was invoked.
-	if len(teardown.projects) != 1 || teardown.projects[0] != "ao" {
-		t.Fatalf("teardown projects = %#v, want [ao]", teardown.projects)
+	if len(teardown.projects) != 1 || teardown.projects[0] != "open-agents" {
+		t.Fatalf("teardown projects = %#v, want [open-agents]", teardown.projects)
 	}
 
 	// Project is gone from List.
@@ -231,6 +231,6 @@ func TestFolderMissing_RemoveAfterExternalDeletion(t *testing.T) {
 	}
 
 	// Get returns PROJECT_NOT_FOUND.
-	_, err = m.Get(ctx, "ao")
+	_, err = m.Get(ctx, "open-agents")
 	wantCode(t, err, "PROJECT_NOT_FOUND")
 }

@@ -121,9 +121,9 @@ describe("turnSettingsSummary", () => {
 
 	// The bug this pins: the summary matched a permission row by looking for
 	// "permission" or "approval" in the label, so a provider Mode option never
-	// matched and the line fell back to AO's approvalMode — a different value
+	// matched and the line fell back to Open Agents' approvalMode — a different value
 	// from the one the sheet was editing.
-	it("reads the provider's own Mode rather than AO's approvalMode", () => {
+	it("reads the provider's own Mode rather than Open Agents' approvalMode", () => {
 		const summary = turnSettingsSummary(
 			snapshot({ settings: { model: "opus", reasoningEffort: "xhigh", approvalMode: "default" } }),
 			[],

@@ -17,7 +17,7 @@ package shellterm
 import (
 	"time"
 
-	"github.com/aoagents/agent-orchestrator/backend/internal/domain"
+	"github.com/sudo-adduser-jordan/open-agents/backend/internal/domain"
 )
 
 // ShellTerminal is one standalone shell pane. HandleID is the runtime handle

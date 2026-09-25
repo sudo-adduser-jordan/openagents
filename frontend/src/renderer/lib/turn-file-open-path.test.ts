@@ -1,7 +1,7 @@
 import { describe, expect, it } from "vitest";
 import { turnFileOpenPath, turnPathHints, workspaceRelativeOpenPath } from "./turn-file-open-path";
 
-const cwd = "/Users/me/.ao/dev/data/worktrees/demo/demo-1";
+const cwd = "/Users/me/.open-agents/dev/data/worktrees/demo/demo-1";
 
 describe("workspaceRelativeOpenPath", () => {
 	it("strips the worktree cwd and keeps nested path segments", () => {
@@ -11,7 +11,7 @@ describe("workspaceRelativeOpenPath", () => {
 
 	it("keeps parent segments when cwd is missing", () => {
 		expect(
-			workspaceRelativeOpenPath("/Users/me/.ao/dev/data/worktrees/demo/demo-1/frontend/index.ts"),
+			workspaceRelativeOpenPath("/Users/me/.open-agents/dev/data/worktrees/demo/demo-1/frontend/index.ts"),
 		).toBe("frontend/index.ts");
 	});
 });

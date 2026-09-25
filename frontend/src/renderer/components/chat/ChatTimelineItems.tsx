@@ -786,7 +786,7 @@ export function AssistantMessage({
 
 /**
  * Delivery state, stated rather than implied. `uncertain` is its own outcome:
- * the provider may have accepted the turn while AO lost the connection, and
+ * the provider may have accepted the turn while Open Agents lost the connection, and
  * pretending otherwise in either direction would be a lie.
  */
 function DeliveryNote({ state }: { state: DeliveryState }) {
@@ -1063,7 +1063,7 @@ function GenericActivityRow({ activity }: { activity: ConversationActivity }) {
 /**
  * Expanded command / explore body: one soft chat-surface card with the shell
  * line nested in its own chip, then muted monospace output underneath — the
- * same anatomy as the Cursor explore block, restated in AO chat tokens.
+ * same anatomy as the Cursor explore block, restated in Open Agents chat tokens.
  */
 function CommandExploreBody({ activity }: { activity: ConversationActivity }) {
 	const detail = activity.detail;
@@ -1145,7 +1145,7 @@ function TerminalInput({ text, truncated }: { text: string; truncated?: boolean 
 			</pre>
 			{truncated ? (
 				<p className="text-[10px] text-muted-foreground/70">
-					AO stopped recording keystrokes at its cap; more were sent.
+					Open Agents stopped recording keystrokes at its cap; more were sent.
 				</p>
 			) : null}
 		</div>
@@ -1178,7 +1178,7 @@ function CommandOutput({
 	const pre = useRef<HTMLPreElement>(null);
 	const detail = activity.detail;
 	// Older ACP-backed conversations may contain the provider's structured
-	// rawOutput even though AO's view model promises a string. New events are
+	// rawOutput even though Open Agents's view model promises a string. New events are
 	// normalized at the adapter boundary; this compatibility read keeps those
 	// already-durable rows from taking down the entire session surface.
 	const raw = commandOutputText(detail?.output as unknown);
@@ -1212,7 +1212,7 @@ function CommandOutput({
 			</pre>
 			{detail?.outputTruncated ? (
 				<p className="text-[10px] leading-relaxed text-warning">
-					This command printed more than AO stores, so the output above stops early. Open a shell in
+					This command printed more than Open Agents stores, so the output above stops early. Open a shell in
 					the worktree to see the rest.
 				</p>
 			) : null}
@@ -1446,7 +1446,7 @@ function Patch({ patch, truncated }: { patch: string; truncated?: boolean }) {
 			<ToolDiffCode text={patch} />
 			{truncated ? (
 				<p className="border-t border-border px-2.5 py-1.5 text-[10px] leading-relaxed text-warning">
-					This patch is longer than AO stores, so it stops early. The whole change is in the
+					This patch is longer than Open Agents stores, so it stops early. The whole change is in the
 					worktree and in the turn&rsquo;s diff.
 				</p>
 			) : null}
@@ -1495,7 +1495,7 @@ function ReasoningBlock({ activity }: { activity: ConversationActivity }) {
 				<ChatMarkdown text={text} streaming={streaming} muted />
 				{activity.detail?.textTruncated ? (
 					<p className="mt-1 text-[10px] text-muted-foreground/70">
-						This summary is longer than AO stores, so it stops early.
+						This summary is longer than Open Agents stores, so it stops early.
 					</p>
 				) : null}
 			</div>
@@ -1737,7 +1737,7 @@ function truncationNote(value: unknown): string | undefined {
 	const record = value as { truncated?: unknown; bytes?: unknown; note?: unknown };
 	if (record.truncated !== true) return undefined;
 	const bytes = typeof record.bytes === "number" ? ` (${formatBytes(record.bytes)})` : "";
-	return `This payload${bytes} was larger than AO stores, so it was not kept.`;
+	return `This payload${bytes} was larger than Open Agents stores, so it was not kept.`;
 }
 
 function formatBytes(bytes: number): string {
@@ -2082,7 +2082,7 @@ function readJsonStringField(raw: string, field: "message" | "additionalDetails"
 	}
 }
 
-/** AO used to persist `provider error: {…}`; parse the JSON object even when prefixed. */
+/** Open Agents used to persist `provider error: {…}`; parse the JSON object even when prefixed. */
 function parseJsonObjectSuffix(raw: string): Record<string, unknown> | undefined {
 	const start = raw.indexOf("{");
 	if (start < 0) return undefined;
@@ -2193,7 +2193,7 @@ export function SteerMessage({
  * A decision the agent is blocked on.
  *
  * Decisions come from `activity.decisions` — the provider's own list — never from
- * a fixed set. The UI still presents common permission choices with AO/Codex copy
+ * a fixed set. The UI still presents common permission choices with Open Agents/Codex copy
  * so provider-flavored labels do not leak into the chat surface.
  */
 export function ApprovalCard({
@@ -2356,7 +2356,7 @@ export function ApprovalCard({
 					))}
 					{decisions.length === 0 ? (
 						<p className="text-[11px] text-warning">
-							The agent offered no decisions AO can present. Open diagnostics.
+							The agent offered no decisions Open Agents can present. Open diagnostics.
 						</p>
 					) : null}
 				</div>
@@ -2665,7 +2665,7 @@ export function TurnChangedFiles({
 
 			{diff.truncated ? (
 				<p className="px-3 pb-2 text-[10px] leading-relaxed text-warning">
-					This turn changed more files than AO lists here.
+					This turn changed more files than Open Agents lists here.
 					{onReview ? " Use Review for the whole change." : " Open the Files tab for the whole change."}
 				</p>
 			) : null}

@@ -19,7 +19,7 @@ const codexAuthFlow: ProviderAuthFlow = {
 	provider: "codex",
 	async authenticate(dataDir: string, signal?: AbortSignal): Promise<ProviderAuthCredential> {
 		// mkdtemp does not create its parent. Keep this temporary, credential-bearing
-		// directory within AO's data root and private even on a fresh install.
+		// directory within Open Agents's data root and private even on a fresh install.
 		await mkdir(dataDir, { recursive: true, mode: 0o700 });
 		await chmod(dataDir, 0o700);
 		const pending = await mkdtemp(path.join(dataDir, "codex-cloud-login-"));

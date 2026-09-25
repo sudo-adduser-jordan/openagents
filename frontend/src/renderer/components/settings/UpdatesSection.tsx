@@ -1,7 +1,7 @@
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { useEffect, useRef, useState, type ReactNode } from "react";
 import { AlertTriangle, CheckCircle2, Clock3, Download, Info, Loader2, RefreshCw } from "lucide-react";
-import { aoBridge } from "../../lib/bridge";
+import { openAgentsBridge } from "../../lib/bridge";
 import { cn } from "../../lib/utils";
 import { parseNightlyVersion } from "../../lib/build-channel";
 import { useUiStore } from "../../stores/ui-store";
@@ -40,7 +40,7 @@ export function UpdatesSection({ titleHidden }: { titleHidden?: boolean } = {}) 
 	const queryClient = useQueryClient();
 	const query = useQuery({
 		queryKey: updateSettingsQueryKey,
-		queryFn: () => aoBridge.updateSettings.get(),
+		queryFn: () => openAgentsBridge.updateSettings.get(),
 		refetchInterval: 3_000,
 	});
 
@@ -130,7 +130,7 @@ export function UpdatesSection({ titleHidden }: { titleHidden?: boolean } = {}) 
 		if (status.state === "available") {
 			void requestUpdateDownload(requestId);
 		} else if (status.state === "downloaded") {
-			void aoBridge.updates.install();
+			void openAgentsBridge.updates.install();
 			autoProgressRef.current = null;
 		} else if (status.state === "error" || status.state === "unsupported" || status.state === "not-available") {
 			autoProgressRef.current = null;
@@ -139,7 +139,7 @@ export function UpdatesSection({ titleHidden }: { titleHidden?: boolean } = {}) 
 
 	const save = useMutation({
 		mutationFn: async (next: UpdateSettings) => {
-			await aoBridge.updateSettings.set(next);
+			await openAgentsBridge.updateSettings.set(next);
 			return next;
 		},
 		onSuccess: (next) => {
@@ -186,7 +186,7 @@ export function UpdatesSection({ titleHidden }: { titleHidden?: boolean } = {}) 
 		const requestId = nextUpdateRequestId("channel-update");
 		setChannelSwitch({ channel: value, requestId });
 		startManualCheck(requestId);
-		void aoBridge.updates
+		void openAgentsBridge.updates
 			.check({ settings: next, requestId })
 			.catch(() => {
 				setChannelSwitch((pending) => (pending?.requestId === requestId ? null : pending));
@@ -204,7 +204,7 @@ export function UpdatesSection({ titleHidden }: { titleHidden?: boolean } = {}) 
 		autoProgressRef.current = requestId;
 		handledStatusRef.current = null;
 		try {
-			await aoBridge.updates.check({ settings: next, requestId });
+			await openAgentsBridge.updates.check({ settings: next, requestId });
 			void queryClient.invalidateQueries({ queryKey: updateSettingsQueryKey });
 		} catch {
 			if (autoProgressRef.current === requestId) autoProgressRef.current = null;
@@ -222,7 +222,7 @@ export function UpdatesSection({ titleHidden }: { titleHidden?: boolean } = {}) 
 		try {
 			// Single updater-serialized op: clears the pin and checks the home channel
 			// atomically, so a concurrent settings-write cannot restore the pin.
-			await aoBridge.updates.returnHome(requestId);
+			await openAgentsBridge.updates.returnHome(requestId);
 			void queryClient.invalidateQueries({ queryKey: updateSettingsQueryKey });
 		} catch {
 			if (autoProgressRef.current === requestId) autoProgressRef.current = null;
@@ -233,7 +233,7 @@ export function UpdatesSection({ titleHidden }: { titleHidden?: boolean } = {}) 
 
 	const activeQuery = useQuery({
 		queryKey: ["feature-active"],
-		queryFn: () => aoBridge.featureBuilds.getActive(),
+		queryFn: () => openAgentsBridge.featureBuilds.getActive(),
 	});
 	const activeBuild = activeQuery.data ?? null;
 	// Show the escape hatch whenever a feature build is running or pinned.
@@ -339,7 +339,7 @@ function FeatureBuildsSelect({
 	currentPr: number | null;
 	onPin: (pr: number, title: string) => void;
 }) {
-	const buildsQuery = useQuery({ queryKey: ["feature-builds"], queryFn: () => aoBridge.featureBuilds.list() });
+	const buildsQuery = useQuery({ queryKey: ["feature-builds"], queryFn: () => openAgentsBridge.featureBuilds.list() });
 	const builds = buildsQuery.data ?? [];
 
 	if (!buildsQuery.isLoading && builds.length === 0) {
@@ -376,7 +376,7 @@ function UpdateActions({
 	finishManualCheck: (requestId: string, error?: unknown) => void;
 	channelSwitch: { channel: UpdateChannel; requestId: string } | null;
 }) {
-	const version = useQuery({ queryKey: ["app-version"], queryFn: () => aoBridge.app.getVersion() });
+	const version = useQuery({ queryKey: ["app-version"], queryFn: () => openAgentsBridge.app.getVersion() });
 	const requestUpdateInstall = useRequestUpdateInstall();
 	const installedChannel = installedUpdateChannel(version.data);
 	const installed = parseNightlyVersion(version.data);
@@ -421,7 +421,7 @@ function UpdateActions({
 		const requestId = nextUpdateRequestId("manual-update");
 		startManualCheck(requestId);
 		try {
-			await aoBridge.updates.check({ requestId });
+			await openAgentsBridge.updates.check({ requestId });
 		} catch (error) {
 			finishManualCheck(requestId, error);
 		} finally {

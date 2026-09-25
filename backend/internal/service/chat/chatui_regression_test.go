@@ -11,9 +11,9 @@ import (
 	"sync/atomic"
 	"testing"
 
-	"github.com/aoagents/agent-orchestrator/backend/internal/domain"
-	"github.com/aoagents/agent-orchestrator/backend/internal/ports"
-	chatsvc "github.com/aoagents/agent-orchestrator/backend/internal/service/chat"
+	"github.com/sudo-adduser-jordan/open-agents/backend/internal/domain"
+	"github.com/sudo-adduser-jordan/open-agents/backend/internal/ports"
+	chatsvc "github.com/sudo-adduser-jordan/open-agents/backend/internal/service/chat"
 )
 
 // TestChatUIRegressionDraftDeliveryRecoveryIsAtMostOnce selects the ordinary
@@ -28,7 +28,7 @@ func TestChatUIRegressionDraftDeliveryRecoveryIsAtMostOnce(t *testing.T) {
 
 // The provider-history recovery may replay the same native archive again after
 // a later controller restart. MQA-06 requires stable event identities to remain
-// exactly-once in AO and guarantees that replay never writes to the worktree.
+// exactly-once in Open Agents and guarantees that replay never writes to the worktree.
 func TestChatUIRegressionProviderHistoryRecoveryDeduplicatesReplayWithoutWorktreeMutation(t *testing.T) {
 	ctx := context.Background()
 	st := openStore(t)

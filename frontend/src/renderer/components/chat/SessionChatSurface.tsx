@@ -122,7 +122,7 @@ export const SessionChatSurface = memo(function SessionChatSurface({
 	onOpenFiles?: () => void;
 	/** Opens the Files inspector focused on one changed path. */
 	onOpenFile?: (path: string) => void;
-	/** Opens a chat link in the active blank tab or a new tab in this session's AO Browser. */
+	/** Opens a chat link in the active blank tab or a new tab in this session's Open Agents Browser. */
 	onOpenLinkInBrowser?: (uri: string) => Promise<void>;
 	headerActions?: ReactNode;
 	sessionTabAction?: ReactNode;

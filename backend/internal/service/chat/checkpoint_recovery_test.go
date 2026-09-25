@@ -9,11 +9,11 @@ import (
 	"testing"
 	"time"
 
-	"github.com/aoagents/agent-orchestrator/backend/internal/domain"
-	"github.com/aoagents/agent-orchestrator/backend/internal/lifecycle"
-	"github.com/aoagents/agent-orchestrator/backend/internal/ports"
-	chatsvc "github.com/aoagents/agent-orchestrator/backend/internal/service/chat"
-	"github.com/aoagents/agent-orchestrator/backend/internal/storage/sqlite"
+	"github.com/sudo-adduser-jordan/open-agents/backend/internal/domain"
+	"github.com/sudo-adduser-jordan/open-agents/backend/internal/lifecycle"
+	"github.com/sudo-adduser-jordan/open-agents/backend/internal/ports"
+	chatsvc "github.com/sudo-adduser-jordan/open-agents/backend/internal/service/chat"
+	"github.com/sudo-adduser-jordan/open-agents/backend/internal/storage/sqlite"
 )
 
 func TestInterfaceHandoffRecoversLegacyCheckpointFromUnsettledChatTurn(t *testing.T) {
@@ -56,7 +56,7 @@ func TestInterfaceHandoffRecoversLegacyCheckpointFromUnsettledChatTurn(t *testin
 				WorkspacePath: t.TempDir(), ProviderConversationID: "thread-1", HistoryMode: ports.ChatHistoryRequired,
 				HistoryPolicy: domain.SessionInterfaceTransitionHistoryStrict,
 			}
-			// Latest main can retire legacy text when its unsettled AO message
+			// Latest main can retire legacy text when its unsettled Open Agents message
 			// remains in the snapshot. Cancelled queue messages are filtered out,
 			// so those still need explicit provider-history recovery consent.
 			policies := []domain.SessionInterfaceTransitionHistoryPolicy{

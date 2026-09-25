@@ -12,7 +12,7 @@ import (
 )
 
 func TestMigrateRepairsRenumberedCodexProfileHistory(t *testing.T) {
-	db, err := sql.Open("sqlite", "file:"+filepath.Join(t.TempDir(), "ao.db")+pragmas)
+	db, err := sql.Open("sqlite", "file:"+filepath.Join(t.TempDir(), "open-agents.db")+pragmas)
 	if err != nil {
 		t.Fatalf("open sqlite: %v", err)
 	}

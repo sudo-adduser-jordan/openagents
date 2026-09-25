@@ -16,7 +16,7 @@ func TestStandaloneProjectColumnsAreNullable(t *testing.T) {
 	if err := store.Close(); err != nil {
 		t.Fatal(err)
 	}
-	db, err := sql.Open("sqlite", "file:"+filepath.Join(dataDir, "ao.db")+"?mode=ro")
+	db, err := sql.Open("sqlite", "file:"+filepath.Join(dataDir, "open-agents.db")+"?mode=ro")
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -55,7 +55,7 @@ func TestStandaloneProjectColumnsAreNullable(t *testing.T) {
 }
 
 func TestStandaloneMigrationConvertsLegacyScratchOwnership(t *testing.T) {
-	db, err := sql.Open("sqlite", "file:"+filepath.Join(t.TempDir(), "ao.db")+pragmas)
+	db, err := sql.Open("sqlite", "file:"+filepath.Join(t.TempDir(), "open-agents.db")+pragmas)
 	if err != nil {
 		t.Fatal(err)
 	}

@@ -11,10 +11,10 @@ import (
 	"strings"
 	"time"
 
-	"github.com/aoagents/agent-orchestrator/backend/internal/domain"
-	"github.com/aoagents/agent-orchestrator/backend/internal/gitdefault"
-	"github.com/aoagents/agent-orchestrator/backend/internal/httpd/apierr"
-	aoprocess "github.com/aoagents/agent-orchestrator/backend/internal/process"
+	"github.com/sudo-adduser-jordan/open-agents/backend/internal/domain"
+	"github.com/sudo-adduser-jordan/open-agents/backend/internal/gitdefault"
+	"github.com/sudo-adduser-jordan/open-agents/backend/internal/httpd/apierr"
+	openagentsprocess "github.com/sudo-adduser-jordan/open-agents/backend/internal/process"
 )
 
 var workspaceRootIgnoreDenylist = []string{
@@ -173,7 +173,7 @@ func detectWorkspaceChildren(ctx context.Context, parent string, projectID domai
 				"Child repository name is reserved for internal use",
 				map[string]any{
 					"path":         child,
-					"suggestedFix": fmt.Sprintf("Rename the directory %q — the name %q is reserved by AO for the workspace root.", child, domain.RootWorkspaceRepoName),
+					"suggestedFix": fmt.Sprintf("Rename the directory %q — the name %q is reserved by Open Agents for the workspace root.", child, domain.RootWorkspaceRepoName),
 				})
 		}
 		if !isGitRepo(child) {
@@ -206,7 +206,7 @@ func detectWorkspaceChildren(ctx context.Context, parent string, projectID domai
 			Name:          name,
 			RelativePath:  filepath.ToSlash(name),
 			RepoOriginURL: resolveGitOriginURL(child),
-			// Preserve AO's recorded branch for repositories it initialized during
+			// Preserve Open Agents's recorded branch for repositories it initialized during
 			// onboarding, even when the freshly entered remote URL does not yet
 			// advertise origin/HEAD.
 			DefaultBranch: resolveWorkspaceChildDefaultBranch(ctx, child),
@@ -267,7 +267,7 @@ func adoptWorkspaceParent(ctx context.Context, parent string, repos []domain.Wor
 		if err := guardNoGitlinks(ctx, parent); err != nil {
 			return err
 		}
-		if _, err := gitOutput(ctx, parent, "commit", "-m", "chore: configure AO workspace ignores", "--", ".gitignore"); err != nil {
+		if _, err := gitOutput(ctx, parent, "commit", "-m", "chore: configure Open Agents workspace ignores", "--", ".gitignore"); err != nil {
 			return apierr.Invalid("WORKSPACE_PARENT_COMMIT_FAILED", "Failed to commit workspace parent .gitignore", map[string]any{"error": err.Error()})
 		}
 	}
@@ -333,7 +333,7 @@ func initWorkspaceParentWithGit(ctx context.Context, parent string, repos []doma
 	if err := guardNoGitlinks(ctx, parent); err != nil {
 		return err
 	}
-	if _, err := runGit(ctx, parent, "commit", "-m", "chore: initialize AO workspace root"); err != nil {
+	if _, err := runGit(ctx, parent, "commit", "-m", "chore: initialize Open Agents workspace root"); err != nil {
 		return apierr.Invalid("WORKSPACE_PARENT_COMMIT_FAILED", "Failed to create workspace parent initial commit", map[string]any{"error": err.Error()})
 	}
 	return nil
@@ -445,7 +445,7 @@ func workspaceReposFromRecords(parent string, records []domain.WorkspaceRepoReco
 }
 
 func gitOutput(ctx context.Context, dir string, args ...string) (string, error) {
-	cmd := aoprocess.CommandContext(ctx, "git", append([]string{"-C", dir}, args...)...)
+	cmd := openagentsprocess.CommandContext(ctx, "git", append([]string{"-C", dir}, args...)...)
 	out, err := cmd.CombinedOutput()
 	if err != nil {
 		return "", fmt.Errorf("git -C %s %s: %w: %s", dir, strings.Join(args, " "), err, strings.TrimSpace(string(out)))

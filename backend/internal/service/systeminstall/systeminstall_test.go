@@ -11,7 +11,7 @@ import (
 	"testing"
 	"time"
 
-	"github.com/aoagents/agent-orchestrator/backend/internal/ports"
+	"github.com/sudo-adduser-jordan/open-agents/backend/internal/ports"
 )
 
 type installJobStoreFake struct {
@@ -91,7 +91,7 @@ func (s *installJobStoreFake) InterruptActiveAgentInstallJobs(_ context.Context,
 			continue
 		}
 		record.Status = string(StatusInterrupted)
-		record.Error = "AO restarted before this job completed."
+		record.Error = "Open Agents restarted before this job completed."
 		record.FinishedAt = &interruptedAt
 		record.UpdatedAt = interruptedAt
 		s.records[target] = record
@@ -222,7 +222,7 @@ func TestPlanFor(t *testing.T) {
 			name: "cloudflared windows without winget is unsupported", target: TargetCloudflared, goos: "windows",
 			wantUnsupported: true, wantReasonHas: "winget",
 		},
-		// Same rule as every other Linux target: these need root, and AO never
+		// Same rule as every other Linux target: these need root, and Open Agents never
 		// asks for a password, so it hands over the command instead.
 		{
 			name: "cloudflared linux is unsupported with instructions", target: TargetCloudflared, goos: "linux",
@@ -673,7 +673,7 @@ func TestAgentVendorScriptInstallPreservesPlanEnvironment(t *testing.T) {
 	waitForStatus(t, s, TargetOpencode, StatusSucceeded)
 	command := <-captured
 	if !slices.Contains(command.Env, "NONINTERACTIVE=1") {
-		t.Fatalf("installer env = %v, want AO noninteractive environment", command.Env)
+		t.Fatalf("installer env = %v, want Open Agents noninteractive environment", command.Env)
 	}
 }
 

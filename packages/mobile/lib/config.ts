@@ -3,7 +3,7 @@ import * as SecureStore from "expo-secure-store";
 import type { EndpointKind } from "./endpoints";
 import { useCallback, useEffect, useState } from "react";
 
-// The user points the app at their AO daemon (over Tailscale/LAN). We store the
+// The user points the app at their Open Agents daemon (over Tailscale/LAN). We store the
 // host + API port; HTTP and WS URLs are derived from them. The Go daemon serves
 // both the REST API and the terminal mux (`/mux`) on the same port, so muxPort is
 // kept only for back-compat and no longer used to build the mux URL.
@@ -54,11 +54,11 @@ export function normalizeServerHost(host: string): string {
 }
 
 // Non-secret host/port/TLS config lives in AsyncStorage (plaintext app sandbox).
-const KEY = "ao.serverConfig";
+const KEY = "openAgents.serverConfig";
 // The connection password is the Bearer secret for REST and /mux — it authorizes
 // terminal input, spawn/kill, PR actions, etc. It must NEVER touch AsyncStorage;
 // it lives only in the device keystore (iOS Keychain / Android Keystore).
-const PW_KEY = "ao.serverPassword";
+const PW_KEY = "openAgents.serverPassword";
 
 export async function loadConfig(): Promise<ServerConfig> {
 	try {

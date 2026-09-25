@@ -15,7 +15,7 @@ import (
 var pinMu sync.Mutex
 
 // pinDirectory uses the install directory only when it contains no sibling
-// executables. Shared installs get a shim so pinning ao cannot promote node,
+// executables. Shared installs get a shim so pinning open-agents cannot promote node,
 // git, or other tools ahead of the agent's selected runtime.
 func pinDirectory(exe, dataDir string) (string, error) {
 	dir := pinnedDirForExecutable(exe)
@@ -27,7 +27,7 @@ func pinDirectory(exe, dataDir string) (string, error) {
 		return dir, nil
 	}
 	if err != nil {
-		return "", fmt.Errorf("inspect AO install directory: %w", err)
+		return "", fmt.Errorf("inspect Open Agents install directory: %w", err)
 	}
 	shared := false
 	for _, entry := range entries {
@@ -54,18 +54,18 @@ func pinDirectory(exe, dataDir string) (string, error) {
 		return dir, nil
 	}
 	if !filepath.IsAbs(dataDir) {
-		return "", fmt.Errorf("AO shim data directory must be absolute, got %q", dataDir)
+		return "", fmt.Errorf("Open Agents shim data directory must be absolute, got %q", dataDir)
 	}
 	absolute, err := filepath.Abs(exe)
 	if err != nil {
 		return "", err
 	}
 	sum := sha256.Sum256([]byte(absolute))
-	shimDir := filepath.Join(dataDir, "runtime", "ao-path", fmt.Sprintf("%x", sum[:16]))
-	name := "ao"
+	shimDir := filepath.Join(dataDir, "runtime", "open-agents-path", fmt.Sprintf("%x", sum[:16]))
+	name := "open-agents"
 	script := "#!/bin/sh\nexec '" + strings.ReplaceAll(absolute, "'", `'"'"'`) + "' \"$@\"\n"
 	if runtime.GOOS == "windows" {
-		name = "ao.cmd"
+		name = "open-agents.cmd"
 		script = "@echo off\r\n\"" + strings.ReplaceAll(absolute, "%", "%%") + "\" %*\r\n"
 	}
 	pinMu.Lock()
@@ -76,13 +76,13 @@ func pinDirectory(exe, dataDir string) (string, error) {
 	target := filepath.Join(shimDir, name)
 	if content, err := os.ReadFile(target); err == nil && string(content) == script {
 		if runtime.GOOS == "windows" {
-			if err := ensureWindowsAOExecutable(shimDir, absolute); err != nil {
+			if err := ensureWindowsOpenAgentsExecutable(shimDir, absolute); err != nil {
 				return "", err
 			}
 		}
 		return shimDir, nil
 	}
-	temp, err := os.CreateTemp(shimDir, ".ao-*")
+	temp, err := os.CreateTemp(shimDir, ".open-agents-*")
 	if err != nil {
 		return "", err
 	}
@@ -95,38 +95,38 @@ func pinDirectory(exe, dataDir string) (string, error) {
 	if err := temp.Close(); err != nil {
 		return "", err
 	}
-	if err := os.Chmod(tempPath, 0o700); err != nil { //nolint:gosec // executable AO shim
+	if err := os.Chmod(tempPath, 0o700); err != nil { //nolint:gosec // executable Open Agents shim
 		return "", err
 	}
 	if err := os.Rename(tempPath, target); err != nil {
 		return "", err
 	}
 	if runtime.GOOS == "windows" {
-		if err := ensureWindowsAOExecutable(shimDir, absolute); err != nil {
+		if err := ensureWindowsOpenAgentsExecutable(shimDir, absolute); err != nil {
 			return "", err
 		}
 	}
 	return shimDir, nil
 }
 
-func ensureWindowsAOExecutable(shimDir, executable string) error {
-	return ensureWindowsAOExecutableWithLink(shimDir, executable, os.Link)
+func ensureWindowsOpenAgentsExecutable(shimDir, executable string) error {
+	return ensureWindowsOpenAgentsExecutableWithLink(shimDir, executable, os.Link)
 }
 
-func ensureWindowsAOExecutableWithLink(shimDir, executable string, link func(string, string) error) error {
-	target := filepath.Join(shimDir, "ao.exe")
+func ensureWindowsOpenAgentsExecutableWithLink(shimDir, executable string, link func(string, string) error) error {
+	target := filepath.Join(shimDir, "open-agents.exe")
 	sourceInfo, err := os.Stat(executable)
 	if err != nil {
-		return fmt.Errorf("stat AO executable: %w", err)
+		return fmt.Errorf("stat Open Agents executable: %w", err)
 	}
 	if targetInfo, targetErr := os.Stat(target); targetErr == nil && os.SameFile(sourceInfo, targetInfo) {
 		return nil
 	} else if targetErr == nil && targetInfo.Size() == sourceInfo.Size() && targetInfo.ModTime().Equal(sourceInfo.ModTime()) {
 		return nil
 	}
-	temp, err := os.CreateTemp(shimDir, ".ao-exe-*")
+	temp, err := os.CreateTemp(shimDir, ".open-agents-exe-*")
 	if err != nil {
-		return fmt.Errorf("create AO executable shim: %w", err)
+		return fmt.Errorf("create Open Agents executable shim: %w", err)
 	}
 	tempPath := temp.Name()
 	if err := temp.Close(); err != nil {
@@ -138,14 +138,14 @@ func ensureWindowsAOExecutableWithLink(shimDir, executable string, link func(str
 	}
 	if err := link(executable, tempPath); err != nil {
 		if err := copyExecutable(executable, tempPath, sourceInfo.ModTime()); err != nil {
-			return fmt.Errorf("copy AO executable after link failed: %w", err)
+			return fmt.Errorf("copy Open Agents executable after link failed: %w", err)
 		}
 	}
 	if err := os.Remove(target); err != nil && !os.IsNotExist(err) {
-		return fmt.Errorf("replace AO executable shim: %w", err)
+		return fmt.Errorf("replace Open Agents executable shim: %w", err)
 	}
 	if err := os.Rename(tempPath, target); err != nil {
-		return fmt.Errorf("install AO executable shim: %w", err)
+		return fmt.Errorf("install Open Agents executable shim: %w", err)
 	}
 	return nil
 }
@@ -156,7 +156,7 @@ func copyExecutable(source, target string, modTime time.Time) error {
 		return err
 	}
 	defer func() { _ = in.Close() }()
-	out, err := os.OpenFile(target, os.O_CREATE|os.O_EXCL|os.O_WRONLY, 0o700) //nolint:gosec // executable AO shim
+	out, err := os.OpenFile(target, os.O_CREATE|os.O_EXCL|os.O_WRONLY, 0o700) //nolint:gosec // executable Open Agents shim
 	if err != nil {
 		return err
 	}

@@ -8,8 +8,8 @@
 // debug the wrong thing.
 
 export type ConnectionFailure =
-	| "not-ao-qr" // the scanned code wasn't an AO pairing payload
-	| "outdated-desktop" // a v1 code: AO on the computer is too old to pair with
+	| "not-open-agents-qr" // the scanned code wasn't an Open Agents pairing payload
+	| "outdated-desktop" // a v1 code: Open Agents on the computer is too old to pair with
 	| "tunnel-rotated" // nothing answered, and the only remote path was a tunnel
 	| "unreachable" // nothing answered (DNS failure, refused, timeout)
 	| "auth" // 401/403 — the password is wrong or was rotated
@@ -99,7 +99,7 @@ export type ConnectionErrorCopy = {
 	title: string;
 	message: string;
 	// When true the screen appends the Local Network hint and offers a button
-	// that opens the OS settings page for AO.
+	// that opens the OS settings page for Open Agents.
 	showLocalNetworkHint: boolean;
 };
 
@@ -121,20 +121,20 @@ export function describeConnectionFailure(
 			return {
 				title: "This machine's remote address changed",
 				message:
-					"AO on your computer restarted, which gives it a new address. Open Settings \u2192 Connect Mobile there and scan the code again.",
+					"Open Agents on your computer restarted, which gives it a new address. Open Settings \u2192 Connect Mobile there and scan the code again.",
 				showLocalNetworkHint: false,
 			};
 		case "outdated-desktop":
 			return {
-				title: "Update AO on your computer",
+				title: "Update Open Agents on your computer",
 				message:
-					"That code was made by an older version of AO. Update the desktop app, then generate a new code.",
+					"That code was made by an older version of Open Agents. Update the desktop app, then generate a new code.",
 				showLocalNetworkHint: false,
 			};
-		case "not-ao-qr":
+		case "not-open-agents-qr":
 			return {
-				title: "Not an AO pairing code",
-				message: "That QR code isn't an AO pairing code.",
+				title: "Not an Open Agents pairing code",
+				message: "That QR code isn't an Open Agents pairing code.",
 				showLocalNetworkHint: false,
 			};
 		case "unreachable":
@@ -169,7 +169,7 @@ export function describeConnectionFailure(
 		case "server-error":
 			return {
 				title: "Your desktop returned an error",
-				message: `${target.host}:${target.port} answered, but with an error. Check the AO logs on your computer.`,
+				message: `${target.host}:${target.port} answered, but with an error. Check the Open Agents logs on your computer.`,
 				showLocalNetworkHint: false,
 			};
 	}
@@ -177,4 +177,4 @@ export function describeConnectionFailure(
 
 /** The extra line shown when {@link ConnectionErrorCopy.showLocalNetworkHint} is set. */
 export const LOCAL_NETWORK_HINT =
-	"If you denied the Local Network prompt, enable it in Settings › Privacy & Security › Local Network › AO.";
+	"If you denied the Local Network prompt, enable it in Settings › Privacy & Security › Local Network › Open Agents.";

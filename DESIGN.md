@@ -1,11 +1,11 @@
 ---
-name: agent-orchestrator-design-system
-description: "Use for any renderer UI, visual polish, component, layout, theme, motion, or interaction change in Agent Orchestrator. Read before proposing or implementing visual work."
+name: open-agents-design-system
+description: "Use for any renderer UI, visual polish, component, layout, theme, motion, or interaction change in Open Agents. Read before proposing or implementing visual work."
 ---
 
-# Design system — Agent Orchestrator
+# Design system — Open Agents
 
-Agent Orchestrator (AO) is serious desktop software for supervising parallel AI coding work. It makes the state of a project legible: what is running, what needs a human, what is safe to ship, and where intervention will have the most leverage.
+Open Agents is serious desktop software for supervising parallel AI coding work. It makes the state of a project legible: what is running, what needs a human, what is safe to ship, and where intervention will have the most leverage.
 
 This is a product UI, not a marketing site. It must feel calm under sustained use, reward scanning, and preserve the terminal as a first-class working surface.
 
@@ -13,7 +13,7 @@ This is a product UI, not a marketing site. It must feel calm under sustained us
 
 This guide is deliberately based only on these approved visual references: the app shell; sidebar and its project section; tooltips; iconography; typography; tokens and themes; borders, shadows and outlines; the New Task, Clone Repository, Settings and Add Project flows; dropdowns used in Settings and New Task; and the kanban board with its cards.
 
-Do **not** infer a visual rule from another AO screen merely because it exists today. Much of the application is still being de-slopped. Existing rounded cards, isolated borders, shadows, all-caps metadata, extra helper copy, or one-off button styling outside the approved references are migration debt, not precedent.
+Do **not** infer a visual rule from another Open Agents screen merely because it exists today. Much of the application is still being de-slopped. Existing rounded cards, isolated borders, shadows, all-caps metadata, extra helper copy, or one-off button styling outside the approved references are migration debt, not precedent.
 
 The guide is a future-state standard and a review tool. When current code conflicts with it, preserve functional behavior but move the surface toward this standard in the smallest safe change. Do not copy a legacy inconsistency into new work.
 
@@ -43,7 +43,7 @@ When a referenced file and this guide disagree, follow this guide for new work a
 - **Reader's job:** understand the current state in seconds; open the right session; make a precise intervention; return to the board without losing context.
 - **Core object:** a session. Each session carries a task, agent, worktree, conversation or terminal, files, PR, checks, review facts, and derived status.
 - **Memorable promise:** “I can run several agents without losing the thread.”
-- **Product posture:** operational, technically literate, compact, direct. AO does not pretend that software delivery is effortless; it makes the work visible and tractable.
+- **Product posture:** operational, technically literate, compact, direct. Open Agents does not pretend that software delivery is effortless; it makes the work visible and tractable.
 
 ### Working preferences for design changes
 
@@ -68,18 +68,18 @@ Never use visual polish to obscure a state transition, destructive action, conne
 
 ## 2. Visual thesis
 
-**Dark-first precision instrument.** AO is a low-glare, near-neutral control surface with calm typography, disciplined color, and dense but breathable information. The visual result should feel more like a thoughtful desktop tool than a generic SaaS dashboard.
+**Dark-first precision instrument.** Open Agents is a low-glare, near-neutral control surface with calm typography, disciplined color, and dense but breathable information. The visual result should feel more like a thoughtful desktop tool than a generic SaaS dashboard.
 
 - **Decoration:** minimal. Type, alignment, spacing, surface tone, and only necessary one-pixel boundaries establish hierarchy.
 - **Material:** layered charcoal surfaces—not pure black—with small tonal shifts reserved for nesting, hover, and elevation.
 - **Color:** rare, semantic, and stateful. A colored element must answer “what does this mean?”
 - **Shape:** modest radius, not a field of pills. A rounded control should read as a control; a panel should read as one composed container; ordinary metadata should remain text.
-- **Density:** compact by default. AO is used all day and needs high information capacity without cramped target sizes.
+- **Density:** compact by default. Open Agents is used all day and needs high information capacity without cramped target sizes.
 - **Personality:** quiet competence. No gradients, glass, glow, stock imagery, decorative textures, emoji, or novelty visual language in the working UI.
 
 ## 3. App architecture expressed visually
 
-AO has one persistent shell; routes replace the center surface rather than replacing the app's orientation.
+Open Agents has one persistent shell; routes replace the center surface rather than replacing the app's orientation.
 
 ### Shell
 
@@ -396,7 +396,7 @@ Before calling a visual change done, verify:
 7. Are dense lists grouped and scan-friendly without becoming cramped? Are project rows compact enough for an all-day sidebar?
 8. Does focus work without hover? Does reduced motion remain coherent? Are icon-only actions named by accessible label and, where needed, tooltip?
 9. Does the change hold on dark/light themes, all desktop platforms, compact sidebar, narrow center width, long text, and loading/error/empty states?
-10. Did we avoid introducing a generic dashboard/card-grid pattern where AO already has a stronger operational model?
+10. Did we avoid introducing a generic dashboard/card-grid pattern where Open Agents already has a stronger operational model?
 
 ### Review outcome
 
@@ -410,12 +410,12 @@ Approve only when the answer to every applicable check is yes. Otherwise classif
 
 | Date | Decision | Rationale |
 | --- | --- | --- |
-| 2026-09-03 | Dark-first, token-led, compact operational UI | Matches AO's long-running desktop workflow and renderer source of truth. |
+| 2026-09-03 | Dark-first, token-led, compact operational UI | Matches Open Agents's long-running desktop workflow and renderer source of truth. |
 | 2026-09-03 | Geist/Geist Mono remain the typographic system | They are bundled, legible at dense sizes, and already define renderer hierarchy. |
 | 2026-09-03 | Color is reserved for semantics and active focus | Parallel-agent supervision depends on fast, trustworthy scanning. |
 | 2026-09-03 | Shared list containers with dividers are preferred over spaced sibling cards | Better density and clearer grouping for projects and sessions. |
 | 2026-09-03 | Existing platform shell behavior is part of the design system | macOS traffic lights, Windows titlebar, and collapsible inspector are product behavior, not incidental CSS. |
-| 2026-09-03 | The approved reference set is intentionally narrow | AO is mid-migration; unfinished screens must not become accidental design authority. |
+| 2026-09-03 | The approved reference set is intentionally narrow | Open Agents is mid-migration; unfinished screens must not become accidental design authority. |
 | 2026-09-03 | Sentence case and concise decision-relevant copy are mandatory | The interface should carry operational clarity through hierarchy and state, not verbose explanation or technical-looking labels. |
 | 2026-09-03 | Borders and shadows are structural/elevational exceptions | The future UI favors one composed surface, shared lists, quiet dividers, and stable hierarchy over a field of outlined cards. |
 | 2026-09-04 | Settings language follows the user's task, not internal architecture | “Agents” describes installation/setup and “Accounts” describes sign-in/account management more clearly than “Harness” or “Subscriptions”. |

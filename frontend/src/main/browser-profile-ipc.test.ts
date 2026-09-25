@@ -26,7 +26,7 @@ afterEach(async () => {
 });
 
 async function setup(confirmSwitch = vi.fn(async () => true)) {
-	const stateDir = await mkdtemp(path.join(os.tmpdir(), "ao-browser-profile-ipc-"));
+	const stateDir = await mkdtemp(path.join(os.tmpdir(), "open-agents-browser-profile-ipc-"));
 	tempDirectories.push(stateDir);
 	const store = new BrowserProfileStore({ stateDir });
 	await store.load();
@@ -125,7 +125,7 @@ describe("browser profile IPC", () => {
 		expect(host.isRendererOwned).toHaveBeenCalledWith(expect.objectContaining({ sender: renderer }), "1:worker-1");
 	});
 
-	it("switches profiles through the renderer-owned AO menu endpoint", async () => {
+	it("switches profiles through the renderer-owned Open Agents menu endpoint", async () => {
 		const { invoke, renderer, store, host } = await setup();
 		const profile = await store.createProfile("Work");
 

@@ -3,7 +3,7 @@ import { useCallback, useLayoutEffect, useRef } from "react";
 type ResizableConstraint = number | (() => number);
 
 interface UseResizableOptions {
-	/** CSS custom property to drive, e.g. "--ao-sidebar-w". */
+	/** CSS custom property to drive, e.g. "--open-agents-sidebar-w". */
 	cssVar: string;
 	/**
 	 * Limits custom-property invalidation to the elements that consume the
@@ -30,7 +30,7 @@ interface UseResizableOptions {
 }
 
 /**
- * Pointer-driven panel resize, cloned from agent-orchestrator's useResizable.
+ * Pointer-driven panel resize, cloned from open-agents's useResizable.
  * Persists the width to localStorage and applies it via a CSS custom property
  * to the nearest consuming layout elements. Keeping a high-frequency custom
  * property off :root avoids invalidating unrelated renderer subtrees.

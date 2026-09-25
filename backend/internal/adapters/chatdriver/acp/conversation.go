@@ -16,9 +16,9 @@ import (
 	acpsdk "github.com/coder/acp-go-sdk"
 	"github.com/google/uuid"
 
-	"github.com/aoagents/agent-orchestrator/backend/internal/adapters/chatdriver/persistenthost"
-	"github.com/aoagents/agent-orchestrator/backend/internal/domain"
-	"github.com/aoagents/agent-orchestrator/backend/internal/ports"
+	"github.com/sudo-adduser-jordan/open-agents/backend/internal/adapters/chatdriver/persistenthost"
+	"github.com/sudo-adduser-jordan/open-agents/backend/internal/domain"
+	"github.com/sudo-adduser-jordan/open-agents/backend/internal/ports"
 )
 
 const (
@@ -199,7 +199,7 @@ func newConversation(
 }
 
 // providerItemID makes ACP's session-scoped opaque item ids safe to use in
-// AO's conversation-wide indexes. ACP only promises ids such as toolCallId are
+// Open Agents's conversation-wide indexes. ACP only promises ids such as toolCallId are
 // unique inside one provider session, while reconstructed branches deliberately
 // create new sessions that may reuse those values.
 func (c *conversation) providerItemID(id string) string {
@@ -210,7 +210,7 @@ func (c *conversation) providerItemID(id string) string {
 }
 
 // lengthPrefixedTuple encodes opaque strings injectively. ACP identifiers are
-// allowed to contain delimiters (including NUL), and AO provider scopes contain
+// allowed to contain delimiters (including NUL), and Open Agents provider scopes contain
 // colons, so delimiter-joining cannot safely define a durable identity.
 func lengthPrefixedTuple(parts ...string) string {
 	var encoded strings.Builder
@@ -364,7 +364,7 @@ func (c *conversation) ActivateLiveReconnect(ctx context.Context, providerTurnID
 	return nil
 }
 
-// SendTurn prepares the long-lived ACP prompt request. AO's controller starts it
+// SendTurn prepares the long-lived ACP prompt request. Open Agents's controller starts it
 // through StartDeferredTurn only after the provider turn id is durable.
 func (c *conversation) SendTurn(ctx context.Context, msg ports.ChatUserMessage) (ports.ChatTurnRef, error) {
 	if err := ctx.Err(); err != nil {
@@ -525,7 +525,7 @@ func (c *conversation) StartDeferredTurn(providerTurnID string) error {
 func (c *conversation) runTurn(ctx context.Context, sessionID string, turn preparedTurn) {
 	c.emit(ports.ChatEvent{Kind: ports.ChatEventTurnStarted, ProviderTurnID: turn.id})
 	c.emit(ports.ChatEvent{Kind: ports.ChatEventControllerState, ControllerState: ports.ChatControllerBusy})
-	// ACP message ids are opaque idempotency/correlation keys. Preserve AO's
+	// ACP message ids are opaque idempotency/correlation keys. Preserve Open Agents's
 	// durable client id when possible so an agent that echoes it from session/load
 	// can be reconciled without provider-specific knowledge. Some agents assign
 	// their own persisted user uuid; the service's history
@@ -806,7 +806,7 @@ func (c *conversation) Interrupt(ctx context.Context, providerTurnID string) err
 		return fmt.Errorf("ACP session/cancel: %w", err)
 	}
 	// The provider owns the root Prompt until it returns a terminal result. Keep
-	// AO busy after accepting session/cancel so a restart cannot start a second
+	// Open Agents busy after accepting session/cancel so a restart cannot start a second
 	// root prompt while the first one is still executing downstream.
 	return nil
 }
@@ -1098,7 +1098,7 @@ func (c *conversation) promptContent(message ports.ChatUserMessage) ([]acpsdk.Co
 				Uri: item.URI, Text: item.Text, MimeType: mimeType,
 			}
 			if item.Internal {
-				resource.Meta = map[string]any{aoInternalReplayMetaKey: true}
+				resource.Meta = map[string]any{openAgentsInternalReplayMetaKey: true}
 			}
 			prompt = append(prompt, acpsdk.ResourceBlock(acpsdk.EmbeddedResourceResource{
 				TextResourceContents: resource,

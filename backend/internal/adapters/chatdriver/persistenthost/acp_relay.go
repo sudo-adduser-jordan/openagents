@@ -11,9 +11,9 @@ import (
 )
 
 const (
-	// ACPEventIDMetaKey identifies one replayable provider event. AO assigns the
+	// ACPEventIDMetaKey identifies one replayable provider event. Open Agents assigns the
 	// value to every durable event derived from that frame.
-	ACPEventIDMetaKey = "ao.persistentEventId"
+	ACPEventIDMetaKey = "open-agents.persistentEventId"
 )
 
 type acpClientRequest struct {

@@ -16,29 +16,29 @@ import (
 // They are separately gated because they use the developer's installed binaries,
 // provider configuration, credentials, and model quota.
 func TestOpenCodeACPTurnSurvivesDaemonSIGKILL(t *testing.T) {
-	if os.Getenv("AO_LIVE_OPENCODE_ACP") != "1" {
-		t.Skip("set AO_LIVE_OPENCODE_ACP=1 to run the real OpenCode restart E2E")
+	if os.Getenv("OPEN_AGENTS_LIVE_OPENCODE_ACP") != "1" {
+		t.Skip("set OPEN_AGENTS_LIVE_OPENCODE_ACP=1 to run the real OpenCode restart E2E")
 	}
 	runACPTurnSurvivesDaemonRestart(t, "opencode", "opencode", "OPENCODE-DAEMON-SURVIVED", false)
 }
 
 func TestOpenCodeACPTurnSurvivesGracefulDaemonRestart(t *testing.T) {
-	if os.Getenv("AO_LIVE_OPENCODE_ACP") != "1" {
-		t.Skip("set AO_LIVE_OPENCODE_ACP=1 to run the real OpenCode restart E2E")
+	if os.Getenv("OPEN_AGENTS_LIVE_OPENCODE_ACP") != "1" {
+		t.Skip("set OPEN_AGENTS_LIVE_OPENCODE_ACP=1 to run the real OpenCode restart E2E")
 	}
 	runACPTurnSurvivesDaemonRestart(t, "opencode", "opencode", "OPENCODE-GRACEFUL-DAEMON-SURVIVED", true)
 }
 
 func TestCursorACPTurnSurvivesDaemonSIGKILL(t *testing.T) {
-	if os.Getenv("AO_LIVE_CURSOR_ACP") != "1" {
-		t.Skip("set AO_LIVE_CURSOR_ACP=1 to run the real Cursor restart E2E")
+	if os.Getenv("OPEN_AGENTS_LIVE_CURSOR_ACP") != "1" {
+		t.Skip("set OPEN_AGENTS_LIVE_CURSOR_ACP=1 to run the real Cursor restart E2E")
 	}
 	runACPTurnSurvivesDaemonRestart(t, "cursor", "cursor-agent", "CURSOR-DAEMON-SURVIVED", false)
 }
 
 func TestCursorACPTurnSurvivesGracefulDaemonRestart(t *testing.T) {
-	if os.Getenv("AO_LIVE_CURSOR_ACP") != "1" {
-		t.Skip("set AO_LIVE_CURSOR_ACP=1 to run the real Cursor restart E2E")
+	if os.Getenv("OPEN_AGENTS_LIVE_CURSOR_ACP") != "1" {
+		t.Skip("set OPEN_AGENTS_LIVE_CURSOR_ACP=1 to run the real Cursor restart E2E")
 	}
 	runACPTurnSurvivesDaemonRestart(t, "cursor", "cursor-agent", "CURSOR-GRACEFUL-DAEMON-SURVIVED", true)
 }

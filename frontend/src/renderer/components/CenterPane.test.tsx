@@ -36,7 +36,7 @@ vi.mock("motion/react", () => ({
 }));
 
 vi.mock("../lib/bridge", () => ({
-	aoBridge: {
+	openAgentsBridge: {
 		app: {
 			setCloseShellTerminalShortcutEnabled: (enabled: boolean) => shortcutMocks.closeableStates.push(enabled),
 			onCloseShellTerminalShortcut: (listener: () => void) => {
@@ -85,7 +85,7 @@ const worker = {
 	title: "do the thing",
 	provider: "opencode",
 	kind: "worker",
-	branch: "ao/sess-1",
+	branch: "open-agents/sess-1",
 	status: "working",
 	updatedAt: "2026-06-10T00:00:00Z",
 	activity: { state: "active", lastActivityAt: "2026-06-10T00:00:00Z" },
@@ -117,7 +117,7 @@ describe("CenterPane toolbar session label", () => {
 	const makeShells = (count: number) =>
 		Array.from({ length: count }, (_, i) => ({
 			handleId: `h-${i}`,
-			title: `agent-orchestrator-${i}`,
+			title: `open-agents-${i}`,
 			workingDir: "/tmp/ws",
 			createdAt: "2026-07-22T00:00:00Z",
 		}));
@@ -598,12 +598,12 @@ describe("CenterPane toolbar session label", () => {
 			Array.from(screen.getByRole("tablist", { name: "Open terminals" }).querySelectorAll('[role="tab"]')).map(
 				(tab) => tab.textContent,
 			);
-		expect(tabLabels()).toEqual(["do the thing", "Reviewer", "agent-orchestrator-0", "agent-orchestrator-1"]);
+		expect(tabLabels()).toEqual(["do the thing", "Reviewer", "open-agents-0", "open-agents-1"]);
 		expect(reorderMocks.onReorder).toBeTypeOf("function");
 
 		act(() => reorderMocks.onReorder?.(["h-0", "reviewer:review-sess-1", "h-1"]));
 
-		expect(tabLabels()).toEqual(["do the thing", "agent-orchestrator-0", "Reviewer", "agent-orchestrator-1"]);
+		expect(tabLabels()).toEqual(["do the thing", "open-agents-0", "Reviewer", "open-agents-1"]);
 	});
 
 	it("appends new terminals after open files and reorders terminals with files", () => {
@@ -623,16 +623,16 @@ describe("CenterPane toolbar session label", () => {
 				(tab) => tab.textContent,
 			);
 
-		expect(tabLabels()).toEqual(["do the thing", "agent-orchestrator-0", ".gitignore"]);
+		expect(tabLabels()).toEqual(["do the thing", "open-agents-0", ".gitignore"]);
 		view.rerender(
 			<TooltipProvider>
 				<CenterPane daemonReady session={worker} shellTerminals={shells} theme="dark" workspaceTabs={[fileTab]} />
 			</TooltipProvider>,
 		);
-		expect(tabLabels()).toEqual(["do the thing", "agent-orchestrator-0", ".gitignore", "agent-orchestrator-1"]);
+		expect(tabLabels()).toEqual(["do the thing", "open-agents-0", ".gitignore", "open-agents-1"]);
 
 		act(() => reorderMocks.onReorder?.(["file:.gitignore", "h-1", "h-0"]));
-		expect(tabLabels()).toEqual(["do the thing", ".gitignore", "agent-orchestrator-1", "agent-orchestrator-0"]);
+		expect(tabLabels()).toEqual(["do the thing", ".gitignore", "open-agents-1", "open-agents-0"]);
 	});
 
 	it("restores a session's remembered tab order after navigating away", () => {
@@ -644,7 +644,7 @@ describe("CenterPane toolbar session label", () => {
 			);
 
 		act(() => reorderMocks.onReorder?.(["h-1", "h-0"]));
-		expect(tabLabels()).toEqual(["do the thing", "agent-orchestrator-1", "agent-orchestrator-0"]);
+		expect(tabLabels()).toEqual(["do the thing", "open-agents-1", "open-agents-0"]);
 
 		view.rerender(
 			<TooltipProvider>
@@ -657,7 +657,7 @@ describe("CenterPane toolbar session label", () => {
 			</TooltipProvider>,
 		);
 
-		expect(tabLabels()).toEqual(["do the thing", "agent-orchestrator-1", "agent-orchestrator-0"]);
+		expect(tabLabels()).toEqual(["do the thing", "open-agents-1", "open-agents-0"]);
 	});
 
 	it("scrolls the tab strip horizontally with the mouse wheel", () => {
@@ -743,7 +743,7 @@ describe("CenterPane toolbar session label", () => {
 
 		const sessionTab = screen.getByRole("tab", { name: /^do the thing/ });
 		const firstShellTab = screen.getByRole("tab", {
-			name: "agent-orchestrator-0",
+			name: "open-agents-0",
 		});
 		expect(sessionTab.getAttribute("tabindex")).toBe("0");
 		expect(firstShellTab.getAttribute("tabindex")).toBe("-1");

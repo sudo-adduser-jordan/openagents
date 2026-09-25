@@ -5,11 +5,11 @@ import { useBrowserDownloads } from "./useBrowserDownloads";
 
 it("surfaces nonfatal download errors from initial and live state", async () => {
 	let changed: ((state: BrowserDownloadsState) => void) | undefined;
-	window.ao!.browser.downloads.list = vi.fn(async () => ({
+	window.openAgents!.browser.downloads.list = vi.fn(async () => ({
 		downloads: [],
 		error: "Could not prepare the Downloads folder.",
 	}));
-	window.ao!.browser.downloads.onChanged = vi.fn((listener) => {
+	window.openAgents!.browser.downloads.onChanged = vi.fn((listener) => {
 		changed = listener;
 		return () => undefined;
 	});

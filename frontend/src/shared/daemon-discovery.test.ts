@@ -77,12 +77,12 @@ describe("parseRunFile", () => {
 				JSON.stringify({
 					pid: 4242,
 					port: 3037,
-					browserRuntimeAddress: String.raw`\\.\pipe\ao-browser-dev`,
+					browserRuntimeAddress: String.raw`\\.\pipe\open-agents-browser-dev`,
 				}),
 			),
 		).toEqual(
 			expect.objectContaining({
-				browserRuntimeAddress: String.raw`\\.\pipe\ao-browser-dev`,
+				browserRuntimeAddress: String.raw`\\.\pipe\open-agents-browser-dev`,
 			}),
 		);
 	});
@@ -113,20 +113,20 @@ describe("parseRunFile", () => {
 });
 
 describe("defaultRunFilePath", () => {
-	it("matches Go's canonical AO home default on macOS", () => {
-		expect(defaultRunFilePath("darwin", {}, "/Users/me")).toBe("/Users/me/.ao/running.json");
+	it("matches Go's canonical Open Agents home default on macOS", () => {
+		expect(defaultRunFilePath("darwin", {}, "/Users/me")).toBe("/Users/me/.open-agents/running.json");
 	});
 
 	it("ignores XDG_CONFIG_HOME on linux", () => {
-		expect(defaultRunFilePath("linux", { XDG_CONFIG_HOME: "/xdg" }, "/home/me")).toBe("/home/me/.ao/running.json");
-		expect(defaultRunFilePath("linux", {}, "/home/me")).toBe("/home/me/.ao/running.json");
+		expect(defaultRunFilePath("linux", { XDG_CONFIG_HOME: "/xdg" }, "/home/me")).toBe("/home/me/.open-agents/running.json");
+		expect(defaultRunFilePath("linux", {}, "/home/me")).toBe("/home/me/.open-agents/running.json");
 	});
 
 	it("ignores APPDATA on windows", () => {
 		expect(defaultRunFilePath("win32", { APPDATA: "C:\\Users\\me\\AppData\\Roaming" }, "C:\\Users\\me")).toBe(
-			"C:\\Users\\me/.ao/running.json",
+			"C:\\Users\\me/.open-agents/running.json",
 		);
-		expect(defaultRunFilePath("win32", {}, "C:\\Users\\me")).toBe("C:\\Users\\me/.ao/running.json");
+		expect(defaultRunFilePath("win32", {}, "C:\\Users\\me")).toBe("C:\\Users\\me/.open-agents/running.json");
 	});
 
 	it("returns null when no home directory can be resolved", () => {

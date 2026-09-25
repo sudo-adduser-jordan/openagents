@@ -18,10 +18,10 @@ import (
 
 	"golang.org/x/sync/errgroup"
 
-	"github.com/aoagents/agent-orchestrator/backend/internal/domain"
-	"github.com/aoagents/agent-orchestrator/backend/internal/httpd/apierr"
-	"github.com/aoagents/agent-orchestrator/backend/internal/ports"
-	aoprocess "github.com/aoagents/agent-orchestrator/backend/internal/process"
+	"github.com/sudo-adduser-jordan/open-agents/backend/internal/domain"
+	"github.com/sudo-adduser-jordan/open-agents/backend/internal/httpd/apierr"
+	"github.com/sudo-adduser-jordan/open-agents/backend/internal/ports"
+	openagentsprocess "github.com/sudo-adduser-jordan/open-agents/backend/internal/process"
 )
 
 const (
@@ -51,7 +51,7 @@ type WorkspaceCompareMode string
 const (
 	// WorkspaceCompareBase means diffs are against the session's recorded base.
 	WorkspaceCompareBase WorkspaceCompareMode = "base"
-	// WorkspaceCompareHeadFallback means AO could not resolve a base and used the
+	// WorkspaceCompareHeadFallback means Open Agents could not resolve a base and used the
 	// previous HEAD-only behavior.
 	WorkspaceCompareHeadFallback WorkspaceCompareMode = "head_fallback"
 )
@@ -681,7 +681,7 @@ func resolveWorkspaceCompare(ctx context.Context, root, recordedSHA, recordedRef
 	}
 
 	// The provider PR's own, independently-synced base. A local
-	// remote-tracking ref can go stale (AO never fetches a session
+	// remote-tracking ref can go stale (Open Agents never fetches a session
 	// worktree), so this can be more advanced than the local candidate above
 	// — but it's equally re-derived through merge-base rather than trusted as
 	// a raw revision, since pr.BaseSHA is the target branch's current tip,
@@ -2257,7 +2257,7 @@ func truncateUTF8(in string, limit int) (string, bool) {
 func gitWorkspaceOutput(ctx context.Context, root string, args ...string) (string, error) {
 	globalArgs := make([]string, 0, 10+len(args))
 	globalArgs = append(globalArgs, "--no-pager", "--no-optional-locks", "-c", "core.hooksPath="+os.DevNull, "-c", "diff.external=", "-c", "core.fsmonitor=false", "-C", root)
-	cmd := aoprocess.CommandContext(ctx, "git", append(globalArgs, args...)...)
+	cmd := openagentsprocess.CommandContext(ctx, "git", append(globalArgs, args...)...)
 	var stderr bytes.Buffer
 	cmd.Stderr = &stderr
 	out, err := cmd.Output()
@@ -2307,7 +2307,7 @@ func (w *cappedWorkspaceOutput) Write(p []byte) (int, error) {
 func gitWorkspaceOutputCapped(ctx context.Context, root string, limit int, args ...string) (string, bool, error) {
 	globalArgs := make([]string, 0, 10+len(args))
 	globalArgs = append(globalArgs, "--no-pager", "--no-optional-locks", "-c", "core.hooksPath="+os.DevNull, "-c", "diff.external=", "-c", "core.fsmonitor=false", "-C", root)
-	cmd := aoprocess.CommandContext(ctx, "git", append(globalArgs, args...)...)
+	cmd := openagentsprocess.CommandContext(ctx, "git", append(globalArgs, args...)...)
 	stdout := &cappedWorkspaceOutput{limit: limit}
 	stderr := &cappedWorkspaceOutput{limit: 64 * 1024}
 	cmd.Stdout = stdout

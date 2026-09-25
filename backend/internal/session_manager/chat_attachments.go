@@ -7,9 +7,9 @@ import (
 	"errors"
 	"fmt"
 
-	"github.com/aoagents/agent-orchestrator/backend/internal/attachmentstore"
-	"github.com/aoagents/agent-orchestrator/backend/internal/domain"
-	"github.com/aoagents/agent-orchestrator/backend/internal/ports"
+	"github.com/sudo-adduser-jordan/open-agents/backend/internal/attachmentstore"
+	"github.com/sudo-adduser-jordan/open-agents/backend/internal/domain"
+	"github.com/sudo-adduser-jordan/open-agents/backend/internal/ports"
 )
 
 // StageAttachments durably stores files, projects them into a live session's

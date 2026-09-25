@@ -14,10 +14,10 @@ import (
 
 	"github.com/go-chi/chi/v5"
 
-	"github.com/aoagents/agent-orchestrator/backend/internal/config"
-	"github.com/aoagents/agent-orchestrator/backend/internal/httpd"
-	"github.com/aoagents/agent-orchestrator/backend/internal/mobilebridge"
-	"github.com/aoagents/agent-orchestrator/backend/internal/presence"
+	"github.com/sudo-adduser-jordan/open-agents/backend/internal/config"
+	"github.com/sudo-adduser-jordan/open-agents/backend/internal/httpd"
+	"github.com/sudo-adduser-jordan/open-agents/backend/internal/mobilebridge"
+	"github.com/sudo-adduser-jordan/open-agents/backend/internal/presence"
 )
 
 type fakeRoster struct {

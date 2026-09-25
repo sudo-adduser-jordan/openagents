@@ -14,13 +14,13 @@ describe("sidebar visibility", () => {
 		expect(state.isSidebarOpen).toBe(false);
 		expect(sidebarIsVisible(state)).toBe(false);
 		expect(sidebarOccupiesLayout(state)).toBe(false);
-		expect(window.localStorage.getItem("ao.sidebar.open")).toBe("false");
+		expect(window.localStorage.getItem("open-agents.sidebar.open")).toBe("false");
 
 		useUiStore.getState().toggleSidebar();
 		state = useUiStore.getState();
 		expect(state.isSidebarOpen).toBe(true);
 		expect(sidebarIsVisible(state)).toBe(true);
 		expect(sidebarOccupiesLayout(state)).toBe(true);
-		expect(window.localStorage.getItem("ao.sidebar.open")).toBe("true");
+		expect(window.localStorage.getItem("open-agents.sidebar.open")).toBe("true");
 	});
 });

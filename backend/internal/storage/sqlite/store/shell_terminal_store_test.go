@@ -5,7 +5,7 @@ import (
 	"testing"
 	"time"
 
-	shelltermsvc "github.com/aoagents/agent-orchestrator/backend/internal/service/shellterm"
+	shelltermsvc "github.com/sudo-adduser-jordan/open-agents/backend/internal/service/shellterm"
 )
 
 // TestSelectShellTerminalsBySessionID: Session Manager uses this to find and

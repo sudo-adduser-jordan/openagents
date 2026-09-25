@@ -1,5 +1,5 @@
 import { create } from "zustand";
-import { aoBridge } from "../lib/bridge";
+import { openAgentsBridge } from "../lib/bridge";
 
 type SoundNotificationsState = {
 	enabled: boolean;
@@ -27,7 +27,7 @@ export const useSoundNotificationsStore = create<SoundNotificationsState>((set, 
 		pendingLoad = (async () => {
 			let enabled = DEFAULT_ENABLED;
 			try {
-				const settings = await aoBridge.uiSettings.get();
+				const settings = await openAgentsBridge.uiSettings.get();
 				enabled = settings.soundNotificationsEnabled;
 			} catch {
 				// A missing bridge or unreadable setting must not prevent the UI from starting.
@@ -44,7 +44,7 @@ export const useSoundNotificationsStore = create<SoundNotificationsState>((set, 
 		const revision = ++settingRevision;
 		set({ saving: true, saveError: false });
 		try {
-			await aoBridge.uiSettings.set({ soundNotificationsEnabled: enabled });
+			await openAgentsBridge.uiSettings.set({ soundNotificationsEnabled: enabled });
 			if (revision === settingRevision) set({ enabled, loaded: true, saving: false });
 		} catch {
 			if (revision === settingRevision) set({ saving: false, saveError: true });

@@ -78,7 +78,7 @@ export default function ProjectScreen() {
 						<ActivityIndicator color={t.blue} />
 					</View>
 				) : (
-					<EmptyState icon="folder" title="Project not found" message="It may have been removed from AO." />
+					<EmptyState icon="folder" title="Project not found" message="It may have been removed from Open Agents." />
 				)
 			) : (
 				<WorkerBoardList

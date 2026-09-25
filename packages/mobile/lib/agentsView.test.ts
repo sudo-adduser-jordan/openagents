@@ -24,7 +24,7 @@ const pr = (over: Partial<DashboardPR> = {}): DashboardPR => ({ number: 1, url: 
 
 describe("kanbanColumnOf", () => {
 	// The daemon derives the column from facts the client cannot see — whether
-	// AO's review pass is mid-run, whether auto-inject is configured — so its
+	// Open Agents' review pass is mid-run, whether auto-inject is configured — so its
 	// placement wins over anything re-derived here.
 	it("trusts the daemon's column over the local fallback", () => {
 		expect(kanbanColumnOf(session({ status: "working", kanbanColumn: "needs_review" }))).toBe("needs_review");
@@ -57,7 +57,7 @@ describe("boardZoneOf", () => {
 		expect(boardZoneOf(session({ status: "working", displayStatus: "Blocked" }))).toBe("needs_you");
 	});
 
-	// PR facts stay where the daemon put them: it already decided whether AO or a
+	// PR facts stay where the daemon put them: it already decided whether Open Agents or a
 	// person owns the next turn, and splitting one PR's lifecycle across two
 	// sections would second-guess that.
 	it("leaves PR-level states in their daemon column", () => {
@@ -274,7 +274,7 @@ describe("workerRowPresentation", () => {
 			darkTheme,
 			session({
 				id: "worker-8",
-				projectId: "agent-orchestrator-mobile_98d163a851",
+				projectId: "open-agents-mobile_98d163a851",
 				status: "idle",
 				displayName: "Polish the handoff",
 				branch: null,
@@ -286,7 +286,7 @@ describe("workerRowPresentation", () => {
 
 		expect(row).toEqual({
 			title: "Polish the handoff",
-			project: "agent-orch…8d163a851",
+			project: "open-agent…8d163a851",
 			branch: null,
 			trailing: "42m",
 			trailingKind: "time",
@@ -304,16 +304,16 @@ describe("showBranch", () => {
 		expect(showBranch("feat/add-login", "Add Login")).toBe(false);
 	});
 
-	// The rule this was narrowed to, twice. AO names worktree branches
-	// `ao/<session-id>/<slug>`; earlier versions normalised that scaffolding away
+	// The rule this was narrowed to, twice. Open Agents names worktree branches
+	// `open-agents/<session-id>/<slug>`; earlier versions normalised that scaffolding away
 	// and so hid the branch on every unnamed session. But it IS the worktree, the
 	// card names it nowhere else, and desktop's sameLabel has no knowledge of
-	// `ao/` so desktop shows it.
-	it("keeps AO worktree branches, named session or not", () => {
-		expect(showBranch("ao/agent-orchestrator-mo-17/root", "mobile-ui-revamp")).toBe(true);
-		expect(showBranch("ao/meetyou-2/chat-experience", "chat-ux")).toBe(true);
-		expect(showBranch("ao/meetyou-7/root", "meetyou-7")).toBe(true);
-		expect(showBranch("ao/precision-market-19/root", "precision-market-19")).toBe(true);
+	// `open-agents/` so desktop shows it.
+	it("keeps Open Agents worktree branches, named session or not", () => {
+		expect(showBranch("open-agents/open-agents-mo-17/root", "mobile-ui-revamp")).toBe(true);
+		expect(showBranch("open-agents/meetyou-2/chat-experience", "chat-ux")).toBe(true);
+		expect(showBranch("open-agents/meetyou-7/root", "meetyou-7")).toBe(true);
+		expect(showBranch("open-agents/precision-market-19/root", "precision-market-19")).toBe(true);
 	});
 
 	it("hides an absent branch", () => {

@@ -212,7 +212,7 @@ const scratch2 = {
 };
 const notFoundBody = { error: "not_found", code: "SESSION_NOT_FOUND", message: "Unknown session", requestId: "req-6" };
 
-const cfg: ServerConfig = { host: "ao.test", httpPort: "3011", muxPort: "3011", secure: false, password: "secret12" };
+const cfg: ServerConfig = { host: "open-agents.test", httpPort: "3011", muxPort: "3011", secure: false, password: "secret12" };
 
 function response(body: unknown, status = 200): Response {
 	return new Response(JSON.stringify(body), { status, headers: { "Content-Type": "application/json" } });
@@ -237,7 +237,7 @@ describe("lookUpSession, the request the route sends", () => {
 		expect(listed).toBeUndefined();
 
 		const lookup = await lookUpSession(cfg, "scratch-1");
-		expect(vi.mocked(fetch).mock.calls[3]?.[0]).toBe("http://ao.test:3011/api/v1/sessions/scratch-1");
+		expect(vi.mocked(fetch).mock.calls[3]?.[0]).toBe("http://open-agents.test:3011/api/v1/sessions/scratch-1");
 		expect(view({ listed, lookup })).toEqual({ kind: "ended" });
 	});
 

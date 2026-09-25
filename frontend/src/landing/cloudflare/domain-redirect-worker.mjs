@@ -1,13 +1,6 @@
-// Route only the landing aliases here; other AO services have separate origins.
-const aliases = new Set([
-  "ao-agents.com",
-  "www.ao-agents.com",
-  "aoagents.dev",
-  "www.aoagents.dev",
-  "useao.dev",
-  "www.useao.dev",
-  "www.orchestrator.inc",
-]);
+// Only the canonical www hostname redirects. Service domains under aoagents.dev
+// remain independent origins and are intentionally not handled here.
+const aliases = new Set(["www.orchestrator.inc"]);
 
 export default {
   fetch(request) {

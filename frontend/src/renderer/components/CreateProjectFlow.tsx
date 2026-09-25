@@ -23,7 +23,7 @@ import type { components } from "../../api/schema";
 import type { ImportFolderScan } from "../../preload";
 import { usePreparedClone } from "../hooks/usePreparedClone";
 import { apiClient, apiErrorMessage } from "../lib/api-client";
-import { aoBridge } from "../lib/bridge";
+import { openAgentsBridge } from "../lib/bridge";
 import { useUiStore } from "../stores/ui-store";
 import {
 	onboardingPanelClass,
@@ -51,8 +51,8 @@ export type CreateProjectInput = {
 export type CloneProjectInput = Pick<CloneRepositorySelection, "remoteUrl" | "destinationParent"> &
 	CreateProjectAgentSelection;
 
-const LAST_CLONE_DESTINATION_KEY = "ao.clone.lastDestinationParent";
-const LAST_IMPORT_REMOTE_URL_KEY = "ao.import.lastRemoteUrl";
+const LAST_CLONE_DESTINATION_KEY = "open-agents.clone.lastDestinationParent";
+const LAST_IMPORT_REMOTE_URL_KEY = "open-agents.import.lastRemoteUrl";
 const GIT_PREPARATION_ACTIONS = ["git_init", "git_commit", "create_remote_repository", "set_remote"] as const;
 const GIT_ACTION_LABELS: Record<string, string> = {
 	git_init: "Git initialization", git_commit: "Initial commit", create_remote_repository: "Create remote repository", set_remote: "Remote setup",
@@ -93,7 +93,7 @@ function initialCloneDetails(): CloneRepositoryDetails {
 	return {
 		remoteUrl: "",
 		destinationParent:
-			typeof window === "undefined" ? "~/ao/projects" : (window.localStorage.getItem(LAST_CLONE_DESTINATION_KEY) || "~/ao/projects"),
+			typeof window === "undefined" ? "~/open-agents/projects" : (window.localStorage.getItem(LAST_CLONE_DESTINATION_KEY) || "~/open-agents/projects"),
 	};
 }
 
@@ -242,7 +242,7 @@ export function CreateProjectFlow({
 			await preparedClone.cleanup();
 			return true;
 		} catch {
-			reportProjectError("AO could not remove the incomplete checkout. Try again before leaving this flow.");
+			reportProjectError("Open Agents could not remove the incomplete checkout. Try again before leaving this flow.");
 			return false;
 		}
 	};
@@ -292,7 +292,7 @@ export function CreateProjectFlow({
 		try {
 			const path =
 				presetPath ??
-				(await aoBridge.app.chooseDirectory(
+				(await openAgentsBridge.app.chooseDirectory(
 					kind === "workspace" ? "Choose a workspace folder" : "Choose a project repository",
 				));
 			if (path && kind === "single_repo") {
@@ -358,8 +358,8 @@ export function CreateProjectFlow({
 				try {
 					const [validation, scan, ancestorWarning] = await Promise.all([
 						validateImportFolder(path, "workspace"),
-						aoBridge.app.scanImportFolder({ path, mode: "workspace" }),
-						aoBridge.app.checkAncestorRepo(path).catch(() => undefined),
+						openAgentsBridge.app.scanImportFolder({ path, mode: "workspace" }),
+						openAgentsBridge.app.checkAncestorRepo(path).catch(() => undefined),
 					]);
 					setValidationScan(scan);
 					setRepositorySetupWarning(ancestorWarning ?? scan.setupWarning ?? null);
@@ -470,7 +470,7 @@ export function CreateProjectFlow({
 		// skip this lookup entirely — the daemon resolves their base branch
 		// itself, saving a blocking IPC round-trip on the critical path.
 		const defaultBranch =
-			selectedKind === "workspace" ? await aoBridge.app.getRepositoryBranch(selectedPath) : undefined;
+			selectedKind === "workspace" ? await openAgentsBridge.app.getRepositoryBranch(selectedPath) : undefined;
 		await onCreateProject({
 			path: selectedPath,
 			asWorkspace: selectedKind === "workspace",
@@ -493,14 +493,14 @@ export function CreateProjectFlow({
 			if (cloneSelection) reportProjectError(message);
 			else if (selectedKind === "single_repo") reportProjectError(safeProjectCreationError(
 				message,
-				"AO could not create this project. Try again.",
+				"Open Agents could not create this project. Try again.",
 				code,
 			));
 			else reportProjectError(message);
 			if (hasModePicker && !cloneSelection && selectedKind !== "single_repo") {
 				if (shouldScanCreateFailure(message)) {
 					try {
-						const scan = await aoBridge.app.scanImportFolder({
+						const scan = await openAgentsBridge.app.scanImportFolder({
 							path: selectedPath,
 							mode: selectedKind === "workspace" ? "workspace" : "project",
 						});
@@ -552,7 +552,7 @@ export function CreateProjectFlow({
 			setSelectedPath(data.path);
 		} catch {
 			reportProjectError(clonedPath
-				? "AO cloned the repository but could not verify the checkout. Try again."
+				? "Open Agents cloned the repository but could not verify the checkout. Try again."
 				: "Could not clone repository");
 			if (clonedPath) await abandonPreparedClone();
 			setCloneDialogOpen(true);
@@ -600,7 +600,7 @@ export function CreateProjectFlow({
 		if (projectApprovedActions.includes("set_remote") && remoteUrl !== "") {
 			setIsPreparingGit(true);
 			try {
-				if (!(await aoBridge.app.checkGitRepository(remoteUrl))) {
+				if (!(await openAgentsBridge.app.checkGitRepository(remoteUrl))) {
 					reportProjectError("This isn't a repository or you don't have access");
 					return;
 				}
@@ -917,7 +917,7 @@ function importValidationMessage(result: ImportValidationResult): string {
 function importBlockingErrorLabel(code: string): string {
 	switch (code) {
 		case "INVALID_PATH":
-			return "Choose a folder AO can read.";
+			return "Choose a folder Open Agents can read.";
 		case "PATH_NOT_DIRECTORY":
 			return "Choose a folder, not a file.";
 		case "BARE_REPOSITORY":
@@ -925,9 +925,9 @@ function importBlockingErrorLabel(code: string): string {
 		case "UNSUPPORTED_GIT_METADATA":
 			return "Repair the Git metadata or choose a different folder.";
 		case "CHILD_REPO_SCAN_FAILED":
-			return "AO could not inspect the repositories under this folder.";
+			return "Open Agents could not inspect the repositories under this folder.";
 		case "IMPORT_PATH_UNSAFE":
-			return "Choose a specific project folder outside AO's own state directories.";
+			return "Choose a specific project folder outside Open Agents's own state directories.";
 		case "DETACHED_HEAD":
 			return "This repository is checked out in detached HEAD state. Check out a named branch before importing it.";
 		case "WORKSPACE_CHILD_REPO_REQUIRED":
@@ -1070,7 +1070,7 @@ function CreateProjectSourceDialog({
 					)}
 				>
 					<Dialog.Title className="sr-only">{"Add a project"}</Dialog.Title>
-					<Dialog.Description className="sr-only">{"Choose how you want to add code to Agent Orchestrator"}</Dialog.Description>
+					<Dialog.Description className="sr-only">{"Choose how you want to add code to Open Agents"}</Dialog.Description>
 					<div className="flex w-full flex-col items-center gap-3">
 						<ImportSourcePicker disabled={disabled} onClose={() => onOpenChange(false)} onSelect={onSelect} onCreateStandaloneAgent={onCreateStandaloneAgent} dialog />
 					</div>
@@ -1127,10 +1127,10 @@ function ImportSourcePicker({
 			)}
 			{dialog ? (
 				<Dialog.Description className={onboardingPanelDescriptionClass}>
-					{"Choose how you want to add code to Agent Orchestrator"}
+					{"Choose how you want to add code to Open Agents"}
 				</Dialog.Description>
 			) : (
-				<p className={onboardingPanelDescriptionClass}>{"Choose how you want to add code to Agent Orchestrator"}</p>
+				<p className={onboardingPanelDescriptionClass}>{"Choose how you want to add code to Open Agents"}</p>
 			)}
 			<div className="mx-4 mb-4 overflow-hidden rounded-md border border-border/50 bg-[var(--color-bg-import-modal)]">
 				<div className="flex flex-col divide-y divide-border/50">
@@ -1247,8 +1247,8 @@ function ProjectImportDialog({
 				}
 			}
 		};
-		void aoBridge.app.getCachedGitHubOwners().then(applyOwners).catch(() => undefined);
-		void aoBridge.app.refreshGitHubOwners().then(applyOwners).catch(() => undefined);
+		void openAgentsBridge.app.getCachedGitHubOwners().then(applyOwners).catch(() => undefined);
+		void openAgentsBridge.app.refreshGitHubOwners().then(applyOwners).catch(() => undefined);
 		return () => { cancelled = true; };
 	}, [customGitHubOwner, githubRepository, needsRemote, onChangeGitHubRepository, onChangeRemote, open]);
 	useEffect(() => {
@@ -1259,7 +1259,7 @@ function ProjectImportDialog({
 		setAvailability({ state: "checking" });
 		let cancelled = false;
 		const timer = window.setTimeout(() => {
-			void aoBridge.app.checkGitHubRepositoryAvailability({ owner: githubOwner, name: githubName })
+			void openAgentsBridge.app.checkGitHubRepositoryAvailability({ owner: githubOwner, name: githubName })
 				.then((result) => {
 					if (cancelled) return;
 					setAvailability(result.available ? { state: "available" } : { state: "unavailable", message: result.message });
@@ -1300,8 +1300,8 @@ function ProjectImportDialog({
 							</Dialog.Title>
 							<Dialog.Description className="sr-only">
 								{step === "blocked"
-									? "AO found a problem with this folder before project setup can continue."
-									: "AO needs your approval before it initializes Git, creates a first commit, or sets the origin remote."}
+									? "Open Agents found a problem with this folder before project setup can continue."
+									: "Open Agents needs your approval before it initializes Git, creates a first commit, or sets the origin remote."}
 							</Dialog.Description>
 						</div>
 						<Dialog.Close asChild>
@@ -1341,12 +1341,12 @@ function ProjectImportDialog({
 								{needsRemote ? (
 									<p className="text-[14px] leading-5 text-[var(--color-text-import-muted)]">
 										<code className="rounded bg-muted px-1.5 py-0.5 font-mono text-[0.9em] text-foreground">{projectNameFromPath(validation.root.repoPath)}</code>{" "}
-										{"does not have a GitHub remote. AO will create a repository, add it as origin, and push the current branch."}
+										{"does not have a GitHub remote. Open Agents will create a repository, add it as origin, and push the current branch."}
 									</p>
 								) : null}
 								{isPreparingGit ? (
 									<span className="text-[11px] text-muted-foreground" role="status">
-										{"Running project setup. AO is preparing this repository now."}
+										{"Running project setup. Open Agents is preparing this repository now."}
 									</span>
 								) : null}
 								{needsRemote ? (

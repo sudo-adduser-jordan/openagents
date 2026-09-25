@@ -1,7 +1,7 @@
 import { render, screen } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { describe, expect, it, vi } from "vitest";
-import { aoBridge } from "../../lib/bridge";
+import { openAgentsBridge } from "../../lib/bridge";
 import type { ConversationActivity } from "../../types/conversation";
 import { ElicitationCard } from "./ElicitationCard";
 
@@ -168,7 +168,7 @@ describe("ElicitationCard", () => {
 
 	it("opens an external URL only after the user explicitly consents", async () => {
 		const user = userEvent.setup();
-		const openExternal = vi.spyOn(aoBridge.app, "openExternal").mockResolvedValue(undefined);
+		const openExternal = vi.spyOn(openAgentsBridge.app, "openExternal").mockResolvedValue(undefined);
 		const onResolve = vi.fn().mockResolvedValue(undefined);
 		render(
 			<ElicitationCard

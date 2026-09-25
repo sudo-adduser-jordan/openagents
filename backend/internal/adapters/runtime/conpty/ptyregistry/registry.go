@@ -1,6 +1,6 @@
 // Package ptyregistry is a sideband JSON list of live Windows pty-host
-// processes so ao stop can find and graceful-kill them even when session
-// metadata is lost. Ported from agent-orchestrator's windows-pty-registry.ts.
+// processes so open-agents stop can find and graceful-kill them even when session
+// metadata is lost. Ported from open-agents's windows-pty-registry.ts.
 package ptyregistry
 
 import (
@@ -36,10 +36,10 @@ var ErrRegistryMalformed = errors.New("conpty pty registry malformed")
 
 // UnresolvedPipePath marks a durable launch reservation or a child that
 // started without reporting a READY address. It is deliberately not dialable.
-const UnresolvedPipePath = "ao-conpty://startup-unresolved"
+const UnresolvedPipePath = "open-agents-conpty://startup-unresolved"
 
 // overrideDir, when set, is the directory the registry file lives in for
-// this daemon instance, taking precedence over the ~/.ao default. Set once by
+// this daemon instance, taking precedence over the ~/.open-agents default. Set once by
 // SetRunFilePath at daemon startup, before any session activity begins, so
 // the unsynchronized package var has no concurrent access to race against.
 var overrideDir string
@@ -51,17 +51,17 @@ var registryMu sync.Mutex
 
 // SetRunFilePath pins the registry to the directory containing this
 // instance's running.json (backend/internal/config's already-resolved,
-// absolute Config.RunFilePath). Two AO daemons on one machine — e.g. a
+// absolute Config.RunFilePath). Two Open Agents daemons on one machine — e.g. a
 // headless dev daemon and the desktop app, or two dev daemons — normally run
-// fully isolated via AO_RUN_FILE/AO_DATA_DIR overrides, but the registry
-// ignored that and always resolved to ~/.ao regardless: with the same
+// fully isolated via OPEN_AGENTS_RUN_FILE/OPEN_AGENTS_DATA_DIR overrides, but the registry
+// ignored that and always resolved to ~/.open-agents regardless: with the same
 // project checked out in both, their independently-numbered session ids
 // (e.g. "demo-website-2") could collide, and the second instance's
 // registration would silently overwrite the first's pty-host address,
 // attaching that session's terminal to the wrong process. Co-locating the
 // registry with each instance's own running.json keeps them isolated the
 // same way the SQLite store already is. An empty path clears any override,
-// reverting to the ~/.ao default.
+// reverting to the ~/.open-agents default.
 func SetRunFilePath(path string) {
 	if path == "" {
 		overrideDir = ""
@@ -72,7 +72,7 @@ func SetRunFilePath(path string) {
 
 // registryFile resolves the pty-host registry path: overrideDir joined with
 // the registry filename when set via SetRunFilePath, otherwise
-// ~/.ao/windows-pty-hosts.json via os.UserHomeDir() so t.Setenv("HOME", dir)
+// ~/.open-agents/windows-pty-hosts.json via os.UserHomeDir() so t.Setenv("HOME", dir)
 // in tests redirects reads/writes to a temp dir.
 func registryFile() (string, error) {
 	if overrideDir != "" {
@@ -82,7 +82,7 @@ func registryFile() (string, error) {
 	if err != nil {
 		return "", err
 	}
-	return filepath.Join(home, ".ao", "windows-pty-hosts.json"), nil
+	return filepath.Join(home, ".open-agents", "windows-pty-hosts.json"), nil
 }
 
 // readRaw reads and strictly parses the registry. A missing file is a complete

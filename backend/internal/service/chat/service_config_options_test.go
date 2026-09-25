@@ -3,8 +3,8 @@ package chat
 import (
 	"testing"
 
-	"github.com/aoagents/agent-orchestrator/backend/internal/domain"
-	"github.com/aoagents/agent-orchestrator/backend/internal/ports"
+	"github.com/sudo-adduser-jordan/open-agents/backend/internal/domain"
+	"github.com/sudo-adduser-jordan/open-agents/backend/internal/ports"
 )
 
 func TestSettingsFromConfigOptionsKeepsAgentModelAndEffortAcrossRestart(t *testing.T) {
@@ -34,7 +34,7 @@ func TestPermissionConfigOptionsLeaveProviderCatalogUntouched(t *testing.T) {
 	}
 	for _, choice := range got[0].Choices {
 		if choice.PermissionMode != "" {
-			t.Fatalf("opencode choice %q was mapped to AO permission mode %q", choice.Value, choice.PermissionMode)
+			t.Fatalf("opencode choice %q was mapped to Open Agents permission mode %q", choice.Value, choice.PermissionMode)
 		}
 	}
 }

@@ -175,9 +175,9 @@ function setupHost(agentBrowserRuntime?: import("./agent-browser-runtime").Agent
 	let debuggerAttached = false;
 	const openDevTools = vi.fn();
 	const closeDevTools = vi.fn();
-	const insertCSS = vi.fn(async (_css: string, _options?: { cssOrigin?: "author" | "user" }) => "ao-browser-scrollbars");
+	const insertCSS = vi.fn(async (_css: string, _options?: { cssOrigin?: "author" | "user" }) => "open-agents-browser-scrollbars");
 	let insertedStyleNumber = 0;
-	insertCSS.mockImplementation(async () => `ao-browser-scrollbars-${++insertedStyleNumber}`);
+	insertCSS.mockImplementation(async () => `open-agents-browser-scrollbars-${++insertedStyleNumber}`);
 	const removeInsertedCSS = vi.fn(async (_key: string) => undefined);
 	const writeImage = vi.fn();
 	const debuggerSendCommand = vi.fn(async (method: string, params?: Record<string, unknown>): Promise<unknown> => {
@@ -715,7 +715,7 @@ describe("browser shortcut routing", () => {
 });
 
 describe("browser scrollbar styling", () => {
-	it("injects AO-styled horizontal and vertical scrollbars whenever a browser page becomes ready", async () => {
+	it("injects Open Agents-styled horizontal and vertical scrollbars whenever a browser page becomes ready", async () => {
 		const { insertCSS, invoke, removeInsertedCSS, setBrowserZoomFactor, webContentsListeners } = setupHost();
 
 		await invoke("browser:ensure", "sess-1");
@@ -743,7 +743,7 @@ describe("browser scrollbar styling", () => {
 		const zoomedCss = insertCSS.mock.calls[2]?.[0] ?? "";
 		expect(zoomedCss).toContain("width: 2px");
 		expect(zoomedCss).toContain("height: 2px");
-		await vi.waitFor(() => expect(removeInsertedCSS).toHaveBeenCalledWith("ao-browser-scrollbars-2"));
+		await vi.waitFor(() => expect(removeInsertedCSS).toHaveBeenCalledWith("open-agents-browser-scrollbars-2"));
 	});
 });
 
@@ -1017,7 +1017,7 @@ describe("browser:closeTab automation-runtime fallback", () => {
 	});
 
 	// Regression, reported live: the runtime's Target.closeTarget handling
-	// (invoked from inside runAction) can call AO's own internal closeTab
+	// (invoked from inside runAction) can call Open Agents's own internal closeTab
 	// before the runtime still reports the overall tab-close command as
 	// failed. The fallback used to call closeTab a second time regardless,
 	// which threw TAB_NOT_FOUND for a tab that had already, genuinely closed —
@@ -1503,8 +1503,8 @@ describe("browser profile partitions and replacement", () => {
 		const firstPartition = constructorOptions[0]!.webPreferences.partition;
 		const secondPartition = constructorOptions[1]!.webPreferences.partition;
 		const firstTabPartition = constructorOptions[2]!.webPreferences.partition;
-		expect(firstPartition).toMatch(/^ao-browser-/);
-		expect(secondPartition).toMatch(/^ao-browser-/);
+		expect(firstPartition).toMatch(/^open-agents-browser-/);
+		expect(secondPartition).toMatch(/^open-agents-browser-/);
 		expect(firstPartition).not.toBe(secondPartition);
 		expect(firstTabPartition).toBe(firstPartition);
 	});
@@ -1721,7 +1721,7 @@ describe("browser profile partitions and replacement", () => {
 			channel: "browser:annotation:canceled",
 			payload: { viewId: nav.viewId, reason: "navigation" },
 		});
-		expect(constructorOptions.slice(2).every(({ webPreferences }) => webPreferences.partition?.startsWith("ao-browser-") === true)).toBe(true);
+		expect(constructorOptions.slice(2).every(({ webPreferences }) => webPreferences.partition?.startsWith("open-agents-browser-") === true)).toBe(true);
 		expect(constructorOptions[2]!.webPreferences.partition).toBe(constructorOptions[3]!.webPreferences.partition);
 		for (const view of views.slice(2)) {
 			expect(view.webContents.session.setPermissionCheckHandler).toHaveBeenCalledWith(expect.any(Function));
@@ -1947,7 +1947,7 @@ describe("browser:clear", () => {
 });
 
 describe("native browser visibility", () => {
-	it("shows AO's empty state while keeping an initialized blank target alive", async () => {
+	it("shows Open Agents's empty state while keeping an initialized blank target alive", async () => {
 		const { emit, invoke, view } = setupHost();
 		await invoke("browser:ensure", "sess-1");
 
@@ -2287,7 +2287,7 @@ describe("agent browser runtime", () => {
 		await host.execute("sess-2", "tabs");
 
 		const firstPartition = constructorOptions[0].webPreferences.partition;
-		expect(firstPartition).toMatch(/^ao-browser-/);
+		expect(firstPartition).toMatch(/^open-agents-browser-/);
 		expect(firstPartition).not.toMatch(/^persist:/);
 		expect(constructorOptions[1].webPreferences.partition).toBe(firstPartition);
 		expect(constructorOptions[2].webPreferences.partition).not.toBe(firstPartition);

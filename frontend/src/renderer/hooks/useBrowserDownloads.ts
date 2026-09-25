@@ -1,9 +1,9 @@
 import { useCallback, useEffect, useState } from "react";
 import type { BrowserDownload, BrowserDownloadAction } from "../../shared/browser-downloads";
-import { aoBridge } from "../lib/bridge";
+import { openAgentsBridge } from "../lib/bridge";
 
 export function useBrowserDownloads() {
-	const bridge = aoBridge.browser?.downloads;
+	const bridge = openAgentsBridge.browser?.downloads;
 	const [downloads, setDownloads] = useState<BrowserDownload[]>([]);
 	const [error, setError] = useState("");
 

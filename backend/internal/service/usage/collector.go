@@ -11,7 +11,7 @@ import (
 	"sync"
 	"time"
 
-	"github.com/aoagents/agent-orchestrator/backend/internal/domain"
+	"github.com/sudo-adduser-jordan/open-agents/backend/internal/domain"
 )
 
 const (
@@ -21,10 +21,10 @@ const (
 
 var nativeUsageIDPattern = regexp.MustCompile(`^[A-Za-z0-9_-]+$`)
 
-// ErrUsageSessionNotFound reports that hook metadata targeted no durable AO session.
+// ErrUsageSessionNotFound reports that hook metadata targeted no durable Open Agents session.
 var ErrUsageSessionNotFound = errors.New("usage session not found")
 
-// HookSignal is the usage-specific metadata carried by an AO agent hook.
+// HookSignal is the usage-specific metadata carried by an Open Agents agent hook.
 type HookSignal struct {
 	Harness                domain.AgentHarness
 	ProviderHint           string
@@ -37,13 +37,13 @@ type HookSignal struct {
 	SubagentTranscriptPath string
 }
 
-// SourceRoots are the provider-owned directories from which AO may read usage
+// SourceRoots are the provider-owned directories from which Open Agents may read usage
 // transcripts. opencode has no certified transcript pipeline, so no
 // provider-owned roots are configured; hooks remain the only collection path.
 type SourceRoots struct{}
 
 // DefaultSourceRoots resolves provider-owned transcript directories. dataDir
-// is AO's already-resolved durable data directory. opencode has no provider
+// is Open Agents's already-resolved durable data directory. opencode has no provider
 // roots, so this returns an empty SourceRoots.
 func DefaultSourceRoots(ctx context.Context, _ string) (SourceRoots, error) {
 	if err := ctx.Err(); err != nil {
@@ -117,7 +117,7 @@ func (c *Collector) FinalizeSession(
 	return nil
 }
 
-// ReactivateSession resumes collection for the native session relaunched by AO.
+// ReactivateSession resumes collection for the native session relaunched by Open Agents.
 // Existing bindings remain untouched; the session binding is merely made
 // watchable again so hooks are not required for continued accounting.
 func (c *Collector) ReactivateSession(
@@ -294,7 +294,7 @@ func (c *Collector) hookSession(
 	return session, true, nil
 }
 
-// BackfillActive records bindings for live/resumable AO sessions. It
+// BackfillActive records bindings for live/resumable Open Agents sessions. It
 // deliberately does not import terminated session history.
 func (c *Collector) BackfillActive(ctx context.Context) error {
 	c.mu.Lock()

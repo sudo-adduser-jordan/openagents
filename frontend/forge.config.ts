@@ -7,28 +7,26 @@ import MakerNSIS from "./makers/maker-nsis";
 import MakerDMG, { isSigningConfigured, sealDmg, verifyDmg, verifyMacArtifact } from "./makers/maker-dmg";
 import { machoHasX86_64Slice } from "./makers/macho-archs";
 import MakerAppImage from "./makers/maker-appimage";
-import { existsSync, readdirSync, writeFileSync } from "node:fs";
+import { existsSync, readdirSync, renameSync, writeFileSync } from "node:fs";
 import { spawnSync } from "node:child_process";
 import path from "node:path";
 
-// Default GitHub release target (production). Releases land on Untrivial-ai
-// (the org the repo was transferred to in July 2026; AgentWrapper and aoagents
-// are prior homes). Builds cut by CI must NOT rely on this fallback: the
-// workflows set AO_RELEASE_REPO to the repo they run in, and build-artifacts.yml
-// asserts the baked app-update.yml matches it, so a future org/repo rename
-// fails the build instead of stranding the fleet on a redirect (#3523).
-const DEFAULT_RELEASE_REPO = "Untrivial-ai/agent-orchestrator";
+// Default GitHub release target (production). Builds cut by CI must NOT rely
+// on a redirect or an older repository identity: workflows set
+// OPEN_AGENTS_RELEASE_REPO to the repository they run in, and
+// build-artifacts.yml asserts the baked app-update.yml matches it.
+const DEFAULT_RELEASE_REPO = "sudo-adduser-jordan/open-agents";
 
 // The packaged binary name (no extension). Single source of truth: the packager
 // names the exe/ELF from this, and the NSIS + deb makers must point their
 // shortcut/launcher at the SAME name. Drift here means a broken Start menu
 // shortcut on Windows (#2414) or "could not find the Electron app binary" on deb.
-const EXECUTABLE_NAME = "agent-orchestrator";
+const EXECUTABLE_NAME = "open-agents";
 const AUTH_PROTOCOL = {
-	name: "Agent Orchestrator authentication callback",
-	schemes: ["ao-app"],
+	name: "Open Agents authentication callback",
+	schemes: ["open-agents"],
 };
-const AUTH_PROTOCOL_MIME_TYPE = "x-scheme-handler/ao-app";
+const AUTH_PROTOCOL_MIME_TYPE = "x-scheme-handler/open-agents";
 const PACKAGED_EXTERNAL_DEPENDENCIES = [
 	"/node_modules/better-sqlite3",
 	"/node_modules/bindings",
@@ -101,7 +99,7 @@ export function macSignOptionsForFile(filePath: string): { entitlements?: string
 	return machoHasX86_64Slice(filePath) ? { entitlements: ACP_RUNTIME_NODE_ENTITLEMENTS } : {};
 }
 
-// parseReleaseRepo turns an "owner/repo" string (from AO_RELEASE_REPO) into the
+// parseReleaseRepo turns an "owner/repo" string (from OPEN_AGENTS_RELEASE_REPO) into the
 // publisher-github { owner, name } shape, falling back to the production default
 // when unset or malformed.
 function parseReleaseRepo(value: string | undefined): { owner: string; name: string } {
@@ -113,6 +111,12 @@ function parseReleaseRepo(value: string | undefined): { owner: string; name: str
 	return { owner, name };
 }
 
+export function canonicalDarwinZipPath(filePath: string): string {
+	const match = /-darwin-(arm64|x64)-(.+)\.zip$/.exec(path.basename(filePath));
+	if (!match) return filePath;
+	return path.join(path.dirname(filePath), `open-agents-darwin-${match[1]}-${match[2]}.zip`);
+}
+
 const config: ForgeConfig = {
 	packagerConfig: {
 		asar: true,
@@ -121,8 +125,8 @@ const config: ForgeConfig = {
 		// runtime dependency tree explicitly; AutoUnpackNativesPlugin then places
 		// the .node binary outside app.asar.
 		ignore: ignoreFromVitePackage,
-		appBundleId: "dev.agent-orchestrator.desktop",
-		name: "Agent Orchestrator",
+		appBundleId: "dev.openagents.desktop",
+		name: "Open Agents",
 		executableName: EXECUTABLE_NAME,
 		protocols: [AUTH_PROTOCOL],
 		appCategoryType: "public.app-category.developer-tools",
@@ -135,8 +139,8 @@ const config: ForgeConfig = {
 		//  - CI: an App Store Connect API key. APPLE_API_KEY is a PATH to the .p8
 		//    (the workflow decodes APPLE_API_KEY_BASE64 to a temp file), plus the
 		//    key id + issuer uuid. Matches the proven local runbook creds.
-		//  - Local: AO_NOTARY_PROFILE, a notarytool keychain profile created with
-		//    `notarytool store-credentials`. See ao-macos-signed-release runbook.
+		//  - Local: OPEN_AGENTS_NOTARY_PROFILE, a notarytool keychain profile created with
+		//    `notarytool store-credentials`. See open-agents-macos-signed-release runbook.
 		// Both are valid NotaryToolCredentials, so no cast is needed.
 		osxSign: process.env.APPLE_SIGNING_IDENTITY
 			? {
@@ -146,8 +150,8 @@ const config: ForgeConfig = {
 			: process.env.CSC_LINK
 				? { optionsForFile: macSignOptionsForFile }
 				: undefined,
-		osxNotarize: process.env.AO_NOTARY_PROFILE
-			? { keychainProfile: process.env.AO_NOTARY_PROFILE }
+		osxNotarize: process.env.OPEN_AGENTS_NOTARY_PROFILE
+			? { keychainProfile: process.env.OPEN_AGENTS_NOTARY_PROFILE }
 			: process.env.APPLE_API_KEY
 				? {
 						appleApiKey: process.env.APPLE_API_KEY,
@@ -164,7 +168,7 @@ const config: ForgeConfig = {
 		// above, so it is copied into the bundle and SIGNED as part of the seal.
 		// Writing it after signing (a postPackage hook) adds an unsealed resource
 		// and macOS reports the app as "damaged". owner/repo are baked from
-		// AO_RELEASE_REPO at build time.
+		// OPEN_AGENTS_RELEASE_REPO at build time.
 		prePackage: async (_forgeConfig, platform, arch) => {
 			await prepareNativeDependencies(platform as NodeJS.Platform, arch);
 			if (platform === "darwin") {
@@ -172,12 +176,12 @@ const config: ForgeConfig = {
 				if (helperBuild.error) throw helperBuild.error;
 				if (helperBuild.status !== 0) throw new Error("macOS update helper build failed");
 			}
-			const { owner, name } = parseReleaseRepo(process.env.AO_RELEASE_REPO);
+			const { owner, name } = parseReleaseRepo(process.env.OPEN_AGENTS_RELEASE_REPO);
 			const yml = [
 				"provider: github",
 				`owner: ${owner}`,
 				`repo: ${name}`,
-				"updaterCacheDirName: agent-orchestrator-updater",
+				"updaterCacheDirName: open-agents-updater",
 				"",
 			].join("\n");
 			writeFileSync("app-update.yml", yml);
@@ -206,7 +210,7 @@ const config: ForgeConfig = {
 					const appBundle = readdirSync(outputPath).find((entry) => entry.endsWith(".app"));
 					if (!appBundle) throw new Error(`packaged macOS app bundle missing from ${outputPath}`);
 					resourcesPath = path.join(outputPath, appBundle, "Contents", "Resources");
-					const helper = path.join(resourcesPath, "update-helper", "ao-update-progress");
+					const helper = path.join(resourcesPath, "update-helper", "open-agents-update-progress");
 					if (!existsSync(helper)) throw new Error(`packaged macOS update helper missing from ${helper}`);
 				}
 				const binary = path.join(resourcesPath, "tmux", "bin", "tmux");
@@ -247,7 +251,16 @@ const config: ForgeConfig = {
 		postMake: async (_forgeConfig, makeResults) => {
 			for (const result of makeResults) {
 				if (result.platform !== "darwin") continue;
-				for (const artifact of result.artifacts) {
+				for (let index = 0; index < result.artifacts.length; index += 1) {
+					let artifact = result.artifacts[index];
+					if (artifact.endsWith(".zip")) {
+						const canonical = canonicalDarwinZipPath(artifact);
+						if (canonical !== artifact) {
+							renameSync(artifact, canonical);
+							result.artifacts[index] = canonical;
+							artifact = canonical;
+						}
+					}
 					if (artifact.endsWith(".dmg")) {
 						if (await sealDmg(artifact)) await verifyDmg(artifact);
 					} else if (artifact.endsWith(".zip") && isSigningConfigured()) {
@@ -265,10 +278,10 @@ const config: ForgeConfig = {
 		// custom install dir or proper uninstaller (issue #401).
 		new MakerNSIS(
 			{
-				appId: "dev.agent-orchestrator.desktop",
-				productName: "Agent Orchestrator",
+				appId: "dev.openagents.desktop",
+				productName: "Open Agents",
 				// Match the packaged binary name so the Start menu shortcut targets
-				// the real "agent-orchestrator.exe" (not "Agent Orchestrator.exe").
+				// the real "open-agents.exe" (not "Open Agents.exe").
 				executableName: EXECUTABLE_NAME,
 				icon: "assets/icon.ico",
 			},
@@ -284,19 +297,19 @@ const config: ForgeConfig = {
 		// break the signature seal on the way in (see makers/maker-dmg.ts, #3267).
 		new MakerDMG(
 			{
-				appId: "dev.agent-orchestrator.desktop",
-				productName: "Agent Orchestrator",
+				appId: "dev.openagents.desktop",
+				productName: "Open Agents",
 			},
 			["darwin"],
 		),
-		// Linux fetch-and-run artifact for `ao start`: a single self-contained
+		// Linux fetch-and-run artifact for `open-agents start`: a single self-contained
 		// AppImage the Go bootstrapper downloads and runs directly (see
 		// makers/maker-appimage.ts). The deb/rpm makers below stay for users who
 		// prefer a system package.
 		new MakerAppImage(
 			{
-				appId: "dev.agent-orchestrator.desktop",
-				productName: "Agent Orchestrator",
+				appId: "dev.openagents.desktop",
+				productName: "Open Agents",
 				icon: "assets/icon.png",
 				protocols: [AUTH_PROTOCOL],
 			},
@@ -308,11 +321,11 @@ const config: ForgeConfig = {
 				options: {
 					// Must match packagerConfig.executableName, or the deb maker
 					// looks for the package name and fails with "could not find
-					// the Electron app binary". (Both are "agent-orchestrator".)
+					// the Electron app binary". (Both are "open-agents".)
 					bin: EXECUTABLE_NAME,
 					icon: "assets/icon.png",
-					maintainer: "Agent Orchestrator",
-					homepage: "https://github.com/aoagents/agent-orchestrator",
+					maintainer: "Open Agents",
+					homepage: "https://github.com/sudo-adduser-jordan/open-agents",
 					mimeType: [AUTH_PROTOCOL_MIME_TYPE],
 				},
 			},
@@ -324,7 +337,7 @@ const config: ForgeConfig = {
 					icon: "assets/icon.png",
 					// rpmbuild rejects a spec with an empty License field.
 					license: "MIT",
-					homepage: "https://github.com/aoagents/agent-orchestrator",
+					homepage: "https://github.com/sudo-adduser-jordan/open-agents",
 					mimeType: [AUTH_PROTOCOL_MIME_TYPE],
 				},
 			},
@@ -334,15 +347,11 @@ const config: ForgeConfig = {
 		{
 			name: "@electron-forge/publisher-github",
 			// Release target is build-time overridable so a fork run publishes to the
-			// fork without a source edit. AO_RELEASE_REPO is "owner/repo"; it defaults
-			// to the production target. The dev/test loop sets
-			// AO_RELEASE_REPO=harshitsinghbhandari/agent-orchestrator (spec §1.1, §8).
-			// Note: aoagents/agent-orchestrator and AgentWrapper/agent-orchestrator
-			// are prior homes and intentionally NOT the default; releases land on
-			// Untrivial-ai.
+			// fork without a source edit. OPEN_AGENTS_RELEASE_REPO is "owner/repo";
+			// it defaults to sudo-adduser-jordan/open-agents.
 			config: {
-				repository: parseReleaseRepo(process.env.AO_RELEASE_REPO),
-				prerelease: process.env.AO_RELEASE_PRERELEASE === "true",
+				repository: parseReleaseRepo(process.env.OPEN_AGENTS_RELEASE_REPO),
+				prerelease: process.env.OPEN_AGENTS_RELEASE_PRERELEASE === "true",
 				draft: false,
 				// Ask GitHub to compose the body from the PRs merged since the last
 				// release. Without it the publisher creates the release with an empty

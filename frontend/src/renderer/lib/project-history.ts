@@ -1,4 +1,4 @@
-const PROJECT_HISTORY_KEY = "ao.project-history";
+const PROJECT_HISTORY_KEY = "open-agents.project-history";
 
 type ProjectHistory = Record<string, string>;
 

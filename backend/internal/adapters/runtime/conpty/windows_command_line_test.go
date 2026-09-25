@@ -5,12 +5,12 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/aoagents/agent-orchestrator/backend/internal/ports"
+	"github.com/sudo-adduser-jordan/open-agents/backend/internal/ports"
 )
 
 func TestWindowsCommandLineUTF16LenEscapesQuotesAndBackslashes(t *testing.T) {
-	args := []string{`C:\Program Files\AO\ao.exe`, "-i", `say "hello"`, `trailing slash \`}
-	const escaped = `"C:\Program Files\AO\ao.exe" -i "say \"hello\"" "trailing slash \\"`
+	args := []string{`C:\Program Files\Open Agents\open-agents.exe`, "-i", `say "hello"`, `trailing slash \`}
+	const escaped = `"C:\Program Files\Open Agents\open-agents.exe" -i "say \"hello\"" "trailing slash \\"`
 
 	if got := windowsCommandLine(args); got != escaped {
 		t.Fatalf("windowsCommandLine() = %q, want %q", got, escaped)

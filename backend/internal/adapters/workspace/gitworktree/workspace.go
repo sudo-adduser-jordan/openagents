@@ -13,10 +13,10 @@ import (
 	"sync"
 	"time"
 
-	"github.com/aoagents/agent-orchestrator/backend/internal/domain"
-	"github.com/aoagents/agent-orchestrator/backend/internal/gitdefault"
-	"github.com/aoagents/agent-orchestrator/backend/internal/ports"
-	aoprocess "github.com/aoagents/agent-orchestrator/backend/internal/process"
+	"github.com/sudo-adduser-jordan/open-agents/backend/internal/domain"
+	"github.com/sudo-adduser-jordan/open-agents/backend/internal/gitdefault"
+	"github.com/sudo-adduser-jordan/open-agents/backend/internal/ports"
+	openagentsprocess "github.com/sudo-adduser-jordan/open-agents/backend/internal/process"
 )
 
 const (
@@ -538,7 +538,7 @@ func copyWorkspaceAssetTree(sourceRoot, source, destination string) error {
 			return err
 		}
 		for _, entry := range entries {
-			if entry.Name() == ".git" || entry.Name() == ".ao" {
+			if entry.Name() == ".git" || entry.Name() == ".open-agents" {
 				continue
 			}
 			if err := copyWorkspaceAssetTree(sourceRoot, filepath.Join(source, entry.Name()), filepath.Join(destination, entry.Name())); err != nil {
@@ -590,7 +590,7 @@ func relativeOrEmpty(root, path string) string {
 
 func hasWorkspaceManagedComponent(path string) bool {
 	for _, component := range strings.Split(filepath.ToSlash(path), "/") {
-		if component == ".git" || component == ".ao" {
+		if component == ".git" || component == ".open-agents" {
 			return true
 		}
 	}
@@ -720,7 +720,7 @@ func (w *Workspace) destroy(ctx context.Context, info ports.WorkspaceInfo) (port
 //
 // ponytail: only safe to call AFTER the session's uncommitted work has been
 // captured via StashUncommitted. Calling it before capture silently
-// discards agent work. For interactive teardown (ao session kill, ao cleanup)
+// discards agent work. For interactive teardown (open-agents session kill, open-agents cleanup)
 // use Destroy, which refuses dirty worktrees via ErrWorkspaceDirty.
 func (w *Workspace) ForceDestroy(ctx context.Context, info ports.WorkspaceInfo) error {
 	if info.Path == "" {
@@ -776,13 +776,13 @@ func (w *Workspace) ForceDestroy(ctx context.Context, info ports.WorkspaceInfo) 
 
 // StashUncommitted captures all uncommitted work in the session's worktree
 // into a git commit object WITHOUT mutating the working tree or the global
-// stash stack. The commit is stored at refs/ao/preserved/<session-id>.
+// stash stack. The commit is stored at refs/open-agents/preserved/<session-id>.
 //
 // It builds the preserve commit through a temporary index file so tracked
 // edits AND new non-ignored files are captured while .gitignore-d files are
 // silently skipped (honoured because we never pass -f/--force to git-add).
 //
-// Returns the full ref name (e.g. "refs/ao/preserved/sess-1"). Returns an
+// Returns the full ref name (e.g. "refs/open-agents/preserved/sess-1"). Returns an
 // empty string (and no error) if the worktree is clean.
 func (w *Workspace) StashUncommitted(ctx context.Context, info ports.WorkspaceInfo) (string, error) {
 	if info.Path == "" {
@@ -833,11 +833,11 @@ func (w *Workspace) StashUncommitted(ctx context.Context, info ports.WorkspaceIn
 		)
 	}
 
-	// Reserve a unique path for the temp index in the system temp dir (not ~/.ao).
+	// Reserve a unique path for the temp index in the system temp dir (not ~/.open-agents).
 	// We must NOT pre-create the file: git requires GIT_INDEX_FILE to either not
 	// exist (it creates it) or be a valid git index. os.CreateTemp gives us a
 	// unique name; we close and remove it immediately so git gets an absent path.
-	tmpIdx, err := os.CreateTemp("", "ao-preserve-idx-*")
+	tmpIdx, err := os.CreateTemp("", "open-agents-preserve-idx-*")
 	if err != nil {
 		return "", fmt.Errorf("gitworktree: reserve temp index path: %w", err)
 	}
@@ -850,14 +850,14 @@ func (w *Workspace) StashUncommitted(ctx context.Context, info ports.WorkspaceIn
 
 	// Stage all tracked and non-ignored untracked files into the temp index.
 	// GIT_INDEX_FILE overrides the index so the real index is never touched.
-	addCmd := aoprocess.CommandContext(ctx, w.binary, addAllTempIndexArgs(path)...)
+	addCmd := openagentsprocess.CommandContext(ctx, w.binary, addAllTempIndexArgs(path)...)
 	addCmd.Env = append(os.Environ(), "GIT_INDEX_FILE="+tmpIdxPath)
 	if out, err := addCmd.CombinedOutput(); err != nil {
 		return "", commandError{args: append([]string{w.binary}, addAllTempIndexArgs(path)...), output: string(out), err: err}
 	}
 
 	// Write the staged tree to get a tree SHA.
-	writeTreeCmd := aoprocess.CommandContext(ctx, w.binary, writeTreeArgs(path)...)
+	writeTreeCmd := openagentsprocess.CommandContext(ctx, w.binary, writeTreeArgs(path)...)
 	writeTreeCmd.Env = append(os.Environ(), "GIT_INDEX_FILE="+tmpIdxPath)
 	treeOut, err := writeTreeCmd.CombinedOutput()
 	if err != nil {
@@ -888,7 +888,7 @@ func (w *Workspace) StashUncommitted(ctx context.Context, info ports.WorkspaceIn
 	}
 
 	// Create a commit object that wraps the preserve tree.
-	msg := "ao preserved " + string(info.SessionID)
+	msg := "open-agents preserved " + string(info.SessionID)
 	commitOut, err := w.run(ctx, w.binary, commitTreeArgs(path, treeSHA, headSHA, msg)...)
 	if err != nil {
 		return "", fmt.Errorf("gitworktree: commit-tree: %w", err)
@@ -896,7 +896,7 @@ func (w *Workspace) StashUncommitted(ctx context.Context, info ports.WorkspaceIn
 	commitSHA := strings.TrimSpace(string(commitOut))
 
 	// Point the preserve ref at the commit.
-	ref := "refs/ao/preserved/" + string(info.SessionID)
+	ref := "refs/open-agents/preserved/" + string(info.SessionID)
 	if _, err := w.run(ctx, w.binary, updateRefArgs(path, ref, commitSHA)...); err != nil {
 		return "", fmt.Errorf("gitworktree: update-ref %q: %w", ref, err)
 	}
@@ -1129,7 +1129,7 @@ func parseObservedWorkspaceCommits(output string) []ports.WorkspaceCommit {
 // returned commandError. Exit code detection happens in the caller.
 func (w *Workspace) runCherryPickNoCommit(ctx context.Context, worktree, commitSHA string) error {
 	args := cherryPickNoCommitArgs(worktree, commitSHA)
-	cmd := aoprocess.CommandContext(ctx, w.binary, args...)
+	cmd := openagentsprocess.CommandContext(ctx, w.binary, args...)
 	out, err := cmd.CombinedOutput()
 	if err != nil {
 		return commandError{args: append([]string{w.binary}, args...), output: string(out), err: err}
@@ -1223,7 +1223,7 @@ func (w *Workspace) existingWorktree(ctx context.Context, repo, path string, cfg
 			//
 			// Unlike Restore, Create deliberately recreates on cfg.Branch and
 			// not on rec.Branch. Restore is re-attaching to a live session
-			// whose branch may have moved on past what AO recorded, so the
+			// whose branch may have moved on past what Open Agents recorded, so the
 			// registration is the better source of truth there; Create is
 			// materializing a NEW session, where a registration at this path is
 			// a leftover from a prior session of the same name and its branch
@@ -1242,7 +1242,7 @@ func (w *Workspace) existingWorktree(ctx context.Context, repo, path string, cfg
 // registeredWorktreeDirMissing reports whether a git-registered worktree's
 // directory no longer exists on disk. A worktree registration (and the
 // session's DB row) can outlive its directory when something removes the path
-// out of band of AO's own teardown (issue #2775: session agent-orchestrator-78
+// out of band of Open Agents's own teardown (issue #2775: session open-agents-78
 // kept its branches and worktree registration but its directory was gone, so
 // handing that path straight to the runtime made the tmux launch command's
 // `cd <path> || exit` guard exit instantly with no diagnostic). When it reports
@@ -1916,7 +1916,7 @@ func resolvedSessionPrefix(cfg ports.WorkspaceConfig) string {
 }
 
 func defaultSessionBranchName(id domain.SessionID) string {
-	return "ao/" + string(id)
+	return "open-agents/" + string(id)
 }
 
 func firstNonEmpty(values ...string) string {
@@ -2027,7 +2027,7 @@ func moveStrayPathAside(path string) (string, error) {
 }
 
 func runCommand(ctx context.Context, binary string, args ...string) ([]byte, error) {
-	cmd := aoprocess.CommandContext(ctx, binary, args...)
+	cmd := openagentsprocess.CommandContext(ctx, binary, args...)
 	cmd.Env = append(os.Environ(), "GIT_TERMINAL_PROMPT=0", "GCM_INTERACTIVE=Never")
 	out, err := cmd.CombinedOutput()
 	if err != nil {

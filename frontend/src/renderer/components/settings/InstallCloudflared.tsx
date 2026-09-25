@@ -10,10 +10,10 @@ const POLL_INTERVAL_MS = 1500;
  * Offers to install the connector that makes this machine reachable from
  * outside the local network.
  *
- * Deliberately user-initiated rather than automatic. Every other install in AO
+ * Deliberately user-initiated rather than automatic. Every other install in Open Agents
  * is, `brew install` can take minutes and update itself first — which would
  * look like a hang while someone waits on a QR — and on Linux it cannot be
- * automatic at all, because AO never asks for an administrator password and
+ * automatic at all, because Open Agents never asks for an administrator password and
  * has to hand over the command instead.
  */
 export function InstallCloudflared({ onInstalled }: { onInstalled: () => void }) {

@@ -13,7 +13,7 @@ import (
 )
 
 const (
-	// FileName is written by the desktop app under AO_DATA_DIR.
+	// FileName is written by the desktop app under OPEN_AGENTS_DATA_DIR.
 	FileName = "terminal-theme"
 
 	// EnvTheme is the PTY variable Cursor Agent reads before its OSC 11 probe.

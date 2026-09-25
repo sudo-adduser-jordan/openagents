@@ -50,7 +50,7 @@ describe("ChatWorkspace retry", () => {
 
 		await userEvent.click(retry);
 
-		// The failed turn in the fixture is turn-1; the daemon must be given AO's
+		// The failed turn in the fixture is turn-1; the daemon must be given Open Agents's
 		// own turn id, which is what the snapshot exposes.
 		expect(onRetryTurn).toHaveBeenCalledWith("turn-1");
 	});

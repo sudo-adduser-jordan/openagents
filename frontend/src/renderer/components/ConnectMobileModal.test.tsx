@@ -193,33 +193,15 @@ test("does not tell LAN users to join the same Wi-Fi", async () => {
 	await waitFor(() => expect(qrPayload()).not.toBeNull());
 
 	expect(screen.queryByText(/same Wi-Fi/i)).not.toBeInTheDocument();
-	expect(screen.getByText("Generate and scan the QR from the AO app")).toBeInTheDocument();
+	expect(screen.getByText("Generate and scan the QR from the Open Agents app")).toBeInTheDocument();
 });
 
-// Both stores are listed in step one now. The platform dropdown that used to
-// gate them is gone, so neither link may be behind an interaction.
-test("offers both store links without a platform choice", async () => {
+test("does not expose retired store links while the new listings are unprovisioned", async () => {
 	renderMobileSettings();
 
-	expect(await screen.findByRole("button", { name: "Open Agent Orchestrator on the App Store" })).toBeInTheDocument();
-	expect(screen.getByRole("button", { name: "Open Agent Orchestrator on Google Play" })).toBeInTheDocument();
-	expect(screen.queryByRole("button", { name: "Get the app" })).not.toBeInTheDocument();
-});
-
-test("shows a square Google Play QR tooltip for Android", async () => {
-	renderMobileSettings();
-	await userEvent.hover(await screen.findByRole("button", { name: "Open Agent Orchestrator on Google Play" }));
-
-	expect(await screen.findByTestId("android-play-qr")).toHaveClass("p-2");
-});
-
-test("shows a QR-only App Store tooltip", async () => {
-	renderMobileSettings();
-	await userEvent.hover(await screen.findByRole("button", { name: "Open Agent Orchestrator on the App Store" }));
-
-	const tooltip = await screen.findByTestId("ios-store-qr");
-	expect(tooltip).not.toHaveTextContent("App Store");
-	expect(tooltip.querySelector("svg")).toBeInTheDocument();
+	expect(await screen.findByText(/once the new store listings are available/i)).toBeInTheDocument();
+	expect(screen.queryByRole("button", { name: "Open Open Agents on the App Store" })).not.toBeInTheDocument();
+	expect(screen.queryByRole("button", { name: "Open Open Agents on Google Play" })).not.toBeInTheDocument();
 });
 
 // v1 encoded one chosen address, so switching mode had to re-encode the code.
@@ -266,7 +248,7 @@ test.skip("shows a hint instead of a QR when Tailscale is not running", async ()
 });
 
 // Regression: an empty host used to encode {"v":1,"host":"",...}, which the
-// phone rejects as "not an AO pairing code" — an incoherent error for a QR AO
+// phone rejects as "not an Open Agents pairing code" — an incoherent error for a QR Open Agents
 // generated itself.
 test("shows a hint instead of an unscannable QR when there is no LAN address", async () => {
 	mobileStatus.host = "";
@@ -413,7 +395,7 @@ test("emits a v2 deep link carrying every endpoint once the daemon advertises th
 		],
 	});
 
-	expect(value.startsWith("aomobile://pair#")).toBe(true);
+	expect(value.startsWith("open-agents-mobile://pair#")).toBe(true);
 	const code = value.slice(value.indexOf("#") + 1);
 	const b64 = code.replace(/-/g, "+").replace(/_/g, "/");
 	const decoded = JSON.parse(atob(b64 + "=".repeat((4 - (b64.length % 4)) % 4)));
@@ -442,7 +424,7 @@ test("emits only v2, never a raw JSON v1 payload", () => {
 		endpoints: [{ kind: "lan", host: "192.168.1.42", port: 3011, secure: false }],
 	});
 
-	expect(value.startsWith("aomobile://pair#")).toBe(true);
+	expect(value.startsWith("open-agents-mobile://pair#")).toBe(true);
 	// v1 travelled as bare JSON; a v2 link must never parse as one.
 	expect(() => JSON.parse(value)).toThrow();
 	expect(decodeQr(value).v).toBe(2);

@@ -18,10 +18,10 @@ import (
 	"time"
 	"unicode/utf8"
 
-	"github.com/aoagents/agent-orchestrator/backend/internal/adapters/runtime/ptyexec"
-	"github.com/aoagents/agent-orchestrator/backend/internal/domain"
-	"github.com/aoagents/agent-orchestrator/backend/internal/ports"
-	"github.com/aoagents/agent-orchestrator/backend/internal/tmuxbin"
+	"github.com/sudo-adduser-jordan/open-agents/backend/internal/adapters/runtime/ptyexec"
+	"github.com/sudo-adduser-jordan/open-agents/backend/internal/domain"
+	"github.com/sudo-adduser-jordan/open-agents/backend/internal/ports"
+	"github.com/sudo-adduser-jordan/open-agents/backend/internal/tmuxbin"
 )
 
 const (
@@ -53,7 +53,7 @@ var getenv = os.Getenv
 type Options struct {
 	Binary       string        // default configured/bundled/system tmux resolution
 	LegacyBinary string        // default system tmux from PATH when SocketName is set; used only for pre-private-socket sessions
-	SocketName   string        // default $AO_TMUX_SOCKET_NAME; empty uses tmux's machine-wide default socket
+	SocketName   string        // default $OPEN_AGENTS_TMUX_SOCKET_NAME; empty uses tmux's machine-wide default socket
 	Shell        string        // default $SHELL else /bin/sh
 	Timeout      time.Duration // default 5s
 	ChunkSize    int           // default 16*1024
@@ -267,7 +267,7 @@ func stableRunDir() string {
 }
 
 // New builds a tmux Runtime, filling unset Options with defaults: binary from
-// AO's configured/bundled/system resolver; shell from $SHELL (else /bin/sh); and the
+// Open Agents's configured/bundled/system resolver; shell from $SHELL (else /bin/sh); and the
 // default timeout and output chunk size.
 func New(opts Options) *Runtime {
 	binary := opts.Binary
@@ -275,7 +275,7 @@ func New(opts Options) *Runtime {
 		resolution, err := tmuxbin.Resolve()
 		if err == nil {
 			binary = resolution.Path
-		} else if configured := strings.TrimSpace(getenv("AO_TMUX_BINARY")); configured != "" {
+		} else if configured := strings.TrimSpace(getenv("OPEN_AGENTS_TMUX_BINARY")); configured != "" {
 			// Keep the configured path on failure so packaged builds fail closed
 			// when they eventually execute it instead of selecting machine tmux.
 			binary = configured
@@ -308,16 +308,16 @@ func New(opts Options) *Runtime {
 	}
 	socketName := strings.TrimSpace(opts.SocketName)
 	if socketName == "" {
-		socketName = strings.TrimSpace(getenv("AO_TMUX_SOCKET_NAME"))
+		socketName = strings.TrimSpace(getenv("OPEN_AGENTS_TMUX_SOCKET_NAME"))
 	}
 	legacyBinary := opts.LegacyBinary
 	if socketName == "" {
 		legacyBinary = binary
 	} else if legacyBinary == "" {
-		// Sessions created before AO introduced its private socket were started by
+		// Sessions created before Open Agents introduced its private socket were started by
 		// the machine tmux from PATH. Use that matching client for the legacy
 		// default socket: tmux's client/server protocol is not guaranteed across
-		// versions, so AO's pinned bundled client may be unable to adopt them.
+		// versions, so Open Agents's pinned bundled client may be unable to adopt them.
 		if systemTmux, err := exec.LookPath("tmux"); err == nil {
 			legacyBinary = systemTmux
 		}
@@ -652,7 +652,7 @@ func (r *Runtime) ProbeFencedRuntime(ctx context.Context, ref ports.FencedRuntim
 		}
 		return ports.FencedProbeResult{Liveness: ports.FencedDead, Reason: ports.FencedReasonExactAbsent}
 	}
-	// A live pane without the exact AO supervisor may contain a workload that a
+	// A live pane without the exact Open Agents supervisor may contain a workload that a
 	// user manually relaunched from the preserved shell. That is not proof of
 	// the requested generation, but it is also not proof that the pane is dead.
 	return ports.FencedProbeResult{Liveness: ports.FencedUnknown, Reason: ports.FencedReasonIdentityMissing}
@@ -660,7 +660,7 @@ func (r *Runtime) ProbeFencedRuntime(ctx context.Context, ref ports.FencedRuntim
 
 // IsSupervisedProcessAlive reports whether the managed workload for ref is
 // still a descendant of this tmux pane. The initial launch is identified by
-// its exact AO supervisor. After that supervisor exits and leaves the
+// its exact Open Agents supervisor. After that supervisor exits and leaves the
 // interactive shell behind, a child launched from that shell is treated as a
 // manually resumed workload. Command failures remain inconclusive.
 func (r *Runtime) IsSupervisedProcessAlive(ctx context.Context, handle ports.RuntimeHandle, ref ports.SupervisedProcessRef) (bool, error) {
@@ -671,7 +671,7 @@ func (r *Runtime) IsSupervisedProcessAlive(ctx context.Context, handle ports.Run
 	return containsManagedWorkload(entries, panePID, string(ref.SessionID), ref.LaunchID), nil
 }
 
-// IsExactSupervisedProcessAlive reports only the AO supervisor matching ref
+// IsExactSupervisedProcessAlive reports only the Open Agents supervisor matching ref
 // while that supervisor still owns a live managed child. It deliberately
 // excludes both the manual-child fallback used by the ordinary reaper probe
 // and a supervisor that is merely waiting to durably report its child's exit:
@@ -755,7 +755,7 @@ func (r *Runtime) SendMessage(ctx context.Context, handle ports.RuntimeHandle, m
 		// their own timeout instead): abandoning mid-pause would strand an
 		// unsubmitted draft that a retried send would then double-paste.
 		// Errors reported by tmux after it accepts a chunk still return to the
-		// caller; they are not retried because AO cannot safely distinguish
+		// caller; they are not retried because Open Agents cannot safely distinguish
 		// whether tmux applied the failed command.
 		if r.enterDelay > 0 {
 			select {
@@ -856,7 +856,7 @@ func (r *Runtime) Attach(ctx context.Context, handle ports.RuntimeHandle, rows, 
 //
 // -u forces tmux's client-side CLIENT_UTF8 flag on. Without it, tmux infers
 // UTF-8 capability from LC_ALL/LC_CTYPE/LANG in the attaching process's env
-// (see tmux's main()); AO's daemon is typically started without an
+// (see tmux's main()); Open Agents's daemon is typically started without an
 // interactive shell's locale, so that inference silently fails. A non-UTF8
 // client makes tmux's tty_check_codeset (tty.c) replace any character it
 // can't map through the legacy ACS table with underscores matching the
@@ -866,7 +866,7 @@ func (r *Runtime) Attach(ctx context.Context, handle ports.RuntimeHandle, rows, 
 // rewritten to "_", which is the underscore corruption reported in #2484.
 // Confirmed byte-for-byte: attaching with a stripped, locale-less env
 // reproduces "_ _ _" for those glyphs; adding -u fixes it, with no observable
-// difference for the still-correct box-drawing case. AO already treats the
+// difference for the still-correct box-drawing case. Open Agents already treats the
 // PTY byte stream as UTF-8 end to end, so forcing the flag is always
 // correct here regardless of the daemon's own environment.
 func (r *Runtime) attachCommand(handle ports.RuntimeHandle) ([]string, error) {
@@ -880,13 +880,13 @@ func (r *Runtime) attachCommand(handle ports.RuntimeHandle) ([]string, error) {
 func (r *Runtime) attachCommandForSocket(id, socketName string) []string {
 	// The embedded xterm renderer supports 24-bit SGR colors. Tell this tmux
 	// client explicitly so tmux forwards RGB instead of quantizing it to the
-	// xterm-256color palette. -T is available in AO's minimum tmux version (3.2).
+	// xterm-256color palette. -T is available in Open Agents's minimum tmux version (3.2).
 	argv := []string{r.binaryForSocket(socketName)}
 	if socketName != "" {
 		argv = append(argv, "-L", socketName)
 	} else if r.socketName != "" {
 		// A legacy session means tmux's historical machine default, never the
-		// socket named by an inherited TMUX from an AO worker or nested shell.
+		// socket named by an inherited TMUX from an Open Agents worker or nested shell.
 		argv = append(argv, "-L", "default")
 	}
 	return append(argv, "-u", "-T", "RGB", "attach-session", "-t", id)
@@ -926,7 +926,7 @@ func (r *Runtime) runOnSocket(ctx context.Context, socketName string, args ...st
 	} else if r.socketName != "" {
 		// Pin legacy discovery and commands to the historical machine default.
 		// Without -L, tmux honors inherited TMUX and may target an unrelated
-		// nested server whose session name happens to collide with AO's handle.
+		// nested server whose session name happens to collide with Open Agents's handle.
 		args = append([]string{"-L", "default"}, args...)
 	}
 	return r.runCommand(ctx, r.binaryForSocket(socketName), args...)
@@ -939,7 +939,7 @@ func (r *Runtime) binaryForSocket(socketName string) string {
 	return r.binary
 }
 
-// runForSession routes sessions created before AO introduced its private tmux
+// runForSession routes sessions created before Open Agents introduced its private tmux
 // socket back to tmux's legacy default socket. The decision is discovered once
 // per daemon lifetime and cached. New sessions always use socketName.
 func (r *Runtime) runForSession(ctx context.Context, id string, args ...string) ([]byte, error) {
@@ -1390,7 +1390,7 @@ func buildLaunchCommand(cfg ports.RuntimeConfig) string {
 		b.WriteString(shellQuote(cfg.Env[key]))
 		b.WriteString("; ")
 	}
-	// The AO web terminal and tmux attach client both support 24-bit SGR color.
+	// The Open Agents web terminal and tmux attach client both support 24-bit SGR color.
 	// Export this after caller env so agent color detection cannot accidentally
 	// downgrade rich syntax/diff colors to ANSI-256.
 	b.WriteString("export COLORTERM='truecolor'; ")
@@ -1410,7 +1410,7 @@ func buildLaunchCommand(cfg ports.RuntimeConfig) string {
 		// completes. The terminal mux then emits `exited`, which drives exact
 		// post-command work such as Codex account verification.
 		b.WriteString(`; exit $?`)
-	} else if cfg.Env["AO_SUPERVISED_PROCESS"] == "1" {
+	} else if cfg.Env["OPEN_AGENTS_SUPERVISED_PROCESS"] == "1" {
 		// cat consumes and discards any input that arrived while the supervised
 		// child was exiting. Runtime Restart/Destroy replaces or kills the pane.
 		b.WriteString(`; exec cat >/dev/null`)

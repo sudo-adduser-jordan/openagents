@@ -8,7 +8,7 @@ import type {
 	PRStatusRow,
 	PRSummaryLink,
 	PRSummaryPart,
-} from "@aoagents/product-ui";
+} from "@openagents/product-ui";
 
 export type {
 	PRCardPresentation,
@@ -18,7 +18,7 @@ export type {
 	PRSummaryLink,
 	PRSummaryPart,
 	PRSummaryPartKey,
-} from "@aoagents/product-ui";
+} from "@openagents/product-ui";
 
 function detectProviderFromUrl(url: string): "github" | "gitlab" {
 	if (url.includes("/-/merge_requests/")) return "gitlab";
@@ -629,7 +629,7 @@ function mergeAttentionLinks(pr: SessionPRSummary, kind: "merge_conflict" | "mer
 	return fileLinks.length > 0 ? fileLinks : reasonLinks.length > 0 ? reasonLinks : fallbackLink;
 }
 
-// `blocked_by_provider` is an internal fallback for a host verdict AO cannot
+// `blocked_by_provider` is an internal fallback for a host verdict Open Agents cannot
 // explain more precisely. It is not an actionable reason, so cards summarize
 // it as merge availability instead of exposing implementation terminology.
 function visibleMergeReasons(pr: SessionPRSummary): string[] {

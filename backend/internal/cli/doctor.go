@@ -18,9 +18,9 @@ import (
 
 	"github.com/spf13/cobra"
 
-	"github.com/aoagents/agent-orchestrator/backend/internal/adapters/agent/registry"
-	"github.com/aoagents/agent-orchestrator/backend/internal/config"
-	"github.com/aoagents/agent-orchestrator/backend/internal/tmuxbin"
+	"github.com/sudo-adduser-jordan/open-agents/backend/internal/adapters/agent/registry"
+	"github.com/sudo-adduser-jordan/open-agents/backend/internal/config"
+	"github.com/sudo-adduser-jordan/open-agents/backend/internal/tmuxbin"
 )
 
 type doctorLevel string
@@ -51,8 +51,8 @@ const (
 	doctorSectionGitHub         = "GitHub"
 	doctorSectionGitLab         = "GitLab"
 	minGitVersion               = "2.25.0"
-	githubDoctorUserAgent       = "ao-agent-orchestrator/doctor"
-	gitlabDoctorUserAgent       = "ao-agent-orchestrator/doctor"
+	githubDoctorUserAgent       = "open-agents/doctor"
+	gitlabDoctorUserAgent       = "open-agents/doctor"
 	defaultDoctorGitHubRESTBase = "https://api.github.com"
 	defaultDoctorGitLabRESTBase = "https://gitlab.com/api/v4"
 )
@@ -81,7 +81,7 @@ func newDoctorCommand(ctx *commandContext) *cobra.Command {
 	var asJSON bool
 	cmd := &cobra.Command{
 		Use:   "doctor",
-		Short: "Run local AO health checks",
+		Short: "Run local Open Agents health checks",
 		Args:  noArgs,
 		RunE: func(cmd *cobra.Command, args []string) error {
 			checks := ctx.runDoctor(cmd.Context())
@@ -159,7 +159,7 @@ func (c *commandContext) runDoctor(ctx context.Context) []doctorCheck {
 	checks = append(checks, checkStore(cfg.DataDir), checkHooksLog(cfg.DataDir, time.Now()))
 
 	// The running daemon's own binary, when one is reachable: it, not the CLI
-	// running this command, is the `ao` the app actually uses.
+	// running this command, is the `open-agents` the app actually uses.
 	daemonExe := ""
 	st, err := c.inspectDaemon(ctx)
 	if err != nil {
@@ -186,7 +186,7 @@ func (c *commandContext) runDoctor(ctx context.Context) []doctorCheck {
 	checks = append(checks,
 		c.checkGit(ctx),
 		c.checkTerminalRuntime(ctx),
-		c.checkAOBinary(daemonExe),
+		c.checkOpenAgentsBinary(daemonExe),
 	)
 	for _, ha := range registry.Harnessed() {
 		id := string(ha.Harness)
@@ -213,7 +213,7 @@ func (c *commandContext) runDoctor(ctx context.Context) []doctorCheck {
 // startup and surfaced through /readyz, so doctor only confirms whether the
 // database file exists yet.
 func checkStore(dataDir string) doctorCheck {
-	dbPath := filepath.Join(dataDir, "ao.db")
+	dbPath := filepath.Join(dataDir, "open-agents.db")
 	info, err := os.Stat(dbPath)
 	switch {
 	case err == nil:
@@ -224,7 +224,7 @@ func checkStore(dataDir string) doctorCheck {
 	case errors.Is(err, fs.ErrNotExist):
 		return doctorCheck{
 			Level: doctorWarn, Section: doctorSectionCore, Name: "sqlite",
-			Message: "database not created yet; run `ao start` to initialize and migrate it",
+			Message: "database not created yet; run `open-agents start` to initialize and migrate it",
 		}
 	default:
 		return doctorCheck{Level: doctorFail, Section: doctorSectionCore, Name: "sqlite", Message: err.Error()}
@@ -232,7 +232,7 @@ func checkStore(dataDir string) doctorCheck {
 }
 
 func checkDataDirWritable(dataDir string) doctorCheck {
-	f, err := os.CreateTemp(dataDir, ".ao-doctor-write-*")
+	f, err := os.CreateTemp(dataDir, ".open-agents-doctor-write-*")
 	if err != nil {
 		return doctorCheck{Level: doctorFail, Section: doctorSectionCore, Name: "data-dir-write", Message: err.Error()}
 	}
@@ -252,9 +252,9 @@ func checkDataDirWritable(dataDir string) doctorCheck {
 	return doctorCheck{Level: doctorPass, Section: doctorSectionCore, Name: "data-dir-write", Message: "write probe succeeded"}
 }
 
-// checkAOBinary verifies the `ao` that workspace hooks and hand-typed commands
+// checkOpenAgentsBinary verifies the `open-agents` that workspace hooks and hand-typed commands
 // would invoke. Agent adapters install hook commands as a bare
-// `ao hooks <agent> <event>`, so an `ao` earlier on PATH that is not the
+// `open-agents hooks <agent> <event>`, so an `open-agents` earlier on PATH that is not the
 // binary the app runs (e.g. a stale npm/Homebrew CLI, whose older flags make
 // current commands look broken) fails every callback and silently kills
 // activity tracking. The daemon pins PATH inside the sessions and shells it
@@ -262,11 +262,11 @@ func checkDataDirWritable(dataDir string) doctorCheck {
 // runs, foreign panes), not a hard failure.
 //
 // daemonExe is the running daemon's own binary when one is reachable, and is
-// preferred over this process's executable: `ao doctor` may itself be the
+// preferred over this process's executable: `open-agents doctor` may itself be the
 // shadowing copy, in which case comparing against itself would report the
 // shadow as a match.
-func (c *commandContext) checkAOBinary(daemonExe string) doctorCheck {
-	const name = "ao-binary"
+func (c *commandContext) checkOpenAgentsBinary(daemonExe string) doctorCheck {
+	const name = "open-agents-binary"
 	self, err := c.deps.Executable()
 	if err != nil && daemonExe == "" {
 		return doctorCheck{Level: doctorWarn, Section: doctorSectionTools, Name: name, Message: fmt.Sprintf("could not resolve the running executable: %v", err)}
@@ -275,25 +275,25 @@ func (c *commandContext) checkAOBinary(daemonExe string) doctorCheck {
 	if daemonExe != "" {
 		want, wantLabel = daemonExe, "the running daemon's binary"
 	}
-	onPath, err := c.deps.LookPath("ao")
+	onPath, err := c.deps.LookPath("open-agents")
 	if err != nil || onPath == "" {
 		return doctorCheck{
 			Level: doctorWarn, Section: doctorSectionTools, Name: name,
-			Message: "ao not found in PATH; workspace hooks invoke `ao hooks <agent> <event>` (daemon-spawned sessions pin PATH to the daemon binary and are unaffected)",
+			Message: "open-agents not found in PATH; workspace hooks invoke `open-agents hooks <agent> <event>` (daemon-spawned sessions pin PATH to the daemon binary and are unaffected)",
 		}
 	}
 	if sameBinary(want, onPath) {
-		return doctorCheck{Level: doctorPass, Section: doctorSectionTools, Name: name, Message: fmt.Sprintf("ao in PATH is %s (%s)", wantLabel, onPath)}
+		return doctorCheck{Level: doctorPass, Section: doctorSectionTools, Name: name, Message: fmt.Sprintf("open-agents in PATH is %s (%s)", wantLabel, onPath)}
 	}
 	if daemonExe != "" {
 		return doctorCheck{
 			Level: doctorWarn, Section: doctorSectionTools, Name: name,
-			Message: fmt.Sprintf("ao in PATH is %s, which shadows the running daemon's binary %s; remove or reorder the shadowing install so `ao` outside daemon-spawned sessions is the one the app runs", onPath, daemonExe),
+			Message: fmt.Sprintf("open-agents in PATH is %s, which shadows the running daemon's binary %s; remove or reorder the shadowing install so `open-agents` outside daemon-spawned sessions is the one the app runs", onPath, daemonExe),
 		}
 	}
 	return doctorCheck{
 		Level: doctorWarn, Section: doctorSectionTools, Name: name,
-		Message: fmt.Sprintf("ao in PATH is %s, not this binary (%s); workspace hooks run `ao hooks` and a foreign ao breaks activity tracking outside daemon-spawned sessions", onPath, self),
+		Message: fmt.Sprintf("open-agents in PATH is %s, not this binary (%s); workspace hooks run `open-agents hooks` and a foreign open-agents breaks activity tracking outside daemon-spawned sessions", onPath, self),
 	}
 }
 
@@ -329,7 +329,7 @@ func (c *commandContext) checkGit(ctx context.Context) doctorCheck {
 		return doctorCheck{Level: doctorWarn, Section: doctorSectionTools, Name: "git", Message: fmt.Sprintf("%s (version unknown: %s)", path, firstOutputLine(out))}
 	}
 	if cmp < 0 {
-		return doctorCheck{Level: doctorWarn, Section: doctorSectionTools, Name: "git", Message: fmt.Sprintf("%s (version %s; AO expects >= %s for worktrees)", path, version, minGitVersion)}
+		return doctorCheck{Level: doctorWarn, Section: doctorSectionTools, Name: "git", Message: fmt.Sprintf("%s (version %s; Open Agents expects >= %s for worktrees)", path, version, minGitVersion)}
 	}
 	return doctorCheck{Level: doctorPass, Section: doctorSectionTools, Name: "git", Message: fmt.Sprintf("%s (version %s; supports worktrees)", path, version)}
 }
@@ -349,31 +349,31 @@ func (c *commandContext) checkTerminalRuntime(ctx context.Context) doctorCheck {
 }
 
 func (c *commandContext) checkTmux(ctx context.Context) doctorCheck {
-	resolution, err := tmuxbin.ResolveWith(os.Getenv("AO_TMUX_BINARY"), c.deps.Executable, c.deps.LookPath)
+	resolution, err := tmuxbin.ResolveWith(os.Getenv("OPEN_AGENTS_TMUX_BINARY"), c.deps.Executable, c.deps.LookPath)
 	if err != nil || resolution.Path == "" {
-		return doctorCheck{Level: doctorWarn, Section: doctorSectionTools, Name: "tmux", Message: "no configured, bundled, or system tmux found for this ao process; required on macOS/Linux to start sessions"}
+		return doctorCheck{Level: doctorWarn, Section: doctorSectionTools, Name: "tmux", Message: "no configured, bundled, or system tmux found for this open-agents process; required on macOS/Linux to start sessions"}
 	}
 	reqCtx, cancel := context.WithTimeout(ctx, probeTimeout)
 	defer cancel()
 	out, err := c.deps.CommandOutput(reqCtx, resolution.Path, "-V")
 	if err != nil {
-		return doctorCheck{Level: doctorFail, Section: doctorSectionTools, Name: "tmux", Message: fmt.Sprintf("%s (%s for this ao process): %v", resolution.Path, resolution.Source, err)}
+		return doctorCheck{Level: doctorFail, Section: doctorSectionTools, Name: "tmux", Message: fmt.Sprintf("%s (%s for this open-agents process): %v", resolution.Path, resolution.Source, err)}
 	}
 	version := firstOutputLine(out)
 	if version == "" {
 		version = "version unknown"
 	}
-	return doctorCheck{Level: doctorPass, Section: doctorSectionTools, Name: "tmux", Message: fmt.Sprintf("%s (%s for this ao process; %s)", resolution.Path, resolution.Source, version)}
+	return doctorCheck{Level: doctorPass, Section: doctorSectionTools, Name: "tmux", Message: fmt.Sprintf("%s (%s for this open-agents process; %s)", resolution.Path, resolution.Source, version)}
 }
 
-// checkHooksLog surfaces recent agent hook delivery failures. `ao hooks`
+// checkHooksLog surfaces recent agent hook delivery failures. `open-agents hooks`
 // callbacks deliberately swallow errors (a hook must never break the user's
-// agent), so $AO_DATA_DIR/hooks.log is the only place a dead activity feed
+// agent), so $OPEN_AGENTS_DATA_DIR/hooks.log is the only place a dead activity feed
 // becomes visible. Lines start with an RFC3339 timestamp (see appendHooksLog).
 func checkHooksLog(dataDir string, now time.Time) doctorCheck {
 	const name = "hooks-log"
 	path := filepath.Join(dataDir, hooksLogName)
-	data, err := os.ReadFile(path) //nolint:gosec // path rooted in AO's own data dir
+	data, err := os.ReadFile(path) //nolint:gosec // path rooted in Open Agents's own data dir
 	if errors.Is(err, fs.ErrNotExist) {
 		return doctorCheck{Level: doctorPass, Section: doctorSectionCore, Name: name, Message: "no hook delivery failures recorded"}
 	}
@@ -492,14 +492,14 @@ func (c *commandContext) checkGitHubToken(ctx context.Context) doctorCheck {
 }
 
 func (c *commandContext) githubToken(ctx context.Context) (token, source string, err error) {
-	for _, name := range []string{"AO_GITHUB_TOKEN", "GITHUB_TOKEN"} {
+	for _, name := range []string{"OPEN_AGENTS_GITHUB_TOKEN", "GITHUB_TOKEN"} {
 		if v := strings.TrimSpace(os.Getenv(name)); v != "" {
 			return v, name, nil
 		}
 	}
 	path, lookErr := c.deps.LookPath("gh")
 	if lookErr != nil || path == "" {
-		return "", "", errors.New("no GitHub token found (set AO_GITHUB_TOKEN/GITHUB_TOKEN or run `gh auth login`)")
+		return "", "", errors.New("no GitHub token found (set OPEN_AGENTS_GITHUB_TOKEN/GITHUB_TOKEN or run `gh auth login`)")
 	}
 	reqCtx, cancel := context.WithTimeout(ctx, probeTimeout)
 	defer cancel()
@@ -559,14 +559,14 @@ func (c *commandContext) checkGitLabToken(ctx context.Context) doctorCheck {
 }
 
 func (c *commandContext) gitlabToken(ctx context.Context) (token, source string, err error) {
-	for _, name := range []string{"AO_GITLAB_TOKEN", "GITLAB_TOKEN"} {
+	for _, name := range []string{"OPEN_AGENTS_GITLAB_TOKEN", "GITLAB_TOKEN"} {
 		if v := strings.TrimSpace(os.Getenv(name)); v != "" {
 			return v, name, nil
 		}
 	}
 	path, lookErr := c.deps.LookPath("glab")
 	if lookErr != nil || path == "" {
-		return "", "", errors.New("no GitLab token found (set AO_GITLAB_TOKEN/GITLAB_TOKEN or run `glab auth login`)")
+		return "", "", errors.New("no GitLab token found (set OPEN_AGENTS_GITLAB_TOKEN/GITLAB_TOKEN or run `glab auth login`)")
 	}
 	reqCtx, cancel := context.WithTimeout(ctx, probeTimeout)
 	defer cancel()

@@ -5,7 +5,7 @@ import { usePathname } from "next/navigation";
 import { useEffect, useState } from "react";
 import { MobileNav } from "./components/MobileNav";
 import { DesktopNav } from "./components/DesktopNav";
-import { AOLogo } from "./components/AOLogo";
+import { OpenAgentsLogo } from "./components/OpenAgentsLogo";
 
 interface HeaderProps {
   ctaButtons: React.ReactNode;
@@ -56,7 +56,7 @@ export function Header({ ctaButtons }: HeaderProps) {
                 href="/"
                 className="flex items-center gap-2 text-foreground hover:text-foreground/80 transition-colors"
               >
-                <AOLogo />
+                <OpenAgentsLogo />
               </Link>
             </div>
 

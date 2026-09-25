@@ -7,7 +7,7 @@ import {
 	type ShortcutBinding,
 	type ShortcutChord,
 } from "../../shared/shortcuts";
-import { aoBridge } from "../lib/bridge";
+import { openAgentsBridge } from "../lib/bridge";
 import { isMacPlatform } from "../lib/platform";
 
 type KeybindingsState = {
@@ -21,7 +21,7 @@ type KeybindingsState = {
 };
 
 async function persist(overrides: KeybindingOverrides): Promise<KeybindingOverrides> {
-	return aoBridge.keybindings.set(overrides);
+	return openAgentsBridge.keybindings.set(overrides);
 }
 
 export const useKeybindingsStore = create<KeybindingsState>((set, get) => ({
@@ -29,7 +29,7 @@ export const useKeybindingsStore = create<KeybindingsState>((set, get) => ({
 	loaded: false,
 	load: async () => {
 		if (get().loaded) return;
-		const overrides = await aoBridge.keybindings.get();
+		const overrides = await openAgentsBridge.keybindings.get();
 		set({ overrides, loaded: true });
 	},
 	setOverrides: async (candidate) => {

@@ -1,29 +1,29 @@
 // Package activitydispatch is the single source of truth mapping the agent
-// token in `ao hooks <agent> <event>` onto the function that interprets that
-// agent's hook callbacks as an AO activity state.
+// token in `open-agents hooks <agent> <event>` onto the function that interprets that
+// agent's hook callbacks as an Open Agents activity state.
 //
-// The hidden `ao hooks` CLI command dispatches a live callback through it. Every
-// adapter that installs `ao hooks <tok>` callbacks must have a deriver
+// The hidden `open-agents hooks` CLI command dispatches a live callback through it. Every
+// adapter that installs `open-agents hooks <tok>` callbacks must have a deriver
 // registered here — otherwise the adapter writes callbacks that nothing on the
 // receiving side understands, so its activity is silently never reported.
 package activitydispatch
 
 import (
-	"github.com/aoagents/agent-orchestrator/backend/internal/adapters/agent/opencode"
-	"github.com/aoagents/agent-orchestrator/backend/internal/domain"
+	"github.com/sudo-adduser-jordan/open-agents/backend/internal/adapters/agent/opencode"
+	"github.com/sudo-adduser-jordan/open-agents/backend/internal/domain"
 )
 
-// DeriveFunc maps a native agent hook event and its raw stdin payload onto an AO
+// DeriveFunc maps a native agent hook event and its raw stdin payload onto an Open Agents
 // activity state. ok=false means the event carries no activity signal.
 type DeriveFunc func(event string, payload []byte) (domain.ActivityState, bool)
 
-// Derivers maps the agent token in `ao hooks <agent> <event>` to its deriver.
+// Derivers maps the agent token in `open-agents hooks <agent> <event>` to its deriver.
 // Per-adapter PRs add their tokens here as they land.
 var Derivers = map[string]DeriveFunc{
 	"opencode": opencode.DeriveActivityState,
 }
 
-// SignalCoverage describes how much of a harness lifecycle AO can observe.
+// SignalCoverage describes how much of a harness lifecycle Open Agents can observe.
 // Partial coverage can report useful transitions but cannot prove that silence
 // means a broken pipeline. Complete coverage is eligible for the no_signal
 // watchdog because the harness is expected to report promptly after launch or

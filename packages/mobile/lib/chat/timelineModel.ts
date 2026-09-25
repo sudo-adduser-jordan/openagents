@@ -122,7 +122,7 @@ export function conversationMarkers(snapshot: ConversationSnapshot): Conversatio
 	});
 }
 
-/** A marker names what the human wrote, not the staged-path list AO appended. */
+/** A marker names what the human wrote, not the staged-path list Open Agents appended. */
 function humanMessageTitle(text: string): string {
 	const { body, attachments } = stagedAttachmentParts(text);
 	if (attachments.length === 0) return text;

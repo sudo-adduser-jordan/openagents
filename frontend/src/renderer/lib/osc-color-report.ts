@@ -1,6 +1,6 @@
-// xterm emits OSC 4/10/11/12 color reports on its onData stream. AO forwards
+// xterm emits OSC 4/10/11/12 color reports on its onData stream. Open Agents forwards
 // only strict, complete reports back to the PTY. Cursor Agent's theme probe
-// specifically issues OSC 10/11/12 queries on stdout and listens on stdin; AO
+// specifically issues OSC 10/11/12 queries on stdout and listens on stdin; Open Agents
 // must return the live palette or the prompt bar defaults to dark.
 
 export type OscTerminalColors = {

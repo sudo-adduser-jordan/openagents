@@ -5,7 +5,7 @@ import (
 	"errors"
 	"testing"
 
-	"github.com/aoagents/agent-orchestrator/backend/internal/domain"
+	"github.com/sudo-adduser-jordan/open-agents/backend/internal/domain"
 )
 
 type workspaceClaimStore struct {
@@ -44,7 +44,7 @@ func TestClaimPRWorkspaceRepositories(t *testing.T) {
 					{RepoOriginURL: "ssh://git@gitlab.example.com:8443/group/sub/api.git"},
 				}}
 				st.projects["ws"] = domain.ProjectRecord{ID: "ws", Kind: domain.ProjectKindWorkspace, RepoOriginURL: root}
-				st.sessions["ws-1"] = domain.SessionRecord{ID: "ws-1", ProjectID: "ws", Kind: domain.KindWorker, Metadata: domain.SessionMetadata{WorkspacePath: "/ws", Branch: "ao/ws-1-2"}}
+				st.sessions["ws-1"] = domain.SessionRecord{ID: "ws-1", ProjectID: "ws", Kind: domain.KindWorker, Metadata: domain.SessionMetadata{WorkspacePath: "/ws", Branch: "open-agents/ws-1-2"}}
 				scm, claimer := &claimTargetSCM{}, &fakePRClaimer{}
 				svc := NewWithDeps(Deps{Store: st, SCM: scm, PRClaimer: claimer})
 				_, err := svc.ClaimPR(context.Background(), "ws-1", tc.ref, ClaimPROptions{})

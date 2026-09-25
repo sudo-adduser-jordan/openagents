@@ -1,7 +1,7 @@
-import { aoBridge } from "./bridge";
+import { openAgentsBridge } from "./bridge";
 import { setApiBaseUrl, setApiDaemonStatus } from "./api-client";
 
-export type DaemonStatus = Awaited<ReturnType<typeof aoBridge.daemon.getStatus>>;
+export type DaemonStatus = Awaited<ReturnType<typeof openAgentsBridge.daemon.getStatus>>;
 
 export function applyDaemonStatus(nextStatus: DaemonStatus): void {
 	setApiDaemonStatus(nextStatus);
@@ -19,5 +19,5 @@ export async function refreshDaemonStatus(): Promise<DaemonStatus> {
 }
 
 export function readDaemonStatus(): Promise<DaemonStatus> {
-	return aoBridge.daemon.getStatus();
+	return openAgentsBridge.daemon.getStatus();
 }

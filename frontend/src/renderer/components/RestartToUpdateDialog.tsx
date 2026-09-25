@@ -1,6 +1,6 @@
 import { useEffect, useRef, useState } from "react";
 import { AlertTriangle } from "lucide-react";
-import { aoBridge } from "../lib/bridge";
+import { openAgentsBridge } from "../lib/bridge";
 import { parseNightlyVersion } from "../lib/build-channel";
 import { sessionsAtRiskFromInstall } from "../lib/update-install-risk";
 import { useUpdateStatus } from "../hooks/useUpdateStatus";
@@ -79,14 +79,14 @@ function RestartToUpdateDialogBody() {
 
 	const hasFailed = failureDetail !== null;
 
-	// Squirrel can't be reset in-process, so retry restarts AO like a manual
+	// Squirrel can't be reset in-process, so retry restarts Open Agents like a manual
 	// quit-and-reopen.
 	const retry = async () => {
 		if (installing.current) return;
 		installing.current = true;
 		setPending(true);
 		try {
-			await aoBridge.updates.relaunch();
+			await openAgentsBridge.updates.relaunch();
 		} catch {
 			// Relaunch quits this process; a rejection means it didn't, and there
 			// is nothing further to do here.
@@ -103,7 +103,7 @@ function RestartToUpdateDialogBody() {
 		setPending(true);
 		setFailureDetail(null);
 		try {
-			const result = await aoBridge.updates.install(version);
+			const result = await openAgentsBridge.updates.install(version);
 			if (result?.state === "confirmation-required") {
 				if (mounted.current) {
 					setConfirmedBuild({ version: result.version, releaseNotes: result.releaseNotes });
@@ -145,7 +145,7 @@ function RestartToUpdateDialogBody() {
 				</div>
 
 				<div className={settingsDialogBodyClass}>
-					{(workspace.isError || !workspace.data) && <p role="status">{"Current worker state could not be confirmed. Installing restarts AO and may interrupt current tasks."}</p>}
+					{(workspace.isError || !workspace.data) && <p role="status">{"Current worker state could not be confirmed. Installing restarts Open Agents and may interrupt current tasks."}</p>}
 					{atRisk.length > 0 && (
 						<div
 							className="mb-4 rounded-md border border-warning/30 bg-warning/8 px-3 py-2.5"
@@ -190,7 +190,7 @@ function RestartToUpdateDialogBody() {
 					)}
 					{failureDetail !== null && (
 						<div role="alert" className="space-y-1 text-sm text-destructive">
-							<p>{"AO could not prepare the update. Please try again."}</p>
+							<p>{"Open Agents could not prepare the update. Please try again."}</p>
 							{failureDetail && <p className="whitespace-pre-line break-words">{failureDetail}</p>}
 						</div>
 					)}

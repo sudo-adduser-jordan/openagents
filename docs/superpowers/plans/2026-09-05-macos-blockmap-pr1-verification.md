@@ -1,12 +1,12 @@
 # PR #4906 verification and rollout stop
 
-PR: https://github.com/Untrivial-ai/agent-orchestrator/pull/4906
+PR: https://github.com/sudo-adduser-jordan/open-agents/pull/4906
 
 ## Current implementation
 
-The approved replacement uses isolated v2 metadata and versioned `.aoblockmap`
+The approved replacement uses isolated v2 metadata and versioned `.open-agents-blockmap`
 assets on the same GitHub release. No bridge release or new server is proposed.
-Current AO explicitly disables macOS differential downloads before checks, keeps
+Current Open Agents explicitly disables macOS differential downloads before checks, keeps
 `scripts/mac-differential-rollout.json` false, and ships an empty v2 trust keyring.
 Windows/Linux flags and feeds remain unchanged. The PR remains draft.
 
@@ -106,7 +106,7 @@ Version thresholds or adoption of an intermediate release are not isolation.
 
 Orchestrator 250 supplied these source facts:
 
-- `ao-releases` `aa936360`: `_pipeline.yml` creates arm64/x64 ZIPs, calls public
+- `open-agents-releases` `aa936360`: `_pipeline.yml` creates arm64/x64 ZIPs, calls public
   `feed.mjs`, verifies, uploads `dist/*`, then publishes.
 - Public main `0244fb8` uses `hashFile` for macOS URL/SHA-512/size with no sidecar
   or `blockMapSize`. Windows/Linux use `writeBlockmap`; Nightly macOS absence is
@@ -124,7 +124,7 @@ post-upload verification. Its separate signed asset inventory requires independe
 review; the current conductor must not be assumed to implement v2 authorization.
 Future explicit authorization, channel/candidate validation, exact verified
 manifests and remote checks are described in the protocol contract. The earlier
-baseline-first proposal from supplied `ao-releases` `RUNBOOK.md:542-626` is not
+baseline-first proposal from supplied `open-agents-releases` `RUNBOOK.md:542-626` is not
 the chosen product design. Rollback preserves historical assets and denies
 future v2 authorization; never delete release history.
 

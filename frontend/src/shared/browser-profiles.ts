@@ -1,5 +1,5 @@
 /**
- * AO-owned browser profile data. The renderer may use profile IDs, but it must
+ * Open Agents-owned browser profile data. The renderer may use profile IDs, but it must
  * never receive filesystem paths or raw Electron partition names.
  */
 
@@ -118,9 +118,9 @@ export function isValidBrowserProfileSessionId(value: unknown): value is string 
 	);
 }
 
-/** The only partition constructor used by AO-owned named profiles. */
+/** The only partition constructor used by Open Agents-owned named profiles. */
 export function browserProfilePartition(id: BrowserProfileId): string {
 	const normalized = normalizeBrowserProfileId(id);
 	if (!normalized) throw new Error("Invalid browser profile ID");
-	return `persist:ao-browser-profile-${normalized}`;
+	return `persist:open-agents-browser-profile-${normalized}`;
 }

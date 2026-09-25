@@ -8,8 +8,8 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/aoagents/agent-orchestrator/backend/internal/domain"
-	"github.com/aoagents/agent-orchestrator/backend/internal/previewserver"
+	"github.com/sudo-adduser-jordan/open-agents/backend/internal/domain"
+	"github.com/sudo-adduser-jordan/open-agents/backend/internal/previewserver"
 )
 
 type fakePreviewExitSessions struct {
@@ -61,14 +61,14 @@ func testLogger(buf *bytes.Buffer) *slog.Logger {
 
 func TestManagedPreviewExitClearsMatchingPreviewURL(t *testing.T) {
 	fake := &fakePreviewExitSessions{sessions: map[domain.SessionID]domain.Session{
-		"ao-1": fakePreviewSession("ao-1", "http://127.0.0.1:4173/"),
+		"open-agents-1": fakePreviewSession("open-agents-1", "http://127.0.0.1:4173/"),
 	}}
 	callback := managedPreviewExitFunc(fake, testLogger(&bytes.Buffer{}))
 
-	callback(context.Background(), "ao-1", previewserver.Status{State: previewserver.StateFailed, URL: "http://127.0.0.1:4173/", Error: "exit status 1"})
+	callback(context.Background(), "open-agents-1", previewserver.Status{State: previewserver.StateFailed, URL: "http://127.0.0.1:4173/", Error: "exit status 1"})
 
-	if len(fake.clearedIDs) != 1 || fake.clearedIDs[0] != domain.SessionID("ao-1") {
-		t.Fatalf("cleared = %v, want [ao-1]", fake.clearedIDs)
+	if len(fake.clearedIDs) != 1 || fake.clearedIDs[0] != domain.SessionID("open-agents-1") {
+		t.Fatalf("cleared = %v, want [open-agents-1]", fake.clearedIDs)
 	}
 }
 
@@ -77,14 +77,14 @@ func TestManagedPreviewExitLeavesUnrelatedPreviewURLAlone(t *testing.T) {
 	// the user replaced it with a static-file preview or the server was
 	// restarted on a different URL before the exit callback ran.
 	fake := &fakePreviewExitSessions{sessions: map[domain.SessionID]domain.Session{
-		"ao-1": fakePreviewSession("ao-1", "file:///tmp/index.html"),
-		"ao-2": fakePreviewSession("ao-2", "http://127.0.0.1:9999/"),
+		"open-agents-1": fakePreviewSession("open-agents-1", "file:///tmp/index.html"),
+		"open-agents-2": fakePreviewSession("open-agents-2", "http://127.0.0.1:9999/"),
 	}}
 	callback := managedPreviewExitFunc(fake, testLogger(&bytes.Buffer{}))
 
-	callback(context.Background(), "ao-1", previewserver.Status{State: previewserver.StateFailed, URL: "http://127.0.0.1:4173/"})
-	callback(context.Background(), "ao-2", previewserver.Status{State: previewserver.StateFailed, URL: "http://127.0.0.1:4173/"})
-	callback(context.Background(), "ao-1", previewserver.Status{State: previewserver.StateFailed, URL: ""})
+	callback(context.Background(), "open-agents-1", previewserver.Status{State: previewserver.StateFailed, URL: "http://127.0.0.1:4173/"})
+	callback(context.Background(), "open-agents-2", previewserver.Status{State: previewserver.StateFailed, URL: "http://127.0.0.1:4173/"})
+	callback(context.Background(), "open-agents-1", previewserver.Status{State: previewserver.StateFailed, URL: ""})
 
 	if len(fake.clearedIDs) != 0 {
 		t.Fatalf("cleared = %v, want none", fake.clearedIDs)
@@ -94,12 +94,12 @@ func TestManagedPreviewExitLeavesUnrelatedPreviewURLAlone(t *testing.T) {
 func TestManagedPreviewExitLogsGetFailureAndDoesNotClear(t *testing.T) {
 	getErr := errors.New("store unavailable")
 	fake := &fakePreviewExitSessions{sessions: map[domain.SessionID]domain.Session{
-		"ao-1": fakePreviewSession("ao-1", "http://127.0.0.1:4173/"),
+		"open-agents-1": fakePreviewSession("open-agents-1", "http://127.0.0.1:4173/"),
 	}, getErr: getErr}
 	buf := &bytes.Buffer{}
 	callback := managedPreviewExitFunc(fake, testLogger(buf))
 
-	callback(context.Background(), "ao-1", previewserver.Status{State: previewserver.StateFailed, URL: "http://127.0.0.1:4173/"})
+	callback(context.Background(), "open-agents-1", previewserver.Status{State: previewserver.StateFailed, URL: "http://127.0.0.1:4173/"})
 
 	if len(fake.clearedIDs) != 0 {
 		t.Fatalf("cleared = %v, want none: a failed Get must not clear the preview URL", fake.clearedIDs)
@@ -111,12 +111,12 @@ func TestManagedPreviewExitLogsGetFailureAndDoesNotClear(t *testing.T) {
 
 func TestManagedPreviewExitLogsSetPreviewFailure(t *testing.T) {
 	fake := &fakePreviewExitSessions{sessions: map[domain.SessionID]domain.Session{
-		"ao-1": fakePreviewSession("ao-1", "http://127.0.0.1:4173/"),
+		"open-agents-1": fakePreviewSession("open-agents-1", "http://127.0.0.1:4173/"),
 	}, setErr: errors.New("store read-only")}
 	buf := &bytes.Buffer{}
 	callback := managedPreviewExitFunc(fake, testLogger(buf))
 
-	callback(context.Background(), "ao-1", previewserver.Status{State: previewserver.StateFailed, URL: "http://127.0.0.1:4173/"})
+	callback(context.Background(), "open-agents-1", previewserver.Status{State: previewserver.StateFailed, URL: "http://127.0.0.1:4173/"})
 
 	if out := buf.String(); !strings.Contains(out, "clear preview URL after managed preview crash") || !strings.Contains(out, "store read-only") {
 		t.Fatalf("log output %q does not mention the SetPreview failure", out)

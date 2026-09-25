@@ -21,7 +21,7 @@ import { Button } from "../ui/button";
 import { Checkbox } from "../ui/checkbox";
 import { Tooltip, TooltipContent, TooltipTrigger } from "../ui/tooltip";
 import { formatTimeTerse } from "../../lib/format-time";
-import { AO_PIERRE_SURFACE_CSS } from "./pierreTheme";
+import { OPEN_AGENTS_PIERRE_SURFACE_CSS } from "./pierreTheme";
 import { usePersistentGutterUtility } from "./usePersistentGutterUtility";
 
 const PATCH_BATCH_SIZE = 100;
@@ -84,7 +84,7 @@ function canOpenRendered(file: WorkspaceFileSummary) {
 type ViewedRecord = Record<string, string>;
 
 function useViewedFiles(sessionId: string, selectionKey: string, files: readonly WorkspaceFileSummary[]) {
-	const key = `ao.files.viewed.${sessionId}.${selectionKey}`;
+	const key = `open-agents.files.viewed.${sessionId}.${selectionKey}`;
 	const [records, setRecords] = useState<ViewedRecord>(() => {
 		try {
 			return JSON.parse(window.localStorage.getItem(key) ?? "{}") as ViewedRecord;
@@ -411,7 +411,7 @@ export function WorkspaceReviewPane({
 			<div className="min-h-0 flex-1 overflow-hidden">
 				{items.length > 0 ? (
 					<CodeView<"feedback">
-						className="ao-pierre-surface board-scrollbar h-full min-h-0 select-text overflow-y-auto overscroll-contain"
+						className="open-agents-pierre-surface board-scrollbar h-full min-h-0 select-text overflow-y-auto overscroll-contain"
 						disableWorkerPool={typeof Worker === "undefined"}
 						items={items}
 						options={{
@@ -432,7 +432,7 @@ export function WorkspaceReviewPane({
 							themeType: resolvedTheme,
 							tokenizeMaxLength: 200_000,
 							tokenizeMaxLineLength: 2_000,
-							unsafeCSS: AO_PIERRE_SURFACE_CSS,
+							unsafeCSS: OPEN_AGENTS_PIERRE_SURFACE_CSS,
 						}}
 						renderAnnotation={() => <FileAnnotationComposer annotation={annotation} />}
 						renderGutterUtility={(getHoveredLine, item) => (

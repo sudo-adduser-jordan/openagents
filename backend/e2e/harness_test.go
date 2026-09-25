@@ -1,6 +1,6 @@
 //go:build !windows
 
-// Package e2e drives a real `ao daemon` over HTTP.
+// Package e2e drives a real `open-agents daemon` over HTTP.
 //
 // These are not unit tests with a fake seam. They boot the actual daemon binary
 // against a throwaway data dir, register a real git project, and talk to a real
@@ -9,10 +9,10 @@
 // survives a restart", "the agent asked before it acted" are claims about the
 // whole stack — routes, store, controller, provider — not about any one package.
 //
-// Gated on AO_CHAT_E2E=1 because they cost real model calls and need a working
+// Gated on OPEN_AGENTS_CHAT_E2E=1 because they cost real model calls and need a working
 // local agent install:
 //
-//	AO_CHAT_E2E=1 go test ./e2e/ -v -timeout 20m
+//	OPEN_AGENTS_CHAT_E2E=1 go test ./e2e/ -v -timeout 20m
 //
 // Windows is excluded: the harness uses process groups to make sure a killed
 // daemon takes its agent child processes with it.
@@ -37,7 +37,7 @@ import (
 	"time"
 )
 
-const gateEnv = "AO_CHAT_E2E"
+const gateEnv = "OPEN_AGENTS_CHAT_E2E"
 
 // requireE2E skips unless the gate is set and the agent binary is present.
 // Skipping loudly with a reason beats a green run that exercised nothing.
@@ -53,7 +53,7 @@ func requireE2E(t *testing.T) {
 }
 
 func codexBinary() string {
-	if bin := os.Getenv("AO_CODEX_BIN"); bin != "" {
+	if bin := os.Getenv("OPEN_AGENTS_CODEX_BIN"); bin != "" {
 		return bin
 	}
 	return "codex"
@@ -62,9 +62,9 @@ func codexBinary() string {
 /* ---- the daemon under test --------------------------------------------- */
 
 var (
-	buildOnce sync.Once
-	aoBinary  string
-	buildErr  error
+	buildOnce        sync.Once
+	openAgentsBinary string
+	buildErr         error
 )
 
 // buildDaemon compiles the binary under test once per `go test` process. Testing
@@ -74,24 +74,24 @@ var (
 func buildDaemon(t *testing.T) string {
 	t.Helper()
 	buildOnce.Do(func() {
-		dir, err := os.MkdirTemp("", "ao-e2e-bin-")
+		dir, err := os.MkdirTemp("", "open-agents-e2e-bin-")
 		if err != nil {
 			buildErr = err
 			return
 		}
-		out := filepath.Join(dir, "ao")
-		cmd := exec.Command("go", "build", "-o", out, "./cmd/ao")
+		out := filepath.Join(dir, "open-agents")
+		cmd := exec.Command("go", "build", "-o", out, "./cmd/open-agents")
 		cmd.Dir = ".."
 		if combined, err := cmd.CombinedOutput(); err != nil {
-			buildErr = fmt.Errorf("go build ./cmd/ao: %w\n%s", err, combined)
+			buildErr = fmt.Errorf("go build ./cmd/open-agents: %w\n%s", err, combined)
 			return
 		}
-		aoBinary = out
+		openAgentsBinary = out
 	})
 	if buildErr != nil {
 		t.Fatalf("build daemon: %v", buildErr)
 	}
-	return aoBinary
+	return openAgentsBinary
 }
 
 type daemon struct {
@@ -121,9 +121,9 @@ func startDaemon(t *testing.T, dataDir string) *daemon {
 
 	cmd := exec.Command(bin, "daemon")
 	cmd.Env = append(os.Environ(),
-		"AO_DATA_DIR="+dataDir,
-		"AO_RUN_FILE="+filepath.Join(dataDir, "running.json"),
-		"AO_PORT="+strconv.Itoa(port),
+		"OPEN_AGENTS_DATA_DIR="+dataDir,
+		"OPEN_AGENTS_RUN_FILE="+filepath.Join(dataDir, "running.json"),
+		"OPEN_AGENTS_PORT="+strconv.Itoa(port),
 	)
 	cmd.Stdout = logFile
 	cmd.Stderr = logFile
@@ -347,8 +347,8 @@ func seedProject(t *testing.T, d *daemon, name string) string {
 		cmd := exec.Command(args[0], args[1:]...)
 		cmd.Dir = dir
 		cmd.Env = append(os.Environ(),
-			"GIT_AUTHOR_NAME=ao-e2e", "GIT_AUTHOR_EMAIL=e2e@example.com",
-			"GIT_COMMITTER_NAME=ao-e2e", "GIT_COMMITTER_EMAIL=e2e@example.com",
+			"GIT_AUTHOR_NAME=open-agents-e2e", "GIT_AUTHOR_EMAIL=e2e@example.com",
+			"GIT_COMMITTER_NAME=open-agents-e2e", "GIT_COMMITTER_EMAIL=e2e@example.com",
 		)
 		if out, err := cmd.CombinedOutput(); err != nil {
 			t.Fatalf("%v: %v\n%s", args, err, out)
@@ -381,7 +381,7 @@ func seedProject(t *testing.T, d *daemon, name string) string {
 }
 
 // setPermissions sets the project's agent permission mode. Approvals are only
-// reachable through it: AO maps permission mode onto the provider's approval
+// reachable through it: Open Agents maps permission mode onto the provider's approval
 // policy at launch, and the default posture deliberately never asks.
 func setPermissions(t *testing.T, d *daemon, projectID, mode string) {
 	t.Helper()
@@ -562,7 +562,7 @@ type accountState struct {
 }
 
 // threadState is the PROVIDER lifecycle view of the thread, not the session status
-// AO derives. Both are readable from one snapshot, which is why they are separate.
+// Open Agents derives. Both are readable from one snapshot, which is why they are separate.
 type threadState struct {
 	Status     string   `json:"status"`
 	WaitingOn  []string `json:"waitingOn"`
@@ -792,7 +792,7 @@ func harnessWithoutChatDriver(t *testing.T, d *daemon) string {
 	for _, harness := range settings.ChatHarnesses {
 		supported[harness] = true
 	}
-	// Any real harness will do; these are simply ones with no machine protocol AO
+	// Any real harness will do; these are simply ones with no machine protocol Open Agents
 	// drives. The loop is what keeps the test honest if one of them ever gains a
 	// driver.
 	for _, candidate := range []string{"aider", "goose", "continue", "cline", "amp"} {

@@ -8,7 +8,7 @@ import (
 	"sync"
 	"time"
 
-	aoprocess "github.com/aoagents/agent-orchestrator/backend/internal/process"
+	openagentsprocess "github.com/sudo-adduser-jordan/open-agents/backend/internal/process"
 )
 
 // TokenSource yields a GitLab private token on demand. Production wires this
@@ -44,7 +44,7 @@ func (s StaticTokenSource) Token(context.Context) (string, error) {
 
 // EnvTokenSource reads the first non-empty value from the listed env vars,
 // falling back to GITLAB_TOKEN. Order matters: a project-scoped variable
-// (AO_GITLAB_TOKEN) should win over the global default.
+// (OPEN_AGENTS_GITLAB_TOKEN) should win over the global default.
 type EnvTokenSource struct {
 	EnvVars []string
 }
@@ -174,7 +174,7 @@ func (s *GLabTokenSource) ttl() time.Duration {
 func glabAuthToken(ctx context.Context) (string, error) {
 	// glab writes auth status output to stderr, not stdout — use CombinedOutput
 	// to capture both streams so the token is not lost.
-	out, err := aoprocess.CommandContext(ctx, "glab", "auth", "status", "--show-token").CombinedOutput()
+	out, err := openagentsprocess.CommandContext(ctx, "glab", "auth", "status", "--show-token").CombinedOutput()
 	if err != nil {
 		return "", ErrNoToken
 	}

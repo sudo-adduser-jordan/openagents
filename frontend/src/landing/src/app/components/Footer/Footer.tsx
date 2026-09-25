@@ -1,6 +1,6 @@
 "use client";
 
-import { COMPANY } from "@ao/shared/constants";
+import { COMPANY } from "@openagents/shared/constants";
 import { ArrowUpRight } from "lucide-react";
 import { usePathname } from "next/navigation";
 import { HashLink } from "../HashLink/HashLink";
@@ -63,8 +63,12 @@ export function Footer() {
                 links={[
                   { href: COMPANY.GITHUB_URL, label: "GitHub", external: true },
                   { href: COMPANY.DISCORD_URL, label: "Discord", external: true },
-                  { href: COMPANY.LINKEDIN_URL, label: "LinkedIn", external: true },
-                  { href: COMPANY.X_URL, label: "X", external: true },
+                  ...(COMPANY.LINKEDIN_URL
+                    ? [{ href: COMPANY.LINKEDIN_URL, label: "LinkedIn", external: true }]
+                    : []),
+                  ...(COMPANY.X_URL
+                    ? [{ href: COMPANY.X_URL, label: "X", external: true }]
+                    : []),
                 ]}
               />
             </div>

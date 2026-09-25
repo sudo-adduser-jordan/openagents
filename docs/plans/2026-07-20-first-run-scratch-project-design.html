@@ -3,7 +3,7 @@
 	<head>
 		<meta charset="utf-8" />
 		<meta name="viewport" content="width=device-width, initial-scale=1" />
-		<title>AO First-Run Scratch Project Design</title>
+		<title>Open Agents First-Run Scratch Project Design</title>
 		<style>
 			:root {
 				--bg: #f7f8fa;
@@ -250,7 +250,7 @@
 		<div class="shell">
 			<aside>
 				<h1>First-Run Scratch Project</h1>
-				<p>Implementation design for using AO without initializing git first.</p>
+				<p>Implementation design for using Open Agents without initializing git first.</p>
 				<nav aria-label="Document sections">
 					<a href="#summary">Summary</a>
 					<a href="#goals">Goals</a>
@@ -267,10 +267,10 @@
 			<main>
 				<header class="hero" id="summary">
 					<p class="eyebrow">Design Doc</p>
-					<h2>AO should boot into a managed Scratch project on first run and allow agents without a git repo.</h2>
+					<h2>Open Agents should boot into a managed Scratch project on first run and allow agents without a git repo.</h2>
 					<p>
 						The daemon seeds one built-in <code>scratch</code> project only for a truly fresh registry. Scratch sessions
-						run in isolated AO-managed directories under <code>AO_DATA_DIR</code>, have no branch metadata, and avoid
+						run in isolated Open Agents-managed directories under <code>OPEN_AGENTS_DATA_DIR</code>, have no branch metadata, and avoid
 						git-only PR, tracker, review, and worktree flows. Existing git-backed projects keep their current behavior.
 					</p>
 					<div class="meta-grid">
@@ -279,7 +279,7 @@
 							<span>Project ID</span><strong><code>scratch</code></strong>
 						</div>
 						<div class="meta-card">
-							<span>State Root</span><strong><code>AO_DATA_DIR/scratch/default</code></strong>
+							<span>State Root</span><strong><code>OPEN_AGENTS_DATA_DIR/scratch/default</code></strong>
 						</div>
 						<div class="meta-card"><span>Git Required</span><strong>No, for scratch only</strong></div>
 					</div>
@@ -291,11 +291,11 @@
 						<div class="mini-card">
 							<h3>Goals</h3>
 							<ul>
-								<li>Fresh AO installs show a usable Scratch project immediately.</li>
+								<li>Fresh Open Agents installs show a usable Scratch project immediately.</li>
 								<li>Users can spawn orchestrator and worker agents without running <code>git init</code>.</li>
 								<li>Each scratch session gets an isolated plain directory.</li>
-								<li>Scratch state stays inside AO-managed data paths.</li>
-								<li><code>ao spawn</code> can fall back to scratch when it is the only active project.</li>
+								<li>Scratch state stays inside Open Agents-managed data paths.</li>
+								<li><code>open-agents spawn</code> can fall back to scratch when it is the only active project.</li>
 								<li>Git project behavior stays unchanged.</li>
 							</ul>
 						</div>
@@ -345,7 +345,7 @@
 								</tr>
 								<tr>
 									<td><code>scratch</code></td>
-									<td>Plain AO-managed session directories</td>
+									<td>Plain Open Agents-managed session directories</td>
 									<td>Always empty</td>
 									<td>None</td>
 								</tr>
@@ -504,12 +504,12 @@ cd frontend && npm run test -- scratch-related files</code></pre>
 					<h2>Acceptance Criteria</h2>
 					<ol>
 						<li>A fresh database contains exactly one built-in Scratch project.</li>
-						<li>AO opens to the Scratch board when Scratch is the only active project.</li>
+						<li>Open Agents opens to the Scratch board when Scratch is the only active project.</li>
 						<li>Users can spawn orchestrator and worker sessions without a git repo.</li>
 						<li>Scratch sessions are isolated per session and branchless in API/UI metadata.</li>
 						<li>Scratch file inspection works without git and rejects path escapes.</li>
 						<li>Scratch shutdown, reconcile, cleanup, and replacement preserve user output.</li>
-						<li><code>ao spawn</code> works on fresh Scratch and rejects branch/PR flags for scratch.</li>
+						<li><code>open-agents spawn</code> works on fresh Scratch and rejects branch/PR flags for scratch.</li>
 						<li>Existing git-backed project behavior and validation continue to pass.</li>
 					</ol>
 					<div class="note">

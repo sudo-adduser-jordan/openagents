@@ -20,7 +20,7 @@ function session(id: string, overrides: Partial<DashboardSession> = {}): Dashboa
 	};
 }
 
-const projectNameFor = (projectId: string) => ({ alpha: "Agent Orchestrator", beta: "Mobile App" })[projectId] ?? projectId;
+const projectNameFor = (projectId: string) => ({ alpha: "Open Agents", beta: "Mobile App" })[projectId] ?? projectId;
 const statusLabelFor = (status: string | null) => (status === "needs_input" ? "Needs input" : status ?? "Unknown");
 
 describe("filterWorkerSessions", () => {

@@ -9,7 +9,7 @@ let root: string;
 const markerFile = (dir: string) => path.join(dir, "update-restart", "relaunch-flag.json");
 
 beforeEach(async () => {
-	root = await mkdtemp(path.join(os.tmpdir(), "ao-relaunch-flag-"));
+	root = await mkdtemp(path.join(os.tmpdir(), "open-agents-relaunch-flag-"));
 });
 afterEach(async () => {
 	await rm(root, { recursive: true, force: true });

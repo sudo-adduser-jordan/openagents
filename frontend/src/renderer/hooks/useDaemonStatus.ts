@@ -1,6 +1,6 @@
 import { useEffect, useRef, useState } from "react";
 import type { QueryClient } from "@tanstack/react-query";
-import { aoBridge } from "../lib/bridge";
+import { openAgentsBridge } from "../lib/bridge";
 import { applyDaemonStatus, readDaemonStatus, type DaemonStatus } from "../lib/daemon-status";
 import { queryClient as defaultQueryClient } from "../lib/query-client";
 import { createEventTransport } from "../lib/event-transport";
@@ -100,7 +100,7 @@ export function useDaemonStatus(queryClient: QueryClient = defaultQueryClient) {
 			if (active) stopTransport = createEventTransport(queryClient).connect();
 		});
 
-		const stopStatusListener = aoBridge.daemon.onStatus((nextStatus) => {
+		const stopStatusListener = openAgentsBridge.daemon.onStatus((nextStatus) => {
 			statusVersion += 1;
 			applyStatus(nextStatus);
 		});

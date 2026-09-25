@@ -9,7 +9,7 @@ import (
 	"sync"
 	"testing"
 
-	"github.com/aoagents/agent-orchestrator/backend/internal/storage/sqlite"
+	"github.com/sudo-adduser-jordan/open-agents/backend/internal/storage/sqlite"
 )
 
 var databaseTemplate struct {
@@ -20,7 +20,7 @@ var databaseTemplate struct {
 
 // Open returns a store cloned from a database migrated once for the current
 // test binary. dataDir may contain unrelated fixture files, but it must not
-// already contain ao.db. Tests that exercise migration behavior should continue
+// already contain open-agents.db. Tests that exercise migration behavior should continue
 // to call sqlite.Open directly with an empty directory.
 func Open(dataDir string) (*sqlite.Store, error) {
 	template, err := templateDatabase()
@@ -30,7 +30,7 @@ func Open(dataDir string) (*sqlite.Store, error) {
 	if err := os.MkdirAll(dataDir, 0o750); err != nil {
 		return nil, fmt.Errorf("create data dir: %w", err)
 	}
-	dbPath := filepath.Join(dataDir, "ao.db")
+	dbPath := filepath.Join(dataDir, "open-agents.db")
 	if err := writeExclusive(dbPath, template); err != nil {
 		return nil, fmt.Errorf("clone migrated template: %w", err)
 	}
@@ -75,7 +75,7 @@ func templateDatabase() ([]byte, error) {
 }
 
 func buildTemplateDatabase() ([]byte, error) {
-	dataDir, err := os.MkdirTemp("", "ao-sqlite-test-template-")
+	dataDir, err := os.MkdirTemp("", "open-agents-sqlite-test-template-")
 	if err != nil {
 		return nil, fmt.Errorf("create temp dir: %w", err)
 	}
@@ -89,7 +89,7 @@ func buildTemplateDatabase() ([]byte, error) {
 		return nil, fmt.Errorf("close template: %w", err)
 	}
 
-	data, err := os.ReadFile(filepath.Join(dataDir, "ao.db"))
+	data, err := os.ReadFile(filepath.Join(dataDir, "open-agents.db"))
 	if err != nil {
 		return nil, fmt.Errorf("read template: %w", err)
 	}

@@ -4,8 +4,8 @@ import (
 	"context"
 	"fmt"
 
-	"github.com/aoagents/agent-orchestrator/backend/internal/adapters/chatdriver/persistenthost"
-	"github.com/aoagents/agent-orchestrator/backend/internal/domain"
+	"github.com/sudo-adduser-jordan/open-agents/backend/internal/adapters/chatdriver/persistenthost"
+	"github.com/sudo-adduser-jordan/open-agents/backend/internal/domain"
 )
 
 type persistentChatSessionStore interface {

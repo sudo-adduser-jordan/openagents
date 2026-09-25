@@ -14,7 +14,7 @@ export type InstallView =
  * Turns an install job into what the user should see.
  *
  * Kept separate from the component because the interesting cases are not
- * visual: Linux resolves as unsupported *with* the exact command, because AO
+ * visual: Linux resolves as unsupported *with* the exact command, because Open Agents
  * never asks for an administrator password — so "unsupported" there means
  * "here is what to run", not "this cannot work". Presenting that as a failure
  * would be wrong, and it is the case least likely to be exercised by hand.

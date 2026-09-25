@@ -16,23 +16,23 @@ import { selectInstallers, feedFilename, buildYml, hashFile, generateFeeds } fro
 import { writeBlockmap } from "./blockmap.mjs";
 const V = "0.10.4";
 const NAMES = [
-	"Agent.Orchestrator.Setup.0.10.4.exe", // win versioned
-	"Agent.Orchestrator-0.10.4.AppImage", // linux versioned
-	"Agent.Orchestrator-darwin-arm64-0.10.4.zip", // mac arm64 versioned
-	"Agent.Orchestrator-darwin-x64-0.10.4.zip", // mac x64 versioned
-	"agent-orchestrator-darwin-arm64.zip", // ao-start alias (no version) -> excluded
-	"agent-orchestrator-win32-x64.exe", // alias (no version) -> excluded
-	"agent-orchestrator_0.10.4_amd64.deb", // deb -> excluded by extension
-	"agent-orchestrator-0.10.4.x86_64.rpm", // rpm -> excluded by extension
+	"open-agents-win32-x64-0.10.4.exe", // win versioned
+	"open-agents-linux-x64-0.10.4.AppImage", // linux versioned
+	"open-agents-darwin-arm64-0.10.4.zip", // mac arm64 versioned
+	"open-agents-darwin-x64-0.10.4.zip", // mac x64 versioned
+	"open-agents-darwin-arm64.zip", // open-agents-start alias (no version) -> excluded
+	"open-agents-win32-x64.exe", // alias (no version) -> excluded
+	"open-agents_0.10.4_amd64.deb", // deb -> excluded by extension
+	"open-agents-0.10.4.x86_64.rpm", // rpm -> excluded by extension
 ];
 
 describe("selectInstallers", () => {
 	it("keeps only versioned exe/AppImage/darwin-zip, split by arch", () => {
 		const s = selectInstallers(NAMES, V);
-		expect(s.win).toEqual(["Agent.Orchestrator.Setup.0.10.4.exe"]);
-		expect(s.linux).toEqual(["Agent.Orchestrator-0.10.4.AppImage"]);
-		expect(s.macArm64).toEqual(["Agent.Orchestrator-darwin-arm64-0.10.4.zip"]);
-		expect(s.macX64).toEqual(["Agent.Orchestrator-darwin-x64-0.10.4.zip"]);
+		expect(s.win).toEqual(["open-agents-win32-x64-0.10.4.exe"]);
+		expect(s.linux).toEqual(["open-agents-linux-x64-0.10.4.AppImage"]);
+		expect(s.macArm64).toEqual(["open-agents-darwin-arm64-0.10.4.zip"]);
+		expect(s.macX64).toEqual(["open-agents-darwin-x64-0.10.4.zip"]);
 	});
 });
 
@@ -83,16 +83,16 @@ describe("buildYml", () => {
 	it("serializes one file with deprecated top-level fields and no blockMapSize", () => {
 		const yml = buildYml(
 			"0.10.4",
-			[{ url: "Agent.Orchestrator.Setup.0.10.4.exe", sha512: "AA/BB+cc==", size: 123 }],
+			[{ url: "open-agents-win32-x64-0.10.4.exe", sha512: "AA/BB+cc==", size: 123 }],
 			"2026-06-27T12:00:00.000Z",
 		);
 		expect(yml).toBe(
 			"version: 0.10.4\n" +
 				"files:\n" +
-				"  - url: Agent.Orchestrator.Setup.0.10.4.exe\n" +
+				"  - url: open-agents-win32-x64-0.10.4.exe\n" +
 				"    sha512: AA/BB+cc==\n" +
 				"    size: 123\n" +
-				"path: Agent.Orchestrator.Setup.0.10.4.exe\n" +
+				"path: open-agents-win32-x64-0.10.4.exe\n" +
 				"sha512: AA/BB+cc==\n" +
 				"releaseDate: '2026-06-27T12:00:00.000Z'\n",
 		);
@@ -103,21 +103,21 @@ describe("buildYml", () => {
 		const yml = buildYml(
 			"0.10.4",
 			[
-				{ url: "Agent.Orchestrator-darwin-arm64-0.10.4.zip", sha512: "ARM==", size: 10 },
-				{ url: "Agent.Orchestrator-darwin-x64-0.10.4.zip", sha512: "X64==", size: 20 },
+				{ url: "open-agents-darwin-arm64-0.10.4.zip", sha512: "ARM==", size: 10 },
+				{ url: "open-agents-darwin-x64-0.10.4.zip", sha512: "X64==", size: 20 },
 			],
 			"2026-06-27T12:00:00.000Z",
 		);
 		const lines = yml.split("\n");
-		expect(lines[2]).toBe("  - url: Agent.Orchestrator-darwin-arm64-0.10.4.zip");
-		expect(lines[5]).toBe("  - url: Agent.Orchestrator-darwin-x64-0.10.4.zip");
-		expect(yml).toContain("path: Agent.Orchestrator-darwin-arm64-0.10.4.zip");
+		expect(lines[2]).toBe("  - url: open-agents-darwin-arm64-0.10.4.zip");
+		expect(lines[5]).toBe("  - url: open-agents-darwin-x64-0.10.4.zip");
+		expect(yml).toContain("path: open-agents-darwin-arm64-0.10.4.zip");
 	});
 
 	it("omits important key when flag is false (byte-identical to old output)", () => {
 		const yml = buildYml(
 			"0.10.4",
-			[{ url: "Agent.Orchestrator.Setup.0.10.4.exe", sha512: "AA/BB+cc==", size: 123 }],
+			[{ url: "open-agents-win32-x64-0.10.4.exe", sha512: "AA/BB+cc==", size: 123 }],
 			"2026-06-27T12:00:00.000Z",
 			false,
 		);
@@ -127,7 +127,7 @@ describe("buildYml", () => {
 	it("emits important: true as top-level key when flag is true", () => {
 		const yml = buildYml(
 			"0.10.4",
-			[{ url: "Agent.Orchestrator.Setup.0.10.4.exe", sha512: "AA/BB+cc==", size: 123 }],
+			[{ url: "open-agents-win32-x64-0.10.4.exe", sha512: "AA/BB+cc==", size: 123 }],
 			"2026-06-27T12:00:00.000Z",
 			true,
 		);
@@ -175,8 +175,8 @@ describe("generateFeeds macOS sidecar suppression", () => {
 	it("suppresses Nightly mac sidecars for both architectures", async () => {
 		const dir = mkdtempSync(join(tmpdir(), "feed-test-"));
 		const macZips = [
-			"Agent.Orchestrator-darwin-arm64-0.10.4.zip",
-			"Agent.Orchestrator-darwin-x64-0.10.4.zip",
+			"open-agents-darwin-arm64-0.10.4.zip",
+			"open-agents-darwin-x64-0.10.4.zip",
 		];
 		for (const macZip of macZips) writeFileSync(join(dir, macZip), "fake mac zip");
 
@@ -201,7 +201,7 @@ describe("generateFeeds macOS sidecar suppression", () => {
 
 	it.each(["latest", "nightly", "pr3288", "unknown"].flatMap(channel => ["arm64", "x64"].map(arch => [channel, arch])))("keeps %s mac %s feeds full-download-only", async (channel, arch) => {
 		const dir = mkdtempSync(join(tmpdir(), "feed-test-"));
-		const macZip = `Agent.Orchestrator-darwin-${arch}-0.10.4.zip`;
+		const macZip = `open-agents-darwin-${arch}-0.10.4.zip`;
 		writeFileSync(join(dir, macZip), "fake mac zip");
 
 		await generateFeeds(dir, "0.10.4", channel, "2026-06-27T12:00:00.000Z");
@@ -213,8 +213,8 @@ describe("generateFeeds macOS sidecar suppression", () => {
 
 	it("still calls writeBlockmap for win and linux installers", async () => {
 		const dir = mkdtempSync(join(tmpdir(), "feed-test-"));
-		const winExe = "Agent.Orchestrator.Setup.0.10.4.exe";
-		const linuxAppImage = "Agent.Orchestrator-0.10.4.AppImage";
+		const winExe = "open-agents-win32-x64-0.10.4.exe";
+		const linuxAppImage = "open-agents-linux-x64-0.10.4.AppImage";
 		writeFileSync(join(dir, winExe), "fake win installer");
 		writeFileSync(join(dir, linuxAppImage), "fake linux installer");
 

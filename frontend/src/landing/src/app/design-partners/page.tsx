@@ -1,4 +1,4 @@
-import { AGENT_HARNESSES, COMPANY } from "@ao/shared/constants";
+import { AGENT_HARNESSES, COMPANY } from "@openagents/shared/constants";
 import type { Metadata } from "next";
 import Image from "next/image";
 import { preload } from "react-dom";
@@ -14,11 +14,11 @@ import {
 } from "./RoadmapSlideshow";
 
 const CONTACT_EMAIL = "prateek@untrivial.ai";
-const CAL_URL = "https://cal.com/agentwrapper/ao-design-partner";
+const CAL_URL = "https://cal.com/open-agents/design-partner";
 const MAILTO_HREF = `mailto:${CONTACT_EMAIL}?subject=${encodeURIComponent(
-  "AO Design Partner Program",
+  "Open Agents Design Partner Program",
 )}&body=${encodeURIComponent(
-  "Hi Prateek,\n\nWe're interested in the AO design partner program.\n\nCompany:\nEngineering team size:\nAgent harnesses we use today (Codex / Cursor / OpenCode / ...):\nWhat we want out of AO:\n",
+  "Hi Prateek,\n\nWe're interested in the Open Agents design partner program.\n\nCompany:\nEngineering team size:\nAgent harnesses we use today (Codex / Cursor / OpenCode / ...):\nWhat we want out of Open Agents:\n",
 )}`;
 const HERO_IMAGE = "/optimized/design-partners/hero-car-engine-olive.webp";
 const SHARED_WORKSPACE_IMAGE =
@@ -43,7 +43,7 @@ export const metadata: Metadata = {
   description:
     "Mission control for your agent fleet: shared sessions, ROI observability, and an engine room your org fully owns. Your engineers get leverage; your leadership gets answers.",
   openGraph: {
-    title: "AO Design Partner Program",
+    title: "Open Agents Design Partner Program",
     description:
       "Mission control for your agent fleet: shared sessions, ROI observability, and an engine room your org fully owns.",
     url: `${COMPANY.MARKETING_URL}/design-partners`,
@@ -79,7 +79,7 @@ const partnerAsks = [
   },
   {
     title: "A champion and a sponsor",
-    body: "One engineer who runs AO weekly. One leader who wants the ROI answer.",
+    body: "One engineer who runs Open Agents weekly. One leader who wants the ROI answer.",
   },
   {
     title: "Real feedback",
@@ -220,7 +220,7 @@ export default async function DesignPartnersPage() {
               </h1>
               <p className="mt-6 max-w-3xl text-pretty text-base leading-8 text-muted-foreground sm:text-xl">
                 Your engineers already run coding agents. Nobody runs the fleet.
-                AO puts every agent, branch, and PR on one board, routes CI
+                Open Agents puts every agent, branch, and PR on one board, routes CI
                 failures and review comments back to the agent that owns them,
                 and tells you what the spend actually produced.
               </p>
@@ -341,7 +341,7 @@ export default async function DesignPartnersPage() {
           </div>
           <p className="mt-8 max-w-4xl text-sm leading-7 text-muted-foreground">
             Best fit: 10-100 engineers. Multiple agent subscriptions in use.
-            Leadership asking what all that agent spend actually produces. AO ships a new build every
+            Leadership asking what all that agent spend actually produces. Open Agents ships a new build every
             night - what we promise, you watch arrive.
           </p>
         </div>

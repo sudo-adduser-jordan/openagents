@@ -1,4 +1,4 @@
-// Package github observes GitHub pull requests for AO's SCM integrations.
+// Package github observes GitHub pull requests for Open Agents's SCM integrations.
 //
 // The compatibility exported surface is:
 //

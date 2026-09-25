@@ -12,16 +12,16 @@ import { formatVersion, formatUpdate, type BuildInfo } from "./appInfo";
  *    lands in the mobile queue rather than in untriaged;
  *  - a marker line in the body, because labels can be dropped (GitHub ignores a
  *    label the reporter cannot apply) while body text always survives, and
- *    `is:issue "reported-from: ao-mobile"` finds every one of them;
+ *    `is:issue "reported-from: open-agents-mobile"` finds every one of them;
  *  - the repo's own bug form, so the report arrives with a title and the same
  *    fields a desktop report has.
  */
-export const BUG_REPORT_REPO = "Untrivial-ai/agent-orchestrator";
+export const BUG_REPORT_REPO = "sudo-adduser-jordan/open-agents";
 export const BUG_REPORT_TEMPLATE = "bug_report.yml";
 export const BUG_REPORT_LABELS = ["bug", "comp/mobile"] as const;
 
 /** Searchable, and stable: filters are built on this string, so it does not change. */
-export const BUG_REPORT_MARKER = "reported-from: ao-mobile";
+export const BUG_REPORT_MARKER = "reported-from: open-agents-mobile";
 
 export type BugReportEnvironment = {
 	build: BuildInfo;
@@ -52,7 +52,7 @@ export function bugReportSummary(env: BugReportEnvironment): string {
 		"",
 		"",
 		"---",
-		`AO mobile: ${formatVersion(env.build)}`,
+		`Open Agents mobile: ${formatVersion(env.build)}`,
 		...(update ? [`Update: ${update}${runtime}`] : []),
 		`Platform: ${env.platform} ${env.osVersion}`,
 		...(env.deviceModel?.trim() ? [`Device: ${env.deviceModel.trim()}`] : []),

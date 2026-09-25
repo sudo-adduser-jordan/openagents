@@ -1,6 +1,6 @@
 import { act, render, screen } from "@testing-library/react";
 import { afterEach, describe, expect, it, vi } from "vitest";
-import { aoBridge } from "../lib/bridge";
+import { openAgentsBridge } from "../lib/bridge";
 import { DaemonStartupLoader } from "./DaemonStartupLoader";
 
 vi.mock("../hooks/useSystemRequirementsGate", () => ({
@@ -26,25 +26,25 @@ describe("DaemonStartupLoader", () => {
 		vi.useFakeTimers();
 		render(<DaemonStartupLoader />);
 
-		expect(screen.getByRole("status", { name: "Agent Orchestrator is starting" })).toBeInTheDocument();
-		expect(screen.getByText("Starting local services")).not.toHaveClass("ao-startup-status");
+		expect(screen.getByRole("status", { name: "Open Agents is starting" })).toBeInTheDocument();
+		expect(screen.getByText("Starting local services")).not.toHaveClass("open-agents-startup-status");
 		act(() => vi.advanceTimersByTime(2_200));
-		expect(screen.getByText("Connecting to the daemon")).toHaveClass("ao-startup-status");
+		expect(screen.getByText("Connecting to the daemon")).toHaveClass("open-agents-startup-status");
 	});
 
 	it("shows update-specific progress after a post-update relaunch", async () => {
 		vi.useFakeTimers();
-		vi.spyOn(aoBridge.updates, "isPostUpdateRelaunch").mockResolvedValue(true);
+		vi.spyOn(openAgentsBridge.updates, "isPostUpdateRelaunch").mockResolvedValue(true);
 		render(<DaemonStartupLoader />);
 
 		await act(async () => Promise.resolve());
-		expect(screen.getByText("Updating AO")).toBeInTheDocument();
+		expect(screen.getByText("Updating Open Agents")).toBeInTheDocument();
 		act(() => vi.advanceTimersByTime(2_200));
-		expect(screen.getByText("Restarting AO")).toHaveClass("ao-startup-status");
+		expect(screen.getByText("Restarting Open Agents")).toHaveClass("open-agents-startup-status");
 	});
 
 	it("keeps showing normal startup progress when the relaunch check fails", async () => {
-		vi.spyOn(aoBridge.updates, "isPostUpdateRelaunch").mockRejectedValue(new Error("IPC unavailable"));
+		vi.spyOn(openAgentsBridge.updates, "isPostUpdateRelaunch").mockRejectedValue(new Error("IPC unavailable"));
 		render(<DaemonStartupLoader />);
 
 		await act(async () => Promise.resolve());

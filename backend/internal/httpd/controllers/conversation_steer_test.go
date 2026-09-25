@@ -13,11 +13,11 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/aoagents/agent-orchestrator/backend/internal/config"
-	"github.com/aoagents/agent-orchestrator/backend/internal/domain"
-	"github.com/aoagents/agent-orchestrator/backend/internal/httpd"
-	"github.com/aoagents/agent-orchestrator/backend/internal/ports"
-	chatsvc "github.com/aoagents/agent-orchestrator/backend/internal/service/chat"
+	"github.com/sudo-adduser-jordan/open-agents/backend/internal/config"
+	"github.com/sudo-adduser-jordan/open-agents/backend/internal/domain"
+	"github.com/sudo-adduser-jordan/open-agents/backend/internal/httpd"
+	"github.com/sudo-adduser-jordan/open-agents/backend/internal/ports"
+	chatsvc "github.com/sudo-adduser-jordan/open-agents/backend/internal/service/chat"
 )
 
 // The steer route's wire contract, asserted through the real router.
@@ -455,7 +455,7 @@ func TestSteerRouteIsNotImplementedWithoutAChatService(t *testing.T) {
 }
 
 // The turn-scoped route identifies durable content; it carries no request body
-// that could replace what AO already queued.
+// that could replace what Open Agents already queued.
 func TestQueuedTurnSteerRoutePromotesTheSelectedTurn(t *testing.T) {
 	svc := &promoteQueuedStub{
 		fakeConversationService: &fakeConversationService{},

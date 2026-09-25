@@ -8,8 +8,8 @@ import (
 	"sync"
 	"time"
 
-	"github.com/aoagents/agent-orchestrator/backend/internal/httpd/envelope"
-	"github.com/aoagents/agent-orchestrator/backend/internal/mobilebridge"
+	"github.com/sudo-adduser-jordan/open-agents/backend/internal/httpd/envelope"
+	"github.com/sudo-adduser-jordan/open-agents/backend/internal/mobilebridge"
 )
 
 const mobileUnencryptedWarning = "Traffic on this connection is not encrypted. Only use it on a network you trust."
@@ -157,7 +157,7 @@ type BridgeService struct {
 	// ResolveTunnel looks for a connector binary again, for the case where one
 	// was installed after the daemon started. Resolution otherwise happens once
 	// at boot, so a cloudflared installed from Connect Mobile stayed invisible
-	// until AO was restarted. Nil in tests that set Tunnel directly.
+	// until Open Agents was restarted. Nil in tests that set Tunnel directly.
 	ResolveTunnel func() TunnelController
 
 	// transitionMu serializes every operation that changes persisted bridge
@@ -465,7 +465,7 @@ func (b *BridgeService) startConnectorsLocked(port int, securePairing bool) {
 // phone keeps working) and re-applying the secure-pairing proxy against the
 // port Start actually bound, never the persisted LastPort. That distinction is
 // the entire point of this method: Start falls back to an ephemeral port when
-// LastPort is taken (e.g. by another AO instance), and a `tailscale serve`
+// LastPort is taken (e.g. by another Open Agents instance), and a `tailscale serve`
 // config pinned to a stale port would proxy the tailnet at this machine's
 // hostname to whatever now holds that port. A failure to apply is recorded in
 // serveErr, never returned — the caller (restoreMobileOnBoot) treats this as
@@ -563,7 +563,7 @@ func (b *BridgeService) Disable() error {
 	// Only touch the tailnet proxy when this bridge actually installed one.
 	// `tailscale serve --https=443 off` is node-global state: clearing it
 	// unconditionally would destroy a serve route the user configured for
-	// themselves, or one owned by another AO instance, for someone who never
+	// themselves, or one owned by another Open Agents instance, for someone who never
 	// enabled secure pairing at all.
 	if st.SecurePairing {
 		_ = b.clearServe()
@@ -597,7 +597,7 @@ func (b *BridgeService) ShutdownTunnel() {
 
 // ShutdownServe removes the tailnet proxy this bridge installed, for use on
 // daemon shutdown. `tailscale serve --bg` state lives in tailscaled and
-// outlives AO, so without this the tailnet keeps routing to a local port that
+// outlives Open Agents, so without this the tailnet keeps routing to a local port that
 // no longer has the authenticated LAN listener behind it — and any other
 // process that later binds that port would be published to the tailnet in its
 // place. The persisted SecurePairing preference is deliberately left set, so

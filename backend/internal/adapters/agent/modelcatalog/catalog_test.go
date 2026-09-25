@@ -9,7 +9,7 @@ import (
 	"testing"
 	"time"
 
-	"github.com/aoagents/agent-orchestrator/backend/internal/ports"
+	"github.com/sudo-adduser-jordan/open-agents/backend/internal/ports"
 )
 
 func TestModelCommandUsesProjectWorkingDirectory(t *testing.T) {
@@ -224,7 +224,7 @@ zai        glm-5.2               1M       128K     yes       yes
 	}
 }
 
-func TestBaseDynamicCatalogsContainNoAOOwnedModelIDs(t *testing.T) {
+func TestBaseDynamicCatalogsContainNoOpenAgentsOwnedModelIDs(t *testing.T) {
 	for _, agentID := range []string{"codex"} {
 		t.Run(agentID, func(t *testing.T) {
 			got := Base(agentID)
@@ -232,7 +232,7 @@ func TestBaseDynamicCatalogsContainNoAOOwnedModelIDs(t *testing.T) {
 				t.Fatalf("Base(%q) = %#v", agentID, got)
 			}
 			if len(got.Models) != 0 {
-				t.Fatalf("Base(%q) models = %#v, want no AO-owned model IDs", agentID, got.Models)
+				t.Fatalf("Base(%q) models = %#v, want no Open Agents-owned model IDs", agentID, got.Models)
 			}
 		})
 	}

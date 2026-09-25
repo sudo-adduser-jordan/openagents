@@ -1,7 +1,7 @@
 package cli
 
-// dto_drift_e2e_test.go is the DTO-drift guard for the `ao spawn` and
-// `ao project add` commands. The CLI defines its OWN request structs
+// dto_drift_e2e_test.go is the DTO-drift guard for the `open-agents spawn` and
+// `open-agents project add` commands. The CLI defines its OWN request structs
 // (spawnRequest in spawn.go, addProjectRequest in project.go) that are separate
 // copies of the daemon's canonical request DTOs (controllers.SpawnSessionRequest
 // and project.AddInput). Nothing else verifies the two sides agree on JSON field
@@ -31,14 +31,14 @@ import (
 	"testing"
 	"time"
 
-	"github.com/aoagents/agent-orchestrator/backend/internal/config"
-	"github.com/aoagents/agent-orchestrator/backend/internal/domain"
-	"github.com/aoagents/agent-orchestrator/backend/internal/httpd"
-	"github.com/aoagents/agent-orchestrator/backend/internal/httpd/controllers"
-	"github.com/aoagents/agent-orchestrator/backend/internal/ports"
-	"github.com/aoagents/agent-orchestrator/backend/internal/runfile"
-	agentsvc "github.com/aoagents/agent-orchestrator/backend/internal/service/agent"
-	projectsvc "github.com/aoagents/agent-orchestrator/backend/internal/service/project"
+	"github.com/sudo-adduser-jordan/open-agents/backend/internal/config"
+	"github.com/sudo-adduser-jordan/open-agents/backend/internal/domain"
+	"github.com/sudo-adduser-jordan/open-agents/backend/internal/httpd"
+	"github.com/sudo-adduser-jordan/open-agents/backend/internal/httpd/controllers"
+	"github.com/sudo-adduser-jordan/open-agents/backend/internal/ports"
+	"github.com/sudo-adduser-jordan/open-agents/backend/internal/runfile"
+	agentsvc "github.com/sudo-adduser-jordan/open-agents/backend/internal/service/agent"
+	projectsvc "github.com/sudo-adduser-jordan/open-agents/backend/internal/service/project"
 )
 
 // fakeSessionService captures the ports.SpawnConfig the controller decodes from
@@ -174,7 +174,7 @@ func (f *fakeProjectManager) Remove(context.Context, domain.ProjectID) (projects
 
 // startDriftTestDaemon stands up the real router+controllers backed by the
 // supplied fakes and points the CLI's run-file at it. The CLI discovers the
-// server purely via AO_RUN_FILE + the run-file port, so this is a genuine
+// server purely via OPEN_AGENTS_RUN_FILE + the run-file port, so this is a genuine
 // loopback round trip through postJSON.
 func startDriftTestDaemon(t *testing.T, sessions controllers.SessionService, projects projectsvc.Manager) {
 	t.Helper()
@@ -191,7 +191,7 @@ func startDriftTestDaemon(t *testing.T, sessions controllers.SessionService, pro
 	port := srv.Listener.Addr().(*net.TCPAddr).Port
 
 	rfPath := filepath.Join(t.TempDir(), "running.json")
-	t.Setenv("AO_RUN_FILE", rfPath)
+	t.Setenv("OPEN_AGENTS_RUN_FILE", rfPath)
 	if err := runfile.Write(rfPath, runfile.Info{PID: os.Getpid(), Port: port, StartedAt: time.Now()}); err != nil {
 		t.Fatalf("write run-file: %v", err)
 	}

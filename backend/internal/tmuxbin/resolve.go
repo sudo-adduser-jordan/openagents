@@ -12,11 +12,11 @@ import (
 
 var errTmuxNotFound = errors.New("tmux executable not found")
 
-// Source identifies where AO found tmux.
+// Source identifies where Open Agents found tmux.
 type Source string
 
 const (
-	// SourceConfigured means AO_TMUX_BINARY selected an explicit executable. The
+	// SourceConfigured means OPEN_AGENTS_TMUX_BINARY selected an explicit executable. The
 	// packaged desktop sets this to its bundled resource.
 	SourceConfigured Source = "configured"
 	// SourceBundled means tmux was found in the packaged desktop resource layout.
@@ -25,7 +25,7 @@ const (
 	SourceSystem Source = "system"
 )
 
-// Resolution is the tmux executable AO will use and where it came from.
+// Resolution is the tmux executable Open Agents will use and where it came from.
 type Resolution struct {
 	Path   string
 	Source Source
@@ -33,7 +33,7 @@ type Resolution struct {
 
 // Resolve applies the production lookup order.
 func Resolve() (Resolution, error) {
-	return ResolveWith(os.Getenv("AO_TMUX_BINARY"), os.Executable, exec.LookPath)
+	return ResolveWith(os.Getenv("OPEN_AGENTS_TMUX_BINARY"), os.Executable, exec.LookPath)
 }
 
 // ResolveWith is Resolve with process lookups injected for callers and tests.
@@ -78,7 +78,7 @@ func ResolveWith(configured string, executable func() (string, error), lookPath 
 }
 
 // bundledCandidate recognizes Electron's resource layout on macOS and Linux:
-// resources/daemon/ao and resources/tmux/bin/tmux. Requiring the daemon and
+// resources/daemon/open-agents and resources/tmux/bin/tmux. Requiring the daemon and
 // resources directory names avoids treating unrelated sibling binaries as a
 // desktop bundle.
 func bundledCandidate(self string) (string, bool) {

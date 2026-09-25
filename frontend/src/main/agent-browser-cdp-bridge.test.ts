@@ -33,7 +33,7 @@ describe("worker-scoped agent-browser CDP bridge", () => {
 	it("exposes only provider targets and forwards flattened target commands", async () => {
 		const debug = new FakeDebugger();
 		const targets: AgentBrowserTarget[] = [
-			{ id: "t1", url: "http://localhost:5173/", title: "AO fixture", debugger: debug },
+			{ id: "t1", url: "http://localhost:5173/", title: "Open Agents fixture", debugger: debug },
 		];
 		const provider = {
 			listTargets: () => targets,
@@ -59,7 +59,7 @@ describe("worker-scoped agent-browser CDP bridge", () => {
 
 			const attached = await rpc(socket, 2, "Target.attachToTarget", { targetId: "t1", flatten: true });
 			const sessionId = (attached.result as { sessionId: string }).sessionId;
-			expect(sessionId).toMatch(/^ao-/);
+			expect(sessionId).toMatch(/^open-agents-/);
 
 			const forwarded = await rpc(socket, 3, "Runtime.evaluate", { expression: "document.title" }, sessionId);
 			expect(forwarded.result).toEqual({
@@ -79,7 +79,7 @@ describe("worker-scoped agent-browser CDP bridge", () => {
 			expect(blockedNavigation.error?.message).toContain("Navigation scheme is not permitted");
 
 			const sibling = await rpc(socket, 4, "Target.attachToTarget", { targetId: "other-worker" });
-			expect(sibling.error?.message).toContain("outside this AO worker");
+			expect(sibling.error?.message).toContain("outside this Open Agents worker");
 
 			const close = await rpc(socket, 5, "Browser.close");
 			expect(close.error?.message).toContain("not permitted");
@@ -92,7 +92,7 @@ describe("worker-scoped agent-browser CDP bridge", () => {
 	it("keeps one physical debugger attached while restricted clients share a target", async () => {
 		const debug = new FakeDebugger();
 		const targets: AgentBrowserTarget[] = [
-			{ id: "t1", url: "http://localhost:5173/", title: "AO fixture", debugger: debug },
+			{ id: "t1", url: "http://localhost:5173/", title: "Open Agents fixture", debugger: debug },
 		];
 		const provider = {
 			listTargets: () => targets,
@@ -110,8 +110,8 @@ describe("worker-scoped agent-browser CDP bridge", () => {
 			const siblingAttach = await rpc(siblingSocket, 2, "Target.attachToTarget", { targetId: "t1", flatten: true });
 			const agentSession = (agentAttach.result as { sessionId: string }).sessionId;
 			const siblingSession = (siblingAttach.result as { sessionId: string }).sessionId;
-			expect(agentSession).toMatch(/^ao-/);
-			expect(siblingSession).toMatch(/^ao-/);
+			expect(agentSession).toMatch(/^open-agents-/);
+			expect(siblingSession).toMatch(/^open-agents-/);
 			expect(debug.attached).toBe(true);
 			await expectRPCResult(agentSocket, 3, "Runtime.enable", {}, agentSession);
 			await expectRPCResult(siblingSocket, 4, "Runtime.enable", {}, siblingSession);
@@ -213,7 +213,7 @@ describe("worker-scoped agent-browser CDP bridge", () => {
 		const target: AgentBrowserTarget = {
 			id: "t1",
 			url: "http://localhost:5173/",
-			title: "AO fixture",
+			title: "Open Agents fixture",
 			debugger: debug,
 		};
 		const bridge = new AgentBrowserCDPBridge({
@@ -248,7 +248,7 @@ describe("worker-scoped agent-browser CDP bridge", () => {
 		const target: AgentBrowserTarget = {
 			id: "t1",
 			url: "http://localhost:5173/",
-			title: "AO fixture",
+			title: "Open Agents fixture",
 			debugger: debug,
 		};
 		const bridge = new AgentBrowserCDPBridge({

@@ -156,7 +156,7 @@ func TestProjectList_Empty(t *testing.T) {
 	if err != nil {
 		t.Fatalf("unexpected error: %v\nstderr=%s", err, errOut)
 	}
-	if !strings.Contains(out, "No projects registered") || !strings.Contains(out, "ao project add --path") {
+	if !strings.Contains(out, "No projects registered") || !strings.Contains(out, "open-agents project add --path") {
 		t.Fatalf("empty output missing hint:\n%s", out)
 	}
 }

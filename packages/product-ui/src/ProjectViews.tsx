@@ -746,7 +746,7 @@ export function ProjectWorkflowSettingsView({
 					label={labels.sessionPrefix}
 					id="sessionPrefix"
 					value={prefix}
-					placeholder="ao"
+					placeholder="open-agents"
 					onChange={onPrefixChange}
 				/>
 			</ProjectSettingsSection>

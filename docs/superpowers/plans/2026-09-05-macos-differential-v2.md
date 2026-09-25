@@ -2,7 +2,7 @@
 
 Existing PR: #4906. Rollout stays disabled and draft. No publication or conductor mutation.
 
-1. Define a signed v2 envelope hosted on the candidate's existing GitHub release. Bind exact schemaVersion 2, enabled authorization, minimumClientVersion, channel, candidate version/tag/source commit, architecture, target ZIP URL/size/SHA-512, baseline identity and baseline ZIP/map hashes. Permit only distinct versioned `.aoblockmap` assets; never conventional `.zip.blockmap` or aliases. Pin verification keys independently in the compatible client.
+1. Define a signed v2 envelope hosted on the candidate's existing GitHub release. Bind exact schemaVersion 2, enabled authorization, minimumClientVersion, channel, candidate version/tag/source commit, architecture, target ZIP URL/size/SHA-512, baseline identity and baseline ZIP/map hashes. Permit only distinct versioned `.open-agents-blockmap` assets; never conventional `.zip.blockmap` or aliases. Pin verification keys independently in the compatible client.
 2. Add an opt-in local asset generator and verifier for the future conductor contract. Legacy feeds retain only full ZIP metadata and never reference v2. Verify exact v2 inventory and signatures before future publication; document independent conductor work.
 3. Require the locally compiled mac-differential-v2 capability independently of version and signed remote authorization. Implement an explicit v2 resolver with bounded authenticated metadata/map reads, exact candidate/baseline validation and no discovery through legacy blockmap URLs.
 4. Use electron-updater's declared protected `differentialDownloadInstaller` extension through a MacUpdater subclass. Implement v2 reconstruction with sequential bounded range reads and exclusively owned file handles, closing and settling all work before returning the single full-download fallback decision. Do not patch dependencies or invoke stock differential code. Preserve native full-download digest/handoff behavior.
@@ -10,7 +10,7 @@ Existing PR: #4906. Rollout stays disabled and draft. No publication or conducto
 6. Re-run focused tests, typechecks and CI; record honest packaged Electron/net/Squirrel limitations. Push only the existing PR branch.
 
 The remote schema and compatibility criterion are approved and implemented.
-`ao-diff-v2-mac.json` lives on the same release as the normal ZIP. Eligibility
+`open-agents-diff-v2-mac.json` lives on the same release as the normal ZIP. Eligibility
 requires the compiled `mac-differential-v2` capability plus schemaVersion exactly
 2, enabled exactly true, minimumClientVersion, channel, architecture and matching
 baseline/candidate/ZIP/map identities, URLs, sizes and SHA-512 values. Version

@@ -8,8 +8,8 @@ import (
 	"fmt"
 	"time"
 
-	"github.com/aoagents/agent-orchestrator/backend/internal/domain"
-	"github.com/aoagents/agent-orchestrator/backend/internal/storage/sqlite/gen"
+	"github.com/sudo-adduser-jordan/open-agents/backend/internal/domain"
+	"github.com/sudo-adduser-jordan/open-agents/backend/internal/storage/sqlite/gen"
 )
 
 // UpsertReview inserts the per-worker, per-harness review row, or reuses the
@@ -223,7 +223,7 @@ func (s *Store) CancelRunningReviewRunsBySessionAndHarness(ctx context.Context, 
 }
 
 // MarkReviewRunDelivered records that lifecycle delivered the worker nudge for
-// a completed AO-internal review pass.
+// a completed Open Agents-internal review pass.
 func (s *Store) MarkReviewRunDelivered(ctx context.Context, id string, deliveredAt time.Time) (bool, error) {
 	s.writeMu.Lock()
 	defer s.writeMu.Unlock()
@@ -406,7 +406,7 @@ func reviewRunFromRow(r gen.ReviewRun) domain.ReviewRun {
 	}
 }
 
-// ListCurrentHeadReviewRunsForSession returns AO's review passes against the
+// ListCurrentHeadReviewRunsForSession returns Open Agents's review passes against the
 // current head commit of each PR the session owns. Passes recorded for an
 // earlier head are filtered out in SQL, so callers cannot let a stale run
 // decide a derived column.

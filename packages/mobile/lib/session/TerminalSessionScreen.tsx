@@ -155,7 +155,7 @@ const TERMINAL_ENHANCE_JS = `
   // RN's +/- buttons call this through the WebView's imperative injection hook.
   // This changes only the phone's CSS viewport: xterm stays mounted and the
   // daemon-owned PTY grid is never resized, so a co-viewing desktop is unaffected.
-  window.__aoAdjustTerminalZoom = function (direction) {
+  window.__openAgentsAdjustTerminalZoom = function (direction) {
     var b = box(); if (!b || (direction !== 1 && direction !== -1)) return;
     setZoom(Z.s + direction * 0.2, b.contW / 2, b.contH / 2);
     Z.lastPan = Date.now();
@@ -302,7 +302,7 @@ const TERMINAL_ENHANCE_JS = `
     // Taps on the scroll-to-top button are handled by the button itself; don't
     // let this capture-phase listener consume them as a terminal tap/long-press.
     var _tt = e.target;
-    if (_tt && _tt.closest && _tt.closest('#ao-scrolltop')) return;
+    if (_tt && _tt.closest && _tt.closest('#open-agents-scrolltop')) return;
     if (e.touches && e.touches.length >= 2) {
       // Second finger down -> pinch. Cancel any pending tap/long-press/scroll.
       clearLP(); mode = 'pinch';
@@ -437,7 +437,7 @@ const TERMINAL_ENHANCE_JS = `
   //    the button always shows there and the jump is a generous burst.
   (function scrollTopBtn() {
     var btn = document.createElement('div');
-    btn.id = 'ao-scrolltop';
+    btn.id = 'open-agents-scrolltop';
     btn.setAttribute('aria-label', 'Scroll to top');
     btn.innerHTML = '↑'; // up arrow
     var s = btn.style;
@@ -538,7 +538,7 @@ const statusColorFor = (t: Theme): Record<MuxStatus, string> => ({
 function terminalInterfacePhaseLabel(phase?: string): string {
 	switch (phase) {
 		case "draining":
-			return "Waiting for the current terminal turn to finish. New AO messages are queued safely.";
+			return "Waiting for the current terminal turn to finish. New Open Agents messages are queued safely.";
 		case "source_stopping":
 			return "Stopping the terminal controller before Chat starts.";
 		case "source_stopped":
@@ -673,7 +673,7 @@ export default function TerminalScreen({ session: resolved }: { session?: RouteS
 	const interfaceTransitionNoticeText =
 		interfaceTransitionNotice?.errorDetail ||
 		(interfaceTransitionRecovered
-			? "AO restored the session in its last committed interface."
+			? "Open Agents restored the session in its last committed interface."
 			: interfaceTransitionNotice?.phase === "recovery_required"
 				? "The interface switch needs recovery before more work is sent."
 				: "The interface switch failed; Terminal UI remains available.");
@@ -956,7 +956,7 @@ export default function TerminalScreen({ session: resolved }: { session?: RouteS
 	// Send the composed text to the selected route. The agent route can still
 	// auto-engage the terminal route when the daemon reports a blocked prompt.
 	//
-	// AO's /send is the right route for a message: the daemon hands it to the
+	// Open Agents' /send is the right route for a message: the daemon hands it to the
 	// harness and submits it. But it sanitises control characters and refuses
 	// outright while a session is paused on a permission prompt — answering 409
 	// SESSION_AWAITING_DECISION with the advice "answer it in the session
@@ -1088,7 +1088,7 @@ export default function TerminalScreen({ session: resolved }: { session?: RouteS
 				if (!result) recheck = { outcome: "not-attempted" };
 				// A superseded answer is not a verdict, same rule as the hook's own
 				// loop: the readiness tick can overtake a slow tap request, and acting
-				// on the tap's payload would alert "Could not reach AO" (or "Not ready
+				// on the tap's payload would alert "Could not reach Open Agents" (or "Not ready
 				// yet" off an older body) while the button had just enabled itself.
 				// The newer request owns the answer; use whatever the hook adopted.
 				else if (result.stale) status = interfaceStatusRef.current;
@@ -1123,7 +1123,7 @@ export default function TerminalScreen({ session: resolved }: { session?: RouteS
 			"Switch to Chat?",
 			known?.activity === "waiting_input" || known?.activity === "blocked"
 				? "This turn is waiting for your input. Finish waits for your answer; stop cancels it and switches now."
-				: "Keep the same AO session, worktree, and native agent conversation.",
+				: "Keep the same Open Agents session, worktree, and native agent conversation.",
 			[
 				{ text: "Keep Terminal UI", style: "cancel" },
 				{ text: "Finish, then switch", onPress: () => void startInterfaceSwitch("drain") },

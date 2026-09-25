@@ -3,7 +3,7 @@ import { cachedInstallId, getInstallId } from "./installId";
 import { captureMobileApiError, httpCategory } from "./sentry";
 import type { AttentionLevel } from "./theme";
 
-// ---- Types (subset of AO's DashboardSession we use on the phone) ------------
+// ---- Types (subset of Open Agents' DashboardSession we use on the phone) ------------
 
 export type SessionMode = "chat" | "tui";
 
@@ -67,7 +67,7 @@ export type DashboardSession = {
 	// Which agent CLI drives this session (codex, …). Parsed off the
 	// wire but discarded until the orchestrator tab needed it for brand marks.
 	harness?: string | null;
-	/** Controller currently committed for this AO session. */
+	/** Controller currently committed for this Open Agents session. */
 	mode: SessionMode;
 	branch: string | null;
 	issueId: string | null;
@@ -149,7 +149,7 @@ export type SessionsResponse = {
 
 // ---- Wire types (this repo's Go daemon, /api/v1/*) --------------------------
 //
-// The app UI speaks AO's OG "DashboardSession" shape; this daemon speaks a
+// The app UI speaks Open Agents' OG "DashboardSession" shape; this daemon speaks a
 // leaner read model. The maps below translate the daemon's SessionView/PR facts
 // into the shapes the screens expect, so the rest of the app is unchanged.
 
@@ -334,7 +334,7 @@ async function req(cfg: ServerConfig, path: string, init?: RequestInit, timeoutM
 			headers: {
 				...authHeaders(cfg),
 				"Content-Type": "application/json",
-				...(installId ? { "X-AO-Install-Id": installId } : {}),
+				...(installId ? { "X-OPEN-AGENTS-Install-Id": installId } : {}),
 				...(init?.headers ?? {}),
 			},
 		});
@@ -481,14 +481,14 @@ export async function getPreview(cfg: ServerConfig, id: string, preferredURL?: s
 	return external ? { entry: external.hostname, url: external.href, authenticated: false } : null;
 }
 
-/** Rewrite host-loopback previews for the phone without ever forwarding AO auth. */
-export function mobileReachablePreviewURL(raw: string | undefined, aoHost: string): URL | undefined {
+/** Rewrite host-loopback previews for the phone without ever forwarding Open Agents auth. */
+export function mobileReachablePreviewURL(raw: string | undefined, serverHost: string): URL | undefined {
 	if (!raw) return undefined;
 	try {
 		const url = new URL(raw);
 		if (url.protocol !== "http:" && url.protocol !== "https:") return undefined;
 		if (["localhost", "127.0.0.1", "::1", "[::1]"].includes(url.hostname)) {
-			const host = normalizeServerHost(aoHost);
+			const host = normalizeServerHost(serverHost);
 			if (!host) return undefined;
 			url.hostname = host.includes(":") && !host.startsWith("[") ? `[${host}]` : host;
 		}
@@ -526,12 +526,12 @@ export type AgentModelCatalog = {
 	warning?: string;
 };
 
-export type AOSettings = {
+export type OpenAgentsSettings = {
 	defaultSessionMode: SessionMode;
 	chatHarnesses: string[];
 };
 
-export async function getSettings(cfg: ServerConfig): Promise<AOSettings> {
+export async function getSettings(cfg: ServerConfig): Promise<OpenAgentsSettings> {
 	const res = await req(cfg, `${API}/settings`);
 	const data = await res.json();
 	return {
@@ -751,7 +751,7 @@ export async function restoreSession(cfg: ServerConfig, id: string): Promise<voi
 	await req(cfg, `${API}/sessions/${encodeURIComponent(id)}/restore`, { method: "POST" });
 }
 
-/** Restart a stopped agent/controller without restoring a terminated AO session. */
+/** Restart a stopped agent/controller without restoring a terminated Open Agents session. */
 export async function resumeSessionAgent(cfg: ServerConfig, id: string): Promise<void> {
 	await req(cfg, `${API}/sessions/${encodeURIComponent(id)}/resume-agent`, { method: "POST" });
 }

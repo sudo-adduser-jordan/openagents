@@ -133,7 +133,7 @@ import { sameBrowserRuntimeIdentity, type BrowserRuntimeIdentity } from "./main/
 import { connectSupervisor, type SupervisorLinkHandle } from "./main/supervisor-link";
 import { connectBrowserRuntime, type BrowserRuntimeLinkHandle } from "./main/browser-runtime-link";
 import { keepDaemonAlive, shouldLinkOnAttach } from "./main/daemon-owner";
-import { readMigrationState, updateMigration, writeAppStateMarker, type MigrationState } from "./main/app-state";
+import { writeAppStateMarker } from "./main/app-state";
 import { isAllowedAppExternalURL, openAllowedAppExternalURL } from "./main/external-open";
 import { dockBounceType, shouldReplaceBounce, shouldSignalAttention, shouldToast } from "./main/notification-signals";
 import { buildLinuxAppMenuTemplate, buildMacAppMenuTemplate, buildWindowsAppMenuTemplate } from "./main/menu";
@@ -161,14 +161,14 @@ process.stderr.on("error", ignoreStdStreamError);
 // Must run before app ready so the About panel and default-menu role labels use it.
 // Unpackaged runs get a distinct name so the dev window, dock menu, and About
 // panel never impersonate the installed app (#3642).
-app.setName(app.isPackaged ? "Agent Orchestrator" : "Agent Orchestrator (dev)");
+app.setName(app.isPackaged ? "Open Agents" : "Open Agents (dev)");
 
 // Windows shows native toasts only when the app declares an AppUserModelID that
 // matches its installer shortcut (the NSIS maker's appId). Without it,
 // Notification.isSupported() still returns true but show() silently drops the
 // toast, so notifications never appear. No-op on macOS/Linux.
 if (process.platform === "win32") {
-	app.setAppUserModelId("dev.agent-orchestrator.desktop");
+	app.setAppUserModelId("dev.openagents.desktop");
 }
 
 // Escape hatch for hosts whose GPU driver stack crashes Chromium on startup
@@ -178,22 +178,22 @@ if (process.platform === "win32") {
 // in-app setting is unreachable and an env var is the only knob that works.
 // Truthy allowlist mirrors keepDaemonAlive() so "off"/"no" cannot accidentally
 // turn the GPU off. Must run before app ready — the call throws after that.
-const disableGpu = process.env.AO_DISABLE_GPU?.trim().toLowerCase();
+const disableGpu = process.env.OPEN_AGENTS_DISABLE_GPU?.trim().toLowerCase();
 if (disableGpu === "1" || disableGpu === "true" || disableGpu === "yes" || disableGpu === "on") {
 	app.disableHardwareAcceleration();
 }
 
 // Pin ALL Electron-owned state (Chromium cache, cookies, local/session storage,
-// crash dumps) under the canonical AO home at ~/.ao instead of Electron's macOS
+// crash dumps) under the canonical Open Agents home at ~/.open-agents instead of Electron's macOS
 // default ~/Library/Application Support/<name>. Keeps the app's entire footprint
-// inside ~/.ao alongside the daemon's data dir and running.json. sessionData and
+// inside ~/.open-agents alongside the daemon's data dir and running.json. sessionData and
 // crashDumps derive from userData, so this one override reparents them all.
 // Must run before app ready.
-// Dev runs get their own profile under the same ~/.ao root: the packaged app
+// Dev runs get their own profile under the same ~/.open-agents root: the packaged app
 // keeps this directory open, and two Chromium instances sharing one profile
 // corrupt its LevelDB stores. Mirrors how dev already isolates running.json and
-// the daemon data dir into ~/.ao/dev.
-// AO_DEV_ELECTRON_DIR overrides the dev profile location. The default dev path
+// the daemon data dir into ~/.open-agents/dev.
+// OPEN_AGENTS_DEV_ELECTRON_DIR overrides the dev profile location. The default dev path
 // is shared by every checkout, and Chromium puts a singleton lock in a profile,
 // so a second worktree's `npm run dev` loses requestSingleInstanceLock() and
 // exits immediately. That is a real constraint for a tool built around parallel
@@ -202,8 +202,8 @@ if (disableGpu === "1" || disableGpu === "true" || disableGpu === "yes" || disab
 app.setPath(
 	"userData",
 	app.isPackaged
-		? path.join(os.homedir(), ".ao", "electron")
-		: (process.env.AO_DEV_ELECTRON_DIR ?? path.join(os.homedir(), ".ao", "dev", "electron")),
+		? path.join(os.homedir(), ".open-agents", "electron")
+		: (process.env.OPEN_AGENTS_DEV_ELECTRON_DIR ?? path.join(os.homedir(), ".open-agents", "dev", "electron")),
 );
 
 // Resolve once against the launch cwd, before the daemon can chdir. The exact
@@ -273,7 +273,7 @@ const isDev = !app.isPackaged;
 // on Unix (backend derives it as dir(RunFilePath)/supervise.sock) and the named pipe
 // on Windows (supervisorPipeFromRunFile derives it from the same dir basename).
 const DEV_DAEMON_PORT = 3002;
-const DEV_STATE_SUBDIR = "dev"; // ~/.ao/dev/
+const DEV_STATE_SUBDIR = "dev"; // ~/.open-agents/dev/
 
 // Traffic lights stay fixed across sidebar expand/collapse. Y matches the
 // natural macOS titlebar band (TitlebarNav is h-traffic-light-clearance).
@@ -298,10 +298,10 @@ function syncNativeWindowBackground(): void {
 }
 
 function resolvedDaemonDataDir(): string {
-	const override = process.env.AO_DATA_DIR?.trim();
+	const override = process.env.OPEN_AGENTS_DATA_DIR?.trim();
 	if (override) return override;
-	if (isDev) return path.join(os.homedir(), ".ao", DEV_STATE_SUBDIR, "data");
-	return path.join(os.homedir(), ".ao", "data");
+	if (isDev) return path.join(os.homedir(), ".open-agents", DEV_STATE_SUBDIR, "data");
+	return path.join(os.homedir(), ".open-agents", "data");
 }
 
 // Cursor Agent reads TERM_THEME at process start. The daemon applies it from
@@ -316,7 +316,7 @@ function persistTerminalThemeHint(scheme: "light" | "dark"): void {
 		writeFileSync(temporary, `${scheme}\n`, { mode: 0o600 });
 		renameSync(temporary, target);
 	} catch (error) {
-		console.warn("AO: unable to persist terminal theme hint", error);
+		console.warn("Open Agents: unable to persist terminal theme hint", error);
 	}
 }
 
@@ -435,7 +435,7 @@ function appendDaemonOutput(text: string): void {
 
 // Menu installed on Windows where the native menu bar is hidden. The bar stays
 // out of sight, but the roles keep their accelerators alive (Reload, zoom, full
-// screen, edit commands). DevTools uses the AO browser toggle so the focused
+// screen, edit commands). DevTools uses the Open Agents browser toggle so the focused
 // Browser panel opens the same native Chromium surface as the toolbar.
 function buildWindowsAppMenu(): Menu {
 	return Menu.buildFromTemplate(
@@ -450,7 +450,7 @@ function buildWindowsAppMenu(): Menu {
 
 // Menu installed on Linux where the native menu bar is hidden by default.
 // The role-based menu preserves standard accelerators (Reload, DevTools, zoom,
-// full screen, edit commands) while routing DevTools through AO's guarded handler.
+// full screen, edit commands) while routing DevTools through Open Agents's guarded handler.
 function buildLinuxAppMenu(): Menu {
 	return Menu.buildFromTemplate(
 		buildLinuxAppMenuTemplate(() => {
@@ -486,7 +486,7 @@ async function disposeBrowserViewHost(): Promise<void> {
 
 function browserProfileStateDir(): string {
 	const runFile = runFilePath();
-	return path.dirname(runFile ?? path.join(os.homedir(), ".ao", "running.json"));
+	return path.dirname(runFile ?? path.join(os.homedir(), ".open-agents", "running.json"));
 }
 
 async function clearElectronBrowserProfileData(partition: string): Promise<void> {
@@ -509,9 +509,9 @@ async function createWindowInternal(): Promise<void> {
 		binaryPath: resolveAgentBrowserBinaryPath(),
 		// Agent Browser creates Unix sockets below each run root. Keep this base
 		// deliberately short so the namespace/session suffix stays below macOS's
-		// 103-byte sockaddr_un limit; all AO state remains under ~/.ao.
-		dataDir: path.join(os.homedir(), ".ao", ...(app.isPackaged ? ["br"] : ["dev", "br"])),
-		log: (message) => console.log(`AO: ${message}`),
+		// 103-byte sockaddr_un limit; all Open Agents state remains under ~/.open-agents.
+		dataDir: path.join(os.homedir(), ".open-agents", ...(app.isPackaged ? ["br"] : ["dev", "br"])),
+		log: (message) => console.log(`Open Agents: ${message}`),
 	});
 	await agentBrowserRuntime.prepare();
 	if (browserQuitRequested) {
@@ -532,7 +532,7 @@ async function createWindowInternal(): Promise<void> {
 		height: 860,
 		minWidth: 960,
 		minHeight: 640,
-		title: app.isPackaged ? "Agent Orchestrator" : "Agent Orchestrator (dev)",
+		title: app.isPackaged ? "Open Agents" : "Open Agents (dev)",
 		icon: windowIconPath(),
 		backgroundColor: NATIVE_WINDOW_BACKGROUND_DARK,
 		// Windows goes frameless and the renderer paints the whole titlebar,
@@ -567,7 +567,7 @@ async function createWindowInternal(): Promise<void> {
 	windowComposition = composition;
 	syncNativeWindowBackground();
 	const shellWebContents = getShellWebContents();
-	if (!shellWebContents) throw new Error("AO shell WebContents was not created");
+	if (!shellWebContents) throw new Error("Open Agents shell WebContents was not created");
 	trustedShellWebContents.set(shellWebContents.id, shellWebContents);
 	shellWebContents.once("destroyed", () => {
 		trustedShellWebContents.delete(shellWebContents.id);
@@ -721,7 +721,7 @@ async function createWindowInternal(): Promise<void> {
 
 	void shellWebContents.loadURL(rendererUrl());
 
-	if (isDev && process.env.AO_OPEN_DEVTOOLS === "1") {
+	if (isDev && process.env.OPEN_AGENTS_OPEN_DEVTOOLS === "1") {
 		shellWebContents.once("did-frame-finish-load", () => {
 			shellWebContents.openDevTools({ mode: "detach" });
 		});
@@ -768,7 +768,7 @@ async function createWindowInternal(): Promise<void> {
 				composition.dispose();
 			})
 			.catch((error) => {
-				console.error("AO: window teardown failed:", error);
+				console.error("Open Agents: window teardown failed:", error);
 			});
 		mainWindow = null;
 		// Drop any pending dock bounce with the window it was attached to: its
@@ -795,7 +795,7 @@ function createWindow(): Promise<void> {
 }
 
 function resolveAgentBrowserBinaryPath(): string {
-	const override = process.env.AO_AGENT_BROWSER_PATH?.trim();
+	const override = process.env.OPEN_AGENTS_AGENT_BROWSER_PATH?.trim();
 	if (override) return path.resolve(override);
 	const binary = process.platform === "win32" ? "agent-browser.exe" : "agent-browser";
 	return app.isPackaged
@@ -816,20 +816,20 @@ const RUN_FILE_FRESHNESS_SKEW_MS = 2_000;
 const DAEMON_PROBE_TIMEOUT_MS = 2_000;
 
 function runFilePath(): string | null {
-	if (process.env.AO_RUN_FILE) return process.env.AO_RUN_FILE;
-	if (isDev) return path.join(os.homedir(), ".ao", DEV_STATE_SUBDIR, "running.json");
+	if (process.env.OPEN_AGENTS_RUN_FILE) return process.env.OPEN_AGENTS_RUN_FILE;
+	if (isDev) return path.join(os.homedir(), ".open-agents", DEV_STATE_SUBDIR, "running.json");
 	return defaultRunFilePath(process.platform, process.env, os.homedir());
 }
 
 function editorStateDir(): string {
 	const runFile = runFilePath();
-	if (!runFile) throw new Error("AO state directory is not available.");
+	if (!runFile) throw new Error("Open Agents state directory is not available.");
 	return path.dirname(runFile);
 }
 
 async function resolveSessionWorkspaceForDesktop(sessionId: string): Promise<string> {
 	if (daemonStatus.state !== "ready" || !daemonStatus.port) {
-		throw new Error("AO daemon is not ready.");
+		throw new Error("Open Agents daemon is not ready.");
 	}
 	const controller = new AbortController();
 	const timer = setTimeout(() => controller.abort(), DAEMON_PROBE_TIMEOUT_MS);
@@ -958,7 +958,7 @@ function ensureShellEnv(): Promise<void> {
 			shellEnvPromise = resolveShellEnvWithSpec(probe, runLoginShell).then((resolved) => {
 				cachedShellEnv = resolved;
 				if (!resolved) {
-					console.error("AO: could not read the login-shell environment; falling back to the process environment.");
+					console.error("Open Agents: could not read the login-shell environment; falling back to the process environment.");
 				}
 			});
 			return shellEnvPromise;
@@ -966,7 +966,7 @@ function ensureShellEnv(): Promise<void> {
 		shellEnvPromise = resolveShellEnv(process.env, runLoginShell).then((resolved) => {
 			cachedShellEnv = resolved;
 			if (!resolved) {
-				console.error("AO: could not read the login-shell environment; falling back to a static PATH floor.");
+				console.error("Open Agents: could not read the login-shell environment; falling back to a static PATH floor.");
 			}
 		});
 	}
@@ -975,8 +975,8 @@ function ensureShellEnv(): Promise<void> {
 
 // One id per app launch, minted eagerly so every daemon spawn in this process
 // (including supervisor restarts) reports the same run. An explicit
-// AO_APP_RUN_ID in the environment wins, which lets a test or a wrapper pin it.
-const appRunId = process.env.AO_APP_RUN_ID ?? `apprun-${randomUUID()}`;
+// OPEN_AGENTS_APP_RUN_ID in the environment wins, which lets a test or a wrapper pin it.
+const appRunId = process.env.OPEN_AGENTS_APP_RUN_ID ?? `apprun-${randomUUID()}`;
 const browserRuntimeToken = randomBytes(32).toString("base64url");
 let stagedBundledTmuxBinary: string | null = null;
 
@@ -984,7 +984,7 @@ async function ensureBundledTmuxStaged(): Promise<void> {
 	const source = bundledTmuxBinaryPath(app.isPackaged, process.resourcesPath, process.platform);
 	const destination = stableBundledTmuxBinaryPath(
 		app.isPackaged,
-		process.env.AO_DATA_DIR?.trim() || path.join(os.homedir(), ".ao"),
+		process.env.OPEN_AGENTS_DATA_DIR?.trim() || path.join(os.homedir(), ".open-agents"),
 		app.getVersion(),
 		process.platform,
 		process.arch,
@@ -1010,50 +1010,50 @@ async function ensureBundledTmuxStaged(): Promise<void> {
 }
 
 function daemonEnv(forceKeep = keepDaemonAlive(process.env)): NodeJS.ProcessEnv {
-	// AO_OWNER is the daemon's durable spawn-mode record: the daemon writes it
+	// OPEN_AGENTS_OWNER is the daemon's durable spawn-mode record: the daemon writes it
 	// into running.json and the attach path reads it to decide the supervisor
 	// link from the daemon's own state (not this Electron process's env, which
 	// differs across launches). A keep-alive daemon is "persistent" (never
 	// re-linked, survives app quit); a normal app-owned daemon is "app";
-	// headless `ao start` sets none (stays unlinked, persistent by default).
+	// headless `open-agents start` sets none (stays unlinked, persistent by default).
 	//
-	// AO_APP_RUN_ID scopes temporary command/auth terminals to this app launch.
+	// OPEN_AGENTS_APP_RUN_ID scopes temporary command/auth terminals to this app launch.
 	// User-opened shells remain attachable across launches while their PTYs live.
-	const AO_OWNER = forceKeep ? "persistent" : "app";
+	const OPEN_AGENTS_OWNER = forceKeep ? "persistent" : "app";
 	const bundledTmuxBinary = stagedBundledTmuxBinary;
 	const ownerTag = {
-		AO_OWNER,
-		AO_DATA_DIR: desktopDataDir,
-		AO_APP_RUN_ID: appRunId,
+		OPEN_AGENTS_OWNER,
+		OPEN_AGENTS_DATA_DIR: desktopDataDir,
+		OPEN_AGENTS_APP_RUN_ID: appRunId,
 		// The browser runtime token is handed over through the child's private
 		// stdin pipe below. Never put it in the daemon environment, where a
 		// same-UID worker could inspect the parent process.
-		AO_BROWSER_RUNTIME_TOKEN: "",
-		AO_BROWSER_RUNTIME_TOKEN_STDIN: "1",
+		OPEN_AGENTS_BROWSER_RUNTIME_TOKEN: "",
+		OPEN_AGENTS_BROWSER_RUNTIME_TOKEN_STDIN: "1",
 		// Under AppImage, APPIMAGE is the stable outer .AppImage file path (the
 		// FUSE mount in executablePath is random per launch). The daemon echoes
 		// it as appImagePath in /healthz|/readyz so the identity check can
 		// recognise its own daemon across a relaunch-to-update.
-		...(process.env.APPIMAGE ? { AO_APPIMAGE: process.env.APPIMAGE } : {}),
-		// Chat providers use AO's packaged ACP adapter + Node runtime. The
+		...(process.env.APPIMAGE ? { OPEN_AGENTS_APPIMAGE: process.env.APPIMAGE } : {}),
+		// Chat providers use Open Agents's packaged ACP adapter + Node runtime. The
 		// provider executable itself is resolved by the daemon from the user's PATH
 		// and passed through the runtime environment; it is not part of this resource.
-		AO_ACP_RUNTIME_DIR:
-			process.env.AO_ACP_RUNTIME_DIR ??
+		OPEN_AGENTS_ACP_RUNTIME_DIR:
+			process.env.OPEN_AGENTS_ACP_RUNTIME_DIR ??
 			(app.isPackaged
 				? path.join(process.resourcesPath, "acp-runtime")
 				: path.join(app.getAppPath(), "resources", "acp-runtime")),
-		...(bundledTmuxBinary ? { AO_TMUX_BINARY: bundledTmuxBinary, AO_TMUX_SOCKET_NAME: "ao" } : {}),
+		...(bundledTmuxBinary ? { OPEN_AGENTS_TMUX_BINARY: bundledTmuxBinary, OPEN_AGENTS_TMUX_SOCKET_NAME: "open-agents" } : {}),
 	};
 	// In dev mode, inject isolation defaults so the dev daemon never collides with
 	// the installed app. User-set env vars take priority (checked first).
 	const devExtras: Record<string, string> = {};
 	if (isDev) {
-		if (!process.env.AO_PORT) devExtras.AO_PORT = String(DEV_DAEMON_PORT);
-		if (!process.env.AO_RUN_FILE) devExtras.AO_RUN_FILE = runFilePath() ?? "";
-		if (!process.env.AO_DATA_DIR) devExtras.AO_DATA_DIR = path.join(os.homedir(), ".ao", DEV_STATE_SUBDIR, "data");
-		devExtras.AO_ALLOWED_ORIGINS = devDaemonAllowedOrigins(
-			process.env.AO_ALLOWED_ORIGINS,
+		if (!process.env.OPEN_AGENTS_PORT) devExtras.OPEN_AGENTS_PORT = String(DEV_DAEMON_PORT);
+		if (!process.env.OPEN_AGENTS_RUN_FILE) devExtras.OPEN_AGENTS_RUN_FILE = runFilePath() ?? "";
+		if (!process.env.OPEN_AGENTS_DATA_DIR) devExtras.OPEN_AGENTS_DATA_DIR = path.join(os.homedir(), ".open-agents", DEV_STATE_SUBDIR, "data");
+		devExtras.OPEN_AGENTS_ALLOWED_ORIGINS = devDaemonAllowedOrigins(
+			process.env.OPEN_AGENTS_ALLOWED_ORIGINS,
 			rendererUrl(),
 		);
 	}
@@ -1112,12 +1112,12 @@ function daemonIdentityError(launch: DaemonLaunchSpec, probe: DaemonProbe): stri
 			: false;
 		const executableMatches = probe.executablePath ? pathInside(probe.executablePath, launch.cwd) : false;
 		if (!probe.workingDirectory && !probe.startupWorkingDirectory && !probe.executablePath) {
-			return "An older AO daemon is already running, but it does not report its checkout identity. Stop it and restart this app.";
+			return "An older Open Agents daemon is already running, but it does not report its checkout identity. Stop it and restart this app.";
 		}
 		if (!cwdMatches && !startupCwdMatches && !executableMatches) {
 			const actual =
 				probe.startupWorkingDirectory ?? probe.workingDirectory ?? probe.executablePath ?? "an unknown location";
-			return `Another AO daemon is already running from ${actual}; expected this checkout at ${launch.cwd}. Stop the other daemon before using this checkout.`;
+			return `Another Open Agents daemon is already running from ${actual}; expected this checkout at ${launch.cwd}. Stop the other daemon before using this checkout.`;
 		}
 		return null;
 	}
@@ -1136,14 +1136,14 @@ function daemonIdentityError(launch: DaemonLaunchSpec, probe: DaemonProbe): stri
  *
  * Called unconditionally on the spawn path (we always own that daemon).
  * Called on the attach path only when the daemon is app-owned (owner === "app");
- * headless `ao start` daemons stay unlinked so they remain persistent after
+ * headless `open-agents start` daemons stay unlinked so they remain persistent after
  * app quit.
  */
 function supervisorPipeFromRunFile(rfp: string | null): string {
-	if (!rfp) return "\\\\.\\pipe\\ao-supervise";
+	if (!rfp) return "\\\\.\\pipe\\open-agents-supervise";
 	const dir = path.basename(path.dirname(rfp));
-	if (dir === ".ao" || dir === "." || dir === "") return "\\\\.\\pipe\\ao-supervise";
-	return "\\\\.\\pipe\\ao-supervise-" + dir.replace(/[^a-zA-Z0-9-]/g, "-");
+	if (dir === ".open-agents" || dir === "." || dir === "") return "\\\\.\\pipe\\open-agents-supervise";
+	return "\\\\.\\pipe\\open-agents-supervise-" + dir.replace(/[^a-zA-Z0-9-]/g, "-");
 }
 
 function disposeBrowserRuntimeLink(): void {
@@ -1156,7 +1156,7 @@ function establishBrowserRuntimeLink(): void {
 	if (!browserViewHost) return;
 	const rfp = runFilePath();
 	if (!rfp) {
-		console.warn("AO: browser runtime link skipped; run-file path unavailable");
+		console.warn("Open Agents: browser runtime link skipped; run-file path unavailable");
 		return;
 	}
 	let runInfo: ReturnType<typeof parseRunFile> = null;
@@ -1167,7 +1167,7 @@ function establishBrowserRuntimeLink(): void {
 	}
 	const address = runInfo?.browserRuntimeAddress;
 	if (!address) {
-		console.warn("AO: browser runtime link skipped; daemon did not publish an address");
+		console.warn("Open Agents: browser runtime link skipped; daemon did not publish an address");
 		return;
 	}
 	const token = browserRuntimeToken;
@@ -1192,7 +1192,7 @@ function establishBrowserRuntimeLink(): void {
 			}
 			return host.execute(command.sessionId, command.action, command.args, signal);
 		},
-		log: (message) => console.log(`AO: ${message}`),
+		log: (message) => console.log(`Open Agents: ${message}`),
 	});
 	browserRuntimeLinkIdentity = identity;
 }
@@ -1208,10 +1208,10 @@ function establishSupervisorLink(): void {
 	if (addr) {
 		supervisorLink?.dispose();
 		supervisorLink = connectSupervisor(addr, {
-			log: (msg) => console.log(`AO: ${msg}`),
+			log: (msg) => console.log(`Open Agents: ${msg}`),
 		});
 	} else {
-		console.warn("AO: supervisor link skipped; run-file path unavailable");
+		console.warn("Open Agents: supervisor link skipped; run-file path unavailable");
 	}
 }
 
@@ -1276,7 +1276,7 @@ async function refreshDaemonStatus(): Promise<DaemonStatus> {
 	) {
 		setDaemonStatus({
 			state: "stopped",
-			message: "AO daemon is no longer reachable.",
+			message: "Open Agents daemon is no longer reachable.",
 			code: "daemon_unreachable",
 		});
 	}
@@ -1299,9 +1299,9 @@ async function startDaemon(): Promise<DaemonStatus> {
 
 // The port this Electron instance expects the daemon to bind. In dev mode a
 // separate port isolates the dev daemon from the installed-app daemon.
-// AO_PORT always wins if set explicitly.
+// OPEN_AGENTS_PORT always wins if set explicitly.
 function resolvedDaemonPort(): number {
-	return isDev && !process.env.AO_PORT ? DEV_DAEMON_PORT : expectedDaemonPort(process.env);
+	return isDev && !process.env.OPEN_AGENTS_PORT ? DEV_DAEMON_PORT : expectedDaemonPort(process.env);
 }
 
 function daemonLaunchEnv(): NodeJS.ProcessEnv {
@@ -1316,7 +1316,7 @@ function daemonLaunchEnv(): NodeJS.ProcessEnv {
 			const daemonPath = path.resolve(parsed.path.trim());
 			const relativePath = path.relative(daemonDir, daemonPath);
 			if (relativePath && !relativePath.startsWith("..") && !path.isAbsolute(relativePath)) {
-				return { ...process.env, AO_DEV_DAEMON_BINARY: daemonPath };
+				return { ...process.env, OPEN_AGENTS_DEV_DAEMON_BINARY: daemonPath };
 			}
 		}
 	} catch {
@@ -1346,7 +1346,7 @@ async function startDaemonInner(startEpoch: number): Promise<DaemonStatus> {
 	if (!launch) {
 		setDaemonStatus({
 			state: "stopped",
-			message: "AO_DAEMON_COMMAND is not configured; renderer uses loopback REST when available.",
+			message: "OPEN_AGENTS_DAEMON_COMMAND is not configured; renderer uses loopback REST when available.",
 			code: "not_configured",
 		});
 		return daemonStatus;
@@ -1374,7 +1374,7 @@ async function startDaemonInner(startEpoch: number): Promise<DaemonStatus> {
 		} else {
 			setDaemonStatus(existing.status);
 			// Re-link the supervisor only when attaching to an app-owned daemon (one we
-			// previously spawned). Headless `ao start` daemons (owner unset) stay unlinked
+			// previously spawned). Headless `open-agents start` daemons (owner unset) stay unlinked
 			// so they remain persistent after app quit.
 			if (shouldLinkOnAttach(existing.owner)) {
 				establishSupervisorLink();
@@ -1388,9 +1388,9 @@ async function startDaemonInner(startEpoch: number): Promise<DaemonStatus> {
 	// health.pid mismatch) makes it return null — yet a daemon may still be serving
 	// the port. Spawning then would just make the Go child refuse and exit 1. Probe
 	// the expected port directly, independent of the run-file, and attach if a
-	// daemon answers. The expected port (AO_PORT or the default) is exactly the
+	// daemon answers. The expected port (OPEN_AGENTS_PORT or the default) is exactly the
 	// port the Go child would bind and collide on — probing a hardcoded 3001 would
-	// miss an AO_PORT override.
+	// miss an OPEN_AGENTS_PORT override.
 	const directDaemon = await resolveDaemonFromPort({
 		expectedPort: resolvedDaemonPort(),
 		probe: readDaemonProbe,
@@ -1446,9 +1446,9 @@ async function startDaemonInner(startEpoch: number): Promise<DaemonStatus> {
 	// may still be holding the port. The only reachable case here is a hung/wedged
 	// holder whose run-file PID is still alive but is not answering /healthz (e.g.
 	// our own daemon that bound the port and then deadlocked). Two cases are
-	// intentionally NOT handled: an identity-mismatched but healthy AO daemon is
+	// intentionally NOT handled: an identity-mismatched but healthy Open Agents daemon is
 	// already surfaced as an error status upstream by resolveDaemonFromPort (not
-	// killed here), and a foreign non-AO process holding the port with a dead
+	// killed here), and a foreign non-Open Agents process holding the port with a dead
 	// run-file PID is not replaced (out of scope). When no holder is detectable,
 	// skip straight to spawn.
 	const orphanProbe = await readDaemonProbe(resolvedDaemonPort(), "healthz");
@@ -1504,7 +1504,7 @@ async function startDaemonInner(startEpoch: number): Promise<DaemonStatus> {
 	if (launch.source === "bundled" && !existsSync(launch.command)) {
 		setDaemonStatus({
 			state: "error",
-			message: `Bundled AO daemon binary was not found at ${launch.command}. Rebuild the desktop package.`,
+			message: `Bundled Open Agents daemon binary was not found at ${launch.command}. Rebuild the desktop package.`,
 			code: "binary_missing",
 		});
 		return daemonStatus;
@@ -1514,7 +1514,7 @@ async function startDaemonInner(startEpoch: number): Promise<DaemonStatus> {
 	} catch (err) {
 		setDaemonStatus({
 			state: "error",
-			message: `Could not stage AO's bundled tmux under the AO data directory: ${(err as Error).message}`,
+			message: `Could not stage Open Agents's bundled tmux under the Open Agents data directory: ${(err as Error).message}`,
 			code: "binary_missing",
 		});
 		return daemonStatus;
@@ -1532,7 +1532,7 @@ async function startDaemonInner(startEpoch: number): Promise<DaemonStatus> {
 			// and leave the UI stuck on "starting". Report it as a failure instead.
 			setDaemonStatus({
 				state: "error",
-				message: `Could not create the AO data directory at ${launch.cwd}: ${(err as Error).message}`,
+				message: `Could not create the Open Agents data directory at ${launch.cwd}: ${(err as Error).message}`,
 				code: "datadir_unwritable",
 			});
 			return daemonStatus;
@@ -1548,25 +1548,25 @@ async function startDaemonInner(startEpoch: number): Promise<DaemonStatus> {
 	// wrapper and orphan the real daemon (which keeps holding the port). Killing
 	// the whole group via killDaemon() reaches the daemon and any PTY children.
 	//
-	// AO_KEEP_DAEMON: the daemon must survive this app, so it cannot inherit
+	// OPEN_AGENTS_KEEP_DAEMON: the daemon must survive this app, so it cannot inherit
 	// Electron-owned stdout/stderr pipes — when Electron exits, the pipe read
 	// ends close and the daemon's next stderr log write (SIGPIPE/EPIPE) kills it,
-	// defeating the keep-alive. Redirect stdio to ~/.ao/daemon.log and unref the
+	// defeating the keep-alive. Redirect stdio to ~/.open-agents/daemon.log and unref the
 	// child so the parent does not wait on it. Port discovery then relies on the
 	// running.json handshake (the log pipe scan is skipped).
 	const keep = replacementKeepAlive ?? keepDaemonAlive(process.env);
 	let keepDaemonLogFd: number | undefined;
 	let stdio: "pipe" | "ignore" | ["pipe", number | "ignore", number | "ignore"] = "pipe";
 	if (keep) {
-		const logPath = path.join(os.homedir(), ".ao", "daemon.log");
+		const logPath = path.join(os.homedir(), ".open-agents", "daemon.log");
 		try {
 			keepDaemonLogFd = openSync(logPath, "a");
 			stdio = ["pipe", keepDaemonLogFd, keepDaemonLogFd];
 		} catch {
-			// Log redirect failed (e.g. ~/.ao not creatable, permission denied):
+			// Log redirect failed (e.g. ~/.open-agents not creatable, permission denied):
 			// fall back to "ignore" so the daemon still runs, but warn — otherwise
 			// a long-lived keep-alive daemon would run with zero log output.
-			console.warn(`AO: keep-daemon log redirect failed; daemon will run with stdio disabled: ${logPath}`);
+			console.warn(`Open Agents: keep-daemon log redirect failed; daemon will run with stdio disabled: ${logPath}`);
 			keepDaemonLogFd = undefined;
 			stdio = ["pipe", "ignore", "ignore"];
 		}
@@ -1611,12 +1611,12 @@ async function startDaemonInner(startEpoch: number): Promise<DaemonStatus> {
 		child.stdin.on("error", () => undefined);
 		child.stdin.end(`${browserRuntimeToken}\n`);
 	} else {
-		console.warn("AO: browser runtime token handoff pipe was unavailable");
+		console.warn("Open Agents: browser runtime token handoff pipe was unavailable");
 	}
 	if (keep) child.unref();
 	daemonProcess = child;
 
-	// Discover the port the daemon ACTUALLY bound rather than trusting AO_PORT:
+	// Discover the port the daemon ACTUALLY bound rather than trusting OPEN_AGENTS_PORT:
 	// the daemon may fall back to a different port than the one requested. Two
 	// confirmed sources race — the "daemon listening" slog line (stderr, but both
 	// streams are scanned) and the running.json handshake — first one wins.
@@ -1643,16 +1643,16 @@ async function startDaemonInner(startEpoch: number): Promise<DaemonStatus> {
 		// exits for any reason, the OS closes the fd and the daemon detects EOF,
 		// then self-stops after its ~5s grace period. The attach paths link only
 		// when the daemon is app-owned (see establishSupervisorLink +
-		// shouldLinkOnAttach); headless `ao start` daemons stay unlinked so they
+		// shouldLinkOnAttach); headless `open-agents start` daemons stay unlinked so they
 		// remain persistent across app quit.
 		//
-		// AO_KEEP_DAEMON opts out of the link entirely: the daemon is spawned but
-		// survives the window closing, stopping only on an explicit `ao stop`.
+		// OPEN_AGENTS_KEEP_DAEMON opts out of the link entirely: the daemon is spawned but
+		// survives the window closing, stopping only on an explicit `open-agents stop`.
 		// Reuse the `keep` captured at spawn rather than re-reading process.env
 		// here: the flag is a property of this spawn, not a value that should be
 		// able to flip between spawn and port-confirmation. (The process.on("exit")
 		// orphan-cleanup below re-reads process.env because this `keep` is scoped
-		// to the spawn function — AO_KEEP_DAEMON is set once at startup and never
+		// to the spawn function — OPEN_AGENTS_KEEP_DAEMON is set once at startup and never
 		// mutated, so both reads agree.)
 		if (!keep) {
 			establishSupervisorLink();
@@ -1660,7 +1660,7 @@ async function startDaemonInner(startEpoch: number): Promise<DaemonStatus> {
 	};
 
 	// One scanner per stream: each keeps its own partial-line buffer.
-	// Skipped under AO_KEEP_DAEMON: stdio is redirected to a log file (no pipes
+	// Skipped under OPEN_AGENTS_KEEP_DAEMON: stdio is redirected to a log file (no pipes
 	// to scan), so port discovery falls back to the running.json handshake below.
 	if (!keep) {
 		const scanStdout = createListenPortScanner(reportBoundPort);
@@ -1798,7 +1798,7 @@ function stopDaemon(): DaemonStatus {
 function reportDaemonRestartFailure(error: unknown): DaemonStatus {
 	setDaemonStatus({
 		state: "error",
-		message: `Could not restart the AO daemon: ${error instanceof Error ? error.message : String(error)}`,
+		message: `Could not restart the Open Agents daemon: ${error instanceof Error ? error.message : String(error)}`,
 		details: daemonOutput.trim() || undefined,
 		code: "spawn_failed",
 	});
@@ -1842,7 +1842,7 @@ async function restartDaemon(): Promise<DaemonStatus> {
 		// a replacement instead of collapsing back to a code-less stopped state.
 		setDaemonStatus({
 			state: "error",
-			message: "AO daemon is still stopping. It will restart automatically when shutdown completes.",
+			message: "Open Agents daemon is still stopping. It will restart automatically when shutdown completes.",
 			details: daemonOutput.trim() || undefined,
 			code: "not_ready",
 		});
@@ -1990,8 +1990,8 @@ ipcMain.handle("menu:action", (_event, action: string) => {
 		case "help.about":
 			void dialog.showMessageBox(win, {
 				type: "info",
-				title: "About Agent Orchestrator",
-				message: "Agent Orchestrator",
+				title: "About Open Agents",
+				message: "Open Agents",
 				detail: `Version ${app.getVersion()}`,
 				buttons: ["OK"],
 			});
@@ -2022,7 +2022,7 @@ ipcMain.handle("app:chooseDirectory", async (_event, input?: string | { title?: 
 	const defaultPath = typeof input === "object" && input !== null && typeof input.defaultPath === "string"
 		? input.defaultPath.trim()
 		: "";
-	return chooseDirectory(title?.trim() || "Choose a git repository", defaultPath === "~/ao/projects" ? path.join(os.homedir(), "ao", "projects") : undefined);
+	return chooseDirectory(title?.trim() || "Choose a git repository", defaultPath === "~/open-agents/projects" ? path.join(os.homedir(), "open-agents", "projects") : undefined);
 });
 ipcMain.handle("app:checkGitRepository", async (_event, remoteUrl: string) => {
 	await ensureShellEnv();
@@ -2061,7 +2061,7 @@ ipcMain.handle("app:getGitHubLogin", async (_event, repoPath?: string) => {
 	const candidates = [
 		typeof repoPath === "string" && repoPath.trim() ? await gitConfig(["-C", repoPath.trim(), "config", "--get", "github.user"]) : "",
 		await gitConfig(["config", "--global", "--get", "github.user"]),
-		process.env.AO_GITHUB_LOGIN?.trim() ?? "",
+		process.env.OPEN_AGENTS_GITHUB_LOGIN?.trim() ?? "",
 	];
 	try {
 		const { stdout } = await execFileAsync("gh", ["api", "user", "--jq", ".login"], {
@@ -2154,17 +2154,6 @@ ipcMain.handle("terminal:saveDroppedFile", async (_event, input: { name: string;
 	return target;
 });
 
-ipcMain.handle("appState:getMigration", async (): Promise<MigrationState> => {
-	const runFile = runFilePath();
-	if (!runFile) return { status: "pending" };
-	return readMigrationState(path.dirname(runFile));
-});
-ipcMain.handle("appState:setMigration", async (_event, migration: MigrationState) => {
-	const runFile = runFilePath();
-	if (!runFile) return;
-	await updateMigration({ stateDir: path.dirname(runFile), migration, now: () => new Date() });
-});
-
 ipcMain.handle("updateSettings:get", async (): Promise<UpdateSettings> => {
 	const runFile = runFilePath();
 	if (!runFile) return { enabled: false, channel: "latest", nightlyAck: false, feature: null, macDifferentialUpdates: false };
@@ -2228,7 +2217,7 @@ ipcMain.handle("updates:download", async (_event, requestId?: string) => {
 });
 ipcMain.handle("updates:install", (_event, confirmedVersion?: string) => quitAndInstallUpdate(confirmedVersion));
 // Retry after a failed macOS preparation: Squirrel can't reset a stalled staging
-// in-process, so restart AO like a manual quit-and-reopen. install-on-quit is
+// in-process, so restart Open Agents like a manual quit-and-reopen. install-on-quit is
 // already off on the failed path, so quitting can't apply a half-prepared build.
 ipcMain.handle("updates:relaunch", () => {
 	app.relaunch();
@@ -2274,9 +2263,9 @@ ipcMain.handle(
 			const toast = new ElectronNotification({
 				title: notification.title,
 				body: notification.body,
-				// AO logo as the notification icon on Windows/Linux. Omitted on macOS,
+				// Open Agents logo as the notification icon on Windows/Linux. Omitted on macOS,
 				// where a custom icon renders only as a redundant right-side content image —
-				// macOS uses the app-bundle icon (the AO logo in a packaged build) as the
+				// macOS uses the app-bundle icon (the Open Agents logo in a packaged build) as the
 				// single main icon.
 				icon: process.platform === "darwin" ? undefined : windowIconPath(),
 			});
@@ -2447,9 +2436,9 @@ function initAutoUpdates(): void {
 	void ensureUpdatePrefs(stateDir).then(() => startAutoUpdates(stateDir));
 }
 
-// Resolve the bundle path `ao start` will later `open` and stat as a usable app.
-// On macOS process.execPath is .../Agent Orchestrator.app/Contents/MacOS/<exe>;
-// the thing `ao start` opens is the enclosing `.app` directory, so walk up three
+// Resolve the bundle path `open-agents start` will later `open` and stat as a usable app.
+// On macOS process.execPath is .../Open Agents.app/Contents/MacOS/<exe>;
+// the thing `open-agents start` opens is the enclosing `.app` directory, so walk up three
 // levels (MacOS -> Contents -> .app). app.getAppPath() is WRONG here: it returns
 // the app.asar archive path inside the bundle, not the bundle itself.
 // On win32/linux there is no .app wrapper, so record execPath; a richer
@@ -2461,7 +2450,7 @@ function resolveBundlePath(): string {
 	return process.execPath;
 }
 
-// `ao start` opens the app with `--installed-via=<value>` so the app can record
+// `open-agents start` opens the app with `--installed-via=<value>` so the app can record
 // how it arrived on first marker creation. Parse it out of argv; absent => the
 // marker defaults installSource to "unknown".
 function parseInstalledVia(argv: string[]): string | undefined {
@@ -2469,18 +2458,18 @@ function parseInstalledVia(argv: string[]): string | undefined {
 	return flag ? flag.slice("--installed-via=".length) : undefined;
 }
 
-// Write ~/.ao/app-state.json so `ao start`'s resolveApp() can find this bundle
+// Write ~/.open-agents/app-state.json so `open-agents start`'s resolveApp() can find this bundle
 // (spec §7.1). The app is the sole writer (invariant 3) and writes every launch.
 // A failure here must NOT block startup, so the caller wraps this in try/catch;
 // we still surface it via the log.
 async function writeAppStateOnLaunch(): Promise<void> {
-	// Reuse the same ~/.ao resolution as running.json; the marker lives beside it
+	// Reuse the same ~/.open-agents resolution as running.json; the marker lives beside it
 	// (the Go side computes its dir as dirname(RunFilePath)). runFilePath() returns
 	// null only when the home dir is unresolvable, in which case we cannot place
 	// the marker; the caller's try/catch logs it.
 	const runFile = runFilePath();
 	if (!runFile) {
-		throw new Error("cannot resolve ~/.ao run-file path; skipping app-state marker");
+		throw new Error("cannot resolve ~/.open-agents run-file path; skipping app-state marker");
 	}
 	const stateDir = path.dirname(runFile);
 	await writeAppStateMarker({
@@ -2556,7 +2545,7 @@ app.whenReady().then(async () => {
 	}
 
 	// A pre-fix bundle cannot be patched retroactively. After the maintained
-	// /Applications build runs, offer to retire older AO copies that can still
+	// /Applications build runs, offer to retire older Open Agents copies that can still
 	// overwrite it if Finder, Spotlight, or an old Dock tile launches them.
 	try {
 		const { formatStaleAppCopies, retireStaleMacAppCopies } = await import("./main/stale-app-copies");
@@ -2571,9 +2560,9 @@ app.whenReady().then(async () => {
 					buttons: ["Move old copies to Trash", "Not now"],
 					defaultId: 0,
 					cancelId: 1,
-					title: "Remove old AO copies",
-					message: "Old copies of Agent Orchestrator can replace your updated app.",
-					detail: `${formatStaleAppCopies(copies)}\n\nMove these copies to Trash to prevent another downgrade. Your AO projects and sessions will not be removed.`,
+					title: "Remove old Open Agents copies",
+					message: "Old copies of Open Agents can replace your updated app.",
+					detail: `${formatStaleAppCopies(copies)}\n\nMove these copies to Trash to prevent another downgrade. Your Open Agents projects and sessions will not be removed.`,
 					noLink: true,
 				});
 				return result.response === 0;
@@ -2585,14 +2574,14 @@ app.whenReady().then(async () => {
 					buttons: ["OK"],
 					defaultId: 0,
 					title: "Some old copies could not be removed",
-					message: "Move these copies to Trash manually before launching AO again.",
+					message: "Move these copies to Trash manually before launching Open Agents again.",
 					detail: paths.join("\n"),
 					noLink: true,
 				});
 			},
 		});
 	} catch (err) {
-		console.warn("stale AO copy cleanup failed:", err);
+		console.warn("stale Open Agents copy cleanup failed:", err);
 	}
 
 	const keybindingRunFile = runFilePath();
@@ -2690,7 +2679,7 @@ app.on("before-quit", (event) => {
 // When the link IS connected we do nothing here and rely on the OS closing the
 // fd on exit, which covers crash and SIGKILL uniformly.
 //
-// AO_KEEP_DAEMON opts out entirely: the daemon is deliberately spawned without a
+// OPEN_AGENTS_KEEP_DAEMON opts out entirely: the daemon is deliberately spawned without a
 // supervisor link so it persists across app quit, so this orphan-cleanup kill
 // must be skipped — otherwise it would defeat the whole point on quit.
 process.on("exit", () => {

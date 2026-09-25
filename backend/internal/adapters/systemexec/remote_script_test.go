@@ -15,7 +15,7 @@ import (
 	"testing"
 	"time"
 
-	"github.com/aoagents/agent-orchestrator/backend/internal/ports"
+	"github.com/sudo-adduser-jordan/open-agents/backend/internal/ports"
 )
 
 func TestRunInstallScriptDownloadsExecutesAndCleansUp(t *testing.T) {
@@ -178,7 +178,7 @@ func TestRunInstallScriptRejectsUnsafeDownloads(t *testing.T) {
 	})
 }
 
-func TestNewUsesAODataDir(t *testing.T) {
+func TestNewUsesOpenAgentsDataDir(t *testing.T) {
 	t.Parallel()
 	dataDir := t.TempDir()
 	if got, want := New(dataDir).installerRoot, filepath.Join(dataDir, "installers", "tmp"); got != want {

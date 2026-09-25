@@ -1,5 +1,5 @@
 import { expect, test } from "@playwright/test";
-import type { AoBridge } from "../src/preload";
+import type { OpenAgentsBridge } from "../src/preload";
 import { agentReadiness } from "../src/renderer/test/agent-readiness-fixtures";
 import { installFakeAgent } from "./support/fake-bridge";
 
@@ -55,7 +55,7 @@ for (const destinationMode of ["picker", "typed"] as const) {
 
 		await page.goto("/#/");
 		await page.evaluate(() => {
-			const bridge = (window as unknown as { ao: AoBridge }).ao;
+			const bridge = (window as unknown as { openAgents: OpenAgentsBridge }).openAgents;
 			bridge.app.chooseDirectory = async () => "/repos";
 			bridge.app.checkGitRepository = async () => true;
 		});

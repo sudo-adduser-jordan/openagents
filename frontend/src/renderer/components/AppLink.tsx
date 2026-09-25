@@ -1,6 +1,6 @@
 import { createContext, useContext, type ComponentProps } from "react";
 import { Copy, ExternalLink, Globe } from "lucide-react";
-import { aoBridge } from "../lib/bridge";
+import { openAgentsBridge } from "../lib/bridge";
 import { isWebLink, openLinkInSystemBrowser } from "../lib/external-link-policy";
 import {
 	ContextMenu,
@@ -43,7 +43,7 @@ export function AppLink({ href, onClick, onBrowserOpen, inAppLink, ...props }: C
 					<>
 						<ContextMenuItem disabled={!openBrowser} onSelect={() => openBrowser?.(href)}>
 							<Globe aria-hidden="true" />
-							{"Open in ao browser"}
+							{"Open in open-agents browser"}
 						</ContextMenuItem>
 						<ContextMenuItem onSelect={() => void openLinkInSystemBrowser(href)}>
 							<ExternalLink aria-hidden="true" />
@@ -52,7 +52,7 @@ export function AppLink({ href, onClick, onBrowserOpen, inAppLink, ...props }: C
 						<ContextMenuSeparator />
 					</>
 				)}
-				<ContextMenuItem onSelect={() => void aoBridge.clipboard.writeText(href)}>
+				<ContextMenuItem onSelect={() => void openAgentsBridge.clipboard.writeText(href)}>
 					<Copy aria-hidden="true" />
 					{"Copy link"}
 				</ContextMenuItem>

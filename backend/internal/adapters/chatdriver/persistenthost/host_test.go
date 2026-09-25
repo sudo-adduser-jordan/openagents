@@ -44,10 +44,10 @@ func TestMain(m *testing.M) {
 }
 
 func TestProviderHelper(t *testing.T) {
-	if os.Getenv("AO_CHAT_HOST_PROVIDER_HELPER") != "1" {
+	if os.Getenv("OPEN_AGENTS_CHAT_HOST_PROVIDER_HELPER") != "1" {
 		return
 	}
-	if os.Getenv("AO_CHAT_HOST_ACP_HELPER") == "1" {
+	if os.Getenv("OPEN_AGENTS_CHAT_HOST_ACP_HELPER") == "1" {
 		runACPProviderHelper()
 		return
 	}
@@ -75,7 +75,7 @@ func TestProviderHelper(t *testing.T) {
 		}
 		_, _ = fmt.Fprintf(os.Stdout, `{"id":%d,"result":{"pid":%d}}`+"\n", frame.ID, os.Getpid())
 	}
-	if os.Getenv("AO_CHAT_HOST_DELAY_EXIT") == "1" {
+	if os.Getenv("OPEN_AGENTS_CHAT_HOST_DELAY_EXIT") == "1" {
 		time.Sleep(300 * time.Millisecond)
 	}
 	os.Exit(0)
@@ -105,7 +105,7 @@ func runACPProviderHelper() {
 			_, _ = fmt.Fprintf(os.Stdout, `{"jsonrpc":"2.0","id":%s,"result":{"sessionId":"acp-session-live"}}`+"\n", frame.ID)
 		case "session/prompt":
 			_, _ = fmt.Fprintln(os.Stdout, `{"jsonrpc":"2.0","method":"session/update","params":{"sessionId":"acp-session-live","update":{"agent_message_chunk":{"content":{"type":"text","text":"before restart"}}}}}`)
-			if os.Getenv("AO_CHAT_HOST_ACP_PERMISSION") == "1" {
+			if os.Getenv("OPEN_AGENTS_CHAT_HOST_ACP_PERMISSION") == "1" {
 				parkedPromptID = append(json.RawMessage(nil), frame.ID...)
 				_, _ = fmt.Fprintln(os.Stdout, `{"jsonrpc":"2.0","id":"permission-ledger","method":"session/request_permission","params":{"sessionId":"acp-session-live","options":[{"optionId":"allow","name":"Allow","kind":"allow_once"}]}}`)
 				continue
@@ -123,9 +123,9 @@ func TestACPHostReplaysAcceptedInteractionAfterAttachmentDies(t *testing.T) {
 	cfg := Config{
 		SessionID: "acp-command-ledger", DataDir: dataDir, Workdir: t.TempDir(), Protocol: ProtocolACP,
 		Env: append(os.Environ(),
-			"AO_CHAT_HOST_PROVIDER_HELPER=1",
-			"AO_CHAT_HOST_ACP_HELPER=1",
-			"AO_CHAT_HOST_ACP_PERMISSION=1",
+			"OPEN_AGENTS_CHAT_HOST_PROVIDER_HELPER=1",
+			"OPEN_AGENTS_CHAT_HOST_ACP_HELPER=1",
+			"OPEN_AGENTS_CHAT_HOST_ACP_PERMISSION=1",
 		),
 		Argv: []string{os.Args[0], "-test.run=TestProviderHelper"},
 	}
@@ -152,7 +152,7 @@ func TestACPHostReplaysAcceptedInteractionAfterAttachmentDies(t *testing.T) {
 		t.Fatal(err)
 	}
 	sendFrame(t, first, fmt.Sprintf(
-		`{"jsonrpc":"2.0","id":99,"method":"_ao/persistent_interaction_command","params":{"requestId":%q,"kind":"approval","decision":{"id":"allow"}}}`,
+		`{"jsonrpc":"2.0","id":99,"method":"_open-agents/persistent_interaction_command","params":{"requestId":%q,"kind":"approval","decision":{"id":"allow"}}}`,
 		requestID,
 	))
 	accepted := readFrame(t, reader)
@@ -172,7 +172,7 @@ func TestACPHostReplaysAcceptedInteractionAfterAttachmentDies(t *testing.T) {
 		t.Fatalf("second replay = %s, want pending permission", replayedPermission)
 	}
 	replayedCommand := readFrame(t, secondReader)
-	if !bytes.Contains(replayedCommand, []byte(`"_ao/persistent_interaction_command"`)) ||
+	if !bytes.Contains(replayedCommand, []byte(`"_open-agents/persistent_interaction_command"`)) ||
 		!bytes.Contains(replayedCommand, []byte(requestID)) {
 		t.Fatalf("third replay = %s, want accepted command", replayedCommand)
 	}
@@ -183,7 +183,7 @@ func TestACPHostPreservesPromptCorrelationAndJournal(t *testing.T) {
 	dataDir := t.TempDir()
 	cfg := Config{
 		SessionID: "acp-live", DataDir: dataDir, Workdir: t.TempDir(), Protocol: ProtocolACP,
-		Env:  append(os.Environ(), "AO_CHAT_HOST_PROVIDER_HELPER=1", "AO_CHAT_HOST_ACP_HELPER=1"),
+		Env:  append(os.Environ(), "OPEN_AGENTS_CHAT_HOST_PROVIDER_HELPER=1", "OPEN_AGENTS_CHAT_HOST_ACP_HELPER=1"),
 		Argv: []string{os.Args[0], "-test.run=TestProviderHelper"},
 	}
 	done := make(chan error, 1)
@@ -234,7 +234,7 @@ func TestACPHostPreservesPromptCorrelationAndJournal(t *testing.T) {
 		t.Fatalf("completion event identity: %q: %v", completion, err)
 	}
 	sendFrame(t, second, fmt.Sprintf(
-		`{"jsonrpc":"2.0","method":"_ao/persistent_prompt_ack","params":{"eventId":%q}}`,
+		`{"jsonrpc":"2.0","method":"_open-agents/persistent_prompt_ack","params":{"eventId":%q}}`,
 		completed.Params.EventID,
 	))
 	if got := requestProviderPID(t, second, 1, "pid"); got != pid {
@@ -276,7 +276,7 @@ func readFrame(t *testing.T, reader *bufio.Reader) []byte {
 
 func TestShutdownReleasesHostBeforeFreshReplacement(t *testing.T) {
 	cfg := Config{SessionID: "replace", DataDir: t.TempDir(), Workdir: t.TempDir(),
-		Env:  append(os.Environ(), "AO_CHAT_HOST_PROVIDER_HELPER=1", "AO_CHAT_HOST_DELAY_EXIT=1"),
+		Env:  append(os.Environ(), "OPEN_AGENTS_CHAT_HOST_PROVIDER_HELPER=1", "OPEN_AGENTS_CHAT_HOST_DELAY_EXIT=1"),
 		Argv: []string{os.Args[0], "-test.run=TestProviderHelper"}}
 	first, err := ConnectOrStart(context.Background(), cfg)
 	if err != nil {
@@ -308,7 +308,7 @@ func TestHostReconnectsSameProviderAndReplaysDetachedOutput(t *testing.T) {
 		SessionID: "project-7",
 		DataDir:   dataDir,
 		Workdir:   workdir,
-		Env:       append(os.Environ(), "AO_CHAT_HOST_PROVIDER_HELPER=1"),
+		Env:       append(os.Environ(), "OPEN_AGENTS_CHAT_HOST_PROVIDER_HELPER=1"),
 		Argv:      []string{os.Args[0], "-test.run=TestProviderHelper"},
 	}
 	hostDone := make(chan error, 1)
@@ -382,7 +382,7 @@ func TestConnectOrStartLaunchesDetachedHost(t *testing.T) {
 	dataDir := t.TempDir()
 	cfg := Config{
 		SessionID: "detached", DataDir: dataDir, Workdir: t.TempDir(),
-		Env:  append(os.Environ(), "AO_CHAT_HOST_PROVIDER_HELPER=1"),
+		Env:  append(os.Environ(), "OPEN_AGENTS_CHAT_HOST_PROVIDER_HELPER=1"),
 		Argv: []string{os.Args[0], "-test.run=TestProviderHelper"},
 	}
 	transport, err := ConnectOrStart(context.Background(), cfg)
@@ -421,7 +421,7 @@ func TestConnectOrStartLaunchesDetachedHost(t *testing.T) {
 func TestHostReplaysUnansweredServerRequestAfterDetach(t *testing.T) {
 	dataDir := t.TempDir()
 	cfg := Config{SessionID: "approval", DataDir: dataDir, Workdir: t.TempDir(),
-		Env:  append(os.Environ(), "AO_CHAT_HOST_PROVIDER_HELPER=1"),
+		Env:  append(os.Environ(), "OPEN_AGENTS_CHAT_HOST_PROVIDER_HELPER=1"),
 		Argv: []string{os.Args[0], "-test.run=TestProviderHelper"}}
 	done := make(chan error, 1)
 	go func() { done <- Run(context.Background(), cfg) }()
@@ -466,7 +466,7 @@ func TestAttachRejectsBadCapabilityAndVersion(t *testing.T) {
 	dataDir := t.TempDir()
 	workdir := t.TempDir()
 	cfg := Config{SessionID: "project-8", DataDir: dataDir, Workdir: workdir,
-		Env:  append(os.Environ(), "AO_CHAT_HOST_PROVIDER_HELPER=1"),
+		Env:  append(os.Environ(), "OPEN_AGENTS_CHAT_HOST_PROVIDER_HELPER=1"),
 		Argv: []string{os.Args[0], "-test.run=TestProviderHelper"}}
 	done := make(chan error, 1)
 	go func() { done <- Run(context.Background(), cfg) }()
@@ -556,7 +556,7 @@ func TestConnectOrStartTimesOutSilentLiveHost(t *testing.T) {
 func TestConnectOrStartRejectsChangedProviderOwner(t *testing.T) {
 	dataDir := t.TempDir()
 	cfg := Config{SessionID: "launch-fingerprint", DataDir: dataDir, Workdir: t.TempDir(),
-		Env:  append(os.Environ(), "AO_CHAT_HOST_PROVIDER_HELPER=1"),
+		Env:  append(os.Environ(), "OPEN_AGENTS_CHAT_HOST_PROVIDER_HELPER=1"),
 		Argv: []string{os.Args[0], "-test.run=TestProviderHelper"}, Protocol: ProtocolACP, OwnershipFingerprint: "owner"}
 	done := make(chan error, 1)
 	go func() { done <- Run(context.Background(), cfg) }()
@@ -578,7 +578,7 @@ func TestConnectOrStartPreparesOnlyWhenLaunchingProvider(t *testing.T) {
 		dataDir := t.TempDir()
 		cfg := Config{
 			SessionID: "prepare-live", DataDir: dataDir, Workdir: t.TempDir(),
-			Env:  append(os.Environ(), "AO_CHAT_HOST_PROVIDER_HELPER=1"),
+			Env:  append(os.Environ(), "OPEN_AGENTS_CHAT_HOST_PROVIDER_HELPER=1"),
 			Argv: []string{os.Args[0], "-test.run=TestProviderHelper"},
 		}
 		done := make(chan error, 1)
@@ -613,7 +613,7 @@ func TestConnectOrStartPreparesOnlyWhenLaunchingProvider(t *testing.T) {
 		cfg.Prepare = func(context.Context) (PreparedProvider, error) {
 			prepareCalls++
 			return PreparedProvider{
-				Env: append(os.Environ(), "AO_CHAT_HOST_PROVIDER_HELPER=1"), Argv: cfg.Argv,
+				Env: append(os.Environ(), "OPEN_AGENTS_CHAT_HOST_PROVIDER_HELPER=1"), Argv: cfg.Argv,
 			}, nil
 		}
 		transport, err := ConnectOrStart(context.Background(), cfg)
@@ -739,7 +739,7 @@ func TestShutdownTimesOutSilentLiveHost(t *testing.T) {
 func TestAttachedTransportOutlivesHandshakeContext(t *testing.T) {
 	dataDir := t.TempDir()
 	cfg := Config{SessionID: "context-detached", DataDir: dataDir, Workdir: t.TempDir(),
-		Env:  append(os.Environ(), "AO_CHAT_HOST_PROVIDER_HELPER=1"),
+		Env:  append(os.Environ(), "OPEN_AGENTS_CHAT_HOST_PROVIDER_HELPER=1"),
 		Argv: []string{os.Args[0], "-test.run=TestProviderHelper"}}
 	done := make(chan error, 1)
 	go func() { done <- Run(context.Background(), cfg) }()
@@ -807,7 +807,7 @@ func TestReconcileKeepsDurableSessionAndStopsOrphan(t *testing.T) {
 	start := func(sessionID string) <-chan error {
 		done := make(chan error, 1)
 		cfg := Config{SessionID: sessionID, DataDir: dataDir, Workdir: workdir,
-			Env:  append(os.Environ(), "AO_CHAT_HOST_PROVIDER_HELPER=1"),
+			Env:  append(os.Environ(), "OPEN_AGENTS_CHAT_HOST_PROVIDER_HELPER=1"),
 			Argv: []string{os.Args[0], "-test.run=TestProviderHelper"}}
 		go func() { done <- Run(context.Background(), cfg) }()
 		_ = awaitDescriptor(t, dataDir, sessionID)
@@ -843,7 +843,7 @@ func TestReconcileKeepsDurableSessionAndStopsOrphan(t *testing.T) {
 func TestHostLaunchLockFencesConcurrentProvider(t *testing.T) {
 	dataDir := t.TempDir()
 	cfg := Config{SessionID: "fenced", DataDir: dataDir, Workdir: t.TempDir(),
-		Env:  append(os.Environ(), "AO_CHAT_HOST_PROVIDER_HELPER=1"),
+		Env:  append(os.Environ(), "OPEN_AGENTS_CHAT_HOST_PROVIDER_HELPER=1"),
 		Argv: []string{os.Args[0], "-test.run=TestProviderHelper"}}
 	firstDone := make(chan error, 1)
 	go func() { firstDone <- Run(context.Background(), cfg) }()
@@ -890,7 +890,7 @@ func TestAcquireHostLockReclaimsDeadOwner(t *testing.T) {
 func TestConnectOrStartWaitsForOldControllerToDetach(t *testing.T) {
 	dataDir := t.TempDir()
 	cfg := Config{SessionID: "overlap", DataDir: dataDir, Workdir: t.TempDir(),
-		Env:  append(os.Environ(), "AO_CHAT_HOST_PROVIDER_HELPER=1"),
+		Env:  append(os.Environ(), "OPEN_AGENTS_CHAT_HOST_PROVIDER_HELPER=1"),
 		Argv: []string{os.Args[0], "-test.run=TestProviderHelper"}}
 	done := make(chan error, 1)
 	go func() { done <- Run(context.Background(), cfg) }()

@@ -12,8 +12,8 @@ import (
 	"sync"
 	"time"
 
-	"github.com/aoagents/agent-orchestrator/backend/internal/domain"
-	"github.com/aoagents/agent-orchestrator/backend/internal/ports"
+	"github.com/sudo-adduser-jordan/open-agents/backend/internal/domain"
+	"github.com/sudo-adduser-jordan/open-agents/backend/internal/ports"
 )
 
 // ErrNoController reports a command for a session with no live Chat controller.
@@ -360,7 +360,7 @@ func (s *Service) Start(ctx context.Context, cfg StartConfig) (*Controller, erro
 			return nil, verifyErr
 		}
 		// The provider proved every retained observation against exact native
-		// ancestry. Replace the hook-inferred text pair, not AO's high-water gate
+		// ancestry. Replace the hook-inferred text pair, not Open Agents's high-water gate
 		// (which is populated later from the durable conversation).
 		verified := nativeHistoryCheckpoint{nativeBoundary: &boundary}
 		// Native Stop evidence does not waive a legacy/coordination prompt that
@@ -676,8 +676,8 @@ func (s *Service) Start(ctx context.Context, cfg StartConfig) (*Controller, erro
 		// Chat. Import it before the live projector starts so the first notification
 		// cannot appear ahead of the older prompt, tool work, and answer it follows.
 		//
-		// Read AO's existing projection too. ACP message/turn ids are opaque, and an
-		// agent may assign a different persisted user id from the id AO supplied at
+		// Read Open Agents's existing projection too. ACP message/turn ids are opaque, and an
+		// agent may assign a different persisted user id from the id Open Agents supplied at
 		// prompt time. Reconciliation must therefore happen before projection; doing
 		// it in one provider's binding would leave every other ACP harness with the same
 		// restart duplication race.
@@ -702,7 +702,7 @@ func (s *Service) Start(ctx context.Context, cfg StartConfig) (*Controller, erro
 			// Older builds carried legacy hook text across edits. Trusted native
 			// checkpoints always retain their identity and content requirements.
 			// The edit's timestamp proves those facts predate this continuation;
-			// newer or undated hooks still gate replay, as does its AO high-water mark.
+			// newer or undated hooks still gate replay, as does its Open Agents high-water mark.
 			if activeBranch.ReplacedTurnID != "" {
 				if replayCheckpoint.userMismatch == ports.ChatHistoryMismatchUntrustedUserText &&
 					!replayCheckpoint.latestUserPromptAt.IsZero() && replayCheckpoint.latestUserPromptAt.Before(activeBranch.CreatedAt) {
@@ -715,7 +715,7 @@ func (s *Service) Start(ctx context.Context, cfg StartConfig) (*Controller, erro
 			}
 		}
 		if cfg.HistoryMode == ports.ChatHistoryRequired {
-			replayCheckpoint.captureAOHighWater(
+			replayCheckpoint.captureOpenAgentsHighWater(
 				cfg.SessionID, existing.Turns, existing.Messages, existing.Activities,
 			)
 		}
@@ -850,10 +850,10 @@ func (s *Service) Start(ctx context.Context, cfg StartConfig) (*Controller, erro
 	return controller, nil
 }
 
-// cleanupUnpublishedConversation rolls back a provider opened before its AO
+// cleanupUnpublishedConversation rolls back a provider opened before its Open Agents
 // controller was published. A fresh host must be destroyed even when it opened a
 // stored provider conversation; only a proven attachment to the same live host
-// is detached so transient AO persistence cannot interrupt work in flight.
+// is detached so transient Open Agents persistence cannot interrupt work in flight.
 func cleanupUnpublishedConversation(conv ports.ChatConversation, fresh bool) error {
 	terminator, canTerminate := conv.(ports.ChatProviderTerminator)
 	liveReconnect := false
@@ -1456,12 +1456,12 @@ var ErrModelsUnsupported = errors.New("chat driver cannot list models")
 
 // ErrConfigOptionsUnsupported reports a conversation whose provider does not
 // advertise live session controls. This is an ordinary capability answer: native
-// drivers can continue using AO's model/settings surface.
+// drivers can continue using Open Agents's model/settings surface.
 var ErrConfigOptionsUnsupported = errors.New("chat driver has no session config options")
 
 // Models reports what the provider offers for this session, plus what is selected.
 //
-// Read from the live conversation rather than a table in AO: models are added,
+// Read from the live conversation rather than a table in Open Agents: models are added,
 // renamed, hidden per account and gated by entitlement the provider knows about.
 func (s *Service) Models(ctx context.Context, id domain.SessionID) ([]ports.ChatModel, domain.ConversationSettings, error) {
 	if _, err := s.requireChatSession(ctx, id); err != nil {
@@ -1482,10 +1482,10 @@ func (s *Service) Models(ctx context.Context, id domain.SessionID) ([]ports.Chat
 	return models, controller.Settings(), nil
 }
 
-// ConfigOptions reports the provider's live session controls. Unlike AO's
+// ConfigOptions reports the provider's live session controls. Unlike Open Agents's
 // durable turn settings, these are provider-owned session state and are read from
 // the connected conversation so model entitlements and model-dependent choices
-// cannot go stale in an AO table.
+// cannot go stale in an Open Agents table.
 func (s *Service) ConfigOptions(ctx context.Context, id domain.SessionID) ([]ports.ChatConfigOption, error) {
 	if _, err := s.requireChatSession(ctx, id); err != nil {
 		return nil, err
@@ -1642,7 +1642,7 @@ func (s *Service) ReloadMCPServers(
 }
 
 // RetryTurn re-dispatches a failed turn's durable prompt as a new turn.
-// The content is loaded from AO's own rows, never from the caller, so the daemon
+// The content is loaded from Open Agents's own rows, never from the caller, so the daemon
 // owns what gets sent again. The current next-turn settings apply.
 func (s *Service) RetryTurn(
 	ctx context.Context,
@@ -1689,10 +1689,10 @@ func (s *Service) SetTurnSettings(
 	return controller.Settings(), nil
 }
 
-// RelayChatTurn delivers a message AO is carrying for someone else.
+// RelayChatTurn delivers a message Open Agents is carrying for someone else.
 //
-// Origin is automation, not human: `ao send` and an orchestrator writing to a
-// worker are AO acting on the user's instructions, and the timeline attributes
+// Origin is automation, not human: `open-agents send` and an orchestrator writing to a
+// worker are Open Agents acting on the user's instructions, and the timeline attributes
 // them so rather than passing them off as something the user typed here. The
 // distinction is durable and structural — a reader must not have to infer it
 // from a text prefix.

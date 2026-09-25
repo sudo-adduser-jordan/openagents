@@ -22,7 +22,7 @@ export async function generateMacV2Assets({ allow = false, channel, minimumClien
     for (const input of inputs) {
       const make = async (zipPath, id) => {
         const name = basename(zipPath);
-        const mapName = `${name}.aoblockmap`;
+        const mapName = `${name}.open-agents-blockmap`;
         const mapPath = join(dir, mapName);
         if (existsSync(mapPath)) throw new Error("Existing v2 asset");
         created.push(mapPath);
@@ -36,7 +36,7 @@ export async function generateMacV2Assets({ allow = false, channel, minimumClien
       const baseline = await make(input.baseline.zipPath, input.baseline.identity);
       artifacts.push({ arch: input.arch, ...target, baseline: { ...input.baseline.identity, ...baseline } });
     }
-    const payload = validateMacV2Payload({ schemaVersion: 2, minimumClientVersion, protocol: "ao-mac-differential-v2", repository: MAC_V2_REPOSITORY, channel, enabled: true, issuedAt, expiresAt, candidate, artifacts });
+    const payload = validateMacV2Payload({ schemaVersion: 2, minimumClientVersion, protocol: "open-agents-mac-differential-v2", repository: MAC_V2_REPOSITORY, channel, enabled: true, issuedAt, expiresAt, candidate, artifacts });
     const envelope = { payload, signature: { keyId, value: sign(null, Buffer.from(macV2Canonical(payload)), privateKey).toString("base64") } };
     const destination = join(dir, MAC_V2_METADATA);
     if (existsSync(destination)) throw new Error("Existing v2 metadata");
@@ -57,11 +57,11 @@ export function verifyMacV2Assets({ allow = false, dir, trustedKeys = {}, candid
   const names = readdirSync(dir);
   if (names.some(name => /\.zip\.blockmap$/.test(name))) throw new Error("Conventional macOS blockmap forbidden");
   for (const name of names.filter(name => /^(?:latest|nightly|pr\d+)-mac\.yml$/.test(name))) {
-    if (/blockMapSize|\.blockmap|\.aoblockmap|ao-diff-v2/i.test(readFileSync(join(dir, name), "utf8"))) {
+    if (/blockMapSize|\.blockmap|\.open-agents-blockmap|open-agents-diff-v2/i.test(readFileSync(join(dir, name), "utf8"))) {
       throw new Error("Legacy macOS feed must remain full-ZIP-only");
     }
   }
-  const v2Names = names.filter(name => name.endsWith(".aoblockmap") || name === MAC_V2_METADATA);
+  const v2Names = names.filter(name => name.endsWith(".open-agents-blockmap") || name === MAC_V2_METADATA);
   if (allow !== true) {
     if (v2Names.length) throw new Error("V2 assets forbidden while disabled");
     return [];
@@ -78,7 +78,7 @@ export function verifyMacV2Assets({ allow = false, dir, trustedKeys = {}, candid
       const name = decodeURIComponent(new URL(file.url).pathname.split("/").at(-1));
       const bytes = readFileSync(join(dir, name));
       if (bytes.length !== file.size || macV2Digest(bytes) !== file.sha512) throw new Error("V2 asset identity mismatch");
-      if (name.endsWith(".aoblockmap")) expected.push(name);
+      if (name.endsWith(".open-agents-blockmap")) expected.push(name);
     }
   }
   if ([...v2Names].sort().join("\n") !== expected.sort().join("\n")) throw new Error("Unexpected v2 inventory");

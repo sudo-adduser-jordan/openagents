@@ -1,6 +1,6 @@
 ---
 title: Workspaces
-description: Git worktrees for repositories and AO-managed directories for Scratch projects.
+description: Git worktrees for repositories and Open Agents-managed directories for Scratch projects.
 ---
 
 Workspace behavior follows the registered project kind:
@@ -9,8 +9,8 @@ Workspace behavior follows the registered project kind:
 | --- | --- |
 | Git repository | A fresh [Git worktree](/docs/plugins/workspaces/worktree) and branch. |
 | Multi-repository workspace | A root worktree with registered child repositories materialized for the session. |
-| Scratch | An AO-managed directory with no branch or PR operations. |
+| Scratch | An Open Agents-managed directory with no branch or PR operations. |
 
-AO does not currently offer a full-clone workspace selector. Register a project with `ao project add`, then let the daemon route workspace operations from its project record.
+Open Agents does not currently offer a full-clone workspace selector. Register a project with `open-agents project add`, then let the daemon route workspace operations from its project record.
 
-Workspace cleanup is conservative: killing a session does not force-delete a dirty registered worktree. Use `ao session cleanup --dry-run` to inspect eligible terminated sessions.
+Workspace cleanup is conservative: killing a session does not force-delete a dirty registered worktree. Use `open-agents session cleanup --dry-run` to inspect eligible terminated sessions.

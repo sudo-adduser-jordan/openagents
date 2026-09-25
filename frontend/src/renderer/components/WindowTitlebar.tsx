@@ -37,7 +37,7 @@ type MenuKey = "view" | "help";
 
 // Dispatch a native-menu action to the main process (see menu:action in main.ts).
 const act = (action: string) => () => {
-  void window.ao?.menu?.action(action);
+  void window.openAgents?.menu?.action(action);
 };
 
 // One top-level menu (View/Help). Declared at module scope, not inside
@@ -147,10 +147,10 @@ export function WindowTitlebar() {
   useEffect(() => {
     if (!isWindows) return;
     let active = true;
-    void window.ao?.window?.isMaximized().then((maximized) => {
+    void window.openAgents?.window?.isMaximized().then((maximized) => {
       if (active) setIsMaximized(maximized);
     });
-    const unsubscribe = window.ao?.window?.onMaximized((maximized) =>
+    const unsubscribe = window.openAgents?.window?.onMaximized((maximized) =>
       setIsMaximized(maximized),
     );
     return () => {
@@ -172,7 +172,7 @@ export function WindowTitlebar() {
       // reported shell focus, main would drop the browser shortcut target and the
       // next ⌘T/⌘W would open/close a terminal instead of a browser tab.
       if (target?.closest('[data-testid="browser-address-bar"], .browser-panel__topbar-host')) return;
-      void window.ao?.menu?.notifyShellFocus();
+      void window.openAgents?.menu?.notifyShellFocus();
     };
     document.addEventListener("focusin", onShellUse);
     document.addEventListener("pointerdown", onShellUse, true);
@@ -295,7 +295,7 @@ export function WindowTitlebar() {
           </DropdownMenuItem>
           <DropdownMenuSeparator />
           <DropdownMenuItem onSelect={act("help.about")}>
-            {"About Agent Orchestrator"}
+            {"About Open Agents"}
           </DropdownMenuItem>
         </TopMenu>
       </nav>

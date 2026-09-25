@@ -8,7 +8,7 @@ import { parseOpenFolderPathArg } from "./open-folder-arg";
 const tempRoots: string[] = [];
 
 async function tempDir(): Promise<string> {
-	const dir = await mkdtemp(path.join(os.tmpdir(), "ao-open-folder-arg-"));
+	const dir = await mkdtemp(path.join(os.tmpdir(), "open-agents-open-folder-arg-"));
 	tempRoots.push(dir);
 	return dir;
 }
@@ -35,8 +35,8 @@ describe("parseOpenFolderPathArg", () => {
 		expect(parseOpenFolderPathArg(["-x", "--no-sandbox", "--installed-via=msi"])).toBeUndefined();
 	});
 
-	it("ignores URL-scheme entries such as the ao-app:// deep link", () => {
-		expect(parseOpenFolderPathArg(["electron.exe", "ao-app://callback?token=abc"])).toBeUndefined();
+	it("ignores URL-scheme entries such as the open-agents:// deep link", () => {
+		expect(parseOpenFolderPathArg(["electron.exe", "open-agents://callback?token=abc"])).toBeUndefined();
 	});
 
 	it("skips a file path (not a directory) before finding the real directory", async () => {
@@ -47,7 +47,7 @@ describe("parseOpenFolderPathArg", () => {
 	// Regression: `electron-forge start` (dev) spawns Electron with its own app
 	// path in argv[1] (e.g. "." resolved to the frontend build dir), a REAL
 	// directory. Without excluding it, every dev cold start and second-instance
-	// relaunch would misread AO's own source tree as a dropped project folder.
+	// relaunch would misread Open Agents's own source tree as a dropped project folder.
 	describe("when running unpackaged (process.defaultApp)", () => {
 		const originalDefaultApp = process.defaultApp;
 

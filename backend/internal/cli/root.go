@@ -1,4 +1,4 @@
-// Package cli implements the user-facing ao command. It stays thin: commands
+// Package cli implements the user-facing open-agents command. It stays thin: commands
 // discover the local daemon, call its loopback HTTP API, and format output.
 package cli
 
@@ -13,12 +13,12 @@ import (
 
 	"github.com/spf13/cobra"
 
-	"github.com/aoagents/agent-orchestrator/backend/internal/daemon"
-	aoprocess "github.com/aoagents/agent-orchestrator/backend/internal/process"
-	"github.com/aoagents/agent-orchestrator/backend/internal/processalive"
+	"github.com/sudo-adduser-jordan/open-agents/backend/internal/daemon"
+	openagentsprocess "github.com/sudo-adduser-jordan/open-agents/backend/internal/process"
+	"github.com/sudo-adduser-jordan/open-agents/backend/internal/processalive"
 )
 
-// Execute runs the ao CLI with process stdio.
+// Execute runs the open-agents CLI with process stdio.
 func Execute() error {
 	return executeWithDeps(DefaultDeps(), os.Args[1:])
 }
@@ -96,11 +96,11 @@ func DefaultDeps() Deps {
 }
 
 func commandOutput(ctx context.Context, name string, args ...string) ([]byte, error) {
-	return aoprocess.CommandContext(ctx, name, args...).CombinedOutput()
+	return openagentsprocess.CommandContext(ctx, name, args...).CombinedOutput()
 }
 
 func commandOutputInDir(ctx context.Context, dir, name string, args ...string) ([]byte, error) {
-	cmd := aoprocess.CommandContext(ctx, name, args...)
+	cmd := openagentsprocess.CommandContext(ctx, name, args...)
 	cmd.Dir = dir
 	return cmd.CombinedOutput()
 }
@@ -158,9 +158,9 @@ func NewRootCommand(deps Deps) *cobra.Command {
 	ctx := &commandContext{deps: deps}
 
 	root := &cobra.Command{
-		Use:           "ao",
-		Short:         "Agent Orchestrator",
-		Long:          "Agent Orchestrator manages the local daemon that supervises parallel coding-agent sessions.",
+		Use:           "open-agents",
+		Short:         "Open Agents",
+		Long:          "Open Agents manages the local daemon that supervises parallel coding-agent sessions.",
 		Version:       VersionString(),
 		SilenceUsage:  true,
 		SilenceErrors: true,
@@ -190,7 +190,6 @@ func NewRootCommand(deps Deps) *cobra.Command {
 	root.AddCommand(newChatHostCommand())
 	root.AddCommand(newLaunchCommand(ctx))
 	root.AddCommand(newPtyHostCommand())
-	root.AddCommand(newImportCommand(ctx))
 	root.AddCommand(newDevCommand(ctx))
 	root.AddCommand(newProjectCommand(ctx))
 	root.AddCommand(newSessionCommand(ctx))
@@ -235,7 +234,7 @@ func atMostOneArg(cmd *cobra.Command, args []string) error {
 func newDaemonCommand() *cobra.Command {
 	return &cobra.Command{
 		Use:    "daemon",
-		Short:  "Run the AO backend daemon",
+		Short:  "Run the Open Agents backend daemon",
 		Hidden: true,
 		Args:   noArgs,
 		RunE: func(cmd *cobra.Command, args []string) error {

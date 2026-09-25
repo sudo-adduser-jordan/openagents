@@ -27,7 +27,7 @@ vi.mock("../lib/navigate-to-session", () => ({
 }));
 
 vi.mock("../lib/bridge", () => ({
-	aoBridge: {
+	openAgentsBridge: {
 		tray: {
 			setAttentionState: h.setAttentionState,
 			onOpenSession: (listener: (target: { projectId: string; sessionId: string }) => void) => {

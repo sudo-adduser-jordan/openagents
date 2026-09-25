@@ -1,10 +1,10 @@
-import { COMPANY } from "@ao/shared/constants";
+import { COMPANY } from "@openagents/shared/constants";
 import type { Metadata } from "next";
 
 const LAST_UPDATED = "19 August 2026";
 
 const description =
-  "How Agent Orchestrator handles data in AO Mobile, the desktop app and CLI, and orchestrator.inc: local-first operation, waitlists, and testimonial submissions.";
+  "How Open Agents handles data in Open Agents Mobile, the desktop app and CLI, and orchestrator.inc: local-first operation, waitlists, and testimonial submissions.";
 
 export const metadata: Metadata = {
   title: "Privacy Policy",
@@ -26,7 +26,6 @@ export const metadata: Metadata = {
   },
   twitter: {
     card: "summary",
-    site: "@ao_build",
     title: `Privacy Policy | ${COMPANY.NAME}`,
     description,
     images: [`${COMPANY.MARKETING_URL}/og-image.png`],
@@ -102,7 +101,7 @@ function Code({ children }: { children: React.ReactNode }) {
 
 const toc = [
   { id: "scope", label: "What this covers" },
-  { id: "mobile", label: "AO Mobile app" },
+  { id: "mobile", label: "Open Agents Mobile app" },
   { id: "desktop", label: "Desktop app & CLI" },
   { id: "website", label: "This website" },
   { id: "not-collected", label: "Data we do not collect" },
@@ -132,8 +131,8 @@ export default function PrivacyPage() {
 
           <div className="mt-8 rounded-[8px] border border-border bg-card/50 p-6 sm:p-7">
             <p className="text-[15px] leading-[1.75] text-muted-foreground sm:text-[16px]">
-              <Strong>The short version.</Strong> Agent Orchestrator runs on your
-              own machine. No account is required, and no hosted AO service stores
+              <Strong>The short version.</Strong> Open Agents runs on your
+              own machine. No account is required, and no hosted Open Agents service stores
               your work. We never see your source code, prompts, agent output,
               terminal contents, repository names, or file paths, and we never
               sell or rent data to anyone. The desktop app and this website send{" "}
@@ -170,16 +169,16 @@ export default function PrivacyPage() {
         <div className="mt-14 space-y-10">
           <Section id="scope" title="What this policy covers">
             <p>
-              Agent Orchestrator ("AO") is open-source software published by the
-              Untrivial-ai project. This policy applies to:
+              Open Agents is open-source software published by the
+              Open Agents project. This policy applies to:
             </p>
             <Bullets>
               <Bullet>
-                <Strong>AO Mobile</Strong> — the companion app for iOS and
-                Android that connects to an AO daemon you run yourself.
+                <Strong>Open Agents Mobile</Strong> — the companion app for iOS and
+                Android that connects to an Open Agents daemon you run yourself.
               </Bullet>
               <Bullet>
-                <Strong>The AO desktop app and CLI</Strong> — the local
+                <Strong>The Open Agents desktop app and CLI</Strong> — the local
                 orchestrator that supervises coding agents in git worktrees on
                 your computer.
               </Bullet>
@@ -189,22 +188,22 @@ export default function PrivacyPage() {
               </Bullet>
             </Bullets>
             <p>
-              AO is not a hosted service. There is no AO account system and no
-              AO server that stores your work. Everything AO orchestrates —
+              Open Agents is not a hosted service. There is no Open Agents account system and no
+              Open Agents server that stores your work. Everything Open Agents orchestrates —
               repositories, worktrees, sessions, terminals, agent output — lives
               on hardware you control.
             </p>
             <p>
-              The AI coding agent you run inside AO (OpenCode) is a separate
-              third-party tool with its own privacy policy. AO launches it
+              The AI coding agent you run inside Open Agents (OpenCode) is a separate
+              third-party tool with its own privacy policy. Open Agents launches it
               locally; it does not intercept, store, or forward what it sends to
               its own provider.
             </p>
           </Section>
 
-          <Section id="mobile" title="AO Mobile (iOS and Android)">
+          <Section id="mobile" title="Open Agents Mobile (iOS and Android)">
             <p>
-              AO Mobile lets you monitor and control an AO daemon that{" "}
+              Open Agents Mobile lets you monitor and control an Open Agents daemon that{" "}
               <Strong>you run yourself</Strong>, over your local network or a
               private network such as Tailscale. The app has no backend of its
               own; it talks only to the server you configure.
@@ -216,7 +215,7 @@ export default function PrivacyPage() {
             <Bullets>
               <Bullet>
                 <Strong>Server connection details.</Strong> The host or address
-                and port of your AO server, plus the connection password. The
+                and port of your Open Agents server, plus the connection password. The
                 address and port are stored in the app's local storage; the
                 password is stored in the device's secure keychain (iOS Keychain
                 / Android Keystore). Both are sent only to the server you
@@ -264,7 +263,7 @@ export default function PrivacyPage() {
             </p>
 
             <p>
-              AO Mobile contains{" "}
+              Open Agents Mobile contains{" "}
               <Strong>no analytics, advertising, or tracking SDKs</Strong>, and
               collects no usage telemetry whatsoever. Nothing in the app is used
               for tracking across apps or websites owned by other companies.
@@ -275,7 +274,7 @@ export default function PrivacyPage() {
             <p>
               The desktop app and CLI run entirely on your machine. All
               application state — projects, worktrees, sessions, terminal
-              history, settings — is written under <Code>~/.ao</Code> on your
+              history, settings — is written under <Code>~/.open-agents</Code> on your
               own disk and is never uploaded to us.
             </p>
             <p>
@@ -283,7 +282,7 @@ export default function PrivacyPage() {
               <Strong>no telemetry of any kind</Strong>. Nothing leaves your
               machine for product analytics: no usage events, no crash reports,
               no version or OS probes. If you connect a GitHub account for
-              pull-request and CI awareness, AO uses your existing local GitHub
+              pull-request and CI awareness, Open Agents uses your existing local GitHub
               credentials to talk to GitHub directly from your machine. Those
               credentials stay on your machine and are never transmitted to us.
             </p>
@@ -305,7 +304,7 @@ export default function PrivacyPage() {
               testimonial, your public LinkedIn profile URL, and any optional
               public X post URL. We use those details to review and, with the
               permission granted on the form, publish your testimonial with
-              public attribution on the AO website. Fonts are self-hosted. Other
+              public attribution on the Open Agents website. Fonts are self-hosted. Other
               services involved when you browse are:
             </p>
             <Bullets>
@@ -363,7 +362,7 @@ export default function PrivacyPage() {
 
           <Section id="third-parties" title="Third-party services">
             <p>
-              AO relies on a small number of services, each only to make a
+              Open Agents relies on a small number of services, each only to make a
               specific feature work:
             </p>
             <Bullets>
@@ -405,14 +404,14 @@ export default function PrivacyPage() {
 
           <Section id="security" title="Storage and security">
             <p>
-              On desktop, all AO state is stored under <Code>~/.ao</Code> on
+              On desktop, all Open Agents state is stored under <Code>~/.open-agents</Code> on
               your own machine, protected by your operating system's file
               permissions. On mobile, configuration is stored in app-local
               storage and the connection password is held in the platform secure
               keychain rather than in plaintext.
             </p>
             <p>
-              AO Mobile connects over the address and transport (HTTP or HTTPS)
+              Open Agents Mobile connects over the address and transport (HTTP or HTTPS)
               you configure. The optional LAN listener that serves the mobile
               app binds to your network only while you explicitly enable it, and
               always requires the connection password. Because the server is one{" "}
@@ -422,8 +421,8 @@ export default function PrivacyPage() {
               to the public internet.
             </p>
             <p>
-              No system is perfectly secure, but because AO holds no central
-              store of your data, there is no AO-side database of user content
+              No system is perfectly secure, but because Open Agents holds no central
+              store of your data, there is no Open Agents-side database of user content
               that could be breached.
             </p>
           </Section>
@@ -434,18 +433,18 @@ export default function PrivacyPage() {
                 <Strong>On your devices.</Strong> Data stays until you delete
                 it. Uninstalling the mobile app, or clearing its data, removes
                 stored settings and the keychain entry and invalidates the push
-                token registered with your server. Deleting <Code>~/.ao</Code>{" "}
+                token registered with your server. Deleting <Code>~/.open-agents</Code>{" "}
                 removes all desktop state.
               </Bullet>
               <Bullet>
                 <Strong>Waitlist details.</Strong> Retained only while needed to
-                notify you about the relevant release or AO Cloud access, then
+                notify you about the relevant release or Open Agents Cloud access, then
                 deleted. You may request earlier deletion using the private
                 contact address below.
               </Bullet>
               <Bullet>
                 <Strong>Testimonial submissions.</Strong> Retained while they
-                are reviewed or displayed on the AO website, including the
+                are reviewed or displayed on the Open Agents website, including the
                 supplied public LinkedIn and optional X post URLs. You may
                 request deletion using the private contact address below.
               </Bullet>
@@ -460,8 +459,8 @@ export default function PrivacyPage() {
               CCPA/CPRA.
             </p>
             <p>
-              In practice, nearly all data AO touches is already in your own
-              hands: delete the app, delete <Code>~/.ao</Code>, and it is gone.
+              In practice, nearly all data Open Agents touches is already in your own
+              hands: delete the app, delete <Code>~/.open-agents</Code>, and it is gone.
               If you submitted a waitlist email or believe we hold other data about
               you, contact us privately at{" "}
               <Ext href={COMPANY.MAIL_TO}>{COMPANY.MAIL_TO.replace("mailto:", "")}</Ext>{" "}
@@ -472,7 +471,7 @@ export default function PrivacyPage() {
 
           <Section id="children" title="Children">
             <p>
-              AO is a developer tool intended for professional and hobbyist
+              Open Agents is a developer tool intended for professional and hobbyist
               software developers. It is not directed to children under 13, and
               we do not knowingly collect personal information from children.
             </p>
@@ -480,7 +479,7 @@ export default function PrivacyPage() {
 
           <Section id="changes" title="Changes to this policy">
             <p>
-              We may update this policy as AO evolves. Material changes will be
+              We may update this policy as Open Agents evolves. Material changes will be
               reflected here with a new "last updated" date, and the history of
               every revision is public in the project's git repository.
             </p>
@@ -505,7 +504,7 @@ export default function PrivacyPage() {
               </Bullet>
             </Bullets>
             <p className="text-muted-foreground">
-              Agent Orchestrator is open-source software released under Apache
+              Open Agents is open-source software released under Apache
               2.0 and provided as-is. If this policy and the source code ever
               disagree, the source code is the truth — and you are welcome to
               read it.

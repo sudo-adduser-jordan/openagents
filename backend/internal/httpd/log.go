@@ -7,7 +7,7 @@ import (
 
 	"github.com/go-chi/chi/v5/middleware"
 
-	"github.com/aoagents/agent-orchestrator/backend/internal/httpd/envelope"
+	"github.com/sudo-adduser-jordan/open-agents/backend/internal/httpd/envelope"
 )
 
 // requestLogger emits one structured access-log line per request via the

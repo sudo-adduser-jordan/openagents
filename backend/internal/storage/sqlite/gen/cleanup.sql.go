@@ -9,7 +9,7 @@ import (
 	"context"
 	"database/sql"
 
-	"github.com/aoagents/agent-orchestrator/backend/internal/domain"
+	"github.com/sudo-adduser-jordan/open-agents/backend/internal/domain"
 )
 
 const getSessionCleanupFacts = `-- name: GetSessionCleanupFacts :one

@@ -2,7 +2,7 @@
 
 > **For agentic workers:** REQUIRED SUB-SKILL: Use superpowers:executing-plans to implement this plan task-by-task.
 
-**Goal:** Replace AO-owned Claude Code, Muse, and Codex model lists with catalogs discovered from each installed agent, while preserving Amp's static mode list.
+**Goal:** Replace Open Agents-owned Claude Code, Muse, and Codex model lists with catalogs discovered from each installed agent, while preserving Amp's static mode list.
 
 **Architecture:** Claude Code uses the Claude Agent SDK's structured `supportedModels()` method without yielding a prompt, Muse uses an isolated short-lived PTY to open `/model`, and Codex uses its structured app-server `model/list` method. Existing per-agent/per-project cache behavior remains authoritative, with asynchronous startup refresh for previously cached Claude Code and Muse scopes and the existing six-hour lazy refresh for all catalogs.
 
@@ -21,7 +21,7 @@
 
 ---
 
-### Task 1: Remove AO-owned model IDs
+### Task 1: Remove Open Agents-owned model IDs
 
 **Files:**
 - Modify: `backend/internal/adapters/agent/modelcatalog/catalog_test.go`
@@ -45,7 +45,7 @@
 3. Add an injected Claude SDK catalog function and a terminal spawner interface backed in production by `runtime/ptyexec.Spawn` for Muse only.
 4. Package a bounded Node helper that calls `supportedModels()` with persistence, settings, hooks, tools, and MCP disabled, then always closes the SDK query.
 5. Implement Muse's bounded interaction: launch in project cwd/env, wait for a safe empty composer, write `/model\r`, capture a stable numbered menu, and always close the PTY.
-6. Wire these paths into `Discoverer.Discover`; no AO session, transcript, provider prompt, trust answer, or auth answer is created.
+6. Wire these paths into `Discoverer.Discover`; no Open Agents session, transcript, provider prompt, trust answer, or auth answer is created.
 7. Run `cd backend && go test ./internal/adapters/agent/modelcatalog`.
 
 ### Task 3: Discover Codex models through app-server
@@ -61,7 +61,7 @@
 1. Add failing tests that the Codex app-server driver exposes normalized visible `model/list` entries without opening a thread, preserving provider IDs, display names, and defaults.
 2. Extract/reuse the existing `model/list` normalization shared by conversations and discovery.
 3. Add a read-only driver discovery method and an injected Codex catalog source for `modelcatalog.Discoverer`.
-4. Make Codex discovery fail safely when app-server/model-list is unavailable; never fall back to an AO-owned model list.
+4. Make Codex discovery fail safely when app-server/model-list is unavailable; never fall back to an Open Agents-owned model list.
 5. Run the targeted Codex and modelcatalog tests.
 
 ### Task 4: List cached scopes and refresh them at startup

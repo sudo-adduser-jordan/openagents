@@ -1,6 +1,6 @@
 import { useMemo, useState, type FormEvent } from "react";
 import { ExternalLink, HelpCircle, Loader2 } from "lucide-react";
-import { aoBridge } from "../../lib/bridge";
+import { openAgentsBridge } from "../../lib/bridge";
 import { cn } from "../../lib/utils";
 import type { ConversationActivity } from "../../types/conversation";
 import { Button } from "../ui/button";
@@ -99,7 +99,7 @@ function URLRequest({
 		try {
 			// Opening is the consented action. Tell the provider only after Electron
 			// accepted it, so an OS-level refusal is never reported as success.
-			await aoBridge.app.openExternal(parsed.href);
+			await openAgentsBridge.app.openExternal(parsed.href);
 			await onResolve("accept");
 		} catch {
 			setOpenError("The link could not be opened. Nothing was approved.");

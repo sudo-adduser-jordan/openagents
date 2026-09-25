@@ -1,8 +1,8 @@
-# AO
+# Open Agents
 
 ## Who We Are
 
-AO is the operating layer for AI software engineering.
+Open Agents is the operating layer for AI software engineering.
 
 We're not building another model or another coding agent. Those will
 keep changing. We're building the layer that sits underneath them. As
@@ -21,7 +21,7 @@ Cursor. Every team slowly develops its own way of working. Every few
 months a better agent shows up and the whole organization is expected to
 adapt again. That isn't sustainable.
 
-AO gives companies a stable operating layer underneath all of it.
+Open Agents gives companies a stable operating layer underneath all of it.
 Engineers use whatever tools make them productive. The organization
 keeps one way of working.
 
@@ -42,16 +42,16 @@ solve problems another engineer already solved months ago because none
 of that learning compounds. AI spend keeps increasing, but very little
 of it becomes a company asset.
 
-Today AO solves the operational side of that problem. Running multiple
+Today Open Agents solves the operational side of that problem. Running multiple
 agents across an engineering team is messy. Multiple terminals, multiple
 worktrees, different harnesses, deployments and reviews all need manual
-coordination. AO orchestrates that into a single workflow so engineers
+coordination. Open Agents orchestrates that into a single workflow so engineers
 spend less time managing agents and more time shipping software.
 
 We also don't think companies should build their future around a single
 vendor. The AI landscape changes too fast for that. The best model today
 probably won't be the best model next year. Companies shouldn't have to
-rebuild how they work every time the industry moves. AO sits above
+rebuild how they work every time the industry moves. Open Agents sits above
 individual harnesses so your operating model stays the same while the
 tools underneath continue to evolve.
 
@@ -59,7 +59,7 @@ Leadership has a different problem. Eventually someone asks simple
 questions. How much are we spending on AI? Which teams are actually
 getting value? What's our ROI? Which workflows should become standard?
 Most companies don't have good answers because the data is scattered
-across individual tools instead of belonging to the organization. AO
+across individual tools instead of belonging to the organization. Open Agents
 gives them visibility into how AI is actually being used without forcing
 engineers to change the way they work.
 
@@ -75,6 +75,6 @@ patterns and the failed attempts disappear with the people who created
 them. We think companies should own that knowledge and keep building on
 it long after those people have moved on.
 
-The value of AO isn't another developer tool. It's turning AI work from
+The value of Open Agents isn't another developer tool. It's turning AI work from
 something temporary into something that compounds. Models will change.
 Agents will change. The knowledge your company builds shouldn't.

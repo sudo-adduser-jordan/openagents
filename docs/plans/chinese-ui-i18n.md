@@ -8,7 +8,7 @@
 
 ## Decision
 
-AO uses `i18next` with `react-i18next` for desktop display text. English remains the default and source catalog; Simplified Chinese (`zh-CN`) is the first additional locale.
+Open Agents uses `i18next` with `react-i18next` for desktop display text. English remains the default and source catalog; Simplified Chinese (`zh-CN`) is the first additional locale.
 
 | Concern | Decision |
 | --- | --- |
@@ -16,15 +16,15 @@ AO uses `i18next` with `react-i18next` for desktop display text. English remains
 | React integration | One `I18nextProvider`; components use `useTranslation()` |
 | Locales | `en` and `zh-CN` |
 | Default | `en`; do not infer the OS language on first launch |
-| Persistence | Main-process `~/.ao/ui-settings.json` through preload IPC |
+| Persistence | Main-process `~/.open-agents/ui-settings.json` through preload IPC |
 | Fallback | Selected locale → English → key identifier |
 | Interpolation | Standard i18next `{{name}}` syntax |
 | Plurals | i18next/CLDR `_one` and `_other` forms with `count` |
 | Document metadata | Update both `<html lang>` and `<html dir>` on load and switch |
 
-This supersedes the earlier first-party `t()` proposal. A standard runtime is the final architecture because localization is intended to grow beyond a two-locale experiment. It provides established fallback, interpolation, plural selection, React subscriptions, and future locale support without growing equivalent framework code in AO.
+This supersedes the earlier first-party `t()` proposal. A standard runtime is the final architecture because localization is intended to grow beyond a two-locale experiment. It provides established fallback, interpolation, plural selection, React subscriptions, and future locale support without growing equivalent framework code in Open Agents.
 
-PR #2503 explored the same library direction. This implementation stays on the current #3465 branch because it also contains the newer `~/.ao` persistence boundary, settings UI, larger aligned catalogs, and broader renderer migration.
+PR #2503 explored the same library direction. This implementation stays on the current #3465 branch because it also contains the newer `~/.open-agents` persistence boundary, settings UI, larger aligned catalogs, and broader renderer migration.
 
 ## Architecture
 
@@ -33,7 +33,7 @@ PR #2503 explored the same library direction. This implementation stays on the c
 - `frontend/src/renderer/main.tsx` provides that instance to React.
 - `frontend/src/renderer/stores/locale-store.ts` owns only persisted locale loading and selection. i18next owns translation state and React subscriptions.
 - Pure presentation helpers use the configured i18next instance. Callers whose memoized output contains translated text pass the reactive `t` function explicitly.
-- `frontend/src/main/ui-settings.ts` reads and atomically writes the selected locale beneath the AO data directory; preload exposes only the typed get/set bridge.
+- `frontend/src/main/ui-settings.ts` reads and atomically writes the selected locale beneath the Open Agents data directory; preload exposes only the typed get/set bridge.
 
 Both catalogs are bundled today. Their combined size is small enough that lazy locale loading would add complexity without a useful startup or package-size benefit. Revisit loading strategy when more locales or materially larger catalogs are added.
 

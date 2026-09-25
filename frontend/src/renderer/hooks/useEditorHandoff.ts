@@ -1,6 +1,6 @@
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { isEditorId, type EditorHandoffState, type OpenTargetId } from "../../shared/editor-handoff";
-import { aoBridge } from "../lib/bridge";
+import { openAgentsBridge } from "../lib/bridge";
 
 export const editorHandoffQueryKey = (sessionId: string) => ["editor-handoff", sessionId] as const;
 export const editorHandoffQueryRoot = ["editor-handoff"] as const;
@@ -65,7 +65,7 @@ export function useEditorHandoffState(sessionId: string, readiness: EditorHandof
 			// during the bounded window in which a newly created session can still
 			// be crossing the daemon/UI readiness boundary.
 			for (let retries = 0; ; retries += 1) {
-				const state = await aoBridge.editorHandoff.getState(sessionId);
+				const state = await openAgentsBridge.editorHandoff.getState(sessionId);
 				if (state.workspaceAvailable || !awaitWorkspace || retries >= WORKSPACE_READINESS_MAX_RETRIES) {
 					return state;
 				}
@@ -86,7 +86,7 @@ export function useOpenSessionTarget() {
 	return useMutation({
 		mutationFn: async ({ sessionId, targetId }: OpenSessionTargetMutationInput) => {
 			try {
-				return await aoBridge.editorHandoff.open({ sessionId, ...(targetId ? { targetId } : {}) });
+				return await openAgentsBridge.editorHandoff.open({ sessionId, ...(targetId ? { targetId } : {}) });
 			} catch (error) {
 				// Normalize here, once, so every consumer of this mutation gets the
 				// reason rather than the IPC wrapper. Callers render error.message

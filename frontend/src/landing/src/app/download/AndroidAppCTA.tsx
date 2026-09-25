@@ -1,6 +1,6 @@
 "use client";
 
-import { ANDROID_PLAY_STORE_URL } from "@ao/shared/constants";
+import { ANDROID_PLAY_STORE_URL } from "@openagents/shared/constants";
 import { useState } from "react";
 import { usePlatform } from "../hooks/useOS";
 import { StoreBadgeButton, StoreBadgeLink } from "./StoreBadge";
@@ -12,6 +12,10 @@ import { StoreQRDialog } from "./StoreQRDialog";
 export function AndroidAppCTA() {
   const { mobileOS } = usePlatform();
   const [open, setOpen] = useState(false);
+
+  if (!ANDROID_PLAY_STORE_URL) {
+    return <span className="text-sm text-muted-foreground">Android app coming soon</span>;
+  }
 
   if (mobileOS === "android") {
     return (

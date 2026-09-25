@@ -26,7 +26,6 @@ import type {
 	OpenSessionTargetInput,
 	OpenSessionTargetResult,
 } from "./shared/editor-handoff";
-import type { MigrationState } from "./main/app-state";
 import type { UpdateSettings, UpdateStatus, UpdateInstallResult } from "./main/update-settings";
 import type { UiSettings } from "./main/ui-settings";
 import type { UpdateCheckOptions } from "./main/auto-updater";
@@ -64,7 +63,7 @@ if (typeof document !== "undefined") {
 		const root = document.documentElement;
 		if (root) {
 			root.dataset.nativeBrowserComposition = "true";
-			root.dataset.aoPlatform = process.platform;
+			root.dataset.openAgentsPlatform = process.platform;
 		}
 	};
 	if (document.readyState === "loading") {
@@ -493,11 +492,6 @@ const api = {
 			};
 		},
 	},
-	appState: {
-		getMigration: () => ipcRenderer.invoke("appState:getMigration") as Promise<MigrationState>,
-		setMigration: (migration: MigrationState) =>
-			ipcRenderer.invoke("appState:setMigration", migration) as Promise<void>,
-	},
 	updateSettings: {
 		get: () => ipcRenderer.invoke("updateSettings:get") as Promise<UpdateSettings>,
 		set: (settings: UpdateSettings) => ipcRenderer.invoke("updateSettings:set", settings) as Promise<void>,
@@ -538,6 +532,6 @@ const api = {
 	},
 };
 
-contextBridge.exposeInMainWorld("ao", api);
+contextBridge.exposeInMainWorld("open-agents", api);
 
-export type AoBridge = typeof api;
+export type OpenAgentsBridge = typeof api;

@@ -86,7 +86,7 @@ export default function PairScreen() {
 				rejected.current = data;
 				// A v1 code is a recognisable thing, not noise: say what to do
 				// about it rather than claiming it is not a pairing code.
-				const reason = isLegacyPairingCode(data) ? "outdated-desktop" : "not-ao-qr";
+				const reason = isLegacyPairingCode(data) ? "outdated-desktop" : "not-open-agents-qr";
 				setFailure(describeConnectionFailure(reason, { host: "", port: "", platform: Platform.OS }));
 			}
 			return;
@@ -115,7 +115,7 @@ export default function PairScreen() {
 			haptics.warning();
 			setFailure(
 				describeConnectionFailure(
-					result.reason === "not-ao-qr" ? "not-ao-qr" : classifyConnectionFailure(undefined),
+					result.reason === "not-open-agents-qr" ? "not-open-agents-qr" : classifyConnectionFailure(undefined),
 					{ host: "", port: "", platform: Platform.OS },
 				),
 			);
@@ -149,7 +149,7 @@ export default function PairScreen() {
 			<View style={styles.topBar}><MinimalBackButton onPress={back} /></View>
 
 			<View style={styles.steps}>
-				<NumberedStep n={1} title="Open AO on your computer" compact />
+				<NumberedStep n={1} title="Open Agents on your computer" compact />
 				<NumberedStep n={2} title="Go to Settings → Connect Mobile" compact />
 				<NumberedStep n={3} title="Scan the QR code" compact />
 			</View>
@@ -251,8 +251,8 @@ function CameraGate({
 			<Text style={styles.gateTitle}>Camera access needed</Text>
 			<Text style={styles.gateHint}>
 				{canAskAgain
-					? "AO uses the camera only to read the pairing QR code on your desktop."
-					: "Camera access is turned off for AO. Enable it in system settings, or enter your details manually below."}
+					? "Open Agents uses the camera only to read the pairing QR code on your desktop."
+					: "Camera access is turned off for Open Agents. Enable it in system settings, or enter your details manually below."}
 			</Text>
 			{canAskAgain ? (
 				// App Review 5.1.1(iv): the button ahead of the system permission

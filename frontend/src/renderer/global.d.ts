@@ -1,13 +1,13 @@
-import type { AoBridge } from "../preload";
+import type { OpenAgentsBridge } from "../preload";
 
 declare global {
 	interface Window {
-		ao?: AoBridge;
+		openAgents?: OpenAgentsBridge;
 	}
 
 	interface ImportMetaEnv {
-		readonly VITE_AO_POSTHOG_KEY?: string;
-		readonly VITE_AO_POSTHOG_HOST?: string;
+		readonly VITE_OPEN_AGENTS_POSTHOG_KEY?: string;
+		readonly VITE_OPEN_AGENTS_POSTHOG_HOST?: string;
 	}
 }
 

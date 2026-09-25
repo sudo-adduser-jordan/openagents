@@ -7,9 +7,9 @@ import path from 'node:path';
 import { buildRepairInstaller, distribution, renderGuard, validateMetadata } from './build-mac-repair-installer.mjs';
 
 const version = '0.12.12-nightly.202609061223';
-const metadata = { id: 'dev.agent-orchestrator.desktop', version, build: version, executable: 'agent-orchestrator', archs: 'arm64' };
+const metadata = { id: 'dev.openagents.desktop', version, build: version, executable: 'open-agents', archs: 'arm64' };
 async function fixture(t) {
-  const base = path.join(process.env.AO_DATA_DIR || path.join(homedir(), '.ao'), 'repair-installer-tests');
+  const base = path.join(process.env.OPEN_AGENTS_DATA_DIR || path.join(homedir(), '.open-agents'), 'repair-installer-tests');
   await mkdir(base, { recursive: true });
   const dir = await mkdtemp(path.join(base, 'case-'));
   t.after(() => rm(dir, { recursive: true, force: true }));
@@ -31,10 +31,10 @@ test('Installer GUI delegates to the guard and limits target volume and location
   assert.match(xml, /my.target.mountpoint === '\/'/);
   assert.match(xml, /enable_anywhere="false"/);
   assert.match(xml, /my.result.type = 'Fatal'/);
-  assert.match(xml, /<must-close><app id="dev.agent-orchestrator.desktop"\/>/);
+  assert.match(xml, /<must-close><app id="dev.openagents.desktop"\/>/);
 });
 async function guardFixture(t) {
-  const dir = await fixture(t), app = path.join(dir, 'Applications/Agent Orchestrator.app');
+  const dir = await fixture(t), app = path.join(dir, 'Applications/Open Agents.app');
   await mkdir(path.join(app, 'Contents'), { recursive: true });
   const files = { ps: '', arch: '1', uname: 'x86_64', id: '0', bundle: metadata.id, old: version, build: version };
   for (const [key, value] of Object.entries(files)) await writeFile(path.join(dir, key), value);
@@ -73,15 +73,15 @@ test('root preinstall refuses nonroot, foreign volume, unrelated bundles, symlin
   await rm(f.app, { recursive: true }); await symlink('/nonexistent', f.app);
   assert.notEqual(f.check().status, 0);
 });
-test('running executable and updater checks reject AO narrowly without matching argument text or other apps', async (t) => {
+test('running executable and updater checks reject Open Agents narrowly without matching argument text or other apps', async (t) => {
   const f = await guardFixture(t);
-  for (const process of ['/Applications/Renamed.app/Contents/Frameworks/Squirrel.framework/Versions/A/Resources/ShipIt', '/Applications/Renamed.app/Contents/MacOS/agent-orchestrator', '/Applications/Agent Orchestrator.app/Contents/MacOS/agent-orchestrator', '/private/var/folders/x/Agent Orchestrator.app/Contents/Frameworks/Agent Orchestrator Helper.app/Contents/MacOS/helper', '/Users/test/Library/Caches/dev.agent-orchestrator.desktop.ShipIt/update/ShipIt']) {
+  for (const process of ['/Applications/Renamed.app/Contents/Frameworks/Squirrel.framework/Versions/A/Resources/ShipIt', '/Applications/Renamed.app/Contents/MacOS/open-agents', '/Applications/Open Agents.app/Contents/MacOS/open-agents', '/private/var/folders/x/Open Agents.app/Contents/Frameworks/Open Agents Helper.app/Contents/MacOS/helper', '/Users/test/Library/Caches/dev.openagents.desktop.ShipIt/update/ShipIt']) {
     await f.set('ps', process); assert.notEqual(f.check().status, 0, process);
   }
   await f.set('ps', '/Applications/Other.app/Contents/MacOS/ShipIt\n/bin/bash\n/usr/bin/node'); assert.equal(f.check().status, 0);
 });
 async function buildFixture(t, failAt) {
-  const dir = await fixture(t), app = path.join(dir, 'Agent Orchestrator.app');
+  const dir = await fixture(t), app = path.join(dir, 'Open Agents.app');
   await mkdir(app);
   const calls = [];
   const execute = async (command, args) => {
@@ -103,7 +103,7 @@ test('signs, notarizes, staples and canonically verifies before emitting output;
   const notarization = f.calls.find(([, a]) => a[0] === 'notarytool')[1];
   assert.equal(notarization[notarization.indexOf('--timeout') + 1], '30m');
   assert.ok(f.calls.some(([, a]) => a[0] === '--expand-full'));
-  assert.ok(f.calls.some(([c, a]) => c.endsWith('bash') && a[1].includes('/Payload/Agent Orchestrator.app')));
+  assert.ok(f.calls.some(([c, a]) => c.endsWith('bash') && a[1].includes('/Payload/Open Agents.app')));
   assert.deepEqual(f.calls.slice(-3).map(([, a]) => a[0] === 'notarytool' ? 'notarytool' : a[0] === 'stapler' ? 'stapler' : 'verify'), ['notarytool', 'stapler', 'verify']);
   await assert.rejects(buildRepairInstaller(f.options, f.execute), /already exists/);
   assert.equal(await readFile(f.options.output, 'utf8'), 'fixture package');
@@ -113,7 +113,7 @@ test('credentials are mandatory; unsigned output is conspicuous and command fail
   await assert.rejects(buildRepairInstaller({ ...f.options, identity: undefined }, f.execute), /identity/);
   await assert.rejects(buildRepairInstaller({ ...f.options, unsignedForTesting: true }, f.execute), /credentials/);
   await assert.rejects(buildRepairInstaller(f.options, f.execute), /injected command failure/);
-  assert.deepEqual(await readdir(f.dir), ['Agent Orchestrator.app']);
+  assert.deepEqual(await readdir(f.dir), ['Open Agents.app']);
   const g = await buildFixture(t);
   const options = { ...g.options, identity: undefined, keychainProfile: undefined, unsignedForTesting: true };
   await assert.rejects(buildRepairInstaller(options, g.execute), /unsigned.pkg/);
@@ -124,15 +124,15 @@ test('credentials are mandatory; unsigned output is conspicuous and command fail
 test('notarization rejection and canonical verifier failure fail closed', async (t) => {
   const f = await buildFixture(t);
   await assert.rejects(buildRepairInstaller(f.options, async (c, a) => a[0] === 'notarytool' ? '{"status":"Rejected"}' : f.execute(c, a)), /did not accept/);
-  assert.deepEqual(await readdir(f.dir), ['Agent Orchestrator.app']);
+  assert.deepEqual(await readdir(f.dir), ['Open Agents.app']);
   const g = await buildFixture(t, '/bin/bash');
   await assert.rejects(buildRepairInstaller(g.options, g.execute), /injected command failure/);
 });
 test('native macOS packaging produces a fixed atomic bundle replacement and executable guards without installing', { skip: process.platform !== 'darwin' }, async (t) => {
-  const dir = await fixture(t), app = path.join(dir, 'Agent Orchestrator.app');
+  const dir = await fixture(t), app = path.join(dir, 'Open Agents.app');
   await mkdir(path.join(app, 'Contents/MacOS'), { recursive: true });
-  await writeFile(path.join(app, 'Contents/Info.plist'), `<?xml version="1.0"?><plist version="1.0"><dict><key>CFBundleIdentifier</key><string>${metadata.id}</string><key>CFBundleShortVersionString</key><string>${version}</string><key>CFBundleVersion</key><string>${version}</string><key>CFBundleExecutable</key><string>agent-orchestrator</string><key>CFBundlePackageType</key><string>APPL</string></dict></plist>`);
-  await writeFile(path.join(app, 'Contents/MacOS/agent-orchestrator'), '#!/bin/sh\nexit 0\n', { mode: 0o755 });
+  await writeFile(path.join(app, 'Contents/Info.plist'), `<?xml version="1.0"?><plist version="1.0"><dict><key>CFBundleIdentifier</key><string>${metadata.id}</string><key>CFBundleShortVersionString</key><string>${version}</string><key>CFBundleVersion</key><string>${version}</string><key>CFBundleExecutable</key><string>open-agents</string><key>CFBundlePackageType</key><string>APPL</string></dict></plist>`);
+  await writeFile(path.join(app, 'Contents/MacOS/open-agents'), '#!/bin/sh\nexit 0\n', { mode: 0o755 });
   const output = path.join(dir, 'fixture.unsigned.pkg');
   await buildRepairInstaller({ app, output, unsignedForTesting: true, dataDir: dir }, (c, a) => {
     // Only this test fixture bypasses trust/lipo: it is a tiny non-release shell app.
@@ -147,6 +147,6 @@ test('native macOS packaging produces a fixed atomic bundle replacement and exec
   assert.match(info, /install-location="\/Applications"/);
   assert.match(info, /<upgrade-bundle>/);
   assert.doesNotMatch(info, /<relocate>/);
-  assert.equal(await readFile(path.join(component, 'Payload/Agent Orchestrator.app/Contents/MacOS/agent-orchestrator'), 'utf8'), '#!/bin/sh\nexit 0\n');
+  assert.equal(await readFile(path.join(component, 'Payload/Open Agents.app/Contents/MacOS/open-agents'), 'utf8'), '#!/bin/sh\nexit 0\n');
   assert.match(await readFile(path.join(component, 'Scripts/preinstall'), 'utf8'), /Preinstall requires root/);
 });

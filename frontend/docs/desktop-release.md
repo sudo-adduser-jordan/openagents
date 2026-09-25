@@ -1,9 +1,9 @@
 # Desktop release architecture
 
 Canonical desktop releases are conducted from the private
-`Untrivial-ai/ao-releases` repository. That conductor is the only system allowed
+`sudo-adduser-jordan/open-agents-releases` repository. That conductor is the only system allowed
 to publish stable, nightly, or preview releases. The public
-`Untrivial-ai/agent-orchestrator` repository supplies source and unsigned build
+`sudo-adduser-jordan/open-agents` repository supplies source and unsigned build
 artifacts; it does not hold signing credentials or publish canonical releases.
 
 Do not create release tags or try to publish from this repository. Operators
@@ -41,7 +41,7 @@ secrets, and does not create, edit, or publish GitHub Releases.
 
 The private conductor pins the immutable source SHA before dispatch and treats
 the returned digests as the handoff boundary. Signing credentials and release
-publication permissions stay in `Untrivial-ai/ao-releases`.
+publication permissions stay in `sudo-adduser-jordan/open-agents-releases`.
 
 Windows installers follow the same boundary (#4502): the NSIS maker
 (`frontend/makers/maker-nsis.ts`) activates electron-builder code signing only
@@ -84,7 +84,7 @@ channels omit the first-install DMG.
 
 ## Isolated macOS differential v2
 
-Current AO uses full-ZIP macOS updates. It explicitly sets
+Current Open Agents uses full-ZIP macOS updates. It explicitly sets
 `disableDifferentialDownload = true` before checks. The local rollout stop is
 false and the v2 signing keyring is empty. Windows/Linux updater and feed
 behavior is unchanged. No bridge release is part of this design.
@@ -94,8 +94,8 @@ references, and conventional `.zip.blockmap` assets. Old clients derive that
 conventional suffix regardless of Developer Mode and may seed their next cache
 cycle even after full fallback. Their discovery paths must remain empty.
 
-The separately gated v2 resolver uses signed `ao-diff-v2-mac.json` and versioned
-`.zip.aoblockmap` assets on the same GitHub release. Those names are never
+The separately gated v2 resolver uses signed `open-agents-diff-v2-mac.json` and versioned
+`.zip.open-agents-blockmap` assets on the same GitHub release. Those names are never
 requested by legacy clients. No public build/feed/publish hook generates them.
 A future independently reviewed conductor change must verify exact signed
 metadata and asset inventories without relaxing the legacy prohibition.
@@ -103,7 +103,7 @@ metadata and asset inventories without relaxing the legacy prohibition.
 The v2 MacUpdater subclass uses the dependency's declared protected extension
 and exclusively owned handles. Range failures, including 416, settle before
 MacUpdater starts one full fallback. Stock 6.8.9's unsafe differential worker
-is never invoked. Current AO remains on the stock full-only path.
+is never invoked. Current Open Agents remains on the stock full-only path.
 
 See [the v2 protocol and acceptance contract](mac-differential-v2.md) for exact
 schema, naming, signing, generation/verification, rollback and runtime limits.
@@ -126,15 +126,15 @@ identity.
 
 The repair `.pkg` is a separate, user-initiated installation path for Macs whose
 installed updater cannot complete an update. It replaces
-`/Applications/Agent Orchestrator.app` using macOS Installer; it does not invoke
-Electron's updater, download a payload at install time, or touch AO user data.
+`/Applications/Open Agents.app` using macOS Installer; it does not invoke
+Electron's updater, download a payload at install time, or touch Open Agents user data.
 It is an additional release artifact: the existing ZIP and update feeds remain
 required. It does not add a remote repair button to old installed versions.
 
-Users must quit AO before running the package. If AO's ShipIt installer is
+Users must quit Open Agents before running the package. If Open Agents's ShipIt installer is
 still running, the repair must wait; restart the Mac and run the repair before
-opening AO. The installer must not terminate processes or install concurrently
-with ShipIt. After installation, users open AO normally. Installs in custom
+opening Open Agents. The installer must not terminate processes or install concurrently
+with ShipIt. After installation, users open Open Agents normally. Installs in custom
 locations and unreadable or unrelated destination bundle metadata require
 separate support; the repair must not guess which app to replace.
 
@@ -151,10 +151,10 @@ Example invocation from the private conductor after configuring its keychain:
 
 ```bash
 node public/frontend/scripts/build-mac-repair-installer.mjs \
-  --app '/path/to/Agent Orchestrator.app' \
-  --output '/path/to/dist/Agent.Orchestrator-repair-arm64.pkg' \
+  --app '/path/to/Open Agents.app' \
+  --output '/path/to/dist/open-agents-repair-arm64.pkg' \
   --identity "$APPLE_INSTALLER_SIGNING_IDENTITY" \
-  --keychain-profile AO_REPAIR_NOTARY
+  --keychain-profile OPEN_AGENTS_REPAIR_NOTARY
 ```
 
 The builder refuses an existing output file. It verifies the input, copied app
@@ -171,7 +171,7 @@ The private conductor must:
 3. Include the resulting signed/notarized package in the artifact inventory,
    local and remote verification, checksums and atomic publication. Account for
    the additional notarization submissions in the job timeout.
-4. Provide a direct, architecture-appropriate download link from the AO website
+4. Provide a direct, architecture-appropriate download link from the Open Agents website
    and recovery announcement. This avoids GitHub navigation but still requires
    users to download and run the package. Do not expose the link before its
    artifact is published and verified.
@@ -187,10 +187,10 @@ structure, not a working signed recovery. Before distribution, test a signed
 candidate on isolated Macs or VMs, on Apple Silicon and Intel:
 
 - Upgrade from stable 0.12.10 and 0.12.11 and the reported nightly builds; confirm
-  the chosen target version launches and existing AO data is preserved.
+  the chosen target version launches and existing Open Agents data is preserved.
 - Repair the same version with damaged app contents; reject a newer installed
   version, wrong architecture, unrelated destination and symlink destination.
-- Reject active AO and active AO ShipIt, including AO quit triggering a staged
+- Reject active Open Agents and active Open Agents ShipIt, including Open Agents quit triggering a staged
   update. The repair must not race that update.
 - Verify the package's signature, Gatekeeper acceptance and staple with
   `verify-mac-artifact.sh`; verify the expanded and installed app with the same

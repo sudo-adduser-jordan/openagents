@@ -22,7 +22,7 @@
 - Retry bases are 5 seconds, 30 seconds, 5 minutes, 30 minutes, then 6 hours for the fifth and subsequent attempts, each with equal jitter in the inclusive 50-100 percent range.
 - Visibility grace periods are exactly 15 seconds for active/recovery state, 60 seconds for history, 2 seconds for presentation acknowledgement, and 5 continuous healthy minutes before recurrence.
 - Remote application fields are deny-by-default. Never export switch/session/project/workspace/user IDs, paths, prompts, messages, transcript or terminal content, provider/native/generation/runtime identifiers, argv/environment, URLs, branches/issues/PR facts, hashes, idempotency keys, request fingerprints, or raw errors/panic values.
-- `AO_DATA_DIR/telemetry_policy.json` is the desktop consent authority. Electron main is its sole durable generation writer; daemon mirrors never invent desktop generations; malformed, unsafe, unreadable, or unsupported policy fails closed.
+- `OPEN_AGENTS_DATA_DIR/telemetry_policy.json` is the desktop consent authority. Electron main is its sole durable generation writer; daemon mirrors never invent desktop generations; malformed, unsafe, unreadable, or unsupported policy fails closed.
 - The primary listener remains unauthenticated loopback-only. Policy control routes live under `/internal/agent-switch-observability/*`, require the existing local-control guard, and remain blocked by the LAN listener's `/internal/*` rule.
 - Existing migrations are immutable, `change_log` remains trigger-owned, generated sqlc files are regenerated rather than hand-edited, and OpenAPI plus `frontend/src/api/schema.ts` are regenerated together.
 - The specification prefers several PRs, but the user's explicit integration instruction overrides that packaging preference: use one branch and one PR, preserve phases as the separate commits below, and keep the production release gate closed.
@@ -192,7 +192,7 @@ git commit -m "fix: fence chat switch activation by source generation"
 
 **Interfaces:**
 
-- Consumes: persisted session handle, exact AO session, source/target generation, native identity when available, and adapter evidence.
+- Consumes: persisted session handle, exact Open Agents session, source/target generation, native identity when available, and adapter evidence.
 - Produces: `ProbeFencedRuntime(context.Context, ports.FencedRuntimeRef) ports.FencedProbeResult`, which returns only `FencedAlive`, `FencedDead`, or `FencedUnknown`; and `ports.RuntimeEffectError`, which preserves partial-create handle/effect/cleanup evidence.
 
 - [ ] **Step 1: Write failing adapter, recovery, marker, and polling tests**
@@ -755,7 +755,7 @@ git commit -m "feat: add acknowledged sentry envelope sender"
 
 **Interfaces:**
 
-- Consumes: `AO_DATA_DIR/telemetry_policy.json`, environment hard vetoes, validated destination, release gate, and loopback daemon status.
+- Consumes: `OPEN_AGENTS_DATA_DIR/telemetry_policy.json`, environment hard vetoes, validated destination, release gate, and loopback daemon status.
 - Produces: main `TelemetryPolicyAuthority` plus serialized `DesktopTelemetryController`, a renderer `TelemetryPolicyView` and settings control, daemon `agentswitch.PolicyCoordinator`, typed IPC bootstrap/capture methods, `/internal/agent-switch-observability/prepare-disable` and `/apply-policy`, and `Authorization() domain.AgentSwitchReportingAuthorization`.
 
 - [ ] **Step 1: Write failing file-durability, truth-table, generation, opt-out, route, and sole-sender tests**
@@ -804,7 +804,7 @@ export type TelemetryPolicySnapshot = {
 };
 ```
 
-Keep `shared/telemetry-policy.ts` pure: it owns only the exact snake_case disk wire type above, strict parser, key/version/generation/time validation, the separate camelCase `TelemetryPolicyView` (`applied`, `cleanup_pending`, or `cleanup_failed`), and fail-closed result types. Put all filesystem work in `main/telemetry-policy-file.ts`. Reject symlinks, non-regular files, and non-owner-only permissions. Write a same-directory `wx` temporary file at 0600 and sync it before replace. On POSIX, rename then sync the containing directory. Do not claim ordinary Node `rename` is an equivalent Windows write-through replace: until a concrete `ReplaceFileW`/`MoveFileExW(MOVEFILE_REPLACE_EXISTING | MOVEFILE_WRITE_THROUGH)` helper is shipped and tested, explicitly mark Windows policy durability unsupported, keep all Sentry surfaces disabled, reject live setting acknowledgement, and surface that release blocker locally. Add a win32 test for this fail-closed gate. First packaged launch writes the current packaged default only on a supported durable platform; an existing invalid file fails closed and is never replaced by an enabled default. Resolve one absolute desktop data directory before daemon launch—including relative `AO_DATA_DIR` against the daemon launch working directory—and pass that exact path to authority code, bootstrap, and daemon environment. Extend `TelemetryBootstrap` with `eventsEnabled` and `consentGeneration`.
+Keep `shared/telemetry-policy.ts` pure: it owns only the exact snake_case disk wire type above, strict parser, key/version/generation/time validation, the separate camelCase `TelemetryPolicyView` (`applied`, `cleanup_pending`, or `cleanup_failed`), and fail-closed result types. Put all filesystem work in `main/telemetry-policy-file.ts`. Reject symlinks, non-regular files, and non-owner-only permissions. Write a same-directory `wx` temporary file at 0600 and sync it before replace. On POSIX, rename then sync the containing directory. Do not claim ordinary Node `rename` is an equivalent Windows write-through replace: until a concrete `ReplaceFileW`/`MoveFileExW(MOVEFILE_REPLACE_EXISTING | MOVEFILE_WRITE_THROUGH)` helper is shipped and tested, explicitly mark Windows policy durability unsupported, keep all Sentry surfaces disabled, reject live setting acknowledgement, and surface that release blocker locally. Add a win32 test for this fail-closed gate. First packaged launch writes the current packaged default only on a supported durable platform; an existing invalid file fails closed and is never replaced by an enabled default. Resolve one absolute desktop data directory before daemon launch—including relative `OPEN_AGENTS_DATA_DIR` against the daemon launch working directory—and pass that exact path to authority code, bootstrap, and daemon environment. Extend `TelemetryBootstrap` with `eventsEnabled` and `consentGeneration`.
 
 - [ ] **Step 4: Implement daemon mirror/gate and ordered live changes**
 
@@ -1184,7 +1184,7 @@ export type AgentSwitchVisibilitySignal = {
 };
 ```
 
-Renderer code sends only `AgentSwitchVisibilitySignalBody`; preload wraps every signal with the latest consent generation received through main's trusted policy-change broadcast, never a permanently frozen startup token and never a renderer-supplied generation. No payload may contain a sender/window identifier. Main derives the trusted sender from the IPC event's `event.sender.id`, rejects senders not registered as live AO shell webContents, selects the most recently focused eligible window, cancels old-owner timers before transfer, and rejects stale/disabled generations. `token`, `switchId`, `updatedAt`, and `localRouteKey` are local dedupe/validity inputs and must be stripped before encoding; only the bounded `presentationKind` and `durableState` enums reach the event. Snapshot-test the final event bytes for absence of every local value. Main applies the exact timers and sends a synthetic allowlisted envelope through its no-cache transport. `ao.agent_switch.visibility_failure` kill switch suppresses capture.
+Renderer code sends only `AgentSwitchVisibilitySignalBody`; preload wraps every signal with the latest consent generation received through main's trusted policy-change broadcast, never a permanently frozen startup token and never a renderer-supplied generation. No payload may contain a sender/window identifier. Main derives the trusted sender from the IPC event's `event.sender.id`, rejects senders not registered as live Open Agents shell webContents, selects the most recently focused eligible window, cancels old-owner timers before transfer, and rejects stale/disabled generations. `token`, `switchId`, `updatedAt`, and `localRouteKey` are local dedupe/validity inputs and must be stripped before encoding; only the bounded `presentationKind` and `durableState` enums reach the event. Snapshot-test the final event bytes for absence of every local value. Main applies the exact timers and sends a synthetic allowlisted envelope through its no-cache transport. `open-agents.agent_switch.visibility_failure` kill switch suppresses capture.
 
 - [ ] **Step 4: Wire actual query, transport, and presentation boundaries**
 

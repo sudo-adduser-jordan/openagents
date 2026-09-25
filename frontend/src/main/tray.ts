@@ -48,7 +48,7 @@ export function createTrayController(options: TrayControllerOptions): TrayContro
 	const render = () => {
 		const count = sessions.length;
 		tray.setTitle(count > 0 ? String(count) : "");
-		tray.setToolTip(count > 0 ? (count === 1 ? "1 session needs attention" : `${count} sessions need attention`) : "Agent Orchestrator");
+		tray.setToolTip(count > 0 ? (count === 1 ? "1 session needs attention" : `${count} sessions need attention`) : "Open Agents");
 
 		const items: MenuItemConstructorOptions[] = [];
 		if (count === 0) {
@@ -75,8 +75,8 @@ export function createTrayController(options: TrayControllerOptions): TrayContro
 			}
 		}
 		items.push({ type: "separator" });
-		items.push({ label: "Show Agent Orchestrator", click: () => options.focusWindow() });
-		items.push({ label: "Quit Agent Orchestrator", role: "quit" });
+		items.push({ label: "Show Open Agents", click: () => options.focusWindow() });
+		items.push({ label: "Quit Open Agents", role: "quit" });
 		tray.setContextMenu(Menu.buildFromTemplate(items));
 	};
 

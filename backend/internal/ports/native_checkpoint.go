@@ -17,7 +17,7 @@ type NativeCheckpointRequest struct {
 }
 
 // NativeCheckpointBoundary must match one completed replay turn, including its
-// native user UUID. It does not replace AO's durable timeline high-water gate.
+// native user UUID. It does not replace Open Agents's durable timeline high-water gate.
 type NativeCheckpointBoundary struct {
 	UserMessageID string
 	UserText      string

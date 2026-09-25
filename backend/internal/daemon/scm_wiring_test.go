@@ -5,10 +5,10 @@ import (
 	"log/slog"
 	"testing"
 
-	scmmulti "github.com/aoagents/agent-orchestrator/backend/internal/adapters/scm/multi"
-	"github.com/aoagents/agent-orchestrator/backend/internal/config"
-	scmobserve "github.com/aoagents/agent-orchestrator/backend/internal/observe/scm"
-	"github.com/aoagents/agent-orchestrator/backend/internal/ports"
+	scmmulti "github.com/sudo-adduser-jordan/open-agents/backend/internal/adapters/scm/multi"
+	"github.com/sudo-adduser-jordan/open-agents/backend/internal/config"
+	scmobserve "github.com/sudo-adduser-jordan/open-agents/backend/internal/observe/scm"
+	"github.com/sudo-adduser-jordan/open-agents/backend/internal/ports"
 )
 
 // TestSCMWiring_MultiProviderSatisfiesScopedIdentityResolver verifies that the

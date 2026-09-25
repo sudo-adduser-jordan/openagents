@@ -30,12 +30,12 @@ func TestE2E_DaemonClosedOutputPipeShutdownRemovesRunFile(t *testing.T) {
 		_, _ = io.Copy(io.Discard, r)
 	}()
 
-	cmd := exec.Command(aoBin, "daemon")
+	cmd := exec.Command(openAgentsBin, "daemon")
 	cmd.Env = e.environ("")
 	cmd.Stdout = w
 	cmd.Stderr = w
 	if err := cmd.Start(); err != nil {
-		t.Fatalf("spawn ao daemon: %v", err)
+		t.Fatalf("spawn open-agents daemon: %v", err)
 	}
 	_ = w.Close()
 

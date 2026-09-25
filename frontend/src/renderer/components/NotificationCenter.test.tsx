@@ -2,7 +2,7 @@ import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { fireEvent, render, screen, waitFor, within } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { beforeEach, describe, expect, it, vi } from "vitest";
-import { aoBridge } from "../lib/bridge";
+import { openAgentsBridge } from "../lib/bridge";
 import type { NotificationDTO, NotificationListStatus } from "../lib/notifications";
 import { useUiStore } from "../stores/ui-store";
 import { NotificationCenter, NotificationRuntime } from "./NotificationCenter";
@@ -510,7 +510,7 @@ describe("NotificationCenter", () => {
 	});
 
 	it("opens the linked PR number in the system browser without opening the session", async () => {
-		const openExternal = vi.spyOn(aoBridge.app, "openExternal").mockResolvedValue(undefined);
+		const openExternal = vi.spyOn(openAgentsBridge.app, "openExternal").mockResolvedValue(undefined);
 		renderNotificationCenter();
 		await clickOpen();
 

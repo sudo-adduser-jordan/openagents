@@ -8,8 +8,8 @@ import (
 	"database/sql"
 	"time"
 
-	"github.com/aoagents/agent-orchestrator/backend/internal/cdc"
-	"github.com/aoagents/agent-orchestrator/backend/internal/domain"
+	"github.com/sudo-adduser-jordan/open-agents/backend/internal/cdc"
+	"github.com/sudo-adduser-jordan/open-agents/backend/internal/domain"
 )
 
 type AgentInstallJob struct {

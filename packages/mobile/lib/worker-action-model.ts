@@ -24,7 +24,7 @@ export type WorkerAction = {
 
 export type WorkerActionState = {
 	pinned: boolean;
-	/** The AO session itself is terminated — only a restore brings it back. */
+	/** The Open Agents session itself is terminated — only a restore brings it back. */
 	terminated: boolean;
 	/** The runtime is stopped but the session is alive; the agent can be resumed. */
 	stopped: boolean;
@@ -33,7 +33,7 @@ export type WorkerActionState = {
 
 /**
  * Resume and Restore are deliberately exclusive, and mirror how the chat screen
- * already chooses between them: a terminated AO session is restored, a merely
+ * already chooses between them: a terminated Open Agents session is restored, a merely
  * stopped agent is resumed. Offering both at once would ask the user to know a
  * distinction the app is supposed to make for them.
  */

@@ -17,7 +17,7 @@ import (
 
 	"github.com/fsnotify/fsnotify"
 
-	aoprocess "github.com/aoagents/agent-orchestrator/backend/internal/process"
+	openagentsprocess "github.com/sudo-adduser-jordan/open-agents/backend/internal/process"
 )
 
 // Watch subscribes to relevant changes below the workspace roots until ctx is cancelled. The
@@ -121,7 +121,7 @@ func discoverGitWorkspace(ctx context.Context, root string) gitWorkspace {
 	// registered and the non-recursive fsnotify backends never see changes in
 	// subdirectories. Only use the git-derived watch set when the repository
 	// actually has this workspace as its toplevel.
-	topRaw, err := aoprocess.CommandContext(ctx, "git", "-C", root, "rev-parse", "--show-toplevel").Output()
+	topRaw, err := openagentsprocess.CommandContext(ctx, "git", "-C", root, "rev-parse", "--show-toplevel").Output()
 	if err != nil {
 		return gitWorkspace{}
 	}
@@ -139,11 +139,11 @@ func discoverGitWorkspace(ctx context.Context, root string) gitWorkspace {
 			return gitWorkspace{}
 		}
 	}
-	gitDirRaw, err := aoprocess.CommandContext(ctx, "git", "-C", root, "rev-parse", "--absolute-git-dir").Output()
+	gitDirRaw, err := openagentsprocess.CommandContext(ctx, "git", "-C", root, "rev-parse", "--absolute-git-dir").Output()
 	if err != nil {
 		return gitWorkspace{}
 	}
-	filesRaw, err := aoprocess.CommandContext(ctx, "git", "-C", root, "ls-files", "-z", "--cached", "--others", "--exclude-standard").Output()
+	filesRaw, err := openagentsprocess.CommandContext(ctx, "git", "-C", root, "ls-files", "-z", "--cached", "--others", "--exclude-standard").Output()
 	if err != nil {
 		return gitWorkspace{}
 	}
@@ -159,14 +159,14 @@ func discoverGitWorkspace(ctx context.Context, root string) gitWorkspace {
 		filepath.Join(gitDir, "HEAD"): {},
 	}
 	commonDir := gitDir
-	if raw, commonErr := aoprocess.CommandContext(ctx, "git", "-C", root, "rev-parse", "--git-common-dir").Output(); commonErr == nil {
+	if raw, commonErr := openagentsprocess.CommandContext(ctx, "git", "-C", root, "rev-parse", "--git-common-dir").Output(); commonErr == nil {
 		commonDir = strings.TrimSpace(string(raw))
 		if !filepath.IsAbs(commonDir) {
 			commonDir = filepath.Join(root, commonDir)
 		}
 	}
 	metadataFiles[filepath.Join(commonDir, "packed-refs")] = struct{}{}
-	if raw, refErr := aoprocess.CommandContext(ctx, "git", "-C", root, "symbolic-ref", "-q", "HEAD").Output(); refErr == nil {
+	if raw, refErr := openagentsprocess.CommandContext(ctx, "git", "-C", root, "symbolic-ref", "-q", "HEAD").Output(); refErr == nil {
 		ref := strings.TrimSpace(string(raw))
 		if ref != "" {
 			metadataFiles[filepath.Join(commonDir, filepath.FromSlash(ref))] = struct{}{}
@@ -300,7 +300,7 @@ func gitIgnored(ctx context.Context, root, target string) bool {
 	if err != nil || rel == "." || strings.HasPrefix(rel, ".."+string(filepath.Separator)) {
 		return false
 	}
-	return aoprocess.CommandContext(ctx, "git", "-C", root, "check-ignore", "-q", "--", filepath.ToSlash(rel)).Run() == nil
+	return openagentsprocess.CommandContext(ctx, "git", "-C", root, "check-ignore", "-q", "--", filepath.ToSlash(rel)).Run() == nil
 }
 
 func isWithin(root, target string) bool {

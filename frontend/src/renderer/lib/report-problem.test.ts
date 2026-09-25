@@ -37,7 +37,7 @@ describe("report problem drafts", () => {
 
 			expect(draft).toContain("Terminal keeps reconnecting after daemon restart");
 			expect(draft).toContain("The app should reconnect without losing the current route.");
-			expect(draft).toContain("AO version: 1.2.3-test");
+			expect(draft).toContain("Open Agents version: 1.2.3-test");
 			expect(draft).toContain("Daemon: ready");
 			expect(draft).toContain("Route surface: session_detail");
 		}
@@ -98,12 +98,12 @@ describe("report problem drafts", () => {
 	it("produces a useful draft when user input is partial", () => {
 		const draft = formatReportProblemDraft({ summary: "", details: "" }, diagnostics, "email");
 
-		expect(draft).toContain("AO feedback");
+		expect(draft).toContain("Open Agents feedback");
 		expect(draft).toContain("To: prasad@untrivial.ai");
 		expect(draft).toContain("Cc: prateek@untrivial.ai");
 		expect(draft).toContain("Not provided");
 		expect(draft).toContain("Safe diagnostics");
-		expect(draft).toContain("AO version: 1.2.3-test");
+		expect(draft).toContain("Open Agents version: 1.2.3-test");
 	});
 
 	it("omits report type and footer copy from generated drafts", () => {
@@ -116,14 +116,14 @@ describe("report problem drafts", () => {
 			expect(draft).toContain("Details");
 			expect(draft).not.toContain("## Type");
 			expect(draft).not.toContain("Bug report");
-			expect(draft).not.toContain("Generated locally by AO");
+			expect(draft).not.toContain("Generated locally by Open Agents");
 			expect(draft).not.toContain("No logs, repo contents");
 		}
 	});
 
 	it("builds copy handoff destinations for GitHub, Discord, and support email", () => {
 		const github = new URL(reportProblemDestinationUrl(completeInput, diagnostics, "github")!);
-		expect(`${github.origin}${github.pathname}`).toBe("https://github.com/Untrivial-ai/agent-orchestrator/issues/new");
+		expect(`${github.origin}${github.pathname}`).toBe("https://github.com/sudo-adduser-jordan/open-agents/issues/new");
 		expect(github.searchParams.get("title")).toBe("Terminal keeps reconnecting after daemon restart");
 		expect(github.searchParams.get("body")).toContain("[redacted-local-path]");
 		expect(github.searchParams.get("body")).toContain("[redacted-local-url]");
@@ -136,9 +136,9 @@ describe("report problem drafts", () => {
 		expect(email.protocol).toBe("mailto:");
 		expect(email.pathname).toBe("prasad@untrivial.ai");
 		expect(email.searchParams.get("cc")).toBe("prateek@untrivial.ai");
-		expect(email.searchParams.get("subject")).toBe("AO feedback: Terminal keeps reconnecting after daemon restart");
-		expect(email.searchParams.get("body")).toContain("AO feedback");
-		expect(email.searchParams.get("body")).toContain("AO version: 1.2.3-test");
+		expect(email.searchParams.get("subject")).toBe("Open Agents feedback: Terminal keeps reconnecting after daemon restart");
+		expect(email.searchParams.get("body")).toContain("Open Agents feedback");
+		expect(email.searchParams.get("body")).toContain("Open Agents version: 1.2.3-test");
 	});
 
 	it("builds provider-specific web compose URLs for Windows email choices", () => {
@@ -149,7 +149,7 @@ describe("report problem drafts", () => {
 		expect(gmail.searchParams.get("to")).toBe("prasad@untrivial.ai");
 		expect(gmail.searchParams.get("cc")).toBe("prateek@untrivial.ai");
 		expect(gmail.searchParams.get("su")).toContain("Terminal keeps reconnecting");
-		expect(gmail.searchParams.get("body")).toContain("AO version: 1.2.3-test");
+		expect(gmail.searchParams.get("body")).toContain("Open Agents version: 1.2.3-test");
 
 		const outlook = new URL(reportProblemDestinationUrl(completeInput, diagnostics, "email", "outlook")!);
 		expect(outlook.origin).toBe("https://outlook.office.com");
@@ -157,7 +157,7 @@ describe("report problem drafts", () => {
 		expect(outlook.searchParams.get("to")).toBe("prasad@untrivial.ai");
 		expect(outlook.searchParams.get("cc")).toBe("prateek@untrivial.ai");
 		expect(outlook.searchParams.get("subject")).toContain("Terminal keeps reconnecting");
-		expect(outlook.searchParams.get("body")).toContain("AO version: 1.2.3-test");
+		expect(outlook.searchParams.get("body")).toContain("Open Agents version: 1.2.3-test");
 	});
 
 	it("percent-encodes mailto spaces instead of serializing them as plus signs", () => {
@@ -171,8 +171,8 @@ describe("report problem drafts", () => {
 		)!;
 
 		expect(email.startsWith("mailto:prasad@untrivial.ai?")).toBe(true);
-		expect(email).toContain("subject=AO%20feedback%3A%20Switch%20Codex%20accounts%20bug");
-		expect(email).toContain("body=AO%20feedback%0A%0ASummary%3A%20Switch%20Codex%20accounts%20bug");
+		expect(email).toContain("subject=Open%20Agents%20feedback%3A%20Switch%20Codex%20accounts%20bug");
+		expect(email).toContain("body=Open%20Agents%20feedback%0A%0ASummary%3A%20Switch%20Codex%20accounts%20bug");
 		expect(email).toContain("Keep%20literal%20%2B%20signs%20safe.");
 		expect(email).not.toContain("+");
 	});
@@ -189,12 +189,12 @@ describe("report problem drafts", () => {
 			)!,
 		);
 
-		expect(email.searchParams.get("subject")).toBe("AO feedback: Broken � text");
+		expect(email.searchParams.get("subject")).toBe("Open Agents feedback: Broken � text");
 	});
 
 	it("derives route surface from the hash-history route", async () => {
-		window.ao!.app.getVersion = vi.fn().mockResolvedValue("1.2.3-test");
-		window.ao!.daemon.getStatus = vi.fn().mockResolvedValue({ state: "ready" });
+		window.openAgents!.app.getVersion = vi.fn().mockResolvedValue("1.2.3-test");
+		window.openAgents!.daemon.getStatus = vi.fn().mockResolvedValue({ state: "ready" });
 		window.location.hash = "#/projects/demo/sessions/demo-1";
 
 		const nextDiagnostics = await collectReportProblemDiagnostics(new Date("2026-07-02T00:00:00.000Z"));

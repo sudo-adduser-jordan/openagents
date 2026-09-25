@@ -4,6 +4,6 @@ type InjectableTerminalRenderer = {
 
 export function adjustTerminalViewport(renderer: InjectableTerminalRenderer | null, direction: -1 | 1): boolean {
 	if (!renderer) return false;
-	renderer.injectJavaScript(`window.__aoAdjustTerminalZoom(${direction}); true;`);
+	renderer.injectJavaScript(`window.__openAgentsAdjustTerminalZoom(${direction}); true;`);
 	return true;
 }

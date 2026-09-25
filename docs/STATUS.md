@@ -1,4 +1,4 @@
-# agent-orchestrator status
+# open-agents status
 
 Current `main` ships a working single-user local loop: the Go daemon and the
 Electron/React frontend both drive a live daemon over HTTP/SSE/WebSocket. The
@@ -40,7 +40,7 @@ surface (`npm run sqlc`, `npm run api`).
   persist provider conversation identity, and dispatch lifecycle reactions
   through the same mode-aware session manager. A durable, capability-gated
   drain/interrupt handoff can move the same opencode native
-  conversation between TUI and Chat without changing the AO session/worktree;
+  conversation between TUI and Chat without changing the Open Agents session/worktree;
   rollback, restart recovery, controller-generation fencing, and a transition
   message outbox preserve the one-controller invariant.
 - The opencode Chat controller is owned by an
@@ -62,7 +62,7 @@ surface (`npm run sqlc`, `npm run api`).
   archive/projection, controller-generation fencing, turns, messages,
   activities, approvals, structured input, usage, compaction, and rollback.
 - Chat driver for the user's installed OpenCode over the kept ACP transport
-  (`opencodeacp`). AO reuses the harness's existing binary/auth/environment
+  (`opencodeacp`). Open Agents reuses the harness's existing binary/auth/environment
   resolution and does not bundle provider CLIs.
 - Project CRUD plus per-project config (`PUT /projects/{id}/config`).
 - PR action engine wired into the API: `POST /prs/{id}/merge` and
@@ -71,7 +71,7 @@ surface (`npm run sqlc`, `npm run api`).
   `POST /reviews/{id}/send`.
 - Interactive reviewer pane for OpenCode.
 - The provider-neutral interactive-reviewer capability gateway and neutral
-  AO-owned working-directory contract are available.
+  Open Agents-owned working-directory contract are available.
 - Durable dashboard notifications for `needs_input`, `ready_to_merge`,
   `pr_merged`, and `pr_closed_unmerged`: backend enrichment/persistence,
   cursor-paginated read/unread history, live notification stream, and read
@@ -80,9 +80,9 @@ surface (`npm run sqlc`, `npm run api`).
   lazy/non-blocking auth, per-PR polling with ETag guards and semantic diffing,
   feeding PR facts into lifecycle, which sends agent nudges for CI failures,
   review feedback, and merge conflicts
-  ([#75](https://github.com/aoagents/agent-orchestrator/issues/75),
-  [#108](https://github.com/aoagents/agent-orchestrator/issues/108),
-  [#109](https://github.com/aoagents/agent-orchestrator/issues/109)).
+  ([#75](https://github.com/sudo-adduser-jordan/open-agents/issues/75),
+  [#108](https://github.com/sudo-adduser-jordan/open-agents/issues/108),
+  [#109](https://github.com/sudo-adduser-jordan/open-agents/issues/109)).
 - User-opened standalone and session side shells reconnect across daemon and
   desktop restarts while their runtimes live. Explicit close, confirmed exit,
   and session/worktree teardown remain cleanup boundaries; new trusted command
@@ -92,7 +92,7 @@ surface (`npm run sqlc`, `npm run api`).
   handles, and a ConPTY loopback host on Windows.
 - Lifecycle reducer plus reaper (`internal/observe/reaper`).
 - Agent adapter platform under `internal/adapters/agent/` (opencode only) with a
-  registry and `ao hooks` activity dispatch.
+  registry and `open-agents hooks` activity dispatch.
 - Daemon-owned in-memory agent readiness coordination with normalized
   installation/authentication observations, purpose-specific freshness,
   single-flight checks, bounded warm-up/retries, launch-time validation, and
@@ -105,7 +105,7 @@ surface (`npm run sqlc`, `npm run api`).
 - Electron + React 19 + TanStack Router/Query + Tailwind + shadcn primitives.
 - Target-isolated per-session browser-control spike: a dedicated local
   daemon↔Electron bridge drives only the selected session's `WebContentsView`
-  through Electron's bound debugger transport. `ao browser` supports open,
+  through Electron's bound debugger transport. `open-agents browser` supports open,
   compact accessibility snapshots and refs, click/fill/type, keyboard input,
   hover and non-mutating element highlighting, scrolling, selection and checked
   state, property reads, stable logical tabs and captured popups, a compact
@@ -121,14 +121,14 @@ surface (`npm run sqlc`, `npm run api`).
   successful-delivery confirmation clears automatically.
 - Chromium's official DevTools frontend is available from the direct Browser
   toolbar button, `Ctrl+Shift+I` (Cmd+Option+I on macOS), the titlebar View menu,
-  and `ao browser devtools`. It opens in a detached desktop window with normal
+  and `open-agents browser devtools`. It opens in a detached desktop window with normal
   OS close controls and is attached through the same worker-scoped CDP
   multiplexer as the agent, so Elements, Console, Network, Sources, and other
   DevTools panels can remain open while agent automation continues. The
   user-facing DevTools connection is unrestricted; agent CDP commands remain
   policy-limited.
-- Preview targets are explicit: `ao preview`, `ao preview <target>`, or
-  `ao preview start` selects what the panel shows. The desktop poller no longer
+- Preview targets are explicit: `open-agents preview`, `open-agents preview <target>`, or
+  `open-agents preview start` selects what the panel shows. The desktop poller no longer
   auto-discovers a static entry point merely because a fresh worker exists.
 - Real daemon wiring via the generated `openapi-fetch` typed client
   (`src/api/schema.ts`); mock data only in `VITE_NO_ELECTRON` web-preview mode.
@@ -188,22 +188,22 @@ surface (`npm run sqlc`, `npm run api`).
 ## In flight / not yet a runtime feature
 
 - **Browser automation acceptance**: the runtime implementation is complete.
-  AO packages one
+  Open Agents packages one
   checksum-pinned Vercel `agent-browser` Rust binary and routes a deliberately
   limited semantic command set through an authenticated, worker-scoped CDP
-  bridge to the existing AO Preview. The binary is prepared automatically for
+  bridge to the existing Open Agents Preview. The binary is prepared automatically for
   desktop development and releases and is the single engine behind ordinary
-  `ao browser` inspection and interaction commands. AO retains only its
+  `open-agents browser` inspection and interaction commands. Open Agents retains only its
   sanitized network observer and temporary highlight cleanup as safety/UI
   plumbing. Focused checks and a fresh Windows x64 package pass; macOS/Linux
   packaging and manual lifecycle acceptance remain release verification work.
 - **Cross-interface raw terminal history import**: compatible providers now
   replay settled native history with stable identities (`thread/read` for the
-  native TUI runtime, ACP `session/load` where advertised), and AO imports it
+  native TUI runtime, ACP `session/load` where advertised), and Open Agents imports it
   idempotently before
   activating Chat. ACP `session/resume` preserves model context but does not
   replay history, so a TUI→Chat handoff fails closed for resume-only agents.
-  AO deliberately does not reconstruct PTY scrollback as messages/tool cards;
+  Open Agents deliberately does not reconstruct PTY scrollback as messages/tool cards;
   arbitrary terminal bytes are redraw artifacts, not canonical provider events.
 - **In-flight tool portability**: drain can finish accepted work and interrupt
   can cancel it, but no common provider protocol serializes a currently executing
@@ -211,13 +211,13 @@ surface (`npm run sqlc`, `npm run api`).
 
 - **Tracker lane**: GitHub tracker adapter exists, but there is no daemon
   observer loop or agent-lifecycle→issue mirroring yet, so the tracker does
-  nothing at runtime ([#112](https://github.com/aoagents/agent-orchestrator/issues/112)).
+  nothing at runtime ([#112](https://github.com/sudo-adduser-jordan/open-agents/issues/112)).
 - **Full raw PR/tracker fact surfacing**: the SCM observer writes facts and the
   desktop consumes concise PR summaries, but exposing the full raw `pr_*` /
   `tracker_*` CDC events to live consumers
-  ([#110](https://github.com/aoagents/agent-orchestrator/issues/110)) and in
-  `ao session get` ([#111](https://github.com/aoagents/agent-orchestrator/issues/111))
+  ([#110](https://github.com/sudo-adduser-jordan/open-agents/issues/110)) and in
+  `open-agents session get` ([#111](https://github.com/sudo-adduser-jordan/open-agents/issues/111))
   is still open.
 
 Tracking milestone:
-[`rewrite`](https://github.com/aoagents/agent-orchestrator/milestone/1).
+[`rewrite`](https://github.com/sudo-adduser-jordan/open-agents/milestone/1).

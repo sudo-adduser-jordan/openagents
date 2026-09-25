@@ -7,12 +7,12 @@ import (
 	"testing"
 	"time"
 
-	"github.com/aoagents/agent-orchestrator/backend/internal/adapters/agent/opencode"
-	"github.com/aoagents/agent-orchestrator/backend/internal/adapters/runtime/tmux"
-	"github.com/aoagents/agent-orchestrator/backend/internal/domain"
-	"github.com/aoagents/agent-orchestrator/backend/internal/lifecycle"
-	"github.com/aoagents/agent-orchestrator/backend/internal/ports"
-	"github.com/aoagents/agent-orchestrator/backend/internal/storage/sqlite/sqlitetest"
+	"github.com/sudo-adduser-jordan/open-agents/backend/internal/adapters/agent/opencode"
+	"github.com/sudo-adduser-jordan/open-agents/backend/internal/adapters/runtime/tmux"
+	"github.com/sudo-adduser-jordan/open-agents/backend/internal/domain"
+	"github.com/sudo-adduser-jordan/open-agents/backend/internal/lifecycle"
+	"github.com/sudo-adduser-jordan/open-agents/backend/internal/ports"
+	"github.com/sudo-adduser-jordan/open-agents/backend/internal/storage/sqlite/sqlitetest"
 )
 
 func TestObserverIntegrationReconcilesRealTmuxOutputIntoSQLite(t *testing.T) {
@@ -49,7 +49,7 @@ func TestObserverIntegrationReconcilesRealTmuxOutputIntoSQLite(t *testing.T) {
 			workspace := t.TempDir()
 			now := time.Now().UTC()
 			staleAt := now.Add(-3 * time.Minute)
-			projectID := domain.ProjectID("ao3115e2e")
+			projectID := domain.ProjectID("open-agents-3115e2e")
 			if err := store.UpsertProject(ctx, domain.ProjectRecord{
 				ID:           string(projectID),
 				Path:         workspace,

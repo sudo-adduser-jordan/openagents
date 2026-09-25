@@ -1,0 +1,23 @@
+{
+	"name": "@openagents/open-agents",
+	"version": "0.10.0",
+	"description": "Open Agents CLI. Resolves and runs the prebuilt Go binary for your platform.",
+	"license": "MIT",
+	"bin": {
+		"open-agents": "./bin/open-agents.js"
+	},
+	"files": [
+		"bin/"
+	],
+	"optionalDependencies": {
+		"@openagents/open-agents-darwin-arm64": "0.10.0",
+		"@openagents/open-agents-darwin-x64": "0.10.0",
+		"@openagents/open-agents-linux-x64": "0.10.0",
+		"@openagents/open-agents-win32-x64": "0.10.0"
+	},
+	"repository": {
+		"type": "git",
+		"url": "https://github.com/sudo-adduser-jordan/open-agents",
+		"directory": "packages/open-agents"
+	}
+}

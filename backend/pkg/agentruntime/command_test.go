@@ -162,13 +162,13 @@ func TestOpenCodePermissionArgs(t *testing.T) {
 }
 
 func TestOpenCodeAgentName(t *testing.T) {
-	if name := OpenCodeAgentName("session-1"); name != "ao-session-1" {
+	if name := OpenCodeAgentName("session-1"); name != "open-agents-session-1" {
 		t.Fatalf("OpenCodeAgentName(session-1) = %q", name)
 	}
-	if name := OpenCodeAgentName("id with spaces"); name != "ao-id-with-spaces" {
+	if name := OpenCodeAgentName("id with spaces"); name != "open-agents-id-with-spaces" {
 		t.Fatalf("OpenCodeAgentName(id with spaces) = %q", name)
 	}
-	if name := OpenCodeAgentName(""); name != "ao-system-prompt" {
+	if name := OpenCodeAgentName(""); name != "open-agents-system-prompt" {
 		t.Fatalf("OpenCodeAgentName() = %q", name)
 	}
 }

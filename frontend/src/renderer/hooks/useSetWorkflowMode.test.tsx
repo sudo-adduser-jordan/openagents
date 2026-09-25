@@ -22,7 +22,7 @@ const session: WorkspaceSession = {
 	workspaceName: "my-app",
 	title: "do the thing",
 	provider: "opencode",
-	branch: "ao/sess-1",
+	branch: "open-agents/sess-1",
 	status: "working",
 	kanbanColumn: "building",
 	workflowMode: "planning",

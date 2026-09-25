@@ -250,7 +250,7 @@ export default function NotificationsScreen() {
 								error ??
 								(config
 									? "Updates from workers and pull requests will appear here when they need you."
-									: "Pair this phone with AO to receive worker and pull request updates.")
+									: "Pair this phone with Open Agents to receive worker and pull request updates.")
 							}
 						/>
 					}

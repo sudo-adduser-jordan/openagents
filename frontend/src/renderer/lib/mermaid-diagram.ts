@@ -136,7 +136,7 @@ export async function renderMermaidDiagram(code: string, theme: DiagramTheme): P
 	// The id must be unique per render: mermaid requires it, and reusing one
 	// across diagrams in the same document collides.
 	renderCounter += 1;
-	const id = `ao-mermaid-${renderCounter.toString(36)}-${Date.now().toString(36)}`;
+	const id = `open-agents-mermaid-${renderCounter.toString(36)}-${Date.now().toString(36)}`;
 	const { svg } = await mermaid.render(id, code);
 
 	const { default: DOMPurify } = await import("dompurify");

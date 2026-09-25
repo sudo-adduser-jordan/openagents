@@ -1,6 +1,6 @@
 # Cloud onboarding — implementation plan
 
-Branch: `pr-5023` (Untrivial-ai/agent-orchestrator PR #5023 head `680e1bdb2`, mirrors `main`).
+Branch: `pr-5023` (sudo-adduser-jordan/open-agents PR #5023 head `680e1bdb2`, mirrors `main`).
 Status: design approved in Discord thread + mockups. Not yet implemented.
 
 ## 0. What this fixes
@@ -58,9 +58,9 @@ real project list — passes through untouched, so the demo is running on a real
 session and a real org the whole time.
 
 **Off by default.** Arm it without a rebuild from the Electron devtools console:
-`window.__aoSetCloudDemoMode(true)`, then reload the renderer (not the whole app).
-Or set `VITE_AO_CLOUD_DEMO=1` before `npm run dev` to have it on from launch. Disarm
-with `window.__aoSetCloudDemoMode(false)` + reload.
+`window.__openAgentsSetCloudDemoMode(true)`, then reload the renderer (not the whole app).
+Or set `VITE_OPEN_AGENTS_CLOUD_DEMO=1` before `npm run dev` to have it on from launch. Disarm
+with `window.__openAgentsSetCloudDemoMode(false)` + reload.
 
 **To remove once real backend support lands:** delete the matching `case` out of
 `demo-fetch.ts` one at a time as each endpoint goes live — nothing above that file
@@ -187,7 +187,7 @@ new endpoint).
 
 **Change:** attempt `git ls-remote` (or a GitHub API HEAD, cheaper if the URL is a
 github.com URL) using whatever credential is available (PAT if connected, anonymous
-otherwise per `AO_CLOUD_ALLOW_ANONYMOUS_GITHUB_CHECKOUT`). On failure, `422` with
+otherwise per `OPEN_AGENTS_CLOUD_ALLOW_ANONYMOUS_GITHUB_CHECKOUT`). On failure, `422` with
 "Can't reach this repo — private, or it doesn't exist" (mockup copy) rather than
 succeeding and failing later in the sandbox.
 
@@ -297,7 +297,7 @@ AGENTS.md's exact API-change loop: dto.go → apispec → `npm run api` →
 
 ## 5. What needs a maintainer, not code
 
-**A separate staging GitHub App.** `AO_CLOUD_GITHUB_APP_ID` (+ slug, client id/secret,
+**A separate staging GitHub App.** `OPEN_AGENTS_CLOUD_GITHUB_APP_ID` (+ slug, client id/secret,
 private key) can only be set where `environment == "production"` per config.go:519.
 Someone with GitHub org-owner rights needs to:
 

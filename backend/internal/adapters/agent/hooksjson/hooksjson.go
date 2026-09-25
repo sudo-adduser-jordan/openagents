@@ -2,12 +2,12 @@
 // (goose, qwen, agy, droid, kimchi) share byte-for-byte in shape.
 // Each file is a JSON object with a "hooks" sub-map keyed by native event name,
 // whose values are matcher groups ({matcher?, hooks:[{type,command,timeout}]}). The
-// adapters differed only in the file path, the AO command prefix, the per-hook
+// adapters differed only in the file path, the Open Agents command prefix, the per-hook
 // timeout, and which events they install, so they describe those with a Manager
 // and share the install/uninstall/detect logic here.
 //
 // The read/write path preserves every top-level key and every user-defined hook
-// AO does not own, and writes atomically, so installing AO's hooks never clobbers
+// Open Agents does not own, and writes atomically, so installing Open Agents's hooks never clobbers
 // unrelated settings.
 package hooksjson
 
@@ -20,7 +20,7 @@ import (
 	"path/filepath"
 	"strings"
 
-	"github.com/aoagents/agent-orchestrator/backend/internal/adapters/agent/hookutil"
+	"github.com/sudo-adduser-jordan/open-agents/backend/internal/adapters/agent/hookutil"
 )
 
 // HookEntry is one command hook inside a matcher group.
@@ -40,9 +40,9 @@ type MatcherGroup struct {
 	Extra   map[string]json.RawMessage `json:"-"`
 }
 
-// UnmarshalJSON retains fields introduced by an agent before AO learns about
+// UnmarshalJSON retains fields introduced by an agent before Open Agents learns about
 // them. User hooks may depend on agent-specific keys such as async or
-// commandWindows, and reconciling AO hooks must not remove them.
+// commandWindows, and reconciling Open Agents hooks must not remove them.
 func (h *HookEntry) UnmarshalJSON(data []byte) error {
 	type known struct {
 		Type    string `json:"type"`
@@ -91,7 +91,7 @@ func (h HookEntry) MarshalJSON() ([]byte, error) {
 }
 
 // UnmarshalJSON preserves unknown matcher-group fields for the same reason as
-// HookEntry: reconciling one AO hook must not rewrite unrelated user behavior.
+// HookEntry: reconciling one Open Agents hook must not rewrite unrelated user behavior.
 func (g *MatcherGroup) UnmarshalJSON(data []byte) error {
 	type known struct {
 		Matcher *string     `json:"matcher,omitempty"`
@@ -149,7 +149,7 @@ func setRawField(fields map[string]json.RawMessage, key string, value any) error
 	return nil
 }
 
-// HookSpec describes one hook AO installs: the native event it attaches to, its
+// HookSpec describes one hook Open Agents installs: the native event it attaches to, its
 // optional matcher, and the command to run. Adapters define these in code rather
 // than reading an embedded template.
 type HookSpec struct {
@@ -158,28 +158,28 @@ type HookSpec struct {
 	Command string
 }
 
-// Manager installs, removes, and detects AO's hooks in one agent's matcher-group
+// Manager installs, removes, and detects Open Agents's hooks in one agent's matcher-group
 // hooks file. Construct one per adapter with its file path, command prefix,
 // per-hook timeout, and managed hook set.
 type Manager struct {
 	// Label prefixes error messages, e.g. "codex" or "goose", so the
 	// wrapped error reads "<label>.GetAgentHooks: ...".
 	Label string
-	// CommandPrefix identifies AO-owned hook commands, e.g. "ao hooks goose ".
+	// CommandPrefix identifies Open Agents-owned hook commands, e.g. "open-agents hooks goose ".
 	// Install skips commands already present and uninstall/detect match on it.
 	CommandPrefix string
-	// LegacyCommandPrefixes identifies AO-owned command prefixes from an older
+	// LegacyCommandPrefixes identifies Open Agents-owned command prefixes from an older
 	// installer that should be removed while installing the current hooks.
 	LegacyCommandPrefixes []string
 	// Timeout is written into each installed hook entry.
 	Timeout int
 	// Path returns the hooks file path for a workspace.
 	Path func(workspacePath string) string
-	// Managed is the set of hooks AO installs.
+	// Managed is the set of hooks Open Agents installs.
 	Managed []HookSpec
 }
 
-// Install reconciles AO's managed hooks into the workspace's hooks file,
+// Install reconciles Open Agents's managed hooks into the workspace's hooks file,
 // preserving user-defined hooks and unrelated settings. A managed command is
 // moved when its matcher changes and is never duplicated. It also writes a
 // self-ignoring .gitignore covering the hooks file so it does not block
@@ -249,7 +249,7 @@ func removeManagedPrefixes(groups []MatcherGroup, prefixes []string) []MatcherGr
 	return result
 }
 
-// Uninstall removes AO's hooks from the workspace's hooks file, leaving
+// Uninstall removes Open Agents's hooks from the workspace's hooks file, leaving
 // user-defined hooks and unrelated settings untouched. A missing file is a no-op.
 func (m Manager) Uninstall(ctx context.Context, workspacePath string) error {
 	if err := ctx.Err(); err != nil {
@@ -285,7 +285,7 @@ func (m Manager) Uninstall(ctx context.Context, workspacePath string) error {
 	return nil
 }
 
-// AreInstalled reports whether any AO hook is present in the workspace's hooks
+// AreInstalled reports whether any Open Agents hook is present in the workspace's hooks
 // file. A missing file means none are installed.
 func (m Manager) AreInstalled(ctx context.Context, workspacePath string) (bool, error) {
 	if err := ctx.Err(); err != nil {
@@ -344,7 +344,7 @@ func (m Manager) managedEvents() []string {
 }
 
 // readHooksFile loads the file into a top-level raw map plus the decoded "hooks"
-// sub-map, preserving every key AO doesn't manage. A missing or empty file
+// sub-map, preserving every key Open Agents doesn't manage. A missing or empty file
 // yields empty maps.
 func readHooksFile(hooksPath string) (topLevel, rawHooks map[string]json.RawMessage, err error) {
 	topLevel = map[string]json.RawMessage{}
@@ -422,7 +422,7 @@ func marshalEvent(rawHooks map[string]json.RawMessage, event string, groups []Ma
 	return nil
 }
 
-// reconcileHook removes every copy of one AO-owned command before adding the
+// reconcileHook removes every copy of one Open Agents-owned command before adding the
 // current managed entry under its declared matcher. This lets adapter upgrades
 // change a matcher or timeout without leaving stale or duplicate commands,
 // while preserving every unrelated hook in the affected groups.
@@ -447,7 +447,7 @@ func reconcileHook(groups []MatcherGroup, hook HookEntry, matcher *string) []Mat
 			result = append(result, group)
 		} else if removedManaged && !keptEmptyTarget && matchersEqual(group.Matcher, matcher) {
 			// Reuse the target group so agent-specific group fields survive an
-			// in-place refresh of AO's hook.
+			// in-place refresh of Open Agents's hook.
 			group.Hooks = nil
 			result = append(result, group)
 			keptEmptyTarget = true
@@ -468,7 +468,7 @@ func addHook(groups []MatcherGroup, hook HookEntry, matcher *string) []MatcherGr
 	return append(groups, MatcherGroup{Matcher: matcher, Hooks: []HookEntry{hook}})
 }
 
-// removeManaged strips AO hook entries (matched by command prefix) from every
+// removeManaged strips Open Agents hook entries (matched by command prefix) from every
 // group, dropping any group left without hooks so the event array doesn't
 // accumulate empty matcher objects.
 func removeManaged(groups []MatcherGroup, prefix string) []MatcherGroup {

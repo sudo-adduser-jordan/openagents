@@ -25,8 +25,8 @@ import (
 	"sync"
 	"time"
 
-	"github.com/aoagents/agent-orchestrator/backend/internal/domain"
-	"github.com/aoagents/agent-orchestrator/backend/internal/ports"
+	"github.com/sudo-adduser-jordan/open-agents/backend/internal/domain"
+	"github.com/sudo-adduser-jordan/open-agents/backend/internal/ports"
 )
 
 const (
@@ -144,7 +144,7 @@ type ActivityRecorder interface {
 	ApplyActivitySignal(ctx context.Context, id domain.SessionID, s ports.ActivitySignal) error
 }
 
-// IDFactory mints the identifiers AO assigns. Injected so tests get stable ids.
+// IDFactory mints the identifiers Open Agents assigns. Injected so tests get stable ids.
 type IDFactory func() string
 
 // Clock is injected so tests do not depend on wall time.
@@ -197,10 +197,10 @@ type Controller struct {
 	// The replacement generation owns lifecycle state; publishing an exited fact
 	// from the source would make that replacement unable to report active work.
 	suppressStoppedActivity bool
-	// activeTurn maps a provider turn id to AO's turn id for the turn currently
+	// activeTurn maps a provider turn id to Open Agents's turn id for the turn currently
 	// in flight, so a completion can be attributed without a round trip.
 	pendingTurnID string
-	// dispatchingTurnID is AO's durable turn row while SendTurn is in flight.
+	// dispatchingTurnID is Open Agents's durable turn row while SendTurn is in flight.
 	// Eager providers can emit turn/started before SendTurn returns with the
 	// provider id; that event must bind this row instead of adopting a duplicate.
 	dispatchingTurnID string
@@ -270,7 +270,7 @@ var ErrTurnNotRetryable = errors.New("turn is not retryable")
 var ErrRetryStaleBranch = errors.New("turn is not on the active conversation branch")
 
 // ErrRetryDeliveryUncertain reports a failed turn whose dispatch was never
-// acknowledged by the provider. Settling it failed was AO's safe guess rather
+// acknowledged by the provider. Settling it failed was Open Agents's safe guess rather
 // than a fact about delivery: the provider may have accepted the work. Because
 // a retry re-sends the prompt as a new turn, an uncertain source could execute
 // it twice, so these turns are refused until delivery is confirmed.
@@ -339,7 +339,7 @@ func newController(
 
 // restoreLiveTurnOwnership rebuilds the volatile busy gate from durable facts
 // before a replacement daemon publishes a reconnected controller. The provider
-// kept running while AO was detached, so forgetting this turn would let a new
+// kept running while Open Agents was detached, so forgetting this turn would let a new
 // Send start a second root turn on the same native conversation.
 func (c *Controller) restoreLiveTurnOwnership(turns []domain.ConversationTurn) string {
 	var latest *domain.ConversationTurn
@@ -381,28 +381,28 @@ type nativeHistoryHighWater struct {
 	detail         []byte
 }
 
-// nativeHistoryCheckpoint combines the newest source-TUI facts with AO's last
+// nativeHistoryCheckpoint combines the newest source-TUI facts with Open Agents's last
 // settled projection of this same provider thread. The hook facts cover work
-// completed while Chat was not attached; the AO high-water mark covers an
+// completed while Chat was not attached; the Open Agents high-water mark covers an
 // immediate round trip before a resumed TUI has emitted another hook.
 type nativeHistoryCheckpoint struct {
-	latestUserPromptAt      time.Time
-	latestAssistantUpdateAt time.Time
-	requireNewerTurn        bool
-	nativeBoundary          *ports.NativeCheckpointBoundary
-	latestUserPrompt        string
-	latestAssistantUpdate   string
-	completedUserPrompt     bool
-	providerTurnID          string
-	userMismatch            ports.ChatHistoryMismatchDimension
-	assistantMismatch       ports.ChatHistoryMismatchDimension
-	hardMismatches          []ports.ChatHistoryMismatchDimension
-	aoHighWater             nativeHistoryHighWater
-	aoHighWaterPeers        []nativeHistoryHighWater
-	replayIndex             *nativeHistoryTurnIndex
+	latestUserPromptAt       time.Time
+	latestAssistantUpdateAt  time.Time
+	requireNewerTurn         bool
+	nativeBoundary           *ports.NativeCheckpointBoundary
+	latestUserPrompt         string
+	latestAssistantUpdate    string
+	completedUserPrompt      bool
+	providerTurnID           string
+	userMismatch             ports.ChatHistoryMismatchDimension
+	assistantMismatch        ports.ChatHistoryMismatchDimension
+	hardMismatches           []ports.ChatHistoryMismatchDimension
+	openAgentsHighWater      nativeHistoryHighWater
+	openAgentsHighWaterPeers []nativeHistoryHighWater
+	replayIndex              *nativeHistoryTurnIndex
 }
 
-// dropUnsettledHookFacts retires legacy checkpoint text that AO recorded on a
+// dropUnsettledHookFacts retires legacy checkpoint text that Open Agents recorded on a
 // turn the provider never settled. A provider promises to reproduce settled work
 // during history load, but a cancelled, interrupted or failed turn carries no
 // such promise: the provider forks its next prompt from the pre-failure transcript
@@ -412,7 +412,7 @@ type nativeHistoryCheckpoint struct {
 // on every future attempt, which is the same trap the high-water anchor below
 // already avoids by only anchoring on completed turns.
 //
-// Evidence is required to drop a fact. A checkpoint AO cannot tie to any of its
+// Evidence is required to drop a fact. A checkpoint Open Agents cannot tie to any of its
 // own turns is left in place: absence of a row is not proof the work was
 // unsettled, and these facts are what stop a stale replay from being imported as
 // if it were current. Trusted source-TUI facts belong to a newer controller
@@ -449,7 +449,7 @@ func (p *nativeHistoryCheckpoint) dropUnsettledHookFacts(
 	}
 }
 
-func (p *nativeHistoryCheckpoint) captureAOHighWater(
+func (p *nativeHistoryCheckpoint) captureOpenAgentsHighWater(
 	sessionID domain.SessionID,
 	turns []domain.ConversationTurn,
 	messages []domain.ConversationMessage,
@@ -460,7 +460,7 @@ func (p *nativeHistoryCheckpoint) captureAOHighWater(
 		turnsByID[turns[i].ID] = &turns[i]
 	}
 	p.dropUnsettledHookFacts(turnsByID, messages)
-	// An agent switch starts a new provider-native thread with an AO coordination
+	// An agent switch starts a new provider-native thread with an Open Agents coordination
 	// turn. Completed turns before it belong to the previous provider: their
 	// opaque ids remain useful timeline facts, but the new provider cannot replay
 	// them and they must not gate this native-history import.
@@ -502,7 +502,7 @@ func (p *nativeHistoryCheckpoint) captureAOHighWater(
 		switch activity.Kind {
 		case domain.ActivityKindCommand, domain.ActivityKindFileChange, domain.ActivityKindReasoning, domain.ActivityKindMCPTool:
 		default:
-			continue // AO control-plane rows are not provider replay evidence.
+			continue // Open Agents control-plane rows are not provider replay evidence.
 		}
 		if activity.Status == domain.ActivityStatusCompleted || activity.Status == domain.ActivityStatusFailed {
 			turnEvidence[activity.TurnID] = nativeHistoryHighWater{
@@ -544,21 +544,21 @@ func (p *nativeHistoryCheckpoint) captureAOHighWater(
 		}
 		if latest == nil || turn.RequestedAt.After(latest.RequestedAt) {
 			latest = turn
-			p.aoHighWaterPeers = nil
+			p.openAgentsHighWaterPeers = nil
 		} else if turn.RequestedAt.Equal(latest.RequestedAt) {
 			if turnEvidence[turn.ID].sequence > turnEvidence[latest.ID].sequence {
-				p.aoHighWaterPeers = append(p.aoHighWaterPeers, evidence(latest))
+				p.openAgentsHighWaterPeers = append(p.openAgentsHighWaterPeers, evidence(latest))
 				latest = turn
 				continue
 			}
-			p.aoHighWaterPeers = append(p.aoHighWaterPeers, evidence(turn))
+			p.openAgentsHighWaterPeers = append(p.openAgentsHighWaterPeers, evidence(turn))
 		}
 	}
 	if latest == nil {
 		return
 	}
 	p.retireSupersededLegacyFacts(sessionID, turnsByID, messages, latest)
-	p.aoHighWater = evidence(latest)
+	p.openAgentsHighWater = evidence(latest)
 	p.replayIndex = indexNativeHistoryTurns(turns, messages, activities)
 }
 
@@ -692,7 +692,7 @@ func (p nativeHistoryCheckpoint) mismatches(
 		}
 	}
 
-	highWater := p.aoHighWater
+	highWater := p.openAgentsHighWater
 	if highWater.providerTurnID == "" {
 		return mismatches
 	}
@@ -701,9 +701,9 @@ func (p nativeHistoryCheckpoint) mismatches(
 		index = indexNativeHistoryTurns(existingTurns, existingMessages, existingActivities)
 	}
 	mappedTurns, _ := index.mapReplay(events)
-	boundaries := make(map[string]nativeHistoryHighWater, len(p.aoHighWaterPeers)+1)
+	boundaries := make(map[string]nativeHistoryHighWater, len(p.openAgentsHighWaterPeers)+1)
 	boundaries[highWater.providerTurnID] = highWater
-	for _, peer := range p.aoHighWaterPeers {
+	for _, peer := range p.openAgentsHighWaterPeers {
 		boundaries[peer.providerTurnID] = peer
 	}
 	for _, event := range events {
@@ -737,7 +737,7 @@ func (p nativeHistoryCheckpoint) mismatches(
 		}
 	}
 	if len(boundaries) > 0 {
-		return append(mismatches, ports.ChatHistoryMismatchAOHighWater)
+		return append(mismatches, ports.ChatHistoryMismatchOpenAgentsHighWater)
 	}
 	if p.requireNewerTurn {
 		pastHighWater, newer := false, false
@@ -753,7 +753,7 @@ func (p nativeHistoryCheckpoint) mismatches(
 			}
 		}
 		if !newer {
-			mismatches = append(mismatches, ports.ChatHistoryMismatchAOHighWater)
+			mismatches = append(mismatches, ports.ChatHistoryMismatchOpenAgentsHighWater)
 		}
 	}
 	return mismatches
@@ -761,8 +761,8 @@ func (p nativeHistoryCheckpoint) mismatches(
 
 func nativeHistoryCoordinationMessage(text string) bool {
 	text = strings.TrimSpace(text)
-	return strings.HasPrefix(text, "<ao-handoff-request") ||
-		strings.HasPrefix(text, "AO transferred the previous agent's context in hidden system instructions.")
+	return strings.HasPrefix(text, "<open-agents-handoff-request") ||
+		strings.HasPrefix(text, "Open Agents transferred the previous agent's context in hidden system instructions.")
 }
 
 func nativeHistoryTextMatches(checkpoint, replayed string) bool {
@@ -770,7 +770,7 @@ func nativeHistoryTextMatches(checkpoint, replayed string) bool {
 }
 
 // readNativeHistory loads and validates the settled provider thread without
-// mutating AO's timeline. A pending provider boundary uses this split phase so
+// mutating Open Agents's timeline. A pending provider boundary uses this split phase so
 // the caller can project the events inside the same transaction that publishes
 // the boundary and controller generation.
 func (c *Controller) readNativeHistory(
@@ -858,7 +858,7 @@ func (c *Controller) projectNativeHistory(ctx context.Context, events []ports.Ch
 	return nil
 }
 
-// nativeHistoryTurn is the durable identity AO already assigned to one native
+// nativeHistoryTurn is the durable identity Open Agents already assigned to one native
 // turn. ProviderTurnID is the value every replay event must use before it reaches
 // the projector; the other fields are progressively stronger ways to recognize
 // it when an ACP agent assigned a different replay turn id.
@@ -896,7 +896,7 @@ func nativeHistoryActivityFingerprint(
 	return string(kind) + "\x00" + string(status) + "\x00" + summary + "\x00" + string(detail)
 }
 
-// mapNativeHistoryTurns identifies which durable AO turn owns each raw replay
+// mapNativeHistoryTurns identifies which durable Open Agents turn owns each raw replay
 // turn before reconciliation rewrites provider turn ids or drops duplicates.
 func mapNativeHistoryTurns(
 	events []ports.ChatEvent,
@@ -924,7 +924,7 @@ func indexNativeHistoryTurns(
 		return nil
 	}
 
-	byAOTurnID := make(map[string]*nativeHistoryTurn, len(existingTurns))
+	byOpenAgentsTurnID := make(map[string]*nativeHistoryTurn, len(existingTurns))
 	byProviderTurnID := make(map[string]*nativeHistoryTurn, len(existingTurns))
 	ordered := make([]*nativeHistoryTurn, 0, len(existingTurns))
 	for _, turn := range existingTurns {
@@ -937,7 +937,7 @@ func indexNativeHistoryTurns(
 			messages:       make(map[string]int),
 			activities:     make(map[string]int),
 		}
-		byAOTurnID[turn.ID] = candidate
+		byOpenAgentsTurnID[turn.ID] = candidate
 		byProviderTurnID[turn.ProviderTurnID] = candidate
 		ordered = append(ordered, candidate)
 	}
@@ -961,7 +961,7 @@ func indexNativeHistoryTurns(
 		providerItems[itemID] = candidate
 	}
 	for _, message := range existingMessages {
-		candidate := byAOTurnID[message.TurnID]
+		candidate := byOpenAgentsTurnID[message.TurnID]
 		if candidate == nil {
 			continue
 		}
@@ -974,7 +974,7 @@ func indexNativeHistoryTurns(
 		}
 	}
 	for _, activity := range existingActivities {
-		candidate := byAOTurnID[activity.TurnID]
+		candidate := byOpenAgentsTurnID[activity.TurnID]
 		if candidate == nil {
 			continue
 		}
@@ -1082,7 +1082,7 @@ func (index *nativeHistoryTurnIndex) mapReplay(events []ports.ChatEvent) (map[st
 	return mapped, providerItems
 }
 
-// reconcileNativeHistory maps a provider replay onto AO's existing durable
+// reconcileNativeHistory maps a provider replay onto Open Agents's existing durable
 // turns before any event is projected.
 //
 // ACP intentionally treats message ids as opaque. Well-behaved agents may echo
@@ -1122,7 +1122,7 @@ func reconcileNativeHistory(
 	// A native provider may omit persisted item ids even though its live stream
 	// supplied them. Codex does this today: a live assistant message can be
 	// `msg_...`, while thread/read later calls the same item `item-2`. Stable turn
-	// identity still tells us which AO turn owns the replay, so suppress already
+	// identity still tells us which Open Agents turn owns the replay, so suppress already
 	// projected message/activity facts by semantic fingerprint. Counts preserve
 	// legitimate repeated identical items within one turn.
 	dropEvent := make([]bool, len(events))
@@ -1179,7 +1179,7 @@ func reconcileNativeHistory(
 			continue
 		}
 		event.ProviderTurnID = candidate.providerTurnID
-		// A replay may have no portable turn-outcome field. Preserve AO's stronger
+		// A replay may have no portable turn-outcome field. Preserve Open Agents's stronger
 		// known result only when the adapter reports recovered. Conversely, a known
 		// replay outcome upgrades an older recovered observation.
 		if event.Kind == ports.ChatEventTurnCompleted &&
@@ -1212,7 +1212,7 @@ const rateLimitReadTimeout = 10 * time.Second
 // gap without giving clients a provider RPC to poll.
 //
 // Off the critical path on purpose, and failure is logged rather than surfaced: a
-// conversation whose quota AO could not read is entirely usable, and refusing to
+// conversation whose quota Open Agents could not read is entirely usable, and refusing to
 // start one over a missing readout would be a worse outcome than showing no meter.
 func (c *Controller) readRateLimits() {
 	reporter, ok := c.conv.(ports.ChatUsageReporter)
@@ -1273,7 +1273,7 @@ func (c *Controller) Capabilities() ports.ChatCapabilities {
 //
 // A message that arrives mid-turn stays queued rather than being pushed at the
 // provider. Two reasons: the agent is a single conversation and a second
-// concurrent turn is not a thing it can run, and a queued row is a promise AO can
+// concurrent turn is not a thing it can run, and a queued row is a promise Open Agents can
 // keep across a restart, which a message dropped into a busy provider is not.
 func (c *Controller) Send(ctx context.Context, msg ports.ChatUserMessage) (domain.ConversationTurn, error) {
 	c.sendMu.Lock()
@@ -1341,7 +1341,7 @@ func (c *Controller) sendLocked(
 
 // RetryTurn re-dispatches a failed turn's durable prompt as a new turn.
 //
-// The content is loaded from AO's own rows, never from the caller, so the daemon
+// The content is loaded from Open Agents's own rows, never from the caller, so the daemon
 // owns what gets sent again. The original failed turn is never mutated or
 // relabeled: the retry is a brand-new turn and both attempts stay in history.
 //
@@ -1382,7 +1382,7 @@ func (c *Controller) RetryTurn(ctx context.Context, turnID string) (domain.Conve
 	}
 
 	// A dispatch the provider never acknowledged may still have been accepted:
-	// settling it failed was AO's safe guess, not a fact about delivery.
+	// settling it failed was Open Agents's safe guess, not a fact about delivery.
 	// Re-dispatching such a prompt could run the work twice, which is the one
 	// outcome a retry must never have. Refuse until the caller confirms.
 	if source.ProviderTurnID == "" {
@@ -1565,8 +1565,8 @@ func (c *Controller) dispatch(
 	msg ports.ChatUserMessage,
 	requestedAt time.Time,
 ) (domain.ConversationTurn, error) {
-	// Every dispatch carries the conversation's choices, including one AO makes on
-	// the user's behalf: a queued message draining, or a relay from `ao send`. A
+	// Every dispatch carries the conversation's choices, including one Open Agents makes on
+	// the user's behalf: a queued message draining, or a relay from `open-agents send`. A
 	// setting that only applied when the user pressed send would silently stop
 	// applying exactly when they were not watching.
 	msg.Settings = c.turnSettings()
@@ -1583,7 +1583,7 @@ func (c *Controller) dispatch(
 		c.mu.Unlock()
 		// The provider may or may not have accepted it. Settle the turn as failed
 		// rather than retrying: a duplicate turn would run the work twice. Settling
-		// by AO's own turn id is required here — an undispatched turn has no
+		// by Open Agents's own turn id is required here — an undispatched turn has no
 		// provider id, so looking one up by the empty string would hit whichever
 		// undispatched turn the database returned first.
 		completedAt := c.now()
@@ -1619,7 +1619,7 @@ func (c *Controller) dispatch(
 	if c.dispatchingTurnID == turnID {
 		c.dispatchingTurnID = ""
 	}
-	// Dispatched, not yet acknowledged: turn/start returning is AO's fact, and the
+	// Dispatched, not yet acknowledged: turn/start returning is Open Agents's fact, and the
 	// provider's own turn-started notification is the one an interrupt needs.
 	c.ackedTurnID = ""
 	c.mu.Unlock()
@@ -1923,7 +1923,7 @@ func (c *Controller) waitForBranchHandoff() {
 }
 
 // Resolve answers a pending approval. The provider is told first: if it rejects
-// the decision, AO must not have already recorded the approval as answered.
+// the decision, Open Agents must not have already recorded the approval as answered.
 func (c *Controller) Resolve(ctx context.Context, requestID string, decision ports.ChatDecision) error {
 	if err := c.conv.ResolveRequest(ctx, requestID, decision); err != nil {
 		return fmt.Errorf("resolve request %s: %w", requestID, err)
@@ -1939,7 +1939,7 @@ func (c *Controller) Resolve(ctx context.Context, requestID string, decision por
 
 // ResolveInput answers a structured form/URL request through the optional driver
 // capability. The provider is told first for the same consent reason as an
-// approval: AO must not record an answer that the live provider rejected.
+// approval: Open Agents must not record an answer that the live provider rejected.
 func (c *Controller) ResolveInput(
 	ctx context.Context,
 	requestID string,
@@ -1976,7 +1976,7 @@ var ErrCompactionUnsupported = errors.New("chat driver cannot compact history")
 // `thread/compact/start` mid-turn silently INTERRUPTS the running turn, reports it
 // as interrupted, and then compacts. Measured twice against a live app-server.
 // Losing work the user is waiting on as a side effect of a housekeeping action is
-// not something they should discover afterwards from the timeline, so AO makes them
+// not something they should discover afterwards from the timeline, so Open Agents makes them
 // stop the turn themselves.
 var ErrCompactionWhileBusy = errors.New("cannot compact while a turn is in flight")
 
@@ -2196,7 +2196,7 @@ func (c *Controller) reconcileDurableTurnsLocked(
 // confirmed it started, or reports that there is nothing to cancel.
 //
 // It gives up immediately when no turn is in flight — that is a plain "nothing to
-// stop" and must stay fast. It only waits in the narrow window where AO has
+// stop" and must stay fast. It only waits in the narrow window where Open Agents has
 // dispatched a turn and the provider has not yet said so. On expiry it returns the
 // turn anyway: the provider is the authority on whether it can be cancelled, and
 // its refusal is already translated into a typed answer.
@@ -2239,9 +2239,9 @@ func (c *Controller) awaitTurnAcknowledged(ctx context.Context, turn string) boo
 
 // Rollback discards a turn and everything after it, and reports how many turns went.
 //
-// Order is deliberate: the provider first, AO's rows second. If the provider
-// refuses, AO must not already have hidden anything — a timeline missing turns the
-// agent still remembers is the same lie in the other direction. If AO's write then
+// Order is deliberate: the provider first, Open Agents's rows second. If the provider
+// refuses, Open Agents must not already have hidden anything — a timeline missing turns the
+// agent still remembers is the same lie in the other direction. If Open Agents's write then
 // fails, the error is returned and logged loudly: the provider call cannot be undone,
 // and the raw provider-event archive plus the surviving turn rows are what make the
 // disagreement repairable rather than invisible.
@@ -2292,7 +2292,7 @@ func (c *Controller) Rollback(ctx context.Context, turnID string) (int, error) {
 	}
 	if turn.ProviderTurnID == "" {
 		// The provider never accepted this turn, so it holds no history to discard.
-		// Hiding AO's rows anyway would leave the agent remembering more than the
+		// Hiding Open Agents's rows anyway would leave the agent remembering more than the
 		// timeline shows, which is the failure this whole operation exists to avoid.
 		return 0, fmt.Errorf("%w: %s", ErrTurnNotRollbackable, turnID)
 	}
@@ -2303,7 +2303,7 @@ func (c *Controller) Rollback(ctx context.Context, turnID string) (int, error) {
 
 	discarded, err := c.store.RollbackTurns(ctx, c.conversation.ID, turnID, c.now())
 	if err != nil {
-		c.log.Error("chat rollback: provider discarded history but AO rows did not follow",
+		c.log.Error("chat rollback: provider discarded history but Open Agents rows did not follow",
 			"session", c.sessionID, "turn", turnID, "error", err)
 		return 0, fmt.Errorf("record rollback of %s: %w", turnID, err)
 	}
@@ -2463,7 +2463,7 @@ func (c *Controller) project() {
 
 	// The stream has ended, so nothing more can arrive for this controller. This
 	// is the only place that reliably knows that — a provider process can die on
-	// its own, in which case no AO code path called Close — so it is where
+	// its own, in which case no Open Agents code path called Close — so it is where
 	// in-flight work gets settled.
 	//
 	// A turn the controller was running is not evidence the work finished, and an
@@ -2538,7 +2538,7 @@ func (c *Controller) projectEvent(ctx context.Context, event ports.ChatEvent) (b
 
 // applyCommittedTurnLifecycle updates the controller's volatile ownership only
 // after the matching durable projection commits. Codex streams events for nested
-// child threads over the root connection, so only events from the conversation AO
+// child threads over the root connection, so only events from the conversation Open Agents
 // opened are allowed to claim or release the primary turn.
 func (c *Controller) applyCommittedTurnLifecycle(event ports.ChatEvent) bool {
 	if event.Kind != ports.ChatEventTurnStarted && event.Kind != ports.ChatEventTurnCompleted {
@@ -2552,7 +2552,7 @@ func (c *Controller) applyCommittedTurnLifecycle(event ports.ChatEvent) bool {
 	defer c.mu.Unlock()
 	switch event.Kind {
 	case ports.ChatEventTurnStarted:
-		// AO serializes root dispatch. A different turn id while one is pending is
+		// Open Agents serializes root dispatch. A different turn id while one is pending is
 		// auxiliary provider work, even for a protocol that cannot name its thread.
 		if c.pendingTurnID != "" && c.pendingTurnID != event.ProviderTurnID {
 			return false
@@ -2592,8 +2592,8 @@ func (c *Controller) apply(ctx context.Context, event ports.ChatEvent) error {
 					return fmt.Errorf("bind early provider-started turn %s: %w", event.ProviderTurnID, err)
 				}
 			} else {
-				// A turn AO dispatched already has a row, bound in dispatch. This covers
-				// the turn AO did NOT dispatch: a compaction, or work the provider resumed
+				// A turn Open Agents dispatched already has a row, bound in dispatch. This covers
+				// the turn Open Agents did NOT dispatch: a compaction, or work the provider resumed
 				// from its own history. Adopting it is what keeps every item it emits
 				// correlated, and without that the activities arrive with no turn and the
 				// timeline quietly stops grouping them.
@@ -2777,7 +2777,7 @@ func (c *Controller) apply(ctx context.Context, event ports.ChatEvent) error {
 			}, now)
 
 	case ports.ChatEventModelRerouted:
-		// A correction to a claim AO has already made. The composer names the model it
+		// A correction to a claim Open Agents has already made. The composer names the model it
 		// is sending to, so a substitution nobody recorded leaves every later reading
 		// of the turn attributing the answer to a model that did not produce it.
 		if event.Reroute == nil || event.Reroute.ToModel == "" {
@@ -2832,7 +2832,7 @@ func (c *Controller) apply(ctx context.Context, event ports.ChatEvent) error {
 		return c.applyMCPServers(ctx, event.MCPServers)
 
 	case ports.ChatEventCompacted:
-		// A fact about the conversation, emitted from a provider-owned turn that AO
+		// A fact about the conversation, emitted from a provider-owned turn that Open Agents
 		// did not dispatch. Keep that native turn correlation even though the UI
 		// renders it as a boundary between user turns: rollback needs to hide the
 		// compaction when the provider forgets the turn that produced it.
@@ -3071,7 +3071,7 @@ func (c *Controller) reportInteractionResolved(ctx context.Context, event string
 // which is the correct outcome and not an error.
 //
 // A cleared title is recorded but never applied: the provider having no name for
-// the thread is not a reason to strip the label off AO's session.
+// the thread is not a reason to strip the label off Open Agents's session.
 func (c *Controller) applyThreadTitle(ctx context.Context, title string, now time.Time) error {
 	normalized := NormalizeTitle(title)
 	if err := c.store.SetProviderTitle(ctx, c.conversation.ID, normalized, now); err != nil {
@@ -3092,7 +3092,7 @@ func (c *Controller) applyThreadTitle(ctx context.Context, title string, now tim
 	return nil
 }
 
-// applyAccount folds an account report into what AO already knows and records the
+// applyAccount folds an account report into what Open Agents already knows and records the
 // result.
 //
 // A merge rather than a replace because the provider reports the account in pieces:
@@ -3128,7 +3128,7 @@ func (c *Controller) applyAccount(
 			Detail:  detail,
 			// Keyed on the reason so a provider retrying its demand updates one row
 			// instead of filling the timeline with the same notice.
-			ProviderItemID: "ao-reauth-" + firstNonEmpty(update.ReauthReason, "unknown"),
+			ProviderItemID: "open-agents-reauth-" + firstNonEmpty(update.ReauthReason, "unknown"),
 		}, now)
 }
 
@@ -3159,7 +3159,7 @@ func (c *Controller) recordAccount(
 	return c.store.RecordAccount(ctx, c.conversation.ID, account, now)
 }
 
-// applyThreadState folds a thread report into what AO already knows.
+// applyThreadState folds a thread report into what Open Agents already knows.
 //
 // Tri-state on purpose. A status report says nothing about archiving and an archive
 // report says nothing about status, so each report updates only what it actually
@@ -3304,15 +3304,15 @@ func planItemID(providerTurnID string) string {
 	if providerTurnID == "" {
 		return ""
 	}
-	return "ao-plan-" + providerTurnID
+	return "open-agents-plan-" + providerTurnID
 }
 
 // rerouteItemID keys a reroute notice the same way, for the same reason.
 func rerouteItemID(providerTurnID string) string {
 	if providerTurnID == "" {
-		return "ao-reroute"
+		return "open-agents-reroute"
 	}
-	return "ao-reroute-" + providerTurnID
+	return "open-agents-reroute-" + providerTurnID
 }
 
 // planActivityStatus reports a plan as still running until every step is done.
@@ -3442,7 +3442,7 @@ func nonEmptyJSON(raw []byte) []byte {
 // reportActivity feeds the lifecycle reduction that derives user-facing status.
 //
 // Chat uses the same pipeline terminal sessions use rather than persisting a
-// second display status — AO derives status from durable facts at read time, and
+// second display status — Open Agents derives status from durable facts at read time, and
 // a parallel chat-only status would be a second source of truth to keep in sync.
 //
 // Best-effort: a rejected signal must not stop the durable projection, which is

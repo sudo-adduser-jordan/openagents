@@ -1,6 +1,6 @@
-# Agent Orchestrator Architecture
+# Open Agents Architecture
 
-Agent Orchestrator is a long-running Go daemon that supervises multiple parallel AI coding agent sessions. Project sessions own isolated git worktrees; projectless standalone workers own AO-managed plain-directory workspaces. Every session commits to one interface mode at a time. A TUI session runs its agent inside a tmux/conpty runtime; a Chat session runs a native protocol controller without an agent terminal runtime. The opencode Chat controller lives in a detached per-session host so daemon/desktop replacement reconnects without stopping an in-flight turn. The ACP host additionally preserves connection setup, JSON-RPC correlation, pending interactions, and acknowledged prompt replay while the replacement daemon rebuilds its typed controller. A durable handoff may move a compatible native conversation between TUI and Chat, but both controllers are never live at once. The daemon coordinates both through the same session, lifecycle, workspace, storage, and observation boundaries.
+Open Agents is a long-running Go daemon that supervises multiple parallel AI coding agent sessions. Project sessions own isolated git worktrees; projectless standalone workers own Open Agents-managed plain-directory workspaces. Every session commits to one interface mode at a time. A TUI session runs its agent inside a tmux/conpty runtime; a Chat session runs a native protocol controller without an agent terminal runtime. The opencode Chat controller lives in a detached per-session host so daemon/desktop replacement reconnects without stopping an in-flight turn. The ACP host additionally preserves connection setup, JSON-RPC correlation, pending interactions, and acknowledged prompt replay while the replacement daemon rebuilds its typed controller. A durable handoff may move a compatible native conversation between TUI and Chat, but both controllers are never live at once. The daemon coordinates both through the same session, lifecycle, workspace, storage, and observation boundaries.
 
 ## Table of Contents
 
@@ -55,7 +55,7 @@ graph TB
     subgraph Frontend
         FE[Electron + React UI]
         Mobile[Expo + React Native UI]
-        CLI[ao CLI]
+        CLI[open-agents CLI]
     end
 
     subgraph HTTP["HTTP Daemon (127.0.0.1)"]
@@ -259,7 +259,7 @@ sequenceDiagram
         Mgr->>WS: Create(project, branch)
         WS->>WS: git worktree add
     else standalone worker
-        Mgr->>WS: Create AO-managed directory
+        Mgr->>WS: Create Open Agents-managed directory
     end
 
     alt persisted mode = tui
@@ -322,7 +322,7 @@ flowchart TD
 
 ### Session Interface Handoff
 
-An interface switch is a controller replacement inside the existing AO session,
+An interface switch is a controller replacement inside the existing Open Agents session,
 not a new session. The session id, optional project, workspace, lifecycle facts,
 and provider-native conversation id stay the same. For project sessions, branch
 and PR ownership also stay the same. Only the mode-owned controller changes.
@@ -350,7 +350,7 @@ than claiming continuity. A Terminal→Chat handoff still requires native replay
 never silently substitutes a fresh Chat provider.
 
 The native-history barrier combines trusted native checkpoints with the
-latest completed AO turn in the active provider scope. A newer completed turn can
+latest completed Open Agents turn in the active provider scope. A newer completed turn can
 supersede a legacy hook fact tied to an older settled turn; otherwise a Chat answer followed by an
 immediate round trip would keep waiting for the older Terminal answer to be last.
 Hook timestamps must prove the fact predates the superseding turn; repeated text
@@ -420,15 +420,15 @@ the target is unavailable; its dispatch fence prevents a completion callback
 from promoting that work during preflight or provider cancellation. Files and
 completed provider context survive.
 There is no provider-neutral way to migrate a currently executing tool call or a
-detached background process, and AO does not synthesize terminal screen output
+detached background process, and Open Agents does not synthesize terminal screen output
 into structured Chat history.
 
-For TUI drains, AO gates new terminal input before checking quiescence. Agent
+For TUI drains, Open Agents gates new terminal input before checking quiescence. Agent
 adapters that can interpret their rendered TUI report work state and composer
 occupancy as separate ephemeral facts. The runtime side of that contract must
 provide the current rendered viewport with ANSI cell styles: tmux uses styled
 `capture-pane`, while macOS and Windows detached PTY hosts maintain a VT cell
-model beside their historical replay ring. AO accepts only repeated observations
+model beside their historical replay ring. Open Agents accepts only repeated observations
 of an idle surface with an empty composer, held across the settle window; a
 visible draft fails with the source untouched and requires the user to submit,
 clear, or explicitly discard it. Adapter/runtime pairs without rendered-surface
@@ -913,7 +913,7 @@ flowchart TD
 The daemon runs two independent HTTP listeners sharing the same chi router:
 
 1. **Primary (Loopback) Listener** — binds `127.0.0.1:3001` with no authentication. All existing daemon operations (CLI, desktop app) use this listener.
-2. **LAN Listener** (Connect Mobile) — an opt-in second listener that binds `0.0.0.0:3011` (or ephemeral fallback) **only when explicitly enabled** by the user through the desktop app's Settings. It wraps the shared router in bearer-password authentication middleware, serves app API routes to mobile clients, but never exposes loopback-gated control routes (`/shutdown`, `/internal/`, mobile control commands). All traffic is plaintext HTTP on a home network only, by deliberate security decision — see `docs/adr/0001-lan-listener-for-mobile.md` for rationale and threat model. Auth state (hashed password, per-source lockout) is persisted to `~/.ao/mobile/config.json` and restored on daemon boot.
+2. **LAN Listener** (Connect Mobile) — an opt-in second listener that binds `0.0.0.0:3011` (or ephemeral fallback) **only when explicitly enabled** by the user through the desktop app's Settings. It wraps the shared router in bearer-password authentication middleware, serves app API routes to mobile clients, but never exposes loopback-gated control routes (`/shutdown`, `/internal/`, mobile control commands). All traffic is plaintext HTTP on a home network only, by deliberate security decision — see `docs/adr/0001-lan-listener-for-mobile.md` for rationale and threat model. Auth state (hashed password, per-source lockout) is persisted to `~/.open-agents/mobile/config.json` and restored on daemon boot.
 
 The mobile app is a second thin renderer over those same session resources. It
 branches on the session's persisted `mode`: TUI attaches the existing mux PTY,
@@ -1042,20 +1042,20 @@ sequenceDiagram
 ## Browser Runtime Bridge
 
 Browser automation uses a dedicated local socket (`browser.sock` on Unix,
-`ao-browser[-dev]` named pipe on Windows) between the daemon and Electron. The
+`open-agents-browser[-dev]` named pipe on Windows) between the daemon and Electron. The
 daemon owns command authorization/correlation; Electron owns the actual browser
 targets. Commands never use the supervisor liveness socket and never enable an
 unauthenticated remote-debugging port.
 
 Electron attaches its debugger directly to the selected session's
 `WebContentsView`, so the protocol transport cannot enumerate or attach to the
-AO renderer or a different session. The loopback `/api/v1/browser` surface is
+Open Agents renderer or a different session. The loopback `/api/v1/browser` surface is
 blocked entirely on the opt-in LAN listener.
 
 Request observation is an explicit, temporary browser command rather than a
 standing debugger feature. Capture is off by default, bound to the active tab
 that starts it, limited to 200 in-memory metadata entries, and automatically
-expires within at most five minutes. AO never requests or stores request or
+expires within at most five minutes. Open Agents never requests or stores request or
 response bodies; it allowlists safe headers and redacts URL credentials,
 fragments, and query values. Closing the tab, ending the session, or shutting
 down Electron disables and discards the capture.
@@ -1069,7 +1069,7 @@ These rules are **load-bearing** — changing them breaks fundamental architectu
 1. **Never store display status** — Status is derived from durable facts at read time
 2. **Never treat failed probes as death** — A failed probe is a fact, not a termination signal
 3. **Never force-delete dirty worktrees** — User data safety over cleanup convenience
-4. **All app state under ~/.ao** — No OS-default app-data locations
+4. **All app state under ~/.open-agents** — No OS-default app-data locations
 5. **Daemon binds to 127.0.0.1 only** — No network exposure, ever
 6. **CLI is thin** — All logic lives in the daemon, CLI is just an HTTP client
 7. **CDC is source-truth for events** — DB triggers write to change_log, poller fans out
@@ -1081,13 +1081,13 @@ These rules are **load-bearing** — changing them breaks fundamental architectu
 
 ## Summary
 
-Agent Orchestrator's architecture is designed around:
+Open Agents's architecture is designed around:
 
 - **Separation of concerns** — Observation, persistence, and display are distinct layers
 - **Port-based design** — Core code depends on interfaces, not implementations
 - **Durable minimalism** — Store only facts, compute everything else
 - **Event-driven updates** — CDC broadcasts changes to all subscribers
-- **Isolation** — Each project session owns a git worktree, each standalone worker owns an AO-managed directory, and every session has exactly one live mode-specific controller, including across handoffs
+- **Isolation** — Each project session owns a git worktree, each standalone worker owns an Open Agents-managed directory, and every session has exactly one live mode-specific controller, including across handoffs
 - **Safety** — Conservative termination, path validation, gitignored hooks
 
 This architecture enables parallel AI agents to work safely while maintaining complete visibility and control.

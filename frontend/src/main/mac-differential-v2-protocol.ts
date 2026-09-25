@@ -1,8 +1,8 @@
 import { createHash, createPublicKey, verify } from "node:crypto";
 import semver from "semver";
 
-export const MAC_V2_METADATA = "ao-diff-v2-mac.json";
-export const MAC_V2_REPOSITORY = "Untrivial-ai/agent-orchestrator";
+export const MAC_V2_METADATA = "open-agents-diff-v2-mac.json";
+export const MAC_V2_REPOSITORY = "sudo-adduser-jordan/open-agents";
 export const MAC_V2_MAX_METADATA = 256 * 1024;
 export const MAC_V2_MAX_MAP = 8 * 1024 * 1024;
 export type MacV2Arch = "arm64" | "x64";
@@ -17,7 +17,7 @@ export interface MacV2Artifact {
 export interface MacV2Payload {
   schemaVersion: 2;
   minimumClientVersion: string;
-  protocol: "ao-mac-differential-v2";
+  protocol: "open-agents-mac-differential-v2";
   repository: typeof MAC_V2_REPOSITORY;
   channel: "nightly";
   enabled: boolean;
@@ -84,7 +84,7 @@ function assetName(url: string, tag: string): string {
 }
 export function macV2ZipName(url: string, id: MacV2Identity, arch: MacV2Arch): string {
   const name = assetName(url, id.tag);
-  // Version required: unversioned ao-start aliases can never acquire maps.
+  // Version required: unversioned open-agents-start aliases can never acquire maps.
   if (!name.endsWith(`-darwin-${arch}-${id.version}.zip`) || !/^[A-Za-z0-9][A-Za-z0-9._+-]+$/.test(name)) {
     throw new Error("Invalid v2 versioned ZIP");
   }
@@ -95,7 +95,7 @@ export function validateMacV2Payload(value: unknown): MacV2Payload {
   const p = record(value, ["schemaVersion", "minimumClientVersion", "protocol", "repository", "channel", "enabled", "issuedAt", "expiresAt", "candidate", "artifacts"]);
   if (p.schemaVersion !== 2 || typeof p.minimumClientVersion !== "string" ||
       semver.valid(p.minimumClientVersion) !== p.minimumClientVersion) throw new Error("Invalid v2 client authorization");
-  if (p.protocol !== "ao-mac-differential-v2" || p.repository !== MAC_V2_REPOSITORY || p.channel !== "nightly") throw new Error("Ineligible v2 protocol/channel");
+  if (p.protocol !== "open-agents-mac-differential-v2" || p.repository !== MAC_V2_REPOSITORY || p.channel !== "nightly") throw new Error("Ineligible v2 protocol/channel");
   if (p.enabled !== true || typeof p.issuedAt !== "string" || typeof p.expiresAt !== "string" ||
       !Number.isFinite(Date.parse(p.issuedAt)) || new Date(p.issuedAt).toISOString() !== p.issuedAt ||
       !Number.isFinite(Date.parse(p.expiresAt)) || new Date(p.expiresAt).toISOString() !== p.expiresAt ||
@@ -120,8 +120,8 @@ export function validateMacV2Payload(value: unknown): MacV2Payload {
     const name = macV2ZipName(zip.url, candidate, a.arch);
     const oldName = macV2ZipName(oldZip.url, baseline, a.arch);
     // Both versioned maps are on the candidate release. Neither is a legacy path.
-    if (map.url !== macV2ReleaseURL(candidate.tag, `${name}.aoblockmap`) ||
-        oldMap.url !== macV2ReleaseURL(candidate.tag, `${oldName}.aoblockmap`) ||
+    if (map.url !== macV2ReleaseURL(candidate.tag, `${name}.open-agents-blockmap`) ||
+        oldMap.url !== macV2ReleaseURL(candidate.tag, `${oldName}.open-agents-blockmap`) ||
         map.size > MAC_V2_MAX_MAP || oldMap.size > MAC_V2_MAX_MAP) throw new Error("Invalid v2 blockmap location");
     for (const url of [zip.url, map.url, oldMap.url]) {
       if (urls.has(url)) throw new Error("Duplicate v2 asset");

@@ -9,8 +9,8 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/aoagents/agent-orchestrator/backend/internal/domain"
-	"github.com/aoagents/agent-orchestrator/backend/internal/ports"
+	"github.com/sudo-adduser-jordan/open-agents/backend/internal/domain"
+	"github.com/sudo-adduser-jordan/open-agents/backend/internal/ports"
 )
 
 func TestWorkspaceIntegrationCreateRestoreDestroy(t *testing.T) {
@@ -89,7 +89,7 @@ func TestWorkspaceIntegrationMixedWorkspaceContentReachesEverySessionKind(t *tes
 	for _, kind := range []domain.SessionKind{domain.KindWorker, domain.KindOrchestrator} {
 		t.Run(string(kind), func(t *testing.T) {
 			info, err := ws.CreateWorkspaceProject(context.Background(), ports.WorkspaceProjectConfig{
-				ProjectID: "proj", SessionID: domain.SessionID("mixed-" + kind), Kind: kind, Branch: "ao/mixed-" + string(kind),
+				ProjectID: "proj", SessionID: domain.SessionID("mixed-" + kind), Kind: kind, Branch: "open-agents/mixed-" + string(kind),
 				RootRepoPath: rootRepo,
 				Repos: []ports.WorkspaceProjectRepoConfig{{
 					Name: "api", RelativePath: "services/api", RepoPath: childRepo,
@@ -211,7 +211,7 @@ func TestWorkspaceIntegrationDestroyDirtyWorktree(t *testing.T) {
 		t.Fatalf("create: %v", err)
 	}
 
-	// AO-managed hook files behind a self-ignoring .gitignore: invisible to git
+	// Open Agents-managed hook files behind a self-ignoring .gitignore: invisible to git
 	// status, so they must not block teardown.
 	hookDir := filepath.Join(info.Path, ".codex")
 	if err := os.MkdirAll(hookDir, 0o750); err != nil {
@@ -237,7 +237,7 @@ func TestWorkspaceIntegrationDestroyDirtyWorktree(t *testing.T) {
 		t.Fatalf("dirty worktree was not preserved: %v", statErr)
 	}
 
-	// With the real work gone, only the ignored AO files remain — git considers
+	// With the real work gone, only the ignored Open Agents files remain — git considers
 	// the worktree clean and Destroy succeeds without --force.
 	if err := os.Remove(wip); err != nil {
 		t.Fatalf("remove wip: %v", err)
@@ -286,7 +286,7 @@ func TestWorkspaceIntegrationRestoreRecreatesSiblingsIndependently(t *testing.T)
 	}
 
 	// Simulate the out-of-band deletion #2775 hit: the directory is gone, the
-	// git registration (and, in production, AO's DB row) is not.
+	// git registration (and, in production, Open Agents's DB row) is not.
 	if err := os.RemoveAll(infoA.Path); err != nil {
 		t.Fatalf("remove A dir: %v", err)
 	}
@@ -525,8 +525,8 @@ func TestWorkspaceIntegrationAutoRejectsUnmarkedRemotelessRepo(t *testing.T) {
 	repo := filepath.Join(tmp, "unmarked")
 	run(t, git, "init", "-b", "main", repo)
 	runGit(t, git, repo, "config", "core.autocrlf", "false")
-	runGit(t, git, repo, "config", "user.email", "ao@example.com")
-	runGit(t, git, repo, "config", "user.name", "Ao Agents")
+	runGit(t, git, repo, "config", "user.email", "open-agents@example.com")
+	runGit(t, git, repo, "config", "user.name", "Open Agents")
 	if err := os.WriteFile(filepath.Join(repo, "README.md"), []byte("seed\n"), 0o644); err != nil {
 		t.Fatalf("write seed: %v", err)
 	}
@@ -540,27 +540,27 @@ func TestWorkspaceIntegrationAutoRejectsUnmarkedRemotelessRepo(t *testing.T) {
 		t.Fatalf("new: %v", err)
 	}
 	ctx := context.Background()
-	_, err = ws.Create(ctx, ports.WorkspaceConfig{ProjectID: "proj", SessionID: "sess", Branch: "ao/proj-1"})
+	_, err = ws.Create(ctx, ports.WorkspaceConfig{ProjectID: "proj", SessionID: "sess", Branch: "open-agents/proj-1"})
 	if !errors.Is(err, ports.ErrWorkspaceDefaultBranchUnresolved) {
 		t.Fatalf("Create error = %v, want ErrWorkspaceDefaultBranchUnresolved", err)
 	}
 	if !strings.Contains(err.Error(), "remote set-head") || !strings.Contains(err.Error(), repo) {
 		t.Fatalf("Create error = %v, want repository-specific remote HEAD remediation", err)
 	}
-	if out, err := exec.Command(git, "-C", repo, "show-ref", "--verify", "--quiet", "refs/heads/ao/proj-1").CombinedOutput(); err == nil {
+	if out, err := exec.Command(git, "-C", repo, "show-ref", "--verify", "--quiet", "refs/heads/open-agents/proj-1").CombinedOutput(); err == nil {
 		t.Fatalf("unresolved auto selection leaked a session branch: %s", out)
 	}
 }
 
-func TestWorkspaceIntegrationAutoUsesAOInitializedRemotelessDefault(t *testing.T) {
+func TestWorkspaceIntegrationAutoUsesOpenAgentsInitializedRemotelessDefault(t *testing.T) {
 	git := requireGit(t)
 	tmp := t.TempDir()
 	repo := filepath.Join(tmp, "repo")
 	run(t, git, "init", "-b", "main", repo)
 	runGit(t, git, repo, "config", "core.autocrlf", "false")
-	runGit(t, git, repo, "config", "user.email", "ao@example.com")
-	runGit(t, git, repo, "config", "user.name", "Ao Agents")
-	runGit(t, git, repo, "config", "ao.defaultBranch", "main")
+	runGit(t, git, repo, "config", "user.email", "open-agents@example.com")
+	runGit(t, git, repo, "config", "user.name", "Open Agents")
+	runGit(t, git, repo, "config", "openagents.defaultBranch", "main")
 	if err := os.WriteFile(filepath.Join(repo, "README.md"), []byte("seed\n"), 0o644); err != nil {
 		t.Fatalf("write seed: %v", err)
 	}
@@ -575,12 +575,12 @@ func TestWorkspaceIntegrationAutoUsesAOInitializedRemotelessDefault(t *testing.T
 		t.Fatalf("new: %v", err)
 	}
 	ctx := context.Background()
-	info, err := ws.Create(ctx, ports.WorkspaceConfig{ProjectID: "proj", SessionID: "sess", Branch: "ao/proj-1"})
+	info, err := ws.Create(ctx, ports.WorkspaceConfig{ProjectID: "proj", SessionID: "sess", Branch: "open-agents/proj-1"})
 	if err != nil {
-		t.Fatalf("create in AO-initialized repo: %v", err)
+		t.Fatalf("create in Open Agents-initialized repo: %v", err)
 	}
 	if got := gitOutput(t, git, info.Path, "merge-base", "HEAD", "refs/heads/main"); got != gitOutput(t, git, repo, "rev-parse", "refs/heads/main") {
-		t.Fatalf("worktree base = %s, want AO-recorded main", got)
+		t.Fatalf("worktree base = %s, want Open Agents-recorded main", got)
 	}
 	if err := ws.Destroy(ctx, info); err != nil {
 		t.Fatalf("destroy: %v", err)
@@ -670,7 +670,7 @@ func TestWorkspaceIntegrationRemotelessRootUsesImportedDefaultBranch(t *testing.
 		t.Fatal(err)
 	}
 	cfg := ports.WorkspaceProjectConfig{
-		ProjectID: "proj", SessionID: "orch", Kind: "orchestrator", Branch: "ao/proj-orch",
+		ProjectID: "proj", SessionID: "orch", Kind: "orchestrator", Branch: "open-agents/proj-orch",
 		RootRepoPath: rootRepo,
 		BaseBranch:   "trunk",
 		Repos:        []ports.WorkspaceProjectRepoConfig{{Name: "api", RelativePath: "api", RepoPath: childRepo}},
@@ -704,7 +704,7 @@ func TestWorkspaceIntegrationWorkspaceProjectInfersPerRepoDefaultBranches(t *tes
 	rootRepo := setupOriginCloneOnBranch(t, git, filepath.Join(tmp, "root"), "trunk")
 	devChildRepo := setupOriginCloneOnBranch(t, git, filepath.Join(tmp, "dev-child"), "dev")
 	mainChildRepo := setupOriginClone(t, git, filepath.Join(tmp, "main-child"))
-	devDefaultSHA, devSessionSHA := pushRemoteBranchCommit(t, git, devChildRepo, "dev", "ao/proj-1")
+	devDefaultSHA, devSessionSHA := pushRemoteBranchCommit(t, git, devChildRepo, "dev", "open-agents/proj-1")
 
 	root := filepath.Join(tmp, "managed")
 	ws, err := New(Options{Binary: git, ManagedRoot: root, RepoResolver: StaticRepoResolver{"proj": rootRepo}})
@@ -715,7 +715,7 @@ func TestWorkspaceIntegrationWorkspaceProjectInfersPerRepoDefaultBranches(t *tes
 		ProjectID:    "proj",
 		SessionID:    "sess",
 		Kind:         "worker",
-		Branch:       "ao/proj-1",
+		Branch:       "open-agents/proj-1",
 		RootRepoPath: rootRepo,
 		Repos: []ports.WorkspaceProjectRepoConfig{
 			{
@@ -753,7 +753,7 @@ func TestWorkspaceIntegrationWorkspaceProjectInfersPerRepoDefaultBranches(t *tes
 	if _, err := os.Stat(filepath.Join(devChildPath, "README.md")); err != nil {
 		t.Fatalf("dev child worktree missing seed file: %v", err)
 	}
-	devChildHead := gitOutput(t, git, devChildRepo, "rev-parse", "refs/heads/ao/proj-1")
+	devChildHead := gitOutput(t, git, devChildRepo, "rev-parse", "refs/heads/open-agents/proj-1")
 	devChildBase := gitOutput(t, git, devChildRepo, "rev-parse", "origin/dev")
 	if devChildBase != devDefaultSHA {
 		t.Fatalf("dev child default = %s, want original default %s", devChildBase, devDefaultSHA)
@@ -761,12 +761,12 @@ func TestWorkspaceIntegrationWorkspaceProjectInfersPerRepoDefaultBranches(t *tes
 	if devChildHead != devSessionSHA {
 		t.Fatalf("dev child branch seed = %s, want requested remote branch %s", devChildHead, devSessionSHA)
 	}
-	mainChildHead := gitOutput(t, git, mainChildRepo, "rev-parse", "refs/heads/ao/proj-1")
+	mainChildHead := gitOutput(t, git, mainChildRepo, "rev-parse", "refs/heads/open-agents/proj-1")
 	mainChildBase := gitOutput(t, git, mainChildRepo, "rev-parse", "origin/main")
 	if mainChildHead != mainChildBase {
 		t.Fatalf("main child branch base = %s, want origin/main %s", mainChildHead, mainChildBase)
 	}
-	rootHead := gitOutput(t, git, rootRepo, "rev-parse", "refs/heads/ao/proj-1")
+	rootHead := gitOutput(t, git, rootRepo, "rev-parse", "refs/heads/open-agents/proj-1")
 	rootBase := gitOutput(t, git, rootRepo, "rev-parse", "origin/trunk")
 	if rootHead != rootBase {
 		t.Fatalf("root branch base = %s, want origin/trunk %s", rootHead, rootBase)
@@ -807,7 +807,7 @@ func TestWorkspaceIntegrationWorkspaceProjectCopiesAssetsAndCleansSessionCopy(t 
 		t.Fatal(err)
 	}
 	info, err := ws.CreateWorkspaceProject(context.Background(), ports.WorkspaceProjectConfig{
-		ProjectID: "proj", SessionID: "sess", Kind: "worker", Branch: "ao/assets",
+		ProjectID: "proj", SessionID: "sess", Kind: "worker", Branch: "open-agents/assets",
 		RootRepoPath: rootRepo,
 		Repos:        []ports.WorkspaceProjectRepoConfig{{Name: "api", RelativePath: "api", RepoPath: childRepo}},
 		Assets:       []ports.WorkspaceProjectAssetConfig{{RelativePath: "notes", SourcePath: asset}},
@@ -849,8 +849,8 @@ func TestWorkspaceIntegrationWorkspaceProjectRepairsRemotelessRootDefault(t *tes
 			tmp := t.TempDir()
 			rootRepo := filepath.Join(tmp, "root")
 			run(t, git, "init", "-b", "trunk", rootRepo)
-			runGit(t, git, rootRepo, "config", "user.email", "ao@example.com")
-			runGit(t, git, rootRepo, "config", "user.name", "AO Test")
+			runGit(t, git, rootRepo, "config", "user.email", "open-agents@example.com")
+			runGit(t, git, rootRepo, "config", "user.name", "Open Agents Test")
 			if err := os.WriteFile(filepath.Join(rootRepo, "README.md"), []byte("root\n"), 0o644); err != nil {
 				t.Fatal(err)
 			}
@@ -863,7 +863,7 @@ func TestWorkspaceIntegrationWorkspaceProjectRepairsRemotelessRootDefault(t *tes
 				t.Fatal(err)
 			}
 			info, err := ws.CreateWorkspaceProject(context.Background(), ports.WorkspaceProjectConfig{
-				ProjectID: "proj", SessionID: domain.SessionID("sess-" + string(kind)), Kind: kind, Branch: "ao/local-root-" + string(kind),
+				ProjectID: "proj", SessionID: domain.SessionID("sess-" + string(kind)), Kind: kind, Branch: "open-agents/local-root-" + string(kind),
 				RootRepoPath: rootRepo,
 				Repos:        []ports.WorkspaceProjectRepoConfig{{Name: "api", RelativePath: "api", RepoPath: childRepo}},
 			})
@@ -874,7 +874,7 @@ func TestWorkspaceIntegrationWorkspaceProjectRepairsRemotelessRootDefault(t *tes
 			if info.Root.BaseRef != "refs/heads/trunk" {
 				t.Fatalf("root BaseRef = %q, want local trunk", info.Root.BaseRef)
 			}
-			if got := gitOutput(t, git, rootRepo, "config", "--local", "--get", "ao.defaultBranch"); got != "trunk" {
+			if got := gitOutput(t, git, rootRepo, "config", "--local", "--get", "openagents.defaultBranch"); got != "trunk" {
 				t.Fatalf("recorded root default = %q, want trunk", got)
 			}
 			if len(info.Worktrees) != 2 || info.Worktrees[1].RepoName != "api" {
@@ -901,7 +901,7 @@ func TestWorkspaceIntegrationWorkspaceProjectAssetCopyFailureRollsBackRoot(t *te
 		t.Fatal(err)
 	}
 	_, err = ws.CreateWorkspaceProject(context.Background(), ports.WorkspaceProjectConfig{
-		ProjectID: "proj", SessionID: "sess", Kind: "worker", Branch: "ao/assets-fail",
+		ProjectID: "proj", SessionID: "sess", Kind: "worker", Branch: "open-agents/assets-fail",
 		RootRepoPath: rootRepo,
 		Assets: []ports.WorkspaceProjectAssetConfig{
 			{RelativePath: "notes", SourcePath: asset},
@@ -932,8 +932,8 @@ func TestFetchDefaultBranchRefreshesRemoteTrackingRef(t *testing.T) {
 	originURL := gitOutput(t, git, repo, "remote", "get-url", "origin")
 	updater := filepath.Join(tmp, "updater")
 	run(t, git, "clone", originURL, updater)
-	runGit(t, git, updater, "config", "user.email", "ao@example.com")
-	runGit(t, git, updater, "config", "user.name", "Ao Agents")
+	runGit(t, git, updater, "config", "user.email", "open-agents@example.com")
+	runGit(t, git, updater, "config", "user.name", "Open Agents")
 	runGit(t, git, updater, "checkout", "-B", "main", "origin/main")
 	if err := os.WriteFile(filepath.Join(updater, "fresh.txt"), []byte("fresh\n"), 0o644); err != nil {
 		t.Fatalf("write fresh file: %v", err)
@@ -986,8 +986,8 @@ func TestResolveDefaultBranchFallsBackToLocalHeadWhenExplicitBranchHasNoRemoteTr
 	tmp := t.TempDir()
 	repo := filepath.Join(tmp, "repo")
 	run(t, git, "init", "-b", "main", repo)
-	runGit(t, git, repo, "config", "user.email", "ao@example.com")
-	runGit(t, git, repo, "config", "user.name", "Ao Agents")
+	runGit(t, git, repo, "config", "user.email", "open-agents@example.com")
+	runGit(t, git, repo, "config", "user.name", "Open Agents")
 	if err := os.WriteFile(filepath.Join(repo, "README.md"), []byte("seed\n"), 0o644); err != nil {
 		t.Fatalf("write seed: %v", err)
 	}
@@ -1021,8 +1021,8 @@ func TestWorkspaceIntegrationRefreshesInferredChildBaseBeforeMaterialization(t *
 	originURL := gitOutput(t, git, childRepo, "remote", "get-url", "origin")
 	updater := filepath.Join(tmp, "child-updater")
 	run(t, git, "clone", originURL, updater)
-	runGit(t, git, updater, "config", "user.email", "ao@example.com")
-	runGit(t, git, updater, "config", "user.name", "Ao Agents")
+	runGit(t, git, updater, "config", "user.email", "open-agents@example.com")
+	runGit(t, git, updater, "config", "user.name", "Open Agents")
 	runGit(t, git, updater, "checkout", "-B", "dev", "origin/dev")
 	if err := os.WriteFile(filepath.Join(updater, "fresh-child.txt"), []byte("fresh\n"), 0o644); err != nil {
 		t.Fatalf("write fresh child file: %v", err)
@@ -1051,7 +1051,7 @@ func TestWorkspaceIntegrationRefreshesInferredChildBaseBeforeMaterialization(t *
 		ProjectID:    "proj",
 		SessionID:    "sess-fresh-child",
 		Kind:         "worker",
-		Branch:       "ao/proj-fresh-child",
+		Branch:       "open-agents/proj-fresh-child",
 		RootRepoPath: rootRepo,
 		BaseBranch:   "main",
 		Repos: []ports.WorkspaceProjectRepoConfig{{
@@ -1081,8 +1081,8 @@ func TestWorkspaceIntegrationCanonicalBaseRefAvoidsRemoteNameCollision(t *testin
 
 	collisionUpdater := filepath.Join(tmp, "collision-updater")
 	run(t, git, "clone", originURL, collisionUpdater)
-	runGit(t, git, collisionUpdater, "config", "user.email", "ao@example.com")
-	runGit(t, git, collisionUpdater, "config", "user.name", "Ao Agents")
+	runGit(t, git, collisionUpdater, "config", "user.email", "open-agents@example.com")
+	runGit(t, git, collisionUpdater, "config", "user.name", "Open Agents")
 	runGit(t, git, collisionUpdater, "checkout", "-b", "upstream/main", "origin/main")
 	if err := os.WriteFile(filepath.Join(collisionUpdater, "collision.txt"), []byte("origin collision\n"), 0o644); err != nil {
 		t.Fatalf("write collision file: %v", err)
@@ -1097,8 +1097,8 @@ func TestWorkspaceIntegrationCanonicalBaseRefAvoidsRemoteNameCollision(t *testin
 	run(t, git, "init", "--bare", upstreamBare)
 	upstreamUpdater := filepath.Join(tmp, "upstream-updater")
 	run(t, git, "clone", originURL, upstreamUpdater)
-	runGit(t, git, upstreamUpdater, "config", "user.email", "ao@example.com")
-	runGit(t, git, upstreamUpdater, "config", "user.name", "Ao Agents")
+	runGit(t, git, upstreamUpdater, "config", "user.email", "open-agents@example.com")
+	runGit(t, git, upstreamUpdater, "config", "user.name", "Open Agents")
 	runGit(t, git, upstreamUpdater, "checkout", "-B", "main", "origin/main")
 	if err := os.WriteFile(filepath.Join(upstreamUpdater, "upstream.txt"), []byte("configured upstream\n"), 0o644); err != nil {
 		t.Fatalf("write upstream file: %v", err)
@@ -1127,7 +1127,7 @@ func TestWorkspaceIntegrationCanonicalBaseRefAvoidsRemoteNameCollision(t *testin
 	info, err := ws.Create(context.Background(), ports.WorkspaceConfig{
 		ProjectID:  "proj",
 		SessionID:  "sess-upstream",
-		Branch:     "ao/proj-upstream",
+		Branch:     "open-agents/proj-upstream",
 		BaseBranch: "upstream/main",
 		BaseRef:    target.BaseRef,
 	})
@@ -1156,8 +1156,8 @@ func setupOriginClone(t *testing.T, git, tmp string) string {
 	run(t, git, "init", "--bare", origin)
 	run(t, git, "init", seed)
 	runGit(t, git, seed, "config", "core.autocrlf", "false")
-	runGit(t, git, seed, "config", "user.email", "ao@example.com")
-	runGit(t, git, seed, "config", "user.name", "Ao Agents")
+	runGit(t, git, seed, "config", "user.email", "open-agents@example.com")
+	runGit(t, git, seed, "config", "user.name", "Open Agents")
 	if err := os.WriteFile(filepath.Join(seed, "README.md"), []byte("seed\n"), 0o644); err != nil {
 		t.Fatalf("write seed: %v", err)
 	}
@@ -1173,8 +1173,8 @@ func setupOriginClone(t *testing.T, git, tmp string) string {
 	// global git identity to fall back on, so commit/commit-tree in this repo's
 	// worktrees would fail with "empty ident name". Set it on the clone; worktrees
 	// inherit the common dir config.
-	runGit(t, git, repo, "config", "user.email", "ao@example.com")
-	runGit(t, git, repo, "config", "user.name", "Ao Agents")
+	runGit(t, git, repo, "config", "user.email", "open-agents@example.com")
+	runGit(t, git, repo, "config", "user.name", "Open Agents")
 	runGit(t, git, repo, "checkout", "main")
 	runGit(t, git, repo, "reset", "--hard", "HEAD")
 	return repo

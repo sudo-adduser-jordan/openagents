@@ -10,7 +10,7 @@ import (
 	"database/sql"
 	"time"
 
-	"github.com/aoagents/agent-orchestrator/backend/internal/domain"
+	"github.com/sudo-adduser-jordan/open-agents/backend/internal/domain"
 )
 
 const cancelRunningReviewRunsBySession = `-- name: CancelRunningReviewRunsBySession :execrows
@@ -364,7 +364,7 @@ type ListCurrentHeadReviewRunsBySessionRow struct {
 	CreatedAt time.Time
 }
 
-// AO review passes recorded against each PR's CURRENT head commit. Passes for
+// Open Agents review passes recorded against each PR's CURRENT head commit. Passes for
 // an earlier head are excluded here so a stale run can never decide the
 // session's Kanban column. The latest same-head pass per (pr, harness) wins,
 // so a superseded retry cannot outvote the rerun that replaced it.

@@ -108,7 +108,7 @@ const { workspaces, workspaceQueryState, shellTerminalsState } = vi.hoisted(() =
 		title: "do the thing",
 		provider: "opencode",
 		kind: "worker",
-		branch: "ao/sess-1",
+		branch: "open-agents/sess-1",
 		status: "working",
 		updatedAt: "2026-06-10T00:00:00Z",
 		prs: [],
@@ -117,7 +117,7 @@ const { workspaces, workspaceQueryState, shellTerminalsState } = vi.hoisted(() =
 		...worker,
 		id: "sess-2",
 		title: "do the other thing",
-		branch: "ao/sess-2",
+		branch: "open-agents/sess-2",
 	} satisfies WorkspaceSession;
 	const orchestrator = {
 		...worker,
@@ -131,7 +131,7 @@ const { workspaces, workspaceQueryState, shellTerminalsState } = vi.hoisted(() =
 		workspaceId: "proj-2",
 		workspaceName: "other-app",
 		title: "cross-project task",
-		branch: "ao/cross-project",
+		branch: "open-agents/cross-project",
 	} satisfies WorkspaceSession;
 	const workspaces: WorkspaceSummary[] = [
 		{ id: "proj-1", name: "my-app", path: "/p", type: "main", sessions: [worker, secondWorker, orchestrator] },
@@ -652,11 +652,11 @@ describe("SessionView", () => {
 		return screen
 			.getByTestId("panel-group")
 			.querySelector<HTMLElement>('[data-slot="inspector-gap"]')
-			?.style.getPropertyValue("--ao-inspector-w");
+			?.style.getPropertyValue("--open-agents-inspector-w");
 	}
 
 	function inspectorPanelWidthVariable() {
-		return screen.getByTestId("panel-inspector").style.getPropertyValue("--ao-inspector-w");
+		return screen.getByTestId("panel-inspector").style.getPropertyValue("--open-agents-inspector-w");
 	}
 
 	beforeEach(() => {
@@ -903,8 +903,8 @@ describe("SessionView", () => {
 
 		render(<SessionView sessionId={sessionId} />);
 
-		expect(screen.queryByText("ao/sess-1")).not.toBeInTheDocument();
-		expect(screen.queryByTitle("ao/sess-1")).not.toBeInTheDocument();
+		expect(screen.queryByText("open-agents/sess-1")).not.toBeInTheDocument();
+		expect(screen.queryByTitle("open-agents/sess-1")).not.toBeInTheDocument();
 		expect(document.querySelector(".lucide-git-branch")).toBeNull();
 		// The session's own actions still ride in the same top-bar slot.
 		expect(screen.getByTestId("mock-session-topbar")).toBeInTheDocument();
@@ -1299,7 +1299,7 @@ describe("SessionView", () => {
 					mimeType: "text/plain",
 					bytes: 8,
 					name: "route-late.txt",
-					stagedPath: ".ao/attachments/route-late.txt",
+					stagedPath: ".open-agents/attachments/route-late.txt",
 				},
 			]);
 			await pending;
@@ -1313,7 +1313,7 @@ describe("SessionView", () => {
 	});
 
 	it("publishes the full stable native risk set and clears it only on unmount", async () => {
-		const publishRisk = vi.spyOn(window.ao!.app, "setChatDraftRisk");
+		const publishRisk = vi.spyOn(window.openAgents!.app, "setChatDraftRisk");
 		const view = render(<SessionView sessionId="sess-1" />);
 		await waitFor(() => expect(publishRisk).toHaveBeenLastCalledWith([], expect.objectContaining({ stay: "Stay" })));
 
@@ -1439,7 +1439,7 @@ describe("SessionView", () => {
 					mimeType: "text/plain",
 					bytes: 8,
 					name: "discard-late.txt",
-					stagedPath: ".ao/attachments/discard-late.txt",
+					stagedPath: ".open-agents/attachments/discard-late.txt",
 				},
 			]);
 			await pending;
@@ -1509,7 +1509,7 @@ describe("SessionView", () => {
 					mimeType: "text/plain",
 					bytes: 8,
 					name: "after-confirmation.txt",
-					stagedPath: ".ao/attachments/after-confirmation.txt",
+					stagedPath: ".open-agents/attachments/after-confirmation.txt",
 				},
 			]);
 			await pending;
@@ -1672,7 +1672,7 @@ describe("SessionView", () => {
 					mimeType: "text/plain",
 					bytes: 8,
 					name: "captured-through-outage.txt",
-					stagedPath: ".ao/attachments/captured-through-outage.txt",
+					stagedPath: ".open-agents/attachments/captured-through-outage.txt",
 				},
 			]);
 			await pending;
@@ -1724,7 +1724,7 @@ describe("SessionView", () => {
 					mimeType: "text/plain",
 					bytes: 8,
 					name: "preserved-after-rejection.txt",
-					stagedPath: ".ao/attachments/preserved-after-rejection.txt",
+					stagedPath: ".open-agents/attachments/preserved-after-rejection.txt",
 				},
 			]);
 			await pending;
@@ -1784,7 +1784,7 @@ describe("SessionView", () => {
 					mimeType: "text/plain",
 					bytes: 8,
 					name: "preserved-after-failure.txt",
-					stagedPath: ".ao/attachments/preserved-after-failure.txt",
+					stagedPath: ".open-agents/attachments/preserved-after-failure.txt",
 				},
 			]);
 			await pending;
@@ -1861,7 +1861,7 @@ describe("SessionView", () => {
 					mimeType: "text/plain",
 					bytes: 8,
 					name: "mixed-late.txt",
-					stagedPath: ".ao/attachments/mixed-late.txt",
+					stagedPath: ".open-agents/attachments/mixed-late.txt",
 				},
 			]);
 			await pending;
@@ -2088,7 +2088,7 @@ describe("SessionView", () => {
 			historyPolicy: "strict" as const,
 			phase: "recovery_required" as const,
 			errorCode: "DAEMON_RESTARTED",
-			errorDetail: "AO recovered the session in its last committed mode.",
+			errorDetail: "Open Agents recovered the session in its last committed mode.",
 			createdAt: "2026-08-12T10:00:00Z",
 			updatedAt: "2026-08-12T10:01:00Z",
 			completedAt: "2026-08-12T10:01:00Z",
@@ -2123,7 +2123,7 @@ describe("SessionView", () => {
 			historyPolicy: "strict" as const,
 			phase: "failed" as const,
 			errorCode,
-			errorDetail: "Interface switch failed (AO-2L): target history is not settled.",
+			errorDetail: "Interface switch failed (Open Agents-2L): target history is not settled.",
 			createdAt: "2026-08-25T09:00:00Z",
 			updatedAt: "2026-08-25T09:00:01Z",
 			completedAt: "2026-08-25T09:00:01Z",
@@ -2190,7 +2190,7 @@ describe("SessionView", () => {
 			historyPolicy: "strict" as const,
 			phase: "failed" as const,
 			errorCode: "TARGET_HISTORY_UNTRUSTED_TEXT_MISMATCH",
-			errorDetail: "Interface switch failed (AO-2L): legacy text mismatch.",
+			errorDetail: "Interface switch failed (Open Agents-2L): legacy text mismatch.",
 			createdAt: "2026-08-25T09:00:00Z",
 			updatedAt: "2026-08-25T09:00:01Z",
 			completedAt: "2026-08-25T09:00:01Z",
@@ -2223,7 +2223,7 @@ describe("SessionView", () => {
 				historyPolicy: "provider_history",
 				phase: "recovery_required",
 				errorCode: "DAEMON_RESTARTED",
-				errorDetail: "AO restored Terminal after the daemon restarted.",
+				errorDetail: "Open Agents restored Terminal after the daemon restarted.",
 				createdAt: "2026-08-25T09:00:00Z",
 				updatedAt: "2026-08-25T09:00:01Z",
 				completedAt: "2026-08-25T09:00:01Z",
@@ -2240,7 +2240,7 @@ describe("SessionView", () => {
 		});
 	});
 
-	it("announces a rejected recovery attempt in the persistent AO-2L notice", () => {
+	it("announces a rejected recovery attempt in the persistent Open Agents-2L notice", () => {
 		interfaceTransitionState.startError = "Provider history recovery is no longer available.";
 		interfaceTransitionState.status = {
 			supported: true,
@@ -2254,7 +2254,7 @@ describe("SessionView", () => {
 				historyPolicy: "strict",
 				phase: "failed",
 				errorCode: "TARGET_HISTORY_UNTRUSTED_TEXT_MISMATCH",
-				errorDetail: "Interface switch failed (AO-2L).",
+				errorDetail: "Interface switch failed (Open Agents-2L).",
 				createdAt: "2026-08-25T09:00:00Z",
 				updatedAt: "2026-08-25T09:00:01Z",
 			},
@@ -2263,7 +2263,7 @@ describe("SessionView", () => {
 		render(<SessionView sessionId="sess-1" />);
 		const [announcement] = screen.getAllByRole("alert");
 		expect(screen.getAllByRole("alert")).toHaveLength(1);
-		expect(announcement).toHaveTextContent("Interface switch failed (AO-2L).");
+		expect(announcement).toHaveTextContent("Interface switch failed (Open Agents-2L).");
 		expect(announcement).toHaveTextContent(
 			"Recovery attempt failed: Provider history recovery is no longer available.",
 		);
@@ -2275,7 +2275,7 @@ describe("SessionView", () => {
 			workerSession("sess-1").mode = "tui";
 			interfaceTransitionState.startError = startError;
 			const errorDetail =
-				"AO could not confirm the target controller stopped. Restart AO to retry shutdown before restoring the original interface. target still running";
+				"Open Agents could not confirm the target controller stopped. Restart Open Agents to retry shutdown before restoring the original interface. target still running";
 			interfaceTransitionState.status = {
 				supported: true,
 				targetMode: "chat",
@@ -2786,8 +2786,8 @@ describe("SessionView", () => {
 	});
 
 	it("never shrinks the inspector when entering Browser", async () => {
-		window.localStorage.setItem("ao.inspector.widthPx", "720");
-		window.localStorage.setItem("ao.workspace.browser.canvasWidthPx", "460");
+		window.localStorage.setItem("open-agents.inspector.widthPx", "720");
+		window.localStorage.setItem("open-agents.workspace.browser.canvasWidthPx", "460");
 		render(<SessionView sessionId="sess-1" />);
 		expect(inspectorWidthVariable()).toBe("720px");
 
@@ -2798,7 +2798,7 @@ describe("SessionView", () => {
 	});
 
 	it("restores and clamps the persisted inspector width in pixels", () => {
-		window.localStorage.setItem("ao.inspector.widthPx", "240");
+		window.localStorage.setItem("open-agents.inspector.widthPx", "240");
 		act(() => useUiStore.getState().setInspectorOpen("sess-1", true));
 		render(<SessionView sessionId="sess-1" />);
 		expect(inspectorWidthVariable()).toBe("340px");
@@ -2807,7 +2807,7 @@ describe("SessionView", () => {
 	it("resizes the inspector panel and terminal gap together synchronously while dragging", () => {
 		render(<SessionView sessionId="sess-1" />);
 		const handle = screen.getByTestId("inspector-resize-handle");
-		expect(document.documentElement.style.getPropertyValue("--ao-inspector-w")).toBe("");
+		expect(document.documentElement.style.getPropertyValue("--open-agents-inspector-w")).toBe("");
 
 		fireEvent.pointerDown(handle, { clientX: 100 });
 		fireEvent.pointerMove(window, { clientX: 200 });
@@ -2867,7 +2867,7 @@ describe("SessionView", () => {
 	});
 
 	it("restores a separate user-sized Browser workspace without changing utility width", () => {
-		window.localStorage.setItem("ao.workspace.browser.canvasWidthPx", "820");
+		window.localStorage.setItem("open-agents.workspace.browser.canvasWidthPx", "820");
 		render(<SessionView sessionId="sess-1" />);
 
 		fireEvent.click(screen.getByRole("tab", { name: "Browser" }));
@@ -3230,7 +3230,7 @@ describe("SessionView", () => {
 		expect(document.querySelector(".files-popout-overlay")).not.toHaveClass("files-popout-overlay--mac-windowed");
 	});
 
-	it("badges Browser as unseen for a new live `ao preview` target instead of auto-opening it", () => {
+	it("badges Browser as unseen for a new live `open-agents preview` target instead of auto-opening it", () => {
 		const worker = workerSession("sess-1");
 		const { rerender } = render(<SessionView sessionId="sess-1" />);
 		const viewBefore = inspectorButton().getAttribute("data-view");
@@ -3402,7 +3402,7 @@ describe("SessionView", () => {
 		expect(inspectorButton()).toHaveAttribute("data-view", "summary");
 	});
 
-	it("does not open Browser when `ao preview clear` removes the target", () => {
+	it("does not open Browser when `open-agents preview clear` removes the target", () => {
 		const worker = workerSession("sess-1");
 		const { rerender } = render(<SessionView sessionId="sess-1" />);
 

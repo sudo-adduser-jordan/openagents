@@ -9,9 +9,9 @@ import (
 	"testing"
 	"time"
 
-	"github.com/aoagents/agent-orchestrator/backend/internal/adapters/runtime/conpty/ptyregistry"
-	"github.com/aoagents/agent-orchestrator/backend/internal/domain"
-	"github.com/aoagents/agent-orchestrator/backend/internal/ports"
+	"github.com/sudo-adduser-jordan/open-agents/backend/internal/adapters/runtime/conpty/ptyregistry"
+	"github.com/sudo-adduser-jordan/open-agents/backend/internal/domain"
+	"github.com/sudo-adduser-jordan/open-agents/backend/internal/ports"
 )
 
 func TestStripEnvAssignments(t *testing.T) {
@@ -23,15 +23,15 @@ func TestStripEnvAssignments(t *testing.T) {
 	}{
 		{
 			name:            "no env prefix returns argv unchanged",
-			argv:            []string{"opencode", "--agent", "ao-x"},
+			argv:            []string{"opencode", "--agent", "open-agents-x"},
 			wantAssignments: nil,
-			wantRest:        []string{"opencode", "--agent", "ao-x"},
+			wantRest:        []string{"opencode", "--agent", "open-agents-x"},
 		},
 		{
 			name:            "env prefix is split from the real command",
-			argv:            []string{"env", "OPENCODE_CONFIG=C:/cfg.json", "opencode", "--agent", "ao-x"},
+			argv:            []string{"env", "OPENCODE_CONFIG=C:/cfg.json", "opencode", "--agent", "open-agents-x"},
 			wantAssignments: []string{"OPENCODE_CONFIG=C:/cfg.json"},
-			wantRest:        []string{"opencode", "--agent", "ao-x"},
+			wantRest:        []string{"opencode", "--agent", "open-agents-x"},
 		},
 		{
 			name:            "env with no command left is untouched",
@@ -280,13 +280,13 @@ func TestPendingPIDZeroReservationRemainsUnknownAcrossScanAndRestart(t *testing.
 func TestInteractiveTerminalEnvDropsAmbientNoColorAndAdvertisesTrueColor(t *testing.T) {
 	env := interactiveTerminalEnv(
 		[]string{"PATH=/usr/bin", "TERM=dumb", "COLORTERM=ansi", "NO_COLOR=1"},
-		map[string]string{"AO_SESSION_ID": "sess-1"},
+		map[string]string{"OPEN_AGENTS_SESSION_ID": "sess-1"},
 		nil,
 	)
 
 	for _, want := range []string{
 		"PATH=/usr/bin",
-		"AO_SESSION_ID=sess-1",
+		"OPEN_AGENTS_SESSION_ID=sess-1",
 		"TERM=xterm-256color",
 		"COLORTERM=truecolor",
 	} {

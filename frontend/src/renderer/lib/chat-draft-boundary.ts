@@ -117,7 +117,7 @@ export function confirmDiscardChatDrafts(
 export function chatDraftBoundaryCopy(kind: ChatDraftBoundaryKind): string {
 	return kind === "persistence-failed"
 		? "This Chat draft could not be saved locally. Leaving now will discard the unsaved changes. Copy the draft before leaving."
-		: "Attachments are still being saved. Leaving now will discard any files AO has not finished writing to the worktree. Wait for saving to finish.";
+		: "Attachments are still being saved. Leaving now will discard any files Open Agents has not finished writing to the worktree. Wait for saving to finish.";
 }
 
 export function chatDraftDialogCopy(kinds: Iterable<ChatDraftBoundaryKind>): ChatDraftDialogCopy {

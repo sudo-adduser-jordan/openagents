@@ -87,7 +87,7 @@ describe("compaction in the timeline", () => {
 	});
 
 	// A compaction right after a daemon restart genuinely does not know what it
-	// saved, because AO has seen no token report yet. Showing "0 freed" would be a
+	// saved, because Open Agents has seen no token report yet. Showing "0 freed" would be a
 	// lie rather than a gap.
 	it("claims no figures when the provider never reported any", () => {
 		render(
@@ -121,7 +121,7 @@ describe("compaction in the timeline", () => {
 
 describe("the compact control", () => {
 	// Compaction lives on `/compact` rather than a toolbar button: the composer
-	// tools stay for attach/settings, and compact is an AO slash command.
+	// tools stay for attach/settings, and compact is an Open Agents slash command.
 	it("is offered in the slash menu, not the message tools", async () => {
 		render(<ChatWorkspace snapshot={snapshot([assistantSaid])} onCompact={vi.fn()} />);
 

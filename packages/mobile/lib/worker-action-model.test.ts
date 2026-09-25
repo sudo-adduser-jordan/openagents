@@ -33,7 +33,7 @@ describe("workerContextActions", () => {
 		expect(ids()).not.toContain("openPr");
 	});
 
-	// The chat screen already makes this choice: a terminated AO session is
+	// The chat screen already makes this choice: a terminated Open Agents session is
 	// restored, a merely stopped agent is resumed. Offering both would push that
 	// distinction onto the user.
 	it("offers resume for a stopped agent and restore for a terminated session", () => {

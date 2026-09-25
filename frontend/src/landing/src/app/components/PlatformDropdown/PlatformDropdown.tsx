@@ -5,7 +5,7 @@ import {
 	DropdownMenuContent,
 	DropdownMenuItem,
 	DropdownMenuTrigger,
-} from "@ao/ui/dropdown-menu";
+} from "@openagents/ui/dropdown-menu";
 import type { ReactNode } from "react";
 
 export interface DropdownItem {

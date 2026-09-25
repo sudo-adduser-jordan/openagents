@@ -345,24 +345,6 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
-    "/api/v1/import": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        /** Check whether a legacy AO install is available to import */
-        get: operations["getImportStatus"];
-        put?: never;
-        /** Run the legacy AO project import through the daemon store */
-        post: operations["runImport"];
-        delete?: never;
-        options?: never;
-        head?: never;
-        patch?: never;
-        trace?: never;
-    };
     "/api/v1/imports/prepare-git": {
         parameters: {
             query?: never;
@@ -1416,7 +1398,7 @@ export interface paths {
         };
         get?: never;
         put?: never;
-        /** Exit the agent while preserving its AO session */
+        /** Exit the agent while preserving its Open Agents session */
         post: operations["exitAgent"];
         delete?: never;
         options?: never;
@@ -1592,7 +1574,7 @@ export interface paths {
         /** Get the managed preview server status for a session */
         get: operations["getSessionPreviewServer"];
         put?: never;
-        /** Start a session-owned server from .ao/launch.json and open its application preview */
+        /** Start a session-owned server from .open-agents/launch.json and open its application preview */
         post: operations["startSessionPreviewServer"];
         /** Stop the managed preview server for a session */
         delete: operations["stopSessionPreviewServer"];
@@ -2882,19 +2864,6 @@ export interface components {
             apiVersion: number;
             hostId: string;
         };
-        ImportReport: {
-            dryRun: boolean;
-            notes?: string[];
-            projectsImported: number;
-            projectsSkipped: number;
-        };
-        ImportRunResponse: {
-            report: components["schemas"]["ImportReport"];
-        };
-        ImportStatusResponse: {
-            available: boolean;
-            legacyRoot: string;
-        };
         ImportValidationInput: {
             /** @enum {string} */
             importKind: "project" | "workspace";
@@ -3542,17 +3511,17 @@ export interface components {
             /** @description Native agent session identifier used to resume its transcript. */
             agentSessionId?: string;
             /**
-             * @description Whether the main-turn boundary came from a human or AO coordination.
+             * @description Whether the main-turn boundary came from a human or Open Agents coordination.
              * @enum {string}
              */
             conversationCheckpointOrigin?: "human" | "coordination";
-            /** @description AO hook sub-command that produced this state (e.g. post-tool-use). */
+            /** @description Open Agents hook sub-command that produced this state (e.g. post-tool-use). */
             event?: string;
             /** @description Latest assistant update exposed by the provider hook. */
             latestAssistantUpdate?: string;
             /** @description Latest real user prompt exposed by the provider hook. */
             latestUserPrompt?: string;
-            /** @description AO process generation that produced the signal. */
+            /** @description Open Agents process generation that produced the signal. */
             launchId?: string;
             /**
              * Format: date-time
@@ -3566,7 +3535,7 @@ export interface components {
              * @enum {string}
              */
             state?: "active" | "idle" | "waiting_input" | "blocked" | "exited";
-            /** @description AO prompt-hook context correlation UUID, when supported. */
+            /** @description Open Agents prompt-hook context correlation UUID, when supported. */
             submissionId?: string;
             /** @description Native tool name, for tool-use hook events. */
             toolName?: string;
@@ -3603,9 +3572,9 @@ export interface components {
         SetReviewActivityRequest: {
             /** @description Native reviewer session identifier used to resume its transcript. */
             agentSessionId?: string;
-            /** @description AO hook sub-command that produced this signal. */
+            /** @description Open Agents hook sub-command that produced this signal. */
             event?: string;
-            /** @description AO process generation that produced the signal. */
+            /** @description Open Agents process generation that produced the signal. */
             launchId?: string;
             /**
              * @description Reviewer activity state reported by a hook. Used for reviewer-pane live status, not worker session state.
@@ -3774,7 +3743,7 @@ export interface components {
             turnId?: string;
         };
         SubmitReviewInput: {
-            /** @description Review body recorded by AO. Required for changes_requested. */
+            /** @description Review body recorded by Open Agents. Required for changes_requested. */
             body?: string;
             /** @description Id of the GitHub PR review the reviewer posted, if any. */
             githubReviewId?: string;
@@ -3786,7 +3755,7 @@ export interface components {
             verdict?: string;
         };
         SubmitReviewItem: {
-            /** @description Review body recorded by AO. Required for changes_requested. */
+            /** @description Review body recorded by Open Agents. Required for changes_requested. */
             body?: string;
             /** @description Id of the GitHub PR review the reviewer posted, if any. */
             githubReviewId?: string;
@@ -4709,8 +4678,8 @@ export interface operations {
         parameters: {
             query?: never;
             header?: {
-                /** @description Opaque browser capability injected into the owning AO worker. */
-                "X-AO-Browser-Capability"?: string;
+                /** @description Opaque browser capability injected into the owning Open Agents worker. */
+                "X-OPEN-AGENTS-Browser-Capability"?: string;
             };
             path?: never;
             cookie?: never;
@@ -4798,12 +4767,12 @@ export interface operations {
     getBrowserStatus: {
         parameters: {
             query?: {
-                /** @description AO session identifier. */
+                /** @description Open Agents session identifier. */
                 sessionId?: string;
             };
             header?: {
-                /** @description Opaque browser capability injected into the owning AO worker. */
-                "X-AO-Browser-Capability"?: string;
+                /** @description Opaque browser capability injected into the owning Open Agents worker. */
+                "X-OPEN-AGENTS-Browser-Capability"?: string;
             };
             path?: never;
             cookie?: never;
@@ -5062,82 +5031,6 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["IdentityResponse"];
-                };
-            };
-            /** @description Not Implemented */
-            501: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["APIError"];
-                };
-            };
-        };
-    };
-    getImportStatus: {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        requestBody?: never;
-        responses: {
-            /** @description OK */
-            200: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["ImportStatusResponse"];
-                };
-            };
-            /** @description Internal Server Error */
-            500: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["APIError"];
-                };
-            };
-            /** @description Not Implemented */
-            501: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["APIError"];
-                };
-            };
-        };
-    };
-    runImport: {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        requestBody?: never;
-        responses: {
-            /** @description OK */
-            200: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["ImportRunResponse"];
-                };
-            };
-            /** @description Internal Server Error */
-            500: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["APIError"];
                 };
             };
             /** @description Not Implemented */
@@ -8508,7 +8401,7 @@ export interface operations {
             path: {
                 /** @description Session identifier, e.g. project-1. */
                 sessionId: string;
-                /** @description AO conversation turn identifier, from the snapshot's turns array. */
+                /** @description Open Agents conversation turn identifier, from the snapshot's turns array. */
                 turnId: string;
             };
             cookie?: never;
@@ -8567,7 +8460,7 @@ export interface operations {
             path: {
                 /** @description Session identifier, e.g. project-1. */
                 sessionId: string;
-                /** @description AO conversation turn identifier, from the snapshot's turns array. */
+                /** @description Open Agents conversation turn identifier, from the snapshot's turns array. */
                 turnId: string;
             };
             cookie?: never;
@@ -8641,7 +8534,7 @@ export interface operations {
             path: {
                 /** @description Session identifier, e.g. project-1. */
                 sessionId: string;
-                /** @description AO conversation turn identifier, from the snapshot's turns array. */
+                /** @description Open Agents conversation turn identifier, from the snapshot's turns array. */
                 turnId: string;
             };
             cookie?: never;
@@ -8713,7 +8606,7 @@ export interface operations {
             path: {
                 /** @description Session identifier, e.g. project-1. */
                 sessionId: string;
-                /** @description AO conversation turn identifier, from the snapshot's turns array. */
+                /** @description Open Agents conversation turn identifier, from the snapshot's turns array. */
                 turnId: string;
             };
             cookie?: never;
@@ -8783,7 +8676,7 @@ export interface operations {
             path: {
                 /** @description Session identifier, e.g. project-1. */
                 sessionId: string;
-                /** @description AO conversation turn identifier, from the snapshot's turns array. */
+                /** @description Open Agents conversation turn identifier, from the snapshot's turns array. */
                 turnId: string;
             };
             cookie?: never;
@@ -8844,7 +8737,7 @@ export interface operations {
             path: {
                 /** @description Session identifier, e.g. project-1. */
                 sessionId: string;
-                /** @description AO conversation turn identifier, from the snapshot's turns array. */
+                /** @description Open Agents conversation turn identifier, from the snapshot's turns array. */
                 turnId: string;
             };
             cookie?: never;
@@ -9778,8 +9671,8 @@ export interface operations {
         parameters: {
             query?: never;
             header?: {
-                /** @description Opaque browser capability injected into the owning AO worker. */
-                "X-AO-Browser-Capability"?: string;
+                /** @description Opaque browser capability injected into the owning Open Agents worker. */
+                "X-OPEN-AGENTS-Browser-Capability"?: string;
             };
             path: {
                 /** @description Session identifier, e.g. project-1. */
@@ -9849,8 +9742,8 @@ export interface operations {
         parameters: {
             query?: never;
             header?: {
-                /** @description Opaque browser capability injected into the owning AO worker. */
-                "X-AO-Browser-Capability"?: string;
+                /** @description Opaque browser capability injected into the owning Open Agents worker. */
+                "X-OPEN-AGENTS-Browser-Capability"?: string;
             };
             path: {
                 /** @description Session identifier, e.g. project-1. */
@@ -9960,8 +9853,8 @@ export interface operations {
         parameters: {
             query?: never;
             header?: {
-                /** @description Opaque browser capability injected into the owning AO worker. */
-                "X-AO-Browser-Capability"?: string;
+                /** @description Opaque browser capability injected into the owning Open Agents worker. */
+                "X-OPEN-AGENTS-Browser-Capability"?: string;
             };
             path: {
                 /** @description Session identifier, e.g. project-1. */

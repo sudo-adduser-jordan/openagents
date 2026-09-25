@@ -9,7 +9,7 @@ export function helperBuildOptions(arch, root = frontend) {
   const cpu = arch === "arm64" ? "arm64" : arch === "x64" ? "x86_64" : undefined;
   if (!cpu) throw new Error(`Unsupported macOS update helper architecture: ${arch}`);
   const source = path.join(root, "native", "update-helper");
-  const output = path.join(root, "update-helper", "ao-update-progress");
+  const output = path.join(root, "update-helper", "open-agents-update-progress");
   return {
     output,
     args: ["swiftc", "-target", `${cpu}-apple-macosx11.0`, "-O",
@@ -22,7 +22,7 @@ export function buildUpdateHelper({ arch = process.arch, platform = process.plat
   if (platform !== "darwin") throw new Error("The macOS update helper must be built on macOS");
   const { output, args } = helperBuildOptions(arch);
   mkdirSync(path.dirname(output), { recursive: true });
-  const moduleCache = path.join(homedir(), ".ao", "build-cache", "update-helper", arch);
+  const moduleCache = path.join(homedir(), ".open-agents", "build-cache", "update-helper", arch);
   mkdirSync(moduleCache, { recursive: true });
   const result = run("xcrun", [...args, "-module-cache-path", moduleCache], { stdio: "inherit" });
   if (result.error) throw result.error;

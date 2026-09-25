@@ -128,7 +128,7 @@ export function ChatSessionScreen({ session }: { session: MobileChatSession }) {
 	const interfaceTransitionNoticeText =
 		interfaceTransitionNotice?.errorDetail ||
 		(interfaceTransitionRecovered
-			? "AO restored the session in its last committed interface."
+			? "Open Agents restored the session in its last committed interface."
 			: interfaceTransitionNotice?.phase === "recovery_required"
 				? "The interface switch needs recovery before more work is sent."
 				: "The interface switch failed; the current interface remains available.");
@@ -260,7 +260,7 @@ export function ChatSessionScreen({ session }: { session: MobileChatSession }) {
 		if (resuming) return;
 		setResuming(true);
 		try {
-			if (!config) throw new Error("No AO server configured");
+			if (!config) throw new Error("No Open Agents server configured");
 			if (terminated) await restoreSession(config, session.id);
 			else await resumeSessionAgent(config, session.id);
 			await refreshBoard();
@@ -295,7 +295,7 @@ export function ChatSessionScreen({ session }: { session: MobileChatSession }) {
 			"Switch to Terminal UI?",
 			turnWaiting
 				? "This turn is waiting for your input. Finish waits for your answer; stop cancels it and switches now."
-				: "Keep the same AO session, worktree, and native agent conversation.",
+				: "Keep the same Open Agents session, worktree, and native agent conversation.",
 			[
 				{ text: "Keep Chat", style: "cancel" },
 				{ text: "Finish, then switch", onPress: () => void startInterfaceSwitch("drain") },

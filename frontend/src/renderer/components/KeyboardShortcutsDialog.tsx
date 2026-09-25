@@ -52,7 +52,7 @@ export function KeyboardShortcutsDialog({
 				<DialogHeader className="border-b border-[var(--color-border-settings-dialog-header)] p-(--size-modal-padding)">
 					<DialogTitle className="settings-dialog-title">{"Keyboard shortcuts"}</DialogTitle>
 					<DialogDescription className="text-xs text-settings-muted">
-						{"Move around Agent Orchestrator without leaving the keyboard."}
+						{"Move around Open Agents without leaving the keyboard."}
 					</DialogDescription>
 				</DialogHeader>
 

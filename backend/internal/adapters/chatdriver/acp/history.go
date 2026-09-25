@@ -10,11 +10,11 @@ import (
 
 	acpsdk "github.com/coder/acp-go-sdk"
 
-	"github.com/aoagents/agent-orchestrator/backend/internal/domain"
-	"github.com/aoagents/agent-orchestrator/backend/internal/ports"
+	"github.com/sudo-adduser-jordan/open-agents/backend/internal/domain"
+	"github.com/sudo-adduser-jordan/open-agents/backend/internal/ports"
 )
 
-const aoInternalReplayMetaKey = "ao.internalReplay"
+const openAgentsInternalReplayMetaKey = "open-agents.internalReplay"
 
 // refreshableConversation is returned only when the agent advertised
 // session/load. Calling session/load again on the already resumed ACP connection
@@ -71,7 +71,7 @@ func (c *refreshableConversation) RefreshHistory(ctx context.Context) ([]ports.C
 
 // historyCapture receives the session/update replay produced by ACP session/load.
 // ACP deliberately replays a flat stream rather than provider turns, so user
-// message ids are the durable boundaries from which AO reconstructs settled turns.
+// message ids are the durable boundaries from which Open Agents reconstructs settled turns.
 type historyCapture struct {
 	sessionID           string
 	events              []ports.ChatEvent
@@ -126,7 +126,7 @@ func (c *conversation) abortHistoryReplay() {
 // final turn. ACP session/load guarantees only that all stored entries were
 // replayed; it does not report their terminal outcomes. Recovered is the shared
 // terminal state for that evidence gap; service reconciliation replaces it with
-// AO's known completed/interrupted/failed result when a durable turn matches.
+// Open Agents's known completed/interrupted/failed result when a durable turn matches.
 func (c *conversation) finishHistoryReplay() {
 	c.historyMu.Lock()
 	hasTail := c.history != nil && c.history.turnID != ""
@@ -171,7 +171,7 @@ func (c *conversation) ReadHistory(ctx context.Context) ([]ports.ChatEvent, erro
 
 // prepareHistoryUpdate handles the one replay notification that the ordinary live
 // path intentionally ignores: user_message_chunk. For all other replay updates it
-// establishes the reconstructed turn, then lets SessionUpdate's existing ACP -> AO
+// establishes the reconstructed turn, then lets SessionUpdate's existing ACP -> Open Agents
 // normalization run unchanged.
 func (c *conversation) prepareHistoryUpdate(update acpsdk.SessionUpdate) bool {
 	if !c.historyReplayActive() {
@@ -462,11 +462,11 @@ func historicalUserContent(content acpsdk.ContentBlock) string {
 func isInternalReplayResource(content *acpsdk.ContentBlockResource) bool {
 	resource := content.Resource
 	if text := resource.TextResourceContents; text != nil {
-		internal, _ := text.Meta[aoInternalReplayMetaKey].(bool)
+		internal, _ := text.Meta[openAgentsInternalReplayMetaKey].(bool)
 		return internal && text.Uri == ports.ChatInternalReplayResourceURI
 	}
 	if blob := resource.BlobResourceContents; blob != nil {
-		internal, _ := blob.Meta[aoInternalReplayMetaKey].(bool)
+		internal, _ := blob.Meta[openAgentsInternalReplayMetaKey].(bool)
 		return internal && blob.Uri == ports.ChatInternalReplayResourceURI
 	}
 	return false

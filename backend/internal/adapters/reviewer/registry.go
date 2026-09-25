@@ -6,9 +6,9 @@ package reviewer
 import (
 	"fmt"
 
-	"github.com/aoagents/agent-orchestrator/backend/internal/adapters/reviewer/opencode"
-	"github.com/aoagents/agent-orchestrator/backend/internal/domain"
-	"github.com/aoagents/agent-orchestrator/backend/internal/ports"
+	"github.com/sudo-adduser-jordan/open-agents/backend/internal/adapters/reviewer/opencode"
+	"github.com/sudo-adduser-jordan/open-agents/backend/internal/domain"
+	"github.com/sudo-adduser-jordan/open-agents/backend/internal/ports"
 )
 
 // Adapter is a registered reviewer: a ports.Reviewer that names its harness.

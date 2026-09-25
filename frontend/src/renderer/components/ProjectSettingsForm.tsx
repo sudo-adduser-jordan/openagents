@@ -7,7 +7,7 @@ import {
 	ProjectSettingsSection,
 	ProjectWorkflowSettingsView,
 	validateProjectSettings,
-} from "@aoagents/product-ui";
+} from "@openagents/product-ui";
 import { useEffect, useState } from "react";
 import { Info, Pencil } from "lucide-react";
 import type { components } from "../../api/schema";

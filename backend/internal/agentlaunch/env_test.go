@@ -15,7 +15,7 @@ func TestSharedInstallKeepsAgentNodeAndCanonicalAO(t *testing.T) {
 		t.Skip("POSIX shebang selection; Windows has a separate command test")
 	}
 	stateDir := t.TempDir()
-	t.Setenv("AO_DATA_DIR", "data")
+	t.Setenv("OPEN_AGENTS_DATA_DIR", "data")
 	shared, agent := filepath.Join(t.TempDir(), "shared install's bin"), t.TempDir()
 	if err := os.MkdirAll(shared, 0o700); err != nil {
 		t.Fatal(err)
@@ -26,14 +26,14 @@ func TestSharedInstallKeepsAgentNodeAndCanonicalAO(t *testing.T) {
 			t.Fatal(err)
 		}
 	}
-	ao := filepath.Join(shared, "ao")
-	write(ao, "#!/bin/sh\necho CANONICAL\n")
+	canonicalBinary := filepath.Join(shared, "open-agents")
+	write(canonicalBinary, "#!/bin/sh\necho CANONICAL\n")
 	write(filepath.Join(shared, "node"), "#!/bin/sh\necho OLD_NODE\n")
 	write(filepath.Join(agent, "node"), "#!/bin/sh\necho AGENT_NODE\n")
-	write(filepath.Join(agent, "ao"), "#!/bin/sh\necho FOREIGN\n")
+	write(filepath.Join(agent, "open-agents"), "#!/bin/sh\necho FOREIGN\n")
 	launcher := filepath.Join(agent, "agent")
 	write(launcher, "#!/usr/bin/env node\n")
-	executable := func() (string, error) { return ao, nil }
+	executable := func() (string, error) { return canonicalBinary, nil }
 	base := agent + string(os.PathListSeparator) + shared + string(os.PathListSeparator) + "/usr/bin:/bin"
 	worktree := t.TempDir()
 	t.Chdir(worktree)
@@ -43,7 +43,7 @@ func TestSharedInstallKeepsAgentNodeAndCanonicalAO(t *testing.T) {
 	}
 	env := map[string]string{"PATH": path}
 	AugmentRuntimePATHForLaunchBinary(context.Background(), env, []string{launcher}, func(string) (string, error) { return filepath.Join(agent, "node"), nil }, PinnedDir(executable, stateDir))
-	cmd := exec.CommandContext(context.Background(), "/bin/sh", "-c", "ao; exec \"$1\"", "sh", launcher)
+	cmd := exec.CommandContext(context.Background(), "/bin/sh", "-c", "open-agents; exec \"$1\"", "sh", launcher)
 	cmd.Env = []string{"PATH=" + env["PATH"]}
 	output, err := cmd.CombinedOutput()
 	if err != nil || string(output) != "CANONICAL\nAGENT_NODE\n" {
@@ -58,9 +58,9 @@ func TestSharedInstallKeepsAgentNodeAndCanonicalAO(t *testing.T) {
 
 func TestSharedInstallRequiresResolvedAbsoluteDataDir(t *testing.T) {
 	shared := t.TempDir()
-	names := []string{"ao", "node"}
+	names := []string{"open-agents", "node"}
 	if runtime.GOOS == "windows" {
-		names = []string{"ao.exe", "node.exe"}
+		names = []string{"open-agents.exe", "node.exe"}
 	}
 	for _, name := range names {
 		if err := os.WriteFile(filepath.Join(shared, name), []byte("#!/bin/sh\n"), 0o700); err != nil {
@@ -74,9 +74,9 @@ func TestSharedInstallRequiresResolvedAbsoluteDataDir(t *testing.T) {
 }
 
 func TestConfiguredPATHWindowsUsesExactProtectedSpelling(t *testing.T) {
-	configured := map[string]string{"Path": "project", "PATH": "ao-pinned"}
+	configured := map[string]string{"Path": "project", "PATH": "open-agents-pinned"}
 	for range 1000 {
-		if got := configuredPATH(configured, true); got != "ao-pinned" {
+		if got := configuredPATH(configured, true); got != "open-agents-pinned" {
 			t.Fatalf("configured PATH = %q, want exact protected value", got)
 		}
 	}

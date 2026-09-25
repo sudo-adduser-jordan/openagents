@@ -16,11 +16,11 @@ import (
 
 	"github.com/creack/pty"
 
-	"github.com/aoagents/agent-orchestrator/backend/internal/ports"
+	"github.com/sudo-adduser-jordan/open-agents/backend/internal/ports"
 )
 
 // TestMain lets the detached-spawn integration test re-exec this test binary
-// through the same hidden pty-host entrypoint used by the production AO binary.
+// through the same hidden pty-host entrypoint used by the production Open Agents binary.
 func TestMain(m *testing.M) {
 	if len(os.Args) > 1 && os.Args[1] == "pty-host" {
 		os.Exit(RunHost(os.Args[2:], os.Stdout))
@@ -98,9 +98,9 @@ func TestLinuxPTYConnStreamsResizesAndReportsExit(t *testing.T) {
 func TestLinuxDefaultSpawnHostEndToEnd(t *testing.T) {
 	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
 	addr, hostPID, err := defaultSpawnHost(ctx, "spawn-e2e", t.TempDir(), []string{
-		"env", "AO_PREFIX_VALUE=prefix", "/bin/sh", "-c",
-		`printf '\033[c'; sleep 0.05; printf 'ready:%s:%s\n' "$AO_DIRECT_PTY_TEST" "$AO_PREFIX_VALUE"; IFS= read -r line; printf 'received:%s\n' "$line"; sleep 30`,
-	}, map[string]string{"AO_DIRECT_PTY_TEST": "works"})
+		"env", "OPEN_AGENTS_PREFIX_VALUE=prefix", "/bin/sh", "-c",
+		`printf '\033[c'; sleep 0.05; printf 'ready:%s:%s\n' "$OPEN_AGENTS_DIRECT_PTY_TEST" "$OPEN_AGENTS_PREFIX_VALUE"; IFS= read -r line; printf 'received:%s\n' "$line"; sleep 30`,
+	}, map[string]string{"OPEN_AGENTS_DIRECT_PTY_TEST": "works"})
 	if err != nil {
 		cancel()
 		t.Fatal(err)

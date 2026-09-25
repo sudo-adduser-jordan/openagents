@@ -17,15 +17,15 @@ import (
 
 	"github.com/google/uuid"
 
-	"github.com/aoagents/agent-orchestrator/backend/internal/adapters/agent/modelcatalog"
-	"github.com/aoagents/agent-orchestrator/backend/internal/agentlaunch"
-	"github.com/aoagents/agent-orchestrator/backend/internal/attachmentstore"
-	"github.com/aoagents/agent-orchestrator/backend/internal/domain"
-	"github.com/aoagents/agent-orchestrator/backend/internal/ports"
-	aoprocess "github.com/aoagents/agent-orchestrator/backend/internal/process"
-	"github.com/aoagents/agent-orchestrator/backend/internal/sessionguard"
-	"github.com/aoagents/agent-orchestrator/backend/internal/skillassets"
-	"github.com/aoagents/agent-orchestrator/backend/internal/tmuxbin"
+	"github.com/sudo-adduser-jordan/open-agents/backend/internal/adapters/agent/modelcatalog"
+	"github.com/sudo-adduser-jordan/open-agents/backend/internal/agentlaunch"
+	"github.com/sudo-adduser-jordan/open-agents/backend/internal/attachmentstore"
+	"github.com/sudo-adduser-jordan/open-agents/backend/internal/domain"
+	"github.com/sudo-adduser-jordan/open-agents/backend/internal/ports"
+	openagentsprocess "github.com/sudo-adduser-jordan/open-agents/backend/internal/process"
+	"github.com/sudo-adduser-jordan/open-agents/backend/internal/sessionguard"
+	"github.com/sudo-adduser-jordan/open-agents/backend/internal/skillassets"
+	"github.com/sudo-adduser-jordan/open-agents/backend/internal/tmuxbin"
 )
 
 // Sentinel errors returned by the Session Manager; callers match them with
@@ -74,7 +74,7 @@ var (
 	// relaunch cycles over one worktree; the send path maps it from the input
 	// gate so a keystroke during the operation is a conflict, not a drop.
 	ErrExclusiveOperationInProgress = errors.New("session: another exclusive operation is in progress")
-	// ErrAgentStopUnconfirmed means runtime teardown returned an error and AO
+	// ErrAgentStopUnconfirmed means runtime teardown returned an error and Open Agents
 	// could not prove whether the provider still owns the session.
 	ErrAgentStopUnconfirmed = errors.New("session: agent stop could not be confirmed")
 	// ErrInterfaceHandoffUnsupported means the harness has not proven that its
@@ -103,7 +103,7 @@ var (
 	// active/successful rows that have no failure or recovery notice to dismiss.
 	ErrInterfaceTransitionNoticeNotAcknowledgeable = errors.New("session: interface transition has no acknowledgeable notice")
 	// ErrInterfaceProviderHistoryRecoveryUnavailable rejects broad or stale
-	// recovery requests. AO permits provider authority only for the latest exact
+	// recovery requests. Open Agents permits provider authority only for the latest exact
 	// TUI-to-Chat saga after it proved every mismatch was legacy text, including
 	// the same explicit recovery saga after startup reconciliation interrupted it.
 	ErrInterfaceProviderHistoryRecoveryUnavailable = errors.New("session: provider-history recovery is unavailable")
@@ -161,36 +161,36 @@ func wrapSpawnStageEarly(stage, err error) error {
 
 // Env vars a spawned process reads to learn who it is. A worker that starts
 // its own Docker containers (a database, a queue, any ad-hoc service) should
-// label them `--label ao.session=$AO_SESSION_ID` so AO's container reaper
+// label them `--label open-agents.session=$OPEN_AGENTS_SESSION_ID` so Open Agents's container reaper
 // (dockerreap) removes them on session kill/terminal state — see #2652. Add
-// `--label ao.spare=true` to a deliberately shared container that must
+// `--label open-agents.spare=true` to a deliberately shared container that must
 // survive past this session.
 const (
-	EnvSessionID = "AO_SESSION_ID"
-	EnvProjectID = "AO_PROJECT_ID"
-	EnvIssueID   = "AO_ISSUE_ID"
+	EnvSessionID = "OPEN_AGENTS_SESSION_ID"
+	EnvProjectID = "OPEN_AGENTS_PROJECT_ID"
+	EnvIssueID   = "OPEN_AGENTS_ISSUE_ID"
 	// EnvRuntimeLaunchID identifies the current supervised agent generation.
-	EnvRuntimeLaunchID = "AO_RUNTIME_LAUNCH_ID"
-	// EnvSupervisedProcess tells terminal runtimes that the AO supervisor owns
+	EnvRuntimeLaunchID = "OPEN_AGENTS_RUNTIME_LAUNCH_ID"
+	// EnvSupervisedProcess tells terminal runtimes that the Open Agents supervisor owns
 	// this launch. When it exits, tmux must park on a non-interpreting input sink
 	// instead of exposing its historical interactive-shell fallback.
-	EnvSupervisedProcess = "AO_SUPERVISED_PROCESS"
-	// EnvDataDir tells a spawned agent's AO hook commands where the store lives.
-	EnvDataDir = "AO_DATA_DIR"
-	// EnvPermissionMode tells hook commands which AO approval policy applies.
-	EnvPermissionMode = "AO_PERMISSION_MODE"
-	// EnvRunFile tells spawned AO hook commands which live daemon owns the
-	// session. AO_DATA_DIR is durable storage, not daemon discovery; custom and
+	EnvSupervisedProcess = "OPEN_AGENTS_SUPERVISED_PROCESS"
+	// EnvDataDir tells a spawned agent's Open Agents hook commands where the store lives.
+	EnvDataDir = "OPEN_AGENTS_DATA_DIR"
+	// EnvPermissionMode tells hook commands which Open Agents approval policy applies.
+	EnvPermissionMode = "OPEN_AGENTS_PERMISSION_MODE"
+	// EnvRunFile tells spawned Open Agents hook commands which live daemon owns the
+	// session. OPEN_AGENTS_DATA_DIR is durable storage, not daemon discovery; custom and
 	// isolated daemons therefore need this coordinate explicitly.
-	EnvRunFile = "AO_RUN_FILE"
+	EnvRunFile = "OPEN_AGENTS_RUN_FILE"
 	// EnvBrowserCapability proves ownership of the session's browser target.
-	EnvBrowserCapability = "AO_BROWSER_CAPABILITY"
+	EnvBrowserCapability = "OPEN_AGENTS_BROWSER_CAPABILITY"
 	// EnvBrowserRuntimeToken must never be inherited by a worker. It authenticates
 	// the privileged Electron runtime, not session-scoped browser callers.
-	EnvBrowserRuntimeToken = "AO_BROWSER_RUNTIME_TOKEN" //nolint:gosec // Environment variable name, not a credential.
+	EnvBrowserRuntimeToken = "OPEN_AGENTS_BROWSER_RUNTIME_TOKEN" //nolint:gosec // Environment variable name, not a credential.
 	// EnvBrowserRuntimeTokenStdin is the daemon-only token handoff marker and
 	// must be cleared before a worker process is spawned.
-	EnvBrowserRuntimeTokenStdin = "AO_BROWSER_RUNTIME_TOKEN_STDIN" //nolint:gosec // Environment variable name, not a credential.
+	EnvBrowserRuntimeTokenStdin = "OPEN_AGENTS_BROWSER_RUNTIME_TOKEN_STDIN" //nolint:gosec // Environment variable name, not a credential.
 )
 
 type lifecycleRecorder interface {
@@ -267,15 +267,15 @@ type runtimeController interface {
 }
 
 // RestoreMode reports whether a restore continued an agent-native transcript or
-// relaunched from AO's saved task prompt.
+// relaunched from Open Agents's saved task prompt.
 type RestoreMode string
 
 const (
-	// RestoreModeNative means AO relaunched through the agent's native transcript resume command.
+	// RestoreModeNative means Open Agents relaunched through the agent's native transcript resume command.
 	RestoreModeNative RestoreMode = "native"
-	// RestoreModeSavedPrompt means AO relaunched a new conversation from the saved task prompt.
+	// RestoreModeSavedPrompt means Open Agents relaunched a new conversation from the saved task prompt.
 	RestoreModeSavedPrompt RestoreMode = "saved_prompt"
-	// RestoreModeFresh means AO relaunched without a saved task prompt.
+	// RestoreModeFresh means Open Agents relaunched without a saved task prompt.
 	RestoreModeFresh RestoreMode = "fresh"
 )
 
@@ -569,7 +569,7 @@ type BrowserCapabilityIssuer interface {
 }
 
 // sendConfirmConfig bounds the best-effort activity-confirmation loop run after
-// Send. AO has no delivery ack: ao send returns 200 the moment tmux send-keys
+// Send. Open Agents has no delivery ack: open-agents send returns 200 the moment tmux send-keys
 // exits 0, and for a large multiline paste the single Enter may not submit the
 // prompt — so UserPromptSubmit never fires and the orchestrator cannot tell the
 // worker started. confirmActive observes the durable Activity.State (written by
@@ -624,10 +624,10 @@ type Deps struct {
 	Browser             BrowserLifecycle
 	BrowserCapabilities BrowserCapabilityIssuer
 	// DataDir owns durable attachment storage and is exported to spawned agents
-	// as AO_DATA_DIR so their hook commands can open the same store.
+	// as OPEN_AGENTS_DATA_DIR so their hook commands can open the same store.
 	DataDir string
-	// RunFilePath is exported to spawned agents as AO_RUN_FILE so their hook
-	// callbacks reach this daemon even when another AO daemon is also running.
+	// RunFilePath is exported to spawned agents as OPEN_AGENTS_RUN_FILE so their hook
+	// callbacks reach this daemon even when another Open Agents daemon is also running.
 	RunFilePath string
 	Clock       func() time.Time
 	// LookPath overrides exec.LookPath for the pre-launch agent-binary check.
@@ -700,7 +700,7 @@ func New(d Deps) *Manager {
 	if m.clock == nil {
 		// UTC so spawn-stamped CreatedAt/UpdatedAt match every other session
 		// write (rename, activity) — all of which use time.Now().UTC(). A local
-		// default produced mixed-timezone timestamps in `ao session get`.
+		// default produced mixed-timezone timestamps in `open-agents session get`.
 		m.clock = func() time.Time { return time.Now().UTC() }
 	}
 	m.statusRecoveries = make(map[domain.SessionID]statusRecovery)
@@ -798,13 +798,13 @@ func (m *Manager) Spawn(ctx context.Context, cfg ports.SpawnConfig) (domain.Sess
 	}
 	// Adapters whose model picker is an agent-owned mode list (e.g. Amp) keep
 	// their selectable values in AgentConfig.Mode. Normalize a copy for the
-	// adapter so `ao spawn --agent amp --model high` launches Amp with `--mode
+	// adapter so `open-agents spawn --agent amp --model high` launches Amp with `--mode
 	// high`, while metadata keeps the original resolved Model for the API view.
 	adapterConfig := normalizeAgentConfigForHarness(cfg.Harness, agentConfig)
 
 	// Resolve the controller mode here, before anything durable is created, for
 	// the same reason an unknown harness is rejected above: an explicit Chat
-	// request AO cannot honor should cost nothing, not leave a terminated row and
+	// request Open Agents cannot honor should cost nothing, not leave a terminated row and
 	// a worktree behind. Chat inherited from the daemon preference is best-effort:
 	// if it is unavailable for this harness or installation, fall back to TUI.
 	modeExplicitlyRequested := cfg.RequestedMode.Valid()
@@ -1057,7 +1057,7 @@ func (m *Manager) inheritedSpawnPermissions(ctx context.Context, projectID domai
 		return "", fmt.Errorf("load parent session %s: %w", parentID, err)
 	}
 	if !ok || parent.ProjectID != projectID || parent.Kind != domain.KindOrchestrator {
-		// AO_SESSION_ID is available in every session, not only orchestrators.
+		// OPEN_AGENTS_SESSION_ID is available in every session, not only orchestrators.
 		// A worker (or a stale/cross-project value) must preserve the historical
 		// project-default spawn behavior rather than gain an inherited policy.
 		return "", nil
@@ -1078,8 +1078,8 @@ func (m *Manager) inheritedSpawnPermissions(ctx context.Context, projectID domai
 
 // gateOrchestratorTaskCreation refuses a worker task spawned by a
 // planning-mode orchestrator: "the orchestrator creates no tasks in plan
-// mode". An orchestrator delegates by invoking `ao spawn` from its own shell,
-// where AO_SESSION_ID names the orchestrator as the parent, so this gate is
+// mode". An orchestrator delegates by invoking `open-agents spawn` from its own shell,
+// where OPEN_AGENTS_SESSION_ID names the orchestrator as the parent, so this gate is
 // the daemon's enforcement point. Only worker children of a same-project
 // orchestrator are gated; worker parents, cross-project parents, unknown
 // sessions, and non-worker children spawn as before. Like the inheritance
@@ -1100,7 +1100,7 @@ func (m *Manager) gateOrchestratorTaskCreation(ctx context.Context, projectID do
 		return nil
 	}
 	if normalized := domain.NormalizeWorkflowMode(parent.WorkflowMode); normalized == domain.WorkflowModePlanning {
-		return fmt.Errorf("spawn: %w: %s is still planning; switch it to building with `ao build %s` before it creates tasks",
+		return fmt.Errorf("spawn: %w: %s is still planning; switch it to building with `open-agents build %s` before it creates tasks",
 			ErrPlanningOrchestratorNoTasks, parentID, parentID)
 	}
 	return nil
@@ -1108,7 +1108,7 @@ func (m *Manager) gateOrchestratorTaskCreation(ctx context.Context, projectID do
 
 // inheritedSpawnWorkflowMode derives a worker's starting delivery stage from its
 // requesting orchestrator. A worker spawned by an orchestrator that has been
-// toggled into building starts in building too, so `ao spawn` from a build-mode
+// toggled into building starts in building too, so `open-agents spawn` from a build-mode
 // orchestrator drops the task straight into the board's Building lane. Any other
 // parent — a worker, a missing session, or an orchestrator still planning — keeps
 // the planning default. Unlike the permission policy this is a board placement,
@@ -1356,7 +1356,7 @@ func spawnDiffBaseRefCandidates(defaultBranch string) []string {
 }
 
 func spawnGitSingleLine(ctx context.Context, root string, args ...string) (string, bool) {
-	cmd := aoprocess.CommandContext(ctx, "git", append([]string{"-C", root}, args...)...)
+	cmd := openagentsprocess.CommandContext(ctx, "git", append([]string{"-C", root}, args...)...)
 	out, err := cmd.Output()
 	if err != nil {
 		return "", false
@@ -1582,7 +1582,7 @@ func resolvedModelForMetadata(harness domain.AgentHarness, effective, adapter po
 	return ""
 }
 
-// validateSpawnModel rejects unknown choices only when AO owns a complete
+// validateSpawnModel rejects unknown choices only when Open Agents owns a complete
 // static catalog. Dynamic catalogs and direct-entry agents defer authoritative
 // model validation to the selected agent at launch time.
 func validateSpawnModel(harness domain.AgentHarness, model string) error {
@@ -2050,7 +2050,7 @@ func (m *Manager) retireWorkspaceProjectForReplacement(ctx context.Context, rec 
 	return nil
 }
 
-// RestoreWithMode relaunches a torn-down session and reports whether AO used
+// RestoreWithMode relaunches a torn-down session and reports whether Open Agents used
 // native resume, a saved-prompt fallback, or a fresh launch. The fallible I/O
 // runs before any durable session write, so a failure never resurrects the row
 // or destroys the worktree (it may hold the agent's prior work).
@@ -2121,7 +2121,7 @@ func (m *Manager) relaunchRestoredSession(ctx context.Context, rec domain.Sessio
 	return result, nil
 }
 
-// ExitAgent stops only the current agent controller. The AO session, worktree,
+// ExitAgent stops only the current agent controller. The Open Agents session, worktree,
 // terminal identity, and provider-native conversation remain available for an
 // exact ResumeAgentWithMode call.
 func (m *Manager) ExitAgent(ctx context.Context, id domain.SessionID) (domain.SessionRecord, error) {
@@ -2171,7 +2171,7 @@ func (m *Manager) ExitAgent(ctx context.Context, id domain.SessionID) (domain.Se
 }
 
 // stopAgentController is the single controller-stop primitive used by the
-// public exit-agent operation. It never terminates the AO session or releases
+// public exit-agent operation. It never terminates the Open Agents session or releases
 // its worktree.
 func (m *Manager) stopAgentController(ctx context.Context, rec domain.SessionRecord) error {
 	if domain.NormalizeSessionMode(rec.Mode) == domain.SessionModeChat {
@@ -2719,7 +2719,7 @@ func (m *Manager) reconcileLive(ctx context.Context, rec domain.SessionRecord) e
 	}
 	// A provider or runtime dependency can be temporarily unavailable during an
 	// app restart (for example, a GUI-launched daemon may have a sparse PATH).
-	// That is not user intent to terminate the AO session, remove its worktree,
+	// That is not user intent to terminate the Open Agents session, remove its worktree,
 	// or retire an orchestrator. Preserve the durable session and native resume
 	// identity, but expose the stopped controller as an exited workload so the
 	// existing Resume Agent path can retry it in place.
@@ -3457,7 +3457,7 @@ func (m *Manager) applyWorkspaceProjectPreserved(ctx context.Context, rows []por
 // it. The guard refuses delivery into a session that is gone, terminated, has
 // an exited agent, or is paused on a permission decision;
 // those refusals surface as typed sentinels so the API reports why instead of
-// silently dropping the message. AO has no delivery ack: the messenger returns
+// silently dropping the message. Open Agents has no delivery ack: the messenger returns
 // nil the moment the runtime paste + Enter commands exit 0, and for a large
 // multiline prompt a single Enter may not submit (codex leaves it as an
 // unsubmitted draft). confirmActive observes the durable Activity.State
@@ -3495,7 +3495,7 @@ func (m *Manager) send(ctx context.Context, id domain.SessionID, message, client
 	// Chat mode has no pane to type into, so it does not go through the messenger
 	// at all. Without this branch the send reached the runtime guard and was
 	// refused as "missing runtime handles" — true of the handles, wrong about the
-	// session, and it left `ao send` and orchestrator-to-worker relay unable to
+	// session, and it left `open-agents send` and orchestrator-to-worker relay unable to
 	// reach a chat worker.
 	if handled, err := m.sendChat(ctx, id, message, clientMessageID); handled {
 		return err
@@ -3898,16 +3898,16 @@ func seedRecord(cfg ports.SpawnConfig, projectConfig domain.ProjectConfig, now t
 
 func defaultSessionBranch(id domain.SessionID, kind domain.SessionKind, prefix, branchNamespace string) string {
 	if kind == domain.KindOrchestrator {
-		return aoBranch(branchNamespace, prefix+"-orchestrator")
+		return openAgentsBranch(branchNamespace, prefix+"-orchestrator")
 	}
 	// A fresh, unique branch per worker session: gitworktree can't add a worktree
 	// on a branch already checked out elsewhere (e.g. main). Put the root work
 	// branch under a session namespace so sibling PR branches such as
-	// ao/<session>/<topic> remain valid Git refs.
-	return aoBranch(branchNamespace, string(id), "root")
+	// open-agents/<session>/<topic> remain valid Git refs.
+	return openAgentsBranch(branchNamespace, string(id), "root")
 }
 
-// DefaultSpawnBranch returns AO's generated work branch for a spawn. Explicit
+// DefaultSpawnBranch returns Open Agents's generated work branch for a spawn. Explicit
 // user-provided branches bypass this helper.
 func DefaultSpawnBranch(id domain.SessionID, kind domain.SessionKind, prefix string, projectKind domain.ProjectKind, dataDir string) string {
 	if projectKind == domain.ProjectKindScratch {
@@ -3915,7 +3915,7 @@ func DefaultSpawnBranch(id domain.SessionID, kind domain.SessionKind, prefix str
 	}
 	branchNamespace := generatedBranchNamespace(dataDir)
 	if projectKind == domain.ProjectKindWorkspace {
-		return aoBranch(branchNamespace, string(id))
+		return openAgentsBranch(branchNamespace, string(id))
 	}
 	return defaultSessionBranch(id, kind, prefix, branchNamespace)
 }
@@ -3926,8 +3926,8 @@ func DefaultOrchestratorBranch(prefix, dataDir string) string {
 	return defaultSessionBranch("", domain.KindOrchestrator, prefix, generatedBranchNamespace(dataDir))
 }
 
-func aoBranch(namespace string, parts ...string) string {
-	all := []string{"ao"}
+func openAgentsBranch(namespace string, parts ...string) string {
+	all := []string{"open-agents"}
 	if namespace != "" {
 		all = append(all, namespace)
 	}
@@ -3950,7 +3950,7 @@ func isDefaultDevDataDir(dataDir string) bool {
 	if err != nil {
 		return false
 	}
-	want, err := filepath.Abs(filepath.Join(home, ".ao", "dev", "data"))
+	want, err := filepath.Abs(filepath.Join(home, ".open-agents", "dev", "data"))
 	if err != nil {
 		return false
 	}
@@ -4141,31 +4141,31 @@ func (m *Manager) buildSystemPrompt(ctx context.Context, kind domain.SessionKind
 			cfg.AdditionalSections = append(cfg.AdditionalSections, workspacePrompt)
 		}
 	}
-	if pointer := strings.TrimSpace(m.aoSkillPointer()); pointer != "" {
+	if pointer := strings.TrimSpace(m.openAgentsSkillPointer()); pointer != "" {
 		cfg.AdditionalSections = append(cfg.AdditionalSections, pointer)
 	}
 	return buildSystemPromptText(cfg), nil
 }
 
-// aoSkillPointer is appended to every agent system prompt. It points the agent
-// at the using-ao skill the daemon installs under the data dir, rather than
+// openAgentsSkillPointer is appended to every agent system prompt. It points the agent
+// at the using-open-agents skill the daemon installs under the data dir, rather than
 // inlining the whole CLI catalog. The path is absolute so it resolves from any
-// project's worktree, not just the AO repo (the only place a repo-relative
+// project's worktree, not just the Open Agents repo (the only place a repo-relative
 // skills/ path would exist). The skill file carries exact flags and examples,
 // so the standing prompt stays a short pointer rather than a command dump.
-func (m *Manager) aoSkillPointer() string {
+func (m *Manager) openAgentsSkillPointer() string {
 	dir := skillassets.Dir(m.dataDir)
 	skillFile := filepath.ToSlash(filepath.Join(dir, "SKILL.md"))
 	commandsGlob := filepath.ToSlash(filepath.Join(dir, "commands", "*.md"))
 	browserFile := filepath.ToSlash(filepath.Join(dir, "commands", "browser.md"))
 	previewFile := filepath.ToSlash(filepath.Join(dir, "commands", "preview.md"))
-	return "\n\n" + "## Using the ao CLI\n\n" +
-		"When using `ao`, read `" + skillFile + "` and only the relevant file under `" + commandsGlob + "`; do not load unrelated command guides.\n\n" +
-		"## AO desktop Browser panel\n\n" +
-		"For frontend work, read `" + previewFile + "` before previewing or starting an app. Static file targets passed to `ao preview` are relative to the session workspace root, regardless of the shell's current directory: use `ao preview README.md`, not `../README.md`. AO serves workspace files through its existing confined loopback preview; do not use `file://` or start a server just to display static files. Never create or modify `package.json` or install dependencies solely to display static files. Do not create `.ao/launch.json` unless the user asks. Automatically open the primary requested browser-displayable artifact immediately after creating or materially updating it, but do not replace an active application preview with a supporting asset. " +
-		"For page inspection or interaction, read `" + browserFile + "` and use `ao browser` from this AO session. Browser network capture is optional and off by default; follow that guide and never enable it for routine browser actions. " +
-		"Do not use host in-app browser connectors, `agent.browsers.get(\"iab\")`, or a browser MCP for the AO Browser panel: those are separate browser runtimes and cannot see or control AO's session-owned page. " +
-		"`ao browser` operates the same live page the user sees in that panel."
+	return "\n\n" + "## Using the open-agents CLI\n\n" +
+		"When using `open-agents`, read `" + skillFile + "` and only the relevant file under `" + commandsGlob + "`; do not load unrelated command guides.\n\n" +
+		"## Open Agents desktop Browser panel\n\n" +
+		"For frontend work, read `" + previewFile + "` before previewing or starting an app. Static file targets passed to `open-agents preview` are relative to the session workspace root, regardless of the shell's current directory: use `open-agents preview README.md`, not `../README.md`. Open Agents serves workspace files through its existing confined loopback preview; do not use `file://` or start a server just to display static files. Never create or modify `package.json` or install dependencies solely to display static files. Do not create `.open-agents/launch.json` unless the user asks. Automatically open the primary requested browser-displayable artifact immediately after creating or materially updating it, but do not replace an active application preview with a supporting asset. " +
+		"For page inspection or interaction, read `" + browserFile + "` and use `open-agents browser` from this Open Agents session. Browser network capture is optional and off by default; follow that guide and never enable it for routine browser actions. " +
+		"Do not use host in-app browser connectors, `agent.browsers.get(\"iab\")`, or a browser MCP for the Open Agents Browser panel: those are separate browser runtimes and cannot see or control Open Agents's session-owned page. " +
+		"`open-agents browser` operates the same live page the user sees in that panel."
 }
 
 func (m *Manager) workspaceProjectPrompt(ctx context.Context, kind domain.SessionKind, projectID domain.ProjectID) (string, error) {
@@ -4287,8 +4287,8 @@ func workspaceRepoList(repos []domain.WorkspaceRepoRecord) string {
 }
 
 // spawnEnv builds the runtime environment: the per-project env vars first, then
-// the AO-internal vars last so they always win (a project cannot override
-// AO_SESSION_ID and friends).
+// the Open Agents-internal vars last so they always win (a project cannot override
+// OPEN_AGENTS_SESSION_ID and friends).
 var envKeysCaseInsensitive = runtime.GOOS == "windows"
 
 func spawnEnv(id domain.SessionID, project domain.ProjectID, issue domain.IssueID, dataDir string, projectEnv map[string]string) map[string]string {
@@ -4318,16 +4318,16 @@ func spawnEnvForOS(id domain.SessionID, project domain.ProjectID, issue domain.I
 }
 
 // runtimeEnv is spawnEnv plus the hook PATH pin: the session's PATH puts the
-// running daemon's own directory first, so the bare `ao` in workspace hook
+// running daemon's own directory first, so the bare `open-agents` in workspace hook
 // commands resolves to the daemon that installed them rather than whatever
-// `ao` is first on the inherited PATH (e.g. a legacy CLI without the hooks
+// `open-agents` is first on the inherited PATH (e.g. a legacy CLI without the hooks
 // command, which fails every callback and silently kills activity tracking).
 // When the pin cannot be applied the inherited PATH is kept and a warning is
 // logged so the degradation isn't silent.
 func (m *Manager) runtimeEnv(id domain.SessionID, project domain.ProjectID, issue domain.IssueID, projectEnv map[string]string) map[string]string {
 	caseInsensitive := envKeysCaseInsensitive
 	env := spawnEnvForOS(id, project, issue, m.dataDir, projectEnv, caseInsensitive)
-	// Project configuration must never redirect AO-owned hook callbacks to a
+	// Project configuration must never redirect Open Agents-owned hook callbacks to a
 	// different daemon. New receives the resolved absolute path in production;
 	// the environment fallback keeps focused embedders and tests compatible.
 	runFilePath := m.runFilePath
@@ -4343,7 +4343,7 @@ func (m *Manager) runtimeEnv(id domain.SessionID, project domain.ProjectID, issu
 	setProtectedEnv(env, EnvBrowserRuntimeTokenStdin, "", caseInsensitive)
 	path, err := hookPATHForOS(m.executable, os.Getenv, projectEnv, m.dataDir, caseInsensitive)
 	if err != nil {
-		m.logger.Warn("session PATH not pinned to the daemon binary; `ao hooks` callbacks may resolve to a different ao and activity tracking will stall",
+		m.logger.Warn("session PATH not pinned to the daemon binary; `open-agents hooks` callbacks may resolve to a different open-agents and activity tracking will stall",
 			"session", id, "error", err)
 		return env
 	}
@@ -4388,7 +4388,7 @@ func hookPATHForOS(executable func() (string, error), getenv func(string) string
 	return HookPATH(executable, getenv, projectEnv, dataDir)
 }
 
-// pinRuntimePermissionEnv exposes the session's AO approval policy to hook
+// pinRuntimePermissionEnv exposes the session's Open Agents approval policy to hook
 // commands so adapters like Cursor can decide whether a tool attempt needs
 // user approval before returning a native permission response.
 func pinRuntimePermissionEnv(env map[string]string, mode domain.PermissionMode) {
@@ -4497,8 +4497,8 @@ func chatControllerOwner(
 // executable's directory prepended to the base PATH (the project's PATH
 // override when set, else the daemon's inherited PATH — matching what the
 // runtime would have exported anyway). An error means the pin cannot be
-// applied: the executable is unresolvable, or is not named "ao", in which case
-// prepending its directory would not change what `ao` resolves to. Exported so
+// applied: the executable is unresolvable, or is not named "open-agents", in which case
+// prepending its directory would not change what `open-agents` resolves to. Exported so
 // the reviewer launcher can pin its pane's PATH the same way.
 func HookPATH(executable func() (string, error), getenv func(string) string, projectEnv map[string]string, dataDir string) (string, error) {
 	return agentlaunch.PinnedPATH(executable, getenv, projectEnv, dataDir)
@@ -4578,9 +4578,9 @@ func runPostCreate(ctx context.Context, workspacePath string, commands []string)
 		}
 		var cmd *exec.Cmd
 		if runtime.GOOS == "windows" {
-			cmd = aoprocess.CommandContext(ctx, "cmd", "/c", command)
+			cmd = openagentsprocess.CommandContext(ctx, "cmd", "/c", command)
 		} else {
-			cmd = aoprocess.CommandContext(ctx, "sh", "-c", command)
+			cmd = openagentsprocess.CommandContext(ctx, "sh", "-c", command)
 		}
 		cmd.Dir = workspacePath
 		if out, err := cmd.CombinedOutput(); err != nil {
@@ -4600,7 +4600,7 @@ type preLauncher interface {
 }
 
 // workspaceCleaner is an optional Agent capability for durable agent-side state
-// that should be released only after AO has actually removed the workspace.
+// that should be released only after Open Agents has actually removed the workspace.
 type workspaceCleaner interface {
 	CleanupWorkspace(ctx context.Context, cfg ports.WorkspaceHookConfig) error
 }
@@ -4675,7 +4675,7 @@ func (m *Manager) cleanupAgentWorkspace(ctx context.Context, rec domain.SessionR
 	if project, err := m.loadProject(ctx, rec.ProjectID); err == nil {
 		env = m.runtimeEnv(rec.ID, rec.ProjectID, rec.IssueID, project.Config.Env)
 	} else {
-		m.logger.Warn("workspace cleanup: project env unavailable; agent cleanup using AO env only",
+		m.logger.Warn("workspace cleanup: project env unavailable; agent cleanup using Open Agents env only",
 			"sessionID", rec.ID, "projectID", rec.ProjectID, "error", err)
 	}
 	if strings.TrimSpace(workspacePath) != "" {
@@ -4869,7 +4869,7 @@ func restoreArgv(ctx context.Context, agent ports.Agent, id domain.SessionID, wo
 }
 
 // nativeConversationMissing reports whether the agent can see a persisted
-// conversation behind the id AO would resume. Agents that cannot answer (no
+// conversation behind the id Open Agents would resume. Agents that cannot answer (no
 // probe, or a failed probe) are treated as present: a restore that might work
 // beats refusing one that would.
 func nativeConversationMissing(ctx context.Context, agent ports.Agent, ref ports.SessionRef, conversationID string, env map[string]string) bool {
@@ -4976,7 +4976,7 @@ func launchBinary(argv []string) (string, bool) {
 	return "", false
 }
 
-// PinnedHookDir resolves the directory that should be prepended for AO hook callbacks.
+// PinnedHookDir resolves the directory that should be prepended for Open Agents hook callbacks.
 func PinnedHookDir(executable func() (string, error), dataDir string) string {
 	return agentlaunch.PinnedDir(executable, dataDir)
 }
@@ -4996,8 +4996,8 @@ func (m *Manager) validateRuntimePrerequisites() error {
 	if runtime.GOOS == "windows" || runtime.GOOS == "linux" {
 		return nil
 	}
-	if resolution, err := tmuxbin.ResolveWith(os.Getenv("AO_TMUX_BINARY"), m.executable, m.lookPath); err != nil || resolution.Path == "" {
-		return fmt.Errorf("%w: tmux required on macOS but AO's configured, bundled, or system tmux was not found", ports.ErrRuntimePrerequisite)
+	if resolution, err := tmuxbin.ResolveWith(os.Getenv("OPEN_AGENTS_TMUX_BINARY"), m.executable, m.lookPath); err != nil || resolution.Path == "" {
+		return fmt.Errorf("%w: tmux required on macOS but Open Agents's configured, bundled, or system tmux was not found", ports.ErrRuntimePrerequisite)
 	}
 	return nil
 }
@@ -5006,7 +5006,7 @@ func (m *Manager) superviseAgentProcess(agent ports.Agent, id domain.SessionID, 
 	return m.superviseAgentProcessMode(agent, id, env, argv)
 }
 
-// superviseAgentProcessMode installs AO's generation-bearing wrapper when the
+// superviseAgentProcessMode installs Open Agents's generation-bearing wrapper when the
 // adapter's process-exit model needs it (supervisor-mode exit detection).
 func (m *Manager) superviseAgentProcessMode(agent ports.Agent, id domain.SessionID, env map[string]string, argv []string) ([]string, string, error) {
 	launchID := m.newLaunchID()
@@ -5035,7 +5035,7 @@ func (m *Manager) wrapAgentProcessWithLaunchID(agent ports.Agent, id domain.Sess
 	env[EnvSupervisedProcess] = "1"
 	executable, err := m.executable()
 	if err != nil {
-		return nil, fmt.Errorf("resolve AO executable: %w", err)
+		return nil, fmt.Errorf("resolve Open Agents executable: %w", err)
 	}
 	wrapped := make([]string, 0, 8+len(argv))
 	wrapped = append(wrapped, executable, "agent-process", "supervise", "--session", string(id), "--launch", launchID, "--")

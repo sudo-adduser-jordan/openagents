@@ -1,6 +1,6 @@
 {
-	"name": "Agent Orchestrator",
-	"short_name": "AO",
+	"name": "Open Agents",
+	"short_name": "Open Agents",
 	"description": "Mission control for a fleet of coding agents",
 	"start_url": "/",
 	"display": "standalone",

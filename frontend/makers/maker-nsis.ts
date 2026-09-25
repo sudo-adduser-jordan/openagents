@@ -6,7 +6,7 @@ import type { ForgePlatform } from "@electron-forge/shared-types";
 // `buildForge`, the same engine recordly's working Windows installer uses. We drop
 // Squirrel.Windows (per-user only, no custom install dir, fragile updates) for a
 // real NSIS installer: per-user or per-machine, custom install directory, and a
-// proper uninstaller. See https://github.com/aoagents/ReverbCode/issues/401.
+// proper uninstaller. See the Open Agents packaging history for issue #401.
 //
 // `buildForge` speaks Forge's legacy v5 function API, which Forge 7's class-based
 // maker loader cannot resolve, so this thin MakerBase subclass adapts it.
@@ -17,9 +17,9 @@ export type MakerNSISConfig = {
 	// Display name for the installer + Start menu shortcut. Defaults to appName.
 	productName?: string;
 	// The packaged binary name WITHOUT ".exe" — must match Forge's
-	// packagerConfig.executableName ("agent-orchestrator"). electron-builder
+	// packagerConfig.executableName ("open-agents"). electron-builder
 	// otherwise derives the exe name from productName and points the Start menu
-	// shortcut at "Agent Orchestrator.exe", which does not exist, so the app
+	// shortcut at "Open Agents.exe", which does not exist, so the app
 	// silently fails to launch and the shortcut shows a generic icon (#2414).
 	executableName?: string;
 	// Path to the Windows .ico used for the app and installer.
@@ -119,15 +119,15 @@ export default class MakerNSIS extends MakerBase<MakerNSISConfig> {
 		// electron-builder derives the Windows exe name — and thus the Start menu
 		// shortcut's target path and icon — from `win.executableName`, falling back
 		// to productName when it is unset. Forge's packager already named the binary
-		// "agent-orchestrator.exe" (packagerConfig.executableName), so we forward the
+		// "open-agents.exe" (packagerConfig.executableName), so we forward the
 		// same name here; otherwise the shortcut targets a nonexistent
-		// "Agent Orchestrator.exe" and the app never launches (#2414).
+		// "Open Agents.exe" and the app never launches (#2414).
 		const win: Record<string, unknown> = { ...(cfg.win ?? {}) };
 		if (cfg.icon) win.icon = cfg.icon;
 		if (cfg.executableName) win.executableName = cfg.executableName;
 		// Windows code signing (#4502): when signing credentials are present in
 		// the environment, electron-builder signs the packaged
-		// agent-orchestrator.exe AND the NSIS installer itself. The signing
+		// open-agents.exe AND the NSIS installer itself. The signing
 		// block is deep-merged over any explicit cfg.win override. With
 		// credentials set we also flip forceCodeSigning so a silently-unsigned
 		// artifact fails the build instead of shipping (same "prove the seal"
@@ -164,6 +164,7 @@ export default class MakerNSIS extends MakerBase<MakerNSISConfig> {
 						createDesktopShortcut: true,
 						createStartMenuShortcut: true,
 						...cfg.nsis,
+						artifactName: "open-agents-win32-${arch}-${version}.${ext}",
 					},
 				},
 			},

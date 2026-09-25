@@ -56,7 +56,7 @@ vi.mock("../../components/TerminalPane", () => ({
 }));
 
 vi.mock("../../lib/bridge", () => ({
-	aoBridge: {
+	openAgentsBridge: {
 		app: { chooseDirectory: chooseDirectoryMock, openExternal: vi.fn() },
 		clipboard: { writeText: clipboardWriteMock },
 		// CreateProjectFlow reads the cloud session (Local | Cloud gating);
@@ -255,7 +255,7 @@ describe("global board first launch", () => {
 		renderBoard(<SessionsBoard />);
 
 		expect(await screen.findByText("Add a project")).toBeInTheDocument();
-		expect(screen.getByText("Choose how you want to add code to Agent Orchestrator")).toBeInTheDocument();
+		expect(screen.getByText("Choose how you want to add code to Open Agents")).toBeInTheDocument();
 		expect(screen.getByRole("button", { name: "Clone from Git" })).toBeInTheDocument();
 		expect(screen.getByRole("button", { name: "Import a workspace folder" })).toBeInTheDocument();
 		expect(screen.getByRole("button", { name: "Import an existing project" })).toBeInTheDocument();

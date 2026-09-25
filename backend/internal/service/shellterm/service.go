@@ -14,10 +14,10 @@ import (
 	"time"
 	"unicode/utf8"
 
-	"github.com/aoagents/agent-orchestrator/backend/internal/agentlaunch"
-	"github.com/aoagents/agent-orchestrator/backend/internal/domain"
-	"github.com/aoagents/agent-orchestrator/backend/internal/httpd/apierr"
-	"github.com/aoagents/agent-orchestrator/backend/internal/ports"
+	"github.com/sudo-adduser-jordan/open-agents/backend/internal/agentlaunch"
+	"github.com/sudo-adduser-jordan/open-agents/backend/internal/domain"
+	"github.com/sudo-adduser-jordan/open-agents/backend/internal/httpd/apierr"
+	"github.com/sudo-adduser-jordan/open-agents/backend/internal/ports"
 )
 
 // ShellRuntime is the slice of the runtime adapter a shell terminal needs:
@@ -73,7 +73,7 @@ type Service struct {
 	// BeginSessionTeardown/OpenShellTerminal gate acquisition. OpenShellTerminal
 	// validates a session id BEFORE calling sessionGateFor, so an invalid id
 	// never allocates an entry here — only real sessions do, bounding growth to
-	// the shape AO's single-user daemon actually runs.
+	// the shape Open Agents's single-user daemon actually runs.
 	gates map[domain.SessionID]*sessionGate
 
 	// onSessionGateWait, when set, is called the instant a session-scoped
@@ -171,7 +171,7 @@ func NewService(runtime ShellRuntime, store Store, projects ProjectRootLocator, 
 func (s *Service) pinnedEnv() map[string]string {
 	path, err := agentlaunch.PinnedPATH(s.executable, os.Getenv, nil, s.dataDir)
 	if err != nil {
-		s.log.Warn("shell terminal PATH not pinned to the daemon binary; a bare `ao` may resolve to a different install", "err", err)
+		s.log.Warn("shell terminal PATH not pinned to the daemon binary; a bare `open-agents` may resolve to a different install", "err", err)
 		return nil
 	}
 	return map[string]string{"PATH": path}

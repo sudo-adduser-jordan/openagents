@@ -19,9 +19,9 @@ import (
 
 	acpsdk "github.com/coder/acp-go-sdk"
 
-	"github.com/aoagents/agent-orchestrator/backend/internal/adapters/chatdriver/persistenthost"
-	"github.com/aoagents/agent-orchestrator/backend/internal/domain"
-	"github.com/aoagents/agent-orchestrator/backend/internal/ports"
+	"github.com/sudo-adduser-jordan/open-agents/backend/internal/adapters/chatdriver/persistenthost"
+	"github.com/sudo-adduser-jordan/open-agents/backend/internal/domain"
+	"github.com/sudo-adduser-jordan/open-agents/backend/internal/ports"
 )
 
 func TestMain(m *testing.M) {
@@ -54,7 +54,7 @@ func TestMain(m *testing.M) {
 }
 
 func TestPersistentACPProviderHelper(t *testing.T) {
-	if os.Getenv("AO_TEST_PERSISTENT_ACP_PROVIDER") != "1" {
+	if os.Getenv("OPEN_AGENTS_TEST_PERSISTENT_ACP_PROVIDER") != "1" {
 		return
 	}
 	scanner := bufio.NewScanner(os.Stdin)
@@ -78,25 +78,25 @@ func TestPersistentACPProviderHelper(t *testing.T) {
 		recordPersistentACPCall(request.Method)
 		switch request.Method {
 		case "initialize":
-			if os.Getenv("AO_TEST_PERSISTENT_ACP_NO_RESUME") == "1" {
+			if os.Getenv("OPEN_AGENTS_TEST_PERSISTENT_ACP_NO_RESUME") == "1" {
 				_, _ = fmt.Fprintf(os.Stdout, `{"jsonrpc":"2.0","id":%s,"result":{"protocolVersion":1,"agentCapabilities":{},"authMethods":[]}}`+"\n", request.ID)
 				continue
 			}
 			_, _ = fmt.Fprintf(os.Stdout, `{"jsonrpc":"2.0","id":%s,"result":{"protocolVersion":1,"agentCapabilities":{"sessionCapabilities":{"resume":{}}},"authMethods":[]}}`+"\n", request.ID)
 		case "session/new":
-			if os.Getenv("AO_TEST_PERSISTENT_ACP_BAD_SETUP") == "1" {
+			if os.Getenv("OPEN_AGENTS_TEST_PERSISTENT_ACP_BAD_SETUP") == "1" {
 				_, _ = fmt.Fprintf(os.Stdout, `{"jsonrpc":"2.0","id":%s,"result":{}}`+"\n", request.ID)
 				continue
 			}
 			_, _ = fmt.Fprintf(os.Stdout, `{"jsonrpc":"2.0","id":%s,"result":{"sessionId":"persistent-provider-session"}}`+"\n", request.ID)
 		case "session/prompt":
 			promptCount++
-			if promptCount == 1 && os.Getenv("AO_TEST_PERSISTENT_ACP_ERROR") == "1" {
+			if promptCount == 1 && os.Getenv("OPEN_AGENTS_TEST_PERSISTENT_ACP_ERROR") == "1" {
 				_, _ = fmt.Fprintf(os.Stdout, `{"jsonrpc":"2.0","id":%s,"error":{"code":-32000,"message":"expired auth","data":"original provider data"}}`+"\n", request.ID)
 				continue
 			}
 			_, _ = fmt.Fprintf(os.Stdout, `{"jsonrpc":"2.0","method":"session/update","params":{"sessionId":"persistent-provider-session","update":{"sessionUpdate":"agent_message_chunk","content":{"type":"text","text":"provider-pid=%d survived"}}}}`+"\n", os.Getpid())
-			if os.Getenv("AO_TEST_PERSISTENT_ACP_PERMISSION") == "1" {
+			if os.Getenv("OPEN_AGENTS_TEST_PERSISTENT_ACP_PERMISSION") == "1" {
 				parkedPromptID = append(json.RawMessage(nil), request.ID...)
 				recordPersistentACPCall("session/request_permission")
 				_, _ = fmt.Fprintln(os.Stdout, `{"jsonrpc":"2.0","id":"permission-1","method":"session/request_permission","params":{"sessionId":"persistent-provider-session","toolCall":{"toolCallId":"tool-1","title":"Approve restart","kind":"edit"},"options":[{"optionId":"allow","name":"Allow","kind":"allow_once"},{"optionId":"reject","name":"Reject","kind":"reject_once"}]}}`)
@@ -114,7 +114,7 @@ func TestPersistentACPProviderHelper(t *testing.T) {
 }
 
 func recordPersistentACPCall(method string) {
-	path := os.Getenv("AO_TEST_PERSISTENT_ACP_CALLS")
+	path := os.Getenv("OPEN_AGENTS_TEST_PERSISTENT_ACP_CALLS")
 	if path == "" || method == "" {
 		return
 	}
@@ -145,7 +145,7 @@ func testACPProcessDetach(t *testing.T, harness domain.AgentHarness) {
 	prepareCalls := 0
 	prepareEnv := func(context.Context) (map[string]string, error) {
 		prepareCalls++
-		return map[string]string{"AO_BROWSER_CAPABILITY": fmt.Sprintf("token-%d", prepareCalls)}, nil
+		return map[string]string{"OPEN_AGENTS_BROWSER_CAPABILITY": fmt.Sprintf("token-%d", prepareCalls)}, nil
 	}
 	cfg := Config{
 		Harness: harness,
@@ -156,9 +156,9 @@ func testACPProcessDetach(t *testing.T, harness domain.AgentHarness) {
 			return Launch{
 				Command: os.Args[0], Args: []string{"-test.run=TestPersistentACPProviderHelper"},
 				Env: map[string]string{
-					"AO_TEST_PERSISTENT_ACP_PROVIDER":  "1",
-					"AO_TEST_PERSISTENT_ACP_NO_RESUME": "1",
-					"AO_TEST_PERSISTENT_ACP_CALLS":     callsPath,
+					"OPEN_AGENTS_TEST_PERSISTENT_ACP_PROVIDER":  "1",
+					"OPEN_AGENTS_TEST_PERSISTENT_ACP_NO_RESUME": "1",
+					"OPEN_AGENTS_TEST_PERSISTENT_ACP_CALLS":     callsPath,
 				},
 			}, nil
 		},
@@ -282,9 +282,9 @@ func TestPersistentACPDriverReplaysOnePermissionAndOriginalResponder(t *testing.
 			return Launch{
 				Command: os.Args[0], Args: []string{"-test.run=TestPersistentACPProviderHelper"},
 				Env: map[string]string{
-					"AO_TEST_PERSISTENT_ACP_PROVIDER":   "1",
-					"AO_TEST_PERSISTENT_ACP_PERMISSION": "1",
-					"AO_TEST_PERSISTENT_ACP_CALLS":      callsPath,
+					"OPEN_AGENTS_TEST_PERSISTENT_ACP_PROVIDER":   "1",
+					"OPEN_AGENTS_TEST_PERSISTENT_ACP_PERMISSION": "1",
+					"OPEN_AGENTS_TEST_PERSISTENT_ACP_CALLS":      callsPath,
 				},
 			}, nil
 		},
@@ -423,7 +423,7 @@ func TestPersistentACPResumeAdoptsLivePromptWithoutSecondSetup(t *testing.T) {
 	}
 
 	opened, err := driver.Resume(context.Background(), ports.ChatResumeConfig{
-		SessionID: "ao-session", DataDir: t.TempDir(), WorkspacePath: t.TempDir(),
+		SessionID: "open-agents-session", DataDir: t.TempDir(), WorkspacePath: t.TempDir(),
 		ProviderConversationID: "provider-session", ProviderScopeID: "scope",
 	})
 	if err != nil {
@@ -445,8 +445,8 @@ func TestPersistentACPResumeAdoptsLivePromptWithoutSecondSetup(t *testing.T) {
 	}
 
 	go func() {
-		_, _ = fmt.Fprintln(host, `{"jsonrpc":"2.0","method":"session/update","params":{"_meta":{"ao.persistentEventId":"acp-host:1"},"sessionId":"provider-session","update":{"sessionUpdate":"agent_message_chunk","content":{"type":"text","text":"survived"}}}}`)
-		_, _ = fmt.Fprintln(host, `{"jsonrpc":"2.0","method":"_ao/persistent_prompt_result","params":{"eventId":"acp-host:2","result":{"stopReason":"end_turn","_meta":{"ao.persistentEventId":"acp-host:2"}}}}`)
+		_, _ = fmt.Fprintln(host, `{"jsonrpc":"2.0","method":"session/update","params":{"_meta":{"open-agents.persistentEventId":"acp-host:1"},"sessionId":"provider-session","update":{"sessionUpdate":"agent_message_chunk","content":{"type":"text","text":"survived"}}}}`)
+		_, _ = fmt.Fprintln(host, `{"jsonrpc":"2.0","method":"_open-agents/persistent_prompt_result","params":{"eventId":"acp-host:2","result":{"stopReason":"end_turn","_meta":{"open-agents.persistentEventId":"acp-host:2"}}}}`)
 	}()
 
 	ready := nextEvent(t, conv.Events())
@@ -476,7 +476,7 @@ func TestPersistentACPResumeAdoptsLivePromptWithoutSecondSetup(t *testing.T) {
 	}
 	select {
 	case ack := <-ackResult:
-		if !strings.Contains(string(ack), "_ao/persistent_prompt_ack") {
+		if !strings.Contains(string(ack), "_open-agents/persistent_prompt_ack") {
 			t.Fatalf("host ack = %q", ack)
 		}
 	case <-time.After(time.Second):
@@ -521,7 +521,7 @@ func TestPersistentACPReplayAppliesAcceptedPermissionCommand(t *testing.T) {
 	}
 
 	opened, err := driver.Resume(context.Background(), ports.ChatResumeConfig{
-		SessionID: "ao-session", DataDir: t.TempDir(), WorkspacePath: t.TempDir(),
+		SessionID: "open-agents-session", DataDir: t.TempDir(), WorkspacePath: t.TempDir(),
 		ProviderConversationID: "provider-session", ProviderScopeID: "scope",
 	})
 	if err != nil {
@@ -534,8 +534,8 @@ func TestPersistentACPReplayAppliesAcceptedPermissionCommand(t *testing.T) {
 	}
 
 	go func() {
-		_, _ = fmt.Fprintln(host, `{"jsonrpc":"2.0","id":"permission-1","method":"session/request_permission","params":{"_meta":{"ao.persistentRequestId":"acp-request:1"},"sessionId":"provider-session","toolCall":{"toolCallId":"tool-1","title":"Approve"},"options":[{"optionId":"allow","name":"Allow","kind":"allow_once"}]}}`)
-		_, _ = fmt.Fprintln(host, `{"jsonrpc":"2.0","method":"_ao/persistent_interaction_command","params":{"eventId":"acp-host:2","requestId":"acp-request:1","kind":"approval","providerPending":true,"decision":{"id":"allow"}}}`)
+		_, _ = fmt.Fprintln(host, `{"jsonrpc":"2.0","id":"permission-1","method":"session/request_permission","params":{"_meta":{"open-agents.persistentRequestId":"acp-request:1"},"sessionId":"provider-session","toolCall":{"toolCallId":"tool-1","title":"Approve"},"options":[{"optionId":"allow","name":"Allow","kind":"allow_once"}]}}`)
+		_, _ = fmt.Fprintln(host, `{"jsonrpc":"2.0","method":"_open-agents/persistent_interaction_command","params":{"eventId":"acp-host:2","requestId":"acp-request:1","kind":"approval","providerPending":true,"decision":{"id":"allow"}}}`)
 	}()
 
 	_ = nextEvent(t, conv.Events()) // controller.ready
@@ -596,7 +596,7 @@ func TestPersistentACPReconnectAcknowledgesAlreadyCommittedPrompt(t *testing.T) 
 	}
 
 	opened, err := driver.Resume(context.Background(), ports.ChatResumeConfig{
-		SessionID: "ao-session", DataDir: t.TempDir(), WorkspacePath: t.TempDir(),
+		SessionID: "open-agents-session", DataDir: t.TempDir(), WorkspacePath: t.TempDir(),
 		ProviderConversationID: "provider-session",
 	})
 	if err != nil {
@@ -607,7 +607,7 @@ func TestPersistentACPReconnectAcknowledgesAlreadyCommittedPrompt(t *testing.T) 
 
 	replayDone := make(chan error, 1)
 	go func() {
-		_, writeErr := fmt.Fprintln(host, `{"jsonrpc":"2.0","method":"_ao/persistent_prompt_result","params":{"eventId":"acp-host:9","result":{"stopReason":"end_turn"}}}`)
+		_, writeErr := fmt.Fprintln(host, `{"jsonrpc":"2.0","method":"_open-agents/persistent_prompt_result","params":{"eventId":"acp-host:9","result":{"stopReason":"end_turn"}}}`)
 		replayDone <- writeErr
 	}()
 	ackResult := make(chan []byte, 1)
@@ -1073,7 +1073,7 @@ func TestACPDriverDefersPromptUntilDurableTurnBinding(t *testing.T) {
 	driver.useTestProcess(fakeSpawn(agent))
 
 	conversation, err := driver.Start(context.Background(), ports.ChatStartConfig{
-		WorkspacePath: t.TempDir(), SystemPrompt: "AO instructions",
+		WorkspacePath: t.TempDir(), SystemPrompt: "Open Agents instructions",
 	})
 	if err != nil {
 		t.Fatalf("Start: %v", err)
@@ -1239,7 +1239,7 @@ func TestACPInterruptWaitsForProviderPromptCompletion(t *testing.T) {
 		t.Fatal("provider did not receive ACP cancel notification")
 	}
 
-	// Accepting session/cancel is not a terminal result. AO must remain busy
+	// Accepting session/cancel is not a terminal result. Open Agents must remain busy
 	// until the provider resolves the original session/prompt request.
 	quiet := time.After(100 * time.Millisecond)
 	for {
@@ -1411,7 +1411,7 @@ func TestACPDriverNegotiatesRichClientCapabilitiesAndNativePromptContent(t *test
 	}
 
 	ref, err := conv.SendTurn(context.Background(), ports.ChatUserMessage{
-		Text: "inspect these", ClientMessageID: "ao-client-message-1",
+		Text: "inspect these", ClientMessageID: "open-agents-client-message-1",
 		Content: []ports.ChatContent{
 			{Type: "image", Data: "aW1hZ2U=", MIMEType: "image/png"},
 			{Type: "resource_link", URI: "file:///repo/README.md", Name: "README.md"},
@@ -1439,11 +1439,11 @@ func TestACPDriverNegotiatesRichClientCapabilitiesAndNativePromptContent(t *test
 		t.Fatalf("native prompt = %#v", prompt)
 	}
 	internalResource := prompt[4].Resource.Resource.TextResourceContents
-	if internalResource == nil || internalResource.Meta[aoInternalReplayMetaKey] != true {
+	if internalResource == nil || internalResource.Meta[openAgentsInternalReplayMetaKey] != true {
 		t.Fatalf("internal replay ACP metadata = %#v", internalResource)
 	}
-	if promptMessageID == nil || *promptMessageID != "ao-client-message-1" {
-		t.Fatalf("ACP prompt message id = %v, want AO's durable client id", promptMessageID)
+	if promptMessageID == nil || *promptMessageID != "open-agents-client-message-1" {
+		t.Fatalf("ACP prompt message id = %v, want Open Agents's durable client id", promptMessageID)
 	}
 }
 
@@ -1477,14 +1477,14 @@ func TestACPDriverReappliesLaunchContextWhenResuming(t *testing.T) {
 		WorkspacePath:          workspace,
 		Env:                    map[string]string{"KEEP": "yes"},
 		Model:                  "selected-resume-model",
-		SystemPrompt:           "Recomputed AO instructions",
+		SystemPrompt:           "Recomputed Open Agents instructions",
 	})
 	if err != nil {
 		t.Fatalf("Resume: %v", err)
 	}
 	defer conv.Close()
 	if got.SessionID != "worker-1" || got.WorkspacePath != workspace || got.Model != "selected-resume-model" ||
-		got.Env["KEEP"] != "yes" || got.SystemPrompt != "Recomputed AO instructions" {
+		got.Env["KEEP"] != "yes" || got.SystemPrompt != "Recomputed Open Agents instructions" {
 		t.Fatalf("launch config = %#v", got)
 	}
 	agent.mu.Lock()
@@ -1496,7 +1496,7 @@ func TestACPDriverReappliesLaunchContextWhenResuming(t *testing.T) {
 		t.Fatalf("resume calls = %d, load calls = %d; want resume fallback", resumeCalls, loadCalls)
 	}
 	prompt, ok := resumeMeta["systemPrompt"].(map[string]any)
-	if !ok || prompt["append"] != "Recomputed AO instructions" {
+	if !ok || prompt["append"] != "Recomputed Open Agents instructions" {
 		t.Fatalf("session/resume metadata = %#v, want recomputed system prompt", resumeMeta)
 	}
 	if resumeModel != "selected-resume-model" {
@@ -1523,7 +1523,7 @@ func TestACPDriverRefreshesHistoryWithAnotherSessionLoad(t *testing.T) {
 	replayBlock := acpsdk.ResourceBlock(acpsdk.EmbeddedResourceResource{
 		TextResourceContents: &acpsdk.TextResourceContents{
 			Uri: ports.ChatInternalReplayResourceURI, Text: `{"kind":"approximate_conversation_context"}`,
-			Meta: map[string]any{aoInternalReplayMetaKey: true},
+			Meta: map[string]any{openAgentsInternalReplayMetaKey: true},
 		},
 	})
 	replaySeed := acpsdk.UpdateUserMessage(replayBlock)
@@ -1565,7 +1565,7 @@ func TestACPDriverRefreshesHistoryWithAnotherSessionLoad(t *testing.T) {
 	conv, err := driver.Resume(context.Background(), ports.ChatResumeConfig{
 		ProviderConversationID: "provider-session-1",
 		WorkspacePath:          t.TempDir(),
-		SystemPrompt:           "AO load instructions",
+		SystemPrompt:           "Open Agents load instructions",
 		ProviderScopeID:        "history-scope",
 	})
 	if err != nil {
@@ -1586,7 +1586,7 @@ func TestACPDriverRefreshesHistoryWithAnotherSessionLoad(t *testing.T) {
 		t.Fatalf("load calls = %d, resume calls = %d, session = %q", loadCalls, resumeCalls, loadedSession)
 	}
 	prompt, ok := loadMeta["systemPrompt"].(map[string]any)
-	if !ok || prompt["append"] != "AO load instructions" {
+	if !ok || prompt["append"] != "Open Agents load instructions" {
 		t.Fatalf("session/load metadata = %#v, want recomputed system prompt", loadMeta)
 	}
 
@@ -1738,7 +1738,7 @@ func TestHistoricalUserContentSuppressesOnlyMarkedInternalReplayResources(t *tes
 		t.Fatalf("unmarked reserved resource = %q, want visible embedded context", got)
 	}
 
-	resource.Resource.Resource.TextResourceContents.Meta = map[string]any{aoInternalReplayMetaKey: true}
+	resource.Resource.Resource.TextResourceContents.Meta = map[string]any{openAgentsInternalReplayMetaKey: true}
 	if got := historicalUserContent(resource); got != "" {
 		t.Fatalf("marked internal replay resource = %q, want hidden", got)
 	}
@@ -2191,7 +2191,7 @@ func TestACPDriverExtractsCommandFromExecuteToolInput(t *testing.T) {
 
 	// A Bash-style tool call reports rawInput as {"command": "..."} — exactly
 	// the shape the neutral `detail.command` contract must be filled from.
-	rawInput := map[string]any{"command": "/bin/zsh -lc 'ao session ls'"}
+	rawInput := map[string]any{"command": "/bin/zsh -lc 'open-agents session ls'"}
 	if err := agent.conn.SessionUpdate(context.Background(), acpsdk.SessionNotification{
 		SessionId: acpsdk.SessionId(opened.ProviderConversationID()),
 		Update: acpsdk.SessionUpdate{ToolCall: &acpsdk.SessionUpdateToolCall{
@@ -2210,10 +2210,10 @@ func TestACPDriverExtractsCommandFromExecuteToolInput(t *testing.T) {
 	if err := json.Unmarshal(started.Detail, &detail); err != nil {
 		t.Fatalf("detail: %v", err)
 	}
-	if detail["command"] != "ao session ls" {
-		t.Fatalf("detail.command = %#v, want unwrapped %q", detail["command"], "ao session ls")
+	if detail["command"] != "open-agents session ls" {
+		t.Fatalf("detail.command = %#v, want unwrapped %q", detail["command"], "open-agents session ls")
 	}
-	if detail["rawCommand"] != "/bin/zsh -lc 'ao session ls'" {
+	if detail["rawCommand"] != "/bin/zsh -lc 'open-agents session ls'" {
 		t.Fatalf("detail.rawCommand = %#v, want the verbatim provider command", detail["rawCommand"])
 	}
 	if detail["input"] == nil {
@@ -2445,7 +2445,7 @@ func TestACPDriverNormalizesRetryStatus(t *testing.T) {
 	}
 
 	// The provider can use a new extension incident id for each attempt before its
-	// provider turn id is available. AO must still update one active-episode row.
+	// provider turn id is available. Open Agents must still update one active-episode row.
 	if err := agent.conn.SessionUpdate(context.Background(), acpsdk.SessionNotification{
 		SessionId: acpsdk.SessionId(opened.ProviderConversationID()),
 		Update: acpsdk.SessionUpdate{SessionInfoUpdate: &acpsdk.SessionSessionInfoUpdate{

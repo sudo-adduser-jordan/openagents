@@ -1,29 +1,29 @@
 import type { Page } from "@playwright/test";
 
 import type { UpdateSettings, UpdateStatus } from "../../src/main/update-settings";
-import type { AoBridge } from "../../src/preload";
+import type { OpenAgentsBridge } from "../../src/preload";
 import type { DaemonStatus } from "../../src/shared/daemon-status";
 import { coerceUiSettings, DEFAULT_UI_SETTINGS } from "../../src/shared/ui-locale";
 
 // The e2e suite runs the renderer under `dev:web` (VITE_NO_ELECTRON=1) with no
-// Electron preload, so `window.ao` is undefined and lib/bridge.ts falls back to
+// Electron preload, so `window.openAgents` is undefined and lib/bridge.ts falls back to
 // a browser stub that reports the daemon as permanently "stopped" and the app
 // version as "0.0.0-preview". The daemon/version smoke cases (DMN-*, INS-004)
 // need a deterministic *ready* daemon and a known version string, so we inject
-// a complete `window.ao` before any page script runs — the same seam the real
+// a complete `window.openAgents` before any page script runs — the same seam the real
 // Electron preload fills. This is a fake *bridge*, not a fake agent: no worker
 // process and no GitHub repo are involved, matching the T0 POD constraints.
 //
-// In a real Linux pod running the packaged Electron build, `window.ao` is the
+// In a real Linux pod running the packaged Electron build, `window.openAgents` is the
 // live preload; the injected bridge is only the deterministic stand-in for the
 // browser harness.
 //
-// SCOPE / CAVEAT — renderer smoke, not full e2e. Because `window.ao`,
+// SCOPE / CAVEAT — renderer smoke, not full e2e. Because `window.openAgents`,
 // `EventSource`, and the workspace snapshot are all faked here, this harness
 // CANNOT catch daemon, storage, API, preload, PTY, or filesystem regressions —
 // those are the packaged-app pod gate's job (#2697). In particular,
 // `useWorkspaceQuery` reads an already-shaped `WorkspaceSummary` straight from
-// `window.__aoFakeAgent.snapshot()`, BYPASSING the generated API client + DTO
+// `window.__openAgentsFakeAgent.snapshot()`, BYPASSING the generated API client + DTO
 // mapping; DTO/client coverage comes from the pod gate + unit tests, never from
 // these specs. Treat green here as "the renderer renders the injected state,"
 // not "the boundary works."
@@ -71,10 +71,10 @@ export async function installFakeBridge(page: Page, opts: FakeBridgeOptions = {}
 				isLoading: false,
 			});
 
-			// Full AoBridge surface (mirrors src/preload.ts) so any renderer call
+			// Full OpenAgentsBridge surface (mirrors src/preload.ts) so any renderer call
 			// resolves — an incomplete object would throw the moment the app touched
 			// a missing method.
-			const ao = {
+			const openAgents = {
 					app: {
 						getVersion: async () => version,
 						chooseDirectory: async () => null,
@@ -194,7 +194,7 @@ export async function installFakeBridge(page: Page, opts: FakeBridgeOptions = {}
 					devtools: async (input: { viewId: string }) => ({ viewId: input.viewId, open: false, activeTabId: "" }),
 					destroy: () => undefined,
 					// Annotation contract (mirrors src/preload.ts): useBrowserView subscribes
-					// to these whenever SessionView mounts with window.ao.browser present, so
+					// to these whenever SessionView mounts with window.openAgents.browser present, so
 					// an incomplete browser shape would crash the session-detail/preview specs.
 					setAnnotationMode: async () => undefined,
 					completeAnnotation: async () => undefined,
@@ -237,10 +237,6 @@ export async function installFakeBridge(page: Page, opts: FakeBridgeOptions = {}
 					setAttentionState: () => undefined,
 					onOpenSession: unsubscribe,
 				},
-				appState: {
-					getMigration: async () => ({ status: "completed" }),
-					setMigration: async () => undefined,
-				},
 				updateSettings: {
 					get: async () => currentUpdateSettings,
 					set: async (next: UpdateSettings) => {
@@ -280,11 +276,11 @@ export async function installFakeBridge(page: Page, opts: FakeBridgeOptions = {}
 					list: async () => [],
 					getActive: async () => null,
 				},
-			} satisfies AoBridge;
-			(window as unknown as { __aoFakeUpdates: { setStatus: (status: UpdateStatus) => void } }).__aoFakeUpdates = {
+			} satisfies OpenAgentsBridge;
+			(window as unknown as { __openAgentsFakeUpdates: { setStatus: (status: UpdateStatus) => void } }).__openAgentsFakeUpdates = {
 				setStatus: emitUpdateStatus,
 			};
-			(window as unknown as { ao: unknown }).ao = ao;
+			(window as unknown as { openAgents: unknown }).openAgents = openAgents;
 		},
 		{ version, daemonState, daemonPort, updateStatus, updateSettings },
 	);
@@ -297,7 +293,7 @@ export async function installFakeBridge(page: Page, opts: FakeBridgeOptions = {}
 // raise a needs-input notification). Under the browser harness there is no Go
 // daemon and no agent, so we simulate that timeline at the bridge:
 //
-//   1. A `window.ao` whose daemon is ready on a port — so the renderer sets its
+//   1. A `window.openAgents` whose daemon is ready on a port — so the renderer sets its
 //      REST base URL and opens its SSE streams (the same seam the packaged app
 //      fills). The `browser.*` IPC is driven off a shared in-page state so the
 //      preview surface is controllable.
@@ -307,7 +303,7 @@ export async function installFakeBridge(page: Page, opts: FakeBridgeOptions = {}
 //      exactly what drives the renderer's cache-invalidation → refetch path (no
 //      manual refresh), matching the real daemon's behaviour.
 //   3. A mutable workspace snapshot read by `useWorkspaceQuery` via
-//      `window.__aoFakeAgent.snapshot()` (dev:web seam). Controller mutations +
+//      `window.__openAgentsFakeAgent.snapshot()` (dev:web seam). Controller mutations +
 //      an SSE push = the card the renderer repaints.
 //
 // The real Go fake-agent plugin drives the same states in the later real-daemon
@@ -358,15 +354,15 @@ export type FakeUpdateController = {
 
 declare global {
 	interface Window {
-		__aoFakeAgent?: FakeAgentController;
-		__aoFakeUpdates?: FakeUpdateController;
+		__openAgentsFakeAgent?: FakeAgentController;
+		__openAgentsFakeUpdates?: FakeUpdateController;
 	}
 }
 
 /**
  * Install the fake-agent bridge + SSE + snapshot seam before any page script.
  * Drive the timeline from specs with
- * `page.evaluate(() => window.__aoFakeAgent!.setStatus(...))`.
+ * `page.evaluate(() => window.__openAgentsFakeAgent!.setStatus(...))`.
  */
 export async function installFakeAgent(page: Page, opts: FakeAgentOptions = {}): Promise<void> {
 	const version = opts.version ?? "9.9.9-test";
@@ -595,20 +591,20 @@ export async function installFakeAgent(page: Page, opts: FakeAgentOptions = {}):
 					emit("/api/v1/notifications/stream", "notification_created", payload);
 				},
 			};
-			(window as unknown as { __aoFakeAgent: unknown }).__aoFakeAgent = controller;
+			(window as unknown as { __openAgentsFakeAgent: unknown }).__openAgentsFakeAgent = controller;
 
 			const unsubscribe = () => () => undefined;
 			const status: DaemonStatus = { state: "ready", port: daemonPort };
 			const navState = (viewId: string, url = "", error?: string) => ({
 				viewId,
 				url,
-				title: url ? "AO preview" : "",
+				title: url ? "Open Agents preview" : "",
 				canGoBack: false,
 				canGoForward: false,
 				isLoading: false,
 				...(error ? { error } : {}),
 			});
-			const ao = {
+			const openAgents = {
 					app: {
 						getVersion: async () => version,
 						chooseDirectory: async () => null,
@@ -726,7 +722,7 @@ export async function installFakeAgent(page: Page, opts: FakeAgentOptions = {}):
 					devtools: async (input: { viewId: string }) => ({ viewId: input.viewId, open: false, activeTabId: "" }),
 					destroy: () => undefined,
 					// Annotation contract (mirrors src/preload.ts): useBrowserView subscribes
-					// to these whenever SessionView mounts with window.ao.browser present, so
+					// to these whenever SessionView mounts with window.openAgents.browser present, so
 					// an incomplete browser shape would crash the session-detail/preview specs.
 					setAnnotationMode: async () => undefined,
 					completeAnnotation: async () => undefined,
@@ -766,7 +762,6 @@ export async function installFakeAgent(page: Page, opts: FakeAgentOptions = {}):
 					onClick: unsubscribe,
 				},
 				tray: { setAttentionState: () => undefined, onOpenSession: unsubscribe },
-				appState: { getMigration: async () => ({ status: "completed" }), setMigration: async () => undefined },
 				updateSettings: {
 					get: async () => ({
 						enabled: false,
@@ -803,8 +798,8 @@ export async function installFakeAgent(page: Page, opts: FakeAgentOptions = {}):
 					list: async () => [],
 					getActive: async () => null,
 				},
-			} satisfies AoBridge;
-			(window as unknown as { ao: unknown }).ao = ao;
+			} satisfies OpenAgentsBridge;
+			(window as unknown as { openAgents: unknown }).openAgents = openAgents;
 		},
 		{ version, daemonPort, projectId, projectName, platform, workers, nowIso },
 	);

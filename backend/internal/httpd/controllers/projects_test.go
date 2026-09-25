@@ -24,15 +24,15 @@ import (
 
 	"testing"
 
-	"github.com/aoagents/agent-orchestrator/backend/internal/config"
+	"github.com/sudo-adduser-jordan/open-agents/backend/internal/config"
 
-	"github.com/aoagents/agent-orchestrator/backend/internal/domain"
+	"github.com/sudo-adduser-jordan/open-agents/backend/internal/domain"
 
-	"github.com/aoagents/agent-orchestrator/backend/internal/httpd"
+	"github.com/sudo-adduser-jordan/open-agents/backend/internal/httpd"
 
-	projectsvc "github.com/aoagents/agent-orchestrator/backend/internal/service/project"
+	projectsvc "github.com/sudo-adduser-jordan/open-agents/backend/internal/service/project"
 
-	"github.com/aoagents/agent-orchestrator/backend/internal/storage/sqlite/sqlitetest"
+	"github.com/sudo-adduser-jordan/open-agents/backend/internal/storage/sqlite/sqlitetest"
 )
 
 // emptyGetManager returns a GetResult that sets neither Project nor Degraded —
@@ -122,7 +122,7 @@ func TestProjectsAPI_ListAddGet(t *testing.T) {
 
 	srv := newTestServer(t)
 
-	repo := gitRepo(t, "agent-orchestrator")
+	repo := gitRepo(t, "open-agents")
 
 	body, status, headers := doRequest(t, srv, "GET", "/api/v1/projects", "")
 
@@ -146,7 +146,7 @@ func TestProjectsAPI_ListAddGet(t *testing.T) {
 
 	}
 
-	body, status, _ = doRequest(t, srv, "POST", "/api/v1/projects", `{"path":`+quote(repo)+`,"projectId":"ao","name":"Agent Orchestrator"}`)
+	body, status, _ = doRequest(t, srv, "POST", "/api/v1/projects", `{"path":`+quote(repo)+`,"projectId":"open-agents","name":"Open Agents"}`)
 
 	if status != http.StatusCreated {
 
@@ -160,13 +160,13 @@ func TestProjectsAPI_ListAddGet(t *testing.T) {
 
 	mustJSON(t, body, &add)
 
-	if add.Project.ID != "ao" || add.Project.Name != "Agent Orchestrator" || add.Project.DefaultBranch != domain.DefaultBranchAuto {
+	if add.Project.ID != "open-agents" || add.Project.Name != "Open Agents" || add.Project.DefaultBranch != domain.DefaultBranchAuto {
 
 		t.Fatalf("created project = %#v", add.Project)
 
 	}
 
-	body, status, _ = doRequest(t, srv, "GET", "/api/v1/projects/ao", "")
+	body, status, _ = doRequest(t, srv, "GET", "/api/v1/projects/open-agents", "")
 
 	if status != http.StatusOK {
 
@@ -182,7 +182,7 @@ func TestProjectsAPI_ListAddGet(t *testing.T) {
 
 	mustJSON(t, body, &get)
 
-	if get.Status != "ok" || get.Project.ID != "ao" {
+	if get.Status != "ok" || get.Project.ID != "open-agents" {
 
 		t.Fatalf("get response = %#v", get)
 
@@ -613,7 +613,7 @@ func gitRepo(t *testing.T, name string) string {
 		t.Fatalf("git init fixture: %v\n%s", err, out)
 
 	}
-	if out, err := exec.Command("git", "-C", dir, "-c", "user.email=ao@example.com", "-c", "user.name=AO Test", "commit", "--allow-empty", "-m", "initial").CombinedOutput(); err != nil {
+	if out, err := exec.Command("git", "-C", dir, "-c", "user.email=open-agents@example.com", "-c", "user.name=Open Agents Test", "commit", "--allow-empty", "-m", "initial").CombinedOutput(); err != nil {
 		t.Fatalf("git commit fixture: %v\n%s", err, out)
 	}
 	return dir

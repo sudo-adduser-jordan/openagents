@@ -126,7 +126,7 @@ const worker = {
 	title: "do the thing",
 	provider: "opencode",
 	kind: "worker",
-	branch: "ao/sess-1",
+	branch: "open-agents/sess-1",
 	status: "working",
 	updatedAt: "2026-06-10T00:00:00Z",
 	prs: [],
@@ -166,8 +166,8 @@ function renderPane(
 	onInputRequestResult?: (id: number, accepted: boolean) => void,
 ) {
 	const queryClient = new QueryClient({ defaultOptions: { queries: { retry: false } } });
-	const previousAO = window.ao;
-	window.ao = {} as typeof window.ao;
+	const previousOpenAgents = window.openAgents;
+	window.openAgents = {} as typeof window.openAgents;
 	const result = render(
 		<QueryClientProvider client={queryClient}>
 			<TooltipProvider>
@@ -186,7 +186,7 @@ function renderPane(
 		...result,
 		queryClient,
 		restore: () => {
-			window.ao = previousAO;
+			window.openAgents = previousOpenAgents;
 		},
 	};
 }
@@ -220,8 +220,8 @@ function renderCachedPane({
 	const queryClient = new QueryClient({ defaultOptions: { queries: { retry: false } } });
 	queryClient.setQueryData(workspaceQueryKey, workspaceWithSessions(sessions));
 	queryClient.setQueryData(shellTerminalsQueryKey, shellTerminals);
-	const previousAO = window.ao;
-	window.ao = {} as typeof window.ao;
+	const previousOpenAgents = window.openAgents;
+	window.openAgents = {} as typeof window.openAgents;
 
 	const tree = (nextSession?: WorkspaceSession, nextTarget?: TerminalTarget, showPane = true) => (
 		<QueryClientProvider client={queryClient}>
@@ -250,7 +250,7 @@ function renderCachedPane({
 		show: (nextSession?: WorkspaceSession, nextTarget?: TerminalTarget) =>
 			result.rerender(tree(nextSession, nextTarget)),
 		restore: () => {
-			window.ao = previousAO;
+			window.openAgents = previousOpenAgents;
 		},
 	};
 }
@@ -262,8 +262,8 @@ function activeXterm(): HTMLElement {
 describe("TerminalPane empty states", () => {
 	it("reports terminal attachment state changes to an optional observer", async () => {
 		const queryClient = new QueryClient({ defaultOptions: { queries: { retry: false } } });
-		const previousAO = window.ao;
-		window.ao = {} as typeof window.ao;
+		const previousOpenAgents = window.openAgents;
+		window.openAgents = {} as typeof window.openAgents;
 		const onTerminalStateChange = vi.fn();
 		const target = {
 			kind: "shell" as const,
@@ -286,7 +286,7 @@ describe("TerminalPane empty states", () => {
 			);
 			await waitFor(() => expect(onTerminalStateChange).toHaveBeenLastCalledWith("exited"));
 		} finally {
-			window.ao = previousAO;
+			window.openAgents = previousOpenAgents;
 		}
 	});
 
@@ -335,7 +335,7 @@ describe("TerminalPane empty states", () => {
 	it("shows a no-selection message when no session is selected", () => {
 		const view = renderPane();
 		try {
-			expect(screen.getByText("Agent Orchestrator")).toBeInTheDocument();
+			expect(screen.getByText("Open Agents")).toBeInTheDocument();
 			expect(screen.getByText("No session selected. Pick a worker to attach its terminal.")).toBeInTheDocument();
 		} finally {
 			view.restore();
@@ -348,7 +348,7 @@ describe("TerminalPane empty states", () => {
 			expect(screen.getByText("Starting session")).toBeInTheDocument();
 			expect(
 				screen.getByText(
-					"Preparing the worker terminal. This can take a moment while AO creates the workspace and starts the agent.",
+					"Preparing the worker terminal. This can take a moment while Open Agents creates the workspace and starts the agent.",
 				),
 			).toBeInTheDocument();
 			expect(screen.queryByText("No session selected. Pick a worker to attach its terminal.")).not.toBeInTheDocument();
@@ -363,7 +363,7 @@ describe("TerminalPane empty states", () => {
 			expect(screen.getByText("Starting session")).toBeInTheDocument();
 			expect(
 				screen.getByText(
-					"Preparing the orchestrator terminal. This can take a moment while AO creates the workspace and starts the agent.",
+					"Preparing the orchestrator terminal. This can take a moment while Open Agents creates the workspace and starts the agent.",
 				),
 			).toBeInTheDocument();
 			expect(screen.queryByText(/worker terminal/i)).not.toBeInTheDocument();

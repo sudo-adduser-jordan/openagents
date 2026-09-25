@@ -6,7 +6,7 @@ import (
 	"testing"
 	"time"
 
-	"github.com/aoagents/agent-orchestrator/backend/internal/domain"
+	"github.com/sudo-adduser-jordan/open-agents/backend/internal/domain"
 )
 
 func TestSessionInterfaceTransitionClaimModeCASAndOutbox(t *testing.T) {
@@ -347,7 +347,7 @@ func TestSessionInterfaceTransitionNoticeAcknowledgementRoundTripAndCDC(t *testi
 	settledAt := now.Add(time.Minute)
 	moved, err := st.AdvanceSessionInterfaceTransition(ctx, transition.ID,
 		domain.SessionInterfaceTransitionRequested, domain.SessionInterfaceTransitionRecovery,
-		"", "DAEMON_RESTARTED", "AO recovered the session.", settledAt)
+		"", "DAEMON_RESTARTED", "Open Agents recovered the session.", settledAt)
 	if err != nil || !moved {
 		t.Fatalf("settle transition: moved=%v err=%v", moved, err)
 	}

@@ -14,11 +14,11 @@ import (
 
 	"github.com/go-chi/chi/v5"
 
-	"github.com/aoagents/agent-orchestrator/backend/internal/domain"
-	"github.com/aoagents/agent-orchestrator/backend/internal/httpd/apispec"
-	"github.com/aoagents/agent-orchestrator/backend/internal/httpd/envelope"
-	"github.com/aoagents/agent-orchestrator/backend/internal/ports"
-	chatsvc "github.com/aoagents/agent-orchestrator/backend/internal/service/chat"
+	"github.com/sudo-adduser-jordan/open-agents/backend/internal/domain"
+	"github.com/sudo-adduser-jordan/open-agents/backend/internal/httpd/apispec"
+	"github.com/sudo-adduser-jordan/open-agents/backend/internal/httpd/envelope"
+	"github.com/sudo-adduser-jordan/open-agents/backend/internal/ports"
+	chatsvc "github.com/sudo-adduser-jordan/open-agents/backend/internal/service/chat"
 )
 
 // maxConversationBody bounds a chat message. Large context belongs in files the
@@ -125,7 +125,7 @@ func (c *ConversationsController) editMessage(w http.ResponseWriter, r *http.Req
 }
 
 // retryTurn re-dispatches a failed turn's durable prompt as a new turn. The
-// content is read from AO's rows rather than the request, so the daemon owns
+// content is read from Open Agents's rows rather than the request, so the daemon owns
 // what gets sent again and the original failed turn stays failed.
 func (c *ConversationsController) retryTurn(w http.ResponseWriter, r *http.Request) {
 	if c.Svc == nil {
@@ -247,7 +247,7 @@ func writeConversationEditError(w http.ResponseWriter, r *http.Request, err erro
 }
 
 // configOptions serves every live control the provider advertises. Empty is a
-// real capability answer and keeps native drivers free to use AO's older typed
+// real capability answer and keeps native drivers free to use Open Agents's older typed
 // model/settings surface.
 func (c *ConversationsController) configOptions(w http.ResponseWriter, r *http.Request) {
 	if c.Svc == nil {
@@ -350,7 +350,7 @@ func (c *ConversationsController) rollback(w http.ResponseWriter, r *http.Reques
 // setTitle names the provider's thread.
 //
 // 202 rather than 200: the provider accepts the name and then reports it back on its
-// own event, and that report is what moves AO's session label. Claiming 200 would
+// own event, and that report is what moves Open Agents's session label. Claiming 200 would
 // promise a change that has not happened yet.
 func (c *ConversationsController) setTitle(w http.ResponseWriter, r *http.Request) {
 	if c.Svc == nil {
@@ -624,7 +624,7 @@ func conversationContent(req SendConversationMessageRequest) ([]ports.ChatConten
 			return nil, &attachmentError{"INVALID_RESOURCE", "resource uri and name are required"}
 		}
 		if resource.URI == ports.ChatInternalReplayResourceURI {
-			return nil, &attachmentError{"INVALID_RESOURCE", "resource uri is reserved for AO internal context"}
+			return nil, &attachmentError{"INVALID_RESOURCE", "resource uri is reserved for Open Agents internal context"}
 		}
 		kind, text := "resource_link", ""
 		if resource.Text != nil {
@@ -797,7 +797,7 @@ func writeConversationError(w http.ResponseWriter, r *http.Request, err error) {
 		// Retryable, unlike every other refusal here: the same request works once
 		// the agent finishes. Rolling back mid-turn is refused rather than raced,
 		// because discarding history the agent is still writing into would leave
-		// AO's timeline and the agent's memory describing different conversations.
+		// Open Agents's timeline and the agent's memory describing different conversations.
 		envelope.WriteAPIError(w, r, http.StatusConflict, "conflict",
 			"CHAT_TURN_RUNNING",
 			"stop the agent before rolling back: it is in the middle of a turn", nil)
@@ -875,7 +875,7 @@ func writeConversationError(w http.ResponseWriter, r *http.Request, err error) {
 
 	case errors.Is(err, ports.ErrChatResumeFailed):
 		// Deliberately not a silent recovery: the client must offer the user a
-		// choice rather than have AO invent a fresh conversation.
+		// choice rather than have Open Agents invent a fresh conversation.
 		envelope.WriteAPIError(w, r, http.StatusConflict, "conflict",
 			"CHAT_RESUME_FAILED",
 			"the stored provider conversation could not be resumed", nil)
@@ -1000,7 +1000,7 @@ func conversationContentSummary(msg domain.ConversationMessage) ([]ConversationC
 	}
 	summaries := make([]ConversationContentSummaryResponse, 0, len(content))
 	for _, block := range content {
-		// AO's reconstructed-history seed is provider context, not content the
+		// Open Agents's reconstructed-history seed is provider context, not content the
 		// person attached. Keeping it out of this public summary prevents it from
 		// appearing as a user resource when the edited message is rendered again.
 		if block.Type == "text" || ports.IsInternalReplayContent(block) {
@@ -1094,7 +1094,7 @@ func turnPlanPayload(plan *domain.ConversationPlan) *ConversationPlanResponse {
 // modelReroutePayload maps a model substitution onto the wire shape.
 //
 // Absent means the provider never swapped the model, which is why it is not folded
-// into the settings payload: settings say what AO asked for, and this says what
+// into the settings payload: settings say what Open Agents asked for, and this says what
 // answered. Collapsing them would leave a client unable to tell "I chose this" from
 // "this replied".
 func modelReroutePayload(reroute *domain.ConversationModelReroute) *ConversationModelReroutePayload {

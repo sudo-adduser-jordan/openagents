@@ -1,6 +1,6 @@
 "use client";
 
-import { COMPANY } from "@ao/shared/constants";
+import { COMPANY } from "@openagents/shared/constants";
 
 interface SocialLinksProps {
 	className?: string;
@@ -28,27 +28,30 @@ export function SocialLinks({ className = "" }: SocialLinksProps) {
 				</svg>
 				<span>Discord</span>
 			</a>
-			<a
-				href={COMPANY.X_URL}
-				target="_blank"
-				rel="noopener noreferrer"
-				className="inline-flex items-center gap-2 text-sm text-muted-foreground transition-colors hover:text-foreground"
-				aria-label="Follow us on X/Twitter"
-			>
-				<svg
-					width="18"
-					height="18"
-					viewBox="0 0 24 24"
-					fill="currentColor"
-					xmlns="http://www.w3.org/2000/svg"
+			{COMPANY.X_URL && (
+				<a
+					href={COMPANY.X_URL}
+					target="_blank"
+					rel="noopener noreferrer"
+					className="inline-flex items-center gap-2 text-sm text-muted-foreground transition-colors hover:text-foreground"
+					aria-label="Follow us on X/Twitter"
 				>
-					<title>X/Twitter</title>
-					<path d="M18.244 2.25h3.308l-7.227 8.26 8.502 11.24H16.17l-5.214-6.817L4.99 21.75H1.68l7.73-8.835L1.254 2.25H8.08l4.713 6.231zm-1.161 17.52h1.833L7.084 4.126H5.117z" />
-				</svg>
-				<span>X</span>
-			</a>
-			<a
-				href={COMPANY.LINKEDIN_URL}
+					<svg
+						width="18"
+						height="18"
+						viewBox="0 0 24 24"
+						fill="currentColor"
+						xmlns="http://www.w3.org/2000/svg"
+					>
+						<title>X/Twitter</title>
+						<path d="M18.244 2.25h3.308l-7.227 8.26 8.502 11.24H16.17l-5.214-6.817L4.99 21.75H1.68l7.73-8.835L1.254 2.25H8.08l4.713 6.231zm-1.161 17.52h1.833L7.084 4.126H5.117z" />
+					</svg>
+					<span>X</span>
+				</a>
+			)}
+			{COMPANY.LINKEDIN_URL && (
+				<a
+					href={COMPANY.LINKEDIN_URL}
 				target="_blank"
 				rel="noopener noreferrer"
 				className="inline-flex items-center gap-2 text-sm text-muted-foreground transition-colors hover:text-foreground"
@@ -66,6 +69,7 @@ export function SocialLinks({ className = "" }: SocialLinksProps) {
 				</svg>
 				<span>LinkedIn</span>
 			</a>
+			)}
 		</div>
 	);
 }

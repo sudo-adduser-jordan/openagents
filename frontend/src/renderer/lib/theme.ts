@@ -12,8 +12,8 @@ export type ThemeStyle =
 	| "gruvbox"
 	| "solarized";
 
-export const themeStorageKey = "ao.theme";
-export const themeStyleStorageKey = "ao.theme-style";
+export const themeStorageKey = "open-agents.theme";
+export const themeStyleStorageKey = "open-agents.theme-style";
 
 function getLocalStorage() {
 	if (typeof window === "undefined" || !window.localStorage) return null;

@@ -9,15 +9,15 @@ import (
 	"sync"
 	"time"
 
-	agentregistry "github.com/aoagents/agent-orchestrator/backend/internal/adapters/agent/registry"
-	"github.com/aoagents/agent-orchestrator/backend/internal/domain"
-	"github.com/aoagents/agent-orchestrator/backend/internal/httpd/apierr"
-	"github.com/aoagents/agent-orchestrator/backend/internal/ports"
+	agentregistry "github.com/sudo-adduser-jordan/open-agents/backend/internal/adapters/agent/registry"
+	"github.com/sudo-adduser-jordan/open-agents/backend/internal/domain"
+	"github.com/sudo-adduser-jordan/open-agents/backend/internal/httpd/apierr"
+	"github.com/sudo-adduser-jordan/open-agents/backend/internal/ports"
 )
 
 var (
 	modelCatalogLoadTimeout = 30 * time.Second
-	// How long a cached catalog is trusted before AO asks a cache-first client to
+	// How long a cached catalog is trusted before Open Agents asks a cache-first client to
 	// revalidate in the background. Long, because rediscovery runs an agent CLI:
 	// this covers drift a fingerprint cannot see, not routine correctness.
 	modelCatalogTrustWindow = 6 * time.Hour
@@ -353,7 +353,7 @@ func applyCustomModelEntryPolicy(catalog, policy ports.AgentModelCatalog) ports.
 }
 
 func appendCacheWarning(current string) string {
-	const next = "Models loaded, but AO could not update the model cache."
+	const next = "Models loaded, but Open Agents could not update the model cache."
 	if current == "" {
 		return next
 	}

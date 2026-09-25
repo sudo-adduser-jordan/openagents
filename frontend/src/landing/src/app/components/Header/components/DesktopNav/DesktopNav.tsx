@@ -1,6 +1,6 @@
 "use client";
 
-import { cn } from "@ao/ui/utils";
+import { cn } from "@openagents/ui/utils";
 import { HashLink } from "../../../HashLink/HashLink";
 import {
   type NavLink,

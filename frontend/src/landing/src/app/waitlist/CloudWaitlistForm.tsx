@@ -61,11 +61,11 @@ export function CloudWaitlistForm() {
           Request received
         </p>
         <h2 className="mt-3 text-2xl font-semibold text-foreground">
-          You're on the AO Cloud waitlist.
+          You're on the Open Agents Cloud waitlist.
         </h2>
         <p className="mt-3 text-sm leading-6 text-muted-foreground">
           Thanks. We'll use your response to prioritize early access for the
-          first AO Cloud workspaces.
+          first Open Agents Cloud workspaces.
         </p>
       </div>
     );
@@ -149,7 +149,7 @@ export function CloudWaitlistForm() {
       ) : null}
 
       <p className="text-xs leading-relaxed text-muted-foreground">
-        We'll only use this to contact you about AO Cloud. See our{" "}
+        We'll only use this to contact you about Open Agents Cloud. See our{" "}
         <Link className="underline underline-offset-2" href="/privacy/">
           privacy policy
         </Link>

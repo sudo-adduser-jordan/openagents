@@ -10,18 +10,18 @@ import (
 	"sort"
 	"strings"
 
-	aoprocess "github.com/aoagents/agent-orchestrator/backend/internal/process"
+	openagentsprocess "github.com/sudo-adduser-jordan/open-agents/backend/internal/process"
 )
 
 const (
 	defaultGitBinary             = "git"
 	legacyDefaultBranch          = "main"
 	legacyInitialCommitSubject   = "initial commit"
-	legacyWorkspaceCommitSubject = "chore: initialize AO workspace root"
-	// ManagedDefaultConfigKey records the branch AO selected when it initialized
+	legacyWorkspaceCommitSubject = "chore: initialize Open Agents workspace root"
+	// ManagedDefaultConfigKey records the branch Open Agents selected when it initialized
 	// a repository itself. It is intentionally repo-local and is only consulted
 	// when the repository has no remote branches yet.
-	ManagedDefaultConfigKey = "ao.defaultBranch"
+	ManagedDefaultConfigKey = "openagents.defaultBranch"
 )
 
 // ErrUnresolved means Git exposes no authoritative default branch. Callers
@@ -36,12 +36,12 @@ const (
 	SourceLiveRemoteHead Source = "live_remote_head"
 	// SourceCachedRemoteHead means the branch came from the selected remote's cached HEAD.
 	SourceCachedRemoteHead Source = "cached_remote_head"
-	// SourceAOInitialized means AO recorded the branch when it initialized the repository.
-	SourceAOInitialized Source = "ao_initialized"
+	// SourceOpenAgentsInitialized means Open Agents recorded the branch when it initialized the repository.
+	SourceOpenAgentsInitialized Source = "open_agents_initialized"
 )
 
 // Resolution is an authoritative branch plus the ref that can safely seed a
-// new worktree. Remote is empty only for repositories initialized by AO.
+// new worktree. Remote is empty only for repositories initialized by Open Agents.
 type Resolution struct {
 	Branch string
 	Remote string
@@ -71,7 +71,7 @@ func New(binary string, run Runner) *Resolver {
 	return &Resolver{binary: binary, run: run}
 }
 
-// RecordInitialBranch records the branch AO is about to give its first commit.
+// RecordInitialBranch records the branch Open Agents is about to give its first commit.
 // Call only while initializing an unborn repository; ordinary default-branch
 // resolution must never infer a default from the current checkout.
 func (r *Resolver) RecordInitialBranch(ctx context.Context, repo string) error {
@@ -97,7 +97,7 @@ func (r *Resolver) Inspect(ctx context.Context, repo string) (Resolution, error)
 		return Resolution{}, err
 	}
 	if len(remotes) == 0 {
-		return r.resolveAOInitialized(ctx, repo)
+		return r.resolveOpenAgentsInitialized(ctx, repo)
 	}
 	if cached, ok := r.cachedRemoteHead(ctx, repo, remote); ok {
 		return cached, nil
@@ -142,7 +142,7 @@ func (r *Resolver) Resolve(ctx, remoteCtx context.Context, repo string) (Resolut
 		return Resolution{}, err
 	}
 	if len(remotes) == 0 {
-		return r.resolveAOInitialized(ctx, repo)
+		return r.resolveOpenAgentsInitialized(ctx, repo)
 	}
 	if remoteCtx == nil {
 		remoteCtx = ctx
@@ -193,7 +193,7 @@ func (r *Resolver) Resolve(ctx, remoteCtx context.Context, repo string) (Resolut
 	)
 }
 
-// An empty clone can have an AO-created initial commit before its first push.
+// An empty clone can have an Open Agents-created initial commit before its first push.
 // Keep remote HEAD authoritative once available, and never use this fallback
 // when the selected remote already has fetched branches.
 func (r *Resolver) initializedBeforeFirstPush(ctx context.Context, repo, remote string) (Resolution, bool) {
@@ -201,7 +201,7 @@ func (r *Resolver) initializedBeforeFirstPush(ctx context.Context, repo, remote 
 	if err != nil || strings.TrimSpace(string(out)) != "" {
 		return Resolution{}, false
 	}
-	resolved, err := r.resolveAOInitialized(ctx, repo)
+	resolved, err := r.resolveOpenAgentsInitialized(ctx, repo)
 	return resolved, err == nil
 }
 
@@ -270,15 +270,15 @@ func (r *Resolver) cachedRemoteHead(ctx context.Context, repo, remote string) (R
 	return Resolution{Branch: branch, Remote: remote, Ref: target, Source: SourceCachedRemoteHead}, true
 }
 
-func (r *Resolver) resolveAOInitialized(ctx context.Context, repo string) (Resolution, error) {
+func (r *Resolver) resolveOpenAgentsInitialized(ctx context.Context, repo string) (Resolution, error) {
 	out, err := r.run(ctx, r.binary, "-C", repo, "config", "--local", "--get", ManagedDefaultConfigKey)
 	branch := strings.TrimSpace(string(out))
 	if err != nil || branch == "" {
 		var ok bool
-		branch, ok = r.legacyAOInitializedBranch(ctx, repo)
+		branch, ok = r.recordedOpenAgentsInitializedBranch(ctx, repo)
 		if !ok {
 			return Resolution{}, unresolvedf(
-				"repository %q has no remote or AO-recorded default", repo,
+				"repository %q has no remote or Open Agents-recorded default", repo,
 			)
 		}
 		if _, err := r.run(ctx, r.binary, "-C", repo, "config", "--local", ManagedDefaultConfigKey, branch); err != nil {
@@ -294,14 +294,14 @@ func (r *Resolver) resolveAOInitialized(ctx context.Context, repo string) (Resol
 			"repository %q records %s=%q, but that local branch does not exist", repo, ManagedDefaultConfigKey, branch,
 		)
 	}
-	return Resolution{Branch: branch, Ref: ref, Source: SourceAOInitialized}, nil
+	return Resolution{Branch: branch, Ref: ref, Source: SourceOpenAgentsInitialized}, nil
 }
 
-// legacyAOInitializedBranch recognizes the two initial commits written by AO
+// recordedOpenAgentsInitializedBranch recognizes the two initial commits written by Open Agents
 // before ManagedDefaultConfigKey existed. Both legacy creation paths selected
 // main explicitly, so this is a compatibility backfill rather than a branch
 // guess. User-created remoteless repositories remain unresolved.
-func (r *Resolver) legacyAOInitializedBranch(ctx context.Context, repo string) (string, bool) {
+func (r *Resolver) recordedOpenAgentsInitializedBranch(ctx context.Context, repo string) (string, bool) {
 	ref := "refs/heads/" + legacyDefaultBranch
 	if !r.refExists(ctx, repo, ref) {
 		return "", false
@@ -324,7 +324,7 @@ func (r *Resolver) legacyAOInitializedBranch(ctx context.Context, repo string) (
 		email := strings.TrimSpace(fields[1])
 		subject := strings.TrimSpace(fields[2])
 		if subject == legacyWorkspaceCommitSubject ||
-			(subject == legacyInitialCommitSubject && name == "Agent Orchestrator" && email == "ao@example.com") {
+			(subject == legacyInitialCommitSubject && name == "Open Agents" && email == "open-agents@example.com") {
 			return legacyDefaultBranch, true
 		}
 	}
@@ -400,7 +400,7 @@ func unresolvedf(format string, args ...any) error {
 }
 
 func runCommand(ctx context.Context, binary string, args ...string) ([]byte, error) {
-	cmd := aoprocess.CommandContext(ctx, binary, args...)
+	cmd := openagentsprocess.CommandContext(ctx, binary, args...)
 	cmd.Env = append(os.Environ(), "GIT_TERMINAL_PROMPT=0", "GCM_INTERACTIVE=Never")
 	out, err := cmd.CombinedOutput()
 	if err != nil {

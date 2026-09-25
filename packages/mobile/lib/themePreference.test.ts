@@ -65,7 +65,7 @@ describe("defaults and labels", () => {
 	});
 
 	it("uses the same storage key name as desktop", () => {
-		expect(THEME_KEY).toBe("ao.theme");
+		expect(THEME_KEY).toBe("openAgents.theme");
 	});
 
 	it("labels every preference", () => {

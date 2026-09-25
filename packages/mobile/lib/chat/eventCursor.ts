@@ -15,7 +15,7 @@ import type { HostMetadata } from "../hosts";
  * Asks the daemon for the current head.
  *
  * The stream clamps any cursor beyond head back to head and reports the
- * resolved value in X-AO-Event-After, so this is the supported way to say
+ * resolved value in X-OPEN-AGENTS-Event-After, so this is the supported way to say
  * "only live events" without a separate round trip.
  */
 export const HEAD_CURSOR = Number.MAX_SAFE_INTEGER;
@@ -29,7 +29,7 @@ export const HEAD_CURSOR = Number.MAX_SAFE_INTEGER;
  * entire backlog. The prefix keeps the key shape this shipped with.
  */
 export function eventCursorKey(cfg: ServerConfig): string {
-	return `ao.chat.events.${machineIdentity(cfg)}`;
+	return `openAgents.chat.events.${machineIdentity(cfg)}`;
 }
 
 /** Remove every replay key a machine may have used. Identified hosts converge

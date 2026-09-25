@@ -5,16 +5,16 @@
  * message and never restarts the agent — the running turn keeps what it was
  * dispatched with. That is why this sits in the composer rather than in settings.
  *
- * The catalog comes from the provider, not from a list in AO. Models are added,
- * renamed, hidden per account and gated by entitlement AO cannot see, so a
+ * The catalog comes from the provider, not from a list in Open Agents. Models are added,
+ * renamed, hidden per account and gated by entitlement Open Agents cannot see, so a
  * hardcoded list would be wrong within a week. An agent whose provider cannot
  * enumerate models reports none and the model control hides itself.
  *
  * ACP agents advertise those same dimensions as live session options. They share
  * this chrome rather than each growing a row of pickers: model and thought level
  * club into the left-hand control, while a provider-owned mode (such as planning)
- * stays separate from AO's approval policy. The lists inside are still the
- * provider's; only the grouping of the triggers is AO's.
+ * stays separate from Open Agents's approval policy. The lists inside are still the
+ * provider's; only the grouping of the triggers is Open Agents's.
  */
 
 import { Fragment, useMemo, type FocusEvent, type ReactNode } from "react";
@@ -41,7 +41,7 @@ import type {
 	TurnSettings,
 } from "../../types/conversation";
 
-/** AO's generic approval modes, used by harnesses without a native vocabulary. */
+/** Open Agents's generic approval modes, used by harnesses without a native vocabulary. */
 const APPROVAL_COPY: Record<ApprovalMode, { label: string }> = {
 	default: { label: "Default approvals" },
 	"accept-edits": { label: "Accept edits" },
@@ -785,8 +785,8 @@ function isModelOption(option: ChatConfigOption): boolean {
 
 /**
  * ACP may advertise an `agent` option for its own multi-agent internals. It is
- * not AO's harness switcher and is not a model choice, so exposing it in the
- * composer promises a meaning AO cannot guarantee. Harness changes remain in
+ * not Open Agents's harness switcher and is not a model choice, so exposing it in the
+ * composer promises a meaning Open Agents cannot guarantee. Harness changes remain in
  * the dedicated session switcher.
  */
 function isAgentOption(option: ChatConfigOption): boolean {

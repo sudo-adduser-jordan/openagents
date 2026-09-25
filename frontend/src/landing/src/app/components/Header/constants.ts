@@ -1,4 +1,4 @@
-import { COMPANY } from "@ao/shared/constants";
+import { COMPANY } from "@openagents/shared/constants";
 
 export interface NavLink {
   href: string;
@@ -11,12 +11,12 @@ export const PRODUCT_LINKS: NavLink[] = [
   {
     href: "/#see-it",
     label: "Demo",
-    description: "Watch AO run a fleet of agents end to end.",
+    description: "Watch Open Agents run a fleet of agents end to end.",
   },
   {
     href: "/design-partners",
     label: "Design Partners",
-    description: "Build the future of multi-agent development with AO.",
+    description: "Build the future of multi-agent development with Open Agents.",
   },
 ];
 

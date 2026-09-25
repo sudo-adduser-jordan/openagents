@@ -1,7 +1,7 @@
 import { fireEvent, render, screen, waitFor } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { beforeEach, describe, expect, it, vi } from "vitest";
-import { aoBridge } from "../../lib/bridge";
+import { openAgentsBridge } from "../../lib/bridge";
 import { renderMermaidDiagram } from "../../lib/mermaid-diagram";
 import { MermaidBlock } from "./MermaidBlock";
 
@@ -14,7 +14,7 @@ vi.mock("../../lib/mermaid-diagram", () => ({
 }));
 
 const renderDiagram = vi.mocked(renderMermaidDiagram);
-const CODE = "flowchart TD\n    A[User] --> B[AO]";
+const CODE = "flowchart TD\n    A[User] --> B[Open Agents]";
 
 beforeEach(() => {
 	renderDiagram.mockReset();
@@ -102,7 +102,7 @@ describe("MermaidBlock", () => {
 
 	it("opens diagram links in the system browser without a chat handler", async () => {
 		const user = userEvent.setup();
-		const openExternal = vi.spyOn(aoBridge.app, "openExternal").mockResolvedValue(undefined);
+		const openExternal = vi.spyOn(openAgentsBridge.app, "openExternal").mockResolvedValue(undefined);
 		renderDiagram.mockResolvedValue(
 			'<svg xmlns="http://www.w3.org/2000/svg"><a href="https://example.com/i/1"><text>docs</text></a></svg>',
 		);

@@ -23,4 +23,4 @@
 === RUN   TestDatabaseURIPreservesWindowsPaths
 --- PASS: TestDatabaseURIPreservesWindowsPaths (0.00s)
 PASS
-ok  	github.com/aoagents/agent-orchestrator/backend/internal/storage/sqlite	3.709s
+ok  	github.com/sudo-adduser-jordan/open-agents/backend/internal/storage/sqlite	3.709s

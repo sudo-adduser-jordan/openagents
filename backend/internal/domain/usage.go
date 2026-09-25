@@ -58,7 +58,7 @@ var (
 	ErrUsageSourceEventConflict    = errors.New("usage source event conflict")
 )
 
-// UsageBindingRecord binds one AO session to one native root session/thread.
+// UsageBindingRecord binds one Open Agents session to one native root session/thread.
 type UsageBindingRecord struct {
 	ID             int64
 	SessionID      SessionID
@@ -124,9 +124,9 @@ const (
 	// provider or CLI usage record. Exact arithmetic over native counters does
 	// not make an event estimated.
 	UsageMeasurementNativeReported UsageMeasurementKind = "native_reported"
-	// UsageMeasurementAOEstimated means AO approximated counters without native ones.
-	UsageMeasurementAOEstimated UsageMeasurementKind = "ao_estimated"
-	// UsageMeasurementMixed means native counters and AO estimates were combined.
+	// UsageMeasurementOpenAgentsEstimated means Open Agents approximated counters without native ones.
+	UsageMeasurementOpenAgentsEstimated UsageMeasurementKind = "open_agents_estimated"
+	// UsageMeasurementMixed means native counters and Open Agents estimates were combined.
 	UsageMeasurementMixed UsageMeasurementKind = "mixed"
 	// UsageMeasurementUnknown means the origin cannot be established.
 	UsageMeasurementUnknown UsageMeasurementKind = "unknown"
@@ -204,10 +204,6 @@ type ModelUsageEvent struct {
 	SourceEventKey        string
 }
 
-
-
-
-
 // UsageModelAggregate is the raw model-level aggregate read from storage before
 // the service applies user-facing coverage rules.
 type UsageModelAggregate struct {
@@ -249,7 +245,7 @@ type ModelUsageSummary struct {
 	Totals  UsageMetricTotals
 }
 
-// HarnessUsageSummary groups model summaries by AO harness.
+// HarnessUsageSummary groups model summaries by Open Agents harness.
 type HarnessUsageSummary struct {
 	Harness AgentHarness
 	Totals  UsageMetricTotals

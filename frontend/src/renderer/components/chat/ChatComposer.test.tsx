@@ -666,7 +666,7 @@ describe("send keys", () => {
 			nativeImages: true,
 			onStageAttachments: vi
 				.fn()
-				.mockResolvedValue([".ao/attachments/accepted-once.png"]),
+				.mockResolvedValue([".open-agents/attachments/accepted-once.png"]),
 		};
 		const surfaces = (
 			showOriginal: boolean,
@@ -698,7 +698,7 @@ describe("send keys", () => {
 		await typeInComposer(original, "inspect this once");
 		fireEvent.keyDown(original, { key: "Enter" });
 		await waitFor(() => expect(onSend).toHaveBeenCalledTimes(1));
-		expect(onSend.mock.calls[0]?.[0]).toContain(".ao/attachments/accepted-once.png");
+		expect(onSend.mock.calls[0]?.[0]).toContain(".open-agents/attachments/accepted-once.png");
 		expect(onSend.mock.calls[0]?.[1]).toEqual([
 			{ mimeType: "image/png", data: expect.any(String) },
 		]);
@@ -741,7 +741,7 @@ describe("send keys", () => {
 		fireEvent.keyDown(committedReplacement, { key: "Enter" });
 		await waitFor(() => expect(onSend).toHaveBeenCalledTimes(2));
 		expect(onSend.mock.calls[1]?.[0]).toBe("fresh follow-up");
-		expect(onSend.mock.calls[1]?.[0]).not.toContain(".ao/attachments/accepted-once.png");
+		expect(onSend.mock.calls[1]?.[0]).not.toContain(".open-agents/attachments/accepted-once.png");
 		expect(onSend.mock.calls[1]?.[1]).toBeUndefined();
 	});
 
@@ -1091,17 +1091,17 @@ describe("slash commands", () => {
 		expect(screen.getAllByRole("option")).toHaveLength(3);
 	});
 
-	it("hides the generic agent source and keeps the AO source label", async () => {
+	it("hides the generic agent source and keeps the Open Agents source label", async () => {
 		const { field } = renderComposer({
 			skills: [
 				{ name: "built-in", displayName: "built-in", source: "agent" },
-				{ name: "compact", displayName: "compact", source: "ao" },
+				{ name: "compact", displayName: "compact", source: "open-agents" },
 			],
 		});
 		await typeInComposer(field, "/");
 
 		expect(screen.queryByText("agent", { exact: true })).toBeNull();
-		expect(screen.getByText("AO", { exact: true })).toBeInTheDocument();
+		expect(screen.getByText("Open Agents", { exact: true })).toBeInTheDocument();
 	});
 
 	it("filters as the user types", async () => {
@@ -1420,8 +1420,8 @@ describe("attachments", () => {
 	it("shows a removable chip per pasted image", async () => {
 		const { field } = renderComposer({
 			onStageAttachments: vi.fn().mockResolvedValue([
-				".ao/attachments/attachment-a.png",
-				".ao/attachments/attachment-b.png",
+				".open-agents/attachments/attachment-a.png",
+				".open-agents/attachments/attachment-b.png",
 			]),
 		});
 		fireEvent.paste(field, { clipboardData: clipboardData([png("a.png"), png("b.png")]) });
@@ -1442,7 +1442,7 @@ describe("attachments", () => {
 	// The chip has to mean something: the bytes get written and the message names
 	// the path the agent can open.
 	it("stages the image and names the returned path in the message", async () => {
-		const stage = vi.fn().mockResolvedValue([".ao/attachments/attachment-ab12cd34ef.png"]);
+		const stage = vi.fn().mockResolvedValue([".open-agents/attachments/attachment-ab12cd34ef.png"]);
 		const { onSend, field } = renderComposer({ onStageAttachments: stage });
 
 		fireEvent.paste(field, { clipboardData: clipboardData([png()]) });
@@ -1457,7 +1457,7 @@ describe("attachments", () => {
 		]);
 		await waitFor(() =>
 			expect(onSend).toHaveBeenCalledWith(
-				"what is wrong here\n\nAttached files (read these files in the workspace):\n- .ao/attachments/attachment-ab12cd34ef.png",
+				"what is wrong here\n\nAttached files (read these files in the workspace):\n- .open-agents/attachments/attachment-ab12cd34ef.png",
 			),
 		);
 		// Consumed, so the next message does not silently resend them.
@@ -1465,7 +1465,7 @@ describe("attachments", () => {
 	});
 
 	it("sends an image with no words, since the reference block carries the request", async () => {
-		const stage = vi.fn().mockResolvedValue([".ao/attachments/attachment-1.png"]);
+		const stage = vi.fn().mockResolvedValue([".open-agents/attachments/attachment-1.png"]);
 		const { onSend, field } = renderComposer({ onStageAttachments: stage });
 
 		fireEvent.paste(field, { clipboardData: clipboardData([png()]) });
@@ -1475,13 +1475,13 @@ describe("attachments", () => {
 
 		await waitFor(() => expect(onSend).toHaveBeenCalledTimes(1));
 		expect(onSend.mock.calls[0]?.[0]).toBe(
-			"Attached files (read these files in the workspace):\n- .ao/attachments/attachment-1.png",
+			"Attached files (read these files in the workspace):\n- .open-agents/attachments/attachment-1.png",
 		);
 	});
 
 	it.each([false, true])("retries an ordinary send with the same ID and native bytes after a lost response (restart: %s)", async (restart) => {
 		const sessionId = `composer-native-retry-${restart}`;
-		const stage = vi.fn().mockResolvedValue([".ao/attachments/native-retry.png"]);
+		const stage = vi.fn().mockResolvedValue([".open-agents/attachments/native-retry.png"]);
 		const onSend = vi.fn().mockRejectedValueOnce(new Error("network request never arrived")).mockResolvedValue(undefined);
 		let view = render(<ChatComposer onSend={onSend} draftSessionId={sessionId} nativeImages onStageAttachments={stage} />);
 		let field = screen.getByLabelText("Message the agent");
@@ -1519,7 +1519,7 @@ describe("attachments", () => {
 	});
 
 	it("also sends native image bytes when the provider negotiated image prompts", async () => {
-		const stage = vi.fn().mockResolvedValue([".ao/attachments/attachment-native.png"]);
+		const stage = vi.fn().mockResolvedValue([".open-agents/attachments/attachment-native.png"]);
 		const { onSend, field } = renderComposer({ onStageAttachments: stage, nativeImages: true });
 
 		fireEvent.paste(field, { clipboardData: clipboardData([png()]) });
@@ -1528,7 +1528,7 @@ describe("attachments", () => {
 		await userEvent.keyboard("{Enter}");
 
 		await waitFor(() => expect(onSend).toHaveBeenCalledTimes(1));
-		expect(onSend.mock.calls[0]?.[0]).toContain(".ao/attachments/attachment-native.png");
+		expect(onSend.mock.calls[0]?.[0]).toContain(".open-agents/attachments/attachment-native.png");
 		expect(onSend.mock.calls[0]?.[1]).toEqual([
 			{ mimeType: "image/png", data: expect.any(String) },
 		]);
@@ -1536,8 +1536,8 @@ describe("attachments", () => {
 
 	it("stages non-images by path without sending them as native image blocks", async () => {
 		const stage = vi.fn().mockResolvedValue([
-			".ao/attachments/attachment-native.png",
-			".ao/attachments/notes.txt",
+			".open-agents/attachments/attachment-native.png",
+			".open-agents/attachments/notes.txt",
 		]);
 		const { onSend, field } = renderComposer({ onStageAttachments: stage, nativeImages: true });
 
@@ -1553,7 +1553,7 @@ describe("attachments", () => {
 		await userEvent.keyboard("{Enter}");
 
 		await waitFor(() => expect(onSend).toHaveBeenCalledTimes(1));
-		expect(onSend.mock.calls[0]?.[0]).toContain(".ao/attachments/notes.txt");
+		expect(onSend.mock.calls[0]?.[0]).toContain(".open-agents/attachments/notes.txt");
 		expect(onSend.mock.calls[0]?.[1]).toEqual([
 			{ mimeType: "image/png", data: expect.any(String) },
 		]);
@@ -1575,7 +1575,7 @@ describe("attachments", () => {
 	});
 
 	it("keeps attachments after a failed send and reuses their staged paths on retry", async () => {
-		const stage = vi.fn().mockResolvedValue([".ao/attachments/attachment-retry.png"]);
+		const stage = vi.fn().mockResolvedValue([".open-agents/attachments/attachment-retry.png"]);
 		const onSend = vi.fn().mockRejectedValueOnce(new Error("offline")).mockResolvedValueOnce(undefined);
 		render(<ChatComposer onSend={onSend} onStageAttachments={stage} />);
 		const field = screen.getByLabelText("Message the agent") as HTMLElement;
@@ -1609,7 +1609,7 @@ describe("attachments", () => {
 			onSend,
 			draftSessionId: sessionId,
 			onStageAttachments: vi.fn().mockResolvedValue([
-				".ao/attachments/attachment-locked.png",
+				".open-agents/attachments/attachment-locked.png",
 			]),
 		};
 		const firstView = render(<ChatComposer {...common} />);
@@ -1700,7 +1700,7 @@ describe("attachments", () => {
 				onSend={vi.fn()}
 				draftSessionId={sessionId}
 				onStageAttachments={vi.fn().mockResolvedValue([
-					".ao/attachments/attachment-after-text-failure.png",
+					".open-agents/attachments/attachment-after-text-failure.png",
 				])}
 			/>,
 		);
@@ -1758,7 +1758,7 @@ describe("attachments", () => {
 				"pending-attachments",
 			]);
 
-			await act(async () => finishStaging([".ao/attachments/pending.png"]));
+			await act(async () => finishStaging([".open-agents/attachments/pending.png"]));
 		} finally {
 			view.unmount();
 			localStorage.mockRestore();
@@ -1786,7 +1786,7 @@ describe("attachments", () => {
 				onSend={vi.fn()}
 				draftSessionId={sessionId}
 				onStageAttachments={vi.fn().mockResolvedValue([
-					".ao/attachments/attachment-storage-failure.png",
+					".open-agents/attachments/attachment-storage-failure.png",
 				])}
 			/>,
 		);
@@ -1995,7 +1995,7 @@ it("shows restored composer recovery notices and actions in English", async () =
 it("reserves a restored image draft before asynchronous native-byte reads", async () => {
 	const sessionId = "composer-reserve-before-native-read";
 	writeChatComposerText(sessionId, "inspect restored image");
-	writeChatAttachments(sessionId, [{ id: "restored-image", name: "restored.png", mimeType: "image/png", bytes: 4, path: ".ao/attachments/restored.png" }]);
+	writeChatAttachments(sessionId, [{ id: "restored-image", name: "restored.png", mimeType: "image/png", bytes: 4, path: ".open-agents/attachments/restored.png" }]);
 	const pending = deferred<Response>();
 	const fetch = vi.spyOn(globalThis, "fetch").mockReturnValue(pending.promise);
 	const onSend = vi.fn().mockResolvedValue(undefined);
@@ -2038,7 +2038,7 @@ it("reserves the composer before pending staging yields to a replacement surface
 	field = screen.getByLabelText("Message the agent");
 	expect(field).toHaveAttribute("contenteditable", "false");
 	expect(send).not.toHaveBeenCalled();
-	await act(async () => { pending.resolve([".ao/attachments/pending.png"]); });
+	await act(async () => { pending.resolve([".open-agents/attachments/pending.png"]); });
 	await waitFor(() => expect(send).toHaveBeenCalledOnce());
 	await waitFor(() => expect(field).toHaveTextContent(/^$/));
 	expect(readChatSessionDraft(sessionId).composer.text).toBe("");
@@ -2059,10 +2059,10 @@ it("does not let Enter omit an image still staging on the previous surface", asy
 	fireEvent.keyDown(screen.getByLabelText("Message the agent"), { key: "Enter" });
 	await act(async () => { await Promise.resolve(); });
 	expect(send).not.toHaveBeenCalled();
-	await act(async () => { pending.resolve([".ao/attachments/pending.png"]); });
+	await act(async () => { pending.resolve([".open-agents/attachments/pending.png"]); });
 	await screen.findByLabelText("Remove pending.png");
 	await userEvent.click(screen.getByRole("button", { name: "Send message" }));
-	await waitFor(() => expect(send).toHaveBeenCalledWith(expect.stringContaining(".ao/attachments/pending.png"), undefined, expect.any(String)));
+	await waitFor(() => expect(send).toHaveBeenCalledWith(expect.stringContaining(".open-agents/attachments/pending.png"), undefined, expect.any(String)));
 	view.unmount();
 });
 
@@ -2070,7 +2070,7 @@ it("keeps staged paths authoritative across a remount until acceptance clears th
 	const sessionId = "composer-staged-path-remount";
 	const response = deferred<void>();
 	const send = vi.fn(() => response.promise);
-	const stage = vi.fn().mockResolvedValue([".ao/attachments/once.png"]);
+	const stage = vi.fn().mockResolvedValue([".open-agents/attachments/once.png"]);
 	let view = render(<ChatComposer onSend={send} onStageAttachments={stage} draftSessionId={sessionId} />);
 	await typeInComposer(screen.getByLabelText("Message the agent"), "inspect once");
 	fireEvent.paste(screen.getByLabelText("Message the agent"), { clipboardData: clipboardData([png("once.png")]) });
@@ -2080,7 +2080,7 @@ it("keeps staged paths authoritative across a remount until acceptance clears th
 	const revision = readChatSessionDraft(sessionId).composer.revision;
 	view.unmount();
 	view = render(<ChatComposer onSend={send} onStageAttachments={stage} draftSessionId={sessionId} />);
-	expect(readChatSessionDraft(sessionId).composer).toMatchObject({ revision, attachments: [{ path: ".ao/attachments/once.png" }] });
+	expect(readChatSessionDraft(sessionId).composer).toMatchObject({ revision, attachments: [{ path: ".open-agents/attachments/once.png" }] });
 	await act(async () => { response.resolve(); });
 	await waitFor(() => expect(screen.getByLabelText("Message the agent")).toHaveTextContent(/^$/));
 	expect(readChatSessionDraft(sessionId).composer.text).toBe("");
@@ -2102,7 +2102,7 @@ it("does not dispatch a restored image after its session incarnation was replace
 	const replacement = { ...scope, incarnation: "2026-09-08T10:00:00Z" };
 	expect(activateChatDraftScope(scope).ok).toBe(true);
 	writeChatComposerText(scope, "old session prompt");
-	writeChatAttachments(scope, [{ id: "old-image", name: "old.png", mimeType: "image/png", bytes: 4, path: ".ao/attachments/old.png" }]);
+	writeChatAttachments(scope, [{ id: "old-image", name: "old.png", mimeType: "image/png", bytes: 4, path: ".open-agents/attachments/old.png" }]);
 	const pending = deferred<Response>();
 	const fetch = vi.spyOn(globalThis, "fetch").mockReturnValue(pending.promise);
 	const readComplete = deferred<void>();
@@ -2137,7 +2137,7 @@ it("does not dispatch a restored image after its session incarnation was replace
 
 it("restores an image thumbnail from its durable path after the composer remounts", async () => {
 	const sessionId = "composer-restored-thumbnail";
-	const path = ".ao/attachments/restored-thumbnail.png";
+	const path = ".open-agents/attachments/restored-thumbnail.png";
 	const props = { onSend: vi.fn(), draftSessionId: sessionId,
 		onStageAttachments: vi.fn().mockResolvedValue([path]) };
 	const view = render(<ChatComposer {...props} />);

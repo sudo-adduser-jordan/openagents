@@ -9,12 +9,12 @@ import fs from "node:fs/promises";
 // ready. Testid-free on purpose — the published nightly predates the new
 // data-testids, so these assertions exercise the real IPC/daemon path only.
 //
-// Isolation is per test: each launch gets a unique ephemeral AO_PORT and a fresh
-// AO_DATA_DIR / AO_RUN_FILE under a temp dir. The daemon inherits these (Electron
+// Isolation is per test: each launch gets a unique ephemeral OPEN_AGENTS_PORT and a fresh
+// OPEN_AGENTS_DATA_DIR / OPEN_AGENTS_RUN_FILE under a temp dir. The daemon inherits these (Electron
 // main spreads process.env into the daemon child), so a stale daemon from a prior
 // run — or anything already bound to the default 3001 — can NOT be mistaken for the
 // app under test: nothing else is on our ephemeral port or writes our run file.
-const APP_BIN = process.env.AO_APP_BIN || "/usr/lib/agent-orchestrator/agent-orchestrator";
+const APP_BIN = process.env.OPEN_AGENTS_APP_BIN || "/usr/lib/open-agents/open-agents";
 
 interface RunFile {
 	pid: number;
@@ -51,7 +51,7 @@ const launched: { app: ElectronApplication; tmpDir: string }[] = [];
 // production clients discover the daemon (run file), never a fixed port.
 async function launchIsolated() {
 	const port = await freePort();
-	const tmpDir = await fs.mkdtemp(path.join(os.tmpdir(), "ao-e2e-"));
+	const tmpDir = await fs.mkdtemp(path.join(os.tmpdir(), "open-agents-e2e-"));
 	const runFile = path.join(tmpDir, "running.json");
 	const dataDir = path.join(tmpDir, "data");
 	const launchedAtMs = Date.now();
@@ -61,9 +61,9 @@ async function launchIsolated() {
 		env: {
 			...process.env,
 			ELECTRON_DISABLE_SANDBOX: "1",
-			AO_PORT: String(port),
-			AO_RUN_FILE: runFile,
-			AO_DATA_DIR: dataDir,
+			OPEN_AGENTS_PORT: String(port),
+			OPEN_AGENTS_RUN_FILE: runFile,
+			OPEN_AGENTS_DATA_DIR: dataDir,
 		},
 	});
 	launched.push({ app, tmpDir });
@@ -81,20 +81,20 @@ test("REAL-001 packaged app launches + window paints @T0 @real", async () => {
 	const { app } = await launchIsolated();
 	const win = await app.firstWindow();
 	expect(win).toBeTruthy();
-	// Prove the AO renderer SCREEN mounted (INS-002 first-run/home UI) — not just
-	// that some document painted. The AO brand string "Agent Orchestrator" is
+	// Prove the Open Agents renderer SCREEN mounted (INS-002 first-run/home UI) — not just
+	// that some document painted. The Open Agents brand string "Open Agents" is
 	// rendered into the app shell (sidebar) and the first-run home/welcome
-	// ("Welcome to Agent Orchestrator"), so its presence in VISIBLE body text is an
-	// AO-specific proof the renderer mounted. A Chromium/Electron error page has no
-	// AO brand text (fails), and an unmounted shell (empty #root) has no visible
+	// ("Welcome to Open Agents"), so its presence in VISIBLE body text is an
+	// Open Agents-specific proof the renderer mounted. A Chromium/Electron error page has no
+	// Open Agents brand text (fails), and an unmounted shell (empty #root) has no visible
 	// text (fails). document.title is deliberately NOT used: index.html sets it to
-	// "Agent Orchestrator" statically, so it is present even if React never mounts.
+	// "Open Agents" statically, so it is present even if React never mounts.
 	await expect
 		.poll(
 			() =>
 				win.evaluate(() => {
 					const text = document.body?.innerText ?? "";
-					return document.readyState === "complete" && text.includes("Agent Orchestrator");
+					return document.readyState === "complete" && text.includes("Open Agents");
 				}),
 			{ timeout: 30_000, intervals: [500] },
 		)
@@ -136,7 +136,7 @@ test("REAL-002 bundled daemon reaches ready (real SQLite) @T0 @real", async () =
 
 	const body = await (await fetch(url)).json();
 	expect(body.status).toBe("ready");
-	expect(body.service).toBe("agent-orchestrator-daemon");
+	expect(body.service).toBe("open-agents-daemon");
 	// Attribution: the ready daemon is the exact process this launch's run file
 	// recorded — not a stale daemon that happened to answer on some shared port.
 	expect(body.pid).toBe(info!.pid);

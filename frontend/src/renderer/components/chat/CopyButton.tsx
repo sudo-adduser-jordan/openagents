@@ -8,7 +8,7 @@
 
 import { useCallback, useEffect, useRef, useState } from "react";
 import { Check, Copy } from "lucide-react";
-import { aoBridge } from "../../lib/bridge";
+import { openAgentsBridge } from "../../lib/bridge";
 import { cn } from "../../lib/utils";
 import { Tooltip, TooltipContent, TooltipTrigger } from "../ui/tooltip";
 
@@ -36,7 +36,7 @@ export function CopyButton({
 		// Through the bridge rather than `navigator.clipboard`: in Electron that
 		// reaches the native clipboard, which does not need the document to be focused
 		// or a permission the renderer cannot prompt for.
-		void aoBridge.clipboard.writeText(text).then(
+		void openAgentsBridge.clipboard.writeText(text).then(
 			() => {
 				setCopied(true);
 				clearTimeout(timer.current);

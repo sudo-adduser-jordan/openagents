@@ -32,11 +32,11 @@ final class ProgressController: NSObject, NSApplicationDelegate, NSWindowDelegat
 
     func applicationDidFinishLaunching(_ notification: Notification) {
         // Start as an accessory: no Dock icon and no window on launch. A normal
-        // update just closes AO and reopens it, with no second window in the way.
+        // update just closes Open Agents and reopens it, with no second window in the way.
         NSApp.setActivationPolicy(.accessory)
         window = NSWindow(contentRect: NSRect(x: 0, y: 0, width: 500, height: 270),
                           styleMask: [.titled, .closable], backing: .buffered, defer: false)
-        window.title = "Updating Agent Orchestrator"
+        window.title = "Updating Open Agents"
         window.isReleasedWhenClosed = false
         window.delegate = self
         title.font = .systemFont(ofSize: 22, weight: .semibold)
@@ -66,7 +66,7 @@ final class ProgressController: NSObject, NSApplicationDelegate, NSWindowDelegat
             stack.centerYAnchor.constraint(equalTo: window.contentView!.centerYAnchor),
         ])
         refresh()
-        // READY is what the parent waits for before letting Squirrel quit AO.
+        // READY is what the parent waits for before letting Squirrel quit Open Agents.
         // It is the process handshake (this stdout line), not any visible UI, so
         // the window can stay hidden here and still hand off safely. The window
         // is presented once the swap actually begins (the .closing/.installing
@@ -103,7 +103,7 @@ final class ProgressController: NSObject, NSApplicationDelegate, NSWindowDelegat
     }
 
     // Bring the window on screen. Shown on the normal close-and-reopen path too
-    // so "Closing AO" / "Installing and reopening AO" is visible during the
+    // so "Closing Open Agents" / "Installing and reopening Open Agents" is visible during the
     // bundle swap, and on the stall/failure paths that need attention. This is
     // presentation only: it does not touch the READY handshake or termination,
     // which still key off complete.json / the parent PID (see refresh/cleanup).
@@ -133,27 +133,27 @@ final class ProgressController: NSObject, NSApplicationDelegate, NSWindowDelegat
         switch next {
         case .closing:
             presentWindow()
-            title.stringValue = "Closing AO"
-            detail.stringValue = "Preparing to install your update. This window will stay open while AO restarts."
+            title.stringValue = "Closing Open Agents"
+            detail.stringValue = "Preparing to install your update. This window will stay open while Open Agents restarts."
             recovery.isHidden = true
             spinner.startAnimation(nil)
         case .installing:
             presentWindow()
-            title.stringValue = "Installing and reopening AO"
-            detail.stringValue = "macOS is installing the update. AO will reopen automatically when it is ready."
+            title.stringValue = "Installing and reopening Open Agents"
+            detail.stringValue = "macOS is installing the update. Open Agents will reopen automatically when it is ready."
             recovery.isHidden = true
             spinner.startAnimation(nil)
         case .recovery(let message):
             presentWindow()
             window.setContentSize(NSSize(width: 500, height: 340))
-            title.stringValue = "Still waiting for AO"
+            title.stringValue = "Still waiting for Open Agents"
             detail.stringValue = String(message.prefix(260))
             recovery.isHidden = false
             spinner.stopAnimation(nil)
         case .reopened:
             presentWindow()
-            title.stringValue = "AO has reopened"
-            detail.stringValue = "This version of AO cannot confirm when its window is ready. You can close this progress window."
+            title.stringValue = "Open Agents has reopened"
+            detail.stringValue = "This version of Open Agents cannot confirm when its window is ready. You can close this progress window."
             recovery.isHidden = false
             recovery.arrangedSubviews.prefix(2).forEach { $0.isHidden = true }
             spinner.stopAnimation(nil)
@@ -166,7 +166,7 @@ final class ProgressController: NSObject, NSApplicationDelegate, NSWindowDelegat
         refresh()
     }
     @objc func download() {
-        NSWorkspace.shared.open(URL(string: "https://github.com/Untrivial-ai/agent-orchestrator/releases/latest")!)
+        NSWorkspace.shared.open(URL(string: "https://github.com/sudo-adduser-jordan/open-agents/releases/latest")!)
     }
     @objc func closeWindow() { window.performClose(nil) }
     func windowWillClose(_ notification: Notification) {
@@ -189,7 +189,7 @@ guard attempt == attempt.resolvingSymlinksInPath(),
       attempt.deletingLastPathComponent().lastPathComponent == "update-restart",
       attempt.lastPathComponent.hasPrefix("attempt-"),
       !attempt.pathComponents.contains(where: { $0.hasSuffix(".app") }),
-      executable == attempt.appendingPathComponent("ao-update-progress"),
+      executable == attempt.appendingPathComponent("open-agents-update-progress"),
       let request = readJSON(UpdateRequest.self, at: attempt.appendingPathComponent("request.json")), request.valid else { exit(2) }
 let controller = ProgressController(attempt: attempt, request: request)
 NSApplication.shared.delegate = controller

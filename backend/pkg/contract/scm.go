@@ -27,44 +27,44 @@ const (
 	PRCheckCancelled  PRCheckStatus = "cancelled"
 )
 
-// AOReviewRunStatus is the lifecycle state of one AO review pass.
-type AOReviewRunStatus string
+// OpenAgentsReviewRunStatus is the lifecycle state of one Open Agents review pass.
+type OpenAgentsReviewRunStatus string
 
-// AO review-run states.
+// Open Agents review-run states.
 const (
-	AOReviewRunRunning   AOReviewRunStatus = "running"
-	AOReviewRunComplete  AOReviewRunStatus = "complete"
-	AOReviewRunDelivered AOReviewRunStatus = "delivered"
-	AOReviewRunFailed    AOReviewRunStatus = "failed"
-	AOReviewRunCancelled AOReviewRunStatus = "cancelled"
+	OpenAgentsReviewRunRunning   OpenAgentsReviewRunStatus = "running"
+	OpenAgentsReviewRunComplete  OpenAgentsReviewRunStatus = "complete"
+	OpenAgentsReviewRunDelivered OpenAgentsReviewRunStatus = "delivered"
+	OpenAgentsReviewRunFailed    OpenAgentsReviewRunStatus = "failed"
+	OpenAgentsReviewRunCancelled OpenAgentsReviewRunStatus = "cancelled"
 )
 
-// AOReviewVerdict is the outcome of an AO review pass. An empty verdict means
+// OpenAgentsReviewVerdict is the outcome of an Open Agents review pass. An empty verdict means
 // the pass has not produced an outcome.
-type AOReviewVerdict string
+type OpenAgentsReviewVerdict string
 
-// AO review verdicts.
+// Open Agents review verdicts.
 const (
-	AOReviewVerdictNone             AOReviewVerdict = ""
-	AOReviewVerdictApproved         AOReviewVerdict = "approved"
-	AOReviewVerdictChangesRequested AOReviewVerdict = "changes_requested"
+	OpenAgentsReviewVerdictNone             OpenAgentsReviewVerdict = ""
+	OpenAgentsReviewVerdictApproved         OpenAgentsReviewVerdict = "approved"
+	OpenAgentsReviewVerdictChangesRequested OpenAgentsReviewVerdict = "changes_requested"
 )
 
 // Valid reports whether v is a verdict a reviewer may submit.
-func (v AOReviewVerdict) Valid() bool {
-	return v == AOReviewVerdictApproved || v == AOReviewVerdictChangesRequested
+func (v OpenAgentsReviewVerdict) Valid() bool {
+	return v == OpenAgentsReviewVerdictApproved || v == OpenAgentsReviewVerdictChangesRequested
 }
 
-// AOReviewState is the current AO review state for one pull request head.
-type AOReviewState string
+// OpenAgentsReviewState is the current Open Agents review state for one pull request head.
+type OpenAgentsReviewState string
 
-// AO review states for the current pull-request head.
+// Open Agents review states for the current pull-request head.
 const (
-	AOReviewNeedsReview      AOReviewState = "needs_review"
-	AOReviewRunning          AOReviewState = "running"
-	AOReviewUpToDate         AOReviewState = "up_to_date"
-	AOReviewChangesRequested AOReviewState = "changes_requested"
-	AOReviewIneligible       AOReviewState = "ineligible"
+	OpenAgentsReviewNeedsReview      OpenAgentsReviewState = "needs_review"
+	OpenAgentsReviewRunning          OpenAgentsReviewState = "running"
+	OpenAgentsReviewUpToDate         OpenAgentsReviewState = "up_to_date"
+	OpenAgentsReviewChangesRequested OpenAgentsReviewState = "changes_requested"
+	OpenAgentsReviewIneligible       OpenAgentsReviewState = "ineligible"
 )
 
 // PullRequestFailingCheck is one failed or cancelled CI check.
@@ -168,32 +168,32 @@ type PullRequestSummary struct {
 	ReviewObservedAt time.Time                      `json:"reviewObservedAt"`
 }
 
-// AOReviewRun is one transport-neutral AO review pass.
-type AOReviewRun struct {
-	ID               string            `json:"id"`
-	ReviewID         string            `json:"reviewId"`
-	SessionID        string            `json:"sessionId"`
-	BatchID          string            `json:"batchId"`
-	Harness          string            `json:"harness"`
-	PRURL            string            `json:"pullRequestUrl"`
-	TargetSHA        string            `json:"targetSha"`
-	Status           AOReviewRunStatus `json:"status"`
-	Verdict          AOReviewVerdict   `json:"verdict"`
-	Body             string            `json:"body"`
-	ProviderReviewID string            `json:"providerReviewId"`
-	CreatedAt        time.Time         `json:"createdAt"`
-	DeliveredAt      *time.Time        `json:"deliveredAt,omitempty"`
-	AutoInjectReview bool              `json:"autoInjectReview"`
+// OpenAgentsReviewRun is one transport-neutral Open Agents review pass.
+type OpenAgentsReviewRun struct {
+	ID               string                    `json:"id"`
+	ReviewID         string                    `json:"reviewId"`
+	SessionID        string                    `json:"sessionId"`
+	BatchID          string                    `json:"batchId"`
+	Harness          string                    `json:"harness"`
+	PRURL            string                    `json:"pullRequestUrl"`
+	TargetSHA        string                    `json:"targetSha"`
+	Status           OpenAgentsReviewRunStatus `json:"status"`
+	Verdict          OpenAgentsReviewVerdict   `json:"verdict"`
+	Body             string                    `json:"body"`
+	ProviderReviewID string                    `json:"providerReviewId"`
+	CreatedAt        time.Time                 `json:"createdAt"`
+	DeliveredAt      *time.Time                `json:"deliveredAt,omitempty"`
+	AutoInjectReview bool                      `json:"autoInjectReview"`
 }
 
-// AOPullRequestReviewState is AO's current review state for one PR head.
-type AOPullRequestReviewState struct {
-	PRURL          string        `json:"pullRequestUrl"`
-	PRNumber       int           `json:"pullRequestNumber"`
-	Title          string        `json:"title"`
-	TargetSHA      string        `json:"targetSha"`
-	Status         AOReviewState `json:"status"`
-	StaleTargetSHA string        `json:"staleTargetSha,omitempty"`
-	LatestRun      *AOReviewRun  `json:"latestRun,omitempty"`
-	PreviousRun    *AOReviewRun  `json:"previousRun,omitempty"`
+// OpenAgentsPullRequestReviewState is Open Agents's current review state for one PR head.
+type OpenAgentsPullRequestReviewState struct {
+	PRURL          string                `json:"pullRequestUrl"`
+	PRNumber       int                   `json:"pullRequestNumber"`
+	Title          string                `json:"title"`
+	TargetSHA      string                `json:"targetSha"`
+	Status         OpenAgentsReviewState `json:"status"`
+	StaleTargetSHA string                `json:"staleTargetSha,omitempty"`
+	LatestRun      *OpenAgentsReviewRun  `json:"latestRun,omitempty"`
+	PreviousRun    *OpenAgentsReviewRun  `json:"previousRun,omitempty"`
 }

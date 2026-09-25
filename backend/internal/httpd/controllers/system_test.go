@@ -10,10 +10,10 @@ import (
 	"testing"
 	"time"
 
-	"github.com/aoagents/agent-orchestrator/backend/internal/config"
-	"github.com/aoagents/agent-orchestrator/backend/internal/httpd"
-	"github.com/aoagents/agent-orchestrator/backend/internal/service/shellterm"
-	"github.com/aoagents/agent-orchestrator/backend/internal/service/systemcheck"
+	"github.com/sudo-adduser-jordan/open-agents/backend/internal/config"
+	"github.com/sudo-adduser-jordan/open-agents/backend/internal/httpd"
+	"github.com/sudo-adduser-jordan/open-agents/backend/internal/service/shellterm"
+	"github.com/sudo-adduser-jordan/open-agents/backend/internal/service/systemcheck"
 )
 
 type fakeSystemChecker struct {
@@ -98,7 +98,7 @@ func TestGetSystemRequirements(t *testing.T) {
 		Requirements: []systemcheck.Requirement{
 			{ID: "git", Label: "git", Satisfied: true, Required: true, Detail: "/usr/bin/git"},
 			{ID: "tmux", Label: "tmux", Satisfied: true, Required: true, Detail: "/usr/bin/tmux"},
-			{ID: "gh", Label: "gh", Satisfied: false, Required: false, Detail: "gh was not found on PATH. It lets agent sessions open pull requests and read issues, but AO runs fine without it."},
+			{ID: "gh", Label: "gh", Satisfied: false, Required: false, Detail: "gh was not found on PATH. It lets agent sessions open pull requests and read issues, but Open Agents runs fine without it."},
 		},
 	}}
 	srv := httptest.NewServer(httpd.NewRouterWithControl(config.Config{}, log, nil, httpd.APIDeps{

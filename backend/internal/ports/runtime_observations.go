@@ -3,7 +3,7 @@ package ports
 import (
 	"time"
 
-	"github.com/aoagents/agent-orchestrator/backend/internal/domain"
+	"github.com/sudo-adduser-jordan/open-agents/backend/internal/domain"
 )
 
 // ProbeResult is a single liveness reading. "failed" means the probe errored
@@ -32,7 +32,7 @@ type RuntimeFacts struct {
 // SessionStart, allowing lifecycle to persist the native resume handle without
 // inventing an activity transition.
 //
-// Event/ToolName/ToolUseID are optional correlation facts: the AO hook
+// Event/ToolName/ToolUseID are optional correlation facts: the Open Agents hook
 // sub-command that produced the state and, for tool-use hooks, the native
 // tool call it concerns. Lifecycle uses them to clear a stale blocked state
 // only when the specific approved tool finishes. A signal without an Event
@@ -53,21 +53,21 @@ type ActivitySignal struct {
 	// to build a deterministic handoff. Lifecycle accepts them only from their
 	// main-turn event boundaries (UserPromptSubmit and Stop) under the current
 	// runtime/controller generation. They are never promoted to system instructions,
-	// and internal <ao-...> coordination turns are filtered by the hook client.
+	// and internal <open-agents-...> coordination turns are filtered by the hook client.
 	LatestUserPrompt      string
 	LatestAssistantUpdate string
-	// ConversationCheckpointOrigin distinguishes real human turns from AO's
+	// ConversationCheckpointOrigin distinguishes real human turns from Open Agents's
 	// own coordination. Lifecycle persists coordination provenance across the
 	// prompt-submit/Stop boundary; an empty value is an older hook client.
 	ConversationCheckpointOrigin domain.ConversationCheckpointOrigin
 	// ProviderTurnID identifies the main turn reported by a native hook.
 	ProviderTurnID string
-	// SubmissionID identifies AO's per-invocation prompt-hook context attachment.
+	// SubmissionID identifies Open Agents's per-invocation prompt-hook context attachment.
 	SubmissionID string
 	// TranscriptPath is a read-only provider-native transcript reference when
-	// the hook exposes one. AO stores the path, never rewrites the transcript.
+	// the hook exposes one. Open Agents stores the path, never rewrites the transcript.
 	TranscriptPath string
-	// LaunchID is set by AO's process supervisor. Lifecycle rejects a signal
+	// LaunchID is set by Open Agents's process supervisor. Lifecycle rejects a signal
 	// from an older process generation of the same session.
 	LaunchID string
 	// ControllerGeneration is the required ownership fence for a runtime-less

@@ -50,8 +50,8 @@ interface TrackItem {
 	summary: string;
 }
 
-const repoName = "Untrivial-ai/agent-orchestrator";
-const repoAvatar = "https://github.com/Untrivial-ai.png?size=64";
+const repoName = "sudo-adduser-jordan/open-agents";
+const repoAvatar = "https://github.com/sudo-adduser-jordan.png?size=64";
 
 const previewTokenStyle = {
 	// Exact dark-theme values from frontend/src/styles/tokens.css (:root).
@@ -268,8 +268,8 @@ const columns = [
 		count: 3,
 		cards: [
 			{
-				title: "Ship AO logo in top navigation",
-				branch: "landing/topbar-ao-logo",
+				title: "Ship Open Agents logo in top navigation",
+				branch: "landing/topbar-open-agents-logo",
 				agent: previewAgents.qwen.agent,
 				icon: previewAgents.qwen.icon,
 				activity: "Approved",
@@ -298,7 +298,7 @@ const projectItems: TrackItem[] = [
 	{
 		id: "landing",
 		label: "smooth card",
-		summary: "Refresh the hero board, topbar, and landing sections without losing the AO product language.",
+		summary: "Refresh the hero board, topbar, and landing sections without losing the Open Agents product language.",
 	},
 	{
 		id: "deploy",
@@ -1251,7 +1251,7 @@ function sidebarSessionLabel(card: PreviewCard): string {
 		"Wire hero mockup progression delays": "progression timing",
 		"Verify preview environment variables": "preview env",
 		"Preload GitHub stars before hydration": "preload stars",
-		"Ship AO logo in top navigation": "ao logo",
+		"Ship Open Agents logo in top navigation": "open-agents logo",
 		"Choose production region failover": "region failover",
 		"Cache workspace dependencies in builds": "workspace cache",
 		"Repair mobile overflow on landing preview": "mobile overflow",
@@ -1346,7 +1346,7 @@ function Sidebar({ cards }: { cards: PreviewCard[] }) {
 
 			<div className="flex shrink-0 items-center gap-1.5 px-3 pb-2 pt-0.5">
 				<img
-					src="/ao-logo.svg"
+					src="/open-agents-logo.svg"
 					alt=""
 					width={22}
 					height={22}
@@ -1355,7 +1355,7 @@ function Sidebar({ cards }: { cards: PreviewCard[] }) {
 					draggable="false"
 				/>
 				<div className="min-w-0 flex-1 translate-y-px truncate text-[12px] font-bold leading-tight tracking-tight text-[var(--preview-sidebar-foreground)]">
-					Agent Orchestrator
+					Open Agents
 				</div>
 			</div>
 
@@ -1398,7 +1398,7 @@ function Sidebar({ cards }: { cards: PreviewCard[] }) {
 				<div className="relative z-20 mb-px shrink-0">
 					<div className="relative flex h-8 w-full items-center gap-2 rounded-lg bg-[var(--preview-sidebar-accent)] px-2.5 pr-[84px] text-left text-[12px] font-medium text-[var(--preview-foreground)]">
 						<FolderOpenIcon className="h-3.5 w-3.5 shrink-0" />
-						<span className="min-w-0 flex-1 truncate">agent-orchestrator</span>
+						<span className="min-w-0 flex-1 truncate">open-agents</span>
 					</div>
 					<div className="absolute inset-y-0 right-1.5 z-30 flex items-center gap-px">
 						<ProjectActionIcon>
@@ -1465,7 +1465,7 @@ function BoardChrome({ viewMode }: { viewMode: ViewMode }) {
 	return (
 		<div className="flex h-10 shrink-0 items-center gap-2 border-b border-[var(--preview-border-strong)] px-4">
 			<div className="min-w-0 truncate text-[16px] font-semibold tracking-tight leading-none text-[var(--preview-foreground)]">
-				{viewMode === "orchestrator" ? "Orchestrator" : "agent-orchestrator"}
+				{viewMode === "orchestrator" ? "Orchestrator" : "open-agents"}
 			</div>
 			<div className="min-w-0 flex-1" />
 				<span
@@ -1615,7 +1615,7 @@ function BoardCard({
 			: "border-[#fb923c]/60"
 		: "border-[var(--preview-border)]";
 	const badgeColor = isReviewFlag ? "bg-[#f87171]" : "bg-[#fb923c]";
-	const attentionAnim = isWaiting && isPulsing ? "ao-attention-pulse" : "";
+	const attentionAnim = isWaiting && isPulsing ? "open-agents-attention-pulse" : "";
 
 	return (
 		<motion.div
@@ -1808,7 +1808,7 @@ function OrchestratorView({
 					</div>
 					<div className="min-w-0">
 						<div className="text-[13px] font-semibold tracking-[-0.5px] text-[var(--preview-foreground)]">
-							Agent Orchestrator
+							Open Agents
 						</div>
 						<div className="truncate text-[10px] text-[var(--preview-muted-foreground)]">
 							Planning workers for {selectedTrack.label.toLowerCase()}
@@ -1841,7 +1841,7 @@ function OrchestratorView({
 				</div>
 
 				<div className="mt-4 min-h-0 flex-1 rounded-[10px] border border-[var(--preview-border)] bg-[var(--preview-card)] p-4 font-mono text-[11px] leading-5 text-[var(--preview-muted-foreground)]">
-					<div className="text-[var(--preview-muted-foreground)]">ao orchestrator</div>
+					<div className="text-[var(--preview-muted-foreground)]">open-agents orchestrator</div>
 					<div className="mt-3 text-[var(--preview-foreground)]">
 						<span className="text-[#60a5fa]">track</span> {selectedTrack.id}
 					</div>
@@ -2052,20 +2052,20 @@ export function AppMockup() {
 		<div
 			ref={windowRef}
 			role="img"
-			aria-label="Preview of the Agent Orchestrator board: agent tasks move across Pending Work, Iterating, In Review, and Ready to merge."
+			aria-label="Preview of the Open Agents board: agent tasks move across Pending Work, Iterating, In Review, and Ready to merge."
 			className="absolute z-10 select-none overflow-hidden rounded-[var(--mockup-shell-radius)] border border-[var(--preview-border)] bg-[var(--preview-sidebar)] font-sans tracking-tight text-[var(--preview-foreground)] antialiased shadow-[0_30px_80px_-24px_rgba(0,0,0,0.75)] [&_.font-mono]:tracking-normal"
 			style={mockupShellStyle}
 		>
 			<style>{`
-				@keyframes ao-attention-pulse-frames {
+				@keyframes open-agents-attention-pulse-frames {
 					0%, 100% { box-shadow: 0 0 0 0 rgba(251, 146, 60, 0.35); }
 					50% { box-shadow: 0 0 0 4px rgba(251, 146, 60, 0); }
 				}
-				.ao-attention-pulse {
-					animation: ao-attention-pulse-frames 1.2s ease-in-out infinite;
+				.open-agents-attention-pulse {
+					animation: open-agents-attention-pulse-frames 1.2s ease-in-out infinite;
 				}
 				@media (prefers-reduced-motion: reduce) {
-					.ao-attention-pulse { animation: none; }
+					.open-agents-attention-pulse { animation: none; }
 				}
 			`}</style>
 			<div className="relative h-full w-full overflow-hidden">

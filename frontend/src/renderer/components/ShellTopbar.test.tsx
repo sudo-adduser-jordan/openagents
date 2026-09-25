@@ -81,7 +81,7 @@ const worker: WorkspaceSession = {
 	title: "do the thing",
 	provider: "opencode",
 	kind: "worker",
-	branch: "ao/sess-1",
+	branch: "open-agents/sess-1",
 	status: "working",
 	updatedAt: "2026-06-10T00:00:00Z",
 	prs: [],
@@ -91,7 +91,7 @@ const secondWorker: WorkspaceSession = {
 	...worker,
 	id: "sess-2",
 	title: "do the other thing",
-	branch: "ao/sess-2",
+	branch: "open-agents/sess-2",
 };
 
 const orchestrator: WorkspaceSession = {
@@ -210,7 +210,7 @@ describe("ShellTopbar status pill", () => {
 		const identity = screen.getByTestId("session-topbar-identity");
 		expect(identity.textContent).toContain("do the thing");
 		expect(identity.textContent).toContain("Working");
-		expect(identity.textContent).not.toContain("ao/sess-1");
+		expect(identity.textContent).not.toContain("open-agents/sess-1");
 		expect(identity.querySelector(".workspace-topbar__identity-separator")).not.toBeNull();
 	});
 
@@ -233,12 +233,12 @@ describe("ShellTopbar status pill", () => {
 	// identity stays the project crumb plus its activity, with its own controls
 	// intact (#3874, regressed by the badge #4252 added beside these actions).
 	it("keeps the worktree branch out of the orchestrator identity and actions", () => {
-		renderTopbar(sessionWith({ ...orchestrator, branch: "ao/orch-root" }));
+		renderTopbar(sessionWith({ ...orchestrator, branch: "open-agents/orch-root" }));
 
 		const identity = screen.getByTestId("session-topbar-identity");
 		expect(identity.textContent).toContain("my-app");
 		expect(identity.textContent).toContain("Working");
-		expect(screen.queryByText("ao/orch-root")).toBeNull();
+		expect(screen.queryByText("open-agents/orch-root")).toBeNull();
 		expect(screen.getByRole("button", { name: "Open Kanban" })).toBeInTheDocument();
 		expect(screen.getByRole("button", { name: "New task" })).toBeInTheDocument();
 	});
@@ -254,7 +254,7 @@ describe("ShellTopbar status pill", () => {
 			</>,
 		);
 
-		expect(screen.queryByText("ao/sess-1")).toBeNull();
+		expect(screen.queryByText("open-agents/sess-1")).toBeNull();
 		expect(screen.queryByText("Working")).toBeNull();
 		const localActions = screen.getByTestId("session-local-actions");
 		expect(localActions).toHaveClass("gap-1");

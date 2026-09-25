@@ -14,13 +14,13 @@ import (
 	"testing"
 	"time"
 
-	"github.com/aoagents/agent-orchestrator/backend/internal/domain"
-	"github.com/aoagents/agent-orchestrator/backend/internal/lifecycle"
-	"github.com/aoagents/agent-orchestrator/backend/internal/ports"
-	chatsvc "github.com/aoagents/agent-orchestrator/backend/internal/service/chat"
-	"github.com/aoagents/agent-orchestrator/backend/internal/storage/sqlite"
-	"github.com/aoagents/agent-orchestrator/backend/internal/storage/sqlite/sqlitetest"
-	"github.com/aoagents/agent-orchestrator/backend/internal/storage/sqlite/store"
+	"github.com/sudo-adduser-jordan/open-agents/backend/internal/domain"
+	"github.com/sudo-adduser-jordan/open-agents/backend/internal/lifecycle"
+	"github.com/sudo-adduser-jordan/open-agents/backend/internal/ports"
+	chatsvc "github.com/sudo-adduser-jordan/open-agents/backend/internal/service/chat"
+	"github.com/sudo-adduser-jordan/open-agents/backend/internal/storage/sqlite"
+	"github.com/sudo-adduser-jordan/open-agents/backend/internal/storage/sqlite/sqlitetest"
+	"github.com/sudo-adduser-jordan/open-agents/backend/internal/storage/sqlite/store"
 )
 
 // These run against a real SQLite store rather than a mock, because the point is
@@ -627,13 +627,13 @@ func TestServicePassesRecomputedSystemPromptToResume(t *testing.T) {
 	_, err = svc.Start(context.Background(), chatsvc.StartConfig{
 		SessionID: testSession, ProjectID: testProject, Harness: domain.HarnessOpenCode,
 		DataDir: dataDir, WorkspacePath: workspace, ProviderConversationID: "thread-1",
-		SystemPrompt: "Recomputed AO orchestrator instructions",
+		SystemPrompt: "Recomputed Open Agents orchestrator instructions",
 	})
 	if err != nil {
 		t.Fatalf("Start resume: %v", err)
 	}
 	if resumed.ProviderConversationID != "thread-1" || resumed.DataDir != dataDir || resumed.WorkspacePath != workspace ||
-		resumed.SystemPrompt != "Recomputed AO orchestrator instructions" || resumed.Model != "gpt-test" ||
+		resumed.SystemPrompt != "Recomputed Open Agents orchestrator instructions" || resumed.Model != "gpt-test" ||
 		resumed.Effort != "high" {
 		t.Fatalf("resume config = %#v", resumed)
 	}
@@ -1257,7 +1257,7 @@ func TestResumeImportsNativeHistoryBeforeTheChatControllerStarts(t *testing.T) {
 	// persisted item ids, so the replay uses synthetic item ids even though the
 	// live assistant message used native-answer-1. Stable turn identity and the
 	// settled content keep the replay from duplicating either message, while the
-	// command AO already knew is deduplicated too, while the new command that AO
+	// command Open Agents already knew is deduplicated too, while the new command that Open Agents
 	// had not seen yet is still imported.
 	if len(snapshot.Messages) != 2 || snapshot.Messages[0].Text != "What changed?" || snapshot.Messages[1].Text != "Nothing is dirty." {
 		t.Fatalf("imported messages = %#v", snapshot.Messages)
@@ -1361,7 +1361,7 @@ func TestInterfaceHandoffRefreshesNativeHistoryUntilItReachesTheCheckpoint(t *te
 		fakeConversation: newFakeConversation(),
 		initialSettled:   true,
 		// The first authoritative observation is internally settled but stale.
-		// RefreshHistory performs the provider read that reaches AO's checkpoint.
+		// RefreshHistory performs the provider read that reaches Open Agents's checkpoint.
 		initialEvents: nil,
 		events: []ports.ChatEvent{
 			{Kind: ports.ChatEventTurnStarted, ProviderEventID: "history-start", ProviderTurnID: "native-turn-1"},
@@ -1420,7 +1420,7 @@ func TestInterfaceHandoffImportsInterruptedUserOnlyNativeHistory(t *testing.T) {
 			{
 				Kind: ports.ChatEventUserMessageCompleted, ProviderEventID: "history-user",
 				ProviderTurnID: "native-turn-1", ProviderItemID: "native-user-1",
-				Text: "AO transferred the previous agent's context in hidden system instructions.",
+				Text: "Open Agents transferred the previous agent's context in hidden system instructions.",
 			},
 			{
 				Kind: ports.ChatEventTurnCompleted, ProviderEventID: "history-interrupted",
@@ -1641,7 +1641,7 @@ func TestInterfaceHandoffRejectsSettledReplayBeforeLatestSessionCheckpoint(t *te
 		fakeConversation: newFakeConversation(),
 		// A provider may report a syntactically settled but stale prefix while its
 		// on-disk transcript is still being flushed. Empty is the strongest form of
-		// that failure: no replay event reaches the hook facts AO already observed.
+		// that failure: no replay event reaches the hook facts Open Agents already observed.
 		events: nil,
 		// Cancel a forbidden second read so the test fails quickly instead of
 		// waiting the full 45s settle limit on a regression.
@@ -1769,7 +1769,7 @@ func TestInterfaceHandoffTrustedCheckpointMayPrecedeLaterCompletedTurn(t *testin
 			if err != nil || !found {
 				t.Fatalf("load session: found=%v err=%v", found, err)
 			}
-			// AO may have no hook evidence at all for a later provider turn. In that case
+			// Open Agents may have no hook evidence at all for a later provider turn. In that case
 			// the earlier coherent checkpoint still need not be the replay's final turn.
 			// A later scoped Stop is covered separately and becomes a latest-turn gate.
 			rec.Metadata.LatestUserPrompt = "trusted checkpoint user"
@@ -1861,7 +1861,7 @@ func TestInterfaceHandoffPanePromptWithMissedHookCannotAcceptHistoryBeforeObserv
 		t.Fatalf("record pane-delivered prompt: changed=%v err=%v", changed, err)
 	}
 
-	// AO delivered another pane turn, but its UserPromptSubmit hook was missed.
+	// Open Agents delivered another pane turn, but its UserPromptSubmit hook was missed.
 	// The Stop still proves there is an unresolved completed boundary that
 	// provider-history recovery must not waive.
 	lifecycleManager := lifecycle.New(st, nil)
@@ -2051,7 +2051,7 @@ func TestInterfaceHandoffTrustedCheckpointMustMatchOneCompletedTurn(t *testing.T
 	}
 }
 
-func TestInterfaceHandoffAOHighWaterFallbackMustStayInItsTurn(t *testing.T) {
+func TestInterfaceHandoffOpenAgentsHighWaterFallbackMustStayInItsTurn(t *testing.T) {
 	ctx := context.Background()
 	st := openStore(t)
 	now := time.Date(2026, 8, 26, 2, 0, 0, 0, time.UTC)
@@ -2127,14 +2127,14 @@ func TestInterfaceHandoffAOHighWaterFallbackMustStayInItsTurn(t *testing.T) {
 		WorkspacePath: t.TempDir(), ProviderConversationID: "thread-1", HistoryMode: ports.ChatHistoryRequired,
 	})
 	if !errors.Is(err, ports.ErrChatHistoryUnsettled) {
-		t.Fatalf("Start error = %v, want AO high-water mismatch from its completed turn", err)
+		t.Fatalf("Start error = %v, want Open Agents high-water mismatch from its completed turn", err)
 	}
-	if dimensions := ports.ChatHistoryMismatchDimensions(err); !slices.Contains(dimensions, ports.ChatHistoryMismatchAOHighWater) {
-		t.Fatalf("mismatch dimensions = %v, want AO high water", dimensions)
+	if dimensions := ports.ChatHistoryMismatchDimensions(err); !slices.Contains(dimensions, ports.ChatHistoryMismatchOpenAgentsHighWater) {
+		t.Fatalf("mismatch dimensions = %v, want Open Agents high water", dimensions)
 	}
 }
 
-func TestInterfaceHandoffAOHighWaterAcceptsMappedReassignedTurn(t *testing.T) {
+func TestInterfaceHandoffOpenAgentsHighWaterAcceptsMappedReassignedTurn(t *testing.T) {
 	ctx := context.Background()
 	st := openStore(t)
 	now := time.Date(2026, 8, 26, 2, 30, 0, 0, time.UTC)
@@ -2500,7 +2500,7 @@ func TestInterfaceHandoffDoesNotAnchorReplayCheckpointOnFailedTurn(t *testing.T)
 	if err != nil {
 		t.Fatalf("LoadConversationSnapshot: %v", err)
 	}
-	// The failed turn stays durable in AO's projection even though the provider
+	// The failed turn stays durable in Open Agents's projection even though the provider
 	// never replays it.
 	var failedState domain.TurnState
 	for _, turn := range snapshot.Turns {
@@ -2549,13 +2549,13 @@ func TestInterfaceHandoffDoesNotAnchorReplayBeforeProviderCoordinationBoundary(t
 		t.Fatalf("SettleTurn old provider: %v", err)
 	}
 
-	// The first native turn in the replacement provider is AO's handoff marker.
+	// The first native turn in the replacement provider is Open Agents's handoff marker.
 	// It is a durable boundary even when the provider rejected that turn.
 	boundaryAt := now.Add(time.Minute)
 	created, err = st.AppendUserMessage(context.Background(), existing.ID, testSession, "old-generation",
 		domain.ConversationMessage{
 			ID:     "coordination-user",
-			Text:   "AO transferred the previous agent's context in hidden system instructions. Continue the task.",
+			Text:   "Open Agents transferred the previous agent's context in hidden system instructions. Continue the task.",
 			Origin: domain.MessageOriginDaemon, ClientMessageID: "coordination-client",
 		}, "coordination-turn", boundaryAt)
 	if err != nil || !created {
@@ -2585,7 +2585,7 @@ func TestInterfaceHandoffDoesNotAnchorReplayBeforeProviderCoordinationBoundary(t
 			{
 				Kind: ports.ChatEventUserMessageCompleted, ProviderEventID: "boundary-user",
 				ProviderTurnID: "new-provider-boundary", ProviderItemID: "boundary-item",
-				Text: "AO transferred the previous agent's context in hidden system instructions. Continue the task.",
+				Text: "Open Agents transferred the previous agent's context in hidden system instructions. Continue the task.",
 			},
 			{
 				Kind: ports.ChatEventTurnCompleted, ProviderEventID: "boundary-complete",
@@ -3092,7 +3092,7 @@ func TestProviderPromptFailureSettlesTurnAndRecordsRecoveryOnce(t *testing.T) {
 		t.Fatalf("reauth reason = %q", snapshot.Conversation.Account.ReauthReason)
 	}
 	for _, activity := range snapshot.Activities {
-		if activity.Kind == domain.ActivityKindError || strings.Contains(activity.ProviderItemID, "ao-reauth-") {
+		if activity.Kind == domain.ActivityKindError || strings.Contains(activity.ProviderItemID, "open-agents-reauth-") {
 			t.Fatalf("terminal failure was duplicated as an activity: %#v", activity)
 		}
 	}
@@ -3387,7 +3387,7 @@ func TestApprovalIsStoredPendingWithProviderDecisions(t *testing.T) {
 		RequestID:      "0",
 		ActivityKind:   domain.ActivityKindCommand,
 		ActivityStatus: domain.ActivityStatusPending,
-		Summary:        "Run ao spawn",
+		Summary:        "Run open-agents spawn",
 		Decisions: []ports.ChatDecisionOption{
 			{ID: "accept", Label: "Approve", Kind: ports.ChatDecisionAllowOnce},
 			{ID: "acceptWithExecpolicyAmendment", Label: "Approve and remember this command", Kind: ports.ChatDecisionAllowAlways},
@@ -3957,7 +3957,7 @@ func TestSendWhileBusyQueuesUntilTheTurnEnds(t *testing.T) {
 
 // Codex can start nested turns while the root turn is still working. A child
 // completion is not conversation quiescence: dispatching queued automation at
-// that point injects it into the still-running root and leaves the AO turn minted
+// that point injects it into the still-running root and leaves the Open Agents turn minted
 // for that automation with no matching provider lifecycle.
 func TestNestedTurnCompletionDoesNotDrainQueueWhilePrimaryTurnRuns(t *testing.T) {
 	h := newHarness(t)
@@ -4252,7 +4252,7 @@ func TestChatHandoffInterruptArmBlocksCompletionFromPromotingQueue(t *testing.T)
 		return len(s.Turns) == 1 && s.Turns[0].State == domain.TurnStateRunning
 	})
 	if _, err := h.svc.Send(ctx, testSession, ports.ChatUserMessage{
-		Text: "touch /tmp/ao3945-queued-ran", ClientMessageID: "handoff-arm-2",
+		Text: "touch /tmp/open-agents-3945-queued-ran", ClientMessageID: "handoff-arm-2",
 	}); err != nil {
 		t.Fatalf("queue second turn: %v", err)
 	}
@@ -4275,7 +4275,7 @@ func TestChatHandoffInterruptArmBlocksCompletionFromPromotingQueue(t *testing.T)
 		states := turnStateByText(t, s)
 		return states["run the dev server"].Terminal()
 	})
-	if got := turnStateByText(t, fenced)["touch /tmp/ao3945-queued-ran"]; got != domain.TurnStateQueued {
+	if got := turnStateByText(t, fenced)["touch /tmp/open-agents-3945-queued-ran"]; got != domain.TurnStateQueued {
 		t.Fatalf("queued command while target preflights = %q, want reversibly fenced", got)
 	}
 	if got := h.conv.sentTexts(); len(got) != 1 {
@@ -4298,7 +4298,7 @@ func TestChatHandoffInterruptArmBlocksCompletionFromPromotingQueue(t *testing.T)
 	if err != nil {
 		t.Fatalf("load stopped conversation: %v", err)
 	}
-	if got := turnStateByText(t, snapshot)["touch /tmp/ao3945-queued-ran"]; got != domain.TurnStateInterrupted {
+	if got := turnStateByText(t, snapshot)["touch /tmp/open-agents-3945-queued-ran"]; got != domain.TurnStateInterrupted {
 		t.Fatalf("queued command = %q, want interrupted without provider dispatch", got)
 	}
 }
@@ -4377,7 +4377,7 @@ func TestChatHandoffInterruptCompletionDuringProviderCancellationCannotPromoteQu
 		return len(s.Turns) == 1 && s.Turns[0].State == domain.TurnStateRunning
 	})
 	if _, err := h.svc.Send(ctx, testSession, ports.ChatUserMessage{
-		Text: "touch /tmp/ao3945-queued-ran", ClientMessageID: "handoff-during-2",
+		Text: "touch /tmp/open-agents-3945-queued-ran", ClientMessageID: "handoff-during-2",
 	}); err != nil {
 		t.Fatalf("queue second turn: %v", err)
 	}
@@ -4898,7 +4898,7 @@ func TestServiceLiveReconnectSkipsSettledHistoryBarrier(t *testing.T) {
 		WorkspacePath: t.TempDir(), ProviderConversationID: "thread-1",
 		PrepareControllerEnv: func(context.Context, domain.SessionControllerOwner) (map[string]string, error) {
 			prepareCalls.Add(1)
-			return map[string]string{"AO_BROWSER_CAPABILITY": "rotated"}, nil
+			return map[string]string{"OPEN_AGENTS_BROWSER_CAPABILITY": "rotated"}, nil
 		},
 	}); err != nil {
 		t.Fatalf("Start: %v", err)
@@ -5095,7 +5095,7 @@ func TestConcurrentReconcileAndResumeShareOneCredentialedControllerLaunch(t *tes
 	var ids atomic.Int32
 	prepare := func(context.Context, domain.SessionControllerOwner) (map[string]string, error) {
 		call := prepared.Add(1)
-		return map[string]string{"AO_BROWSER_CAPABILITY": fmt.Sprintf("token-%d", call)}, nil
+		return map[string]string{"OPEN_AGENTS_BROWSER_CAPABILITY": fmt.Sprintf("token-%d", call)}, nil
 	}
 	svc := chatsvc.New(chatsvc.Options{
 		Store: st, Sessions: st, Drivers: fakeRegistry{driver: driver},
@@ -5104,7 +5104,7 @@ func TestConcurrentReconcileAndResumeShareOneCredentialedControllerLaunch(t *tes
 	t.Cleanup(func() { _ = svc.Stop(context.Background(), testSession) })
 	cfg := chatsvc.StartConfig{
 		SessionID: testSession, ProjectID: testProject, Harness: domain.HarnessOpenCode,
-		WorkspacePath: t.TempDir(), Env: map[string]string{"AO_BROWSER_CAPABILITY": "stale"},
+		WorkspacePath: t.TempDir(), Env: map[string]string{"OPEN_AGENTS_BROWSER_CAPABILITY": "stale"},
 		PrepareControllerEnv: prepare,
 	}
 	type startResult struct {
@@ -5142,7 +5142,7 @@ func TestConcurrentReconcileAndResumeShareOneCredentialedControllerLaunch(t *tes
 	if got := providerStarts.Load(); got != 1 {
 		t.Fatalf("provider starts = %d, want 1", got)
 	}
-	if got := launchedEnv["AO_BROWSER_CAPABILITY"]; got != "token-1" {
+	if got := launchedEnv["OPEN_AGENTS_BROWSER_CAPABILITY"]; got != "token-1" {
 		t.Fatalf("provider capability = %q, want token-1", got)
 	}
 }
@@ -5234,7 +5234,7 @@ func TestInitialPromptIsAttributedToTheUser(t *testing.T) {
 	}
 }
 
-// A relayed message is AO carrying someone else's words: `ao send`, or an
+// A relayed message is Open Agents carrying someone else's words: `open-agents send`, or an
 // orchestrator writing to a worker. It must be attributed to automation, not
 // passed off as something the user typed here — the timeline distinguishes the
 // two structurally, and a reader should never have to infer it from a prefix.
@@ -6090,7 +6090,7 @@ func TestCompactionIsProjectedAsATimelineFact(t *testing.T) {
 	if activity.ProviderItemID != "cc-1" {
 		t.Errorf("provider item id = %q, want cc-1 so a replay updates this row", activity.ProviderItemID)
 	}
-	// Not attached to a turn: the provider ran the compaction in a turn AO never
+	// Not attached to a turn: the provider ran the compaction in a turn Open Agents never
 	// dispatched, so filing the row under it would attribute the entry to work the
 	// user never asked for.
 	if activity.TurnID != "" {
@@ -6202,7 +6202,7 @@ func TestCompactRefusesWhenProviderImplementsCompactorWithoutCapability(t *testi
 // Measured twice against a live app-server: thread/compact/start mid-turn silently
 // interrupts the running turn and reports it as interrupted, then compacts. Losing
 // work the user is waiting on as a side effect of housekeeping is not something to
-// discover afterwards from the timeline, so AO refuses and makes them stop it.
+// discover afterwards from the timeline, so Open Agents refuses and makes them stop it.
 func TestCompactRefusesWhileATurnIsInFlight(t *testing.T) {
 	conv := newCompactingConversation()
 	h := newHarnessWithConversation(t, conv)
@@ -6234,7 +6234,7 @@ func TestCompactRefusesWhileATurnIsInFlight(t *testing.T) {
 	}
 }
 
-// A provider can start a turn AO never dispatched: a compaction runs as its own
+// A provider can start a turn Open Agents never dispatched: a compaction runs as its own
 // turn, and so does work the provider resumes from its own history. Without a row
 // for it, every item that turn emits correlates to no turn — the activities arrive
 // with an empty turn id and the timeline silently stops grouping them, which reads

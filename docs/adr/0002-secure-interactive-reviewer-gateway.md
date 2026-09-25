@@ -13,7 +13,7 @@ startup resources, edit files, use Git hooks and filters, commit, push, or read
 unrelated host state.
 
 Headless, JSON, RPC, print, and one-shot modes are not acceptable substitutes for
-AO's reviewer terminal. A reusable boundary must preserve the real TUI while
+Open Agents's reviewer terminal. A reusable boundary must preserve the real TUI while
 granting only the capabilities needed for review.
 
 ## Decision
@@ -24,21 +24,21 @@ future interactive reviewer adapters.
 - Each reviewer receives a private neutral working directory, configuration,
   state, cache and temporary roots, an empty Git-hooks directory, and a
   content-addressed task manifest below
-  `AO_DATA_DIR/reviewer-runtime/<reviewer-id>`. The project checkout is never its
+  `OPEN_AGENTS_DATA_DIR/reviewer-runtime/<reviewer-id>`. The project checkout is never its
   working directory.
 - The immutable manifest binds a reviewer and worker session to exact review-run
-  ids, GitHub PR URLs, target/base object ids, and AO-owned hidden prompt files.
+  ids, GitHub PR URLs, target/base object ids, and Open Agents-owned hidden prompt files.
 - Source access is structured: list pinned-tree paths, read a pinned blob, bounded
   literal search, pinned diff, and pinned commit inspection. Git argv is constructed
-  by AO, with no shell, caller refs, hooks, external diff, textconv, pager, system
+  by Open Agents, with no shell, caller refs, hooks, external diff, textconv, pager, system
   configuration, or optional locks.
 - Side effects are structured: post a review only to the manifest PR/commit and
-  submit only manifest run ids for the manifest worker. AO selects absolute `git`,
-  `gh`, and `ao` binaries; payloads use stdin and fixed argv. The TUI never receives
+  submit only manifest run ids for the manifest worker. Open Agents selects absolute `git`,
+  `gh`, and `open-agents` binaries; payloads use stdin and fixed argv. The TUI never receives
   an arbitrary-command primitive.
-- Prompt reads resolve symlinks and remain inside the AO prompt root. Repository
+- Prompt reads resolve symlinks and remain inside the Open Agents prompt root. Repository
   paths reject absolute paths, traversal, option injection, NUL, and newlines.
-- The gateway uses the existing loopback `ao review submit` flow and does not alter
+- The gateway uses the existing loopback `open-agents review submit` flow and does not alter
   listener behavior, database schema, or HTTP APIs.
 
 This is an enforceable capability API when invoked, but it is not by itself a
@@ -54,11 +54,11 @@ Before any experimental host-trusted adapter is described or shipped as
 contained/read-only, the runtime must consume a fail-closed reviewer isolation
 profile while preserving the visible TUI:
 
-- macOS/Linux tmux: launch the TUI through an AO-owned sandbox process, mount the
+- macOS/Linux tmux: launch the TUI through an Open Agents-owned sandbox process, mount the
   neutral root read/write and required executable/runtime files read-only, and do
   not mount the checkout. Source access is exposed only through structured gateway
   IPC. Network egress allows only the selected model provider, GitHub review API,
-  and AO loopback submission endpoint.
+  and Open Agents loopback submission endpoint.
 - Windows ConPTY: apply the equivalent boundary with an AppContainer/restricted
   token, job object, explicit filesystem ACL/capability grants, and outbound network
   policy. ConPTY remains the terminal transport, not the security boundary.
@@ -82,7 +82,7 @@ command filtering is insufficient.
    textconv, environment, plugin/MCP, and executable-replacement attacks fail.
 4. Reads/search/diffs return only manifest-pinned objects; mismatched run, PR,
    commit, worker, or prompt requests fail closed.
-5. GitHub posting and AO submission work through fixed operations and cannot be
+5. GitHub posting and Open Agents submission work through fixed operations and cannot be
    redirected to another task.
 6. Killing, cancelling, restoring, detaching, and TUI exit leave no host shell and
    no writable checkout, including after daemon or desktop restart.

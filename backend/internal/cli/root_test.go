@@ -15,8 +15,8 @@ import (
 	"testing"
 	"time"
 
-	"github.com/aoagents/agent-orchestrator/backend/internal/daemonmeta"
-	"github.com/aoagents/agent-orchestrator/backend/internal/runfile"
+	"github.com/sudo-adduser-jordan/open-agents/backend/internal/daemonmeta"
+	"github.com/sudo-adduser-jordan/open-agents/backend/internal/runfile"
 )
 
 func TestRootHelpDoesNotShowDaemon(t *testing.T) {
@@ -153,7 +153,7 @@ func TestStopDoesNotShutdownUnverifiedReusedPID(t *testing.T) {
 	}
 	select {
 	case <-shutdownCalled:
-		t.Fatal("stop requested shutdown from a process whose health probe did not prove AO daemon ownership")
+		t.Fatal("stop requested shutdown from a process whose health probe did not prove Open Agents daemon ownership")
 	default:
 	}
 	if !strings.Contains(out, `"state": "stopped"`) {
@@ -273,12 +273,12 @@ func setConfigEnv(t *testing.T) testConfig {
 		runFile: filepath.Join(dir, "running.json"),
 		dataDir: filepath.Join(dir, "data"),
 	}
-	t.Setenv("AO_RUN_FILE", cfg.runFile)
-	t.Setenv("AO_DATA_DIR", cfg.dataDir)
-	t.Setenv("AO_PORT", "3001")
-	t.Setenv("AO_PROJECT_ID", "")
-	t.Setenv("AO_REQUEST_TIMEOUT", "")
-	t.Setenv("AO_SHUTDOWN_TIMEOUT", "")
+	t.Setenv("OPEN_AGENTS_RUN_FILE", cfg.runFile)
+	t.Setenv("OPEN_AGENTS_DATA_DIR", cfg.dataDir)
+	t.Setenv("OPEN_AGENTS_PORT", "3001")
+	t.Setenv("OPEN_AGENTS_PROJECT_ID", "")
+	t.Setenv("OPEN_AGENTS_REQUEST_TIMEOUT", "")
+	t.Setenv("OPEN_AGENTS_SHUTDOWN_TIMEOUT", "")
 	return cfg
 }
 

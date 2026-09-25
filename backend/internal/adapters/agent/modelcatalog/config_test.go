@@ -7,7 +7,7 @@ import (
 	"reflect"
 	"testing"
 
-	"github.com/aoagents/agent-orchestrator/backend/internal/ports"
+	"github.com/sudo-adduser-jordan/open-agents/backend/internal/ports"
 )
 
 func TestParseQwenModelsUsesConfiguredProviderSelectors(t *testing.T) {

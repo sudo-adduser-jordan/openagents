@@ -19,7 +19,7 @@ const {
 }));
 
 vi.mock("./bridge", () => ({
-	aoBridge: {
+	openAgentsBridge: {
 		daemon: { onStatus: onStatusMock },
 	},
 }));
@@ -301,7 +301,7 @@ describe("createEventTransport", () => {
 		let unsubscribe: (() => void) | undefined;
 		try {
 			const queryClient = new QueryClient({ defaultOptions: { queries: { retry: false } } });
-			const queryKey = ["editor-handoff", "agent-orchestrator-260"] as const;
+			const queryKey = ["editor-handoff", "open-agents-260"] as const;
 			const queryFn = vi
 				.fn()
 				.mockResolvedValueOnce({ workspaceAvailable: false })
@@ -316,10 +316,10 @@ describe("createEventTransport", () => {
 				"session_updated",
 				JSON.stringify({
 					seq: 667762,
-					projectId: "agent-orchestrator",
-					sessionId: "agent-orchestrator-260",
+					projectId: "open-agents",
+					sessionId: "open-agents-260",
 					type: "session_updated",
-					payload: { id: "agent-orchestrator-260" },
+					payload: { id: "open-agents-260" },
 					createdAt: "2026-08-29T07:55:18.913484Z",
 				}),
 			);

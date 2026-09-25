@@ -10,8 +10,8 @@ describe("terminal viewport zoom", () => {
 		expect(adjustTerminalViewport(renderer, 1)).toBe(true);
 		expect(adjustTerminalViewport(renderer, -1)).toBe(true);
 		expect(injectJavaScript.mock.calls).toEqual([
-			["window.__aoAdjustTerminalZoom(1); true;"],
-			["window.__aoAdjustTerminalZoom(-1); true;"],
+			["window.__openAgentsAdjustTerminalZoom(1); true;"],
+			["window.__openAgentsAdjustTerminalZoom(-1); true;"],
 		]);
 	});
 

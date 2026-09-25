@@ -8,9 +8,9 @@ import (
 
 	acpsdk "github.com/coder/acp-go-sdk"
 
-	"github.com/aoagents/agent-orchestrator/backend/internal/adapters/chatdriver/persistenthost"
-	"github.com/aoagents/agent-orchestrator/backend/internal/domain"
-	"github.com/aoagents/agent-orchestrator/backend/internal/ports"
+	"github.com/sudo-adduser-jordan/open-agents/backend/internal/adapters/chatdriver/persistenthost"
+	"github.com/sudo-adduser-jordan/open-agents/backend/internal/domain"
+	"github.com/sudo-adduser-jordan/open-agents/backend/internal/ports"
 )
 
 const (
@@ -32,7 +32,7 @@ type persistentDecision struct {
 }
 
 // ClientApprovalRequest describes a provider extension's blocking approval in
-// AO's durable, provider-neutral vocabulary.
+// Open Agents's durable, provider-neutral vocabulary.
 type ClientApprovalRequest struct {
 	Summary      string
 	ActivityKind domain.ActivityKind

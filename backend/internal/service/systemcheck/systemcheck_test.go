@@ -9,8 +9,8 @@ import (
 	"slices"
 	"testing"
 
-	agentsvc "github.com/aoagents/agent-orchestrator/backend/internal/service/agent"
-	"github.com/aoagents/agent-orchestrator/backend/internal/service/shellterm"
+	agentsvc "github.com/sudo-adduser-jordan/open-agents/backend/internal/service/agent"
+	"github.com/sudo-adduser-jordan/open-agents/backend/internal/service/shellterm"
 )
 
 type fakeHarnessCatalog struct {
@@ -219,8 +219,8 @@ func TestCheck_UsesBundledTmuxOverride(t *testing.T) {
 	if runtime.GOOS == "windows" {
 		t.Skip("tmux is not required on Windows")
 	}
-	const bundled = "/opt/ao/resources/tmux/bin/tmux"
-	t.Setenv("AO_TMUX_BINARY", bundled)
+	const bundled = "/opt/open-agents/resources/tmux/bin/tmux"
+	t.Setenv("OPEN_AGENTS_TMUX_BINARY", bundled)
 	catalog := &fakeHarnessCatalog{inventory: agentsvc.Inventory{
 		Installed: []agentsvc.Info{{ID: "codex", Label: "Codex"}},
 	}}

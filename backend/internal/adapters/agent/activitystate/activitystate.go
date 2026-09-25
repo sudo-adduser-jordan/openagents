@@ -1,4 +1,4 @@
-// Package activitystate holds the standard mapping from an AO hook sub-command
+// Package activitystate holds the standard mapping from an Open Agents hook sub-command
 // name onto an activity state. Most adapters install the same
 // session-start/user-prompt-submit/stop/permission-request callbacks and derive
 // activity identically from the event name alone; they share this deriver rather
@@ -6,9 +6,9 @@
 // grained state (codex, droid) keep their own deriver.
 package activitystate
 
-import "github.com/aoagents/agent-orchestrator/backend/internal/domain"
+import "github.com/sudo-adduser-jordan/open-agents/backend/internal/domain"
 
-// StandardDeriveActivityState maps a hook sub-command name onto an AO activity
+// StandardDeriveActivityState maps a hook sub-command name onto an Open Agents activity
 // state. The bool is false when the event carries no activity signal. The
 // payload is ignored: this is the name-only mapping shared by adapters whose
 // hooks report activity purely through which callback fired.

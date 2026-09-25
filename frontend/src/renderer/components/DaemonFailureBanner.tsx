@@ -3,7 +3,7 @@ import { useEffect, useRef, useState } from "react";
 import type { DaemonStatus } from "../../shared/daemon-status";
 import { isSlowDaemonStartupStatus } from "../../shared/daemon-startup-status";
 import { daemonFailureHint, daemonFailureMessage, daemonFailureTitle } from "../lib/daemon-failure";
-import { aoBridge } from "../lib/bridge";
+import { openAgentsBridge } from "../lib/bridge";
 
 export function DaemonFailureBanner({ status }: { status: DaemonStatus }) {
 	if ((!status.code && !isSlowDaemonStartupStatus(status)) || status.state === "ready") return null;
@@ -19,7 +19,7 @@ function DaemonFailureContent({ status }: { status: DaemonStatus }) {
 	const slowStartup = isSlowDaemonStartupStatus(status);
 	const details = status.details?.trim();
 	const hint = slowStartup ? "" : daemonFailureHint(status);
-	const title = slowStartup ? "AO daemon is not ready yet" : daemonFailureTitle(status);
+	const title = slowStartup ? "Open Agents daemon is not ready yet" : daemonFailureTitle(status);
 	const canRestart =
 		!slowStartup &&
 		(status.code === "not_ready" ||
@@ -40,7 +40,7 @@ function DaemonFailureContent({ status }: { status: DaemonStatus }) {
 			`Message: ${daemonFailureMessage(status)}`,
 			details ? `\n${`Details: ${details}`}` : "",
 		];
-		await aoBridge.clipboard.writeText(lines.filter(Boolean).join("\n"));
+		await openAgentsBridge.clipboard.writeText(lines.filter(Boolean).join("\n"));
 		setCopied(true);
 		if (copiedTimeout.current !== null) clearTimeout(copiedTimeout.current);
 		copiedTimeout.current = setTimeout(() => {
@@ -52,7 +52,7 @@ function DaemonFailureContent({ status }: { status: DaemonStatus }) {
 		setRestarting(true);
 		setRestartError(null);
 		try {
-			const nextStatus = await aoBridge.daemon.restart();
+			const nextStatus = await openAgentsBridge.daemon.restart();
 			if (nextStatus.state === "error" || nextStatus.state === "stopped") {
 				setRestartError(daemonFailureMessage(nextStatus));
 			}

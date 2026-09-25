@@ -387,8 +387,8 @@ describe("orchestratorProjectSections", () => {
 
 describe("orchestratorRowAccessibilityLabel", () => {
 	it("describes the action available for each project row", () => {
-		expect(orchestratorRowAccessibilityLabel("agent-orchestrator", "Needs input", "open")).toBe(
-			"Open orchestrator for agent-orchestrator, Needs input",
+		expect(orchestratorRowAccessibilityLabel("open-agents", "Needs input", "open")).toBe(
+			"Open orchestrator for open-agents, Needs input",
 		);
 		expect(orchestratorRowAccessibilityLabel("landing-page", "Not started", "start")).toBe(
 			"Start orchestrator for landing-page",

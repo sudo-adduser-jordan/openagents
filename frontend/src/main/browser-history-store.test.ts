@@ -12,7 +12,7 @@ afterEach(async () => {
 });
 
 async function temporaryState(): Promise<string> {
-	const directory = await mkdtemp(path.join(os.tmpdir(), "ao-browser-history-"));
+	const directory = await mkdtemp(path.join(os.tmpdir(), "open-agents-browser-history-"));
 	temporaryDirectories.push(directory);
 	return directory;
 }

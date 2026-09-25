@@ -95,11 +95,11 @@ struct UpdateProgressState {
         if let failure, !failure.isEmpty { return .recovery(failure) }
         if parentAlive {
             return now - waitingSince >= 30_000
-                ? .recovery("AO is taking longer than expected to close. The update will continue when AO has closed.")
+                ? .recovery("Open Agents is taking longer than expected to close. The update will continue when Open Agents has closed.")
                 : .closing
         }
         return now - waitingSince >= 180_000
-            ? .recovery("AO has not reopened yet. The installer may still be working. You can keep waiting or download the latest app.")
+            ? .recovery("Open Agents has not reopened yet. The installer may still be working. You can keep waiting or download the latest app.")
             : .installing
     }
 }

@@ -9,7 +9,7 @@
 # face, and re-lays both for each platform so the phone icon matches the desktop.
 # See the docstring there for what each output is.
 #
-# Outputs land in packages/mobile/assets/: the Icon Composer bundle AO.icon (iOS
+# Outputs land in packages/mobile/assets/: the Icon Composer bundle open-agents.icon (iOS
 # 26 Liquid Glass) plus the flat rasters used by Android, web and Expo Go.
 #
 # Requirements (this is a manual, out-of-band tool -- the generated assets are
@@ -39,8 +39,8 @@ echo "==> deriving icons from frontend/assets/icon.png"
 python3 "$here/icon-build/from-desktop.py" "$source_icon" "$work"
 
 echo "==> installing into assets/"
-rm -rf "$assets/AO.icon"
-cp -R "$work/AO.icon" "$assets/AO.icon"
+rm -rf "$assets/open-agents.icon"
+cp -R "$work/open-agents.icon" "$assets/open-agents.icon"
 for f in icon.png splash-icon.png favicon.png android-icon-background.png \
          android-icon-foreground.png android-icon-monochrome.png; do
   cp "$work/$f" "$assets/$f"

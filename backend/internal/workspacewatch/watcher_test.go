@@ -91,8 +91,8 @@ func TestWatchClosesWhenContextIsCancelled(t *testing.T) {
 func TestWatchDoesNotTurnGitStatusIndexRefreshIntoAChange(t *testing.T) {
 	root := t.TempDir()
 	runGit(t, root, "init")
-	runGit(t, root, "config", "user.email", "ao@example.com")
-	runGit(t, root, "config", "user.name", "AO Tests")
+	runGit(t, root, "config", "user.email", "open-agents@example.com")
+	runGit(t, root, "config", "user.name", "Open Agents Tests")
 	tracked := filepath.Join(root, "README.md")
 	if err := os.WriteFile(tracked, []byte("hello\n"), 0o644); err != nil {
 		t.Fatalf("write tracked file: %v", err)

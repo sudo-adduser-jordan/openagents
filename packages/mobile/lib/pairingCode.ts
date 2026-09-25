@@ -69,7 +69,7 @@ function extractCode(input: string): string | null {
 	if (hash !== -1) {
 		// Only our own links. Another app's deep link with a fragment must not
 		// be treated as a pairing code.
-		if (!/^(aomobile:\/\/pair|https?:\/\/[^/]+\/pair)/i.test(trimmed)) return null;
+		if (!/^(open-agents-mobile:\/\/pair|https?:\/\/[^/]+\/pair)/i.test(trimmed)) return null;
 		return trimmed.slice(hash + 1) || null;
 	}
 	if (/^[a-z][a-z0-9+.-]*:\/\//i.test(trimmed)) return null; // a URL with no payload
@@ -84,7 +84,7 @@ function extractCode(input: string): string | null {
  * enough to emit one answers 404 to every probe and the race can never
  * complete — the compatibility was advertised but unreachable in practice.
  *
- * Recognised, though, so the app can say "update AO on your computer" instead
+ * Recognised, though, so the app can say "update Open Agents on your computer" instead
  * of "this is not a pairing code".
  */
 export function isLegacyPairingCode(raw: string): boolean {

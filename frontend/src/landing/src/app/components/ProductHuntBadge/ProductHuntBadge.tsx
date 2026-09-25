@@ -4,11 +4,11 @@ import type { ReactNode } from "react";
 
 /** The live Product Hunt page (outbound target for upvote / comment CTAs). */
 export const PRODUCT_HUNT_URL =
-	"https://www.producthunt.com/products/agent-orchestrator?launch=agent-orchestrator";
+	"https://www.producthunt.com/products/open-agents?launch=open-agents";
 
 /** Which Product Hunt CTA this is; selects the label shown. */
 const INTENT_LABEL = {
-	badge: "Find Agent Orchestrator on Product Hunt",
+	badge: "Find Open Agents on Product Hunt",
 	upvote: "Upvote us on Product Hunt",
 } as const;
 
@@ -43,7 +43,7 @@ export function ProductHuntBadge({
 			target="_blank"
 			rel="noopener noreferrer"
 			className={className}
-			aria-label="Agent Orchestrator on Product Hunt"
+			aria-label="Open Agents on Product Hunt"
 		>
 			{children ?? INTENT_LABEL[intent]}
 		</a>

@@ -10,11 +10,11 @@ import (
 	"testing"
 	"time"
 
-	"github.com/aoagents/agent-orchestrator/backend/internal/config"
-	"github.com/aoagents/agent-orchestrator/backend/internal/httpd"
-	"github.com/aoagents/agent-orchestrator/backend/internal/httpd/apierr"
-	"github.com/aoagents/agent-orchestrator/backend/internal/service/agentauth"
-	"github.com/aoagents/agent-orchestrator/backend/internal/service/shellterm"
+	"github.com/sudo-adduser-jordan/open-agents/backend/internal/config"
+	"github.com/sudo-adduser-jordan/open-agents/backend/internal/httpd"
+	"github.com/sudo-adduser-jordan/open-agents/backend/internal/httpd/apierr"
+	"github.com/sudo-adduser-jordan/open-agents/backend/internal/service/agentauth"
+	"github.com/sudo-adduser-jordan/open-agents/backend/internal/service/shellterm"
 )
 
 type fakeAgentAuthService struct {
@@ -75,7 +75,7 @@ func TestAgentAuthStartReturnsTerminalHandle(t *testing.T) {
 		AgentID:  "pi",
 		Action:   agentauth.ActionLogin,
 		Guidance: "Native Pi login flow",
-		Terminal: shellterm.ShellTerminal{HandleID: "shellterm-auth", Title: "Log in to Pi", WorkingDir: "/tmp/ao", CreatedAt: createdAt},
+		Terminal: shellterm.ShellTerminal{HandleID: "shellterm-auth", Title: "Log in to Pi", WorkingDir: "/tmp/open-agents", CreatedAt: createdAt},
 	}}
 	server := newAgentAuthTestServer(t, svc)
 

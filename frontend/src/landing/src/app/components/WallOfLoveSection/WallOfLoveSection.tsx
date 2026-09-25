@@ -100,7 +100,7 @@ export function WallOfLoveSection() {
 						In the wild
 					</h2>
 					<p className="mt-3 text-base text-muted-foreground">
-						Real feedback from builders using AO.
+						Real feedback from builders using Open Agents.
 					</p>
 				</div>
 

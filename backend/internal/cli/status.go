@@ -9,9 +9,9 @@ import (
 
 	"github.com/spf13/cobra"
 
-	"github.com/aoagents/agent-orchestrator/backend/internal/config"
-	"github.com/aoagents/agent-orchestrator/backend/internal/daemonmeta"
-	"github.com/aoagents/agent-orchestrator/backend/internal/runfile"
+	"github.com/sudo-adduser-jordan/open-agents/backend/internal/config"
+	"github.com/sudo-adduser-jordan/open-agents/backend/internal/daemonmeta"
+	"github.com/sudo-adduser-jordan/open-agents/backend/internal/runfile"
 )
 
 const probeTimeout = 2 * time.Second
@@ -35,8 +35,8 @@ type daemonStatus struct {
 	PID   int         `json:"pid,omitempty"`
 	Port  int         `json:"port,omitempty"`
 	// ExecutablePath is the binary the running daemon reports for itself, read
-	// from its own /healthz. It is the authority on which `ao` the app uses,
-	// which the CLI's own os.Executable is not: `ao doctor` may itself be a
+	// from its own /healthz. It is the authority on which `open-agents` the app uses,
+	// which the CLI's own os.Executable is not: `open-agents doctor` may itself be a
 	// different install than the daemon the app started.
 	ExecutablePath string     `json:"executablePath,omitempty"`
 	StartedAt      *time.Time `json:"startedAt,omitempty"`
@@ -61,7 +61,7 @@ func newStatusCommand(ctx *commandContext) *cobra.Command {
 	var opts statusOptions
 	cmd := &cobra.Command{
 		Use:   "status",
-		Short: "Show AO daemon status",
+		Short: "Show Open Agents daemon status",
 		Args:  noArgs,
 		RunE: func(cmd *cobra.Command, args []string) error {
 			st, err := ctx.inspectDaemon(cmd.Context())
@@ -173,7 +173,7 @@ func (c *commandContext) readProbe(ctx context.Context, port int, path string) (
 
 func verifyProbeOwner(probe probeResult, wantPID int, path string) error {
 	if probe.Service != daemonmeta.ServiceName {
-		return fmt.Errorf("%s: response is not from AO daemon", path)
+		return fmt.Errorf("%s: response is not from Open Agents daemon", path)
 	}
 	if probe.PID != wantPID {
 		return fmt.Errorf("%s: daemon pid %d does not match run-file pid %d", path, probe.PID, wantPID)
@@ -183,7 +183,7 @@ func verifyProbeOwner(probe probeResult, wantPID int, path string) error {
 
 func writeStatus(cmd *cobra.Command, st daemonStatus) error {
 	out := cmd.OutOrStdout()
-	if _, err := fmt.Fprintf(out, "AO daemon: %s\n", st.State); err != nil {
+	if _, err := fmt.Fprintf(out, "Open Agents daemon: %s\n", st.State); err != nil {
 		return err
 	}
 	if st.PID != 0 {

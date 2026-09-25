@@ -1,7 +1,7 @@
 package gitlab
 
 import (
-	scmgitlab "github.com/aoagents/agent-orchestrator/backend/internal/adapters/scm/gitlab"
+	scmgitlab "github.com/sudo-adduser-jordan/open-agents/backend/internal/adapters/scm/gitlab"
 )
 
 // ErrNoToken re-exports the SCM provider's canonical sentinel so the
@@ -12,12 +12,12 @@ import (
 var ErrNoToken = scmgitlab.ErrNoToken
 
 // DefaultTokenSource returns the standard GitLab token source chain used
-// by the tracker: AO_GITLAB_TOKEN → GITLAB_TOKEN → glab auth status
+// by the tracker: OPEN_AGENTS_GITLAB_TOKEN → GITLAB_TOKEN → glab auth status
 // --show-token. This mirrors the SCM provider's chain so both adapters
 // honor the same precedence.
 func DefaultTokenSource() scmgitlab.TokenSource {
 	return scmgitlab.FallbackTokenSource{
-		&scmgitlab.EnvTokenSource{EnvVars: []string{"AO_GITLAB_TOKEN"}},
+		&scmgitlab.EnvTokenSource{EnvVars: []string{"OPEN_AGENTS_GITLAB_TOKEN"}},
 		&scmgitlab.GLabTokenSource{},
 	}
 }

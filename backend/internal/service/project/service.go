@@ -14,11 +14,11 @@ import (
 	"time"
 	"unicode/utf8"
 
-	"github.com/aoagents/agent-orchestrator/backend/internal/config"
-	"github.com/aoagents/agent-orchestrator/backend/internal/domain"
-	"github.com/aoagents/agent-orchestrator/backend/internal/gitdefault"
-	"github.com/aoagents/agent-orchestrator/backend/internal/httpd/apierr"
-	aoprocess "github.com/aoagents/agent-orchestrator/backend/internal/process"
+	"github.com/sudo-adduser-jordan/open-agents/backend/internal/config"
+	"github.com/sudo-adduser-jordan/open-agents/backend/internal/domain"
+	"github.com/sudo-adduser-jordan/open-agents/backend/internal/gitdefault"
+	"github.com/sudo-adduser-jordan/open-agents/backend/internal/httpd/apierr"
+	openagentsprocess "github.com/sudo-adduser-jordan/open-agents/backend/internal/process"
 )
 
 // Manager is the controller-facing contract for the /api/v1/projects surface.
@@ -82,7 +82,7 @@ var _ Manager = (*Service)(nil)
 
 // Deps captures optional collaborators for project use-cases.
 type Deps struct {
-	// DefaultHarness is the daemon's configured default agent (AO_AGENT).
+	// DefaultHarness is the daemon's configured default agent (OPEN_AGENTS_AGENT).
 	// When empty, the service falls back to config.DefaultAgent.
 	DefaultHarness domain.AgentHarness
 	Store          Store
@@ -317,10 +317,10 @@ func (m *Service) Add(ctx context.Context, in AddInput) (Project, error) {
 	}()
 	probes.Wait()
 	if !isRepo {
-		return Project{}, apierr.Invalid("NOT_A_GIT_REPO", "AO needs a Git repository with an initial commit before it can create agent workspaces.", nil)
+		return Project{}, apierr.Invalid("NOT_A_GIT_REPO", "Open Agents needs a Git repository with an initial commit before it can create agent workspaces.", nil)
 	}
 	if !hasCommit {
-		return Project{}, apierr.Invalid("PROJECT_UNBORN", "AO needs a Git repository with an initial commit before it can create agent workspaces.", map[string]any{
+		return Project{}, apierr.Invalid("PROJECT_UNBORN", "Open Agents needs a Git repository with an initial commit before it can create agent workspaces.", map[string]any{
 			"path":         path,
 			"suggestedFix": "Run `git commit --allow-empty -m \"initial commit\"` in this folder, then try again.",
 		})
@@ -388,7 +388,7 @@ func (m *Service) InitializeRepository(ctx context.Context, in InitializeReposit
 	if _, err := gitOutput(ctx, path, "add", "-A"); err != nil {
 		return InitializeRepositoryResult{}, apierr.Invalid("GIT_ADD_FAILED", "Could not stage files for the initial commit.", map[string]any{"error": err.Error()})
 	}
-	if _, err := gitOutput(ctx, path, "-c", "user.name=Agent Orchestrator", "-c", "user.email=ao@example.com", "commit", "--allow-empty", "-m", "initial commit"); err != nil {
+	if _, err := gitOutput(ctx, path, "-c", "user.name=Open Agents", "-c", "user.email=open-agents@example.com", "commit", "--allow-empty", "-m", "initial commit"); err != nil {
 		return InitializeRepositoryResult{}, apierr.Invalid("INITIAL_COMMIT_FAILED", "Could not create the initial commit.", map[string]any{"error": err.Error()})
 	}
 	return InitializeRepositoryResult{Path: path}, nil
@@ -398,7 +398,7 @@ func classifyRepositorySetupTarget(ctx context.Context, path string) (repository
 	if isBareGitRepository(ctx, path) {
 		return repositorySetupPlainFolder, apierr.Invalid("PROJECT_BARE_REPOSITORY", "Selected folder must be a non-bare Git repository or a plain folder.", map[string]any{
 			"path":         path,
-			"suggestedFix": "Use a normal checkout, or select a plain folder for AO to initialize.",
+			"suggestedFix": "Use a normal checkout, or select a plain folder for Open Agents to initialize.",
 		})
 	}
 
@@ -410,7 +410,7 @@ func classifyRepositorySetupTarget(ctx context.Context, path string) (repository
 	}
 
 	if hasGitMetadata(path) {
-		return repositorySetupPlainFolder, apierr.Invalid("UNSUPPORTED_GIT_REPO", "Selected folder contains Git metadata that AO could not inspect.", map[string]any{
+		return repositorySetupPlainFolder, apierr.Invalid("UNSUPPORTED_GIT_REPO", "Selected folder contains Git metadata that Open Agents could not inspect.", map[string]any{
 			"path":         path,
 			"suggestedFix": "Repair the Git repository or select a plain folder.",
 		})
@@ -440,9 +440,9 @@ func validateRepositorySetupPathSafety(path string) error {
 		}
 	}
 
-	aoState := comparablePath(filepath.Join(home, ".ao"))
-	if samePath(clean, aoState) || isDescendantPath(clean, aoState) {
-		return unsafeRepositorySetupPathError(path, "AO state directory")
+	openAgentsState := comparablePath(filepath.Join(home, ".open-agents"))
+	if samePath(clean, openAgentsState) || isDescendantPath(clean, openAgentsState) {
+		return unsafeRepositorySetupPathError(path, "Open Agents state directory")
 	}
 	return nil
 }
@@ -640,7 +640,7 @@ func validateScratchProjectConfig(cfg domain.ProjectConfig) error {
 // other git error returns an empty string — `project add` must not fail just
 // because no origin is configured (the SCM observer skips such projects).
 func resolveGitOriginURL(path string) string {
-	out, err := aoprocess.Command("git", "-C", path, "remote", "get-url", "origin").Output()
+	out, err := openagentsprocess.Command("git", "-C", path, "remote", "get-url", "origin").Output()
 	if err != nil {
 		return ""
 	}
@@ -648,7 +648,7 @@ func resolveGitOriginURL(path string) string {
 }
 
 // resolveDefaultBranch inspects only authoritative local metadata: a cached
-// remote HEAD, or the branch AO recorded when it initialized a remoteless repo.
+// remote HEAD, or the branch Open Agents recorded when it initialized a remoteless repo.
 // It deliberately never consults the checked-out branch and never guesses
 // main/master. Live remote lookup stays on the bounded workspace spawn path.
 func resolveDefaultBranch(ctx context.Context, path string) string {
@@ -839,7 +839,7 @@ func samePath(a, b string) bool {
 }
 
 func isGitRepo(path string) bool {
-	cmd := aoprocess.Command("git", "-C", path, "rev-parse", "--show-toplevel")
+	cmd := openagentsprocess.Command("git", "-C", path, "rev-parse", "--show-toplevel")
 	out, err := cmd.Output()
 	if err != nil {
 		return false
@@ -860,7 +860,7 @@ var projectIDPattern = regexp.MustCompile(`^[A-Za-z0-9][A-Za-z0-9._-]*$`)
 func validateProjectID(id domain.ProjectID) error {
 	raw := string(id)
 	// Reject any "." run: a "." prefix fails the pattern, but an embedded ".."
-	// (e.g. "a..b") passes it yet yields a branch like "ao/a..b-1" that git's
+	// (e.g. "a..b") passes it yet yields a branch like "open-agents/a..b-1" that git's
 	// check-ref-format rejects — surfacing as an opaque 500 at spawn time.
 	if raw == "" || raw == "." || strings.Contains(raw, "..") || strings.ContainsAny(raw, `/\`) || !projectIDPattern.MatchString(raw) {
 		return apierr.Invalid("INVALID_PROJECT_ID", "Project id failed storage-path validation", nil)
@@ -880,7 +880,7 @@ func resolveSessionPrefix(row domain.ProjectRecord) string {
 
 func sessionPrefix(id string) string {
 	if id == "" {
-		return "ao"
+		return "open-agents"
 	}
 	if len(id) <= 12 {
 		return id

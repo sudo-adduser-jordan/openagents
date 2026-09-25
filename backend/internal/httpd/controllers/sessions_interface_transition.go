@@ -7,10 +7,10 @@ import (
 
 	"github.com/go-chi/chi/v5"
 
-	"github.com/aoagents/agent-orchestrator/backend/internal/domain"
-	"github.com/aoagents/agent-orchestrator/backend/internal/httpd/apispec"
-	"github.com/aoagents/agent-orchestrator/backend/internal/httpd/envelope"
-	sessionsvc "github.com/aoagents/agent-orchestrator/backend/internal/service/session"
+	"github.com/sudo-adduser-jordan/open-agents/backend/internal/domain"
+	"github.com/sudo-adduser-jordan/open-agents/backend/internal/httpd/apispec"
+	"github.com/sudo-adduser-jordan/open-agents/backend/internal/httpd/envelope"
+	sessionsvc "github.com/sudo-adduser-jordan/open-agents/backend/internal/service/session"
 )
 
 const interfaceTransitionPath = "/api/v1/sessions/{sessionId}/interface-transition"

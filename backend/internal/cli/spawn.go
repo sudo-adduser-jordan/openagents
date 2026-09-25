@@ -69,7 +69,7 @@ func newSpawnCommand(ctx *commandContext) *cobra.Command {
 		Short: "Spawn an agent session",
 		Long: "Spawn an agent session in a registered project, or a standalone worker with --standalone.\n\n" +
 			"The session runs the chosen agent in a\n" +
-			"fresh isolated workspace. Git projects use worktrees; standalone agents use an AO-managed plain directory.",
+			"fresh isolated workspace. Git projects use worktrees; standalone agents use an Open Agents-managed plain directory.",
 		Args: noArgs,
 		RunE: func(cmd *cobra.Command, args []string) error {
 			if opts.standalone && strings.TrimSpace(opts.project) != "" {
@@ -156,7 +156,7 @@ func newSpawnCommand(ctx *commandContext) *cobra.Command {
 			req := spawnRequest{
 				ProjectID:       opts.project,
 				IssueID:         opts.issue,
-				ParentSessionID: strings.TrimSpace(os.Getenv("AO_SESSION_ID")),
+				ParentSessionID: strings.TrimSpace(os.Getenv("OPEN_AGENTS_SESSION_ID")),
 				TrackerProvider: opts.trackerProvider,
 				Kind:            opts.kind,
 				Harness:         opts.harness,
@@ -204,7 +204,7 @@ func newSpawnCommand(ctx *commandContext) *cobra.Command {
 		},
 	}
 	f := cmd.Flags()
-	// --agent is an alias for --harness so the more intuitive `ao spawn --agent
+	// --agent is an alias for --harness so the more intuitive `open-agents spawn --agent
 	// droid` works identically; both resolve to the same harness flag.
 	f.SetNormalizeFunc(func(_ *pflag.FlagSet, name string) pflag.NormalizedName {
 		if name == "agent" {
@@ -212,12 +212,12 @@ func newSpawnCommand(ctx *commandContext) *cobra.Command {
 		}
 		return pflag.NormalizedName(name)
 	})
-	f.StringVar(&opts.project, "project", "", "Project id to spawn the session in (default: AO_PROJECT_ID or the current registered repo)")
-	f.BoolVar(&opts.standalone, "standalone", false, "Spawn a projectless worker in an AO-managed plain directory (requires --agent)")
+	f.StringVar(&opts.project, "project", "", "Project id to spawn the session in (default: OPEN_AGENTS_PROJECT_ID or the current registered repo)")
+	f.BoolVar(&opts.standalone, "standalone", false, "Spawn a projectless worker in an Open Agents-managed plain directory (requires --agent)")
 	f.StringVar(&opts.harness, "harness", "", "Agent harness / --agent: opencode (default: project worker.agent; orchestrator spawns default to project orchestrator.agent; required if the project has none)")
 	f.StringVar(&opts.kind, "kind", "", "Session role: worker or orchestrator (default: worker)")
 	f.StringVar(&opts.mode, "mode", "", "Initial session interface: chat (structured agent connection) or tui (the agent's native terminal). Omitted uses the daemon default; compatible sessions can switch later.")
-	f.StringVar(&opts.branch, "branch", "", "Branch for git project sessions (default: ao/<session-id>/root; unsupported for standalone or Scratch sessions)")
+	f.StringVar(&opts.branch, "branch", "", "Branch for git project sessions (default: open-agents/<session-id>/root; unsupported for standalone or Scratch sessions)")
 	f.StringVar(&opts.prompt, "prompt", "", "Initial prompt for the agent")
 	f.StringVar(&opts.model, "model", "", "Agent model override for this session only (e.g. sonnet, gpt-5.6-sol); overrides project/role config without changing it")
 	f.StringVar(&opts.issue, "issue", "", "Issue id to associate with the session")
@@ -248,10 +248,10 @@ func (c *commandContext) resolveSpawnProject(ctx context.Context, explicit strin
 	if id := strings.TrimSpace(explicit); id != "" {
 		return c.fetchProjectDetails(ctx, id)
 	}
-	if id := strings.TrimSpace(os.Getenv("AO_PROJECT_ID")); id != "" {
+	if id := strings.TrimSpace(os.Getenv("OPEN_AGENTS_PROJECT_ID")); id != "" {
 		return c.fetchProjectDetails(ctx, id)
 	}
-	if sessionID := strings.TrimSpace(os.Getenv("AO_SESSION_ID")); sessionID != "" {
+	if sessionID := strings.TrimSpace(os.Getenv("OPEN_AGENTS_SESSION_ID")); sessionID != "" {
 		project, err := c.resolveProjectFromSession(ctx, sessionID)
 		if err != nil {
 			return projectDetails{}, err
@@ -265,16 +265,16 @@ func (c *commandContext) resolveSpawnProject(ctx context.Context, explicit strin
 	if ok {
 		return project, nil
 	}
-	return projectDetails{}, usageError{fmt.Errorf("project could not be resolved; pass --project, use --standalone, or run `ao project add --path <repo-path> --worker-agent <agent>`")}
+	return projectDetails{}, usageError{fmt.Errorf("project could not be resolved; pass --project, use --standalone, or run `open-agents project add --path <repo-path> --worker-agent <agent>`")}
 }
 
 func (c *commandContext) resolveProjectFromSession(ctx context.Context, sessionID string) (projectDetails, error) {
 	sess, err := c.fetchScopedSession(ctx, sessionID, "")
 	if err != nil {
-		return projectDetails{}, usageError{fmt.Errorf("project could not be resolved from AO_SESSION_ID %q; pass --project", sessionID)}
+		return projectDetails{}, usageError{fmt.Errorf("project could not be resolved from OPEN_AGENTS_SESSION_ID %q; pass --project", sessionID)}
 	}
 	if strings.TrimSpace(sess.ProjectID) == "" {
-		return projectDetails{}, usageError{fmt.Errorf("project could not be resolved from AO_SESSION_ID %q; pass --project", sessionID)}
+		return projectDetails{}, usageError{fmt.Errorf("project could not be resolved from OPEN_AGENTS_SESSION_ID %q; pass --project", sessionID)}
 	}
 	return c.fetchProjectDetails(ctx, sess.ProjectID)
 }
@@ -376,9 +376,9 @@ func resolveSpawnHarness(explicit, kind string, project projectDetails) (string,
 		}
 	}
 	if kind == "orchestrator" {
-		return "", usageError{fmt.Errorf("agent could not be resolved; pass --agent or configure `ao project set-config %s --orchestrator-agent <agent>`", project.ID)}
+		return "", usageError{fmt.Errorf("agent could not be resolved; pass --agent or configure `open-agents project set-config %s --orchestrator-agent <agent>`", project.ID)}
 	}
-	return "", usageError{fmt.Errorf("agent could not be resolved; pass --agent or configure `ao project set-config %s --worker-agent <agent>`", project.ID)}
+	return "", usageError{fmt.Errorf("agent could not be resolved; pass --agent or configure `open-agents project set-config %s --worker-agent <agent>`", project.ID)}
 }
 
 func (c *commandContext) preflightSpawnAgentAuth(ctx context.Context, cmd *cobra.Command, agentID string) error {
@@ -386,12 +386,12 @@ func (c *commandContext) preflightSpawnAgentAuth(ctx context.Context, cmd *cobra
 	if err != nil {
 		var apiErr apiResponseError
 		if errors.As(err, &apiErr) && apiErr.ErrorBody.Code == "UNKNOWN_AGENT_ID" {
-			return fmt.Errorf("agent %q is not supported by this daemon; pass a supported --agent or run `ao agent ls`", agentID)
+			return fmt.Errorf("agent %q is not supported by this daemon; pass a supported --agent or run `open-agents agent ls`", agentID)
 		}
 		return err
 	}
 	if len(readiness.Agents) != 1 {
-		return fmt.Errorf("agent %q is not supported by this daemon; pass a supported --agent or run `ao agent ls`", agentID)
+		return fmt.Errorf("agent %q is not supported by this daemon; pass a supported --agent or run `open-agents agent ls`", agentID)
 	}
 	snapshot := readiness.Agents[0]
 	if snapshot.Installation.State == "not_installed" {

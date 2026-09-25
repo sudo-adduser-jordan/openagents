@@ -4,7 +4,7 @@ import (
 	"testing"
 	"time"
 
-	"github.com/aoagents/agent-orchestrator/backend/pkg/contract"
+	"github.com/sudo-adduser-jordan/open-agents/backend/pkg/contract"
 )
 
 // deriveColumn asserts only the stage-one placement. The column is derived from
@@ -52,7 +52,7 @@ func TestDeriveKanbanColumnSinglePR(t *testing.T) {
 		want    contract.KanbanColumn
 	}{
 		{
-			name: "draft is ao validation work",
+			name: "draft is open-agents validation work",
 			pr:   contract.KanbanPRFacts{URL: "pr/1", Draft: true},
 			want: contract.KanbanValidating,
 		},
@@ -87,7 +87,7 @@ func TestDeriveKanbanColumnSinglePR(t *testing.T) {
 			want: contract.KanbanReady,
 		},
 		{
-			name: "ao's own approval alone is not ready",
+			name: "open-agents's own approval alone is not ready",
 			pr: contract.KanbanPRFacts{
 				URL:          "pr/1",
 				Review:       contract.ReviewApproved,
@@ -105,7 +105,7 @@ func TestDeriveKanbanColumnSinglePR(t *testing.T) {
 			want: contract.KanbanValidating,
 		},
 		{
-			name:    "ao addressing its own changes request is validating",
+			name:    "open-agents addressing its own changes request is validating",
 			session: contract.KanbanSessionFacts{AutoInjectReview: true},
 			pr: contract.KanbanPRFacts{
 				URL:       "pr/1",
@@ -125,7 +125,7 @@ func TestDeriveKanbanColumnSinglePR(t *testing.T) {
 			want: contract.KanbanNeedsReview,
 		},
 		{
-			name:    "ao fixing ci is validating",
+			name:    "open-agents fixing ci is validating",
 			session: contract.KanbanSessionFacts{AutoInjectCI: true},
 			pr: contract.KanbanPRFacts{
 				URL:       "pr/1",
@@ -235,7 +235,7 @@ func TestDeriveKanbanColumnSinglePR(t *testing.T) {
 }
 
 // A run recorded for an earlier head is dropped before the reducer sees it, so
-// the PR reads as an unreviewed head and the review-feedback loop restarts: AO
+// the PR reads as an unreviewed head and the review-feedback loop restarts: Open Agents
 // takes the next turn with auto review on, a person takes it with it off.
 func TestDeriveKanbanColumnStaleReviewRunStartsANewCycle(t *testing.T) {
 	t.Parallel()
@@ -270,7 +270,7 @@ func TestDeriveKanbanColumnReviewLockFreezesCard(t *testing.T) {
 			},
 		},
 		{
-			name:    "ao's auto review pass cannot move it",
+			name:    "open-agents's auto review pass cannot move it",
 			session: contract.KanbanSessionFacts{ReviewLocked: true, AutoReview: true},
 			pr:      contract.KanbanPRFacts{URL: "pr/1"},
 		},
@@ -432,7 +432,7 @@ func TestDeriveKanbanPresentationSinglePR(t *testing.T) {
 		wantColumn contract.KanbanColumn
 		want       contract.DisplayStatus
 	}{
-		// Validating: the AO-driven loop.
+		// Validating: the Open Agents-driven loop.
 		{
 			name:       "a draft with nothing else to say is a draft",
 			pr:         contract.KanbanPRFacts{URL: "pr/1", Draft: true},
@@ -483,7 +483,7 @@ func TestDeriveKanbanPresentationSinglePR(t *testing.T) {
 			want:       contract.DisplayCIFailing,
 		},
 		{
-			name: "an ao changes request with auto-inject on and worker active is being addressed",
+			name: "an open-agents changes request with auto-inject on and worker active is being addressed",
 			session: contract.KanbanSessionFacts{
 				SessionFacts:     contract.SessionFacts{Activity: contract.ActivityActive},
 				AutoInjectReview: true,
@@ -496,7 +496,7 @@ func TestDeriveKanbanPresentationSinglePR(t *testing.T) {
 			want:       contract.DisplayAddressingComments,
 		},
 		{
-			name:    "an ao changes request with auto-inject on but worker idle needs review",
+			name:    "an open-agents changes request with auto-inject on but worker idle needs review",
 			session: contract.KanbanSessionFacts{AutoInjectReview: true},
 			pr: contract.KanbanPRFacts{
 				URL:       "pr/1",
@@ -520,7 +520,7 @@ func TestDeriveKanbanPresentationSinglePR(t *testing.T) {
 			want:       contract.DisplayNoSignal,
 		},
 		{
-			name: "an ao changes request with auto-inject off needs review",
+			name: "an open-agents changes request with auto-inject off needs review",
 			pr: contract.KanbanPRFacts{
 				URL:       "pr/1",
 				Draft:     true,

@@ -1,9 +1,9 @@
 import { memo, useEffect, useRef } from "react";
 import QRCodeStyling from "qr-code-styling";
-import aoLogo from "../../assets/ao-logo.svg";
+import openAgentsLogo from "../../assets/open-agents-logo.svg";
 
 /**
- * Rounded-dot QR (qr-code-styling) with the AO logo in the middle, always drawn
+ * Rounded-dot QR (qr-code-styling) with the Open Agents logo in the middle, always drawn
  * as dark modules on a light card.
  *
  * The polarity is a correctness constraint, not a style choice. This used to
@@ -68,7 +68,7 @@ export const StyledQRCode = memo(function StyledQRCode({
 				height: size,
 				type: "svg",
 				data: value,
-				image: showLogo ? aoLogo : undefined,
+				image: showLogo ? openAgentsLogo : undefined,
 				// Replaced below once the module count is known.
 				margin: 0,
 				// Lower error correction = fewer modules = chunkier dots, so a

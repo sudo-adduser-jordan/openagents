@@ -125,7 +125,7 @@ export default function MobileSessionRoute() {
 					<EmptyState
 						icon="server"
 						title="No desktop paired"
-						message="Scan the pairing code from AO → Settings → Connect Mobile to drive your agents from here."
+						message="Scan the pairing code from Open Agents → Settings → Connect Mobile to drive your agents from here."
 						action={<Button title="Scan pairing code" icon="maximize" onPress={() => router.push("/pair")} />}
 					/>
 				</View>

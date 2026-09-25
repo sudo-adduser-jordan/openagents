@@ -40,7 +40,7 @@ afterEach(async () => {
 });
 
 async function fixtureRoot(): Promise<string> {
-	const directory = await mkdtemp(path.join(os.tmpdir(), "ao-browser-import-"));
+	const directory = await mkdtemp(path.join(os.tmpdir(), "open-agents-browser-import-"));
 	temporaryDirectories.push(directory);
 	return directory;
 }
@@ -273,7 +273,7 @@ describe("BrowserProfileImportService", () => {
 			if (String(file).includes("com.apple.Safari")) return Promise.reject(Object.assign(new Error("blocked"), { code: "EPERM" }));
 			return original(file, options);
 		}) as typeof fs.lstat;
-		const stateDir = path.join(root, "ao-state");
+		const stateDir = path.join(root, "open-agents-state");
 		const profileStore = new BrowserProfileStore({ stateDir });
 		await profileStore.load();
 		const service = new BrowserProfileImportService({ stateDir, profileStore, sourceLstat,
@@ -293,7 +293,7 @@ describe("BrowserProfileImportService", () => {
 	it("bounds Safari metadata snapshots and removes discovery staging", async () => {
 		const root = await fixtureRoot();
 		const { library } = await createSafariFixture(root);
-		const stateDir = path.join(root, "ao-state");
+		const stateDir = path.join(root, "open-agents-state");
 		const profileStore = new BrowserProfileStore({ stateDir });
 		await profileStore.load();
 		const service = new BrowserProfileImportService({ stateDir, profileStore,
@@ -315,7 +315,7 @@ describe("BrowserProfileImportService", () => {
 	it("discovers Safari profiles only on macOS and keeps their paths private", async () => {
 		const root = await fixtureRoot();
 		await createSafariFixture(root);
-		const stateDir = path.join(root, "ao-state");
+		const stateDir = path.join(root, "open-agents-state");
 		const profileStore = new BrowserProfileStore({ stateDir });
 		await profileStore.load();
 		const createService = (platform: NodeJS.Platform) => new BrowserProfileImportService({
@@ -345,7 +345,7 @@ describe("BrowserProfileImportService", () => {
 	it("imports Safari BinaryCookies and Core Data history into a new profile", async () => {
 		const root = await fixtureRoot();
 		await createSafariFixture(root);
-		const stateDir = path.join(root, "ao-state");
+		const stateDir = path.join(root, "open-agents-state");
 		const profileStore = new BrowserProfileStore({ stateDir });
 		await profileStore.load();
 		const historyStore = new BrowserHistoryStore({ stateDir });
@@ -393,7 +393,7 @@ describe("BrowserProfileImportService", () => {
 	it("imports a named Safari profile from its profile-specific stores", async () => {
 		const root = await fixtureRoot();
 		await createSafariFixture(root);
-		const stateDir = path.join(root, "ao-state");
+		const stateDir = path.join(root, "open-agents-state");
 		const profileStore = new BrowserProfileStore({ stateDir });
 		await profileStore.load();
 		const historyStore = new BrowserHistoryStore({ stateDir });
@@ -442,7 +442,7 @@ describe("BrowserProfileImportService", () => {
 			"Cookies",
 			"Cookies.binarycookies",
 		), Buffer.from("cook\0\0\0\x01broken", "binary"));
-		const stateDir = path.join(root, "ao-state");
+		const stateDir = path.join(root, "open-agents-state");
 		const profileStore = new BrowserProfileStore({ stateDir });
 		await profileStore.load();
 		const service = new BrowserProfileImportService({
@@ -488,7 +488,7 @@ describe("BrowserProfileImportService", () => {
 		const root = await fixtureRoot();
 		const fixture = await createLiveFirefoxFixture(root);
 		try {
-			const stateDir = path.join(root, "ao-state");
+			const stateDir = path.join(root, "open-agents-state");
 			const profileStore = new BrowserProfileStore({ stateDir });
 			await profileStore.load();
 			const historyStore = new BrowserHistoryStore({ stateDir });
@@ -549,7 +549,7 @@ describe("BrowserProfileImportService", () => {
 			INSERT INTO moz_cookies VALUES ('.example.com', 'legacy', 'value', '/', 1893456000, 1, 1, '', 2, 1);
 		`);
 		database.close();
-		const stateDir = path.join(root, "ao-state");
+		const stateDir = path.join(root, "open-agents-state");
 		const profileStore = new BrowserProfileStore({ stateDir });
 		await profileStore.load();
 		const setCookie = vi.fn(async () => undefined);
@@ -594,7 +594,7 @@ describe("BrowserProfileImportService", () => {
 		`);
 		history.close();
 
-		const stateDir = path.join(root, "ao-state");
+		const stateDir = path.join(root, "open-agents-state");
 		const profileStore = new BrowserProfileStore({ stateDir });
 		await profileStore.load();
 		const setCookie = vi.fn(async () => undefined);
@@ -632,7 +632,7 @@ describe("BrowserProfileImportService", () => {
 	it("discovers path-hidden profiles and atomically imports supported cookies and history", async () => {
 		const root = await fixtureRoot();
 		const { localAppData } = await createChromeFixture(root);
-		const stateDir = path.join(root, "ao-state");
+		const stateDir = path.join(root, "open-agents-state");
 		const profileStore = new BrowserProfileStore({ stateDir });
 		await profileStore.load();
 		const historyStore = new BrowserHistoryStore({ stateDir });
@@ -696,7 +696,7 @@ describe("BrowserProfileImportService", () => {
 		const root = await fixtureRoot();
 		const { localAppData } = await createChromeFixture(root);
 		await addChromeProfile(localAppData, "Profile 1", "Work", "secondary", "Newer title");
-		const stateDir = path.join(root, "ao-state");
+		const stateDir = path.join(root, "open-agents-state");
 		const profileStore = new BrowserProfileStore({ stateDir });
 		await profileStore.load();
 		const importedCookies: Array<{ name?: string; value?: string }> = [];
@@ -739,7 +739,7 @@ describe("BrowserProfileImportService", () => {
 	it("rolls back a failed destination and allows a clean retry", async () => {
 		const root = await fixtureRoot();
 		const { localAppData } = await createChromeFixture(root);
-		const stateDir = path.join(root, "ao-state");
+		const stateDir = path.join(root, "open-agents-state");
 		const profileStore = new BrowserProfileStore({ stateDir });
 		await profileStore.load();
 		const historyStore = new BrowserHistoryStore({ stateDir });
@@ -773,7 +773,7 @@ describe("BrowserProfileImportService", () => {
 		const root = await fixtureRoot();
 		const { localAppData } = await createChromeFixture(root);
 		await addChromeProfile(localAppData, "Profile 1", "Work");
-		const stateDir = path.join(root, "ao-state");
+		const stateDir = path.join(root, "open-agents-state");
 		const profileStore = new BrowserProfileStore({ stateDir });
 		await profileStore.load();
 		for (let index = 0; index < BROWSER_PROFILE_MAX_COUNT - 1; index += 1) {
@@ -814,7 +814,7 @@ describe("BrowserProfileImportService", () => {
 	it("cancels and rolls back an active import before disposal completes", async () => {
 		const root = await fixtureRoot();
 		const { localAppData } = await createChromeFixture(root);
-		const stateDir = path.join(root, "ao-state");
+		const stateDir = path.join(root, "open-agents-state");
 		const profileStore = new BrowserProfileStore({ stateDir });
 		await profileStore.load();
 		let releaseCookie!: () => void;
@@ -862,7 +862,7 @@ describe("BrowserProfileImportService", () => {
 
 	it("removes stale import staging during initialization", async () => {
 		const root = await fixtureRoot();
-		const stateDir = path.join(root, "ao-state");
+		const stateDir = path.join(root, "open-agents-state");
 		const stale = path.join(stateDir, "browser-import-staging", "stale", "snapshot.sqlite");
 		const active = path.join(stateDir, "browser-import-staging", "active", "snapshot.sqlite");
 		await mkdir(path.dirname(stale), { recursive: true });
@@ -893,7 +893,7 @@ describe("BrowserProfileImportService", () => {
 	it("retains a visible destination when Electron session cleanup cannot start", async () => {
 		const root = await fixtureRoot();
 		const { localAppData } = await createChromeFixture(root);
-		const stateDir = path.join(root, "ao-state");
+		const stateDir = path.join(root, "open-agents-state");
 		const profileStore = new BrowserProfileStore({ stateDir });
 		await profileStore.load();
 		let sessionAvailable = false;
@@ -934,7 +934,7 @@ describe("BrowserProfileImportService", () => {
 	it("keeps a failed destination registered when rollback cannot remove all imported data", async () => {
 		const root = await fixtureRoot();
 		const { localAppData } = await createChromeFixture(root);
-		const stateDir = path.join(root, "ao-state");
+		const stateDir = path.join(root, "open-agents-state");
 		const profileStore = new BrowserProfileStore({ stateDir });
 		await profileStore.load();
 		const historyStore = new BrowserHistoryStore({ stateDir });
@@ -983,7 +983,7 @@ describe("BrowserProfileImportService", () => {
 		history.exec("COMMIT");
 		history.close();
 
-		const stateDir = path.join(root, "ao-state");
+		const stateDir = path.join(root, "open-agents-state");
 		const profileStore = new BrowserProfileStore({ stateDir });
 		await profileStore.load();
 		const service = new BrowserProfileImportService({
@@ -1035,7 +1035,7 @@ describe("BrowserProfileImportService", () => {
 		database.exec("COMMIT");
 		database.close();
 
-		const stateDir = path.join(root, "ao-state");
+		const stateDir = path.join(root, "open-agents-state");
 		const profileStore = new BrowserProfileStore({ stateDir });
 		await profileStore.load();
 		let importedCookies = 0;
@@ -1079,7 +1079,7 @@ describe("BrowserProfileImportService", () => {
 		const historyFile = path.join(profileRoot, "History");
 		await writeFile(historyFile, "");
 		await truncate(historyFile, 256 * 1024 * 1024 + 1);
-		const stateDir = path.join(root, "ao-state");
+		const stateDir = path.join(root, "open-agents-state");
 		const profileStore = new BrowserProfileStore({ stateDir });
 		await profileStore.load();
 		const service = new BrowserProfileImportService({
@@ -1120,7 +1120,7 @@ describe("BrowserProfileImportService", () => {
 			throw error;
 		}
 
-		const stateDir = path.join(root, "ao-state");
+		const stateDir = path.join(root, "open-agents-state");
 		const profileStore = new BrowserProfileStore({ stateDir });
 		await profileStore.load();
 		const service = new BrowserProfileImportService({

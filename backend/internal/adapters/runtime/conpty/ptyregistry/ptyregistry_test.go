@@ -33,7 +33,7 @@ func setupHome(t *testing.T) string {
 	dir := t.TempDir()
 	t.Setenv("HOME", dir)
 	t.Setenv("USERPROFILE", dir)
-	return filepath.Join(dir, ".ao", "windows-pty-hosts.json")
+	return filepath.Join(dir, ".open-agents", "windows-pty-hosts.json")
 }
 
 // withRunFilePath sets the instance-scoped registry override for the
@@ -54,7 +54,7 @@ func TestRegisterThenList(t *testing.T) {
 	setupHome(t)
 	withFakePidAlive(t, func(int) bool { return true })
 
-	e := Entry{SessionID: "s1", PtyHostPID: 1234, PipePath: `\\.\pipe\ao-s1`, RegisteredAt: nowRFC3339()}
+	e := Entry{SessionID: "s1", PtyHostPID: 1234, PipePath: `\\.\pipe\open-agents-s1`, RegisteredAt: nowRFC3339()}
 	if err := Register(context.Background(), e); err != nil {
 		t.Fatal(err)
 	}
@@ -72,8 +72,8 @@ func TestRegisterReplaceSameID(t *testing.T) {
 	setupHome(t)
 	withFakePidAlive(t, func(int) bool { return true })
 
-	e1 := Entry{SessionID: "s1", PtyHostPID: 111, PipePath: `\\.\pipe\ao-s1-a`, RegisteredAt: nowRFC3339()}
-	e2 := Entry{SessionID: "s1", PtyHostPID: 222, PipePath: `\\.\pipe\ao-s1-b`, RegisteredAt: nowRFC3339()}
+	e1 := Entry{SessionID: "s1", PtyHostPID: 111, PipePath: `\\.\pipe\open-agents-s1-a`, RegisteredAt: nowRFC3339()}
+	e2 := Entry{SessionID: "s1", PtyHostPID: 222, PipePath: `\\.\pipe\open-agents-s1-b`, RegisteredAt: nowRFC3339()}
 	if err := Register(context.Background(), e1); err != nil {
 		t.Fatal(err)
 	}
@@ -133,7 +133,7 @@ func TestUnregisterRemoves(t *testing.T) {
 	setupHome(t)
 	withFakePidAlive(t, func(int) bool { return true })
 
-	e := Entry{SessionID: "s1", PtyHostPID: 1234, PipePath: `\\.\pipe\ao-s1`, RegisteredAt: nowRFC3339()}
+	e := Entry{SessionID: "s1", PtyHostPID: 1234, PipePath: `\\.\pipe\open-agents-s1`, RegisteredAt: nowRFC3339()}
 	if err := Register(context.Background(), e); err != nil {
 		t.Fatal(err)
 	}
@@ -161,7 +161,7 @@ func TestUnregisterNoOpWhenAbsent(t *testing.T) {
 func TestRegisterAndUnregisterHonorCanceledContext(t *testing.T) {
 	regPath := setupHome(t)
 	withFakePidAlive(t, func(int) bool { return true })
-	entry := Entry{SessionID: "s1", PtyHostPID: 1234, PipePath: `\\.\pipe\ao-s1`, RegisteredAt: nowRFC3339()}
+	entry := Entry{SessionID: "s1", PtyHostPID: 1234, PipePath: `\\.\pipe\open-agents-s1`, RegisteredAt: nowRFC3339()}
 
 	cancelled, cancel := context.WithCancel(context.Background())
 	cancel()
@@ -191,8 +191,8 @@ func TestListPrunesDeadPIDs(t *testing.T) {
 	alive := map[int]bool{1: true, 2: false}
 	withFakePidAlive(t, func(pid int) bool { return alive[pid] })
 
-	e1 := Entry{SessionID: "s1", PtyHostPID: 1, PipePath: `\\.\pipe\ao-s1`, RegisteredAt: nowRFC3339()}
-	e2 := Entry{SessionID: "s2", PtyHostPID: 2, PipePath: `\\.\pipe\ao-s2`, RegisteredAt: nowRFC3339()}
+	e1 := Entry{SessionID: "s1", PtyHostPID: 1, PipePath: `\\.\pipe\open-agents-s1`, RegisteredAt: nowRFC3339()}
+	e2 := Entry{SessionID: "s2", PtyHostPID: 2, PipePath: `\\.\pipe\open-agents-s2`, RegisteredAt: nowRFC3339()}
 	if err := Register(context.Background(), e1); err != nil {
 		t.Fatal(err)
 	}
@@ -226,7 +226,7 @@ func TestEmptyResultDeletesFile(t *testing.T) {
 	regPath := setupHome(t)
 	withFakePidAlive(t, func(int) bool { return true })
 
-	e := Entry{SessionID: "s1", PtyHostPID: 1, PipePath: `\\.\pipe\ao-s1`, RegisteredAt: nowRFC3339()}
+	e := Entry{SessionID: "s1", PtyHostPID: 1, PipePath: `\\.\pipe\open-agents-s1`, RegisteredAt: nowRFC3339()}
 	if err := Register(context.Background(), e); err != nil {
 		t.Fatal(err)
 	}
@@ -243,7 +243,7 @@ func TestClearDeletesFile(t *testing.T) {
 	regPath := setupHome(t)
 	withFakePidAlive(t, func(int) bool { return true })
 
-	e := Entry{SessionID: "s1", PtyHostPID: 1, PipePath: `\\.\pipe\ao-s1`, RegisteredAt: nowRFC3339()}
+	e := Entry{SessionID: "s1", PtyHostPID: 1, PipePath: `\\.\pipe\open-agents-s1`, RegisteredAt: nowRFC3339()}
 	if err := Register(context.Background(), e); err != nil {
 		t.Fatal(err)
 	}
@@ -363,7 +363,7 @@ func TestAtomicWriteProducesValidJSON(t *testing.T) {
 	regPath := setupHome(t)
 	withFakePidAlive(t, func(int) bool { return true })
 
-	e := Entry{SessionID: "s1", PtyHostPID: 99, PipePath: `\\.\pipe\ao-s1`, RegisteredAt: nowRFC3339()}
+	e := Entry{SessionID: "s1", PtyHostPID: 99, PipePath: `\\.\pipe\open-agents-s1`, RegisteredAt: nowRFC3339()}
 	if err := Register(context.Background(), e); err != nil {
 		t.Fatal(err)
 	}
@@ -382,7 +382,7 @@ func TestAtomicWriteProducesValidJSON(t *testing.T) {
 }
 
 // TestSetRunFilePathScopesRegistryToInstanceDir verifies that pinning the
-// registry to a run-file's directory writes there instead of ~/.ao, even
+// registry to a run-file's directory writes there instead of ~/.open-agents, even
 // though HOME still resolves to a different temp dir.
 func TestSetRunFilePathScopesRegistryToInstanceDir(t *testing.T) {
 	homeRegPath := setupHome(t)
@@ -408,7 +408,7 @@ func TestSetRunFilePathScopesRegistryToInstanceDir(t *testing.T) {
 // TestTwoInstancesWithDifferentRunFilePathsDoNotShareRegistry is the
 // regression test for the cross-instance session collision: two daemon
 // instances (e.g. a headless dev daemon and the desktop app) with different
-// AO_RUN_FILE locations must not clobber each other's same-named session
+// OPEN_AGENTS_RUN_FILE locations must not clobber each other's same-named session
 // even though both resolve to one registry file today.
 func TestTwoInstancesWithDifferentRunFilePathsDoNotShareRegistry(t *testing.T) {
 	setupHome(t)
@@ -440,7 +440,7 @@ func TestTwoInstancesWithDifferentRunFilePathsDoNotShareRegistry(t *testing.T) {
 }
 
 // TestSetRunFilePathEmptyClearsOverride verifies the documented contract: an
-// empty path clears any override and reverts to the ~/.ao default. This is
+// empty path clears any override and reverts to the ~/.open-agents default. This is
 // what lets conpty.New(Options{}) -- the zero value used throughout this
 // package's own tests -- always start from a clean, deterministic registry
 // resolution regardless of what an earlier test configured.

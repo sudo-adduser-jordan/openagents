@@ -4,9 +4,9 @@ import { Cloud, GitBranch, Handshake } from "lucide-react";
 import { CloudWaitlistForm } from "./CloudWaitlistForm";
 
 export const metadata: Metadata = {
-  title: "AO Cloud Waitlist",
+  title: "Open Agents Cloud Waitlist",
   description:
-    "Join the AO Cloud waitlist for hosted agent orchestration.",
+    "Join the Open Agents Cloud waitlist for hosted agent orchestration.",
 };
 
 const notes = [
@@ -22,7 +22,7 @@ const notes = [
   },
   {
     icon: GitBranch,
-    label: "Same AO loop",
+    label: "Same Open Agents loop",
     text: "Keep branches, reviews, and CI connected to each run.",
   },
 ];
@@ -35,7 +35,7 @@ export default function WaitlistPage() {
           <div className="relative order-2 overflow-hidden rounded-2xl border border-border bg-card lg:order-1 lg:h-[600px]">
             <Image
               src="/optimized/feature3.webp"
-              alt="AO desktop workspace showing coordinated agent sessions"
+              alt="Open Agents desktop workspace showing coordinated agent sessions"
               fill
               priority
               sizes="(max-width: 1023px) 100vw, 58vw"
@@ -46,13 +46,13 @@ export default function WaitlistPage() {
               <div className="max-w-3xl">
                 <p className="inline-flex items-center gap-2 rounded-full border border-border bg-background/80 px-3 py-1 text-xs font-medium uppercase tracking-[0.18em] text-muted-foreground backdrop-blur">
                   <Cloud className="size-3.5" aria-hidden="true" />
-                  AO Cloud
+                  Open Agents Cloud
                 </p>
                 <h1 className="mt-5 max-w-4xl text-4xl font-semibold leading-[1.02] text-foreground sm:mt-6 sm:text-5xl lg:text-6xl">
-                  Join the AO Cloud waitlist.
+                  Join the Open Agents Cloud waitlist.
                 </h1>
                 <p className="mt-5 max-w-2xl text-base leading-7 text-muted-foreground sm:text-lg">
-                  AO Cloud brings your agent work into a shared place your team
+                  Open Agents Cloud brings your agent work into a shared place your team
                   can follow, resume, and ship from.
                 </p>
               </div>

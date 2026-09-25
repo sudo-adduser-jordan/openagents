@@ -6,7 +6,7 @@ import (
 	"path/filepath"
 	"testing"
 
-	"github.com/aoagents/agent-orchestrator/backend/internal/ports"
+	"github.com/sudo-adduser-jordan/open-agents/backend/internal/ports"
 )
 
 // TestDestroyReclaimReportsAlreadyAbsentWorktree covers the accounting half of
@@ -33,7 +33,7 @@ func TestDestroyReclaimReportsAlreadyAbsentWorktree(t *testing.T) {
 		t.Fatalf("create: %v", err)
 	}
 
-	// The directory disappears behind AO's back while git still has it
+	// The directory disappears behind Open Agents's back while git still has it
 	// registered: an external `rm -rf`, a wiped scratch disk, a restored backup.
 	if err := os.RemoveAll(info.Path); err != nil {
 		t.Fatalf("remove worktree dir: %v", err)

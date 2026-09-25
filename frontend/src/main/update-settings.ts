@@ -84,7 +84,7 @@ export interface UpdateStatus {
 	netError?: boolean;
 }
 
-/** File holding the user's auto-update preferences under the ~/.ao state dir. */
+/** File holding the user's auto-update preferences under the ~/.open-agents state dir. */
 export const UPDATE_SETTINGS_FILE_NAME = "update-settings.json";
 
 const DEFAULTS: UpdateSettings = {

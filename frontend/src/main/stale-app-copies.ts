@@ -4,8 +4,8 @@ import os from "node:os";
 import path from "node:path";
 import semver from "semver";
 
-export const AO_BUNDLE_ID = "dev.agent-orchestrator.desktop";
-export const MAINTAINED_MAC_APP_PATH = "/Applications/Agent Orchestrator.app";
+export const OPEN_AGENTS_BUNDLE_ID = "dev.openagents.desktop";
+export const MAINTAINED_MAC_APP_PATH = "/Applications/Open Agents.app";
 
 export interface BundleMetadata {
 	bundleId: string | null;
@@ -85,8 +85,8 @@ export async function findStaleAppCopies(
 
 	const dependencies = { ...defaultDiscoveryDependencies, ...dependencyOverrides };
 	const candidates = [
-		path.join(input.homeDir, "Downloads", "Agent Orchestrator.app"),
-		path.join(input.homeDir, "Desktop", "Agent Orchestrator.app"),
+		path.join(input.homeDir, "Downloads", "Open Agents.app"),
+		path.join(input.homeDir, "Desktop", "Open Agents.app"),
 	];
 	const copies: StaleAppCopy[] = [];
 	for (const candidate of candidates) {
@@ -94,7 +94,7 @@ export async function findStaleAppCopies(
 			const identity = await dependencies.fileIdentity(candidate);
 			if (!identity) continue;
 			const metadata = await dependencies.readMetadata(candidate);
-			if (metadata.bundleId !== AO_BUNDLE_ID) continue;
+			if (metadata.bundleId !== OPEN_AGENTS_BUNDLE_ID) continue;
 			const candidateVersion = semver.valid(metadata.version ?? "");
 			if (candidateVersion && semver.lt(candidateVersion, runningVersion)) {
 				copies.push({ path: candidate, version: candidateVersion, ...identity });
@@ -118,7 +118,7 @@ export async function stageStaleAppCopy(
 	dependencyOverrides: Partial<StagingDependencies> = {},
 ): Promise<string | null> {
 	const dependencies = { ...defaultStagingDependencies, ...dependencyOverrides };
-	const stagedPath = `${copy.path}.ao-retiring-${randomUUID()}`;
+	const stagedPath = `${copy.path}.open-agents-retiring-${randomUUID()}`;
 	try {
 		await dependencies.rename(copy.path, stagedPath);
 		return stagedPath;
@@ -153,7 +153,7 @@ export async function isUnchangedStaleAppCopy(
 		if (!identity || identity.device !== copy.device || identity.inode !== copy.inode) return false;
 		const metadata = await dependencies.readMetadata(inspectPath);
 		const bundleVersion = semver.valid(metadata.version ?? "");
-		return metadata.bundleId === AO_BUNDLE_ID
+		return metadata.bundleId === OPEN_AGENTS_BUNDLE_ID
 			&& bundleVersion !== null
 			&& bundleVersion === copy.version
 			&& semver.lt(copy.version, currentVersion);

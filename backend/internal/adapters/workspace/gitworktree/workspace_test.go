@@ -11,8 +11,8 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/aoagents/agent-orchestrator/backend/internal/domain"
-	"github.com/aoagents/agent-orchestrator/backend/internal/ports"
+	"github.com/sudo-adduser-jordan/open-agents/backend/internal/domain"
+	"github.com/sudo-adduser-jordan/open-agents/backend/internal/ports"
 )
 
 func TestCommandArgs(t *testing.T) {
@@ -135,13 +135,13 @@ func TestOrchestratorManagedPath(t *testing.T) {
 			ProjectID:     "proj",
 			SessionID:     "proj-1",
 			Kind:          domain.KindOrchestrator,
-			SessionPrefix: "ao-agents",
+			SessionPrefix: "open-agents-agents",
 		}
 		path, err := ws.managedPath(cfg)
 		if err != nil {
 			t.Fatalf("managed path: %v", err)
 		}
-		want := filepath.Join(ws.managedRoot, "proj", "orchestrator", "ao-agents-orchestrator")
+		want := filepath.Join(ws.managedRoot, "proj", "orchestrator", "open-agents-agents-orchestrator")
 		if path != want {
 			t.Fatalf("path = %q, want %q", path, want)
 		}
@@ -196,7 +196,7 @@ func TestCreateReusesRegisteredWorktreeAtExpectedPath(t *testing.T) {
 		SessionID:     "proj-1",
 		Kind:          domain.KindOrchestrator,
 		SessionPrefix: "proj",
-		Branch:        "ao/proj-orchestrator",
+		Branch:        "open-agents/proj-orchestrator",
 		BaseBranch:    "main",
 	}
 	ws.run = func(_ context.Context, _ string, args ...string) ([]byte, error) {
@@ -205,7 +205,7 @@ func TestCreateReusesRegisteredWorktreeAtExpectedPath(t *testing.T) {
 		case strings.Contains(joined, "check-ref-format"):
 			return nil, nil
 		case strings.Contains(joined, "worktree list --porcelain"):
-			return []byte("worktree " + path + "\nbranch refs/heads/ao/proj-orchestrator\n"), nil
+			return []byte("worktree " + path + "\nbranch refs/heads/open-agents/proj-orchestrator\n"), nil
 		case strings.Contains(joined, "rev-parse --verify --quiet"):
 			return []byte("sha\n"), nil
 		default:
@@ -218,8 +218,8 @@ func TestCreateReusesRegisteredWorktreeAtExpectedPath(t *testing.T) {
 	if err != nil {
 		t.Fatalf("Create: %v", err)
 	}
-	if info.Path != path || info.Branch != "ao/proj-orchestrator" {
-		t.Fatalf("info = %#v, want path %q branch ao/proj-orchestrator", info, path)
+	if info.Path != path || info.Branch != "open-agents/proj-orchestrator" {
+		t.Fatalf("info = %#v, want path %q branch open-agents/proj-orchestrator", info, path)
 	}
 }
 
@@ -243,7 +243,7 @@ func TestCreateRecreatesMissingRegisteredWorktreeWithForce(t *testing.T) {
 		SessionID:     "proj-1",
 		Kind:          domain.KindOrchestrator,
 		SessionPrefix: "proj",
-		Branch:        "ao/proj-orchestrator",
+		Branch:        "open-agents/proj-orchestrator",
 		BaseBranch:    "main",
 	}
 
@@ -257,12 +257,12 @@ func TestCreateRecreatesMissingRegisteredWorktreeWithForce(t *testing.T) {
 		case strings.Contains(joined, "check-ref-format"):
 			return nil, nil
 		case strings.Contains(joined, "worktree list --porcelain"):
-			return []byte("worktree " + path + "\nbranch refs/heads/ao/proj-orchestrator\n"), nil
-		case strings.Contains(joined, "rev-parse --verify --quiet refs/heads/ao/proj-orchestrator"):
+			return []byte("worktree " + path + "\nbranch refs/heads/open-agents/proj-orchestrator\n"), nil
+		case strings.Contains(joined, "rev-parse --verify --quiet refs/heads/open-agents/proj-orchestrator"):
 			return nil, nil
 		case strings.Contains(joined, "rev-parse --verify --quiet"):
 			return []byte("sha\n"), nil
-		case strings.Contains(joined, "worktree add --force "+path+" ao/proj-orchestrator"):
+		case strings.Contains(joined, "worktree add --force "+path+" open-agents/proj-orchestrator"):
 			return nil, nil
 		default:
 			t.Fatalf("unexpected git invocation: %v", args)
@@ -304,7 +304,7 @@ func assertNoDestructiveRegistrationCleanup(t *testing.T, op, calls string) {
 // counterpart: session_manager.RestoreAll relies on workspace.Restore to
 // re-materialize a worktree whose directory disappeared, but Restore only
 // exercised that path when the git registration was ALSO gone. The observed
-// #2775 case (session agent-orchestrator-78) had a registration and DB row
+// #2775 case (session open-agents-78) had a registration and DB row
 // that survived a directory deletion, so Restore returned a handle to a
 // missing directory and the tmux launch command's `cd <path> || exit` guard
 // exited instantly with no diagnostic.
@@ -321,7 +321,7 @@ func TestRestoreRecreatesMissingRegisteredWorktreeWithForce(t *testing.T) {
 		SessionID:     "proj-1",
 		Kind:          domain.KindOrchestrator,
 		SessionPrefix: "proj",
-		Branch:        "ao/proj-orchestrator",
+		Branch:        "open-agents/proj-orchestrator",
 		BaseBranch:    "main",
 		Path:          path,
 	}
@@ -334,12 +334,12 @@ func TestRestoreRecreatesMissingRegisteredWorktreeWithForce(t *testing.T) {
 		case strings.Contains(joined, "check-ref-format"):
 			return nil, nil
 		case strings.Contains(joined, "worktree list --porcelain"):
-			return []byte("worktree " + path + "\nbranch refs/heads/ao/proj-orchestrator\n"), nil
-		case strings.Contains(joined, "rev-parse --verify --quiet refs/heads/ao/proj-orchestrator"):
+			return []byte("worktree " + path + "\nbranch refs/heads/open-agents/proj-orchestrator\n"), nil
+		case strings.Contains(joined, "rev-parse --verify --quiet refs/heads/open-agents/proj-orchestrator"):
 			return nil, nil
 		case strings.Contains(joined, "rev-parse --verify --quiet"):
 			return []byte("sha\n"), nil
-		case strings.Contains(joined, "worktree add --force "+path+" ao/proj-orchestrator"):
+		case strings.Contains(joined, "worktree add --force "+path+" open-agents/proj-orchestrator"):
 			return nil, nil
 		default:
 			t.Fatalf("unexpected git invocation: %v", args)
@@ -362,9 +362,9 @@ func TestRestoreRecreatesMissingRegisteredWorktreeWithForce(t *testing.T) {
 }
 
 // TestRestoreRecreatesOnRegisteredBranchNotCfgBranch is the regression test
-// for the real #2775 case: session agent-orchestrator-78 had its worktree
-// registered on a child branch (ao/agent-orchestrator-78/gh-pages-landing),
-// not the root branch AO would pass as cfg.Branch. When the directory is
+// for the real #2775 case: session open-agents-78 had its worktree
+// registered on a child branch (open-agents/open-agents-78/gh-pages-landing),
+// not the root branch Open Agents would pass as cfg.Branch. When the directory is
 // missing and Restore falls through to recreate the worktree, it must
 // recreate it on the registration's OWN branch, not cfg.Branch: otherwise a
 // session on a child branch is silently checked out on root instead, which
@@ -377,10 +377,10 @@ func TestRestoreRecreatesOnRegisteredBranchNotCfgBranch(t *testing.T) {
 		t.Fatalf("new: %v", err)
 	}
 	path := filepath.Join(ws.managedRoot, "proj", "orchestrator", "proj-orchestrator")
-	const registeredBranch = "ao/proj-orchestrator/gh-pages-landing"
+	const registeredBranch = "open-agents/proj-orchestrator/gh-pages-landing"
 	// cfg.Branch deliberately differs from the stale registration's branch
 	// (and is not a prefix of it, so a substring match on the recorded git
-	// invocations cannot accidentally pass either way), mirroring how AO
+	// invocations cannot accidentally pass either way), mirroring how Open Agents
 	// passes the session's root branch through Restore while the on-disk
 	// worktree may have been registered on a child branch.
 	cfg := ports.WorkspaceConfig{
@@ -388,7 +388,7 @@ func TestRestoreRecreatesOnRegisteredBranchNotCfgBranch(t *testing.T) {
 		SessionID:     "proj-1",
 		Kind:          domain.KindOrchestrator,
 		SessionPrefix: "proj",
-		Branch:        "ao/proj-orchestrator/root",
+		Branch:        "open-agents/proj-orchestrator/root",
 		BaseBranch:    "main",
 		Path:          path,
 	}
@@ -766,7 +766,7 @@ func TestRestoreWithRepoPathMovesStrayPathAside(t *testing.T) {
 	info, err := ws.Restore(context.Background(), ports.WorkspaceConfig{
 		ProjectID:  "proj",
 		SessionID:  "proj-1",
-		Branch:     "ao/proj-1",
+		Branch:     "open-agents/proj-1",
 		BaseBranch: "main",
 		RepoPath:   repo,
 		Path:       path,
@@ -1087,7 +1087,7 @@ func TestResolveWorktreeRefsInfersRepoDefaultBranchWhenUnset(t *testing.T) {
 			return nil, nil
 		}
 	}
-	refs, err := ws.resolveWorktreeRefs(context.Background(), context.Background(), "/repo/child", "ao/work", "")
+	refs, err := ws.resolveWorktreeRefs(context.Background(), context.Background(), "/repo/child", "open-agents/work", "")
 	if err != nil {
 		t.Fatalf("resolveWorktreeRefs err = %v", err)
 	}

@@ -2,7 +2,7 @@ import { app, dialog, shell } from "electron";
 import semver from "semver";
 
 const FLOOR_URL =
-  "https://raw.githubusercontent.com/Untrivial-ai/agent-orchestrator/main/desktop-version-floor.json";
+  "https://raw.githubusercontent.com/sudo-adduser-jordan/open-agents/main/desktop-version-floor.json";
 
 const FETCH_TIMEOUT_MS = 10_000;
 
@@ -13,7 +13,7 @@ type Floor = {
 };
 
 const DEFAULT_DOWNLOAD_URL =
-  "https://github.com/Untrivial-ai/agent-orchestrator/releases/latest";
+  "https://github.com/sudo-adduser-jordan/open-agents/releases/latest";
 
 function usableVersion(v: string | null | undefined): string | null {
   const trimmed = v?.trim();
@@ -36,7 +36,7 @@ export async function checkDesktopVersionFloor(): Promise<void> {
     const response = await fetch(FLOOR_URL, {
       cache: "no-store",
       headers: {
-        "User-Agent": `ao-desktop/${app.getVersion()}`,
+        "User-Agent": `open-agents-desktop/${app.getVersion()}`,
         Accept: "application/json",
       },
       signal: AbortSignal.timeout(FETCH_TIMEOUT_MS),
@@ -60,7 +60,7 @@ export async function checkDesktopVersionFloor(): Promise<void> {
       defaultId: 0,
       cancelId: 1,
       title: "Update Required",
-      message: `Agent Orchestrator v${running} is no longer supported.`,
+      message: `Open Agents v${running} is no longer supported.`,
       detail:
         `Version ${minVersion} or later is required. ` +
         "Download the latest release to continue using the app.",
@@ -80,7 +80,7 @@ export async function checkDesktopVersionFloor(): Promise<void> {
       defaultId: 0,
       cancelId: 1,
       title: "Update Available",
-      message: "A newer version of Agent Orchestrator is available.",
+      message: "A newer version of Open Agents is available.",
       detail:
         `You are on v${running}. Version ${latestVersion} is recommended. ` +
         "You can update now or continue using the current version.",

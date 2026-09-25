@@ -16,7 +16,7 @@ const demoPr = (
 	review: PullRequestFacts["review"] = "none",
 	mergeability: PullRequestFacts["mergeability"] = "mergeable",
 ): PullRequestFacts => ({
-	url: `https://github.com/Untrivial-ai/agent-orchestrator/pull/${number}`,
+	url: `https://github.com/sudo-adduser-jordan/open-agents/pull/${number}`,
 	number,
 	state,
 	ci,
@@ -32,27 +32,27 @@ const demoPr = (
 export const mockShellTerminals: ShellTerminal[] = [
 	{
 		handleId: "shellterm-demo-1",
-		projectId: "ao-demo",
-		workingDir: "/Users/demo/Projects/ao-demo",
-		title: "ao-demo",
+		projectId: "open-agents-demo",
+		workingDir: "/Users/demo/Projects/open-agents-demo",
+		title: "open-agents-demo",
 		createdAt: now,
 	},
 ];
 
 export const mockWorkspaces: WorkspaceSummary[] = [
 	{
-		id: "ao-demo",
-		name: "ao-demo",
-		path: "/demo/ao-demo",
+		id: "open-agents-demo",
+		name: "open-agents-demo",
+		path: "/demo/open-agents-demo",
 		type: "main",
 		orchestratorAgent: "opencode",
 		accentColor: "var(--color-project-accent-mint)",
 		sessions: [
 			{
-				id: "ao-demo-orchestrator",
-				terminalHandleId: "ao-demo-orchestrator/terminal_0",
-				workspaceId: "ao-demo",
-				workspaceName: "ao-demo",
+				id: "open-agents-demo-orchestrator",
+				terminalHandleId: "open-agents-demo-orchestrator/terminal_0",
+				workspaceId: "open-agents-demo",
+				workspaceName: "open-agents-demo",
 				title: "Project orchestrator",
 				provider: "opencode",
 				kind: "orchestrator",
@@ -68,8 +68,8 @@ export const mockWorkspaces: WorkspaceSummary[] = [
 			{
 				id: "demo-working",
 				terminalHandleId: "demo-working/terminal_0",
-				workspaceId: "ao-demo",
-				workspaceName: "ao-demo",
+				workspaceId: "open-agents-demo",
+				workspaceName: "open-agents-demo",
 				title: "Build screenshot-ready dashboard data",
 				provider: "opencode",
 				branch: "demo/dashboard-screenshot",
@@ -89,8 +89,8 @@ export const mockWorkspaces: WorkspaceSummary[] = [
 			{
 				id: "demo-needs-input",
 				terminalHandleId: "demo-needs-input/terminal_0",
-				workspaceId: "ao-demo",
-				workspaceName: "ao-demo",
+				workspaceId: "open-agents-demo",
+				workspaceName: "open-agents-demo",
 				title: "Resolve reviewer feedback on terminal polish",
 				provider: "opencode",
 				branch: "demo/terminal-polish",
@@ -110,8 +110,8 @@ export const mockWorkspaces: WorkspaceSummary[] = [
 			{
 				id: "demo-review-stack",
 				terminalHandleId: "demo-review-stack/terminal_0",
-				workspaceId: "ao-demo",
-				workspaceName: "ao-demo",
+				workspaceId: "open-agents-demo",
+				workspaceName: "open-agents-demo",
 				title: "Review stacked browser preview flow",
 				provider: "opencode",
 				branch: "demo/browser-preview-stack",
@@ -139,8 +139,8 @@ export const mockWorkspaces: WorkspaceSummary[] = [
 			{
 				id: "demo-in-review",
 				terminalHandleId: "demo-in-review/terminal_0",
-				workspaceId: "ao-demo",
-				workspaceName: "ao-demo",
+				workspaceId: "open-agents-demo",
+				workspaceName: "open-agents-demo",
 				title: "Wait for CI on project settings copy",
 				provider: "opencode",
 				branch: "demo/project-settings-copy",
@@ -155,8 +155,8 @@ export const mockWorkspaces: WorkspaceSummary[] = [
 			{
 				id: "demo-ready",
 				terminalHandleId: "demo-ready/terminal_0",
-				workspaceId: "ao-demo",
-				workspaceName: "ao-demo",
+				workspaceId: "open-agents-demo",
+				workspaceName: "open-agents-demo",
 				title: "Merge README screenshot asset update",
 				provider: "opencode",
 				branch: "demo/readme-assets",
@@ -175,8 +175,8 @@ export const mockWorkspaces: WorkspaceSummary[] = [
 			{
 				id: "demo-ci-failed",
 				terminalHandleId: "demo-ci-failed/terminal_0",
-				workspaceId: "ao-demo",
-				workspaceName: "ao-demo",
+				workspaceId: "open-agents-demo",
+				workspaceName: "open-agents-demo",
 				title: "Fix flaky NewTaskDialog smoke test",
 				provider: "opencode",
 				branch: "demo/new-task-flake",
@@ -238,7 +238,7 @@ export const mockWorkspaces: WorkspaceSummary[] = [
 const prSummary = (sessionId: string, number: number, overrides: Partial<SessionPRSummary> = {}): SessionPRSummary => {
 	const session = mockWorkspaces.flatMap((workspace) => workspace.sessions).find((item) => item.id === sessionId);
 	const facts = session?.prs.find((item) => item.number === number);
-	const url = facts?.url ?? `https://github.com/Untrivial-ai/agent-orchestrator/pull/${number}`;
+	const url = facts?.url ?? `https://github.com/sudo-adduser-jordan/open-agents/pull/${number}`;
 	return {
 		url,
 		htmlUrl: url,
@@ -246,7 +246,7 @@ const prSummary = (sessionId: string, number: number, overrides: Partial<Session
 		title: session?.title ?? `PR #${number}`,
 		state: facts?.state ?? "open",
 		provider: "github",
-		repo: "Untrivial-ai/agent-orchestrator",
+		repo: "sudo-adduser-jordan/open-agents",
 		author: "octocat",
 		authorAvatarUrl: previewAuthorAvatarUrl,
 		sourceBranch: session?.branch ?? "",
@@ -306,7 +306,7 @@ export const mockSessionScmSummaries: Record<string, SessionPRSummary[]> = {
 						name: "renderer smoke",
 						status: "failed",
 						conclusion: "failure",
-						url: "https://github.com/Untrivial-ai/agent-orchestrator/actions/runs/4486001/job/1",
+						url: "https://github.com/sudo-adduser-jordan/open-agents/actions/runs/4486001/job/1",
 					},
 				],
 			},
@@ -329,7 +329,7 @@ export const mockSessionScmSummaries: Record<string, SessionPRSummary[]> = {
 						autoInjectReview: true,
 						verdict: "changes_requested",
 						submittedAt: minutesAgo(18),
-						reviewUrl: "https://github.com/Untrivial-ai/agent-orchestrator/pull/318#pullrequestreview-3101",
+						reviewUrl: "https://github.com/sudo-adduser-jordan/open-agents/pull/318#pullrequestreview-3101",
 						body: "The activity sample is **tighter**, but the toolbar density change needs a second look before this lands.\n\n- Check compact spacing\n- Keep button labels readable",
 					},
 					{
@@ -338,7 +338,7 @@ export const mockSessionScmSummaries: Record<string, SessionPRSummary[]> = {
 						isBot: true,
 						verdict: "approved",
 						submittedAt: minutesAgo(15),
-						reviewUrl: "https://github.com/Untrivial-ai/agent-orchestrator/pull/318#pullrequestreview-3102",
+						reviewUrl: "https://github.com/sudo-adduser-jordan/open-agents/pull/318#pullrequestreview-3102",
 						body: "No issues found in the terminal pane changes.",
 					},
 					{
@@ -346,7 +346,7 @@ export const mockSessionScmSummaries: Record<string, SessionPRSummary[]> = {
 						autoInjectReview: true,
 						verdict: "none",
 						submittedAt: minutesAgo(12),
-						reviewUrl: "https://github.com/acme-inc/ao-demo/pull/318#pullrequestreview-3103",
+						reviewUrl: "https://github.com/acme-inc/open-agents-demo/pull/318#pullrequestreview-3103",
 						body: "The compact review layout reads well. One non-blocking spacing note remains for a later pass.",
 					},
 				],
@@ -354,7 +354,7 @@ export const mockSessionScmSummaries: Record<string, SessionPRSummary[]> = {
 					{
 						reviewerId: "prateek",
 						count: 2,
-						reviewUrl: "https://github.com/Untrivial-ai/agent-orchestrator/pull/318#pullrequestreview-3101",
+						reviewUrl: "https://github.com/sudo-adduser-jordan/open-agents/pull/318#pullrequestreview-3101",
 						// Two comments, two separate threads — resolving addresses threads.
 						links: [
 							{ reviewId: "31801", file: "frontend/src/renderer/components/TerminalPane.tsx", line: 84, body: "The reviewer terminal header wraps awkwardly at this width. Please keep the role label and controls on one line.", autoInjectReview: true },
@@ -366,7 +366,7 @@ export const mockSessionScmSummaries: Record<string, SessionPRSummary[]> = {
 					{
 						reviewerId: "prateek",
 						count: 1,
-						reviewUrl: "https://github.com/acme-inc/ao-demo/pull/318#pullrequestreview-31801",
+						reviewUrl: "https://github.com/acme-inc/open-agents-demo/pull/318#pullrequestreview-31801",
 						links: [
 							{ reviewId: "31801", file: "frontend/src/renderer/components/TerminalPane.tsx", line: 62, body: "This earlier toolbar alignment comment has been resolved.", autoInjectReview: true },
 						],
@@ -384,10 +384,10 @@ export const mockSessionScmSummaries: Record<string, SessionPRSummary[]> = {
 				decision: "changes_requested",
 				hasUnresolvedHumanComments: true,
 				reviews: [
-					{ reviewerId: "vickyshaw29", autoInjectReview: false, verdict: "changes_requested", submittedAt: hoursAgo(1), reviewUrl: "https://github.com/Untrivial-ai/agent-orchestrator/pull/321#review-1", body: "Please address the browser preview comments before merge." },
-					{ reviewerId: "Prasad-D-Ware", autoInjectReview: false, verdict: "approved", submittedAt: hoursAgo(1), reviewUrl: "https://github.com/Untrivial-ai/agent-orchestrator/pull/321#review-2", body: "The preview flow looks good overall." },
+					{ reviewerId: "vickyshaw29", autoInjectReview: false, verdict: "changes_requested", submittedAt: hoursAgo(1), reviewUrl: "https://github.com/sudo-adduser-jordan/open-agents/pull/321#review-1", body: "Please address the browser preview comments before merge." },
+					{ reviewerId: "Prasad-D-Ware", autoInjectReview: false, verdict: "approved", submittedAt: hoursAgo(1), reviewUrl: "https://github.com/sudo-adduser-jordan/open-agents/pull/321#review-2", body: "The preview flow looks good overall." },
 				],
-				unresolvedBy: [{ reviewerId: "vickyshaw29", count: 3, reviewUrl: "https://github.com/Untrivial-ai/agent-orchestrator/pull/321#review-1", links: [] }],
+				unresolvedBy: [{ reviewerId: "vickyshaw29", count: 3, reviewUrl: "https://github.com/sudo-adduser-jordan/open-agents/pull/321#review-1", links: [] }],
 			},
 		}),
 		prSummary("demo-review-stack", 319, {
@@ -399,15 +399,15 @@ export const mockSessionScmSummaries: Record<string, SessionPRSummary[]> = {
 			stateChangedAt: hoursAgo(3),
 		}),
 		prSummary("demo-review-stack", 317, {
-			url: "https://github.com/Untrivial-ai/agent-orchestrator/pull/317",
-			htmlUrl: "https://github.com/Untrivial-ai/agent-orchestrator/pull/317",
+			url: "https://github.com/sudo-adduser-jordan/open-agents/pull/317",
+			htmlUrl: "https://github.com/sudo-adduser-jordan/open-agents/pull/317",
 			state: "closed",
 			createdAt: hoursAgo(7),
 			stateChangedAt: hoursAgo(1),
 			mergeability: {
 				state: "mergeable",
 				reasons: [],
-				prUrl: "https://github.com/Untrivial-ai/agent-orchestrator/pull/317",
+				prUrl: "https://github.com/sudo-adduser-jordan/open-agents/pull/317",
 				conflictFiles: [],
 			},
 		}),

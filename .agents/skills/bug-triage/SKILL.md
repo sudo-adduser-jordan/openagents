@@ -21,7 +21,7 @@ repeat questions already answered or turn these suggestions into required fields
 - What did you do, and what happened instead of what you expected?
 - Where did it happen, and does it happen every time or only sometimes?
 - For a visual problem, can you share a screenshot or short recording showing it?
-- If relevant, which AO version and OS were you using, and did it start after a change?
+- If relevant, which Open Agents version and OS were you using, and did it start after a change?
 
 If a screenshot is unavailable, accept a description. If the reporter cannot remember
 steps or reproduce the problem, preserve that uncertainty and proceed with what is
@@ -45,7 +45,7 @@ Keep agent-discovered information separate from the human report and label it
 **Agent-collected evidence**, even when it confirms the report. Include only relevant
 excerpts and:
 
-- The command or read-only query used, collection time, and relevant AO version or
+- The command or read-only query used, collection time, and relevant Open Agents version or
   checkout commit, so another person can interpret the result.
 - Observed output, screenshots, or reproduction results, with enough context to verify
   the finding. Distinguish the reporter's environment from a separate test build.
@@ -59,15 +59,15 @@ speculation or claim a reproduction succeeded when it didn't.
 
 Use diagnostics that fit the symptom, within the user's requested scope. Prefer
 read-only checks against the affected installation. Don't restart sessions, upgrade
-AO, change live data, or alter the user's checkout just to collect evidence.
+Open Agents, change live data, or alter the user's checkout just to collect evidence.
 
-AO uses a Go daemon and an Electron/React frontend. Read `docs/architecture.md` for
+Open Agents uses a Go daemon and an Electron/React frontend. Read `docs/architecture.md` for
 current boundaries and locate actual files with `rg` before citing code. Do not rely
 on the old TypeScript implementation or assume which runtime backs a session.
 
-Before trusting diagnostics, identify the AO executable and affected daemon. A PATH
+Before trusting diagnostics, identify the Open Agents executable and affected daemon. A PATH
 lookup may resolve to a legacy install. Check the executable's version and status,
-and the configured run file/data directory (`AO_RUN_FILE` / `AO_DATA_DIR` when set).
+and the configured run file/data directory (`OPEN_AGENTS_RUN_FILE` / `OPEN_AGENTS_DATA_DIR` when set).
 The primary daemon normally uses loopback port 3001; port alone does not establish
 which version or installation is affected. Consult the installed CLI help for commands.
 
@@ -84,7 +84,7 @@ Use the daemon API/CLI for state first. If database evidence is needed, discover
 actual database location and schema, open it read-only, and select only relevant rows
 and columns. Never attach an entire database or broad log dump. Redact tokens,
 credentials, private prompts, and unrelated personal or repository data from every
-artifact, including screenshots. Keep diagnostic artifacts under `~/.ao` and out of
+artifact, including screenshots. Keep diagnostic artifacts under `~/.open-agents` and out of
 Git commits. Preserve evidentiary content when redacting, and verify that unrelated
 content did not change. Share a useful excerpt rather than a wall of output.
 
@@ -97,8 +97,8 @@ is optional when it can add concrete evidence. Keep findings in the separate evi
 Search open and closed issues and related PRs using the symptom or exact error:
 
 ```bash
-gh issue list --repo Untrivial-ai/agent-orchestrator --state all --search '<symptom or error>'
-gh pr list --repo Untrivial-ai/agent-orchestrator --state all --search '<symptom or error>'
+gh issue list --repo sudo-adduser-jordan/open-agents --state all --search '<symptom or error>'
+gh pr list --repo sudo-adduser-jordan/open-agents --state all --search '<symptom or error>'
 ```
 
 Read likely matches before calling a report a duplicate. If one matches, give the

@@ -79,9 +79,9 @@ func capturedAgentSessionID(t *testing.T, capture *activityCapture) string {
 }
 
 func TestHooks_ReviewerRoutesToReviewActivity(t *testing.T) {
-	t.Setenv("AO_REVIEW_SESSION_ID", "review-7")
-	t.Setenv("AO_REVIEW_WORKER_SESSION_ID", "worker-7")
-	t.Setenv("AO_REVIEW_HARNESS", "opencode")
+	t.Setenv("OPEN_AGENTS_REVIEW_SESSION_ID", "review-7")
+	t.Setenv("OPEN_AGENTS_REVIEW_WORKER_SESSION_ID", "worker-7")
+	t.Setenv("OPEN_AGENTS_REVIEW_HARNESS", "opencode")
 	cfg := setConfigEnv(t)
 	srv, capture := activityServer(t, http.StatusOK, `{"ok":true,"reviewSessionId":"review-7"}`)
 	writeRunFileFor(t, cfg, srv)
@@ -102,9 +102,9 @@ func TestHooks_ReviewerRoutesToReviewActivity(t *testing.T) {
 }
 
 func TestHooks_ReviewerActivityOmitsToolCorrelationFields(t *testing.T) {
-	t.Setenv("AO_REVIEW_SESSION_ID", "review-7")
-	t.Setenv("AO_REVIEW_WORKER_SESSION_ID", "worker-7")
-	t.Setenv("AO_REVIEW_HARNESS", "opencode")
+	t.Setenv("OPEN_AGENTS_REVIEW_SESSION_ID", "review-7")
+	t.Setenv("OPEN_AGENTS_REVIEW_WORKER_SESSION_ID", "worker-7")
+	t.Setenv("OPEN_AGENTS_REVIEW_HARNESS", "opencode")
 	cfg := setConfigEnv(t)
 	srv, capture := activityServer(t, http.StatusOK, `{"ok":true,"reviewSessionId":"review-7"}`)
 	writeRunFileFor(t, cfg, srv)
@@ -132,9 +132,9 @@ func TestHooks_ReviewerActivityOmitsToolCorrelationFields(t *testing.T) {
 }
 
 func TestHooks_ReviewerRoutingTakesPrecedenceOverWorkerSession(t *testing.T) {
-	t.Setenv("AO_REVIEW_SESSION_ID", "review-7")
-	t.Setenv("AO_REVIEW_WORKER_SESSION_ID", "worker-context-only")
-	t.Setenv("AO_SESSION_ID", "worker-7")
+	t.Setenv("OPEN_AGENTS_REVIEW_SESSION_ID", "review-7")
+	t.Setenv("OPEN_AGENTS_REVIEW_WORKER_SESSION_ID", "worker-context-only")
+	t.Setenv("OPEN_AGENTS_SESSION_ID", "worker-7")
 	cfg := setConfigEnv(t)
 	srv, capture := activityServer(t, http.StatusOK, `{"ok":true}`)
 	writeRunFileFor(t, cfg, srv)
@@ -152,8 +152,8 @@ func TestHooks_ReviewerRoutingTakesPrecedenceOverWorkerSession(t *testing.T) {
 }
 
 func TestHooks_ReviewWorkerSessionIDDoesNotRouteWithoutReviewSessionID(t *testing.T) {
-	t.Setenv("AO_REVIEW_WORKER_SESSION_ID", "worker-context-only")
-	t.Setenv("AO_SESSION_ID", "")
+	t.Setenv("OPEN_AGENTS_REVIEW_WORKER_SESSION_ID", "worker-context-only")
+	t.Setenv("OPEN_AGENTS_SESSION_ID", "")
 	cfg := setConfigEnv(t)
 	srv, capture := activityServer(t, http.StatusOK, `{"ok":true}`)
 	writeRunFileFor(t, cfg, srv)
@@ -171,9 +171,9 @@ func TestHooks_ReviewWorkerSessionIDDoesNotRouteWithoutReviewSessionID(t *testin
 }
 
 func TestHooks_NotificationReportsBlocked(t *testing.T) {
-	t.Setenv("AO_SESSION_ID", "ao-7")
+	t.Setenv("OPEN_AGENTS_SESSION_ID", "open-agents-7")
 	cfg := setConfigEnv(t)
-	srv, capture := activityServer(t, http.StatusOK, `{"ok":true,"sessionId":"ao-7","state":"blocked"}`)
+	srv, capture := activityServer(t, http.StatusOK, `{"ok":true,"sessionId":"open-agents-7","state":"blocked"}`)
 	writeRunFileFor(t, cfg, srv)
 
 	_, errOut, err := executeCLI(t, Deps{
@@ -183,8 +183,8 @@ func TestHooks_NotificationReportsBlocked(t *testing.T) {
 	if err != nil {
 		t.Fatalf("unexpected error: %v\nstderr=%s", err, errOut)
 	}
-	if capture.path != "/api/v1/sessions/ao-7/activity" {
-		t.Errorf("path = %q, want /api/v1/sessions/ao-7/activity", capture.path)
+	if capture.path != "/api/v1/sessions/open-agents-7/activity" {
+		t.Errorf("path = %q, want /api/v1/sessions/open-agents-7/activity", capture.path)
 	}
 	if got := capturedState(t, capture); got != "blocked" {
 		t.Errorf("state = %q, want blocked", got)
@@ -192,8 +192,8 @@ func TestHooks_NotificationReportsBlocked(t *testing.T) {
 }
 
 func TestHooks_ThreadsRuntimeLaunchID(t *testing.T) {
-	t.Setenv("AO_SESSION_ID", "ao-7")
-	t.Setenv("AO_RUNTIME_LAUNCH_ID", "launch-3")
+	t.Setenv("OPEN_AGENTS_SESSION_ID", "open-agents-7")
+	t.Setenv("OPEN_AGENTS_RUNTIME_LAUNCH_ID", "launch-3")
 	cfg := setConfigEnv(t)
 	srv, capture := activityServer(t, http.StatusOK, `{"ok":true}`)
 	writeRunFileFor(t, cfg, srv)
@@ -215,7 +215,7 @@ func TestHooks_ThreadsRuntimeLaunchID(t *testing.T) {
 }
 
 func TestHooks_PayloadLaunchIDFallbackWhenEnvUnset(t *testing.T) {
-	t.Setenv("AO_SESSION_ID", "ao-7")
+	t.Setenv("OPEN_AGENTS_SESSION_ID", "open-agents-7")
 	cfg := setConfigEnv(t)
 	srv, capture := activityServer(t, http.StatusOK, `{"ok":true}`)
 	writeRunFileFor(t, cfg, srv)
@@ -240,7 +240,7 @@ func TestHooks_PayloadLaunchIDFallbackWhenEnvUnset(t *testing.T) {
 }
 
 func TestHooks_StopReportsIdle(t *testing.T) {
-	t.Setenv("AO_SESSION_ID", "ao-7")
+	t.Setenv("OPEN_AGENTS_SESSION_ID", "open-agents-7")
 	cfg := setConfigEnv(t)
 	srv, capture := activityServer(t, http.StatusOK, `{"ok":true}`)
 	writeRunFileFor(t, cfg, srv)
@@ -258,7 +258,7 @@ func TestHooks_StopReportsIdle(t *testing.T) {
 }
 
 func TestHooks_SessionStartReportsAgentSessionID(t *testing.T) {
-	t.Setenv("AO_SESSION_ID", "ao-7")
+	t.Setenv("OPEN_AGENTS_SESSION_ID", "open-agents-7")
 	cfg := setConfigEnv(t)
 	srv, capture := activityServer(t, http.StatusOK, `{"ok":true}`)
 	writeRunFileFor(t, cfg, srv)
@@ -279,7 +279,7 @@ func TestHooks_SessionStartReportsAgentSessionID(t *testing.T) {
 }
 
 func TestHooks_ActivityAlsoReportsNativeSessionID(t *testing.T) {
-	t.Setenv("AO_SESSION_ID", "ao-7")
+	t.Setenv("OPEN_AGENTS_SESSION_ID", "open-agents-7")
 	cfg := setConfigEnv(t)
 	srv, capture := activityServer(t, http.StatusOK, `{"ok":true}`)
 	writeRunFileFor(t, cfg, srv)
@@ -300,7 +300,7 @@ func TestHooks_ActivityAlsoReportsNativeSessionID(t *testing.T) {
 }
 
 func TestHooks_UnknownAgentCannotReportNativeSessionID(t *testing.T) {
-	t.Setenv("AO_SESSION_ID", "ao-7")
+	t.Setenv("OPEN_AGENTS_SESSION_ID", "open-agents-7")
 	cfg := setConfigEnv(t)
 	srv, capture := activityServer(t, http.StatusOK, `{"ok":true}`)
 	writeRunFileFor(t, cfg, srv)
@@ -320,7 +320,7 @@ func TestHooks_UnknownAgentCannotReportNativeSessionID(t *testing.T) {
 func TestHooks_ToolCorrelationFieldsAreCarried(t *testing.T) {
 	// Tool-use signals must carry the event and the native tool identity so
 	// lifecycle can clear a stale blocked only on the approved tool's post.
-	t.Setenv("AO_SESSION_ID", "ao-7")
+	t.Setenv("OPEN_AGENTS_SESSION_ID", "open-agents-7")
 	cfg := setConfigEnv(t)
 	srv, capture := activityServer(t, http.StatusOK, `{"ok":true}`)
 	writeRunFileFor(t, cfg, srv)
@@ -343,7 +343,7 @@ func TestHooks_ToolCorrelationFieldsAreCarried(t *testing.T) {
 func TestHooks_EventWithoutToolIdentityOmitsIt(t *testing.T) {
 	// Payloads that carry only tool_name still tag the event; the missing
 	// identity field stays empty rather than inventing a value.
-	t.Setenv("AO_SESSION_ID", "ao-7")
+	t.Setenv("OPEN_AGENTS_SESSION_ID", "open-agents-7")
 	cfg := setConfigEnv(t)
 	srv, capture := activityServer(t, http.StatusOK, `{"ok":true}`)
 	writeRunFileFor(t, cfg, srv)
@@ -364,7 +364,7 @@ func TestHooks_EventWithoutToolIdentityOmitsIt(t *testing.T) {
 }
 
 func TestHooks_OpenCodeUserPromptReportsActive(t *testing.T) {
-	t.Setenv("AO_SESSION_ID", "ao-7")
+	t.Setenv("OPEN_AGENTS_SESSION_ID", "open-agents-7")
 	cfg := setConfigEnv(t)
 	srv, capture := activityServer(t, http.StatusOK, `{"ok":true}`)
 	writeRunFileFor(t, cfg, srv)
@@ -384,7 +384,7 @@ func TestHooks_OpenCodeUserPromptReportsActive(t *testing.T) {
 func TestHooks_RegisteredHarnessSessionStartReportsAgentSessionID(t *testing.T) {
 	for _, agent := range []string{"opencode"} {
 		t.Run(agent, func(t *testing.T) {
-			t.Setenv("AO_SESSION_ID", "ao-7")
+			t.Setenv("OPEN_AGENTS_SESSION_ID", "open-agents-7")
 			cfg := setConfigEnv(t)
 			srv, capture := activityServer(t, http.StatusOK, `{"ok":true}`)
 			writeRunFileFor(t, cfg, srv)
@@ -410,7 +410,7 @@ func TestHooks_RegisteredHarnessSessionStartReportsAgentSessionID(t *testing.T) 
 }
 
 func TestHooks_RejectsMalformedSessionID(t *testing.T) {
-	t.Setenv("AO_SESSION_ID", "../etc/passwd")
+	t.Setenv("OPEN_AGENTS_SESSION_ID", "../etc/passwd")
 	cfg := setConfigEnv(t)
 	srv, capture := activityServer(t, http.StatusOK, `{}`)
 	writeRunFileFor(t, cfg, srv)
@@ -428,7 +428,7 @@ func TestHooks_RejectsMalformedSessionID(t *testing.T) {
 }
 
 func TestHooks_NoSessionIDIsNoOp(t *testing.T) {
-	t.Setenv("AO_SESSION_ID", "")
+	t.Setenv("OPEN_AGENTS_SESSION_ID", "")
 	cfg := setConfigEnv(t)
 	srv, capture := activityServer(t, http.StatusOK, `{}`)
 	writeRunFileFor(t, cfg, srv)
@@ -441,12 +441,12 @@ func TestHooks_NoSessionIDIsNoOp(t *testing.T) {
 		t.Fatalf("unexpected error: %v", err)
 	}
 	if capture.hits != 0 {
-		t.Errorf("expected no daemon call for a non-AO session, got %d", capture.hits)
+		t.Errorf("expected no daemon call for a non-Open Agents session, got %d", capture.hits)
 	}
 }
 
 func TestHooks_UntrackedEventIsNoOp(t *testing.T) {
-	t.Setenv("AO_SESSION_ID", "ao-7")
+	t.Setenv("OPEN_AGENTS_SESSION_ID", "open-agents-7")
 	cfg := setConfigEnv(t)
 	srv, capture := activityServer(t, http.StatusOK, `{}`)
 	writeRunFileFor(t, cfg, srv)
@@ -464,7 +464,7 @@ func TestHooks_UntrackedEventIsNoOp(t *testing.T) {
 }
 
 func TestHooks_DaemonDownIsBestEffort(t *testing.T) {
-	t.Setenv("AO_SESSION_ID", "ao-7")
+	t.Setenv("OPEN_AGENTS_SESSION_ID", "open-agents-7")
 	setConfigEnv(t) // no run-file written: daemon is "not running"
 
 	_, _, err := executeCLI(t, Deps{
@@ -487,7 +487,7 @@ func TestHooks_RetryOnlyUncommittedActivityProjection(t *testing.T) {
 		{"other unavailable error is not safe to repeat", "SERVICE_UNAVAILABLE", 2, 1},
 	} {
 		t.Run(tt.name, func(t *testing.T) {
-			t.Setenv("AO_SESSION_ID", "ao-7")
+			t.Setenv("OPEN_AGENTS_SESSION_ID", "open-agents-7")
 			cfg := setConfigEnv(t)
 			var calls atomic.Int32
 			payloads := make(chan string, 10)
@@ -531,7 +531,7 @@ func TestHooks_RetryOnlyUncommittedActivityProjection(t *testing.T) {
 
 // TestHooks_DeliveryFailureGoesToHooksLog covers the durable failure sink:
 // agents swallow hook stderr, so a delivery failure must also land in
-// $AO_DATA_DIR/hooks.log — and a delivered hook must not write the file at all.
+// $OPEN_AGENTS_DATA_DIR/hooks.log — and a delivered hook must not write the file at all.
 func TestHooks_DeliveryFailureGoesToHooksLog(t *testing.T) {
 	cases := []struct {
 		name    string
@@ -545,7 +545,7 @@ func TestHooks_DeliveryFailureGoesToHooksLog(t *testing.T) {
 			status:  http.StatusInternalServerError,
 			body:    `{"error":"internal","code":"BOOM","message":"boom"}`,
 			wantLog: true,
-			wantIn:  []string{"ao hooks opencode stop", "session=ao-7"},
+			wantIn:  []string{"open-agents hooks opencode stop", "session=open-agents-7"},
 		},
 		{
 			name:   "successful delivery writes nothing",
@@ -555,7 +555,7 @@ func TestHooks_DeliveryFailureGoesToHooksLog(t *testing.T) {
 	}
 	for _, tc := range cases {
 		t.Run(tc.name, func(t *testing.T) {
-			t.Setenv("AO_SESSION_ID", "ao-7")
+			t.Setenv("OPEN_AGENTS_SESSION_ID", "open-agents-7")
 			cfg := setConfigEnv(t)
 			srv, _ := activityServer(t, tc.status, tc.body)
 			writeRunFileFor(t, cfg, srv)
@@ -592,7 +592,7 @@ func TestHooks_DeliveryFailureGoesToHooksLog(t *testing.T) {
 // a hooks.log already past the cap truncates it first, so a persistently
 // failing hook cannot grow the file without bound.
 func TestHooks_HooksLogTruncatesPastCap(t *testing.T) {
-	t.Setenv("AO_SESSION_ID", "ao-7")
+	t.Setenv("OPEN_AGENTS_SESSION_ID", "open-agents-7")
 	cfg := setConfigEnv(t) // no run file written: every delivery fails
 	logPath := filepath.Join(cfg.dataDir, "hooks.log")
 	if err := os.MkdirAll(cfg.dataDir, 0o750); err != nil {
@@ -617,13 +617,13 @@ func TestHooks_HooksLogTruncatesPastCap(t *testing.T) {
 	if len(data) > maxHooksLogBytes {
 		t.Fatalf("hooks.log = %d bytes, want truncated below the %d cap", len(data), maxHooksLogBytes)
 	}
-	if !strings.Contains(string(data), "ao hooks opencode stop") {
+	if !strings.Contains(string(data), "open-agents hooks opencode stop") {
 		t.Errorf("truncated hooks.log missing the new failure line:\n%s", data)
 	}
 }
 
 func TestHooks_DaemonErrorIsSwallowed(t *testing.T) {
-	t.Setenv("AO_SESSION_ID", "ao-7")
+	t.Setenv("OPEN_AGENTS_SESSION_ID", "open-agents-7")
 	cfg := setConfigEnv(t)
 	srv, _ := activityServer(t, http.StatusInternalServerError,
 		`{"error":"internal","code":"BOOM","message":"boom"}`)
@@ -636,7 +636,7 @@ func TestHooks_DaemonErrorIsSwallowed(t *testing.T) {
 	if err != nil {
 		t.Fatalf("hooks must exit 0 even on a daemon error, got: %v", err)
 	}
-	if !strings.Contains(errOut, "ao hooks") {
+	if !strings.Contains(errOut, "open-agents hooks") {
 		t.Errorf("expected the failure surfaced to stderr, got %q", errOut)
 	}
 }

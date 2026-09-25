@@ -19,13 +19,13 @@ import (
 	"testing"
 	"time"
 
-	scmmulti "github.com/aoagents/agent-orchestrator/backend/internal/adapters/scm/multi"
-	"github.com/aoagents/agent-orchestrator/backend/internal/domain"
-	"github.com/aoagents/agent-orchestrator/backend/internal/lifecycle"
-	scmobserve "github.com/aoagents/agent-orchestrator/backend/internal/observe/scm"
-	"github.com/aoagents/agent-orchestrator/backend/internal/ports"
-	"github.com/aoagents/agent-orchestrator/backend/internal/storage/sqlite"
-	"github.com/aoagents/agent-orchestrator/backend/internal/storage/sqlite/sqlitetest"
+	scmmulti "github.com/sudo-adduser-jordan/open-agents/backend/internal/adapters/scm/multi"
+	"github.com/sudo-adduser-jordan/open-agents/backend/internal/domain"
+	"github.com/sudo-adduser-jordan/open-agents/backend/internal/lifecycle"
+	scmobserve "github.com/sudo-adduser-jordan/open-agents/backend/internal/observe/scm"
+	"github.com/sudo-adduser-jordan/open-agents/backend/internal/ports"
+	"github.com/sudo-adduser-jordan/open-agents/backend/internal/storage/sqlite"
+	"github.com/sudo-adduser-jordan/open-agents/backend/internal/storage/sqlite/sqlitetest"
 )
 
 var scmTestRepo = ports.SCMRepo{

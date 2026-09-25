@@ -281,7 +281,7 @@ export function formatBrowserAnnotationMessage(
 		`Page: ${compactText(session.page.title ?? "", 160) || "Untitled page"}`,
 		`URL: ${session.page.url || "(unknown)"}`,
 		`Annotations: ${total}`,
-		"Task: Address the feedback below according to its wording. Visual adjustments are already previewed in AO's shared browser and describe the intended result; implement that result in workspace source when available, otherwise use it as visual context.",
+		"Task: Address the feedback below according to its wording. Visual adjustments are already previewed in Open Agents's shared browser and describe the intended result; implement that result in workspace source when available, otherwise use it as visual context.",
 	];
 	for (const annotation of session.annotations) {
 		const context = annotation.target.context;
@@ -309,7 +309,7 @@ export function formatBrowserAnnotationMessage(
 }
 
 /**
- * Parse AO's annotation transport so the transcript can render a concise card
+ * Parse Open Agents's annotation transport so the transcript can render a concise card
  * instead of exposing selectors and agent-facing handoff instructions.
  */
 export function parseBrowserAnnotationMessage(message: string): ParsedBrowserAnnotationMessage | null {

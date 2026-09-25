@@ -7,7 +7,7 @@ import (
 	"database/sql"
 	"fmt"
 
-	"github.com/aoagents/agent-orchestrator/backend/internal/storage/sqlite/gen"
+	"github.com/sudo-adduser-jordan/open-agents/backend/internal/storage/sqlite/gen"
 )
 
 // Store is the SQLite-backed persistence layer. It routes writes to a single

@@ -9,8 +9,8 @@ import (
 	"testing"
 	"time"
 
-	"github.com/aoagents/agent-orchestrator/backend/internal/adapters/runtime/tmux"
-	"github.com/aoagents/agent-orchestrator/backend/internal/ports"
+	"github.com/sudo-adduser-jordan/open-agents/backend/internal/adapters/runtime/tmux"
+	"github.com/sudo-adduser-jordan/open-agents/backend/internal/ports"
 )
 
 func TestTmuxUserShellExitReconciliation(t *testing.T) {
@@ -28,21 +28,21 @@ func TestTmuxUserShellExitReconciliation(t *testing.T) {
 	}{
 		{name: "legacy default socket"},
 		{name: "legacy last shell", noAnchor: true},
-		{name: "private last shell", socket: "ao-fixture", noAnchor: true},
-		{name: "private socket retained pane", socket: "ao-fixture", retainPane: true},
+		{name: "private last shell", socket: "open-agents-fixture", noAnchor: true},
+		{name: "private socket retained pane", socket: "open-agents-fixture", retainPane: true},
 	} {
 		for _, reconcile := range []string{"list", "desktop relaunch"} {
 			t.Run(tc.name+"/"+reconcile, func(t *testing.T) {
 				// A fresh, short socket root isolates even the legacy default
 				// socket and stays below macOS's Unix socket path limit.
-				socketRoot, err := os.MkdirTemp("/tmp", "ao-shell-exit-")
+				socketRoot, err := os.MkdirTemp("/tmp", "open-agents-shell-exit-")
 				if err != nil {
 					t.Fatal(err)
 				}
 				t.Cleanup(func() { _ = os.RemoveAll(socketRoot) })
 				t.Setenv("TMUX_TMPDIR", socketRoot)
 				t.Setenv("TMUX", "")
-				t.Setenv("AO_TMUX_SOCKET_NAME", "")
+				t.Setenv("OPEN_AGENTS_TMUX_SOCKET_NAME", "")
 				t.Setenv("HOME", t.TempDir())
 				t.Setenv("XDG_CONFIG_HOME", t.TempDir())
 				t.Setenv("SHELL", "/bin/sh")

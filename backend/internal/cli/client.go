@@ -11,8 +11,8 @@ import (
 	"net/http"
 	"time"
 
-	"github.com/aoagents/agent-orchestrator/backend/internal/config"
-	"github.com/aoagents/agent-orchestrator/backend/internal/runfile"
+	"github.com/sudo-adduser-jordan/open-agents/backend/internal/config"
+	"github.com/sudo-adduser-jordan/open-agents/backend/internal/runfile"
 )
 
 // commandTimeout bounds a mutating daemon call. Spawns do real work (git
@@ -37,7 +37,7 @@ type apiResponseError struct {
 	ErrorBody  apiError
 }
 
-var errDaemonUnavailable = errors.New("AO daemon unavailable")
+var errDaemonUnavailable = errors.New("Open Agents daemon unavailable")
 
 // daemonUnavailableError keeps the established user-facing diagnostics while
 // giving the few idempotent CLI operations that can safely retry a typed signal.
@@ -154,10 +154,10 @@ func (c *commandContext) doJSONPathWithHeadersAndTimeout(
 		return err
 	}
 	if info == nil {
-		return daemonUnavailableError{message: "AO daemon is not running — start it with `ao start`"}
+		return daemonUnavailableError{message: "Open Agents daemon is not running — start it with `open-agents start`"}
 	}
 	if !c.deps.ProcessAlive(info.PID) {
-		return daemonUnavailableError{message: fmt.Sprintf("AO daemon is not running (stale run-file at %s) — start it with `ao start`", cfg.RunFilePath)}
+		return daemonUnavailableError{message: fmt.Sprintf("Open Agents daemon is not running (stale run-file at %s) — start it with `open-agents start`", cfg.RunFilePath)}
 	}
 
 	var reader io.Reader = http.NoBody

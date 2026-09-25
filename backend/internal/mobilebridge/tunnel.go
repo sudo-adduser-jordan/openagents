@@ -13,7 +13,7 @@ import (
 	"sync"
 	"time"
 
-	aoprocess "github.com/aoagents/agent-orchestrator/backend/internal/process"
+	openagentsprocess "github.com/sudo-adduser-jordan/open-agents/backend/internal/process"
 )
 
 // The hostname of a quick tunnel is only ever available by scraping
@@ -122,9 +122,9 @@ func (v CloudflaredVersion) AtLeast(floor CloudflaredVersion) bool {
 type CloudflaredSource string
 
 const (
-	// CloudflaredFromEnv is an explicit AO_CLOUDFLARED_PATH override.
+	// CloudflaredFromEnv is an explicit OPEN_AGENTS_CLOUDFLARED_PATH override.
 	CloudflaredFromEnv CloudflaredSource = "env"
-	// CloudflaredManaged is AO's own pinned copy under ~/.ao/bin.
+	// CloudflaredManaged is Open Agents's own pinned copy under ~/.open-agents/bin.
 	CloudflaredManaged CloudflaredSource = "managed"
 	// CloudflaredFromSystem is a copy the user already installed.
 	CloudflaredFromSystem CloudflaredSource = "system"
@@ -136,9 +136,9 @@ const (
 // Every filesystem and PATH touch goes through these, so resolution is
 // testable without depending on what the machine happens to have installed.
 type CloudflaredLookup struct {
-	// EnvPath is $AO_CLOUDFLARED_PATH.
+	// EnvPath is $OPEN_AGENTS_CLOUDFLARED_PATH.
 	EnvPath string
-	// ManagedPath is where AO keeps its own pinned copy (~/.ao/bin/cloudflared).
+	// ManagedPath is where Open Agents keeps its own pinned copy (~/.open-agents/bin/cloudflared).
 	ManagedPath string
 	LookPath    func(file string) (string, error)
 	Exists      func(path string) bool
@@ -158,7 +158,7 @@ type CloudflaredResolution struct {
 
 // ResolveCloudflared picks the cloudflared to run.
 //
-// Order: explicit override, then AO's managed copy, then a system install that
+// Order: explicit override, then Open Agents's managed copy, then a system install that
 // is recent enough, then install our own.
 //
 // Two rules matter. A user's package-managed binary is never modified or
@@ -184,7 +184,7 @@ func ResolveCloudflared(l CloudflaredLookup) CloudflaredResolution {
 	return CloudflaredResolution{Source: CloudflaredAbsent, NeedsInstall: true}
 }
 
-// ManagedCloudflaredPath is where AO keeps its own pinned copy.
+// ManagedCloudflaredPath is where Open Agents keeps its own pinned copy.
 func ManagedCloudflaredPath(dataDir string) string {
 	name := "cloudflared"
 	if runtime.GOOS == "windows" {
@@ -197,7 +197,7 @@ func ManagedCloudflaredPath(dataDir string) string {
 // filesystem, and `cloudflared --version` for the version gate.
 func LocalCloudflaredLookup(dataDir string) CloudflaredLookup {
 	return CloudflaredLookup{
-		EnvPath:     os.Getenv("AO_CLOUDFLARED_PATH"),
+		EnvPath:     os.Getenv("OPEN_AGENTS_CLOUDFLARED_PATH"),
 		ManagedPath: ManagedCloudflaredPath(dataDir),
 		LookPath:    exec.LookPath,
 		Exists: func(p string) bool {
@@ -207,7 +207,7 @@ func LocalCloudflaredLookup(dataDir string) CloudflaredLookup {
 		Version: func(p string) (CloudflaredVersion, bool) {
 			ctx, cancel := context.WithTimeout(context.Background(), cloudflaredVersionTimeout)
 			defer cancel()
-			out, err := aoprocess.CommandContext(ctx, p, "--version").CombinedOutput()
+			out, err := openagentsprocess.CommandContext(ctx, p, "--version").CombinedOutput()
 			if err != nil {
 				return CloudflaredVersion{}, false
 			}
@@ -221,7 +221,7 @@ func LocalCloudflaredLookup(dataDir string) CloudflaredLookup {
 const cloudflaredVersionTimeout = 5 * time.Second
 
 // TunnelPIDPath is where the managed connector's pid is recorded
-// (~/.ao/mobile/tunnel.pid).
+// (~/.open-agents/mobile/tunnel.pid).
 func TunnelPIDPath(dataDir string) string {
 	return filepath.Join(dataDir, "mobile", "tunnel.pid")
 }

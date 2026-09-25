@@ -9,9 +9,9 @@ import (
 	"testing"
 	"time"
 
-	"github.com/aoagents/agent-orchestrator/backend/internal/adapters/agent/opencode"
-	"github.com/aoagents/agent-orchestrator/backend/internal/domain"
-	"github.com/aoagents/agent-orchestrator/backend/internal/ports"
+	"github.com/sudo-adduser-jordan/open-agents/backend/internal/adapters/agent/opencode"
+	"github.com/sudo-adduser-jordan/open-agents/backend/internal/domain"
+	"github.com/sudo-adduser-jordan/open-agents/backend/internal/ports"
 )
 
 type fakeSessions struct {
@@ -78,12 +78,12 @@ func (d detectorAgent) ContinuouslyDetectTerminalActivityWhileWaiting() bool {
 
 func activeSession(now time.Time, harness domain.AgentHarness) domain.SessionRecord {
 	return domain.SessionRecord{
-		ID:        "ao-1",
+		ID:        "open-agents-1",
 		Harness:   harness,
 		Activity:  domain.Activity{State: domain.ActivityActive, LastActivityAt: now.Add(-3 * time.Minute)},
 		UpdatedAt: now.Add(-3 * time.Minute),
 		Metadata: domain.SessionMetadata{
-			RuntimeHandleID: "ao-1",
+			RuntimeHandleID: "open-agents-1",
 			RuntimeLaunchID: "launch-1",
 		},
 	}

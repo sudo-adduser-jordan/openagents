@@ -80,9 +80,9 @@ function isDescendantPath(child: string, parent: string): boolean {
 function projectSetupSafetyReason(repoPath: string, options: ScanOptions = {}): string | undefined {
 	const home = options.homeDir?.trim();
 	if (!home) return undefined;
-	const aoState = path.join(home, ".ao");
-	if (isDescendantPath(repoPath, aoState)) {
-		return "Selected folder is inside AO's internal data directory. Select a project folder outside ~/.ao.";
+	const openAgentsState = path.join(home, ".open-agents");
+	if (isDescendantPath(repoPath, openAgentsState)) {
+		return "Selected folder is inside Open Agents's internal data directory. Select a project folder outside ~/.open-agents.";
 	}
 	return undefined;
 }
@@ -91,7 +91,7 @@ export async function ancestorRepositorySetupWarning(repoPath: string, options: 
 	try {
 		const top = normalizeGitReportedPath(repoPath, await gitOutput(repoPath, ["rev-parse", "--show-toplevel"], options));
 		if (top && !samePath(top, repoPath)) {
-			return `Selected folder is inside an existing Git repository at ${top}. AO will initialize this folder as a separate repository.`;
+			return `Selected folder is inside an existing Git repository at ${top}. Open Agents will initialize this folder as a separate repository.`;
 		}
 	} catch {
 		// No ancestor repository.
@@ -122,7 +122,7 @@ async function resolveDefaultBranch(repoPath: string, options: ScanOptions = {})
 
 export async function resolveCheckedOutBranch(repoPath: string, options: ScanOptions = {}): Promise<string | undefined> {
 	try {
-		// Git walks up to an ancestor repository for plain nested folders. AO
+		// Git walks up to an ancestor repository for plain nested folders. Open Agents
 		// initializes those workspace roots separately, so do not inherit its branch.
 		if (await gitOutput(repoPath, ["rev-parse", "--show-prefix"], options)) return undefined;
 		const branch = await gitOutput(repoPath, ["symbolic-ref", "--short", "HEAD"], options);
@@ -212,7 +212,7 @@ async function scanGitRepo(
 }
 
 function scanRepoValidationReason(name: string): string | undefined {
-	if (name === "__root__") return "Repository name is reserved by AO.";
+	if (name === "__root__") return "Repository name is reserved by Open Agents.";
 	return undefined;
 }
 

@@ -88,7 +88,7 @@ export default defineConfig({
 	resolve: {
 		alias: {
 			"@": fileURLToPath(new URL("./src/renderer", import.meta.url)),
-			"@aoagents/product-ui": fileURLToPath(
+			"@openagents/product-ui": fileURLToPath(
 				new URL("../packages/product-ui/src/index.ts", import.meta.url),
 			),
 			// The alias above resolves product-ui to its source, so that package's
@@ -111,11 +111,11 @@ export default defineConfig({
 	server: {
 		proxy: {
 			"/api": {
-				target: process.env.AO_DEV_API_TARGET ?? "http://127.0.0.1:3001",
+				target: process.env.OPEN_AGENTS_DEV_API_TARGET ?? "http://127.0.0.1:3001",
 				changeOrigin: false,
 			},
 			"/mux": {
-				target: process.env.AO_DEV_API_TARGET ?? "http://127.0.0.1:3001",
+				target: process.env.OPEN_AGENTS_DEV_API_TARGET ?? "http://127.0.0.1:3001",
 				changeOrigin: false,
 				ws: true,
 			},

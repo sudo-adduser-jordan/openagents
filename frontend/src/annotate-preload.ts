@@ -838,7 +838,7 @@ function registerFonts(root: ShadowRoot): void {
 function ensureOverlay(): ShadowRoot {
 	if (shadow && host?.isConnected) return shadow;
 	host = document.createElement("div");
-	host.setAttribute("data-ao-annotation-root", "");
+	host.setAttribute("data-open-agents-annotation-root", "");
 	host.style.cssText = "position:fixed;inset:0;z-index:2147483647;pointer-events:none";
 	(document.documentElement ?? document.body).appendChild(host);
 	shadow = host.attachShadow({ mode: "open" });

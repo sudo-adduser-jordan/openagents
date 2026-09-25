@@ -86,7 +86,7 @@ for (const platform of PLATFORMS) {
 		await expect.poll(() => caretIsInTheVisibleTerminal(page)).toBe(true);
 		await page.keyboard.type("bbb");
 
-		const inputs = await page.evaluate(() => window.__aoFakeTerminalMux?.stats().inputs ?? {});
+		const inputs = await page.evaluate(() => window.__openAgentsFakeTerminalMux?.stats().inputs ?? {});
 		expect(inputs[handleB]?.join("")).toBe("bbb");
 	});
 

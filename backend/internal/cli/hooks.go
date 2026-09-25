@@ -16,17 +16,17 @@ import (
 
 	"github.com/spf13/cobra"
 
-	"github.com/aoagents/agent-orchestrator/backend/internal/adapters/agent/activitydispatch"
-	"github.com/aoagents/agent-orchestrator/backend/internal/domain"
+	"github.com/sudo-adduser-jordan/open-agents/backend/internal/adapters/agent/activitydispatch"
+	"github.com/sudo-adduser-jordan/open-agents/backend/internal/domain"
 )
 
-// sessionIDPattern bounds the AO_SESSION_ID we will place in a request path to
+// sessionIDPattern bounds the OPEN_AGENTS_SESSION_ID we will place in a request path to
 // the id alphabet the daemon issues. Validating the externally-set env value
 // before it reaches the loopback URL keeps it from steering the request.
 var sessionIDPattern = regexp.MustCompile(`^[A-Za-z0-9_-]+$`)
 
 const (
-	// hooksLogName is the file under AO_DATA_DIR where hook delivery failures
+	// hooksLogName is the file under OPEN_AGENTS_DATA_DIR where hook delivery failures
 	// are appended. Agent hook runners swallow stderr, so without a durable
 	// sink a dead activity feed (e.g. an unreachable daemon) stays invisible.
 	hooksLogName = "hooks.log"
@@ -38,7 +38,7 @@ const (
 
 // setActivityAPIRequest mirrors the daemon's SetActivityRequest body for
 // POST /api/v1/sessions/{id}/activity. The CLI keeps its own copy so it need
-// not import httpd. Event carries the AO hook sub-command that produced the
+// not import httpd. Event carries the Open Agents hook sub-command that produced the
 // state; ToolName/ToolUseID are the tool-use correlation facts lifted from the
 // native payload when present. All four are optional: an old daemon decodes
 // the body leniently and simply ignores them.
@@ -133,7 +133,7 @@ func hookAgentSessionID(payload []byte) string {
 }
 
 // hookLaunchID extracts the runtime launch id a plugin embeds in its payload.
-// It is a fallback for AO_RUNTIME_LAUNCH_ID when child-process env inheritance
+// It is a fallback for OPEN_AGENTS_RUNTIME_LAUNCH_ID when child-process env inheritance
 // is trimmed by the agent runtime.
 func hookLaunchID(payload []byte) string {
 	var p struct {
@@ -151,13 +151,13 @@ func hookLaunchID(payload []byte) string {
 	return id
 }
 
-// newHooksCommand builds the hidden `ao hooks <agent> <event>` command that
+// newHooksCommand builds the hidden `open-agents hooks <agent> <event>` command that
 // agent CLIs invoke from their workspace-local hook config. It reads the native
-// hook payload from stdin and the AO session id from AO_SESSION_ID, derives an
+// hook payload from stdin and the Open Agents session id from OPEN_AGENTS_SESSION_ID, derives an
 // activity state for the event, and reports it to the daemon.
 //
 // It is best-effort by design: a hook must never break the user's agent, so a
-// non-AO session (no AO_SESSION_ID), an event that carries no activity signal,
+// non-Open Agents session (no OPEN_AGENTS_SESSION_ID), an event that carries no activity signal,
 // or an unreachable daemon all exit 0 rather than erroring.
 func newHooksCommand(ctx *commandContext) *cobra.Command {
 	return &cobra.Command{
@@ -173,16 +173,16 @@ func newHooksCommand(ctx *commandContext) *cobra.Command {
 
 func (c *commandContext) runHook(ctx context.Context, agent, event string) error {
 	observedAt := c.deps.Now()
-	reviewSessionID := strings.TrimSpace(os.Getenv("AO_REVIEW_SESSION_ID"))
+	reviewSessionID := strings.TrimSpace(os.Getenv("OPEN_AGENTS_REVIEW_SESSION_ID"))
 	if reviewSessionID != "" {
 		if !sessionIDPattern.MatchString(reviewSessionID) {
 			return nil
 		}
 		return c.runReviewHook(ctx, agent, event, reviewSessionID)
 	}
-	sessionID := strings.TrimSpace(os.Getenv("AO_SESSION_ID"))
+	sessionID := strings.TrimSpace(os.Getenv("OPEN_AGENTS_SESSION_ID"))
 	if !sessionIDPattern.MatchString(sessionID) {
-		// Not an AO-managed session (unset/empty), or an id we won't put in a
+		// Not an Open Agents-managed session (unset/empty), or an id we won't put in a
 		// request path. Return before reading stdin so a manual invocation
 		// without a piped payload can't block on EOF.
 		return nil
@@ -210,7 +210,7 @@ func (c *commandContext) runHook(ctx context.Context, agent, event string) error
 		return nil
 	}
 
-	launchID := validLaunchID(os.Getenv("AO_RUNTIME_LAUNCH_ID"))
+	launchID := validLaunchID(os.Getenv("OPEN_AGENTS_RUNTIME_LAUNCH_ID"))
 	if launchID == "" {
 		launchID = validLaunchID(hookLaunchID(payload))
 	}
@@ -279,7 +279,7 @@ func (c *commandContext) runReviewHook(ctx context.Context, agent, event, review
 	if !hasActivity && agentSessionID == "" {
 		return nil
 	}
-	launchID := validLaunchID(os.Getenv("AO_RUNTIME_LAUNCH_ID"))
+	launchID := validLaunchID(os.Getenv("OPEN_AGENTS_RUNTIME_LAUNCH_ID"))
 	if launchID == "" {
 		launchID = validLaunchID(hookLaunchID(payload))
 	}
@@ -315,11 +315,11 @@ func validLaunchID(value string) string {
 
 // reportHookFailure surfaces a hook delivery failure without breaking the
 // agent: stderr for the agent's hook runner, plus a best-effort append to
-// $AO_DATA_DIR/hooks.log so the failure can be diagnosed after the fact.
+// $OPEN_AGENTS_DATA_DIR/hooks.log so the failure can be diagnosed after the fact.
 func (c *commandContext) reportHookFailure(agent, event, sessionID string, cause error) {
-	msg := fmt.Sprintf("ao hooks %s %s: %v", agent, event, cause)
+	msg := fmt.Sprintf("open-agents hooks %s %s: %v", agent, event, cause)
 	_, _ = fmt.Fprintln(c.deps.Err, msg)
-	dataDir := strings.TrimSpace(os.Getenv("AO_DATA_DIR"))
+	dataDir := strings.TrimSpace(os.Getenv("OPEN_AGENTS_DATA_DIR"))
 	if dataDir == "" {
 		return
 	}
@@ -339,7 +339,7 @@ func appendHooksLog(dataDir, line string) {
 	if info, err := os.Stat(path); err == nil && info.Size() > maxHooksLogBytes {
 		flags = os.O_TRUNC | os.O_CREATE | os.O_WRONLY
 	}
-	f, err := os.OpenFile(path, flags, 0o600) //nolint:gosec // path is rooted in AO's own data dir
+	f, err := os.OpenFile(path, flags, 0o600) //nolint:gosec // path is rooted in Open Agents's own data dir
 	if err != nil {
 		return
 	}

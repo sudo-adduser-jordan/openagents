@@ -17,7 +17,7 @@ const supervisedExitReportTimeout = 5 * time.Second
 func newAgentProcessCommand(ctx *commandContext) *cobra.Command {
 	root := &cobra.Command{
 		Use:    "agent-process",
-		Short:  "Run an AO-managed agent process (internal)",
+		Short:  "Run an Open Agents-managed agent process (internal)",
 		Hidden: true,
 	}
 	root.AddCommand(newAgentProcessSuperviseCommand(ctx))
@@ -50,8 +50,8 @@ func newAgentProcessSuperviseCommand(ctx *commandContext) *cobra.Command {
 			return nil
 		},
 	}
-	cmd.Flags().StringVar(&sessionID, "session", "", "AO session id")
-	cmd.Flags().StringVar(&launchID, "launch", "", "AO process launch id")
+	cmd.Flags().StringVar(&sessionID, "session", "", "Open Agents session id")
+	cmd.Flags().StringVar(&launchID, "launch", "", "Open Agents process launch id")
 	return cmd
 }
 
@@ -62,7 +62,7 @@ func (c *commandContext) runSupervisedProcess(ctx context.Context, sessionID, la
 	child.Stderr = c.deps.Err
 
 	if err := child.Start(); err != nil {
-		_, _ = fmt.Fprintf(c.deps.Err, "ao: start managed agent: %v\n", err)
+		_, _ = fmt.Fprintf(c.deps.Err, "open-agents: start managed agent: %v\n", err)
 		c.reportSupervisedExit(sessionID, launchID)
 		return
 	}

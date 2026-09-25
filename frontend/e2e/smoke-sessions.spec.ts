@@ -4,7 +4,7 @@ import { installFakeAgent } from "./support/fake-bridge";
 // SES-* RENDERER SMOKE (issue #2483, renderer slice).
 //
 // Scope: this runs under `dev:web` (VITE_NO_ELECTRON=1) with an injected
-// `window.ao` + a fake CDC/SSE stream + an in-page workspace snapshot. It
+// `window.openAgents` + a fake CDC/SSE stream + an in-page workspace snapshot. It
 // exercises the renderer's SSE → invalidate → refetch path only — NOT the real
 // daemon, storage, API, preload, PTY, or filesystem. Those boundaries are
 // exercised only in the packaged-app pod gate (#2697), which today runs a
@@ -29,7 +29,7 @@ test("renderer: new session card appears in the spawning/working state @T0 @SES"
 	await expect(page.locator(card("fake-spawn"))).toHaveCount(0);
 
 	await page.evaluate(() =>
-		window.__aoFakeAgent!.createWorker({ id: "fake-spawn", title: "Spawning worker", activity: "exited" }),
+		window.__openAgentsFakeAgent!.createWorker({ id: "fake-spawn", title: "Spawning worker", activity: "exited" }),
 	);
 
 	await expect(page.locator(columnCard("building", "fake-spawn"))).toBeVisible();

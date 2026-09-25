@@ -5,8 +5,8 @@ import (
 	"fmt"
 	"strings"
 
-	"github.com/aoagents/agent-orchestrator/backend/internal/domain"
-	"github.com/aoagents/agent-orchestrator/backend/internal/httpd/apierr"
+	"github.com/sudo-adduser-jordan/open-agents/backend/internal/domain"
+	"github.com/sudo-adduser-jordan/open-agents/backend/internal/httpd/apierr"
 )
 
 type usageSummaryStore interface {
@@ -93,7 +93,7 @@ func usageTotals(models []domain.UsageModelAggregate) (domain.UsageMetricTotals,
 		UncachedInputTokens: aggregateMetric(models, func(model domain.UsageModelAggregate) *int64 {
 			return model.Tokens.UncachedInputTokens
 		}),
-		OutputTokens:  output,
+		OutputTokens: output,
 	}
 	if input != nil && output != nil {
 		processed := *input + *output
@@ -146,4 +146,3 @@ func harnessUsageSummaries(models []domain.UsageModelAggregate) ([]domain.Harnes
 	}
 	return out, nil
 }
-

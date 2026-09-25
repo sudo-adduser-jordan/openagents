@@ -8,9 +8,9 @@ import (
 	"log/slog"
 	"runtime"
 
-	"github.com/aoagents/agent-orchestrator/backend/internal/adapters/runtime/conpty"
-	"github.com/aoagents/agent-orchestrator/backend/internal/adapters/runtime/tmux"
-	"github.com/aoagents/agent-orchestrator/backend/internal/ports"
+	"github.com/sudo-adduser-jordan/open-agents/backend/internal/adapters/runtime/conpty"
+	"github.com/sudo-adduser-jordan/open-agents/backend/internal/adapters/runtime/tmux"
+	"github.com/sudo-adduser-jordan/open-agents/backend/internal/ports"
 )
 
 // Runtime is the union interface that every selected runtime satisfies.
@@ -34,7 +34,7 @@ var _ Runtime = (*tmux.Runtime)(nil)
 var _ Runtime = (*conpty.Runtime)(nil)
 
 // New returns the platform runtime. runFilePath is this daemon instance's
-// running.json path and scopes detached-host recovery to that AO instance.
+// running.json path and scopes detached-host recovery to that Open Agents instance.
 func New(log *slog.Logger, runFilePath string) Runtime {
 	switch runtime.GOOS {
 	case "windows":

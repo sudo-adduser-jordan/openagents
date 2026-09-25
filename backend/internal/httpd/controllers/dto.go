@@ -6,18 +6,17 @@ import (
 	"sort"
 	"time"
 
-	"github.com/aoagents/agent-orchestrator/backend/internal/devimport"
-	"github.com/aoagents/agent-orchestrator/backend/internal/domain"
-	"github.com/aoagents/agent-orchestrator/backend/internal/legacyimport"
-	"github.com/aoagents/agent-orchestrator/backend/internal/ports"
-	agentsvc "github.com/aoagents/agent-orchestrator/backend/internal/service/agent"
-	"github.com/aoagents/agent-orchestrator/backend/internal/service/agentauth"
-	projectsvc "github.com/aoagents/agent-orchestrator/backend/internal/service/project"
-	sessionsvc "github.com/aoagents/agent-orchestrator/backend/internal/service/session"
-	"github.com/aoagents/agent-orchestrator/backend/internal/service/systemcheck"
-	"github.com/aoagents/agent-orchestrator/backend/internal/service/systeminstall"
+	"github.com/sudo-adduser-jordan/open-agents/backend/internal/devimport"
+	"github.com/sudo-adduser-jordan/open-agents/backend/internal/domain"
+	"github.com/sudo-adduser-jordan/open-agents/backend/internal/ports"
+	agentsvc "github.com/sudo-adduser-jordan/open-agents/backend/internal/service/agent"
+	"github.com/sudo-adduser-jordan/open-agents/backend/internal/service/agentauth"
+	projectsvc "github.com/sudo-adduser-jordan/open-agents/backend/internal/service/project"
+	sessionsvc "github.com/sudo-adduser-jordan/open-agents/backend/internal/service/session"
+	"github.com/sudo-adduser-jordan/open-agents/backend/internal/service/systemcheck"
+	"github.com/sudo-adduser-jordan/open-agents/backend/internal/service/systeminstall"
 
-	"github.com/aoagents/agent-orchestrator/backend/internal/mobilebridge"
+	"github.com/sudo-adduser-jordan/open-agents/backend/internal/mobilebridge"
 )
 
 // HTTP response envelopes for the projects surface — the SINGLE definition of
@@ -240,7 +239,7 @@ type SessionView struct {
 	// session, set via POST /sessions/{sessionId}/preview. Empty (omitted) when
 	// no preview has been requested. Pulled from the json:"-" domain Metadata.
 	PreviewURL string `json:"previewUrl,omitempty"`
-	// PreviewRevision bumps on every `ao preview` call (even when previewUrl is
+	// PreviewRevision bumps on every `open-agents preview` call (even when previewUrl is
 	// unchanged) so the desktop browser panel can re-navigate / refresh on a
 	// repeated preview of the same target. Pulled from the json:"-" domain
 	// Metadata.
@@ -264,7 +263,7 @@ type SpawnSessionRequest struct {
 	// ProjectID is omitted for a standalone worker session.
 	ProjectID domain.ProjectID `json:"projectId,omitempty"`
 	IssueID   domain.IssueID   `json:"issueId,omitempty"`
-	// ParentSessionID is supplied by `ao spawn` inside an AO session. The daemon
+	// ParentSessionID is supplied by `open-agents spawn` inside an Open Agents session. The daemon
 	// validates it before deriving inherited worker settings.
 	ParentSessionID domain.SessionID       `json:"parentSessionId,omitempty"`
 	TrackerProvider domain.TrackerProvider `json:"trackerProvider,omitempty" enum:"github,gitlab"`
@@ -286,7 +285,7 @@ type SpawnSessionRequest struct {
 	Model string `json:"model,omitempty" maxLength:"256"`
 
 	// DisplayName is the sidebar label for the session, capped at 20 characters.
-	// `ao spawn --name` always sets it; other clients (e.g. the desktop new-task
+	// `open-agents spawn --name` always sets it; other clients (e.g. the desktop new-task
 	// dialog) may omit it and fall back to the session id in the read model.
 	DisplayName string `json:"displayName,omitempty" maxLength:"20"`
 	// Attachments are files pasted or dropped into the task brief. Each carries
@@ -553,13 +552,13 @@ type SetSessionPreviewRequest struct {
 	URL string `json:"url,omitempty" description:"Preview target URL. When empty, the daemon autodetects a static entry point in the session workspace."`
 }
 
-// StartPreviewServerRequest selects one named entry from .ao/launch.json. The
+// StartPreviewServerRequest selects one named entry from .open-agents/launch.json. The
 // name may be omitted when the file contains exactly one configuration.
 type StartPreviewServerRequest struct {
 	Configuration string `json:"configuration,omitempty" description:"Named preview configuration. Optional when exactly one configuration exists."`
 }
 
-// PreviewServerStatusResponse reports the deterministic server AO owns for one
+// PreviewServerStatusResponse reports the deterministic server Open Agents owns for one
 // session. Logs are bounded to the latest lines and never contain global
 // process or port discovery.
 type PreviewServerStatusResponse struct {
@@ -576,12 +575,12 @@ type PreviewServerStatusResponse struct {
 
 // BrowserStatusQuery selects the session whose logical browser is inspected.
 type BrowserStatusQuery struct {
-	SessionID domain.SessionID `query:"sessionId" description:"AO session identifier."`
+	SessionID domain.SessionID `query:"sessionId" description:"Open Agents session identifier."`
 }
 
 // BrowserCapabilityHeader proves that the caller owns the target session.
 type BrowserCapabilityHeader struct {
-	Capability string `header:"X-AO-Browser-Capability" description:"Opaque browser capability injected into the owning AO worker."`
+	Capability string `header:"X-OPEN-AGENTS-Browser-Capability" description:"Opaque browser capability injected into the owning Open Agents worker."`
 }
 
 // BrowserStatusResponse reports whether the desktop-owned browser transport is
@@ -1057,7 +1056,7 @@ type ClaimPRResponse struct {
 }
 
 // SetActivityRequest is the body of POST /api/v1/sessions/{sessionId}/activity.
-// Event/ToolName/ToolUseID are optional correlation facts: which AO hook
+// Event/ToolName/ToolUseID are optional correlation facts: which Open Agents hook
 // sub-command produced the state and, for tool-use hooks, which tool call it
 // concerns. Lifecycle uses them to clear a stale blocked state only when the
 // specific approved tool finishes. Absent on old CLIs and on adapters whose
@@ -1067,17 +1066,17 @@ type ClaimPRResponse struct {
 type SetActivityRequest struct {
 	ObservedAt                   time.Time                           `json:"observedAt,omitempty" description:"Time the local hook process observed the event, before delivery to the daemon."`
 	State                        string                              `json:"state,omitempty" enum:"active,idle,waiting_input,blocked,exited" description:"Agent activity state reported by an agent hook. Optional for metadata-only hooks."`
-	Event                        string                              `json:"event,omitempty" description:"AO hook sub-command that produced this state (e.g. post-tool-use)."`
+	Event                        string                              `json:"event,omitempty" description:"Open Agents hook sub-command that produced this state (e.g. post-tool-use)."`
 	ToolName                     string                              `json:"toolName,omitempty" description:"Native tool name, for tool-use hook events."`
 	ToolUseID                    string                              `json:"toolUseId,omitempty" description:"Native tool-use id, for tool-use hook events."`
 	AgentSessionID               string                              `json:"agentSessionId,omitempty" description:"Native agent session identifier used to resume its transcript."`
 	LatestUserPrompt             string                              `json:"latestUserPrompt,omitempty" maxLength:"16384" description:"Latest real user prompt exposed by the provider hook."`
 	LatestAssistantUpdate        string                              `json:"latestAssistantUpdate,omitempty" maxLength:"16384" description:"Latest assistant update exposed by the provider hook."`
-	ConversationCheckpointOrigin domain.ConversationCheckpointOrigin `json:"conversationCheckpointOrigin,omitempty" enum:"human,coordination" description:"Whether the main-turn boundary came from a human or AO coordination."`
+	ConversationCheckpointOrigin domain.ConversationCheckpointOrigin `json:"conversationCheckpointOrigin,omitempty" enum:"human,coordination" description:"Whether the main-turn boundary came from a human or Open Agents coordination."`
 	ProviderTurnID               string                              `json:"providerTurnId,omitempty" description:"Native main-turn identity reported by the hook, when supported."`
-	SubmissionID                 string                              `json:"submissionId,omitempty" maxLength:"36" description:"AO prompt-hook context correlation UUID, when supported."`
+	SubmissionID                 string                              `json:"submissionId,omitempty" maxLength:"36" description:"Open Agents prompt-hook context correlation UUID, when supported."`
 	TranscriptPath               string                              `json:"transcriptPath,omitempty" maxLength:"4096" description:"Read-only provider-native transcript path exposed by the hook."`
-	LaunchID                     string                              `json:"launchId,omitempty" description:"AO process generation that produced the signal."`
+	LaunchID                     string                              `json:"launchId,omitempty" description:"Open Agents process generation that produced the signal."`
 	Usage                        *UsageHookMetadata                  `json:"usage,omitempty" description:"Provider transcript metadata used by the local usage pipeline."`
 }
 
@@ -1106,9 +1105,9 @@ type SetActivityResponse struct {
 // does not mutate the worker session lifecycle row.
 type SetReviewActivityRequest struct {
 	State          string `json:"state,omitempty" enum:"active,idle,waiting_input,blocked,exited" description:"Reviewer activity state reported by a hook. Used for reviewer-pane live status, not worker session state."`
-	Event          string `json:"event,omitempty" description:"AO hook sub-command that produced this signal."`
+	Event          string `json:"event,omitempty" description:"Open Agents hook sub-command that produced this signal."`
 	AgentSessionID string `json:"agentSessionId,omitempty" description:"Native reviewer session identifier used to resume its transcript."`
-	LaunchID       string `json:"launchId,omitempty" description:"AO process generation that produced the signal."`
+	LaunchID       string `json:"launchId,omitempty" description:"Open Agents process generation that produced the signal."`
 }
 
 // SetReviewActivityResponse is the body of POST /api/v1/reviews/{reviewSessionID}/activity.
@@ -1207,10 +1206,10 @@ type ListUsageSessionsQuery struct {
 
 // CompactSessionUsageResponse is one session card's usage summary.
 type CompactSessionUsageResponse struct {
-	SessionID       domain.SessionID       `json:"sessionId"`
-	ProcessedTokens *int64                 `json:"processedTokens" minimum:"0" description:"Canonical input plus output. Null when either component is unknown."`
-	TotalTokens     int64                  `json:"totalTokens" minimum:"0" description:"Deprecated compatibility alias for processedTokens."`
-	Incomplete      bool                   `json:"incomplete"`
+	SessionID       domain.SessionID `json:"sessionId"`
+	ProcessedTokens *int64           `json:"processedTokens" minimum:"0" description:"Canonical input plus output. Null when either component is unknown."`
+	TotalTokens     int64            `json:"totalTokens" minimum:"0" description:"Deprecated compatibility alias for processedTokens."`
+	Incomplete      bool             `json:"incomplete"`
 }
 
 // ListCompactSessionUsageResponse is the batch dashboard usage response.
@@ -1224,12 +1223,12 @@ type ListCompactSessionUsageResponse struct {
 // in each event's bounded provider usage object, where a field the provider
 // adds later survives without a schema change on this boundary.
 type UsageTotalsResponse struct {
-	InputTokens         *int64                 `json:"inputTokens" minimum:"0" description:"Total input, including cached and uncached input."`
-	CachedInputTokens   *int64                 `json:"cachedInputTokens" minimum:"0" description:"Input read from an existing provider cache. Cache hit percentage uses cachedInputTokens divided by inclusive inputTokens."`
-	UncachedInputTokens *int64                 `json:"uncachedInputTokens" minimum:"0" description:"Input not read from an existing provider cache. Includes cache writes."`
-	OutputTokens        *int64                 `json:"outputTokens" minimum:"0" description:"Total output, including provider-specific subsets such as reasoning output."`
-	ProcessedTokens     *int64                 `json:"processedTokens" minimum:"0" description:"Canonical input plus output. Null when either component is unknown."`
-	CacheReadTokens     *int64                 `json:"cacheReadTokens" minimum:"0" description:"Deprecated compatibility alias for cachedInputTokens."`
+	InputTokens         *int64 `json:"inputTokens" minimum:"0" description:"Total input, including cached and uncached input."`
+	CachedInputTokens   *int64 `json:"cachedInputTokens" minimum:"0" description:"Input read from an existing provider cache. Cache hit percentage uses cachedInputTokens divided by inclusive inputTokens."`
+	UncachedInputTokens *int64 `json:"uncachedInputTokens" minimum:"0" description:"Input not read from an existing provider cache. Includes cache writes."`
+	OutputTokens        *int64 `json:"outputTokens" minimum:"0" description:"Total output, including provider-specific subsets such as reasoning output."`
+	ProcessedTokens     *int64 `json:"processedTokens" minimum:"0" description:"Canonical input plus output. Null when either component is unknown."`
+	CacheReadTokens     *int64 `json:"cacheReadTokens" minimum:"0" description:"Deprecated compatibility alias for cachedInputTokens."`
 }
 
 // UsageModelResponse is telemetry grouped by model. The billing provider is
@@ -1240,7 +1239,7 @@ type UsageModelResponse struct {
 	Totals  UsageTotalsResponse `json:"totals"`
 }
 
-// UsageHarnessResponse groups model telemetry under one AO harness.
+// UsageHarnessResponse groups model telemetry under one Open Agents harness.
 type UsageHarnessResponse struct {
 	Harness string               `json:"harness"`
 	Totals  UsageTotalsResponse  `json:"totals"`
@@ -1323,7 +1322,7 @@ type NotificationResponse struct {
 	Body      string    `json:"body"`
 	Status    string    `json:"status" enum:"unread,read" description:"Seen state. unread means the user has not opened the notification panel since it arrived."`
 	CreatedAt time.Time `json:"createdAt"`
-	// ResolvedAt is set by AO when the underlying issue goes away (the session
+	// ResolvedAt is set by Open Agents when the underlying issue goes away (the session
 	// received its input, the PR stopped waiting on a merge). Absent means the
 	// issue is still open. There is no user-facing action that sets it.
 	ResolvedAt *time.Time         `json:"resolvedAt,omitempty"`
@@ -1399,19 +1398,6 @@ type MarkAllNotificationsReadRequest struct {
 type MarkAllNotificationsReadResponse struct {
 	Notifications []NotificationResponse `json:"notifications" description:"Deprecated compatibility field. Always empty so mark-all responses stay bounded."`
 	UpdatedCount  int64                  `json:"updatedCount" description:"Number of notifications changed from unread to read."`
-}
-
-// ImportStatusResponse is the body of GET /api/v1/import: whether a legacy AO
-// install is available to import, and the root the daemon would read from.
-type ImportStatusResponse struct {
-	Available  bool   `json:"available"`
-	LegacyRoot string `json:"legacyRoot"`
-}
-
-// ImportRunResponse is the body of POST /api/v1/import: the structured outcome
-// of the import run (counts + notes), reused verbatim from the import engine.
-type ImportRunResponse struct {
-	Report legacyimport.Report `json:"report"`
 }
 
 // DevImportProjectsRequest is the body of POST /api/v1/dev/import-projects.
@@ -1631,8 +1617,8 @@ type SteerConversationRequest struct {
 	Text string `json:"text"`
 	// Attachments are native image prompt blocks delivered with the correction.
 	Attachments []ConversationImageContentRequest `json:"attachments,omitempty"`
-	// ClientMessageID makes a retry idempotent at AO's durable daemon boundary. The
-	// provider does not promise to honor this handle, so AO reserves it before I/O
+	// ClientMessageID makes a retry idempotent at Open Agents's durable daemon boundary. The
+	// provider does not promise to honor this handle, so Open Agents reserves it before I/O
 	// and replays only a known result on every later request.
 	ClientMessageID string `json:"clientMessageId,omitempty"`
 	// RecoverOnly reads the saved result for ClientMessageID without contacting the
@@ -1794,7 +1780,7 @@ type ConversationTurnSettingsPayload struct {
 }
 
 // ResolveConversationApprovalRequest answers a pending approval. DecisionID must
-// be one the provider offered for that request; AO does not invent options.
+// be one the provider offered for that request; Open Agents does not invent options.
 type ResolveConversationApprovalRequest struct {
 	DecisionID string `json:"decisionId"`
 }
@@ -1816,7 +1802,7 @@ type ResolveConversationInputRequest struct {
 type CompactConversationResponse struct {
 	// TokensBefore is the conversation's context position when compaction was
 	// requested. Zero means the provider has not reported one yet, in which case
-	// AO deliberately claims no figure rather than guessing at one.
+	// Open Agents deliberately claims no figure rather than guessing at one.
 	TokensBefore int64 `json:"tokensBefore,omitempty"`
 	// TokensAfter is only set by a provider that compacts synchronously. Zero means
 	// the reclaim is still in flight.
@@ -1887,7 +1873,7 @@ type ConversationTurnDiffResponse struct {
 //
 // No patch text. The turn view answers "what did this touch, and by how much";
 // carrying every hunk would put the full diff into a body polled once a second,
-// and AO already has a diff surface for reading the change itself.
+// and Open Agents already has a diff surface for reading the change itself.
 type ConversationDiffFileResponse struct {
 	Path      string `json:"path"`
 	Additions int    `json:"additions"`
@@ -1986,7 +1972,7 @@ type ConversationSnapshotResponse struct {
 	Activities                       []ConversationActivityResponse    `json:"activities"`
 	BranchPoints                     []ConversationBranchPointResponse `json:"branchPoints,omitempty"`
 	// BranchMaterialization says whether the selected provider branch preserved
-	// native history or was rebuilt from AO's bounded text transcript. Omitted for
+	// native history or was rebuilt from Open Agents's bounded text transcript. Omitted for
 	// conversations that have no durable branch metadata yet.
 	BranchMaterialization *ConversationBranchMaterializationResponse `json:"branchMaterialization,omitempty"`
 	// Settings are the provider choices for the next turn. Carried on the snapshot
@@ -2057,7 +2043,7 @@ type ConversationModelReroutePayload struct {
 	FromModel string `json:"fromModel,omitempty"`
 	ToModel   string `json:"toModel"`
 	// Reason is the provider's own word for why, carried verbatim rather than
-	// translated: AO cannot improve on the provider's account of its own policy.
+	// translated: Open Agents cannot improve on the provider's account of its own policy.
 	Reason string `json:"reason,omitempty"`
 	// ProviderTurnID is the turn it happened on, so a client can point at the
 	// exchange rather than only at the conversation.
@@ -2162,7 +2148,7 @@ type ConversationConfigIDParam struct {
 
 // ConversationTurnIDParam names one turn in a session's conversation.
 type ConversationTurnIDParam struct {
-	TurnID string `path:"turnId" description:"AO conversation turn identifier, from the snapshot's turns array."`
+	TurnID string `path:"turnId" description:"Open Agents conversation turn identifier, from the snapshot's turns array."`
 }
 
 // ConversationBranchIDParam names one durable provider-thread branch.
@@ -2186,8 +2172,8 @@ type SetConversationTitleRequest struct {
 // SetConversationTitleResponse echoes the normalized title.
 //
 // Accepted rather than applied: the provider confirms the name and then reports it
-// back on its own event, and that report is what updates AO's rows. So this is the
-// title AO asked for, which is not yet proof the session label has moved.
+// back on its own event, and that report is what updates Open Agents's rows. So this is the
+// title Open Agents asked for, which is not yet proof the session label has moved.
 type SetConversationTitleResponse struct {
 	Title string `json:"title"`
 }
@@ -2251,7 +2237,7 @@ type ResolveReviewCommentRequest struct {
 	CommentURL     string `json:"commentUrl" description:"Provider URL of the unresolved review comment to resolve."`
 }
 
-// ResolveReviewCommentResponse is returned after AO resolves a provider review thread.
+// ResolveReviewCommentResponse is returned after Open Agents resolves a provider review thread.
 type ResolveReviewCommentResponse struct {
 	OK bool `json:"ok"`
 }
@@ -2262,7 +2248,7 @@ type RequestRereviewRequest struct {
 	ReviewerID     string `json:"reviewerId" description:"Provider login of the reviewer to ask for another review."`
 }
 
-// RequestRereviewResponse is returned after AO asks the SCM provider for another review.
+// RequestRereviewResponse is returned after Open Agents asks the SCM provider for another review.
 type RequestRereviewResponse struct {
 	OK bool `json:"ok"`
 }

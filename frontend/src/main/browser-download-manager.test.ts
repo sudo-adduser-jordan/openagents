@@ -12,7 +12,7 @@ afterEach(() => {
 });
 
 function setup() {
-	const root = mkdtempSync(path.join(os.tmpdir(), "ao-browser-downloads-"));
+	const root = mkdtempSync(path.join(os.tmpdir(), "open-agents-browser-downloads-"));
 	temporaryDirectories.push(root);
 	const downloadsDirectory = path.join(root, "Downloads");
 	const historyPath = path.join(root, "data", "browser-downloads.json");
@@ -67,7 +67,7 @@ class FakeDownloadItem extends EventEmitter {
 
 describe("browser download manager", () => {
 	it("contains destination setup failures and reports them without exposing the path", () => {
-		const root = mkdtempSync(path.join(os.tmpdir(), "ao-browser-download-failure-"));
+		const root = mkdtempSync(path.join(os.tmpdir(), "open-agents-browser-download-failure-"));
 		temporaryDirectories.push(root);
 		const blockingFile = path.join(root, "not-a-directory");
 		writeFileSync(blockingFile, "blocker");

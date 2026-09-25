@@ -1,10 +1,10 @@
-import type { AoBridge } from "../../preload";
+import type { OpenAgentsBridge } from "../../preload";
 import { coerceUiSettings, DEFAULT_UI_SETTINGS } from "../../shared/ui-locale";
 export type { FeatureBuild } from "../../main/feature-builds";
 
 
-export const aoBridge: AoBridge =
-	window.ao ??
+export const openAgentsBridge: OpenAgentsBridge =
+	window.openAgents ??
 	({
 		app: {
 			getVersion: async () => "0.0.0-preview",
@@ -212,10 +212,6 @@ export const aoBridge: AoBridge =
 			setAttentionState: () => undefined,
 			onOpenSession: () => () => undefined,
 		},
-		appState: {
-			getMigration: async () => ({ status: "pending" }),
-			setMigration: async () => undefined,
-		},
 		updateSettings: {
 			get: async () => ({ enabled: false, channel: "latest", nightlyAck: false, feature: null, macDifferentialUpdates: false }),
 			set: async () => undefined,
@@ -244,4 +240,4 @@ export const aoBridge: AoBridge =
 			list: async () => [],
 			getActive: async () => null,
 		},
-	} satisfies AoBridge);
+	} satisfies OpenAgentsBridge);

@@ -2,7 +2,7 @@
 
 > **For agentic workers:** REQUIRED SUB-SKILL: Use superpowers:subagent-driven-development (recommended) or superpowers:executing-plans to implement this plan task-by-task. Steps use checkbox (`- [ ]`) syntax for tracking.
 
-**Goal:** Let a physical phone use Agent Orchestrator over the local network through a second, on-demand, password-authenticated HTTP listener inside the daemon, without changing the existing loopback behaviour.
+**Goal:** Let a physical phone use Open Agents over the local network through a second, on-demand, password-authenticated HTTP listener inside the daemon, without changing the existing loopback behaviour.
 
 **Architecture:** The daemon keeps its `127.0.0.1` **Loopback Listener** exactly as today (desktop/CLI, unauthenticated). A new **LAN Listener** binds `0.0.0.0` only while "Connect Mobile" is enabled; it wraps the _same_ chi router in one extra `authMiddleware`. Auth is decided by _which socket the request arrived on_, not by inspecting the request. Transport is plaintext HTTP (home-network-only). The phone pairs by scanning a QR that carries only `host`+`port`, then types the rotating 8-char password (shown on the desktop) into a popup; the password rides as `Authorization: Bearer <pw>` on REST and the RN WebSocket.
 
@@ -10,11 +10,11 @@
 
 ## Global Constraints
 
-- All state resolves under `~/.ao` (overridable via `AO_DATA_DIR`). Mobile state lives in `~/.ao/mobile/config.json`. Never touch `~/Library/Application Support`.
+- All state resolves under `~/.open-agents` (overridable via `OPEN_AGENTS_DATA_DIR`). Mobile state lives in `~/.open-agents/mobile/config.json`. Never touch `~/Library/Application Support`.
 - The **Loopback Listener must remain byte-for-byte unchanged** — no auth, same bind, same routes. Zero desktop/CLI regression.
 - Daemon API is code-first: edit `backend/internal/httpd/controllers/dto.go` + `backend/internal/httpd/apispec/specgen/build.go`, then run `npm run api` to regenerate the OpenAPI spec + frontend TS types. Never hand-edit generated artifacts.
 - CLI stays a thin HTTP client; do not open storage/runtime directly.
-- Renderer clones agent-orchestrator's look; build UI from `frontend/src/renderer/components/ui/*` primitives (per DESIGN.md).
+- Renderer clones open-agents's look; build UI from `frontend/src/renderer/components/ui/*` primitives (per DESIGN.md).
 - Password format: **8 chars, alphanumeric `[A-Za-z0-9]`**, generated with `crypto/rand`. Stored **hashed only** (SHA-256 hex is sufficient here — it is a rotating LAN enabler, not a human password; constant-time compare on the hash). Never persist the plaintext to disk.
 - Auth scheme everywhere: `Authorization: Bearer <password>`.
 - Default LAN port **3011**; ephemeral fallback if taken; the QR/status must always report the _actually-bound_ port.
@@ -27,7 +27,7 @@
 
 **Backend (Go)**
 
-- `backend/internal/mobilebridge/config.go` — the `~/.ao/mobile/config.json` store (load/save/atomic), password gen + hash, state struct. _New package, no httpd deps._
+- `backend/internal/mobilebridge/config.go` — the `~/.open-agents/mobile/config.json` store (load/save/atomic), password gen + hash, state struct. _New package, no httpd deps._
 - `backend/internal/mobilebridge/config_test.go`
 - `backend/internal/mobilebridge/netiface.go` — autopick LAN IP + enumerate candidates.
 - `backend/internal/mobilebridge/netiface_test.go`
@@ -158,7 +158,7 @@ Expected: FAIL — package/functions do not exist.
 
 ```go
 // Package mobilebridge owns the durable state and helpers for the Connect
-// Mobile LAN listener: the ~/.ao/mobile/config.json store and the rotating
+// Mobile LAN listener: the ~/.open-agents/mobile/config.json store and the rotating
 // connection password. It has no httpd/daemon dependencies.
 package mobilebridge
 
@@ -425,7 +425,7 @@ import (
 	"testing"
 	"time"
 
-	"github.com/aoagents/agent-orchestrator/backend/internal/mobilebridge"
+	"github.com/sudo-adduser-jordan/open-agents/backend/internal/mobilebridge"
 )
 
 func newAuthUnderTest(pw string, now func() time.Time) (http.Handler, *lockout) {
@@ -498,8 +498,8 @@ import (
 	"sync/atomic"
 	"time"
 
-	"github.com/aoagents/agent-orchestrator/backend/internal/httpd/envelope"
-	"github.com/aoagents/agent-orchestrator/backend/internal/mobilebridge"
+	"github.com/sudo-adduser-jordan/open-agents/backend/internal/httpd/envelope"
+	"github.com/sudo-adduser-jordan/open-agents/backend/internal/mobilebridge"
 )
 
 // authState holds the current password hash for the LAN listener. Swapped
@@ -636,7 +636,7 @@ import (
 	"testing"
 	"time"
 
-	"github.com/aoagents/agent-orchestrator/backend/internal/mobilebridge"
+	"github.com/sudo-adduser-jordan/open-agents/backend/internal/mobilebridge"
 )
 
 func TestLANManagerAuthGatesSharedHandler(t *testing.T) {
@@ -885,8 +885,8 @@ import (
 	"net/http"
 	"time"
 
-	"github.com/aoagents/agent-orchestrator/backend/internal/httpd/envelope"
-	"github.com/aoagents/agent-orchestrator/backend/internal/mobilebridge"
+	"github.com/sudo-adduser-jordan/open-agents/backend/internal/httpd/envelope"
+	"github.com/sudo-adduser-jordan/open-agents/backend/internal/mobilebridge"
 )
 
 const mobileUnencryptedWarning = "Traffic on this connection is not encrypted. Only use it on a network you trust."
@@ -1131,7 +1131,7 @@ cd backend && go build ./... && go test ./... && go test -race ./internal/httpd/
 Then a manual smoke:
 
 ```bash
-go run ./cmd/ao start &   # daemon up
+go run ./cmd/open-agents daemon &   # daemon up
 curl -s -XPOST localhost:3001/api/v1/mobile/enable | tee /tmp/enable.json   # returns password + port
 # NOTE: envelope.WriteJSON encodes the DTO directly (no "data" wrapper).
 PW=$(python3 -c "import json;print(json.load(open('/tmp/enable.json'))['password'])")
@@ -1225,7 +1225,7 @@ cd frontend && npx vitest run src/renderer/components/ConnectMobileModal.test.ts
 Then, per CLAUDE.md, demo it in-session:
 
 ```bash
-ao preview   # render the settings screen with Connect Mobile in the desktop browser panel
+open-agents preview   # render the settings screen with Connect Mobile in the desktop browser panel
 ```
 
 Expected: test PASS, typecheck PASS, modal renders with QR + password + warning when enabled.
@@ -1343,7 +1343,7 @@ git commit -m "feat(mobile): QR scan pairing + password popup"
 
 - Modify: `AGENTS.md`
 - Modify: `docs/architecture.md`
-- Modify: `packages/mobile/scripts/README.md` (mark `ao-phone-proxy.js` superseded by the built-in LAN listener)
+- Modify: `packages/mobile/scripts/README.md` (mark `open-agents-phone-proxy.js` superseded by the built-in LAN listener)
 
 - [ ] **Step 1:** In `AGENTS.md`, change the hard rule from _"The daemon is a loopback-only sidecar. Do not make the bind host configurable or expose it beyond `127.0.0.1`."_ to scope it to the **Loopback Listener**, and add the LAN Listener's rules:
 
@@ -1351,7 +1351,7 @@ git commit -m "feat(mobile): QR scan pairing + password popup"
   > - A **second, opt-in LAN listener** (Connect Mobile) may bind `0.0.0.0` **only** while enabled, **only** behind the bearer-password `authMiddleware`, serving the app API but never the loopback-gated control routes. Plaintext, home-network-only, by decision in `docs/adr/0001-lan-listener-for-mobile.md`.
 
 - [ ] **Step 2:** Add a short two-listener paragraph to `docs/architecture.md` pointing at ADR 0001 and `CONTEXT.md`.
-- [ ] **Step 3:** Note in the mobile scripts README that `ao-phone-proxy.js` is superseded by the in-app LAN listener (keep the file for now; do not delete without user sign-off).
+- [ ] **Step 3:** Note in the mobile scripts README that `open-agents-phone-proxy.js` is superseded by the in-app LAN listener (keep the file for now; do not delete without user sign-off).
 - [ ] **Step 4:** `npm run lint` (docs don't break Go, but run the repo lint gate for safety) → PASS.
 - [ ] **Step 5: Commit**
 

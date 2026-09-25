@@ -1,4 +1,4 @@
-import { COMPANY } from "@ao/shared/constants";
+import { COMPANY } from "@openagents/shared/constants";
 import { ArrowUpRight, GitBranch, Sparkles, Users } from "lucide-react";
 import type { Metadata } from "next";
 
@@ -27,13 +27,13 @@ const highlights = [
 
 export const metadata: Metadata = {
   title: "Syndicate Hackathon",
-  description: "Register for the AO Syndicate hackathon.",
+  description: "Register for the Open Agents Syndicate hackathon.",
   openGraph: {
     type: "website",
     url: pageUrl,
     siteName: COMPANY.NAME,
     title: `Syndicate Hackathon | ${COMPANY.NAME}`,
-    description: "Register for the AO Syndicate hackathon.",
+    description: "Register for the Open Agents Syndicate hackathon.",
     images: [
       {
         url: `${COMPANY.MARKETING_URL}/og-image.png`,
@@ -45,9 +45,8 @@ export const metadata: Metadata = {
   },
   twitter: {
     card: "summary_large_image",
-    site: "@ao_build",
     title: `Syndicate Hackathon | ${COMPANY.NAME}`,
-    description: "Register for the AO Syndicate hackathon.",
+    description: "Register for the Open Agents Syndicate hackathon.",
     images: [`${COMPANY.MARKETING_URL}/og-image.png`],
   },
   alternates: {
@@ -112,7 +111,7 @@ export default function SyndicateHackathonPage() {
                 </div>
                 <iframe
                   src={eventUrl}
-                  title="AO Syndicate hackathon registration"
+                  title="Open Agents Syndicate hackathon registration"
                   width="600"
                   height="450"
                   className="block h-[520px] w-full bg-background sm:h-[560px] lg:h-[600px]"

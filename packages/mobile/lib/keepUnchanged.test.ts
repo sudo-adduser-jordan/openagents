@@ -7,11 +7,11 @@ import { keepUnchanged, sameJson } from "./keepUnchanged";
 // A session shaped like the poll actually returns one: nested PR, optional
 // fields present and absent, so the walk is exercised on the real payload.
 const session = (over: Partial<DashboardSession> = {}): DashboardSession => ({
-	id: "ao-1",
-	projectId: "ao",
+	id: "open-agents-1",
+	projectId: "open-agents",
 	status: "running",
 	mode: "chat",
-	branch: "ao/ao-1/root",
+	branch: "open-agents/open-agents-1/root",
 	issueId: null,
 	issueTitle: null,
 	userPrompt: "check the readme",
@@ -26,7 +26,7 @@ const session = (over: Partial<DashboardSession> = {}): DashboardSession => ({
 
 describe("sameJson", () => {
 	it("treats a re-mapped but identical fleet as unchanged", () => {
-		expect(sameJson([session(), session({ id: "ao-2" })], [session(), session({ id: "ao-2" })])).toBe(true);
+		expect(sameJson([session(), session({ id: "open-agents-2" })], [session(), session({ id: "open-agents-2" })])).toBe(true);
 	});
 
 	it.each([
@@ -51,13 +51,13 @@ describe("sameJson", () => {
 	});
 
 	it("sees a session appear and disappear", () => {
-		expect(sameJson([session()], [session(), session({ id: "ao-2" })])).toBe(false);
-		expect(sameJson([session(), session({ id: "ao-2" })], [session()])).toBe(false);
+		expect(sameJson([session()], [session(), session({ id: "open-agents-2" })])).toBe(false);
+		expect(sameJson([session(), session({ id: "open-agents-2" })], [session()])).toBe(false);
 	});
 
 	// The daemon orders the board; a reorder is a real change to render.
 	it("sees a reorder", () => {
-		expect(sameJson([session(), session({ id: "ao-2" })], [session({ id: "ao-2" }), session()])).toBe(false);
+		expect(sameJson([session(), session({ id: "open-agents-2" })], [session({ id: "open-agents-2" }), session()])).toBe(false);
 	});
 
 	// A hand-written field list would go blind to a field added later. This is

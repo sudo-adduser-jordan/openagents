@@ -1,4 +1,4 @@
-// Package persistenthost keeps a provider stdio process alive while AO's daemon
+// Package persistenthost keeps a provider stdio process alive while Open Agents's daemon
 // is replaced. Raw protocols are forwarded unchanged. ACP uses a small relay
 // that preserves connection-scoped initialization, session, request-correlation,
 // and in-flight prompt state across daemon attachments.
@@ -23,7 +23,7 @@ import (
 	"sync"
 	"time"
 
-	"github.com/aoagents/agent-orchestrator/backend/internal/processalive"
+	"github.com/sudo-adduser-jordan/open-agents/backend/internal/processalive"
 )
 
 const (
@@ -44,21 +44,21 @@ const (
 	// ProtocolACP enables the host-owned ACP correlation and replay profile.
 	ProtocolACP Protocol = "acp"
 
-	// ACPPromptResultMethod is an AO-private notification emitted when an ACP
+	// ACPPromptResultMethod is an Open Agents-private notification emitted when an ACP
 	// prompt finishes after the daemon attachment that issued it has gone away.
-	ACPPromptResultMethod = "_ao/persistent_prompt_result"
-	// ACPPromptAckMethod acknowledges that AO durably committed a replayed prompt
+	ACPPromptResultMethod = "_open-agents/persistent_prompt_result"
+	// ACPPromptAckMethod acknowledges that Open Agents durably committed a replayed prompt
 	// result, allowing the host to discard its prompt journal.
-	ACPPromptAckMethod = "_ao/persistent_prompt_ack"
+	ACPPromptAckMethod = "_open-agents/persistent_prompt_ack"
 	// ACPInteractionCommandMethod records a user interaction decision in the host
 	// before the daemon releases the blocked ACP responder.
-	ACPInteractionCommandMethod = "_ao/persistent_interaction_command"
+	ACPInteractionCommandMethod = "_open-agents/persistent_interaction_command"
 	// ACPRequestIDMetaKey carries one host-stable identity on replayable
 	// provider-to-client requests such as permissions and elicitations.
-	ACPRequestIDMetaKey = "ao.persistentRequestId"
+	ACPRequestIDMetaKey = "open-agents.persistentRequestId"
 	// ACPInitialPermissionsMetaKey records the process-launch approval policy,
 	// which can differ from mutable session settings after reconnect.
-	ACPInitialPermissionsMetaKey = "ao.initialPermissions"
+	ACPInitialPermissionsMetaKey = "open-agents.initialPermissions"
 )
 
 var (
@@ -88,7 +88,7 @@ type Descriptor struct {
 	StartedAt            time.Time `json:"startedAt"`
 }
 
-// Config identifies one provider process and its AO session ownership.
+// Config identifies one provider process and its Open Agents session ownership.
 type Config struct {
 	SessionID            string
 	DataDir              string
@@ -179,9 +179,9 @@ func acquireHostLock(dataDir, sessionID string) (func(), error) {
 		return nil, err
 	}
 	path, _ := lockPath(dataDir, sessionID)
-	f, err := os.OpenFile(path, os.O_WRONLY|os.O_CREATE|os.O_EXCL, 0o600) //nolint:gosec // AO-owned capability directory.
+	f, err := os.OpenFile(path, os.O_WRONLY|os.O_CREATE|os.O_EXCL, 0o600) //nolint:gosec // Open Agents-owned capability directory.
 	if errors.Is(err, os.ErrExist) {
-		owner, readErr := os.ReadFile(path) //nolint:gosec // AO-owned path derived from validated session id.
+		owner, readErr := os.ReadFile(path) //nolint:gosec // Open Agents-owned path derived from validated session id.
 		pid, parseErr := strconv.Atoi(strings.TrimSpace(string(owner)))
 		if readErr != nil || parseErr != nil || pid <= 0 || processalive.Alive(pid) {
 			return nil, ErrHostExists
@@ -192,7 +192,7 @@ func acquireHostLock(dataDir, sessionID string) (func(), error) {
 		if removeErr := os.Remove(path); removeErr != nil && !errors.Is(removeErr, os.ErrNotExist) {
 			return nil, ErrHostExists
 		}
-		f, err = os.OpenFile(path, os.O_WRONLY|os.O_CREATE|os.O_EXCL, 0o600) //nolint:gosec // AO-owned capability directory.
+		f, err = os.OpenFile(path, os.O_WRONLY|os.O_CREATE|os.O_EXCL, 0o600) //nolint:gosec // Open Agents-owned capability directory.
 		if errors.Is(err, os.ErrExist) {
 			return nil, ErrHostExists
 		}
@@ -217,7 +217,7 @@ func readDescriptor(dataDir, sessionID string) (Descriptor, error) {
 	if err != nil {
 		return Descriptor{}, err
 	}
-	b, err := os.ReadFile(path) //nolint:gosec // AO-owned path derived from validated session id.
+	b, err := os.ReadFile(path) //nolint:gosec // Open Agents-owned path derived from validated session id.
 	if err != nil {
 		return Descriptor{}, err
 	}
@@ -282,7 +282,7 @@ func validateDescriptor(cfg Config, d Descriptor) error {
 }
 
 // ConnectOrStart attaches to an existing compatible host or starts one with the
-// current AO executable. Failed/incompatible probes never terminate that host.
+// current Open Agents executable. Failed/incompatible probes never terminate that host.
 func ConnectOrStart(ctx context.Context, cfg Config) (*Transport, error) {
 	if d, err := readDescriptor(cfg.DataDir, cfg.SessionID); err == nil {
 		if err := validateDescriptor(cfg, d); err != nil && processalive.Alive(d.PID) {
@@ -566,7 +566,7 @@ func Run(ctx context.Context, cfg Config) error {
 	}
 	defer func() { _ = listener.Close() }()
 
-	child := exec.Command(cfg.Argv[0], cfg.Argv[1:]...) //nolint:gosec // provider argv is constructed by AO's driver.
+	child := exec.Command(cfg.Argv[0], cfg.Argv[1:]...) //nolint:gosec // provider argv is constructed by Open Agents's driver.
 	child.Dir = cfg.Workdir
 	child.Env = cfg.Env
 	configureProviderProcess(child)

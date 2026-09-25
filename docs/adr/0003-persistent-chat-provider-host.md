@@ -15,15 +15,15 @@ this failure because tmux/conpty already owns their harness outside the daemon.
 
 ## Decision
 
-AO will move native Chat provider process ownership into a detached, per-session
+Open Agents will move native Chat provider process ownership into a detached, per-session
 host. The daemon is an authenticated, exclusive client of that host, not its
 parent lifetime owner.
 
 Codex app-server uses the original raw protocol profile:
 
-- `ao chat-host` launches the provider in the session worktree and listens only
+- `open-agents chat-host` launches the provider in the session worktree and listens only
   on an ephemeral loopback TCP port. A 256-bit capability and protocol version
-  live in a mode-0600 descriptor below `~/.ao/data/chat-hosts/<session>/`.
+  live in a mode-0600 descriptor below `~/.open-agents/data/chat-hosts/<session>/`.
 - Exactly one controller may attach. The host retains provider stdin/stdout when
   that client disconnects, so an active turn continues. A replacement daemon
   authenticates, takes the exclusive attachment, and does not repeat
@@ -53,7 +53,7 @@ Codex app-server uses the original raw protocol profile:
   store, incompatible descriptor, live PID with an unreachable endpoint, or
   failed auth is preserved rather than treated as death.
 - Branch activation first fences an idle source controller, then explicitly
-  terminates its host before opening the replacement. If replacement fails, AO
+  terminates its host before opening the replacement. If replacement fails, Open Agents
   restores the source branch through native resume. This keeps one provider
   writer at a time and never treats an attached host as permission to launch a
   competing direct process.
@@ -73,7 +73,7 @@ connection-scoped ACP state that a replacement SDK client cannot infer:
 - `session/prompt` remains owned by the host after the issuing daemon detaches.
   Prompt updates receive stable event identities and are appended before delivery
   to a mode-0600, 256 MiB per-prompt journal under the session host directory.
-  Replay is released only after the replacement service restores the durable AO
+  Replay is released only after the replacement service restores the durable Open Agents
   provider-turn ID. Persistent ACP delivery is lossless at the driver event
   boundary; journal/quota errors fail explicitly instead of dropping deltas.
 - The prompt result is retained until the controller acknowledges its event ID
@@ -88,7 +88,7 @@ connection-scoped ACP state that a replacement SDK client cannot infer:
   a replacement host resuming the same native provider session.
 - Concurrent provider-to-client requests such as permissions and elicitation are
   retained by the host and receive host-stable interaction IDs. Replaying a
-  request therefore restores the same durable AO approval/input and its response
+  request therefore restores the same durable Open Agents approval/input and its response
   is forwarded once using the provider's original JSON-RPC ID.
 - Before releasing a blocked provider request, the daemon records the user's
   approval or input as an idempotent host command. The host assigns the durable
@@ -142,7 +142,7 @@ host and is not a second provider-history database.
 
 ## Consequences
 
-- Closing/updating AO no longer terminates Codex or an ACP Chat harness or
+- Closing/updating Open Agents no longer terminates Codex or an ACP Chat harness or
   interrupts its active generation. Reopen latency loses provider launch,
   initialization, and native resume; it retains daemon reconciliation and
   native-history repair.

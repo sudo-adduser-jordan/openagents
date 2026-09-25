@@ -1159,9 +1159,9 @@ function editNonAcceptance(error: unknown): ChatEditOutcome | undefined {
 /**
  * The models the provider offers for this session.
  *
- * Fetched from the live conversation rather than a table in AO, and only while a
+ * Fetched from the live conversation rather than a table in Open Agents, and only while a
  * session is open: the catalog depends on the account's entitlements, which the
- * provider knows and AO does not.
+ * provider knows and Open Agents does not.
  */
 export function useConversationModels(sessionId: string | undefined, enabled: boolean) {
 	const query = useQuery({
@@ -1192,7 +1192,7 @@ export function useConversationModels(sessionId: string | undefined, enabled: bo
 /**
  * Provider-owned controls advertised for this live session.
  *
- * Unlike AO's durable turn settings, these are an ACP catalog whose values and
+ * Unlike Open Agents's durable turn settings, these are an ACP catalog whose values and
  * available choices may change after any selection (choosing a model can replace
  * the effort choices, for example). The daemon therefore returns the complete
  * catalog after every mutation and that response replaces the cache atomically.
@@ -1282,7 +1282,7 @@ export function useConversationConfigOptions(sessionId: string | undefined, enab
  * The named skills this session's provider will accept.
  *
  * Read from the live conversation for the same reason the model catalog is: skills
- * come from the user's own agent config and from the repo's own files, so a list AO
+ * come from the user's own agent config and from the repo's own files, so a list Open Agents
  * held would offer commands that no longer exist and hide ones just written.
  *
  * An empty list is a real answer and the composer depends on being able to tell it

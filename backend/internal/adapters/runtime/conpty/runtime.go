@@ -11,12 +11,12 @@ import (
 	"sync"
 	"time"
 
-	"github.com/aoagents/agent-orchestrator/backend/internal/adapters/runtime/conpty/ptyregistry"
-	"github.com/aoagents/agent-orchestrator/backend/internal/ports"
+	"github.com/sudo-adduser-jordan/open-agents/backend/internal/adapters/runtime/conpty/ptyregistry"
+	"github.com/sudo-adduser-jordan/open-agents/backend/internal/ports"
 )
 
 const (
-	runtimeLaunchIDEnv    = "AO_RUNTIME_LAUNCH_ID"
+	runtimeLaunchIDEnv    = "OPEN_AGENTS_RUNTIME_LAUNCH_ID"
 	unresolvedHostAddress = ptyregistry.UnresolvedPipePath
 )
 
@@ -46,7 +46,7 @@ func conptyPartialCreateFailure(err error, handle ports.RuntimeHandle, cleanup p
 	return runtimeEffectFailure{err: err, handle: handle, effect: ports.RuntimeEffectPossible, cleanup: cleanup}
 }
 
-// validSessionID matches agent-orchestrator's assertValidSessionId.
+// validSessionID matches open-agents's assertValidSessionId.
 var validSessionID = regexp.MustCompile(`^[a-zA-Z0-9_-]+$`)
 
 // hostSession is the in-memory state for a live pty-host connection.
@@ -68,9 +68,9 @@ type Options struct {
 
 	// RunFilePath is this daemon instance's running.json path (config.Config.
 	// RunFilePath). It scopes the B2 pty-host registry to the same directory,
-	// so two AO instances on one machine with different AO_RUN_FILE/
-	// AO_DATA_DIR overrides never share one registry -- see
-	// ptyregistry.SetRunFilePath. Empty uses the ~/.ao default.
+	// so two Open Agents instances on one machine with different OPEN_AGENTS_RUN_FILE/
+	// OPEN_AGENTS_DATA_DIR overrides never share one registry -- see
+	// ptyregistry.SetRunFilePath. Empty uses the ~/.open-agents default.
 	RunFilePath string
 
 	// UnregisterHost overrides durable reservation cleanup. It exists for
@@ -438,7 +438,7 @@ func (r *Runtime) ProbeFencedRuntime(ctx context.Context, ref ports.FencedRuntim
 }
 
 // IsSupervisedProcessAlive uses the pty-host's child status. For a supervised
-// launch that child is the AO supervisor, whose lifetime matches the managed
+// launch that child is the Open Agents supervisor, whose lifetime matches the managed
 // agent process. When a generation ref is supplied, the launch id captured at
 // Create (and persisted in the recovery registry) must match exactly.
 func (r *Runtime) IsSupervisedProcessAlive(ctx context.Context, handle ports.RuntimeHandle, ref ports.SupervisedProcessRef) (bool, error) {

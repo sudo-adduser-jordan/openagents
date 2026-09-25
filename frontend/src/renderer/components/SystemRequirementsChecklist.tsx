@@ -16,7 +16,7 @@ const MISSING_DETAILS: Record<string, string> = {
 	git: "git was not found on PATH.",
 	tmux: "tmux was not found on PATH; it is required on macOS/Linux to start sessions.",
 	harness: "No OpenCode CLI was found on PATH.",
-	gh: "gh was not found on PATH. It lets agent sessions open pull requests and read issues, but AO runs fine without it.",
+	gh: "gh was not found on PATH. It lets agent sessions open pull requests and read issues, but Open Agents runs fine without it.",
 };
 
 // requirement.detail is backend-authoritative (systemcheck.go) and hardcoded
@@ -40,13 +40,13 @@ export function SystemRequirementsChecklist({
 	return (
 		<div
 			aria-live="polite"
-			className="ao-startup-checklist mt-4 flex w-full max-w-content-max flex-col gap-2 text-left"
+			className="open-agents-startup-checklist mt-4 flex w-full max-w-content-max flex-col gap-2 text-left"
 			role="status"
 		>
 			{requirements.map((requirement, index) => (
 				<div
 					key={requirement.id}
-					className="ao-startup-checklist__row flex items-start gap-2"
+					className="open-agents-startup-checklist__row flex items-start gap-2"
 					style={{ animationDelay: `${index * STAGGER_STEP_MS}ms` }}
 				>
 					<RequirementGlyph requirement={requirement} />
@@ -59,7 +59,7 @@ export function SystemRequirementsChecklist({
 				</div>
 			))}
 			{ready ? (
-				<p className="ao-startup-checklist__row mt-0.5 text-caption font-medium text-success">
+				<p className="open-agents-startup-checklist__row mt-0.5 text-caption font-medium text-success">
 					{"All checks passed"}
 				</p>
 			) : null}

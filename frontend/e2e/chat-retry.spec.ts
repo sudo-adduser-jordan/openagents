@@ -106,7 +106,7 @@ async function installRetryConversation(page: Page, running: boolean) {
 }
 
 async function capture(page: Page, name: string) {
-	const directory = process.env.AO_RETRY_EVIDENCE_DIR;
+	const directory = process.env.OPEN_AGENTS_RETRY_EVIDENCE_DIR;
 	if (directory) await page.screenshot({ path: `${directory}/${name}.png`, fullPage: true });
 }
 

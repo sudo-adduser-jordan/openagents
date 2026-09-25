@@ -14,7 +14,7 @@ beforeEach(() => {
 	purgeFileAttachmentsForSession(chatFixture.sessionId);
 });
 
-const path = ".ao/attachments/attachment-shot.png";
+const path = ".open-agents/attachments/attachment-shot.png";
 const suffix = `Attached files (read these files in the workspace):\n- ${path}`;
 
 function setup(text = "inspect this", content: ConversationContentSummary[] = [], nativeImages = true) {
@@ -166,7 +166,7 @@ describe("queued message attachments", () => {
 		const { edit } = setup(`inspect this\n\n${suffix}`, [{ type: "image", mimeType: "image/png" }]);
 		await beginEdit();
 		expect(screen.getByLabelText("Remove attachment-shot.png")).toBeInTheDocument();
-		expect(screen.getByRole("combobox")).not.toHaveTextContent(".ao/attachments");
+		expect(screen.getByRole("combobox")).not.toHaveTextContent(".open-agents/attachments");
 		await typeInLexicalEditor(screen.getByRole("combobox"), " carefully");
 		await userEvent.click(screen.getByRole("button", { name: "Send message" }));
 		await waitFor(() =>
@@ -210,7 +210,7 @@ describe("queued message attachments", () => {
 
 	it.each(["image/png", "text/plain"])("counts only native images when adding %s to eight retained images", async (mimeType) => {
 		const { edit, stage } = setup("inspect this", Array.from({ length: 8 }, () => ({ type: "image", mimeType: "image/png" })));
-		stage.mockResolvedValue([".ao/attachments/attachment-context.txt"]);
+		stage.mockResolvedValue([".open-agents/attachments/attachment-context.txt"]);
 		await beginEdit();
 		fireEvent.paste(screen.getByRole("combobox"), { clipboardData: { files: [new File(["context"], "new-file", { type: mimeType })], items: [] } });
 		await screen.findByLabelText("Remove new-file");
@@ -219,7 +219,7 @@ describe("queued message attachments", () => {
 			await screen.findByText("You can attach up to 8 images.");
 			expect(edit).not.toHaveBeenCalled();
 		} else {
-			await waitFor(() => expect(edit).toHaveBeenCalledWith("q1", "inspect this\n\nAttached files (read these files in the workspace):\n- .ao/attachments/attachment-context.txt", {
+			await waitFor(() => expect(edit).toHaveBeenCalledWith("q1", "inspect this\n\nAttached files (read these files in the workspace):\n- .open-agents/attachments/attachment-context.txt", {
 				retainedContent: [0, 1, 2, 3, 4, 5, 6, 7], clientMessageId: expect.any(String), expectedRevision: 0,
 			}));
 		}
@@ -378,7 +378,7 @@ describe("queued message attachments", () => {
 		expect(screen.queryByLabelText("Remove Image 1")).not.toBeInTheDocument();
 		expect(screen.queryByLabelText("Remove attachment-shot.png")).not.toBeInTheDocument();
 		expect(screen.getByLabelText("Remove first.png")).toBeInTheDocument();
-		second.stage.mockResolvedValue([".ao/attachments/attachment-second.png"]);
+		second.stage.mockResolvedValue([".open-agents/attachments/attachment-second.png"]);
 		await pasteImage(screen.getByRole("combobox"), "second.png");
 		const response = new Response();
 		vi.spyOn(response, "blob").mockResolvedValue(new Blob(["restored-first"], { type: "image/png" }));

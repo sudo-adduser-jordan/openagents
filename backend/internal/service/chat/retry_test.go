@@ -5,10 +5,10 @@ import (
 	"errors"
 	"testing"
 
-	"github.com/aoagents/agent-orchestrator/backend/internal/domain"
-	"github.com/aoagents/agent-orchestrator/backend/internal/ports"
-	chatsvc "github.com/aoagents/agent-orchestrator/backend/internal/service/chat"
-	"github.com/aoagents/agent-orchestrator/backend/internal/storage/sqlite/store"
+	"github.com/sudo-adduser-jordan/open-agents/backend/internal/domain"
+	"github.com/sudo-adduser-jordan/open-agents/backend/internal/ports"
+	chatsvc "github.com/sudo-adduser-jordan/open-agents/backend/internal/service/chat"
+	"github.com/sudo-adduser-jordan/open-agents/backend/internal/storage/sqlite/store"
 )
 
 // Retry scenarios.
@@ -666,7 +666,7 @@ func TestRetryTurnRefusesUnconfirmedDispatch(t *testing.T) {
 		t.Fatalf("Send with a failing provider = nil error, want the dispatch failure")
 	}
 	if turn.ID == "" || turn.State != domain.TurnStateFailed {
-		t.Fatalf("undispatched turn = %+v, want a failed turn with an AO id", turn)
+		t.Fatalf("undispatched turn = %+v, want a failed turn with an Open Agents id", turn)
 	}
 	snapshot := failedTurnSnapshot(t, h, turn.ID)
 	if settled, ok := turnByID(snapshot, turn.ID); !ok || settled.ProviderTurnID != "" {

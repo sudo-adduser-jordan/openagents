@@ -8,7 +8,7 @@ import (
 )
 
 func TestMigrateRepairsRenumberedAgentInventoryHistory(t *testing.T) {
-	db, err := sql.Open("sqlite", "file:"+filepath.Join(t.TempDir(), "ao.db")+pragmas)
+	db, err := sql.Open("sqlite", "file:"+filepath.Join(t.TempDir(), "open-agents.db")+pragmas)
 	if err != nil {
 		t.Fatalf("open sqlite: %v", err)
 	}
@@ -59,7 +59,7 @@ ORDER BY id DESC LIMIT 1`).Scan(&reapplied119ID); err != nil {
 }
 
 func TestMigrateRepairsAgentInventoryHistoryFromCollidedVersion120(t *testing.T) {
-	db, err := sql.Open("sqlite", "file:"+filepath.Join(t.TempDir(), "ao.db")+pragmas)
+	db, err := sql.Open("sqlite", "file:"+filepath.Join(t.TempDir(), "open-agents.db")+pragmas)
 	if err != nil {
 		t.Fatalf("open sqlite: %v", err)
 	}
@@ -99,7 +99,7 @@ SELECT CAST(activity_last_at AS TEXT) FROM sessions WHERE id = 'legacy-0120-sess
 }
 
 func TestMigrateRepairsAgentInventoryHistoryFromCollidedVersion121(t *testing.T) {
-	db, err := sql.Open("sqlite", "file:"+filepath.Join(t.TempDir(), "ao.db")+pragmas)
+	db, err := sql.Open("sqlite", "file:"+filepath.Join(t.TempDir(), "open-agents.db")+pragmas)
 	if err != nil {
 		t.Fatalf("open sqlite: %v", err)
 	}

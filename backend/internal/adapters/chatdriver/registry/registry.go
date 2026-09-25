@@ -10,10 +10,10 @@ package registry
 import (
 	"log/slog"
 
-	"github.com/aoagents/agent-orchestrator/backend/internal/adapters/agent/opencode"
-	"github.com/aoagents/agent-orchestrator/backend/internal/adapters/chatdriver/opencodeacp"
-	"github.com/aoagents/agent-orchestrator/backend/internal/domain"
-	"github.com/aoagents/agent-orchestrator/backend/internal/ports"
+	"github.com/sudo-adduser-jordan/open-agents/backend/internal/adapters/agent/opencode"
+	"github.com/sudo-adduser-jordan/open-agents/backend/internal/adapters/chatdriver/opencodeacp"
+	"github.com/sudo-adduser-jordan/open-agents/backend/internal/domain"
+	"github.com/sudo-adduser-jordan/open-agents/backend/internal/ports"
 )
 
 // Registry maps a harness to its Chat driver.
@@ -38,7 +38,7 @@ func New(drivers ...ports.ChatDriver) *Registry {
 
 // Build returns the drivers the daemon ships.
 //
-// OpenCode exposes ACP itself, so AO launches the exact executable resolved by
+// OpenCode exposes ACP itself, so Open Agents launches the exact executable resolved by
 // its agent plugin. No path scrapes terminal output or packages a second
 // provider CLI.
 //

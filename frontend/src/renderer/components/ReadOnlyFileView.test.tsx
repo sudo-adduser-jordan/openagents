@@ -52,7 +52,7 @@ describe("ReadOnlyFileView", () => {
 	it("renders source through the wrapped Pierre/Shiki surface", () => {
 		const { container } = render(<ReadOnlyFileView annotation={annotation()} detail={baseDetail()} sessionId="sess-1" />);
 		expect(screen.getByText("hello world")).toBeInTheDocument();
-		expect(container.querySelector(".ao-pierre-surface")).toHaveClass("select-text");
+		expect(container.querySelector(".open-agents-pierre-surface")).toHaveClass("select-text");
 		expect(container.querySelector("[data-overflow]")).toHaveAttribute("data-overflow", "wrap");
 		expect(container.querySelector("[data-overflow]")).toHaveAttribute("data-surface-css", expect.stringContaining("--diffs-bg: var(--color-bg-primary)"));
 	});

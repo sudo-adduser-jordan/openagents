@@ -1,7 +1,7 @@
 #!/usr/bin/env node
 /** Build API: await buildRepairInstaller({ app, output, identity, keychainProfile,
- * unsignedForTesting: false, dataDir: process.env.AO_DATA_DIR }); returns output.
- * Input must be the exact signed/stapled release .app. Never installs or launches AO.
+ * unsignedForTesting: false, dataDir: process.env.OPEN_AGENTS_DATA_DIR }); returns output.
+ * Input must be the exact signed/stapled release .app. Never installs or launches Open Agents.
  * The optional second argument injects command execution for unit tests only.
  */
 import { spawnSync } from 'node:child_process';
@@ -13,8 +13,8 @@ import { fileURLToPath } from 'node:url';
 
 const here = path.dirname(fileURLToPath(import.meta.url));
 const verifier = path.join(here, 'verify-mac-artifact.sh');
-const appName = 'Agent Orchestrator.app';
-const bundleID = 'dev.agent-orchestrator.desktop';
+const appName = 'Open Agents.app';
+const bundleID = 'dev.openagents.desktop';
 const packageID = `${bundleID}.repair`;
 const versionPattern = /^(0|[1-9]\d*)\.(0|[1-9]\d*)\.(0|[1-9]\d*)(?:-nightly\.(\d{12}))?$/;
 const xml = (value) => String(value).replace(/[<>&"']/g, (c) => ({ '<': '&lt;', '>': '&gt;', '&': '&amp;', '"': '&quot;', "'": '&apos;' })[c]);
@@ -38,10 +38,10 @@ export async function renderGuard({ version, architectures }, root = false) {
     .replace('@@ARCHS@@', architectures.join(' ')).replace('@@VERSION@@', version);
 }
 export function distribution(version, architectures) {
-  const message = 'Quit Agent Orchestrator before continuing. If its updater is still running, restart your Mac and run this installer before opening AO. Use the installer for this Mac architecture on the startup volume. Downgrades, unknown versions, unrelated applications and symbolic-link destinations are refused.';
+  const message = 'Quit Open Agents before continuing. If its updater is still running, restart your Mac and run this installer before opening Open Agents. Use the installer for this Mac architecture on the startup volume. Downgrades, unknown versions, unrelated applications and symbolic-link destinations are refused.';
   return `<?xml version="1.0" encoding="utf-8"?>
 <installer-gui-script minSpecVersion="2">
-<title>Agent Orchestrator Repair</title>
+<title>Open Agents Repair</title>
 <options customize="never" require-scripts="true" allow-external-scripts="yes" hostArchitectures="${architectures.join(',')}" rootVolumeOnly="true"/>
 <domains enable_anywhere="false" enable_currentUserHome="false" enable_localSystem="true"/>
 <welcome file="welcome.html" mime-type="text/html"/><conclusion file="conclusion.html" mime-type="text/html"/>
@@ -58,7 +58,7 @@ function checkVolume() {
 }
 ]]></script>
 <choices-outline><line choice="repair"/></choices-outline>
-<choice id="repair" visible="false" title="Agent Orchestrator Repair"><pkg-ref id="${packageID}"/></choice>
+<choice id="repair" visible="false" title="Open Agents Repair"><pkg-ref id="${packageID}"/></choice>
 <pkg-ref id="${packageID}" version="${xml(version)}" auth="root">repair-component.pkg</pkg-ref>
 <pkg-ref id="${packageID}"><must-close><app id="${bundleID}"/></must-close></pkg-ref>
 </installer-gui-script>\n`;
@@ -72,7 +72,7 @@ export async function buildRepairInstaller(options, execute = run) {
   if (!output.endsWith(unsignedForTesting ? '.unsigned.pkg' : '.pkg') || (!unsignedForTesting && output.endsWith('.unsigned.pkg'))) throw new Error('Output must end in .pkg (or .unsigned.pkg for explicit unsigned testing)');
   if (path.basename(app) !== appName || !(await lstat(app)).isDirectory() || (await lstat(app)).isSymbolicLink()) throw new Error(`Input must be a real ${appName} directory`);
   try { await lstat(output); throw new Error('Output already exists'); } catch (error) { if (error.code !== 'ENOENT') throw error; }
-  const base = path.resolve(options.dataDir || process.env.AO_DATA_DIR || path.join(homedir(), '.ao'));
+  const base = path.resolve(options.dataDir || process.env.OPEN_AGENTS_DATA_DIR || path.join(homedir(), '.open-agents'));
   await mkdir(base, { recursive: true });
   const work = await mkdtemp(path.join(base, 'repair-installer-'));
   try {
@@ -89,9 +89,9 @@ export async function buildRepairInstaller(options, execute = run) {
     await execute('/bin/bash', [verifier, path.join(root, appName)]);
     await writeFile(path.join(scripts, 'preinstall'), await renderGuard(metadata, true), { mode: 0o755 });
     await writeFile(path.join(resources, 'guard.sh'), await renderGuard(metadata), { mode: 0o755 });
-    const intro = `<h1>Repair Agent Orchestrator ${xml(version)}</h1><p>Quit Agent Orchestrator. If its updater is still running, restart your Mac and run this installer before opening AO.</p><p>This replaces the entire application at /Applications/Agent Orchestrator.app. Your AO data and caches are preserved. The same version can be repaired; downgrades are refused. Installer will request permission to check the destination and running processes.</p>`;
+    const intro = `<h1>Repair Open Agents ${xml(version)}</h1><p>Quit Open Agents. If its updater is still running, restart your Mac and run this installer before opening Open Agents.</p><p>This replaces the entire application at /Applications/Open Agents.app. Your Open Agents data and caches are preserved. The same version can be repaired; downgrades are refused. Installer will request permission to check the destination and running processes.</p>`;
     await writeFile(path.join(resources, 'welcome.html'), intro);
-    await writeFile(path.join(resources, 'conclusion.html'), '<h1>Repair complete</h1><p>Open Agent Orchestrator from Applications when you are ready.</p>');
+    await writeFile(path.join(resources, 'conclusion.html'), '<h1>Repair complete</h1><p>Open Open Agents from Applications when you are ready.</p>');
     const component = path.join(work, 'component.plist');
     await writeFile(component, `<?xml version="1.0"?><plist version="1.0"><array><dict><key>RootRelativeBundlePath</key><string>${appName}</string><key>BundleIsRelocatable</key><false/><key>BundleIsVersionChecked</key><false/><key>BundleHasStrictIdentifier</key><true/><key>BundleOverwriteAction</key><string>upgrade</string></dict></array></plist>`);
     const componentPkg = path.join(work, 'repair-component.pkg');

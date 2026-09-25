@@ -1,11 +1,11 @@
 #!/usr/bin/env bash
 # Runs INSIDE the Daytona pod for the stable-release e2e gate.
 #
-# The release .deb and this harness are uploaded by the runner (AO_DEB_PATH) —
+# The release .deb and this harness are uploaded by the runner (OPEN_AGENTS_DEB_PATH) —
 # the pod holds NO secret and fetches NO application code (CodeRabbit lesson: a
 # compromised pod finds nothing to pivot to). It boots the real Electron app
 # headless, drives it with Playwright (_electron.launch against the app's own
-# electron), and emits a final `AO_VERDICT {json}` line the runner parses.
+# electron), and emits a final `OPEN_AGENTS_VERDICT {json}` line the runner parses.
 #
 # Verdict contract (parsed by the e2e gate runner):
 #   {"passed":true}               -> app smoke passed         (green)
@@ -29,15 +29,15 @@
 # TODO: bake xvfb/tmux/@playwright/test into the Daytona snapshot.
 set -o pipefail
 cd /home/daytona
-DEB="${AO_DEB_PATH:-/home/daytona/app.deb}"
-# Optional tag filter (e.g. AO_SUITE=T0 -> playwright --grep @T0). Empty = all.
-SUITE="${AO_SUITE:-}"
+DEB="${OPEN_AGENTS_DEB_PATH:-/home/daytona/app.deb}"
+# Optional tag filter (e.g. OPEN_AGENTS_SUITE=T0 -> playwright --grep @T0). Empty = all.
+SUITE="${OPEN_AGENTS_SUITE:-}"
 
 # Emit an INFRA verdict and stop. Setup/toolchain problems are NOT the release
 # build's fault — the runner maps infra:true to a NEUTRAL gate result, never red.
 fail_infra() {
 	echo "== INFRA FAILURE ($1): $2 =="
-	echo "AO_VERDICT {\"passed\":false,\"infra\":true,\"stage\":\"$1\",\"reason\":\"$2\"}"
+	echo "OPEN_AGENTS_VERDICT {\"passed\":false,\"infra\":true,\"stage\":\"$1\",\"reason\":\"$2\"}"
 	exit 0
 }
 
@@ -45,7 +45,7 @@ fail_infra() {
 # or ships no runnable binary) — a real release-build failure, mapped to RED.
 fail_app() {
 	echo "== APP FAILURE ($1): $2 =="
-	echo "AO_VERDICT {\"passed\":false,\"suite\":\"real-app-t0\",\"stage\":\"$1\",\"reason\":\"$2\"}"
+	echo "OPEN_AGENTS_VERDICT {\"passed\":false,\"suite\":\"real-app-t0\",\"stage\":\"$1\",\"reason\":\"$2\"}"
 	exit 0
 }
 
@@ -59,13 +59,13 @@ command -v xvfb-run >/dev/null 2>&1 || fail_infra "xvfb-missing" "xvfb-run unava
 
 echo "== install release build: $DEB =="
 # Guard against a STALE binary masquerading as a fresh install: drop any
-# pre-existing agent-orchestrator so the ONLY binary that can satisfy the check
+# pre-existing open-agents so the ONLY binary that can satisfy the check
 # below is one THIS .deb installs. Trusting `command -v` alone would let a broken
 # package pass against a leftover binary on PATH.
-if command -v agent-orchestrator >/dev/null 2>&1; then
-	sudo rm -f "$(command -v agent-orchestrator)" 2>/dev/null || true
+if command -v open-agents >/dev/null 2>&1; then
+	sudo rm -f "$(command -v open-agents)" 2>/dev/null || true
 fi
-sudo rm -f /usr/lib/agent-orchestrator/agent-orchestrator 2>/dev/null || true
+sudo rm -f /usr/lib/open-agents/open-agents 2>/dev/null || true
 
 # dpkg -i unpacks the package's files; runtime-dependency *configuration* may be
 # deferred to apt-get -f below (dpkg then exits non-zero with "dependency
@@ -99,18 +99,18 @@ fi
 # must OWN the resolved binary (dpkg -s / dpkg -L) — not merely resolve to some
 # binary on PATH. This is what makes a stale/foreign binary unable to green a
 # broken package.
-if ! dpkg -s agent-orchestrator >/dev/null 2>&1; then
-	fail_app "package-install" "agent-orchestrator is not registered as installed after dpkg/apt (dpkg rc=$dpkg_rc)"
+if ! dpkg -s open-agents >/dev/null 2>&1; then
+	fail_app "package-install" "open-agents is not registered as installed after dpkg/apt (dpkg rc=$dpkg_rc)"
 fi
-APP="$(command -v agent-orchestrator || echo /usr/lib/agent-orchestrator/agent-orchestrator)"
+APP="$(command -v open-agents || echo /usr/lib/open-agents/open-agents)"
 if [ ! -x "$APP" ]; then
 	fail_app "package-install" "release .deb installed no runnable app binary (dpkg rc=$dpkg_rc, path=$APP)"
 fi
 # Confirm the resolved binary is a file the package owns (following symlinks).
 APP_REAL="$(readlink -f "$APP" 2>/dev/null || echo "$APP")"
-if ! dpkg -L agent-orchestrator 2>/dev/null | grep -qxF "$APP" &&
-	! dpkg -L agent-orchestrator 2>/dev/null | grep -qxF "$APP_REAL"; then
-	fail_app "package-install" "resolved binary $APP is not owned by the agent-orchestrator package (stale/foreign binary)"
+if ! dpkg -L open-agents 2>/dev/null | grep -qxF "$APP" &&
+	! dpkg -L open-agents 2>/dev/null | grep -qxF "$APP_REAL"; then
+	fail_app "package-install" "resolved binary $APP is not owned by the open-agents package (stale/foreign binary)"
 fi
 echo "app: $APP (dpkg rc=$dpkg_rc)"
 
@@ -126,7 +126,7 @@ echo "== real-app e2e under xvfb${SUITE:+ (suite @$SUITE)} =="
 # From here PW is the REAL app-test result: 0 = app passed, non-zero = app failed.
 # Setup is done and the package installed a runnable binary; only the app under
 # test decides pass/fail now.
-export AO_APP_BIN="$APP"
+export OPEN_AGENTS_APP_BIN="$APP"
 xvfb-run -a npx playwright test -c playwright.electron.config.ts ${SUITE:+--grep "@$SUITE"} 2>&1
 PW=$?
 
@@ -136,7 +136,7 @@ PW=$?
 tar czf /home/daytona/artifacts.tgz -C /home/daytona test-results playwright-report 2>/dev/null || true
 
 if [ "$PW" = 0 ]; then
-	echo "AO_VERDICT {\"passed\":true,\"suite\":\"real-app-t0\"${SUITE:+,\"grep\":\"@$SUITE\"}}"
+	echo "OPEN_AGENTS_VERDICT {\"passed\":true,\"suite\":\"real-app-t0\"${SUITE:+,\"grep\":\"@$SUITE\"}}"
 else
-	echo "AO_VERDICT {\"passed\":false,\"suite\":\"real-app-t0\",\"playwright_exit\":$PW}"
+	echo "OPEN_AGENTS_VERDICT {\"passed\":false,\"suite\":\"real-app-t0\",\"playwright_exit\":$PW}"
 fi

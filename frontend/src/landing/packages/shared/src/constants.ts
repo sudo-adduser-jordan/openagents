@@ -1,24 +1,25 @@
 export const COMPANY = {
-  NAME: "Agent Orchestrator",
-  SHORT_NAME: "AO",
+  NAME: "Open Agents",
+  SHORT_NAME: "Open Agents",
   MARKETING_URL: "https://orchestrator.inc",
   DOCS_URL: "https://orchestrator.inc/docs",
-  GITHUB_URL: "https://github.com/Untrivial-ai/agent-orchestrator",
-  GITHUB_REPO: "Untrivial-ai/agent-orchestrator",
+  GITHUB_URL: "https://github.com/sudo-adduser-jordan/open-agents",
+  GITHUB_REPO: "sudo-adduser-jordan/open-agents",
   STATUS_URL: "https://status.aoagents.dev",
   TRUST_URL: "https://orchestrator.inc/privacy/",
   MAIL_TO: "mailto:prateek@untrivial.ai",
-  X_URL: "https://x.com/ao_build",
+  // Social accounts are provisioned separately; do not publish guessed handles.
+  X_URL: null as string | null,
   YOUTUBE_URL: "https://www.youtube.com/@itrytoohard",
-  LINKEDIN_URL: "https://www.linkedin.com/company/agent-orchestrator/",
+  LINKEDIN_URL: null as string | null,
   DISCORD_URL: "https://discord.com/invite/UZv7JjxbwG",
   FOUNDERS_EMAIL: "prateek@untrivial.ai",
-  REPORT_ISSUE_URL: "https://github.com/Untrivial-ai/agent-orchestrator/issues/new",
+  REPORT_ISSUE_URL: "https://github.com/sudo-adduser-jordan/open-agents/issues/new",
   LICENSE: "Apache-2.0",
-  LICENSE_URL: "https://github.com/Untrivial-ai/agent-orchestrator/blob/main/LICENSE",
+  LICENSE_URL: "https://github.com/sudo-adduser-jordan/open-agents/blob/main/LICENSE",
 } as const;
 
-export const THEME_STORAGE_KEY = "ao-theme";
+export const THEME_STORAGE_KEY = "open-agents-theme";
 export const POSTHOG_COOKIE_NAME = "ph_phc_";
 
 export const OPEN_ROLES = [] as { title: string; url: string; location: string }[];
@@ -29,7 +30,7 @@ export const PLATFORMS = {
   LINUX: "linux",
 } as const;
 
-export const GITHUB_STARS_URL = "https://api.github.com/repos/Untrivial-ai/agent-orchestrator";
+export const GITHUB_STARS_URL = "https://api.github.com/repos/sudo-adduser-jordan/open-agents";
 
 // macOS points at the .dmg: this is rollout step 6 of issue #3267, taken once the
 // release conductor started publishing a signed, notarized dmg on the stable
@@ -47,23 +48,16 @@ export const GITHUB_STARS_URL = "https://api.github.com/repos/Untrivial-ai/agent
 // ever break, check that the newest non-prerelease release has both files rather
 // than assuming the pipeline is broken. The download page itself is resilient
 // here: it reads the live release list and falls back to the zip.
-export const DOWNLOAD_URL_MAC_ARM64 = "https://github.com/Untrivial-ai/agent-orchestrator/releases/latest/download/agent-orchestrator-darwin-arm64.dmg";
-export const DOWNLOAD_URL_MAC_X64 = "https://github.com/Untrivial-ai/agent-orchestrator/releases/latest/download/agent-orchestrator-darwin-x64.dmg";
-export const DOWNLOAD_URL_WINDOWS = "https://github.com/Untrivial-ai/agent-orchestrator/releases/latest/download/agent-orchestrator-win32-x64.exe";
-export const DOWNLOAD_URL_LINUX = "https://github.com/Untrivial-ai/agent-orchestrator/releases/latest/download/agent-orchestrator-linux-x64.AppImage";
+export const DOWNLOAD_URL_MAC_ARM64 = "https://github.com/sudo-adduser-jordan/open-agents/releases/latest/download/open-agents-darwin-arm64.dmg";
+export const DOWNLOAD_URL_MAC_X64 = "https://github.com/sudo-adduser-jordan/open-agents/releases/latest/download/open-agents-darwin-x64.dmg";
+export const DOWNLOAD_URL_WINDOWS = "https://github.com/sudo-adduser-jordan/open-agents/releases/latest/download/open-agents-win32-x64.exe";
+export const DOWNLOAD_URL_LINUX = "https://github.com/sudo-adduser-jordan/open-agents/releases/latest/download/open-agents-linux-x64.AppImage";
 
-// AO Mobile, live on both stores. These are the same links the desktop app's
-// Connect Mobile panel opens (frontend/src/renderer/components/settings/
-// ConnectMobileGetApp.tsx), so the two must be changed together.
-//
-// No storefront segment ("/us/") in the App Store URL on purpose: Apple
-// redirects a bare /app/ link to the visitor's own storefront, while a pinned
-// one sends everyone outside that country to a "not available" page.
-export const IOS_APP_STORE_URL = "https://apps.apple.com/app/ao-mobile/id6792552173";
-
-/** Public Google Play listing. */
-export const ANDROID_PLAY_STORE_URL =
-  "https://play.google.com/store/apps/details?id=aoagents.dev";
+// The new native identities use dev.openagents.mobile. Store listings are
+// provisioned externally, so no retired listing or guessed replacement URL is
+// exposed until both values are available.
+export const IOS_APP_STORE_URL: string | null = null;
+export const ANDROID_PLAY_STORE_URL: string | null = null;
 
 export const AGENT_HARNESSES = 24;
 export const TAGLINE = "Stop babysitting agents. Start merging real work.";

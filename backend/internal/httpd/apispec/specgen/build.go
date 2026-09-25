@@ -15,10 +15,10 @@ import (
 	openapi "github.com/swaggest/openapi-go"
 	"github.com/swaggest/openapi-go/openapi31"
 
-	"github.com/aoagents/agent-orchestrator/backend/internal/httpd/controllers"
-	"github.com/aoagents/agent-orchestrator/backend/internal/httpd/envelope"
-	importsvc "github.com/aoagents/agent-orchestrator/backend/internal/service/importer"
-	projectsvc "github.com/aoagents/agent-orchestrator/backend/internal/service/project"
+	"github.com/sudo-adduser-jordan/open-agents/backend/internal/httpd/controllers"
+	"github.com/sudo-adduser-jordan/open-agents/backend/internal/httpd/envelope"
+	importsvc "github.com/sudo-adduser-jordan/open-agents/backend/internal/service/importer"
+	projectsvc "github.com/sudo-adduser-jordan/open-agents/backend/internal/service/project"
 )
 
 // Build reflects the Go contract types and the operation registry below into
@@ -50,7 +50,7 @@ func Build() ([]byte, error) {
 		jsonschema.InterceptDefName(schemaName),
 	)
 
-	r.Spec.SetTitle("Agent Orchestrator HTTP daemon")
+	r.Spec.SetTitle("Open Agents HTTP daemon")
 	r.Spec.SetVersion("0.1.0-route-shell")
 	r.Spec.SetDescription("Loopback-only HTTP surface served by the Go daemon. " +
 		"Generated from Go (code-first) — do not edit by hand; run `go generate ./...`.")
@@ -71,13 +71,13 @@ func Build() ([]byte, error) {
 		*(&openapi31.Tag{Name: "notifications"}).WithDescription(
 			"Durable dashboard notifications"),
 		*(&openapi31.Tag{Name: "usage"}).WithDescription(
-			"Token usage telemetry for AO sessions"),
+			"Token usage telemetry for Open Agents sessions"),
 		*(&openapi31.Tag{Name: "push"}).WithDescription(
 			"Mobile push-device registration for OS push notifications"),
 		*(&openapi31.Tag{Name: "events"}).WithDescription(
 			"Server-sent CDC event stream with durable replay"),
 		*(&openapi31.Tag{Name: "import"}).WithDescription(
-			"Legacy AO project import (availability probe and run)"),
+			"Project-folder import validation and Git preparation"),
 		*(&openapi31.Tag{Name: "dev"}).WithDescription(
 			"Developer-only maintenance operations"),
 		*(&openapi31.Tag{Name: "mobile"}).WithDescription(
@@ -374,9 +374,6 @@ var schemaNames = map[string]string{ //nolint:gosec // Public OpenAPI type names
 	// domain review entities
 	"DomainReviewRun":     "ReviewRun",
 	"ReviewPRReviewState": "PRReviewState",
-	// httpd/controllers: import wire envelopes
-	"ControllersImportStatusResponse": "ImportStatusResponse",
-	"ControllersImportRunResponse":    "ImportRunResponse",
 	// service/importer: project import onboarding DTOs
 	"ImporterImportValidationInput":         "ImportValidationInput",
 	"ImporterImportValidationResult":        "ImportValidationResult",
@@ -408,8 +405,6 @@ var schemaNames = map[string]string{ //nolint:gosec // Public OpenAPI type names
 	"ControllersPushDeviceEnvelope":           "PushDeviceEnvelope",
 	"ControllersPushDeviceResponse":           "PushDeviceResponse",
 	"ControllersUnregisterPushDeviceResponse": "UnregisterPushDeviceResponse",
-	// legacyimport report
-	"LegacyimportReport": "ImportReport",
 	// service/project entities + DTOs
 	"ProjectProject":                    "Project",
 	"ProjectSummary":                    "ProjectSummary",
@@ -1328,24 +1323,6 @@ func mobileDeviceOperations() []operation {
 func importOperations() []operation {
 	return []operation{
 		{
-			method: http.MethodGet, path: "/api/v1/import", id: "getImportStatus", tag: "import",
-			summary: "Check whether a legacy AO install is available to import",
-			resps: []respUnit{
-				{http.StatusOK, controllers.ImportStatusResponse{}},
-				{http.StatusInternalServerError, envelope.APIError{}},
-				{http.StatusNotImplemented, envelope.APIError{}},
-			},
-		},
-		{
-			method: http.MethodPost, path: "/api/v1/import", id: "runImport", tag: "import",
-			summary: "Run the legacy AO project import through the daemon store",
-			resps: []respUnit{
-				{http.StatusOK, controllers.ImportRunResponse{}},
-				{http.StatusInternalServerError, envelope.APIError{}},
-				{http.StatusNotImplemented, envelope.APIError{}},
-			},
-		},
-		{
 			method: http.MethodPost, path: "/api/v1/imports/validate", id: "validateImport", tag: "import",
 			summary: "Validate a selected folder for project import onboarding",
 			reqBody: importsvc.ImportValidationInput{},
@@ -1845,7 +1822,7 @@ func sessionOperations() []operation {
 		},
 		{
 			method: http.MethodPost, path: "/api/v1/sessions/{sessionId}/preview/server", id: "startSessionPreviewServer", tag: "sessions",
-			summary:    "Start a session-owned server from .ao/launch.json and open its application preview",
+			summary:    "Start a session-owned server from .open-agents/launch.json and open its application preview",
 			pathParams: []any{controllers.SessionIDParam{}, controllers.BrowserCapabilityHeader{}},
 			reqBody:    controllers.StartPreviewServerRequest{},
 			resps: []respUnit{
@@ -2163,7 +2140,7 @@ func sessionOperations() []operation {
 		},
 		{
 			method: http.MethodPost, path: "/api/v1/sessions/{sessionId}/exit-agent", id: "exitAgent", tag: "sessions",
-			summary:    "Exit the agent while preserving its AO session",
+			summary:    "Exit the agent while preserving its Open Agents session",
 			pathParams: []any{controllers.SessionIDParam{}},
 			resps: []respUnit{
 				{http.StatusOK, controllers.ExitAgentResponse{}},

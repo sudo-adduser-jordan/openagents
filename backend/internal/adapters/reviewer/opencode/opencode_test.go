@@ -11,7 +11,7 @@ import (
 	"testing"
 	"time"
 
-	"github.com/aoagents/agent-orchestrator/backend/internal/ports"
+	"github.com/sudo-adduser-jordan/open-agents/backend/internal/ports"
 )
 
 type captureAgent struct {
@@ -71,7 +71,7 @@ func TestReviewCommandUsesReadOnlyPermissionPolicy(t *testing.T) {
 		t.Fatalf("permission policy = %#v", permission)
 	}
 	bash := permission["bash"].(map[string]any)
-	if bash["*"] != "deny" || bash["gh api *"] != "allow" || bash["ao review submit *"] != "allow" {
+	if bash["*"] != "deny" || bash["gh api *"] != "allow" || bash["open-agents review submit *"] != "allow" {
 		t.Fatalf("bash policy = %#v", bash)
 	}
 }
@@ -79,19 +79,19 @@ func TestReviewCommandUsesReadOnlyPermissionPolicy(t *testing.T) {
 func TestReviewCommandKeepsSystemPromptFileOutOfVisiblePrompt(t *testing.T) {
 	agent := &captureAgent{}
 	r := &Reviewer{agent: agent}
-	taskPromptRoot := filepath.Join("ao", "prompts", "reviewer")
+	taskPromptRoot := filepath.Join("open-agents", "prompts", "reviewer")
 	taskPromptFile := filepath.Join(taskPromptRoot, "requests", "batch-1", "run-1", "task.md")
 
 	got, err := r.ReviewCommand(context.Background(), ports.ReviewInvocation{
-		Prompt:           "Start the AO review task.",
-		SystemPromptFile: "/ao/prompts/reviewer/system.md",
+		Prompt:           "Start the Open Agents review task.",
+		SystemPromptFile: "/open-agents/prompts/reviewer/system.md",
 		TaskPromptFile:   taskPromptFile,
 		TaskPromptRoot:   taskPromptRoot,
 	})
 	if err != nil {
 		t.Fatalf("ReviewCommand: %v", err)
 	}
-	if agent.got.Prompt != "Start the AO review task." || agent.got.SystemPrompt != "" || agent.got.SystemPromptFile != "/ao/prompts/reviewer/system.md" {
+	if agent.got.Prompt != "Start the Open Agents review task." || agent.got.SystemPrompt != "" || agent.got.SystemPromptFile != "/open-agents/prompts/reviewer/system.md" {
 		t.Fatalf("launch config = %+v", agent.got)
 	}
 	var config struct {
@@ -116,8 +116,8 @@ func TestReviewRestoreCommandUsesNativeSessionIDAndReadOnlyPolicy(t *testing.T) 
 		ReviewerID:       "review-w1",
 		AgentSessionID:   "opencode-native-1",
 		WorkspacePath:    "/ws/w1",
-		TaskPromptRoot:   filepath.Join("ao", "prompts", "reviewer"),
-		SystemPromptFile: "/ao/prompts/reviewer/system.md",
+		TaskPromptRoot:   filepath.Join("open-agents", "prompts", "reviewer"),
+		SystemPromptFile: "/open-agents/prompts/reviewer/system.md",
 	})
 	if err != nil {
 		t.Fatalf("ReviewRestoreCommand: %v", err)
@@ -196,7 +196,7 @@ func TestReviewCommandBuildsBothOpenCodeConfigSources(t *testing.T) {
 	spec, err := New().ReviewCommand(context.Background(), ports.ReviewInvocation{
 		ReviewerID:       "review-w1",
 		WorkspacePath:    t.TempDir(),
-		Prompt:           "Read the AO review task.",
+		Prompt:           "Read the Open Agents review task.",
 		SystemPromptFile: systemPath,
 		TaskPromptFile:   taskPath,
 		TaskPromptRoot:   promptDir,
@@ -208,8 +208,8 @@ func TestReviewCommandBuildsBothOpenCodeConfigSources(t *testing.T) {
 	joinedArgv := strings.Join(spec.Argv, "\n")
 	for _, want := range []string{
 		"OPENCODE_CONFIG=" + configPath,
-		"--agent\nao-review-w1",
-		"--prompt\nRead the AO review task.",
+		"--agent\nopen-agents-review-w1",
+		"--prompt\nRead the Open Agents review task.",
 	} {
 		if !strings.Contains(joinedArgv, want) {
 			t.Fatalf("argv missing %q: %#v", want, spec.Argv)
@@ -243,7 +243,7 @@ func TestBashAllowlistCoversPromptRequiredCommands(t *testing.T) {
 		},
 		{
 			name:    "local review submit",
-			command: `printf '%s' '{ "reviews": [] }' | ao review submit --session sess-1 --reviews -`,
+			command: `printf '%s' '{ "reviews": [] }' | open-agents review submit --session sess-1 --reviews -`,
 			allowed: true,
 		},
 		{

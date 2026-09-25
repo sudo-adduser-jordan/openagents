@@ -1,4 +1,4 @@
-module github.com/aoagents/agent-orchestrator/backend
+module github.com/sudo-adduser-jordan/open-agents/backend
 
 go 1.25.7
 

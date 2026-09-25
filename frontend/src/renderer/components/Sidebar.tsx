@@ -61,7 +61,7 @@ import {
 	STANDALONE_WORKSPACE_ID,
 } from "../types/workspace";
 import { getSessionStatusDotView } from "../lib/session-presentation";
-import { aoBridge } from "../lib/bridge";
+import { openAgentsBridge } from "../lib/bridge";
 import { useCommandPaletteEnabled } from "../hooks/useCommandPaletteEnabled";
 import { workspaceQueryKey } from "../hooks/useWorkspaceQuery";
 import { usePinSession, useUnpinSession } from "../hooks/usePinSession";
@@ -103,7 +103,7 @@ import {
 } from "./ui/sidebar";
 import { Tooltip, TooltipContent, TooltipTrigger } from "./ui/tooltip";
 import { OrchestratorIcon } from "./icons";
-import aoLogo from "../../../assets/ao-logo.svg";
+import openAgentsLogo from "../../../assets/open-agents-logo.svg";
 import { cn } from "../lib/utils";
 import { useUiStore } from "../stores/ui-store";
 import { useKeybindingsStore } from "../stores/keybindings-store";
@@ -288,7 +288,7 @@ export const SIDEBAR_MAX_WIDTH = 420;
  *  One-way for now (no Show less / no persistence) — intentional first cut.
  *  Collapsed icon rail always shows the full list so projects stay reachable. */
 const SIDEBAR_INITIAL_PROJECT_LIMIT = 12;
-const expandedProjectsStorageKey = "ao.sidebar.expanded-projects";
+const expandedProjectsStorageKey = "open-agents.sidebar.expanded-projects";
 
 function readExpandedProjectIds(): ReadonlySet<string> {
 	if (typeof window === "undefined" || !window.localStorage) return new Set();
@@ -472,13 +472,13 @@ export function Sidebar({
 	// (the setting can be changed mid-session; the binary cannot).
 	const { data: appVersion } = useQuery({
 		queryKey: ["app-version"],
-		queryFn: () => aoBridge.app.getVersion(),
+		queryFn: () => openAgentsBridge.app.getVersion(),
 		staleTime: Infinity,
 	});
 	const isNightly = typeof appVersion === "string" && appVersion.includes("-nightly.");
 
-	// agent-orchestrator's sidebar resize: drag the right edge (200-420px,
-	// persisted), double-click to reset to 240px. Drives --ao-sidebar-w on :root,
+	// open-agents's sidebar resize: drag the right edge (200-420px,
+	// persisted), double-click to reset to 240px. Drives --open-agents-sidebar-w on :root,
 	// only to the two layout consumers and fixed titlebar strip, rather than
 	// :root. Dragging clamps
 	// at SIDEBAR_MIN_WIDTH — collapsing stays on the explicit toggle (⌘B /
@@ -504,9 +504,9 @@ export function Sidebar({
 		onCollapsedPointerDown: onCollapsedResizePointerDown,
 		onDoubleClick: onResizeDoubleClick,
 	} = useResizable({
-		cssVar: "--ao-sidebar-w",
+		cssVar: "--open-agents-sidebar-w",
 		getCssTargets: getResizeTargets,
-		storageKey: "ao-sidebar-w",
+		storageKey: "open-agents-sidebar-w",
 		defaultWidth: SIDEBAR_DEFAULT_WIDTH,
 		min: SIDEBAR_MIN_WIDTH,
 		max: SIDEBAR_MAX_WIDTH,
@@ -688,12 +688,12 @@ export function Sidebar({
 							"group-data-[collapsible=icon]:size-control-board group-data-[collapsible=icon]:rounded-lg",
 						)}
 					>
-						<img src={aoLogo} alt="" aria-hidden="true" className="h-5.5 w-5.5 -translate-y-[3px] rounded-md object-cover" />
+						<img src={openAgentsLogo} alt="" aria-hidden="true" className="h-5.5 w-5.5 -translate-y-[3px] rounded-md object-cover" />
 					</span>
 					<span
 						className="sidebar-expanded-chrome min-w-0 flex-1 truncate text-sm font-bold leading-tight tracking-tight-lg text-foreground group-data-[collapsible=icon]:hidden"
 					>
-						Agent Orchestrator
+						Open Agents
 					</span>
 					{isNightly && (
 						<span className="sidebar-expanded-chrome shrink-0 rounded-full bg-purple-subtle px-1.5 py-0.5 text-micro font-semibold leading-none text-purple-accent group-data-[collapsible=icon]:hidden">
@@ -1476,13 +1476,13 @@ const ProjectItem = memo(function ProjectItem({
 						title="Remove project"
 						description={
 							<>
-								<p className="text-sm font-medium text-foreground">{`This will remove ${workspace.name} from AO`}</p>
+								<p className="text-sm font-medium text-foreground">{`This will remove ${workspace.name} from Open Agents`}</p>
 								<p className="mt-1 text-xs text-muted-foreground">
 									{"This stops its live sessions and removes it from the sidebar, but keeps the repository folder and stored history on disk."}
 								</p>
 								{openPullRequestCount > 0 ? (
 									<p className="mt-2 text-xs font-medium text-error">
-										{(openPullRequestCount === 1 ? `${openPullRequestCount} open pull request belongs to this project. Removing it will hide that pull request from AO, but will not close it.` : `${openPullRequestCount} open pull requests belong to this project. Removing it will hide those pull requests from AO, but will not close them.`)}
+										{(openPullRequestCount === 1 ? `${openPullRequestCount} open pull request belongs to this project. Removing it will hide that pull request from Open Agents, but will not close it.` : `${openPullRequestCount} open pull requests belong to this project. Removing it will hide those pull requests from Open Agents, but will not close them.`)}
 									</p>
 								) : null}
 							</>
@@ -1948,7 +1948,7 @@ function UpdateStatusRow({
 							: "Download update"
 					}
 					className={cn(FOOTER_NAV_BUTTON_CLASS, "min-w-0 flex-1")}
-					onClick={() => void aoBridge.updates.download()}
+					onClick={() => void openAgentsBridge.updates.download()}
 					tabIndex={tabIndex}
 					type="button"
 				>
@@ -1999,7 +1999,7 @@ function UpdateStatusRow({
 			aria-label="Retry update check"
 			className="flex w-full items-center gap-2.5 rounded-lg border border-warning/35 bg-warning/12 p-2.5 text-left text-control font-medium text-warning hover:bg-warning/18 [&_svg]:text-warning"
 			data-testid="sidebar-update-failed"
-			onClick={() => void aoBridge.updates.check()}
+			onClick={() => void openAgentsBridge.updates.check()}
 			tabIndex={tabIndex}
 			type="button"
 		>
@@ -2092,7 +2092,7 @@ function UpdateStatusRail({
 								: "Download update"
 						}
 						className={cn(FOOTER_RAIL_BUTTON_CLASS, "size-9 text-passive [&_svg]:size-4")}
-						onClick={() => void aoBridge.updates.download()}
+						onClick={() => void openAgentsBridge.updates.download()}
 						tabIndex={tabIndex}
 						type="button"
 					>
@@ -2133,7 +2133,7 @@ function UpdateStatusRail({
 					<button
 						aria-label="Retry update check"
 						className="grid size-9 place-items-center rounded-lg bg-warning/12 text-warning hover:bg-warning/18 [&_svg]:size-4"
-						onClick={() => void aoBridge.updates.check()}
+						onClick={() => void openAgentsBridge.updates.check()}
 						tabIndex={tabIndex}
 						type="button"
 					>

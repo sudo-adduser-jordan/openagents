@@ -2,7 +2,7 @@ package domain
 
 import "time"
 
-// SessionInterfaceTransitionPolicy decides what AO does with work already in
+// SessionInterfaceTransitionPolicy decides what Open Agents does with work already in
 // flight when moving a live session between its terminal and Chat controllers.
 type SessionInterfaceTransitionPolicy string
 
@@ -22,7 +22,7 @@ func (p SessionInterfaceTransitionPolicy) Valid() bool {
 
 // SessionInterfaceTransitionHistoryPolicy scopes an explicit recovery choice.
 // Provider history may replace only legacy/untrusted hook text; it never waives
-// a trusted current-turn checkpoint, AO's projected high-water mark, or native
+// a trusted current-turn checkpoint, Open Agents's projected high-water mark, or native
 // conversation identity.
 type SessionInterfaceTransitionHistoryPolicy string
 

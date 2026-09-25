@@ -36,7 +36,7 @@ export const BOARD_ZONES: BoardZone[] = ["needs_you", "needs_review", "ready", "
  * Statuses where the agent itself is waiting on a person.
  *
  * Deliberately agent-level only. `ci_failed` and `changes_requested` are PR
- * facts, and the daemon already decides whether AO or a person owns their next
+ * facts, and the daemon already decides whether Open Agents or a person owns their next
  * turn — lifting them here would second-guess that and split one PR's lifecycle
  * across two sections.
  */
@@ -51,7 +51,7 @@ export function agentBlocked(session: Pick<DashboardSession, "status" | "display
  *
  * Mirrors desktop's `toKanbanColumn`: trust the server's placement when it sends
  * one, because it is derived from durable delivery facts that the client cannot
- * see — whether AO's review pass is mid-run, whether auto-inject is configured.
+ * see — whether Open Agents' review pass is mid-run, whether auto-inject is configured.
  * The fallback only covers a daemon too old to send the field.
  */
 export function kanbanColumnOf(session: DashboardSession): KanbanColumn {
@@ -275,8 +275,8 @@ export function groupSessions(
  *
  * Two earlier versions of this were stricter and both hid too much. Comparing
  * against the SESSION ID stopped making sense once titles came from `issueId`,
- * because the id then appeared nowhere on the card. And normalising away AO's
- * own `ao/<id>/root` scaffolding hid the branch on every unnamed session — but
+ * because the id then appeared nowhere on the card. And normalising away Open Agents'
+ * own `open-agents/<id>/root` scaffolding hid the branch on every unnamed session — but
  * that string is the worktree, it is the only place the card names it, and
  * desktop shows it. Only a branch that genuinely restates the title is dropped.
  */

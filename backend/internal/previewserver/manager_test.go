@@ -16,22 +16,22 @@ import (
 	"testing"
 	"time"
 
-	"github.com/aoagents/agent-orchestrator/backend/internal/domain"
+	"github.com/sudo-adduser-jordan/open-agents/backend/internal/domain"
 )
 
 func TestPreviewServerHelper(t *testing.T) {
-	if os.Getenv("AO_PREVIEW_CRASH_HELPER") == "1" {
+	if os.Getenv("OPEN_AGENTS_PREVIEW_CRASH_HELPER") == "1" {
 		serveUntilFirstRequestThenExit(t)
 		return
 	}
-	if os.Getenv("AO_PREVIEW_TEST_HELPER") == "1" {
+	if os.Getenv("OPEN_AGENTS_PREVIEW_TEST_HELPER") == "1" {
 		servePreviewHelper(t)
 		return
 	}
 }
 
 // serveUntilFirstRequestThenExit binds the loopback port passed via PORT,
-// answers HTTP requests until AO_PREVIEW_CRASH_AFTER_MS milliseconds have
+// answers HTTP requests until OPEN_AGENTS_PREVIEW_CRASH_AFTER_MS milliseconds have
 // passed (default 200ms), then exits with a non-zero status. That window is
 // long enough for the manager's readiness probe to flip the run to
 // StateReady, and short enough that the subsequent waitForExit goroutine
@@ -43,7 +43,7 @@ func serveUntilFirstRequestThenExit(t *testing.T) {
 		t.Fatalf("invalid helper PORT %q", os.Getenv("PORT"))
 	}
 	delay := 2 * time.Second
-	if raw := os.Getenv("AO_PREVIEW_CRASH_AFTER_MS"); raw != "" {
+	if raw := os.Getenv("OPEN_AGENTS_PREVIEW_CRASH_AFTER_MS"); raw != "" {
 		if n, errConv := strconv.Atoi(raw); errConv == nil && n > 0 {
 			delay = time.Duration(n) * time.Millisecond
 		}
@@ -93,7 +93,7 @@ func TestManagerStartsIsolatedConfiguredServerAndStopsIt(t *testing.T) {
 	manager := New(slog.New(slog.NewTextHandler(io.Discard, nil)))
 	t.Cleanup(manager.Close)
 
-	status, err := manager.Start(context.Background(), "ao-1", workspace, "")
+	status, err := manager.Start(context.Background(), "open-agents-1", workspace, "")
 	if err != nil {
 		t.Fatalf("Start: %v\nstatus=%+v", err, status)
 	}
@@ -112,7 +112,7 @@ func TestManagerStartsIsolatedConfiguredServerAndStopsIt(t *testing.T) {
 		t.Fatalf("GET status = %d", resp.StatusCode)
 	}
 
-	stopped, err := manager.Stop(context.Background(), "ao-1")
+	stopped, err := manager.Stop(context.Background(), "open-agents-1")
 	if err != nil {
 		t.Fatalf("Stop: %v", err)
 	}
@@ -126,18 +126,18 @@ func TestManagerKeepsConcurrentSessionServersIsolated(t *testing.T) {
 	manager := New(slog.New(slog.NewTextHandler(io.Discard, nil)))
 	t.Cleanup(manager.Close)
 
-	first, err := manager.Start(context.Background(), domain.SessionID("ao-1"), workspace, "")
+	first, err := manager.Start(context.Background(), domain.SessionID("open-agents-1"), workspace, "")
 	if err != nil {
 		t.Fatal(err)
 	}
-	second, err := manager.Start(context.Background(), domain.SessionID("ao-2"), workspace, "")
+	second, err := manager.Start(context.Background(), domain.SessionID("open-agents-2"), workspace, "")
 	if err != nil {
 		t.Fatal(err)
 	}
 	if first.Port == second.Port || first.URL == second.URL {
 		t.Fatalf("session previews collided: first=%+v second=%+v", first, second)
 	}
-	if manager.Status("ao-1").State != StateReady || manager.Status("ao-2").State != StateReady {
+	if manager.Status("open-agents-1").State != StateReady || manager.Status("open-agents-2").State != StateReady {
 		t.Fatalf("both session servers should remain ready")
 	}
 }
@@ -155,7 +155,7 @@ func TestManagerFiresOnExitWhenServerCrashesAfterLaunch(t *testing.T) {
 		gotStatus <- s
 	})
 
-	status, err := manager.Start(context.Background(), domain.SessionID("ao-1"), workspace, "")
+	status, err := manager.Start(context.Background(), domain.SessionID("open-agents-1"), workspace, "")
 	if err != nil {
 		t.Fatalf("Start: %v\nstatus=%+v", err, status)
 	}
@@ -183,7 +183,7 @@ func TestManagerFiresOnExitWhenServerCrashesAfterLaunch(t *testing.T) {
 
 	// Status must reflect the crash immediately, before the
 	// failedStatusRetention window expires (issue #4500).
-	post := manager.Status("ao-1")
+	post := manager.Status("open-agents-1")
 	if post.State != StateFailed {
 		t.Fatalf("post-crash state = %q, want %q", post.State, StateFailed)
 	}
@@ -197,7 +197,7 @@ func TestManagerDoesNotFireOnExitWhenStoppedByUser(t *testing.T) {
 	manager := New(slog.New(slog.NewTextHandler(io.Discard, nil)))
 	t.Cleanup(manager.Close)
 
-	status, err := manager.Start(context.Background(), domain.SessionID("ao-1"), workspace, "")
+	status, err := manager.Start(context.Background(), domain.SessionID("open-agents-1"), workspace, "")
 	if err != nil {
 		t.Fatalf("Start: %v\nstatus=%+v", err, status)
 	}
@@ -207,7 +207,7 @@ func TestManagerDoesNotFireOnExitWhenStoppedByUser(t *testing.T) {
 		gotStatus <- s
 	})
 
-	if _, err := manager.Stop(context.Background(), "ao-1"); err != nil {
+	if _, err := manager.Stop(context.Background(), "open-agents-1"); err != nil {
 		t.Fatalf("Stop: %v", err)
 	}
 
@@ -226,32 +226,32 @@ func TestManagerRequiresNameWhenConfigurationsAreAmbiguous(t *testing.T) {
 	manager := New(nil)
 	t.Cleanup(manager.Close)
 
-	_, err := manager.Start(context.Background(), "ao-1", workspace, "")
+	_, err := manager.Start(context.Background(), "open-agents-1", workspace, "")
 	var serviceErr Error
 	if !errors.As(err, &serviceErr) || serviceErr.Code != "PREVIEW_CONFIGURATION_REQUIRED" {
 		t.Fatalf("error = %#v, want PREVIEW_CONFIGURATION_REQUIRED", err)
 	}
 
-	status, err := manager.Start(context.Background(), "ao-1", workspace, "api")
+	status, err := manager.Start(context.Background(), "open-agents-1", workspace, "api")
 	if err != nil {
 		t.Fatalf("named Start: %v", err)
 	}
 	if status.TargetKind != TargetAPI {
 		t.Fatalf("targetKind = %q, want api", status.TargetKind)
 	}
-	_, _ = manager.Stop(context.Background(), "ao-1")
+	_, _ = manager.Stop(context.Background(), "open-agents-1")
 }
 
 func TestManagerRejectsMissingConfigAndNonLoopbackURL(t *testing.T) {
 	manager := New(nil)
 	t.Cleanup(manager.Close)
-	_, err := manager.Start(context.Background(), "ao-1", t.TempDir(), "")
+	_, err := manager.Start(context.Background(), "open-agents-1", t.TempDir(), "")
 	assertPreviewErrorCode(t, err, "PREVIEW_CONFIG_NOT_FOUND")
 
 	cfg := helperConfiguration("web", TargetApp)
 	cfg.URL = "https://example.com:${PORT}/"
 	workspace := writeLaunchFile(t, []Configuration{cfg})
-	_, err = manager.Start(context.Background(), "ao-1", workspace, "")
+	_, err = manager.Start(context.Background(), "open-agents-1", workspace, "")
 	assertPreviewErrorCode(t, err, "PREVIEW_CONFIG_INVALID")
 }
 
@@ -296,17 +296,17 @@ func TestPreviewEnvironmentDoesNotInheritDaemonCredentials(t *testing.T) {
 			"PATH=/usr/bin",
 			"HOME=/home/test",
 			"GITHUB_TOKEN=secret",
-			"AO_BROWSER_RUNTIME_TOKEN=runtime-secret",
+			"OPEN_AGENTS_BROWSER_RUNTIME_TOKEN=runtime-secret",
 		},
 		map[string]string{"PUBLIC_FLAG": "enabled"},
 		"session-1",
 		4173,
 	)
 	joined := strings.Join(env, "\n")
-	if strings.Contains(joined, "GITHUB_TOKEN") || strings.Contains(joined, "AO_BROWSER_RUNTIME_TOKEN") {
+	if strings.Contains(joined, "GITHUB_TOKEN") || strings.Contains(joined, "OPEN_AGENTS_BROWSER_RUNTIME_TOKEN") {
 		t.Fatalf("preview inherited daemon credentials: %v", env)
 	}
-	for _, want := range []string{"PATH=/usr/bin", "HOME=/home/test", "PUBLIC_FLAG=enabled", "AO_SESSION_ID=session-1"} {
+	for _, want := range []string{"PATH=/usr/bin", "HOME=/home/test", "PUBLIC_FLAG=enabled", "OPEN_AGENTS_SESSION_ID=session-1"} {
 		if !strings.Contains(joined, want) {
 			t.Fatalf("preview env missing %q: %v", want, env)
 		}
@@ -322,7 +322,7 @@ func helperConfiguration(name string, kind TargetKind) Configuration {
 		AutoPort:           true,
 		URL:                "http://127.0.0.1:${PORT}/",
 		TargetKind:         kind,
-		Env:                map[string]string{"AO_PREVIEW_TEST_HELPER": "1"},
+		Env:                map[string]string{"OPEN_AGENTS_PREVIEW_TEST_HELPER": "1"},
 		ReadyTimeoutMillis: 5000,
 	}
 }
@@ -342,8 +342,8 @@ func crashConfiguration(name string, kind TargetKind) Configuration {
 		TargetKind:         kind,
 		ReadyTimeoutMillis: 5000,
 		Env: map[string]string{
-			"AO_PREVIEW_CRASH_HELPER": "1",
-			"AO_PREVIEW_TEST_HELPER":  "1",
+			"OPEN_AGENTS_PREVIEW_CRASH_HELPER": "1",
+			"OPEN_AGENTS_PREVIEW_TEST_HELPER":  "1",
 		},
 	}
 }
@@ -351,7 +351,7 @@ func crashConfiguration(name string, kind TargetKind) Configuration {
 func writeLaunchFile(t *testing.T, configurations []Configuration) string {
 	t.Helper()
 	workspace := t.TempDir()
-	dir := filepath.Join(workspace, ".ao")
+	dir := filepath.Join(workspace, ".open-agents")
 	if err := os.MkdirAll(dir, 0o755); err != nil {
 		t.Fatal(err)
 	}

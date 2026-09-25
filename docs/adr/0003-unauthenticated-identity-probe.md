@@ -44,17 +44,17 @@ The exemption is deliberately narrow, and there are tests for each constraint:
   be able to lock itself out by probing, and an unauthenticated probe carries no
   credential to get wrong.
 
-The host id is persisted at `~/.ao/mobile/identity.json` and belongs to that AO
+The host id is persisted at `~/.open-agents/mobile/identity.json` and belongs to that Open Agents
 data directory. Hardware fingerprints are retained as diagnostic metadata but
 never rotate the id: docks, OS interface changes, and replacing the only network
 card must not silently unpair every phone. Resetting identity is explicit by
-removing this file while AO is stopped; the next start issues a new id.
+removing this file while Open Agents is stopped; the next start issues a new id.
 
-This means copying the complete `~/.ao` directory copies the identity too. That
+This means copying the complete `~/.open-agents` directory copies the identity too. That
 is the chosen tradeoff: predictable pairing across ordinary hardware changes
 instead of inferring identity from mutable network hardware. A copied data
 directory can pass the pre-auth identity check, so backups and migrations of
-`~/.ao` must be protected like the rest of AO's credentials and state.
+`~/.open-agents` must be protected like the rest of Open Agents's credentials and state.
 
 ## Consequences
 
@@ -63,7 +63,7 @@ exists to stop the app leaking a credential to an unknown device, which is a
 worse exposure than disclosing an opaque identifier.
 
 What an unauthenticated caller on the LAN — or anyone who reaches the tunnel
-hostname — can now learn: that an AO daemon is present, and a random opaque id
+hostname — can now learn: that an Open Agents daemon is present, and a random opaque id
 for it. They could already infer the first from the shape of the 401. The id is
 not a secret and carries no hostname, user, project, or platform. It does not
 authorize requests; the connection password is still required.

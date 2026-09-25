@@ -3,24 +3,24 @@ package review
 import (
 	"sort"
 
-	"github.com/aoagents/agent-orchestrator/backend/internal/domain"
-	"github.com/aoagents/agent-orchestrator/backend/pkg/contract"
+	"github.com/sudo-adduser-jordan/open-agents/backend/internal/domain"
+	"github.com/sudo-adduser-jordan/open-agents/backend/pkg/contract"
 )
 
 // StateStatus is the per-PR review planning state.
-type StateStatus = contract.AOReviewState
+type StateStatus = contract.OpenAgentsReviewState
 
 const (
-	// ReviewStateNeedsReview means an eligible PR has no current AO approval or running pass.
-	ReviewStateNeedsReview = contract.AOReviewNeedsReview
+	// ReviewStateNeedsReview means an eligible PR has no current Open Agents approval or running pass.
+	ReviewStateNeedsReview = contract.OpenAgentsReviewNeedsReview
 	// ReviewStateRunning means a review run is already active for the PR's current head.
-	ReviewStateRunning = contract.AOReviewRunning
-	// ReviewStateUpToDate means AO approved the PR's current head.
-	ReviewStateUpToDate = contract.AOReviewUpToDate
-	// ReviewStateChangesRequested means AO requested changes on the PR's current head.
-	ReviewStateChangesRequested = contract.AOReviewChangesRequested
+	ReviewStateRunning = contract.OpenAgentsReviewRunning
+	// ReviewStateUpToDate means Open Agents approved the PR's current head.
+	ReviewStateUpToDate = contract.OpenAgentsReviewUpToDate
+	// ReviewStateChangesRequested means Open Agents requested changes on the PR's current head.
+	ReviewStateChangesRequested = contract.OpenAgentsReviewChangesRequested
 	// ReviewStateIneligible means the PR is closed, merged, or missing required facts.
-	ReviewStateIneligible = contract.AOReviewIneligible
+	ReviewStateIneligible = contract.OpenAgentsReviewIneligible
 )
 
 // PRReviewState is one PR-scoped review decision for a worker session.

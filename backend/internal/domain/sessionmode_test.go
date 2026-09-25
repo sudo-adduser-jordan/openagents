@@ -88,7 +88,7 @@ func TestTurnStateTerminal(t *testing.T) {
 		// during history replay. It must not keep the controller busy.
 		{TurnStateRecovered, true},
 		// Interrupted is terminal but is not a failure: the provider reports it
-		// as its own status and AO must not relabel it as an error.
+		// as its own status and Open Agents must not relabel it as an error.
 		{TurnStateInterrupted, true},
 		{TurnStateFailed, true},
 		{TurnStateCancelled, true},

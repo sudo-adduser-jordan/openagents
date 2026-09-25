@@ -1,5 +1,5 @@
 // Helpers for discovering the daemon's actually-bound port. The configured
-// AO_PORT is only a request — the daemon may bind a different port (port 0,
+// OPEN_AGENTS_PORT is only a request — the daemon may bind a different port (port 0,
 // operator overrides), so the supervisor trusts what the daemon reports:
 //   - the slog text line `msg="daemon listening" addr=127.0.0.1:<port>`
 //     (backend/internal/httpd/server.go, written to stderr), and
@@ -70,8 +70,8 @@ export type RunFileInfo = {
 	 * Daemon ownership tag — read from running.json so the attach-path link
 	 * decision uses the daemon's durable record, not the current process env.
 	 * "app" = desktop-spawned (re-link on attach); "persistent" = spawned under
-	 * AO_KEEP_DAEMON (stays alive across app quit, never re-linked);
-	 * undefined/empty = headless `ao start` daemon.
+	 * OPEN_AGENTS_KEEP_DAEMON (stays alive across app quit, never re-linked);
+	 * undefined/empty = headless `open-agents start` daemon.
 	 */
 	owner?: string;
 	/** Desktop launch that supplied this daemon's private browser token. */
@@ -109,8 +109,8 @@ export function parseRunFile(contents: string): RunFileInfo | null {
 }
 
 /**
- * Where the daemon writes running.json when AO_RUN_FILE is unset. Matches
- * backend/internal/config's canonical AO home default so the supervisor reads
+ * Where the daemon writes running.json when OPEN_AGENTS_RUN_FILE is unset. Matches
+ * backend/internal/config's canonical Open Agents home default so the supervisor reads
  * the same file the daemon writes. Returns null when the user home directory
  * cannot be resolved.
  */
@@ -121,5 +121,5 @@ export function defaultRunFilePath(
 ): string | null {
 	void platform;
 	if (!homeDir) return null;
-	return joinPath(homeDir, ".ao", "running.json");
+	return joinPath(homeDir, ".open-agents", "running.json");
 }

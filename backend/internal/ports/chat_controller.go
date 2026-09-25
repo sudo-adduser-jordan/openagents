@@ -3,7 +3,7 @@ package ports
 import (
 	"context"
 
-	"github.com/aoagents/agent-orchestrator/backend/internal/domain"
+	"github.com/sudo-adduser-jordan/open-agents/backend/internal/domain"
 )
 
 // ChatHistoryMode makes required replay and deferred import mutually exclusive.
@@ -52,7 +52,7 @@ type ChatControllerStart struct {
 	HistoryMode ChatHistoryMode
 	// HistoryPolicy carries explicit, attempt-scoped consent to ignore only
 	// legacy/untrusted hook text during a TUI-to-Chat replay. Trusted checkpoints
-	// and AO high-water facts remain mandatory.
+	// and Open Agents high-water facts remain mandatory.
 	HistoryPolicy domain.SessionInterfaceTransitionHistoryPolicy
 	// ControllerReady commits the controller's durable generation before event
 	// consumption starts. A controller that exits immediately must report after

@@ -291,7 +291,7 @@ export default function SpawnModal() {
 		{Platform.OS === "ios" ? <View style={styles.flexSpacer} /> : null}
 
 		{hasComposerMessage ? <View style={styles.messages}>
-					{mode === "chat" && !loading && agents.length === 0 ? <Text style={styles.warn}>No installed agent on this AO host currently supports Chat. Choose Terminal UI or install/authenticate a Chat-capable agent.</Text> : null}
+					{mode === "chat" && !loading && agents.length === 0 ? <Text style={styles.warn}>No installed agent on this Open Agents host currently supports Chat. Choose Terminal UI or install/authenticate a Chat-capable agent.</Text> : null}
 					{catalogError ? <Text style={styles.warn}>{catalogError}</Text> : null}
 					{modelError ? <Text style={styles.warn}>{modelError}</Text> : null}
 					{attachmentError ? <Text style={styles.warn}>{attachmentError}</Text> : null}

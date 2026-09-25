@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# Render the AO.icon bundle exactly as iOS 26 will draw it, without a build.
+# Render the open-agents.icon bundle exactly as iOS 26 will draw it, without a build.
 #
 #   scripts/preview-icon.sh [output-dir]
 #
@@ -26,7 +26,7 @@ ictool="$app/Contents/Executables/ictool"
 export DYLD_FRAMEWORK_PATH="$app/Contents/Frameworks"
 
 here="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
-icon="$(dirname "$here")/assets/AO.icon"
+icon="$(dirname "$here")/assets/open-agents.icon"
 out="${1:-$(mktemp -d)}"
 mkdir -p "$out"
 

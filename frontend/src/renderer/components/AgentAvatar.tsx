@@ -2,10 +2,10 @@ import {
 	AgentAvatar as ProductAgentAvatar,
 	type AgentAvatarProps,
 	type AgentLogoSources,
-} from "@aoagents/product-ui";
+} from "@openagents/product-ui";
 import opencodeLogo from "../assets/agents/opencode.svg";
 
-// Real brand logo keyed by the harness name AO stores on session.provider.
+// Real brand logo keyed by the harness name Open Agents stores on session.provider.
 // Agents without an asset fall back to a lettered tile.
 const LOGOS: AgentLogoSources = {
 	opencode: opencodeLogo,

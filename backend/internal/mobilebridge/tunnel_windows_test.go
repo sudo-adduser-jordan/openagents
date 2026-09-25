@@ -19,7 +19,7 @@ import (
 // Run the test executable as a console-subsystem cloudflared stand-in so the
 // production discovery and runner paths can be checked without network access.
 func TestMain(m *testing.M) {
-	if report := os.Getenv("AO_TEST_CLOUDFLARED_CONSOLE"); report != "" {
+	if report := os.Getenv("OPEN_AGENTS_TEST_CLOUDFLARED_CONSOLE"); report != "" {
 		console, _, _ := windows.NewLazySystemDLL("kernel32.dll").NewProc("GetConsoleWindow").Call()
 		if err := os.WriteFile(report, []byte(strconv.FormatUint(uint64(console), 10)), 0o600); err != nil {
 			os.Exit(2)
@@ -48,7 +48,7 @@ func TestCloudflaredVersionHasNoConsole(t *testing.T) {
 		t.Fatal(err)
 	}
 	report := filepath.Join(t.TempDir(), "console")
-	t.Setenv("AO_TEST_CLOUDFLARED_CONSOLE", report)
+	t.Setenv("OPEN_AGENTS_TEST_CLOUDFLARED_CONSOLE", report)
 	version, ok := LocalCloudflaredLookup(t.TempDir()).Version(binary)
 	if !ok || version != (CloudflaredVersion{2026, 7, 2}) {
 		t.Fatalf("version = %+v, ok = %v", version, ok)
@@ -66,7 +66,7 @@ func TestCloudflaredRunnerHasNoConsoleAndStops(t *testing.T) {
 	}
 	dir := t.TempDir()
 	report := filepath.Join(dir, "console")
-	t.Setenv("AO_TEST_CLOUDFLARED_CONSOLE", report)
+	t.Setenv("OPEN_AGENTS_TEST_CLOUDFLARED_CONSOLE", report)
 	runner := &TunnelRunner{
 		Binary: binary, LocalPort: 3002, PIDPath: filepath.Join(dir, "tunnel.pid"),
 		Runtime: &TunnelRuntime{}, SettleDelay: time.Millisecond,
@@ -105,7 +105,7 @@ func TestCloudflaredRunnerHasNoConsoleAndStops(t *testing.T) {
 // an ordinary go test console can otherwise mask the unwanted window.
 func runInDetachedProcess(t *testing.T) bool {
 	t.Helper()
-	if os.Getenv("AO_TEST_DETACHED_TUNNEL") == "1" {
+	if os.Getenv("OPEN_AGENTS_TEST_DETACHED_TUNNEL") == "1" {
 		return false
 	}
 	binary, err := os.Executable()
@@ -115,7 +115,7 @@ func runInDetachedProcess(t *testing.T) bool {
 	ctx, cancel := context.WithTimeout(context.Background(), 30*time.Second)
 	defer cancel()
 	cmd := exec.CommandContext(ctx, binary, "-test.run=^"+t.Name()+"$", "-test.v")
-	cmd.Env = append(os.Environ(), "AO_TEST_DETACHED_TUNNEL=1")
+	cmd.Env = append(os.Environ(), "OPEN_AGENTS_TEST_DETACHED_TUNNEL=1")
 	cmd.SysProcAttr = &syscall.SysProcAttr{CreationFlags: windows.DETACHED_PROCESS}
 	if output, err := cmd.CombinedOutput(); err != nil {
 		t.Fatalf("detached daemon test: %v\n%s", err, output)

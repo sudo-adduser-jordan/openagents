@@ -1,6 +1,6 @@
 # Domain Glossary
 
-Canonical vocabulary for Agent Orchestrator. Terms only — no implementation
+Canonical vocabulary for Open Agents. Terms only — no implementation
 details, no decisions (those live in `docs/adr/`).
 
 ## Daemon surfaces

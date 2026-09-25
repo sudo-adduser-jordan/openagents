@@ -66,7 +66,7 @@ vi.mock("../lib/platform", async (importOriginal) => {
 });
 
 vi.mock("../lib/bridge", () => ({
-	aoBridge: {
+	openAgentsBridge: {
 		app: { getVersion, openExternal },
 		clipboard: { writeText },
 		daemon: { getStatus: getDaemonStatus },
@@ -192,7 +192,7 @@ describe("GlobalSettingsForm", () => {
 		expect(toggle).toHaveAttribute("aria-checked", "false");
 
 		await user.click(toggle);
-		expect(window.localStorage.getItem("ao.developerMode")).toBe("true");
+		expect(window.localStorage.getItem("open-agents.developerMode")).toBe("true");
 		await user.click(screen.getByLabelText("Updates channel"));
 		expect(await screen.findByRole("menuitem", { name: "Feature Releases" })).toBeInTheDocument();
 	});
@@ -590,16 +590,16 @@ describe("GlobalSettingsForm", () => {
 		await waitFor(() => expect(writeText).toHaveBeenCalledTimes(1));
 		const copied = writeText.mock.calls[0][0] as string;
 		expect(copied).toContain("Create project fails");
-		expect(copied).toContain("AO version: 9.9.9-test");
+		expect(copied).toContain("Open Agents version: 9.9.9-test");
 		expect(copied).toContain("Daemon: ready");
 		expect(copied).toContain("[redacted-local-path]");
 		expect(copied).toContain("[redacted-local-url]");
 		expect(copied).not.toContain("/Users/alice");
 		expect(copied).not.toContain("local-secret");
 		expect(copied).not.toContain("## Type");
-		expect(copied).not.toContain("Generated locally by AO");
+		expect(copied).not.toContain("Generated locally by Open Agents");
 		expect(openExternal).toHaveBeenCalledWith(
-			expect.stringContaining("https://github.com/Untrivial-ai/agent-orchestrator/issues/new"),
+			expect.stringContaining("https://github.com/sudo-adduser-jordan/open-agents/issues/new"),
 		);
 		expect(open).not.toHaveBeenCalled();
 		expect(screen.getByLabelText("Title")).toHaveValue("");
@@ -620,7 +620,7 @@ describe("GlobalSettingsForm", () => {
 		expect(screen.getByRole("button", { name: /copy & open email/i })).toBeInTheDocument();
 		await user.click(screen.getByRole("button", { name: /copy & open discord/i }));
 		await waitFor(() => expect(writeText).toHaveBeenCalledTimes(1));
-		expect(writeText.mock.calls[0][0]).toContain("**AO feedback**");
+		expect(writeText.mock.calls[0][0]).toContain("**Open Agents feedback**");
 		expect(screen.getByText("Discord draft copied.")).toBeInTheDocument();
 		expect(screen.getByLabelText("Title")).toHaveValue("");
 		expect(screen.getByLabelText("What happened?")).toHaveValue("");
@@ -638,7 +638,7 @@ describe("GlobalSettingsForm", () => {
 		await waitFor(() => expect(writeText).toHaveBeenCalledTimes(2));
 		expect(writeText.mock.calls[0][0]).toContain("Daemon: unknown");
 		expect(writeText.mock.calls[1][0]).toContain("To: prasad@untrivial.ai");
-		expect(writeText.mock.calls[1][0]).toContain("AO feedback");
+		expect(writeText.mock.calls[1][0]).toContain("Open Agents feedback");
 		expect(openExternal).toHaveBeenCalledWith("https://discord.gg/WjKNa7EbB8");
 		expect(openExternal).toHaveBeenCalledWith(expect.stringContaining("mailto:prasad@untrivial.ai"));
 		expect(open).not.toHaveBeenCalled();

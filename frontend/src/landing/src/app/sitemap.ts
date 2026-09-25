@@ -1,4 +1,4 @@
-import { COMPANY } from "@ao/shared/constants";
+import { COMPANY } from "@openagents/shared/constants";
 import type { MetadataRoute } from "next";
 import { getBlogPosts } from "@/lib/blog";
 import { getChangelogEntries } from "@/lib/changelog";

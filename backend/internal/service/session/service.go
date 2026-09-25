@@ -11,10 +11,10 @@ import (
 
 	"golang.org/x/sync/singleflight"
 
-	"github.com/aoagents/agent-orchestrator/backend/internal/domain"
-	"github.com/aoagents/agent-orchestrator/backend/internal/httpd/apierr"
-	"github.com/aoagents/agent-orchestrator/backend/internal/ports"
-	sessionmanager "github.com/aoagents/agent-orchestrator/backend/internal/session_manager"
+	"github.com/sudo-adduser-jordan/open-agents/backend/internal/domain"
+	"github.com/sudo-adduser-jordan/open-agents/backend/internal/httpd/apierr"
+	"github.com/sudo-adduser-jordan/open-agents/backend/internal/ports"
+	sessionmanager "github.com/sudo-adduser-jordan/open-agents/backend/internal/session_manager"
 )
 
 // Store is the read-only persistence surface needed to assemble controller-facing session read models.
@@ -120,19 +120,19 @@ const (
 	RestoreModeViewFresh RestoreModeView = "fresh"
 )
 
-// RestoreOutcome reports the restored read model and how AO relaunched it.
+// RestoreOutcome reports the restored read model and how Open Agents relaunched it.
 type RestoreOutcome struct {
 	Session domain.Session  `json:"session"`
 	Mode    RestoreModeView `json:"restoreMode"`
 }
 
-// ResumeAgentOutcome reports the resumed read model and how AO relaunched it.
+// ResumeAgentOutcome reports the resumed read model and how Open Agents relaunched it.
 type ResumeAgentOutcome struct {
 	Session domain.Session  `json:"session"`
 	Mode    RestoreModeView `json:"resumeMode"`
 }
 
-// ExitAgentOutcome reports the still-live AO session after only its agent
+// ExitAgentOutcome reports the still-live Open Agents session after only its agent
 // controller has exited.
 type ExitAgentOutcome struct {
 	Session domain.Session `json:"session"`
@@ -333,7 +333,7 @@ func (s *Service) requireProject(ctx context.Context, id domain.ProjectID) (doma
 		return domain.ProjectRecord{}, fmt.Errorf("get project %s: %w", id, err)
 	}
 	if !ok {
-		return domain.ProjectRecord{}, apierr.NotFound("PROJECT_NOT_FOUND", "Unknown project. Register it with `ao project add`")
+		return domain.ProjectRecord{}, apierr.NotFound("PROJECT_NOT_FOUND", "Unknown project. Register it with `open-agents project add`")
 	}
 	return rec, nil
 }
@@ -404,7 +404,7 @@ func (s *Service) activeOrchestrators(ctx context.Context, projectID domain.Proj
 	return s.List(ctx, ListFilter{ProjectID: projectID, Active: &active, OrchestratorOnly: true})
 }
 
-const orchestratorRetireNotice = "AO is replacing this project orchestrator. Stop coordinating new work now; a fresh orchestrator will take over in a new workspace."
+const orchestratorRetireNotice = "Open Agents is replacing this project orchestrator. Stop coordinating new work now; a fresh orchestrator will take over in a new workspace."
 
 func (s *Service) sendRetireNotice(ctx context.Context, id domain.SessionID) error {
 	if err := s.manager.Send(ctx, id, orchestratorRetireNotice, nil); err != nil {
@@ -490,7 +490,7 @@ func (s *Service) Restore(ctx context.Context, id domain.SessionID) (RestoreOutc
 	return RestoreOutcome{Session: session, Mode: restoreModeView(res.Mode)}, nil
 }
 
-// ExitAgent stops only the agent controller while preserving the AO session,
+// ExitAgent stops only the agent controller while preserving the Open Agents session,
 // worktree, terminal identity, and provider-native conversation.
 func (s *Service) ExitAgent(ctx context.Context, id domain.SessionID) (ExitAgentOutcome, error) {
 	manager, ok := s.manager.(exitAgentCommander)
@@ -707,7 +707,7 @@ func (s *Service) SetWorkflowMode(ctx context.Context, id domain.SessionID, mode
 	return s.Get(ctx, id)
 }
 
-// SetAutoInjectReview persists whether new SCM and AO review feedback should be sent to the session.
+// SetAutoInjectReview persists whether new SCM and Open Agents review feedback should be sent to the session.
 func (s *Service) SetAutoInjectReview(ctx context.Context, id domain.SessionID, autoInject bool) (domain.Session, error) {
 	updated, err := s.store.SetSessionAutoInjectReview(ctx, id, autoInject, time.Now().UTC())
 	if err != nil {
@@ -1042,13 +1042,13 @@ func mapSessionError(err error) error {
 			"The current terminal launch has not confirmed that it owns the stored native conversation yet", nil)
 	case errors.Is(err, sessionmanager.ErrInterfaceTransitionNotCancellable):
 		return apierr.Conflict("INTERFACE_TRANSITION_NOT_CANCELLABLE",
-			"The source controller has already stopped; AO must finish or recover the switch", nil)
+			"The source controller has already stopped; Open Agents must finish or recover the switch", nil)
 	case errors.Is(err, sessionmanager.ErrInterfaceTransitionNoticeNotAcknowledgeable):
 		return apierr.Conflict("INTERFACE_TRANSITION_NOTICE_NOT_ACKNOWLEDGEABLE",
 			"This interface switch has no failure or recovery notice to acknowledge", nil)
 	case errors.Is(err, sessionmanager.ErrInterfaceProviderHistoryRecoveryUnavailable):
 		return apierr.Conflict("PROVIDER_HISTORY_RECOVERY_UNAVAILABLE",
-			"Provider history can be used only after AO identifies a legacy text-only mismatch", nil)
+			"Provider history can be used only after Open Agents identifies a legacy text-only mismatch", nil)
 	case errors.Is(err, sessionmanager.ErrInterfaceAlreadySelected):
 		return apierr.Conflict("INTERFACE_ALREADY_SELECTED",
 			"The session is already using the requested interface", nil)
@@ -1066,7 +1066,7 @@ func mapSessionError(err error) error {
 		return apierr.Conflict("SESSION_NOT_RESUMABLE",
 			"This session has no saved agent session or prompt to resume from", nil)
 	case errors.Is(err, sessionmanager.ErrProjectNotResolvable):
-		return apierr.Invalid("PROJECT_NOT_RESOLVABLE", "Project is not registered or has no repo. Register it with `ao project add`", nil)
+		return apierr.Invalid("PROJECT_NOT_RESOLVABLE", "Project is not registered or has no repo. Register it with `open-agents project add`", nil)
 	case errors.Is(err, sessionmanager.ErrUnknownHarness):
 		return apierr.Invalid("UNKNOWN_HARNESS", err.Error(), nil)
 	case errors.Is(err, sessionmanager.ErrMissingHarness):
@@ -1200,7 +1200,7 @@ func (s *Service) toSession(ctx context.Context, rec domain.SessionRecord) (doma
 	return s.toSessionWithFacts(rec, prs, runs)
 }
 
-// currentHeadReviewRuns reads the session's AO review passes for the Kanban
+// currentHeadReviewRuns reads the session's Open Agents review passes for the Kanban
 // reducer. Sessions the reducer already decides without them — terminated ones
 // and ones with no PR yet — skip the query, so listing a board of building
 // workers stays one read per session.

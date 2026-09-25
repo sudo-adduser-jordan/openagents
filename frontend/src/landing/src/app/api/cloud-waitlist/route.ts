@@ -43,18 +43,18 @@ async function ensureTable(databaseUrl: string) {
     const sql = neon(databaseUrl);
 
     ensureTablePromise = sql`
-      CREATE TABLE IF NOT EXISTS ao_cloud_waitlist (
+      CREATE TABLE IF NOT EXISTS open_agents_cloud_waitlist (
         id BIGSERIAL PRIMARY KEY,
         email TEXT NOT NULL UNIQUE,
         role TEXT NOT NULL,
         social_profile TEXT,
-        source TEXT NOT NULL DEFAULT 'ao_cloud_waitlist',
+        source TEXT NOT NULL DEFAULT 'open_agents_cloud_waitlist',
         created_at TIMESTAMPTZ NOT NULL DEFAULT now(),
         updated_at TIMESTAMPTZ NOT NULL DEFAULT now()
       )
     `.then(async () => {
       await sql`
-        ALTER TABLE ao_cloud_waitlist
+        ALTER TABLE open_agents_cloud_waitlist
         ADD COLUMN IF NOT EXISTS social_profile TEXT
       `;
     });
@@ -80,7 +80,7 @@ export async function POST(request: NextRequest) {
       await ensureTable(databaseUrl);
 
       await sql`
-        INSERT INTO ao_cloud_waitlist (email, role, social_profile)
+        INSERT INTO open_agents_cloud_waitlist (email, role, social_profile)
         VALUES (${data.email}, ${data.role}, ${data.socialProfile})
         ON CONFLICT (email)
         DO UPDATE SET
@@ -89,7 +89,7 @@ export async function POST(request: NextRequest) {
           updated_at = now()
       `;
     },
-    failureLog: "AO Cloud waitlist storage failed.",
+    failureLog: "Open Agents Cloud waitlist storage failed.",
     failureError: "Unable to save waitlist request.",
   });
 }

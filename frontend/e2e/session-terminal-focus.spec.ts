@@ -43,7 +43,7 @@ test("renderer: a TUI session terminal holds the caret when it opens @T0 @TRM", 
 
 	await page.keyboard.type("hi");
 	await expect
-		.poll(async () => (await page.evaluate(() => window.__aoFakeTerminalMux?.stats().inputs ?? {}))[handleA]?.join(""))
+		.poll(async () => (await page.evaluate(() => window.__openAgentsFakeTerminalMux?.stats().inputs ?? {}))[handleA]?.join(""))
 		.toBe("hi");
 });
 
@@ -61,7 +61,7 @@ test("renderer: switching TUI sessions moves the caret to the session on screen 
 
 	// Each session received only its own keystrokes, so the caret followed the
 	// terminal that was actually on screen.
-	const inputs = await page.evaluate(() => window.__aoFakeTerminalMux?.stats().inputs ?? {});
+	const inputs = await page.evaluate(() => window.__openAgentsFakeTerminalMux?.stats().inputs ?? {});
 	expect(inputs[handleB]?.join("")).toBe("bbb");
 	expect(inputs[handleA]?.join("")).toBe("aaa");
 });

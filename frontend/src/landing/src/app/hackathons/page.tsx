@@ -1,4 +1,4 @@
-import { COMPANY } from "@ao/shared/constants";
+import { COMPANY } from "@openagents/shared/constants";
 import { ArrowRight, ArrowUpRight } from "lucide-react";
 import type { Metadata } from "next";
 import Link from "next/link";
@@ -7,16 +7,16 @@ import { TextScramble } from "./TextScramble";
 const pageUrl = `${COMPANY.MARKETING_URL}/hackathons/`;
 
 export const metadata: Metadata = {
-  title: "AO Hackathons",
+  title: "Open Agents Hackathons",
   description:
-    "Join upcoming AO hackathons and explore past community build sprints.",
+    "Join upcoming Open Agents hackathons and explore past community build sprints.",
   openGraph: {
     type: "website",
     url: pageUrl,
     siteName: COMPANY.NAME,
-    title: `AO Hackathons | ${COMPANY.NAME}`,
+    title: `Open Agents Hackathons | ${COMPANY.NAME}`,
     description:
-      "Join upcoming AO hackathons and explore past community build sprints.",
+      "Join upcoming Open Agents hackathons and explore past community build sprints.",
     images: [
       {
         url: `${COMPANY.MARKETING_URL}/og-image.png`,
@@ -28,10 +28,9 @@ export const metadata: Metadata = {
   },
   twitter: {
     card: "summary_large_image",
-    site: "@ao_build",
-    title: `AO Hackathons | ${COMPANY.NAME}`,
+    title: `Open Agents Hackathons | ${COMPANY.NAME}`,
     description:
-      "Join upcoming AO hackathons and explore past community build sprints.",
+      "Join upcoming Open Agents hackathons and explore past community build sprints.",
     images: [`${COMPANY.MARKETING_URL}/og-image.png`],
   },
   alternates: {
@@ -49,7 +48,7 @@ export default function HackathonsPage() {
               <TextScramble text="Build with agents, then show the work." />
             </h1>
             <p className="mt-6 max-w-2xl text-pretty text-lg leading-8 text-muted-foreground sm:text-xl">
-              Community build sprints for people turning AO into their coding
+              Community build sprints for people turning Open Agents into their coding
               workspace. Join the next run or look back at what builders already
               shipped.
             </p>
@@ -97,8 +96,8 @@ export default function HackathonsPage() {
               </div>
 
               <p className="mt-5 text-base leading-7 text-muted-foreground">
-                AO's first hackathon was a fully online sprint with no fixed
-                theme. Builders used AO to plan, delegate, code, review, test,
+                Open Agents's first hackathon was a fully online sprint with no fixed
+                theme. Builders used Open Agents to plan, delegate, code, review, test,
                 and ship with agents running on their own machines.
               </p>
 

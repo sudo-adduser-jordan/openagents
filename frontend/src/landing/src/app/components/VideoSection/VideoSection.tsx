@@ -13,7 +13,7 @@ const MuxPlayer = dynamic(() => import("@mux/mux-player-react"), { ssr: false })
 const MUX_PLAYBACK_ID =
 	process.env.NEXT_PUBLIC_MUX_PLAYBACK_ID ??
 	"cpmHxjRygocH1rPeKq6jk4UYxGghl8B8ABcop4Gc01b8";
-const VIDEO_TITLE = "AO Demo";
+const VIDEO_TITLE = "Open Agents Demo";
 
 function PlayIcon({ className = "" }: { className?: string }) {
 	return (
@@ -39,7 +39,7 @@ export function VideoSection() {
 						See it in action
 					</h2>
 					<p className="mt-3 text-base text-muted-foreground">
-						Watch AO run a fleet of agents end to end on a single repo, from task to merged PR.
+						Watch Open Agents run a fleet of agents end to end on a single repo, from task to merged PR.
 					</p>
 				</div>
 
@@ -65,7 +65,7 @@ export function VideoSection() {
 							>
 								<Image
 									src="/mux-video-preview.jpg"
-									alt="Still from the Agent Orchestrator demo video"
+									alt="Still from the Open Agents demo video"
 									fill
 									sizes="(min-width: 1280px) 1280px, 100vw"
 									className="object-cover"

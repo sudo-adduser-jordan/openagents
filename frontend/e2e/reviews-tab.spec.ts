@@ -4,7 +4,7 @@ import { expect, test } from "@playwright/test";
 // so fixture title changes do not prevent these tests from reaching Reviews.
 
 test("the Reviews tab renders the reviewer panel for a session that owns PRs", async ({ page }) => {
-	await page.goto("/#/projects/ao-demo/sessions/demo-ready");
+	await page.goto("/#/projects/open-agents-demo/sessions/demo-ready");
 
 	const inspector = page.locator("#inspector");
 	await expect(inspector).toBeVisible();
@@ -26,7 +26,7 @@ test("the Reviews tab renders the reviewer panel for a session that owns PRs", a
 });
 
 test("the Reviews tab stays hidden for a session with no reviewable PRs", async ({ page }) => {
-	await page.goto("/#/projects/ao-demo/sessions/demo-working");
+	await page.goto("/#/projects/open-agents-demo/sessions/demo-working");
 
 	const inspector = page.locator("#inspector");
 	await expect(inspector).toBeVisible();
@@ -36,10 +36,10 @@ test("the Reviews tab stays hidden for a session with no reviewable PRs", async 
 
 test("review controls stay aligned and collapse the run action at minimum width", async ({ page }) => {
 	await page.addInitScript(() => {
-		window.localStorage.setItem("ao.inspector.widthPx", "350");
+		window.localStorage.setItem("open-agents.inspector.widthPx", "350");
 	});
 	await page.setViewportSize({ height: 900, width: 1100 });
-	await page.goto("/#/projects/ao-demo/sessions/demo-needs-input");
+	await page.goto("/#/projects/open-agents-demo/sessions/demo-needs-input");
 
 	const inspector = page.locator("#inspector");
 	await inspector.getByRole("tab", { name: "Reviews" }).click();

@@ -1,4 +1,4 @@
-// Package opencodeacp binds the user's own OpenCode installation to AO's
+// Package opencodeacp binds the user's own OpenCode installation to Open Agents's
 // reusable ACP Chat transport.
 package opencodeacp
 
@@ -8,15 +8,15 @@ import (
 	"log/slog"
 	"strings"
 
-	"github.com/aoagents/agent-orchestrator/backend/internal/adapters/agent/opencode"
-	acpdriver "github.com/aoagents/agent-orchestrator/backend/internal/adapters/chatdriver/acp"
-	"github.com/aoagents/agent-orchestrator/backend/internal/adapters/chatdriver/nativeacp"
-	"github.com/aoagents/agent-orchestrator/backend/internal/domain"
-	"github.com/aoagents/agent-orchestrator/backend/internal/ports"
+	"github.com/sudo-adduser-jordan/open-agents/backend/internal/adapters/agent/opencode"
+	acpdriver "github.com/sudo-adduser-jordan/open-agents/backend/internal/adapters/chatdriver/acp"
+	"github.com/sudo-adduser-jordan/open-agents/backend/internal/adapters/chatdriver/nativeacp"
+	"github.com/sudo-adduser-jordan/open-agents/backend/internal/domain"
+	"github.com/sudo-adduser-jordan/open-agents/backend/internal/ports"
 )
 
 // New launches `opencode acp` from the exact binary resolved by the existing
-// OpenCode agent plugin. AO adds only a per-session inline overlay for its
+// OpenCode agent plugin. Open Agents adds only a per-session inline overlay for its
 // standing instructions and an explicit bypass-permissions choice.
 func New(plugin nativeacp.Plugin, log *slog.Logger) ports.ChatDriver {
 	return nativeacp.New(plugin, nativeacp.Config{

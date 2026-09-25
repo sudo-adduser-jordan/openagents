@@ -5,13 +5,13 @@ on:
     branches: [main]
     paths:
       - ".gitmodules"
-      - "private/ao-cloud"
+      - "private/open-agents-cloud"
       - "test/submodule/**"
       - ".github/workflows/optional-private-submodule.yml"
   pull_request:
     paths:
       - ".gitmodules"
-      - "private/ao-cloud"
+      - "private/open-agents-cloud"
       - "test/submodule/**"
       - ".github/workflows/optional-private-submodule.yml"
 

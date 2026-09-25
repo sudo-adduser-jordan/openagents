@@ -9,10 +9,10 @@ import (
 
 	"github.com/google/uuid"
 
-	"github.com/aoagents/agent-orchestrator/backend/internal/domain"
-	"github.com/aoagents/agent-orchestrator/backend/internal/lifecycle"
-	"github.com/aoagents/agent-orchestrator/backend/internal/ports"
-	chatsvc "github.com/aoagents/agent-orchestrator/backend/internal/service/chat"
+	"github.com/sudo-adduser-jordan/open-agents/backend/internal/domain"
+	"github.com/sudo-adduser-jordan/open-agents/backend/internal/lifecycle"
+	"github.com/sudo-adduser-jordan/open-agents/backend/internal/ports"
+	chatsvc "github.com/sudo-adduser-jordan/open-agents/backend/internal/service/chat"
 )
 
 func TestNativeReplaySettlesMatchingHooksAndRejectsConflictingOnes(t *testing.T) {
@@ -61,7 +61,7 @@ func TestNativeReplaySettlesMatchingHooksAndRejectsConflictingOnes(t *testing.T)
 			var events []ports.ChatEvent
 			prompts := []string{"continue", "different task"}
 			if tc.withBoundary {
-				prompts = []string{"continue", "<ao-handoff-request>", "different task"}
+				prompts = []string{"continue", "<open-agents-handoff-request>", "different task"}
 			}
 			for i, prompt := range prompts {
 				at := now.Add(time.Duration(i) * time.Minute)

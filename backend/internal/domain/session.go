@@ -22,7 +22,7 @@ const (
 	KindOrchestrator SessionKind = "orchestrator"
 )
 
-// ConversationCheckpointState records which main-turn boundaries AO has
+// ConversationCheckpointState records which main-turn boundaries Open Agents has
 // durably observed for the hook-derived replay checkpoint. The legacy value is
 // intentionally distinct: rows written before owner/event scoping may still be
 // enforced by an ordinary switch, but only those text dimensions may be waived
@@ -34,7 +34,7 @@ type ConversationCheckpointState string
 const (
 	ConversationCheckpointLegacy ConversationCheckpointState = "legacy"
 	ConversationCheckpointEmpty  ConversationCheckpointState = "empty"
-	// ConversationCheckpointCoordination records an AO-authored turn boundary.
+	// ConversationCheckpointCoordination records an Open Agents-authored turn boundary.
 	// It carries across a prompt-submit/Stop pair so provider coordination can
 	// never be promoted into replay evidence, even when Stop omits the prompt.
 	ConversationCheckpointCoordination ConversationCheckpointState = "coordination"
@@ -53,7 +53,7 @@ func (s ConversationCheckpointState) Trusted() bool {
 type ConversationCheckpointOrigin string
 
 // Conversation checkpoint origins distinguish compatibility traffic, real
-// human turns, and AO-authored coordination turns.
+// human turns, and Open Agents-authored coordination turns.
 const (
 	ConversationCheckpointOriginUnknown      ConversationCheckpointOrigin = ""
 	ConversationCheckpointOriginHuman        ConversationCheckpointOrigin = "human"
@@ -89,7 +89,7 @@ type SessionMetadata struct {
 	NativeIdentityObservedAt time.Time `json:"-"`
 	Prompt                   string    `json:"prompt,omitempty"`
 	// LatestUserPrompt is the latest real user-authored task direction observed
-	// for this AO session. Internal AO coordination messages (for example an
+	// for this Open Agents session. Internal Open Agents coordination messages (for example an
 	// agent-switch handoff request) must not replace it.
 	LatestUserPrompt string `json:"latestUserPrompt,omitempty"`
 	// LatestUserPromptAt is when LatestUserPrompt was submitted. It is kept as a
@@ -129,12 +129,12 @@ type SessionMetadata struct {
 	// the same fence as RuntimeLaunchID, which covers terminal runtimes.
 	ControllerGeneration string `json:"controllerGeneration,omitempty"`
 	// PreviewURL is the browser preview target the desktop app opens for this
-	// session. Set via `ao preview` (POST /sessions/{id}/preview); persisted so
+	// session. Set via `open-agents preview` (POST /sessions/{id}/preview); persisted so
 	// it survives a daemon restart. Empty means no preview has been requested.
 	PreviewURL string `json:"previewUrl,omitempty"`
-	// PreviewRevision is a monotonic counter bumped on every `ao preview` call,
+	// PreviewRevision is a monotonic counter bumped on every `open-agents preview` call,
 	// even when PreviewURL is unchanged. The desktop browser panel keys
-	// navigation on it so a repeated `ao preview <same-url>` still refreshes.
+	// navigation on it so a repeated `open-agents preview <same-url>` still refreshes.
 	PreviewRevision int64 `json:"previewRevision,omitempty"`
 	// Model is the agent model this session resolved to at spawn time, including
 	// any per-spawn --model override. Empty means the agent's default model.
@@ -252,7 +252,7 @@ type Session struct {
 	Status                SessionStatus `json:"status" enum:"working,pr_open,draft,ci_failed,review_pending,changes_requested,approved,mergeable,merged,needs_input,exited,idle,terminated,no_signal"`
 	SCMStatus             SessionStatus `json:"scmStatus,omitempty" enum:"pr_open,draft,ci_failed,review_pending,changes_requested,approved,mergeable,merged"`
 	// KanbanColumn is where the session sits in its delivery lifecycle and
-	// which loop is turning it: an AO-driven one (validating) or the
+	// which loop is turning it: an Open Agents-driven one (validating) or the
 	// review-feedback loop whose next turn is a person's (needs_review). It is
 	// derived independently of Status and, like it, is never persisted.
 	KanbanColumn KanbanColumn `json:"kanbanColumn" enum:"building,validating,needs_review,ready,archive"`

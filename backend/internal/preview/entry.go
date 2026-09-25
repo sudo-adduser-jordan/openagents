@@ -13,10 +13,10 @@ import (
 	"time"
 	"unicode/utf8"
 
-	"github.com/aoagents/agent-orchestrator/backend/internal/domain"
+	"github.com/sudo-adduser-jordan/open-agents/backend/internal/domain"
 )
 
-const previewHostLabel = "ao-preview"
+const previewHostLabel = "open-agents-preview"
 
 // ErrPreviewHostUnsupported indicates that a session ID cannot be represented
 // by a standards-compliant localhost hostname.

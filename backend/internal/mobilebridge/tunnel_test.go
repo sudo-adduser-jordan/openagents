@@ -143,10 +143,10 @@ func lookupFor(env, managed, system string, versions map[string]CloudflaredVersi
 }
 
 func TestResolveCloudflaredPrefersExplicitOverride(t *testing.T) {
-	// AO_CLOUDFLARED_PATH is the escape hatch for CI, enterprise images, and
+	// OPEN_AGENTS_CLOUDFLARED_PATH is the escape hatch for CI, enterprise images, and
 	// air-gapped installs. It wins outright, and is not version-gated: the
 	// operator asked for that binary specifically.
-	got := ResolveCloudflared(lookupFor("/opt/cf", "/home/u/.ao/bin/cloudflared", "/usr/local/bin/cloudflared",
+	got := ResolveCloudflared(lookupFor("/opt/cf", "/home/u/.open-agents/bin/cloudflared", "/usr/local/bin/cloudflared",
 		map[string]CloudflaredVersion{"/opt/cf": {2019, 1, 0}}))
 
 	if got.Path != "/opt/cf" || got.Source != CloudflaredFromEnv {
@@ -158,13 +158,13 @@ func TestResolveCloudflaredPrefersExplicitOverride(t *testing.T) {
 }
 
 func TestResolveCloudflaredPrefersOurManagedCopyOverSystem(t *testing.T) {
-	got := ResolveCloudflared(lookupFor("", "/home/u/.ao/bin/cloudflared", "/usr/local/bin/cloudflared",
+	got := ResolveCloudflared(lookupFor("", "/home/u/.open-agents/bin/cloudflared", "/usr/local/bin/cloudflared",
 		map[string]CloudflaredVersion{
-			"/home/u/.ao/bin/cloudflared": {2026, 7, 2},
-			"/usr/local/bin/cloudflared":  {2026, 7, 2},
+			"/home/u/.open-agents/bin/cloudflared": {2026, 7, 2},
+			"/usr/local/bin/cloudflared":           {2026, 7, 2},
 		}))
 
-	if got.Path != "/home/u/.ao/bin/cloudflared" || got.Source != CloudflaredManaged {
+	if got.Path != "/home/u/.open-agents/bin/cloudflared" || got.Source != CloudflaredManaged {
 		t.Fatalf("got %+v, want the managed copy", got)
 	}
 }

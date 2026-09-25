@@ -278,7 +278,7 @@ describe("ACP session config options", () => {
 		expect(screen.getByText("Showing 2 of 2 matching models", { exact: true })).toBeInTheDocument();
 	});
 
-	it.each(["ao-plan-project-1", "agents/plan-reviewer", "my_plan_agent"])(
+	it.each(["open-agents-plan-project-1", "agents/plan-reviewer", "my_plan_agent"])(
 		"does not treat custom agent %s as native Plan Mode",
 		async (custom) => {
 			const user = userEvent.setup();
@@ -620,7 +620,7 @@ describe("remember project permissions", () => {
 		expect(remember).toHaveBeenCalledWith("bypass-permissions");
 	});
 
-	it("does not substitute a stale AO mode for an unmapped provider choice", async () => {
+	it("does not substitute a stale Open Agents mode for an unmapped provider choice", async () => {
 		const user = userEvent.setup();
 		render(<TurnSettingsBar models={[]} settings={{ approvalMode: "auto" }}
 			configOptions={[OPTIONS[2]]} onChangeConfigOption={vi.fn()} onRememberPermissions={vi.fn()} />);
@@ -685,7 +685,7 @@ describe("native model selection", () => {
 });
 
 describe("Cursor Ask and Agent chat modes", () => {
-	// Values are deliberately not lowercase: AO must round-trip whatever the
+	// Values are deliberately not lowercase: Open Agents must round-trip whatever the
 	// provider advertised, never a value re-derived from the label.
 	const CURSOR_MODE: ChatConfigOption = {
 		id: "mode",
@@ -790,7 +790,7 @@ describe("Cursor Ask and Agent chat modes", () => {
 		).not.toBeInTheDocument();
 	});
 
-	it("keeps Ask out of the approval menu, which stays AO's own policy list", async () => {
+	it("keeps Ask out of the approval menu, which stays Open Agents's own policy list", async () => {
 		const user = userEvent.setup();
 		render(
 			<TurnSettingsBar
@@ -866,7 +866,7 @@ describe("Cursor Ask and Agent chat modes", () => {
 		expect(onChange).toHaveBeenCalledWith("mode", { value: "plan" });
 	});
 
-	it("does not confuse a provider-owned agent option with AO's Switch agent", async () => {
+	it("does not confuse a provider-owned agent option with Open Agents's Switch agent", async () => {
 		const user = userEvent.setup();
 		render(
 			<TurnSettingsBar

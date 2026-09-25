@@ -11,11 +11,11 @@ import (
 	"github.com/go-chi/chi/v5"
 	"github.com/go-chi/chi/v5/middleware"
 
-	"github.com/aoagents/agent-orchestrator/backend/internal/config"
-	"github.com/aoagents/agent-orchestrator/backend/internal/daemonmeta"
-	"github.com/aoagents/agent-orchestrator/backend/internal/httpd/controllers"
-	"github.com/aoagents/agent-orchestrator/backend/internal/httpd/envelope"
-	"github.com/aoagents/agent-orchestrator/backend/internal/terminal"
+	"github.com/sudo-adduser-jordan/open-agents/backend/internal/config"
+	"github.com/sudo-adduser-jordan/open-agents/backend/internal/daemonmeta"
+	"github.com/sudo-adduser-jordan/open-agents/backend/internal/httpd/controllers"
+	"github.com/sudo-adduser-jordan/open-agents/backend/internal/httpd/envelope"
+	"github.com/sudo-adduser-jordan/open-agents/backend/internal/terminal"
 )
 
 // ControlDeps carries the daemon-control hooks the router exposes, such as the
@@ -142,7 +142,7 @@ func mountMobile(r chi.Router, c *controllers.MobileController) {
 // enforced by the transport rather than by a spoofable header.
 //
 // The routes are mounted unconditionally, even when c.Registry is nil (a
-// corrupt ~/.ao/data/mobile/push-devices.json failed to load): each handler
+// corrupt ~/.open-agents/data/mobile/push-devices.json failed to load): each handler
 // answers 503 DEVICE_REGISTRY_UNAVAILABLE in that case, so the desktop can tell
 // "the registry failed to load" apart from "this route doesn't exist / talking
 // to an old daemon" (a 404 would be ambiguous with both). Only a nil controller
@@ -198,11 +198,11 @@ func daemonProbePayload(status string, cfg config.Config) map[string]any {
 	if cfg.StartupWorkingDirectory != "" {
 		payload["startupWorkingDirectory"] = cfg.StartupWorkingDirectory
 	}
-	// AO_APPIMAGE is set by the Electron app at spawn time when it runs from an
+	// OPEN_AGENTS_APPIMAGE is set by the Electron app at spawn time when it runs from an
 	// AppImage. The value is the stable outer .AppImage file path, which the
 	// app's daemon identity check compares instead of the transient
 	// /tmp/.mount_* executable path (regenerated on every AppImage launch).
-	if appImage := os.Getenv("AO_APPIMAGE"); appImage != "" {
+	if appImage := os.Getenv("OPEN_AGENTS_APPIMAGE"); appImage != "" {
 		payload["appImagePath"] = appImage
 	}
 	return payload

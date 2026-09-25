@@ -17,7 +17,7 @@ const (
 // SessionStatus is the derived display status of a session.
 type SessionStatus string
 
-// SessionStatus values shown by AO clients.
+// SessionStatus values shown by Open Agents clients.
 const (
 	StatusWorking          SessionStatus = "working"
 	StatusPROpen           SessionStatus = "pr_open"

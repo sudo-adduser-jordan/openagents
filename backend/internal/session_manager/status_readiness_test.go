@@ -6,15 +6,15 @@ import (
 	"testing"
 	"time"
 
-	"github.com/aoagents/agent-orchestrator/backend/internal/domain"
-	"github.com/aoagents/agent-orchestrator/backend/internal/ports"
+	"github.com/sudo-adduser-jordan/open-agents/backend/internal/domain"
+	"github.com/sudo-adduser-jordan/open-agents/backend/internal/ports"
 )
 
 func TestStatusReadinessWaitsForRecoveryAndAllowsRetry(t *testing.T) {
 	m, st, rt, _ := newManager()
 	rec := domain.SessionRecord{ID: "s1", ProjectID: "mer", Harness: domain.HarnessOpenCode,
 		Activity: domain.Activity{State: domain.ActivityActive, LastActivityAt: time.Unix(100, 0)},
-		Metadata: domain.SessionMetadata{Branch: "ao/s1", WorkspacePath: "/wt/s1", RuntimeHandleID: "s1"}}
+		Metadata: domain.SessionMetadata{Branch: "open-agents/s1", WorkspacePath: "/wt/s1", RuntimeHandleID: "s1"}}
 	st.sessions[rec.ID] = rec
 	if got := m.SessionStatusReadiness(rec); got != "checking" {
 		t.Fatalf("before recovery = %s", got)
@@ -58,7 +58,7 @@ func TestStatusReadinessDoesNotOfferRetryWhileRecoveryOwnsSession(t *testing.T) 
 	m, st, rt, _ := newManager()
 	rec := domain.SessionRecord{ID: "s1", ProjectID: "mer", Harness: domain.HarnessOpenCode,
 		Activity: domain.Activity{State: domain.ActivityActive},
-		Metadata: domain.SessionMetadata{Branch: "ao/s1", WorkspacePath: "/wt/s1", RuntimeHandleID: "s1"}}
+		Metadata: domain.SessionMetadata{Branch: "open-agents/s1", WorkspacePath: "/wt/s1", RuntimeHandleID: "s1"}}
 	st.sessions[rec.ID] = rec
 	blocked := &stubbornAliveRuntime{fakeRuntime: rt, entered: make(chan domain.SessionID, 1), release: make(chan struct{})}
 	m.runtime = blocked
@@ -97,7 +97,7 @@ func TestStatusReadinessDeadlineReleasesSessionForRetry(t *testing.T) {
 	m, st, rt, _ := newManager()
 	rec := domain.SessionRecord{ID: "s1", ProjectID: "mer", Harness: domain.HarnessOpenCode,
 		Activity: domain.Activity{State: domain.ActivityActive},
-		Metadata: domain.SessionMetadata{Branch: "ao/s1", WorkspacePath: "/wt/s1", RuntimeHandleID: "s1"}}
+		Metadata: domain.SessionMetadata{Branch: "open-agents/s1", WorkspacePath: "/wt/s1", RuntimeHandleID: "s1"}}
 	st.sessions[rec.ID] = rec
 	deadlineRuntime := &deadlineAwareRuntime{fakeRuntime: rt, entered: make(chan struct{})}
 	m.runtime = deadlineRuntime

@@ -8,7 +8,7 @@ import type { Snooze } from "./storeUpdate";
 // Nothing here is a secret, so AsyncStorage (plaintext app sandbox) is right;
 // SecureStore stays reserved for the connection password.
 
-export const STORE_UPDATE_KEY = "ao.storeUpdate";
+export const STORE_UPDATE_KEY = "openAgents.storeUpdate";
 
 /** How often the nudge was dismissed, and for which version. Never throws. */
 export async function loadSnooze(): Promise<Snooze | null> {

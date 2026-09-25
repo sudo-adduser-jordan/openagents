@@ -9,8 +9,8 @@ import (
 
 	"github.com/pressly/goose/v3"
 
-	"github.com/aoagents/agent-orchestrator/backend/internal/domain"
-	sqlitestore "github.com/aoagents/agent-orchestrator/backend/internal/storage/sqlite/store"
+	"github.com/sudo-adduser-jordan/open-agents/backend/internal/domain"
+	sqlitestore "github.com/sudo-adduser-jordan/open-agents/backend/internal/storage/sqlite/store"
 )
 
 // shippedMigrations freezes every migration version that has shipped in a
@@ -157,6 +157,7 @@ var shippedMigrations = map[int64]string{
 	150: "0150_add_session_workflow_mode.sql",
 	151: "0151_add_session_review_lock.sql",
 	152: "0152_remove_claude_code_harness.sql",
+	153: "0153_open_agents_usage_measurement.sql",
 }
 
 // burnedVersion reports version numbers that must never be (re)used: they
@@ -234,7 +235,7 @@ func TestMigrationVersionLedger(t *testing.T) {
 // records a version they never shipped. goose runs with WithAllowMissing, which
 // is what makes the resulting gap harmless.
 func TestMigrationsApplyOverAForeignInterleavedVersion(t *testing.T) {
-	db, err := sql.Open("sqlite", "file:"+filepath.Join(t.TempDir(), "ao.db")+pragmas)
+	db, err := sql.Open("sqlite", "file:"+filepath.Join(t.TempDir(), "open-agents.db")+pragmas)
 	if err != nil {
 		t.Fatalf("open sqlite: %v", err)
 	}
@@ -277,7 +278,7 @@ SELECT COUNT(*) FROM (
 // columns. Startup schema reconciliation must repair the physical schema so
 // the session list works instead of returning 500 INTERNAL_ERROR.
 func TestSessionListSucceedsOnBurnedMigrationHistory(t *testing.T) {
-	db, err := sql.Open("sqlite", "file:"+filepath.Join(t.TempDir(), "ao.db")+pragmas)
+	db, err := sql.Open("sqlite", "file:"+filepath.Join(t.TempDir(), "open-agents.db")+pragmas)
 	if err != nil {
 		t.Fatalf("open sqlite: %v", err)
 	}
@@ -319,8 +320,8 @@ INSERT INTO projects (
 		Harness:   domain.HarnessOpenCode,
 		Activity:  domain.Activity{State: domain.ActivityActive},
 		Metadata: domain.SessionMetadata{
-			Branch:        "ao/mer-1/root",
-			WorkspacePath: `C:\Users\mer\.ao\data\worktrees\mer\mer-1`,
+			Branch:        "open-agents/mer-1/root",
+			WorkspacePath: `C:\Users\mer\.open-agents\data\worktrees\mer\mer-1`,
 			DiffBaseSHA:   "0f0e0d0c0b0a09080706050403020100ffeeddcc",
 			DiffBaseRef:   "refs/remotes/origin/main",
 		},

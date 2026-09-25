@@ -74,10 +74,10 @@ type RevealSample = {
 };
 
 type RevealObserverWindow = Window & {
-	__aoRevealFrame?: number;
-	__aoRevealFrames?: string[];
-	__aoRevealObserver?: MutationObserver;
-	__aoRevealSamples?: RevealSample[];
+	__openAgentsRevealFrame?: number;
+	__openAgentsRevealFrames?: string[];
+	__openAgentsRevealObserver?: MutationObserver;
+	__openAgentsRevealSamples?: RevealSample[];
 };
 
 function activeTerminal(page: Page): Locator {
@@ -92,31 +92,31 @@ function activeBufferAtBottom(page: Page): Promise<boolean> {
 	return activeTerminal(page)
 		.locator("[aria-label='Session terminal']")
 		.evaluate((element) => {
-			const terminal = (element as HTMLElement & { __aoXtermForTest?: TestXterm }).__aoXtermForTest;
+			const terminal = (element as HTMLElement & { __openAgentsXtermForTest?: TestXterm }).__openAgentsXtermForTest;
 			return Boolean(terminal && terminal.buffer.active.viewportY === terminal.buffer.active.baseY);
 		});
 }
 
 async function muxStats(page: Page): Promise<FakeTerminalMuxStats> {
-	return page.evaluate(() => window.__aoFakeTerminalMux!.stats());
+	return page.evaluate(() => window.__openAgentsFakeTerminalMux!.stats());
 }
 
 async function observeNextReveal(container: Locator): Promise<void> {
 	await container.evaluate((element) => {
 		const state = window as RevealObserverWindow;
-		state.__aoRevealObserver?.disconnect();
-		if (state.__aoRevealFrame !== undefined) {
-			cancelAnimationFrame(state.__aoRevealFrame);
+		state.__openAgentsRevealObserver?.disconnect();
+		if (state.__openAgentsRevealFrame !== undefined) {
+			cancelAnimationFrame(state.__openAgentsRevealFrame);
 		}
 		const samples: RevealSample[] = [];
 		const framePhases: string[] = [];
-		state.__aoRevealSamples = samples;
-		state.__aoRevealFrames = framePhases;
+		state.__openAgentsRevealSamples = samples;
+		state.__openAgentsRevealFrames = framePhases;
 		const captureVisibleSample = () => {
 			const host = element.querySelector<HTMLElement>("[aria-label='Session terminal']");
 			const viewport = host?.querySelector<HTMLElement>(".xterm-viewport");
-			const terminal = (host as (HTMLElement & { __aoXtermForTest?: TestXterm }) | null)
-				?.__aoXtermForTest;
+			const terminal = (host as (HTMLElement & { __openAgentsXtermForTest?: TestXterm }) | null)
+				?.__openAgentsXtermForTest;
 			if (
 				(element as HTMLElement).style.visibility === "hidden" ||
 				(element as HTMLElement).dataset.terminalActivationPhase !== "visible" ||
@@ -139,12 +139,12 @@ async function observeNextReveal(container: Locator): Promise<void> {
 			framePhases.push(phase);
 			if (phase === "visible") {
 				captureVisibleSample();
-				state.__aoRevealFrame = undefined;
+				state.__openAgentsRevealFrame = undefined;
 				return;
 			}
-			state.__aoRevealFrame = requestAnimationFrame(sampleFrame);
+			state.__openAgentsRevealFrame = requestAnimationFrame(sampleFrame);
 		};
-		state.__aoRevealFrame = requestAnimationFrame(sampleFrame);
+		state.__openAgentsRevealFrame = requestAnimationFrame(sampleFrame);
 		const observer = new MutationObserver(() => {
 			captureVisibleSample();
 		});
@@ -152,16 +152,16 @@ async function observeNextReveal(container: Locator): Promise<void> {
 			attributes: true,
 			attributeFilter: ["aria-hidden", "data-terminal-activation-phase", "style"],
 		});
-		state.__aoRevealObserver = observer;
+		state.__openAgentsRevealObserver = observer;
 	});
 }
 
 async function revealSamples(page: Page): Promise<RevealSample[]> {
-	return page.evaluate(() => (window as RevealObserverWindow).__aoRevealSamples ?? []);
+	return page.evaluate(() => (window as RevealObserverWindow).__openAgentsRevealSamples ?? []);
 }
 
 async function revealFramePhases(page: Page): Promise<string[]> {
-	return page.evaluate(() => (window as RevealObserverWindow).__aoRevealFrames ?? []);
+	return page.evaluate(() => (window as RevealObserverWindow).__openAgentsRevealFrames ?? []);
 }
 
 async function settledRevealSamples(page: Page): Promise<RevealSample[]> {
@@ -220,7 +220,7 @@ test.describe("retained terminal viewport", () => {
 			.toBeGreaterThan(500);
 		const metrics = await host.evaluate((element) => {
 			const viewport = element.querySelector<HTMLElement>(".xterm-viewport")!;
-			const terminal = (element as HTMLElement & { __aoXtermForTest?: TestXterm }).__aoXtermForTest!;
+			const terminal = (element as HTMLElement & { __openAgentsXtermForTest?: TestXterm }).__openAgentsXtermForTest!;
 			terminal.scrollToTop();
 			return {
 				reservation: (terminal as unknown as { _core: { viewport: { scrollBarWidth: number } } })._core.viewport
@@ -243,9 +243,9 @@ test.describe("retained terminal viewport", () => {
 		await page.mouse.up();
 		await expect.poll(() => viewport.evaluate((element) => element.scrollTop)).toBeGreaterThan(0);
 
-		await page.evaluate((handleId) => window.__aoFakeTerminalMux!.emit(handleId, "\x1b[?1049hTUI screen"), handleA);
+		await page.evaluate((handleId) => window.__openAgentsFakeTerminalMux!.emit(handleId, "\x1b[?1049hTUI screen"), handleA);
 		await expect(scrollbar).toHaveAttribute("data-scrollable", "false");
-		await page.evaluate((handleId) => window.__aoFakeTerminalMux!.emit(handleId, "\x1b[?1049l"), handleA);
+		await page.evaluate((handleId) => window.__openAgentsFakeTerminalMux!.emit(handleId, "\x1b[?1049l"), handleA);
 		await expect(scrollbar).toHaveAttribute("data-scrollable", "true");
 	});
 
@@ -270,7 +270,7 @@ test.describe("retained terminal viewport", () => {
 		await expect(parkedA).toHaveAttribute("data-terminal-activation-phase", "parked");
 		await page.evaluate(
 			(handleId) =>
-				window.__aoFakeTerminalMux!.emit(
+				window.__openAgentsFakeTerminalMux!.emit(
 					handleId,
 					"\r\n" + Array.from({ length: 20 }, (_, index) => `A six-session hidden ${index}`).join("\r\n"),
 				),
@@ -319,7 +319,7 @@ test.describe("retained terminal viewport", () => {
 		const fontSizeBefore = await activeTerminal(page)
 			.locator("[aria-label='Session terminal']")
 			.evaluate((element) =>
-				(element as HTMLElement & { __aoXtermForTest?: TestXterm }).__aoXtermForTest!.options.fontSize,
+				(element as HTMLElement & { __openAgentsXtermForTest?: TestXterm }).__openAgentsXtermForTest!.options.fontSize,
 			);
 		await activeTerminal(page).locator(".xterm-helper-textarea").focus();
 		await page.keyboard.press("ControlOrMeta+=");
@@ -354,7 +354,7 @@ test.describe("retained terminal viewport", () => {
 		await expect.poll(() => activeBufferAtBottom(page)).toBe(true);
 		await openSession(page, sessionB.title);
 		await page.evaluate(
-			(handleId) => window.__aoFakeTerminalMux!.emit(handleId, "\r\nA frame-sensitive bottom output"),
+			(handleId) => window.__openAgentsFakeTerminalMux!.emit(handleId, "\r\nA frame-sensitive bottom output"),
 			handleA,
 		);
 		await observeNextReveal(parkedA);
@@ -388,10 +388,10 @@ test.describe("retained terminal viewport", () => {
 			})
 			.toBeGreaterThanOrEqual(0);
 		await viewport.evaluate((element) => {
-			(element as HTMLElement & { __aoScrollEvents?: number }).__aoScrollEvents = 0;
+			(element as HTMLElement & { __openAgentsScrollEvents?: number }).__openAgentsScrollEvents = 0;
 			element.addEventListener("scroll", () => {
-				const tracked = element as HTMLElement & { __aoScrollEvents?: number };
-				tracked.__aoScrollEvents = (tracked.__aoScrollEvents ?? 0) + 1;
+				const tracked = element as HTMLElement & { __openAgentsScrollEvents?: number };
+				tracked.__openAgentsScrollEvents = (tracked.__openAgentsScrollEvents ?? 0) + 1;
 			});
 		});
 
@@ -411,7 +411,7 @@ test.describe("retained terminal viewport", () => {
 		await page.setViewportSize({ width: 1280, height: 800 });
 
 		await page.evaluate((handleId) => {
-			window.__aoFakeTerminalMux!.emit(
+			window.__openAgentsFakeTerminalMux!.emit(
 				handleId,
 				"\r\n" + Array.from({ length: 30 }, (_, index) => `A hidden output ${index}`).join("\r\n"),
 			);
@@ -428,7 +428,7 @@ test.describe("retained terminal viewport", () => {
 		const afterReturn = await muxStats(page);
 		expect(afterReturn.resizePhases[handleA]?.slice(aResizesBeforeReturn) ?? []).toEqual([]);
 		await page.evaluate((handleId) => {
-			window.__aoFakeTerminalMux!.emit(handleId, "\r\nA output during return");
+			window.__openAgentsFakeTerminalMux!.emit(handleId, "\r\nA output during return");
 		}, handleA);
 		await expect.poll(() => activeBufferAtBottom(page)).toBe(true);
 		await expect
@@ -439,7 +439,7 @@ test.describe("retained terminal viewport", () => {
 			.toBeLessThanOrEqual(1);
 		expect(
 			await activeViewport(page).evaluate(
-				(element) => (element as HTMLElement & { __aoScrollEvents?: number }).__aoScrollEvents ?? 0,
+				(element) => (element as HTMLElement & { __openAgentsScrollEvents?: number }).__openAgentsScrollEvents ?? 0,
 			),
 		).toBeLessThanOrEqual(3);
 
@@ -482,7 +482,7 @@ test.describe("retained terminal viewport", () => {
 		const retainedSelection = await activeTerminal(page)
 			.locator("[aria-label='Session terminal']")
 			.evaluate((element) => {
-				const terminal = (element as HTMLElement & { __aoXtermForTest?: TestXterm }).__aoXtermForTest!;
+				const terminal = (element as HTMLElement & { __openAgentsXtermForTest?: TestXterm }).__openAgentsXtermForTest!;
 				terminal.selectLines(125, 125);
 				return terminal.getSelection();
 			});
@@ -504,7 +504,7 @@ test.describe("retained terminal viewport", () => {
 		expect((await muxStats(page)).opens[handleC]).toBe(1);
 
 		const beforeReconnect = await muxStats(page);
-		await page.evaluate((handleId) => window.__aoFakeTerminalMux!.disconnect(handleId), handleA);
+		await page.evaluate((handleId) => window.__openAgentsFakeTerminalMux!.disconnect(handleId), handleA);
 		await expect(activeTerminal(page).getByText("Terminal disconnected — reattaching…")).toBeVisible();
 		await expect.poll(async () => (await muxStats(page)).opens[handleA] ?? 0).toBe(2);
 		await expect.poll(async () => (await muxStats(page)).opens[handleB] ?? 0).toBe(2);
@@ -544,7 +544,7 @@ test.describe("retained terminal viewport", () => {
 		const afterReconnectSelection = await activeTerminal(page)
 			.locator("[aria-label='Session terminal']")
 			.evaluate((element) => {
-				const terminal = (element as HTMLElement & { __aoXtermForTest?: TestXterm }).__aoXtermForTest!;
+				const terminal = (element as HTMLElement & { __openAgentsXtermForTest?: TestXterm }).__openAgentsXtermForTest!;
 				return terminal.getSelection();
 			});
 		await expect.poll(() => activeBufferAtBottom(page)).toBe(true);
@@ -557,7 +557,7 @@ test.describe("retained terminal viewport", () => {
 		// Authoritative session removal is a hard lifecycle boundary, not an LRU
 		// event: every retained renderer and mux must be disposed.
 		await page.evaluate((ids) => {
-			for (const id of ids) window.__aoFakeAgent!.removeWorker(id);
+			for (const id of ids) window.__openAgentsFakeAgent!.removeWorker(id);
 		}, [sessionA.id, sessionB.id, sessionC.id]);
 		await expect.poll(async () => (await muxStats(page)).writers).toBe(0);
 		await expect.poll(async () => (await muxStats(page)).sockets).toBe(0);
@@ -574,7 +574,7 @@ test.describe("retained terminal viewport", () => {
 		await openSession(page, sessionB.title);
 		const parkedA = page.locator(`[data-terminal-cache-key^="session:${sessionA.id}:worker|"]`);
 		await page.evaluate((handleId) => {
-			window.__aoFakeTerminalMux!.emit(
+			window.__openAgentsFakeTerminalMux!.emit(
 				handleId,
 				"\r\n" +
 					Array.from({ length: 5_300 }, (_, index) => `A eviction output ${String(index).padStart(4, "0")}`).join(
@@ -585,7 +585,7 @@ test.describe("retained terminal viewport", () => {
 		await expect
 			.poll(() =>
 				parkedA.locator("[aria-label='Session terminal']").evaluate((element) => {
-					const terminal = (element as HTMLElement & { __aoXtermForTest?: TestXterm }).__aoXtermForTest!;
+					const terminal = (element as HTMLElement & { __openAgentsXtermForTest?: TestXterm }).__openAgentsXtermForTest!;
 					return terminal.buffer.active.baseY;
 				}),
 			)
@@ -596,7 +596,7 @@ test.describe("retained terminal viewport", () => {
 		const restored = await activeTerminal(page)
 			.locator("[aria-label='Session terminal']")
 			.evaluate((element) => {
-				const terminal = (element as HTMLElement & { __aoXtermForTest?: TestXterm }).__aoXtermForTest!;
+				const terminal = (element as HTMLElement & { __openAgentsXtermForTest?: TestXterm }).__openAgentsXtermForTest!;
 				return {
 					baseY: terminal.buffer.active.baseY,
 					latestLine: terminal.buffer.active

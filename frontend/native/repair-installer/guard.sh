@@ -2,10 +2,10 @@
 # Shared by Installer's GUI check and root preinstall; all values are build-time constants.
 set -eu
 export PATH=/usr/bin:/bin:/usr/sbin:/sbin
-fail() { echo "Agent Orchestrator repair: $*" >&2; exit 1; }
+fail() { echo "Open Agents repair: $*" >&2; exit 1; }
 @@ROOT_CHECK@@
 [ "${3:-}" = / ] || fail 'Install only on the startup volume.'
-app='/Applications/Agent Orchestrator.app'
+app='/Applications/Open Agents.app'
 [ ! -L /Applications ] && [ ! -L "$app" ] || fail 'The destination must not be a symbolic link.'
 [ ! -e "$app" ] || [ -d "$app" ] || fail 'The destination is not an application bundle.'
 # sysctl identifies Apple Silicon even when Installer runs under Rosetta.
@@ -16,23 +16,23 @@ else
 fi
 case ' @@ARCHS@@ ' in *" $host "*) ;; *) fail 'This installer does not match this Mac architecture.' ;; esac
 processes=$(/bin/ps -axo comm=) || fail 'Cannot check running applications.'
-# comm is the executable path, not arbitrary arguments mentioning AO.
+# comm is the executable path, not arbitrary arguments mentioning Open Agents.
 if printf '%s\n' "$processes" | /usr/bin/awk '
-  /\/Contents\/MacOS\/agent-orchestrator$/ { found=1 }
-  /\/Agent Orchestrator[.]app\/Contents\// { found=1 }
-  /\/dev[.]agent-orchestrator[.]desktop[.]ShipIt\/.*\/ShipIt$/ { found=1 }
-  /\/dev[.]agent-orchestrator[.]desktop[.]ShipIt\/ShipIt$/ { found=1 }
+  /\/Contents\/MacOS\/open-agents$/ { found=1 }
+  /\/Open Agents[.]app\/Contents\// { found=1 }
+  /\/dev[.]open-agents[.]desktop[.]ShipIt\/.*\/ShipIt$/ { found=1 }
+  /\/dev[.]open-agents[.]desktop[.]ShipIt\/ShipIt$/ { found=1 }
   END { exit !found }'; then
-  fail 'Quit Agent Orchestrator. If its updater is still running, restart your Mac and run this installer before opening AO.'
+  fail 'Quit Open Agents. If its updater is still running, restart your Mac and run this installer before opening Open Agents.'
 fi
-# A renamed AO bundle can still host ShipIt after its main process exits.
+# A renamed Open Agents bundle can still host ShipIt after its main process exits.
 # Resolve the enclosing bundle identity without running any code from it.
 while IFS= read -r process; do
   case "$process" in
     *.app/Contents/*/ShipIt)
       owner="${process%%.app/Contents/*}.app/Contents/Info.plist"
       owner_id=$(/usr/libexec/PlistBuddy -c 'Print :CFBundleIdentifier' "$owner" 2>/dev/null || true)
-      [ "$owner_id" != dev.agent-orchestrator.desktop ] || fail 'AO updater is running. Restart your Mac and run this installer before opening AO.'
+      [ "$owner_id" != dev.openagents.desktop ] || fail 'Open Agents updater is running. Restart your Mac and run this installer before opening Open Agents.'
       ;;
   esac
 done <<< "$processes"
@@ -40,7 +40,7 @@ if [ -e "$app" ]; then
   [ ! -L "$app/Contents" ] && [ ! -L "$app/Contents/Info.plist" ] || fail 'The existing bundle metadata must not be a symbolic link.'
   plist="$app/Contents/Info.plist"
   id=$(/usr/libexec/PlistBuddy -c 'Print :CFBundleIdentifier' "$plist") || fail 'Cannot read the existing bundle identity.'
-  [ "$id" = dev.agent-orchestrator.desktop ] || fail 'Refusing to replace an unrelated application.'
+  [ "$id" = dev.openagents.desktop ] || fail 'Refusing to replace an unrelated application.'
   old=$(/usr/libexec/PlistBuddy -c 'Print :CFBundleShortVersionString' "$plist") || fail 'Cannot read the existing version.'
   build=$(/usr/libexec/PlistBuddy -c 'Print :CFBundleVersion' "$plist") || fail 'Cannot read the existing build.'
   [ "$old" = "$build" ] || fail 'Unrecognized version/build combination; refusing replacement.'

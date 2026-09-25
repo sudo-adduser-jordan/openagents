@@ -88,7 +88,7 @@ export type BoardPullRequestState = "closed" | "open" | "draft" | "merged";
 
 // Display statuses that mean work is still turning, and so earn the spinning
 // loader beside the card's status label: the review the PR is waiting on, or an
-// AO-driven loop working the PR. Settled phrases ("Mergeable", "Approved",
+// Open Agents-driven loop working the PR. Settled phrases ("Mergeable", "Approved",
 // "Merged") are deliberately absent — see #4725 and #5081.
 const IN_PROGRESS_DISPLAY_STATUSES = new Set<string>([
 	"Review pending",
@@ -315,7 +315,7 @@ export function SessionCardView({
 		session.statusReadiness === "checking" || (session.statusReadiness !== "unavailable" &&
 		!needsAttention &&
 		session.displayStatus !== "Needs human review" &&
-		// "Draft" describes the PR, not work AO is turning, so it gets no loader
+		// "Draft" describes the PR, not work Open Agents is turning, so it gets no loader
 		// even while the worker is live.
 		session.displayStatus !== "Draft" &&
 		(session.status === "working" ||

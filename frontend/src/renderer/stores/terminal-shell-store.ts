@@ -4,7 +4,7 @@ import {
 	coerceTerminalShell,
 	type TerminalShellPreference,
 } from "../../shared/ui-locale";
-import { aoBridge } from "../lib/bridge";
+import { openAgentsBridge } from "../lib/bridge";
 
 type TerminalShellState = {
 	preference: TerminalShellPreference;
@@ -30,7 +30,7 @@ export const useTerminalShellStore = create<TerminalShellState>((set, get) => ({
 		pendingLoad = (async () => {
 			let preference = DEFAULT_TERMINAL_SHELL;
 			try {
-				const settings = await aoBridge.uiSettings.get();
+				const settings = await openAgentsBridge.uiSettings.get();
 				preference = coerceTerminalShell(settings.terminalShell);
 			} catch {
 				// A missing bridge or unreadable setting must not prevent terminals from opening.
@@ -48,7 +48,7 @@ export const useTerminalShellStore = create<TerminalShellState>((set, get) => ({
 		const revision = ++settingRevision;
 		set({ saving: true, saveError: false });
 		try {
-			await aoBridge.uiSettings.set({ terminalShell: preference });
+			await openAgentsBridge.uiSettings.set({ terminalShell: preference });
 			if (revision === settingRevision) set({ preference, loaded: true, saving: false });
 		} catch {
 			if (revision === settingRevision) set({ saving: false, saveError: true });

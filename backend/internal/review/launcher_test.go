@@ -10,9 +10,9 @@ import (
 	"testing"
 	"time"
 
-	"github.com/aoagents/agent-orchestrator/backend/internal/domain"
-	"github.com/aoagents/agent-orchestrator/backend/internal/ports"
-	sessionmanager "github.com/aoagents/agent-orchestrator/backend/internal/session_manager"
+	"github.com/sudo-adduser-jordan/open-agents/backend/internal/domain"
+	"github.com/sudo-adduser-jordan/open-agents/backend/internal/ports"
+	sessionmanager "github.com/sudo-adduser-jordan/open-agents/backend/internal/session_manager"
 )
 
 type fakeReviewer struct {
@@ -32,12 +32,12 @@ func (f *fakeReviewer) ReviewMessage(_ context.Context, inv ports.ReviewInvocati
 
 func TestLauncherSpawnEnvCannotOverrideWorkerContext(t *testing.T) {
 	reviewer := &fakeReviewer{env: map[string]string{
-		sessionmanager.EnvSessionID: "hacked-session",
-		sessionmanager.EnvProjectID: "hacked-project",
-		sessionmanager.EnvDataDir:   "hacked-data",
-		"AO_REVIEW_SESSION_ID":      "hacked-review",
-		EnvRunFile:                  "hacked-run-file",
-		"REVIEW_ONLY":               "1",
+		sessionmanager.EnvSessionID:     "hacked-session",
+		sessionmanager.EnvProjectID:     "hacked-project",
+		sessionmanager.EnvDataDir:       "hacked-data",
+		"OPEN_AGENTS_REVIEW_SESSION_ID": "hacked-review",
+		EnvRunFile:                      "hacked-run-file",
+		"REVIEW_ONLY":                   "1",
 	}}
 	rt := &fakeRuntime{}
 	dataDir := t.TempDir()
@@ -54,14 +54,14 @@ func TestLauncherSpawnEnvCannotOverrideWorkerContext(t *testing.T) {
 	if _, ok := rt.createCfg.Env[sessionmanager.EnvSessionID]; ok {
 		t.Fatalf("reviewer env must not set worker %s: %v", sessionmanager.EnvSessionID, rt.createCfg.Env)
 	}
-	if rt.createCfg.Env["AO_REVIEW_SESSION_ID"] != "review-1" {
-		t.Fatalf("AO_REVIEW_SESSION_ID = %q, want review-1", rt.createCfg.Env["AO_REVIEW_SESSION_ID"])
+	if rt.createCfg.Env["OPEN_AGENTS_REVIEW_SESSION_ID"] != "review-1" {
+		t.Fatalf("OPEN_AGENTS_REVIEW_SESSION_ID = %q, want review-1", rt.createCfg.Env["OPEN_AGENTS_REVIEW_SESSION_ID"])
 	}
-	if rt.createCfg.Env["AO_REVIEW_WORKER_SESSION_ID"] != "mer-1" {
-		t.Fatalf("AO_REVIEW_WORKER_SESSION_ID = %q, want mer-1", rt.createCfg.Env["AO_REVIEW_WORKER_SESSION_ID"])
+	if rt.createCfg.Env["OPEN_AGENTS_REVIEW_WORKER_SESSION_ID"] != "mer-1" {
+		t.Fatalf("OPEN_AGENTS_REVIEW_WORKER_SESSION_ID = %q, want mer-1", rt.createCfg.Env["OPEN_AGENTS_REVIEW_WORKER_SESSION_ID"])
 	}
-	if rt.createCfg.Env["AO_REVIEW_HARNESS"] != string(domain.ReviewerHarness("opencode")) {
-		t.Fatalf("AO_REVIEW_HARNESS = %q, want %q", rt.createCfg.Env["AO_REVIEW_HARNESS"], domain.ReviewerOpenCode)
+	if rt.createCfg.Env["OPEN_AGENTS_REVIEW_HARNESS"] != string(domain.ReviewerHarness("opencode")) {
+		t.Fatalf("OPEN_AGENTS_REVIEW_HARNESS = %q, want %q", rt.createCfg.Env["OPEN_AGENTS_REVIEW_HARNESS"], domain.ReviewerOpenCode)
 	}
 	if rt.createCfg.Env[sessionmanager.EnvProjectID] != "mer" {
 		t.Fatalf("%s = %q, want mer", sessionmanager.EnvProjectID, rt.createCfg.Env[sessionmanager.EnvProjectID])
@@ -74,16 +74,16 @@ func TestLauncherSpawnEnvCannotOverrideWorkerContext(t *testing.T) {
 	}
 }
 
-func TestLauncherSpawnPinsPATHToAOExecutable(t *testing.T) {
-	aoDir := t.TempDir()
-	aoExe := filepath.Join(aoDir, "ao")
+func TestLauncherSpawnPinsPATHToOpenAgentsExecutable(t *testing.T) {
+	openAgentsDir := t.TempDir()
+	openAgentsExe := filepath.Join(openAgentsDir, "open-agents")
 	reviewer := &fakeReviewer{env: map[string]string{"PATH": "/reviewer/bin"}}
 	rt := &fakeRuntime{}
 	l := NewLauncher(
 		fakeReviewerResolver{reviewer: reviewer, ok: true},
 		rt,
 		t.TempDir(),
-		WithExecutable(func() (string, error) { return aoExe, nil }),
+		WithExecutable(func() (string, error) { return openAgentsExe, nil }),
 	)
 
 	if _, err := l.Spawn(context.Background(), launchSpec()); err != nil {
@@ -91,14 +91,14 @@ func TestLauncherSpawnPinsPATHToAOExecutable(t *testing.T) {
 	}
 
 	parts := strings.Split(rt.createCfg.Env["PATH"], string(os.PathListSeparator))
-	if len(parts) < 2 || parts[0] != aoDir || parts[1] != "/reviewer/bin" {
-		t.Fatalf("reviewer PATH = %q, want AO dir before adapter PATH", rt.createCfg.Env["PATH"])
+	if len(parts) < 2 || parts[0] != openAgentsDir || parts[1] != "/reviewer/bin" {
+		t.Fatalf("reviewer PATH = %q, want Open Agents dir before adapter PATH", rt.createCfg.Env["PATH"])
 	}
 }
 
-func TestLauncherSpawnCreatesAOShimWhenExecutableIsNotNamedAO(t *testing.T) {
+func TestLauncherSpawnCreatesOpenAgentsShimWhenExecutableIsNotNamedOpenAgents(t *testing.T) {
 	dataDir := t.TempDir()
-	exe := filepath.Join(t.TempDir(), "ao-dev-daemon")
+	exe := filepath.Join(t.TempDir(), "open-agents-dev-daemon")
 	reviewer := &fakeReviewer{env: map[string]string{"PATH": "/reviewer/bin"}}
 	rt := &fakeRuntime{}
 	l := NewLauncher(
@@ -117,16 +117,16 @@ func TestLauncherSpawnCreatesAOShimWhenExecutableIsNotNamedAO(t *testing.T) {
 	if len(parts) < 2 || parts[0] != shimDir || parts[1] != "/reviewer/bin" {
 		t.Fatalf("reviewer PATH = %q, want shim dir before adapter PATH", rt.createCfg.Env["PATH"])
 	}
-	shimPath := filepath.Join(shimDir, "ao")
+	shimPath := filepath.Join(shimDir, "open-agents")
 	if runtime.GOOS == "windows" {
 		shimPath += ".cmd"
 	}
 	shim, err := os.ReadFile(shimPath)
 	if err != nil {
-		t.Fatalf("read AO shim: %v", err)
+		t.Fatalf("read Open Agents shim: %v", err)
 	}
 	if !strings.Contains(string(shim), exe) {
-		t.Fatalf("AO shim = %q, want executable %q", shim, exe)
+		t.Fatalf("Open Agents shim = %q, want executable %q", shim, exe)
 	}
 }
 
@@ -141,7 +141,7 @@ func TestLauncherSpawnWarnsWhenPATHPinAndShimFail(t *testing.T) {
 		WithExecutable(func() (string, error) {
 			calls++
 			if calls == 1 {
-				return filepath.Join(t.TempDir(), "ao-dev-daemon"), nil
+				return filepath.Join(t.TempDir(), "open-agents-dev-daemon"), nil
 			}
 			return "", errors.New("executable unavailable")
 		}),
@@ -156,9 +156,9 @@ func TestLauncherSpawnWarnsWhenPATHPinAndShimFail(t *testing.T) {
 	if rt.createCfg.Env["PATH"] != "/reviewer/bin" {
 		t.Fatalf("PATH = %q, want original reviewer PATH", rt.createCfg.Env["PATH"])
 	}
-	warning := rt.createCfg.Env[EnvAOCommandWarning]
-	if !strings.Contains(warning, "PATH pin failed") || !strings.Contains(warning, "AO shim fallback failed") || !strings.Contains(warning, "executable unavailable") {
-		t.Fatalf("%s = %q, want combined PATH/shim warning", EnvAOCommandWarning, warning)
+	warning := rt.createCfg.Env[EnvOpenAgentsCommandWarning]
+	if !strings.Contains(warning, "PATH pin failed") || !strings.Contains(warning, "Open Agents shim fallback failed") || !strings.Contains(warning, "executable unavailable") {
+		t.Fatalf("%s = %q, want combined PATH/shim warning", EnvOpenAgentsCommandWarning, warning)
 	}
 }
 
@@ -195,7 +195,7 @@ func TestLauncherSpawnPrependsNodeRuntimeForNodeShimReviewer(t *testing.T) {
 	reviewerWithCommand := reviewerCommandFunc{reviewer: reviewer, reviewCommand: reviewerCommand}
 	rt := &fakeRuntime{}
 	dataDir := t.TempDir()
-	exe := filepath.Join(t.TempDir(), "ao")
+	exe := filepath.Join(t.TempDir(), "open-agents")
 	l := NewLauncher(
 		fakeReviewerResolver{reviewer: reviewerWithCommand, ok: true},
 		rt,
@@ -207,7 +207,7 @@ func TestLauncherSpawnPrependsNodeRuntimeForNodeShimReviewer(t *testing.T) {
 		t.Fatalf("Spawn: %v", err)
 	}
 	// The daemon-dir pin stays at the head: the reviewer binary is invoked by
-	// absolute path, and `env node` skips the daemon dir (which holds `ao`, not
+	// absolute path, and `env node` skips the daemon dir (which holds `open-agents`, not
 	// `node`) to reach the node dir behind it.
 	parts := strings.Split(rt.createCfg.Env["PATH"], string(os.PathListSeparator))
 	if len(parts) < 3 || parts[0] != filepath.Dir(exe) || parts[1] != binDir || parts[2] != nodeDir {
@@ -215,25 +215,25 @@ func TestLauncherSpawnPrependsNodeRuntimeForNodeShimReviewer(t *testing.T) {
 	}
 }
 
-// A foreign `ao` beside the reviewer binary must not win a bare `ao` typed into
+// A foreign `open-agents` beside the reviewer binary must not win a bare `open-agents` typed into
 // a reviewer pane: the launch-binary prepend puts that directory in front of
 // the pin, and the pin has to be moved back. Same failure as #3562, one context
 // over.
-func TestLauncherSpawnKeepsDaemonAOAheadOfLaunchBinaryDir(t *testing.T) {
+func TestLauncherSpawnKeepsDaemonOpenAgentsAheadOfLaunchBinaryDir(t *testing.T) {
 	home := t.TempDir()
 	binDir := filepath.Join(home, "reviewer", "bin")
 	reviewerBin := filepath.Join(binDir, "codex")
 	if err := os.MkdirAll(binDir, 0o755); err != nil {
 		t.Fatal(err)
 	}
-	for _, name := range []string{reviewerBin, filepath.Join(binDir, "ao")} {
+	for _, name := range []string{reviewerBin, filepath.Join(binDir, "open-agents")} {
 		if err := os.WriteFile(name, []byte("#!/bin/sh\n"), 0o755); err != nil {
 			t.Fatal(err)
 		}
 	}
 	// binDir is deliberately NOT on the inherited PATH, which is what makes the
 	// launch-binary prepend happen at all (a GUI-launched app does not see the
-	// npm global bin the agent CLI and the legacy `ao` share).
+	// npm global bin the agent CLI and the legacy `open-agents` share).
 	basePath := t.TempDir()
 	t.Setenv("PATH", basePath)
 
@@ -243,7 +243,7 @@ func TestLauncherSpawnKeepsDaemonAOAheadOfLaunchBinaryDir(t *testing.T) {
 		return ports.ReviewCommandSpec{Argv: []string{reviewerBin, "--review"}, Env: reviewer.env}, nil
 	}
 	rt := &fakeRuntime{}
-	exe := filepath.Join(t.TempDir(), "ao")
+	exe := filepath.Join(t.TempDir(), "open-agents")
 	l := NewLauncher(
 		fakeReviewerResolver{reviewer: reviewerCommandFunc{reviewer: reviewer, reviewCommand: reviewerCommand}, ok: true},
 		rt,
@@ -478,11 +478,11 @@ func TestLauncherSpawnReturnsStableHandle(t *testing.T) {
 	if _, ok := rt.createCfg.Env[sessionmanager.EnvSessionID]; ok {
 		t.Fatalf("reviewer env must not set worker %s: %v", sessionmanager.EnvSessionID, rt.createCfg.Env)
 	}
-	if rt.createCfg.Env["AO_REVIEW_SESSION_ID"] != "review-1" {
-		t.Fatalf("reviewer AO_REVIEW_SESSION_ID = %q, want review-1", rt.createCfg.Env["AO_REVIEW_SESSION_ID"])
+	if rt.createCfg.Env["OPEN_AGENTS_REVIEW_SESSION_ID"] != "review-1" {
+		t.Fatalf("reviewer OPEN_AGENTS_REVIEW_SESSION_ID = %q, want review-1", rt.createCfg.Env["OPEN_AGENTS_REVIEW_SESSION_ID"])
 	}
-	if rt.createCfg.Env["AO_REVIEW_WORKER_SESSION_ID"] != "mer-1" {
-		t.Fatalf("reviewer AO_REVIEW_WORKER_SESSION_ID = %q, want mer-1", rt.createCfg.Env["AO_REVIEW_WORKER_SESSION_ID"])
+	if rt.createCfg.Env["OPEN_AGENTS_REVIEW_WORKER_SESSION_ID"] != "mer-1" {
+		t.Fatalf("reviewer OPEN_AGENTS_REVIEW_WORKER_SESSION_ID = %q, want mer-1", rt.createCfg.Env["OPEN_AGENTS_REVIEW_WORKER_SESSION_ID"])
 	}
 	if rt.createCfg.Env[sessionmanager.EnvProjectID] != "mer" {
 		t.Fatalf("reviewer %s = %q, want mer", sessionmanager.EnvProjectID, rt.createCfg.Env[sessionmanager.EnvProjectID])
@@ -518,7 +518,7 @@ func TestLauncherSpawnReturnsStableHandle(t *testing.T) {
 }
 
 func TestLauncherUsesReviewerNeutralWorkingDirectory(t *testing.T) {
-	reviewer := &fakeReviewer{workingDirectory: "/ao/reviewer-runtime/review-mer-1/workspace"}
+	reviewer := &fakeReviewer{workingDirectory: "/open-agents/reviewer-runtime/review-mer-1/workspace"}
 	rt := &fakeRuntime{}
 	l := newTestLauncher(t, reviewer, rt)
 
@@ -582,7 +582,7 @@ func TestLauncherRestoreTerminalStartsIdlePane(t *testing.T) {
 		"verdict: changes_requested",
 		"GitHub review: 484",
 		"Fix the restore path.",
-		"Wait for AO to send the next review task",
+		"Wait for Open Agents to send the next review task",
 	} {
 		if !strings.Contains(reviewer.gotInv.Prompt, want) {
 			t.Fatalf("restore prompt missing %q: %q", want, reviewer.gotInv.Prompt)
@@ -597,8 +597,8 @@ func TestLauncherRestoreTerminalStartsIdlePane(t *testing.T) {
 }
 
 func TestLauncherRestoreTerminalUsesReviewerRestoreCommandWhenAvailable(t *testing.T) {
-	aoDir := t.TempDir()
-	aoExe := filepath.Join(aoDir, "ao")
+	openAgentsDir := t.TempDir()
+	openAgentsExe := filepath.Join(openAgentsDir, "open-agents")
 	reviewer := &fakeRestoringReviewer{
 		restoreOK: true,
 		restoreSpec: ports.ReviewCommandSpec{
@@ -616,7 +616,7 @@ func TestLauncherRestoreTerminalUsesReviewerRestoreCommandWhenAvailable(t *testi
 		rt,
 		dataDir,
 		WithRunFilePath(runFile),
-		WithExecutable(func() (string, error) { return aoExe, nil }),
+		WithExecutable(func() (string, error) { return openAgentsExe, nil }),
 	)
 	spec := launchSpec()
 	spec.AgentSessionID = "native-reviewer-1"
@@ -644,8 +644,8 @@ func TestLauncherRestoreTerminalUsesReviewerRestoreCommandWhenAvailable(t *testi
 		t.Fatalf("runtime argv = %#v", rt.createCfg.Argv)
 	}
 	parts := strings.Split(rt.createCfg.Env["PATH"], string(os.PathListSeparator))
-	if len(parts) < 2 || parts[0] != aoDir || parts[1] != "/restore/bin" {
-		t.Fatalf("restore PATH = %q, want AO dir before restore command PATH", rt.createCfg.Env["PATH"])
+	if len(parts) < 2 || parts[0] != openAgentsDir || parts[1] != "/restore/bin" {
+		t.Fatalf("restore PATH = %q, want Open Agents dir before restore command PATH", rt.createCfg.Env["PATH"])
 	}
 	if rt.createCfg.Env[EnvRunFile] != runFile {
 		t.Fatalf("restore %s = %q, want %q", EnvRunFile, rt.createCfg.Env[EnvRunFile], runFile)
@@ -890,14 +890,14 @@ func TestLauncherCancelSendsEscapeForKiro(t *testing.T) {
 
 func TestLauncherSpawnUsesReviewerWorkingDirectoryAndInitialMessage(t *testing.T) {
 	reviewer := &fakeReviewerWithLaunchSpec{spec: ports.ReviewCommandSpec{
-		Argv: []string{"kiro-cli", "chat"}, WorkingDirectory: "/ao/reviewer", InitialMessage: "task ref",
+		Argv: []string{"kiro-cli", "chat"}, WorkingDirectory: "/open-agents/reviewer", InitialMessage: "task ref",
 	}}
 	rt := &fakeRuntime{}
 	l := newTestLauncher(t, reviewer, rt)
 	if _, err := l.Spawn(context.Background(), launchSpec()); err != nil {
 		t.Fatalf("Spawn: %v", err)
 	}
-	if rt.createCfg.WorkspacePath != "/ao/reviewer" || rt.sentMsg != "task ref" {
+	if rt.createCfg.WorkspacePath != "/open-agents/reviewer" || rt.sentMsg != "task ref" {
 		t.Fatalf("create = %+v, sent = %q", rt.createCfg, rt.sentMsg)
 	}
 }

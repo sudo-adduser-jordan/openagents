@@ -27,13 +27,13 @@ describe("parsePairingCode", () => {
 	// rides in the fragment, which browsers never send to a server, keeping the
 	// token out of web logs and referrer headers.
 	it("reads the payload out of a deep link fragment", () => {
-		const got = parsePairingCode(pairingUrl(offer, "aomobile://pair"));
+		const got = parsePairingCode(pairingUrl(offer, "open-agents-mobile://pair"));
 
 		expect(got?.hostId).toBe("h_b3e07f31");
 	});
 
 	it("reads the payload out of an https universal link", () => {
-		const got = parsePairingCode(pairingUrl(offer, "https://aoagents.dev/pair"));
+		const got = parsePairingCode(pairingUrl(offer, "https://example.com/pair"));
 
 		expect(got?.hostId).toBe("h_b3e07f31");
 	});

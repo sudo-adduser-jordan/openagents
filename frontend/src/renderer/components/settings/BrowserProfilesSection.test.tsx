@@ -1,7 +1,7 @@
 import { render, screen, waitFor } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { afterEach, describe, expect, it, vi } from "vitest";
-import type { AoBridge } from "../../../preload";
+import type { OpenAgentsBridge } from "../../../preload";
 import { BrowserProfilesSection } from "./BrowserProfilesSection";
 
 const profile = {
@@ -12,14 +12,14 @@ const profile = {
 };
 
 describe("BrowserProfilesSection", () => {
-	let originalBridge: AoBridge["browserProfiles"];
+	let originalBridge: OpenAgentsBridge["browserProfiles"];
 
 	afterEach(() => {
-		if (window.ao) window.ao.browserProfiles = originalBridge;
+		if (window.openAgents) window.openAgents.browserProfiles = originalBridge;
 	});
 
 	it("loads profiles and wires create, rename, clear, and delete actions", async () => {
-		const bridge: AoBridge["browserProfiles"] = {
+		const bridge: OpenAgentsBridge["browserProfiles"] = {
 			list: vi.fn(async () => ({ profiles: [profile] })),
 			create: vi.fn(async (name: string) => ({ ...profile, id: "22222222-2222-4222-8222-222222222222", name })),
 			rename: vi.fn(async (input: { id: string; name: string }) => ({ ...profile, ...input })),
@@ -29,8 +29,8 @@ describe("BrowserProfilesSection", () => {
 			import: vi.fn(async () => ({ sourceName: "", entries: [] })),
 			onImportProgress: vi.fn(() => () => undefined),
 		};
-		originalBridge = window.ao!.browserProfiles;
-		window.ao!.browserProfiles = bridge;
+		originalBridge = window.openAgents!.browserProfiles;
+		window.openAgents!.browserProfiles = bridge;
 
 		render(<BrowserProfilesSection />);
 		expect(await screen.findByText("Work")).toBeInTheDocument();
@@ -60,7 +60,7 @@ describe("BrowserProfilesSection", () => {
 	});
 
 	it("surfaces a recoverable load error", async () => {
-		const bridge: AoBridge["browserProfiles"] = {
+		const bridge: OpenAgentsBridge["browserProfiles"] = {
 			list: vi.fn(async () => {
 				throw new Error("Registry is corrupt");
 			}),
@@ -72,8 +72,8 @@ describe("BrowserProfilesSection", () => {
 			import: vi.fn(async () => ({ sourceName: "", entries: [] })),
 			onImportProgress: vi.fn(() => () => undefined),
 		};
-		originalBridge = window.ao!.browserProfiles;
-		window.ao!.browserProfiles = bridge;
+		originalBridge = window.openAgents!.browserProfiles;
+		window.openAgents!.browserProfiles = bridge;
 
 		render(<BrowserProfilesSection />);
 		expect(await screen.findByRole("alert")).toHaveTextContent("Registry is corrupt");

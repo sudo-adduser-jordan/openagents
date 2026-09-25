@@ -38,7 +38,7 @@ export function MainPanel({ activeDemo }: MainPanelProps) {
 								</div>
 								<div>Default model · Full tools</div>
 								<div className="text-muted-foreground/65">
-									~/.ao-agents/worktrees/main/feature-ws
+									~/.open-agents/worktrees/main/feature-ws
 								</div>
 							</div>
 						</div>
@@ -59,7 +59,7 @@ export function MainPanel({ activeDemo }: MainPanelProps) {
 							<div>
 								<span className="text-muted-foreground/55">❯</span>
 								<span className="ml-1 text-foreground">1.</span>
-								<span className="ml-1 text-brand-light">ao-agents-mcp</span>
+								<span className="ml-1 text-brand-light">open-agents-mcp</span>
 								<span className="ml-2 text-emerald-400/85">✓ connected</span>
 							</div>
 
@@ -92,7 +92,7 @@ export function MainPanel({ activeDemo }: MainPanelProps) {
 				>
 					<div className="mb-3 text-foreground">
 						<span className="text-muted-foreground/55">❯</span>{" "}
-						<span className="text-brand-light">ao new</span>
+						<span className="text-brand-light">open-agents new</span>
 					</div>
 					<div className="space-y-1.5 text-muted-foreground">
 						<div className="flex items-center gap-2">

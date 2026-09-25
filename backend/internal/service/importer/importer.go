@@ -1,9 +1,4 @@
-// Package importer is the controller-facing service for the legacy-AO import.
-// It wraps the internal/legacyimport engine with a detection probe (is a legacy
-// install present?) and a trigger that runs the import through the live daemon's
-// store, so the daemon stays the sole writer. Whether to PROMPT for the import
-// is the desktop app's job (the app-state.json migration marker), so this probe
-// reports only physical availability, not "already imported".
+// Package importer validates and prepares user-selected project folders for import.
 package importer
 
 import (
@@ -17,28 +12,14 @@ import (
 	"slices"
 	"strings"
 
-	"github.com/aoagents/agent-orchestrator/backend/internal/domain"
-	"github.com/aoagents/agent-orchestrator/backend/internal/gitdefault"
-	"github.com/aoagents/agent-orchestrator/backend/internal/httpd/apierr"
-	"github.com/aoagents/agent-orchestrator/backend/internal/legacyimport"
-	aoprocess "github.com/aoagents/agent-orchestrator/backend/internal/process"
+	"github.com/sudo-adduser-jordan/open-agents/backend/internal/domain"
+	"github.com/sudo-adduser-jordan/open-agents/backend/internal/gitdefault"
+	"github.com/sudo-adduser-jordan/open-agents/backend/internal/httpd/apierr"
+	openagentsprocess "github.com/sudo-adduser-jordan/open-agents/backend/internal/process"
 )
-
-// Store is the storage slice the import runs through; *sqlite.Store satisfies it.
-type Store interface {
-	legacyimport.Store
-}
-
-// Status reports whether a legacy AO install is physically present to import.
-type Status struct {
-	Available  bool   `json:"available"`
-	LegacyRoot string `json:"legacyRoot"`
-}
 
 // Service is the controller-facing import contract.
 type Service interface {
-	Status(ctx context.Context) (Status, error)
-	Run(ctx context.Context) (legacyimport.Report, error)
 	Validate(ctx context.Context, in ImportValidationInput) (ImportValidationResult, error)
 	PrepareGit(ctx context.Context, in GitPreparationInput) (GitPreparationResult, error)
 }
@@ -64,7 +45,7 @@ const (
 	GitPreparationEventError   = "error"
 )
 
-const importGitHubRepositoryConfigKey = "ao.import.githubRepository"
+const importGitHubRepositoryConfigKey = "open-agents.import.githubRepository"
 
 // ImportValidationInput is the body shape for POST /api/v1/imports/validate.
 type ImportValidationInput struct {
@@ -84,7 +65,7 @@ type GitPreparationInput struct {
 	Stepwise         bool                            `json:"stepwise,omitempty"`
 }
 
-// GitHubRepositoryPreparation describes the GitHub repository AO should create for a project import.
+// GitHubRepositoryPreparation describes the GitHub repository Open Agents should create for a project import.
 type GitHubRepositoryPreparation struct {
 	Owner   string `json:"owner,omitempty"`
 	Name    string `json:"name,omitempty"`
@@ -140,42 +121,16 @@ type GitPreparationResult struct {
 	Validation ImportValidationResult `json:"validation"`
 }
 
-// Deps bundles the import service's dependencies.
-type Deps struct {
-	// Store is the rewrite's durable store (the daemon's shared *sqlite.Store).
-	Store Store
-	// Root overrides the legacy AO root to read. Empty -> the default.
-	Root string
-}
+// Deps is reserved for future import-service dependencies.
+type Deps struct{}
 
-// Manager implements Service over the daemon's store.
-type Manager struct {
-	store Store
-	root  string
-}
+// Manager implements Service.
+type Manager struct{}
 
 var _ Service = (*Manager)(nil)
 
-// New constructs the import service. An empty Root falls back to the default.
-func New(deps Deps) *Manager {
-	root := deps.Root
-	if root == "" {
-		root = legacyimport.DefaultLegacyRootDir()
-	}
-	return &Manager{store: deps.Store, root: root}
-}
-
-// Status reports availability only: legacy data present at the root. It never
-// errors on a missing legacy store; that is simply "not available".
-func (m *Manager) Status(_ context.Context) (Status, error) {
-	return Status{Available: legacyimport.HasLegacyData(m.root), LegacyRoot: m.root}, nil
-}
-
-// Run executes the import through the daemon's store. Idempotent: the engine
-// skips rows that already exist. Legacy files are never modified.
-func (m *Manager) Run(ctx context.Context) (legacyimport.Report, error) {
-	return legacyimport.Run(ctx, m.store, legacyimport.Options{Root: m.root})
-}
+// New constructs the import service.
+func New(Deps) *Manager { return &Manager{} }
 
 // Validate inspects a selected folder for project import readiness without
 // mutating Git or the filesystem.
@@ -232,7 +187,7 @@ func (m *Manager) Validate(ctx context.Context, in ImportValidationInput) (Impor
 	}
 	if importKind == ImportKindWorkspace {
 		if root.IsRepo && root.HasOrigin {
-			result.Warning = "This folder is already a Git project. AO will import it as a project instead of a workspace."
+			result.Warning = "This folder is already a Git project. Open Agents will import it as a project instead of a workspace."
 			result.NextStep = ImportNextStepChooseImportKind
 			return result, nil
 		}
@@ -274,7 +229,7 @@ func (m *Manager) Validate(ctx context.Context, in ImportValidationInput) (Impor
 		}
 	}
 	if root.HasOrigin && len(children) > 0 {
-		result.Warning = "Selected folder has direct child repositories, but because the root repository already has an origin remote AO will import it as a project, not a workspace."
+		result.Warning = "Selected folder has direct child repositories, but because the root repository already has an origin remote Open Agents will import it as a project, not a workspace."
 	}
 	if len(root.RequiredActions) > 0 {
 		result.NextStep = ImportNextStepPrepareGit
@@ -361,17 +316,17 @@ func validatePreparationTarget(target gitPreparationTarget) error {
 		}
 	}
 	if required[GitPreparationActionCreateRemoteRepository] && target.Input.GitHubRepository == nil && strings.TrimSpace(target.Input.RemoteURL) == "" {
-		return apierr.Invalid("IMPORT_GITHUB_REPOSITORY_REQUIRED", "GitHub repository owner and name are required before AO can create an origin remote.", map[string]any{"repoPath": target.Status.RepoPath})
+		return apierr.Invalid("IMPORT_GITHUB_REPOSITORY_REQUIRED", "GitHub repository owner and name are required before Open Agents can create an origin remote.", map[string]any{"repoPath": target.Status.RepoPath})
 	}
 	if required[GitPreparationActionCreateRemoteRepository] && target.Input.GitHubRepository != nil {
 		owner := strings.TrimSpace(target.Input.GitHubRepository.Owner)
 		name := strings.TrimSpace(target.Input.GitHubRepository.Name)
 		if owner == "" || name == "" {
-			return apierr.Invalid("IMPORT_GITHUB_REPOSITORY_REQUIRED", "GitHub repository owner and name are required before AO can create an origin remote.", map[string]any{"repoPath": target.Status.RepoPath})
+			return apierr.Invalid("IMPORT_GITHUB_REPOSITORY_REQUIRED", "GitHub repository owner and name are required before Open Agents can create an origin remote.", map[string]any{"repoPath": target.Status.RepoPath})
 		}
 	}
 	if required[GitPreparationActionSetRemote] && strings.TrimSpace(target.Input.RemoteURL) == "" {
-		return apierr.Invalid("IMPORT_REMOTE_URL_REQUIRED", "remoteUrl is required before AO can add an origin remote.", map[string]any{"repoPath": target.Status.RepoPath})
+		return apierr.Invalid("IMPORT_REMOTE_URL_REQUIRED", "remoteUrl is required before Open Agents can add an origin remote.", map[string]any{"repoPath": target.Status.RepoPath})
 	}
 	if required[GitPreparationActionSetRemote] || (required[GitPreparationActionCreateRemoteRepository] && target.Input.GitHubRepository == nil) {
 		if err := validateImportRemoteURL(target.Input.RemoteURL); err != nil {
@@ -556,7 +511,7 @@ func runGitPreparationAction(ctx context.Context, path, action string, in GitRep
 		if msg == "" {
 			msg = "initial commit"
 		}
-		if _, err := importGitOutput(ctx, path, "-c", "user.name=Agent Orchestrator", "-c", "user.email=ao@example.com", "commit", "--allow-empty", "-m", msg); err != nil {
+		if _, err := importGitOutput(ctx, path, "-c", "user.name=Open Agents", "-c", "user.email=open-agents@example.com", "commit", "--allow-empty", "-m", msg); err != nil {
 			return fmt.Errorf("create initial commit: %w", err)
 		}
 	case GitPreparationActionSetRemote:
@@ -656,7 +611,7 @@ func normalizeImportPath(raw string) (string, error) {
 	return filepath.Clean(abs), nil
 }
 
-// unsafeImportPath protects broad user and AO-owned directories from the Git
+// unsafeImportPath protects broad user and Open Agents-owned directories from the Git
 // preparation actions below. Import preparation is deliberately separate from
 // project setup, so it cannot rely on the latter's path-safety guard.
 func unsafeImportPath(path string) bool {
@@ -678,8 +633,8 @@ func unsafeImportPath(path string) bool {
 			return true
 		}
 	}
-	aoState := comparableImportPath(filepath.Join(home, ".ao"))
-	return sameImportPath(clean, aoState) || isImportDescendant(clean, aoState)
+	openAgentsState := comparableImportPath(filepath.Join(home, ".open-agents"))
+	return sameImportPath(clean, openAgentsState) || isImportDescendant(clean, openAgentsState)
 }
 
 func isImportDescendant(path, parent string) bool {
@@ -696,7 +651,7 @@ func isImportFolderEmpty(path string) bool {
 }
 
 func isImportGitRepo(path string) bool {
-	out, err := aoprocess.Command("git", "-C", path, "rev-parse", "--show-toplevel").Output()
+	out, err := openagentsprocess.Command("git", "-C", path, "rev-parse", "--show-toplevel").Output()
 	if err != nil {
 		return false
 	}
@@ -781,7 +736,7 @@ var importGhOutputFunc = importGhOutput
 var importGitOutputFunc = importGitOutput
 
 func importGhOutput(ctx context.Context, dir string, args ...string) (string, error) {
-	cmd := aoprocess.CommandContext(ctx, "gh", args...)
+	cmd := openagentsprocess.CommandContext(ctx, "gh", args...)
 	cmd.Dir = dir
 	out, err := cmd.CombinedOutput()
 	if err != nil {
@@ -791,7 +746,7 @@ func importGhOutput(ctx context.Context, dir string, args ...string) (string, er
 }
 
 func importRemoteExists(path, name string) bool {
-	out, err := aoprocess.Command("git", "-C", path, "remote").Output()
+	out, err := openagentsprocess.Command("git", "-C", path, "remote").Output()
 	if err != nil {
 		return false
 	}
@@ -802,7 +757,7 @@ func resolveImportOriginURL(path string) string {
 	// `git remote get-url origin` falls back to the literal string "origin"
 	// when the remote section exists without a URL. Read the configured value
 	// directly so validation can repair that incomplete state.
-	out, err := aoprocess.Command("git", "-C", path, "config", "--get", "remote.origin.url").Output()
+	out, err := openagentsprocess.Command("git", "-C", path, "config", "--get", "remote.origin.url").Output()
 	if err != nil {
 		return ""
 	}
@@ -857,7 +812,7 @@ func containsAction(actions []string, want string) bool {
 }
 
 func importGitOutput(ctx context.Context, dir string, args ...string) (string, error) {
-	cmd := aoprocess.CommandContext(ctx, "git", append([]string{"-C", dir}, args...)...)
+	cmd := openagentsprocess.CommandContext(ctx, "git", append([]string{"-C", dir}, args...)...)
 	out, err := cmd.CombinedOutput()
 	if err != nil {
 		return "", fmt.Errorf("git -C %s %s: %w: %s", dir, strings.Join(args, " "), err, strings.TrimSpace(string(out)))

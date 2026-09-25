@@ -9,9 +9,9 @@ import (
 	"fmt"
 	"time"
 
-	"github.com/aoagents/agent-orchestrator/backend/internal/ports"
+	"github.com/sudo-adduser-jordan/open-agents/backend/internal/ports"
 
-	scmobserve "github.com/aoagents/agent-orchestrator/backend/internal/observe/scm"
+	scmobserve "github.com/sudo-adduser-jordan/open-agents/backend/internal/observe/scm"
 )
 
 // NamedProvider pairs a routing key with a provider. The Key must match the

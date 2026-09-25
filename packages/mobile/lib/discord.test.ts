@@ -2,7 +2,7 @@ import { describe, expect, it } from "vitest";
 import { discordFeatureRequestURL } from "./discord";
 
 describe("discordFeatureRequestURL", () => {
-	it("opens the official AO Discord invite until a feature-request channel is configured", () => {
+	it("opens the official Open Agents Discord invite until a feature-request channel is configured", () => {
 		expect(discordFeatureRequestURL()).toBe("https://discord.com/invite/UZv7JjxbwG");
 	});
 

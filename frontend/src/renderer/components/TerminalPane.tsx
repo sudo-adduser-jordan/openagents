@@ -606,7 +606,7 @@ export function TerminalPane({
 			? terminalTarget.handleId
 			: `${session?.terminalHandleId ?? "empty"}:${session?.terminalGeneration ?? ""}`;
 
-	if (!window.ao) {
+	if (!window.openAgents) {
 		// A standalone shell has no agent and no branch, so it previews as a plain
 		// prompt rather than borrowing the session's agent transcript.
 		if (terminalTarget?.kind === "shell") {
@@ -711,7 +711,7 @@ export function TerminalPane({
 }
 
 function workerPreviewLines(session: WorkspaceSession | undefined, provider: string): string[] {
-	if (session?.id === "ao-demo-orchestrator") {
+	if (session?.id === "open-agents-demo-orchestrator") {
 		return [
 			"> Go through my Linear backlog and let's plan which tasks to spawn off",
 			"",
@@ -739,7 +739,7 @@ function workerPreviewLines(session: WorkspaceSession | undefined, provider: str
 			"> yes, spawn all three",
 			"",
 			"Running 3 shell commands…",
-			'└ $ ao spawn --project ao-demo --name "new-task-flake" --agent opencode --prompt',
+			'└ $ open-agents spawn --project open-agents-demo --name "new-task-flake" --agent opencode --prompt',
 			'  "Fix the flaky NewTaskDialog smoke test: submit is debounced 300ms while the',
 			'  e2e check asserts synchronously. Reproduce, fix, and push to update PR #324."',
 			"PASS 3 sessions spawned — board updated",
@@ -748,9 +748,9 @@ function workerPreviewLines(session: WorkspaceSession | undefined, provider: str
 	if (session?.id === "demo-review-stack") {
 		return [
 			'$ rg "previewUrl|Browser" frontend/src/renderer',
-			"frontend/src/renderer/components/SessionInspector.tsx: Browser tab selected after ao preview",
+			"frontend/src/renderer/components/SessionInspector.tsx: Browser tab selected after open-agents preview",
 			"frontend/src/renderer/hooks/useBrowserView.ts: preview revision re-navigates the view",
-			"$ ao preview http://localhost:5173",
+			"$ open-agents preview http://localhost:5173",
 			"DONE preview target set for demo-review-stack",
 			"$ npm --prefix frontend run typecheck",
 			"PASS TypeScript project references are clean",
@@ -781,7 +781,7 @@ function workerPreviewLines(session: WorkspaceSession | undefined, provider: str
 			"╭────────────────────────────────────────────╮",
 			"│ >_ OpenAI Codex (v0.133.0)                 │",
 			"│ model:        gpt-5.5 high  /model to change",
-			"│ directory:    ~/ao-demo/demo-new-task-flake",
+			"│ directory:    ~/open-agents-demo/demo-new-task-flake",
 			"│ permissions:  YOLO mode                    │",
 			"╰────────────────────────────────────────────╯",
 			"",
@@ -791,7 +791,7 @@ function workerPreviewLines(session: WorkspaceSession | undefined, provider: str
 			"• Ran npm test -- NewTaskDialog",
 			"└ PASS 12 tests passed",
 			"",
-			"▲ ao send · CI failed on PR #324. The failing checks are e2e (NewTaskDialog",
+			"▲ open-agents send · CI failed on PR #324. The failing checks are e2e (NewTaskDialog",
 			"  submits with Enter). Investigate and push a fix.",
 			"",
 			'• Ran rg -n "onKeyDown|Enter" src/components/NewTaskDialog.tsx',
@@ -813,8 +813,8 @@ function workerPreviewLines(session: WorkspaceSession | undefined, provider: str
 
 function reviewerPreviewLines(session: WorkspaceSession | undefined): string[] {
 	return [
-		"$ ao review submit --session " + (session?.id ?? "demo-session"),
-		"Reviewing PR #319: browser preview rail renders inside AO",
+		"$ open-agents review submit --session " + (session?.id ?? "demo-session"),
+		"Reviewing PR #319: browser preview rail renders inside Open Agents",
 		"PASS implementation matches the requested README screenshot flow",
 		"Reviewing PR #320: stacked PR review rows",
 		"WARN keep multiple review rows visible before taking the screenshot",
@@ -1017,11 +1017,11 @@ function AttachedTerminal({
 		(!replaySettled || replayPaintPending) &&
 		(state === "connecting" || state === "attached");
 	const showEndedState = state === "exited" || canRestoreSession;
-	const emptyStateTitle = session ? "Starting session" : "Agent Orchestrator";
+	const emptyStateTitle = session ? "Starting session" : "Open Agents";
 	const emptyStateMessage = session
 		? session.kind === "orchestrator"
-			? "Preparing the orchestrator terminal. This can take a moment while AO creates the workspace and starts the agent."
-			: "Preparing the worker terminal. This can take a moment while AO creates the workspace and starts the agent."
+			? "Preparing the orchestrator terminal. This can take a moment while Open Agents creates the workspace and starts the agent."
+			: "Preparing the worker terminal. This can take a moment while Open Agents creates the workspace and starts the agent."
 		: "No session selected. Pick a worker to attach its terminal.";
 
 	return (

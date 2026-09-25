@@ -9,10 +9,10 @@ import (
 
 	"github.com/google/uuid"
 
-	"github.com/aoagents/agent-orchestrator/backend/internal/domain"
-	"github.com/aoagents/agent-orchestrator/backend/internal/ports"
-	chatsvc "github.com/aoagents/agent-orchestrator/backend/internal/service/chat"
-	"github.com/aoagents/agent-orchestrator/backend/internal/storage/sqlite/store"
+	"github.com/sudo-adduser-jordan/open-agents/backend/internal/domain"
+	"github.com/sudo-adduser-jordan/open-agents/backend/internal/ports"
+	chatsvc "github.com/sudo-adduser-jordan/open-agents/backend/internal/service/chat"
+	"github.com/sudo-adduser-jordan/open-agents/backend/internal/storage/sqlite/store"
 )
 
 type nativeCheckpointDriver struct {
@@ -36,7 +36,7 @@ func TestStartNativeCheckpointAdmission(t *testing.T) {
 		{name: "verifier error before driver launch", verifyErr: sentinel},
 		{name: "unsettled before driver launch", verifyErr: ports.ErrChatHistoryUnsettled},
 		{name: "replayed wrong UUID", wrongUUID: true},
-		{name: "AO high-water still enforced", highWater: true},
+		{name: "Open Agents high-water still enforced", highWater: true},
 		{name: "legacy gate still enforced", legacy: true},
 		{name: "legacy gate waived only by consent", legacy: true, consent: true, wantPass: true},
 	} {

@@ -33,7 +33,7 @@ afterEach(() => {
 
 describe("useGitHubAuthTerminal", () => {
 	// A `gh auth login` device flow routinely outlives React Query's five-minute
-	// default gcTime: the user leaves AO, authenticates in a browser, then comes
+	// default gcTime: the user leaves Open Agents, authenticates in a browser, then comes
 	// back. The notice renders only on the home page and the empty board, so
 	// opening a project unmounts the last observer of this query. If the handle
 	// were collected the panel could not reattach, and the PTY would be orphaned

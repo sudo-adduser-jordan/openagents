@@ -241,37 +241,37 @@ describe("BrowserPanel", () => {
 		annotationSubmitListeners.clear();
 		annotationCancelListeners.clear();
 		pageFocusListeners.clear();
-		window.ao!.browser.onPageFocus = vi.fn((listener: (viewId: string) => void) => {
+		window.openAgents!.browser.onPageFocus = vi.fn((listener: (viewId: string) => void) => {
 			pageFocusListeners.add(listener);
 			return () => pageFocusListeners.delete(listener);
 		});
-		window.ao!.browser.onAnnotationSubmit = vi.fn((listener: (payload: BrowserAnnotationSubmitPayload) => void) => {
+		window.openAgents!.browser.onAnnotationSubmit = vi.fn((listener: (payload: BrowserAnnotationSubmitPayload) => void) => {
 			annotationSubmitListeners.add(listener);
 			return () => {
 				annotationSubmitListeners.delete(listener);
 			};
 		});
-		window.ao!.browser.onAnnotationCancel = vi.fn((listener: (payload: BrowserAnnotationCancelPayload) => void) => {
+		window.openAgents!.browser.onAnnotationCancel = vi.fn((listener: (payload: BrowserAnnotationCancelPayload) => void) => {
 			annotationCancelListeners.add(listener);
 			return () => {
 				annotationCancelListeners.delete(listener);
 			};
 		});
-		window.ao!.browser.historySuggestions = vi.fn(async () => []);
-		window.ao!.browser.historyFavicon = vi.fn(async () => undefined);
-		window.ao!.browser.captureScreenshot = vi.fn(async () => undefined);
-		window.ao!.browser.downloads.list = vi.fn(async () => ({ downloads: [] }));
-		window.ao!.browser.selectProfile = vi.fn(async () => undefined);
-		window.ao!.browserProfiles.list = vi.fn(async () => ({ profiles: [] }));
-		window.ao!.browser.notifyPanelUsed = vi.fn();
-		window.ao!.browser.notifyPanelBlur = vi.fn();
-		window.ao!.browser.onFocusLocation = vi.fn((listener: (viewId: string) => void) => {
+		window.openAgents!.browser.historySuggestions = vi.fn(async () => []);
+		window.openAgents!.browser.historyFavicon = vi.fn(async () => undefined);
+		window.openAgents!.browser.captureScreenshot = vi.fn(async () => undefined);
+		window.openAgents!.browser.downloads.list = vi.fn(async () => ({ downloads: [] }));
+		window.openAgents!.browser.selectProfile = vi.fn(async () => undefined);
+		window.openAgents!.browserProfiles.list = vi.fn(async () => ({ profiles: [] }));
+		window.openAgents!.browser.notifyPanelUsed = vi.fn();
+		window.openAgents!.browser.notifyPanelBlur = vi.fn();
+		window.openAgents!.browser.onFocusLocation = vi.fn((listener: (viewId: string) => void) => {
 			focusLocationListener = listener;
 			return () => {
 				if (focusLocationListener === listener) focusLocationListener = undefined;
 			};
 		});
-		window.ao!.browser.onReopenClosedTab = vi.fn((listener: (viewId: string) => void) => {
+		window.openAgents!.browser.onReopenClosedTab = vi.fn((listener: (viewId: string) => void) => {
 			reopenClosedTabListener = listener;
 			return () => {
 				if (reopenClosedTabListener === listener) reopenClosedTabListener = undefined;
@@ -324,7 +324,7 @@ describe("BrowserPanel", () => {
 			profileId: "11111111-1111-4111-8111-111111111111",
 			temporary: false,
 		};
-		window.ao!.browser.historySuggestions = vi.fn(async () => [
+		window.openAgents!.browser.historySuggestions = vi.fn(async () => [
 			{ url: "https://github.com/openai", title: "OpenAI" },
 			{ url: "https://gitlab.com/example", title: "GitLab" },
 			{ url: "https://github.blog/example", title: "GitHub Blog" },
@@ -332,7 +332,7 @@ describe("BrowserPanel", () => {
 			{ url: "https://githubstatus.com", title: "Fifth result" },
 		]);
 		let resolveGithubFavicon: (favicon: string | undefined) => void = () => undefined;
-		window.ao!.browser.historyFavicon = vi.fn(({ url }) =>
+		window.openAgents!.browser.historyFavicon = vi.fn(({ url }) =>
 			url.startsWith("https://github.com/")
 				? new Promise<string | undefined>((resolve) => {
 					resolveGithubFavicon = resolve;
@@ -347,7 +347,7 @@ describe("BrowserPanel", () => {
 		await userEvent.type(input, "g");
 		expect(addressBar).toHaveClass("browser-panel__address-bar--editing");
 
-		await waitFor(() => expect(window.ao!.browser.historySuggestions).toHaveBeenCalledWith({
+		await waitFor(() => expect(window.openAgents!.browser.historySuggestions).toHaveBeenCalledWith({
 			viewId: "42:sess-1",
 			query: "g",
 		}), { timeout: 2_000 });
@@ -361,7 +361,7 @@ describe("BrowserPanel", () => {
 		expect(screen.getAllByRole("option")[0]!.querySelector("img")).not.toBeInTheDocument();
 		await act(async () => resolveGithubFavicon("data:image/png;base64,github"));
 		await waitFor(() => expect(menu.querySelector("img")).toHaveAttribute("src", "data:image/png;base64,github"));
-		expect(window.ao!.browser.historyFavicon).toHaveBeenCalledWith({
+		expect(window.openAgents!.browser.historyFavicon).toHaveBeenCalledWith({
 			viewId: "42:sess-1",
 			url: "https://github.com/openai",
 		});
@@ -379,9 +379,9 @@ describe("BrowserPanel", () => {
 			profileId: "11111111-1111-4111-8111-111111111111",
 			temporary: false,
 		};
-		window.ao!.browser.historySuggestions = vi.fn(async () => [
+		window.openAgents!.browser.historySuggestions = vi.fn(async () => [
 			{ url: "https://github.com/openai", title: "OpenAI" },
-			{ url: "https://github.com/aoagents", title: "AO" },
+			{ url: "https://github.com/sudo-adduser-jordan/open-agents", title: "Open Agents" },
 		]);
 		render(<BrowserPanel active onTogglePopOut={() => undefined} poppedOut={false} session={session} />);
 		const input = screen.getByRole("textbox", { name: /browser url/i });
@@ -390,7 +390,7 @@ describe("BrowserPanel", () => {
 		await screen.findByRole("listbox", { name: "Address suggestions" });
 		await userEvent.keyboard("{ArrowDown}{ArrowDown}{Enter}");
 
-		expect(hookState.navigate).toHaveBeenCalledWith("https://github.com/aoagents");
+		expect(hookState.navigate).toHaveBeenCalledWith("https://github.com/sudo-adduser-jordan/open-agents");
 	});
 
 	it("keeps address suggestions closed when an escaped request resolves late", async () => {
@@ -400,14 +400,14 @@ describe("BrowserPanel", () => {
 			temporary: false,
 		};
 		let resolveSuggestions: (suggestions: Array<{ url: string; title?: string }>) => void = () => undefined;
-		window.ao!.browser.historySuggestions = vi.fn(() => new Promise<Array<{ url: string; title?: string }>>((resolve) => {
+		window.openAgents!.browser.historySuggestions = vi.fn(() => new Promise<Array<{ url: string; title?: string }>>((resolve) => {
 			resolveSuggestions = resolve;
 		}));
 		render(<BrowserPanel active onTogglePopOut={() => undefined} poppedOut={false} session={session} />);
 		const input = screen.getByRole("textbox", { name: /browser url/i });
 
 		await userEvent.type(input, "git");
-		await waitFor(() => expect(window.ao!.browser.historySuggestions).toHaveBeenCalledOnce());
+		await waitFor(() => expect(window.openAgents!.browser.historySuggestions).toHaveBeenCalledOnce());
 		await userEvent.keyboard("{Escape}");
 		await act(async () => resolveSuggestions([{ url: "https://github.com/openai", title: "OpenAI" }]));
 
@@ -426,12 +426,12 @@ describe("BrowserPanel", () => {
 
 		fireEvent.focus(input);
 		await new Promise((resolve) => window.setTimeout(resolve, 150));
-		expect(window.ao!.browser.historySuggestions).not.toHaveBeenCalled();
+		expect(window.openAgents!.browser.historySuggestions).not.toHaveBeenCalled();
 
 		await userEvent.clear(input);
 		await userEvent.type(input, "exa");
 		await waitFor(() =>
-			expect(window.ao!.browser.historySuggestions).toHaveBeenCalledWith({
+			expect(window.openAgents!.browser.historySuggestions).toHaveBeenCalledWith({
 				viewId: "42:sess-1",
 				query: "exa",
 			}),
@@ -448,7 +448,7 @@ describe("BrowserPanel", () => {
 		expect(input).toHaveFocus();
 		expect(input.selectionStart).toBe(0);
 		expect(input.selectionEnd).toBe(input.value.length);
-		expect(window.ao!.browser.notifyPanelUsed).toHaveBeenCalledWith("42:sess-1");
+		expect(window.openAgents!.browser.notifyPanelUsed).toHaveBeenCalledWith("42:sess-1");
 	});
 
 	it("keeps browser shortcuts targeted when the portaled address bar receives focus", () => {
@@ -463,11 +463,11 @@ describe("BrowserPanel", () => {
 				topbarHost={topbarHost}
 			/>,
 		);
-		vi.mocked(window.ao!.browser.notifyPanelUsed).mockClear();
+		vi.mocked(window.openAgents!.browser.notifyPanelUsed).mockClear();
 
 		fireEvent.focus(screen.getByRole("textbox", { name: /browser url/i }));
 
-		expect(window.ao!.browser.notifyPanelUsed).toHaveBeenCalledWith("42:sess-1");
+		expect(window.openAgents!.browser.notifyPanelUsed).toHaveBeenCalledWith("42:sess-1");
 	});
 
 	it("does not clear the browser shortcut target when focus moves into the portaled address bar", () => {
@@ -484,11 +484,11 @@ describe("BrowserPanel", () => {
 		);
 		const panel = screen.getByTestId("browser-panel");
 		const input = screen.getByRole("textbox", { name: /browser url/i });
-		vi.mocked(window.ao!.browser.notifyPanelBlur).mockClear();
+		vi.mocked(window.openAgents!.browser.notifyPanelBlur).mockClear();
 
 		fireEvent.blur(panel, { relatedTarget: input });
 
-		expect(window.ao!.browser.notifyPanelBlur).not.toHaveBeenCalled();
+		expect(window.openAgents!.browser.notifyPanelBlur).not.toHaveBeenCalled();
 	});
 
 	it("does not clear the browser shortcut target when focus blurs to body or leaves into native page", () => {
@@ -501,18 +501,18 @@ describe("BrowserPanel", () => {
 			/>,
 		);
 		const panel = screen.getByTestId("browser-panel");
-		vi.mocked(window.ao!.browser.notifyPanelBlur).mockClear();
+		vi.mocked(window.openAgents!.browser.notifyPanelBlur).mockClear();
 
 		fireEvent.blur(panel, { relatedTarget: document.body });
-		expect(window.ao!.browser.notifyPanelBlur).not.toHaveBeenCalled();
+		expect(window.openAgents!.browser.notifyPanelBlur).not.toHaveBeenCalled();
 
 		fireEvent.blur(panel, { relatedTarget: null });
-		expect(window.ao!.browser.notifyPanelBlur).not.toHaveBeenCalled();
+		expect(window.openAgents!.browser.notifyPanelBlur).not.toHaveBeenCalled();
 
 		const outside = document.createElement("button");
 		document.body.appendChild(outside);
 		fireEvent.blur(panel, { relatedTarget: outside });
-		expect(window.ao!.browser.notifyPanelBlur).toHaveBeenCalledWith("42:sess-1");
+		expect(window.openAgents!.browser.notifyPanelBlur).toHaveBeenCalledWith("42:sess-1");
 		outside.remove();
 	});
 
@@ -600,7 +600,7 @@ describe("BrowserPanel", () => {
 	it("opens the current page in the system browser from the address bar", async () => {
 		const url = "https://www.google.com/search?q=agent+orchestrator";
 		hookState.navState = { ...hookState.navState, url };
-		const openExternal = vi.spyOn(window.ao!.app, "openExternal").mockResolvedValue(undefined);
+		const openExternal = vi.spyOn(window.openAgents!.app, "openExternal").mockResolvedValue(undefined);
 		render(<BrowserPanel active onTogglePopOut={() => undefined} poppedOut={false} session={session} />);
 
 		fireEvent.click(screen.getByRole("button", { name: /open in system browser/i }));
@@ -630,7 +630,7 @@ describe("BrowserPanel", () => {
 		await openBrowserControls();
 		await userEvent.click(screen.getByRole("menuitem", { name: "Take a screenshot" }));
 
-		expect(window.ao!.browser.captureScreenshot).toHaveBeenCalledWith("42:sess-1");
+		expect(window.openAgents!.browser.captureScreenshot).toHaveBeenCalledWith("42:sess-1");
 		await waitFor(() =>
 			expect(useUiStore.getState().globalToast?.title).toBe("Screenshot copied to clipboard"),
 		);
@@ -652,7 +652,7 @@ describe("BrowserPanel", () => {
 	});
 
 	it("restores the shared Downloads tooltip when its menu returns focus", async () => {
-		window.ao!.browser.downloads.list = vi.fn(async () => ({
+		window.openAgents!.browser.downloads.list = vi.fn(async () => ({
 			downloads: [{
 				id: "download-1",
 				fileName: "report.pdf",
@@ -679,8 +679,8 @@ describe("BrowserPanel", () => {
 		expect(document.querySelector('[data-slot="tooltip-content"]')).toHaveTextContent("Downloads");
 	});
 
-	it("keeps browser profiles inside the AO controls menu", async () => {
-		window.ao!.browserProfiles.list = vi.fn(async () => ({
+	it("keeps browser profiles inside the Open Agents controls menu", async () => {
+		window.openAgents!.browserProfiles.list = vi.fn(async () => ({
 			profiles: [
 				{
 					id: "11111111-1111-4111-8111-111111111111",
@@ -700,7 +700,7 @@ describe("BrowserPanel", () => {
 		expect(screen.getByRole("menuitem", { name: "Work" })).toBeInTheDocument();
 		expect(screen.getByRole("menuitem", { name: "Manage profiles" })).toBeInTheDocument();
 		await userEvent.click(screen.getByRole("menuitem", { name: "Work" }));
-		expect(window.ao!.browser.selectProfile).toHaveBeenCalledWith(
+		expect(window.openAgents!.browser.selectProfile).toHaveBeenCalledWith(
 			expect.objectContaining({
 				viewId: "42:sess-1",
 				profileId: "11111111-1111-4111-8111-111111111111",
@@ -800,7 +800,7 @@ describe("BrowserPanel", () => {
 		expect(document.querySelector('[data-slot="tooltip-content"]')).toHaveTextContent("Browser controls");
 	});
 
-	it("uses the shared AO tooltip for browser controls", async () => {
+	it("uses the shared Open Agents tooltip for browser controls", async () => {
 		render(<BrowserPanel active onTogglePopOut={() => undefined} poppedOut={false} session={session} />);
 		const trigger = screen.getByRole("button", { name: "Browser controls" });
 
@@ -837,15 +837,15 @@ describe("BrowserPanel", () => {
 
 	it("uses the active app theme for the static browser preview", () => {
 		hookState.navState = { ...hookState.navState, url: "http://localhost:5173/" };
-		const ao = window.ao;
-		Object.defineProperty(window, "ao", { configurable: true, value: undefined });
+		const openAgents = window.openAgents;
+		Object.defineProperty(window, "openAgents", { configurable: true, value: undefined });
 		try {
 			render(<BrowserPanel active onTogglePopOut={() => undefined} poppedOut={false} session={session} />);
 
 			const preview = screen.getByText("Demo app preview").closest(".bg-preview, .bg-background");
 			expect(preview).toHaveClass("bg-background", "text-foreground");
 		} finally {
-			Object.defineProperty(window, "ao", { configurable: true, value: ao });
+			Object.defineProperty(window, "openAgents", { configurable: true, value: openAgents });
 		}
 	});
 
@@ -868,7 +868,7 @@ describe("BrowserPanel", () => {
 		expect(hookState.stop).toHaveBeenCalled();
 	});
 
-	it("uses shared AO tooltips for toolbar controls", async () => {
+	it("uses shared Open Agents tooltips for toolbar controls", async () => {
 		hookState.navState = {
 			viewId: "42:sess-1",
 			url: "http://localhost:5173/",
@@ -885,7 +885,7 @@ describe("BrowserPanel", () => {
 		await waitFor(() => expect(document.querySelector('[data-slot="tooltip-content"]')).not.toBeNull());
 	});
 
-	it("uses shared AO tooltips while maximized", async () => {
+	it("uses shared Open Agents tooltips while maximized", async () => {
 		hookState.navState = {
 			viewId: "42:sess-1",
 			url: "http://localhost:5173/",
@@ -902,7 +902,7 @@ describe("BrowserPanel", () => {
 		await waitFor(() => expect(document.querySelector('[data-slot="tooltip-content"]')).not.toBeNull());
 	});
 
-	it("keeps a shared AO tooltip trigger around a disabled toolbar button", () => {
+	it("keeps a shared Open Agents tooltip trigger around a disabled toolbar button", () => {
 		// Disabled buttons never dispatch pointer/focus events natively, so the
 		// hover listener has to live on a wrapping span around the button rather
 		// than on the (potentially disabled) button itself.
@@ -1257,7 +1257,7 @@ describe("BrowserPanel", () => {
 
 	it("stages the captured snapshot and references it in the annotation message", async () => {
 		postMock
-			.mockResolvedValueOnce({ data: { paths: [".ao/attachments/browser-annotation.png"] } })
+			.mockResolvedValueOnce({ data: { paths: [".openAgents/attachments/browser-annotation.png"] } })
 			.mockResolvedValueOnce({ data: {} });
 		hookState.navState = { ...hookState.navState, url: "http://localhost:5173/" };
 		render(
@@ -1280,7 +1280,7 @@ describe("BrowserPanel", () => {
 		});
 		const sendBody = postMock.mock.calls[1][1].body as { message: string; attachment?: unknown };
 		expect(sendBody.attachment).toBeUndefined();
-		expect(sendBody.message).toContain(".ao/attachments/browser-annotation.png");
+		expect(sendBody.message).toContain(".openAgents/attachments/browser-annotation.png");
 	});
 
 	it("omits the attachment field when the payload has no snapshot", async () => {
@@ -1506,7 +1506,7 @@ describe("BrowserPanel", () => {
 	});
 
 	it("shows annotation send errors", async () => {
-		postMock.mockResolvedValue({ error: { message: "AO daemon is not ready." } });
+		postMock.mockResolvedValue({ error: { message: "Open Agents daemon is not ready." } });
 		hookState.navState = { ...hookState.navState, url: "http://localhost:5173/" };
 		render(<BrowserPanel active onTogglePopOut={() => undefined} poppedOut={false} session={session} />);
 
@@ -1514,12 +1514,12 @@ describe("BrowserPanel", () => {
 			annotationSubmitListeners.forEach((listener) => listener(annotationPayload("Make this button blue.")));
 		});
 
-		expect(await screen.findByText("AO daemon is not ready.")).toBeInTheDocument();
+		expect(await screen.findByText("Open Agents daemon is not ready.")).toBeInTheDocument();
 	});
 
 	it("keeps a failed annotation queued so the user can retry it", async () => {
 		postMock
-			.mockResolvedValueOnce({ error: { message: "AO daemon is not ready." } })
+			.mockResolvedValueOnce({ error: { message: "Open Agents daemon is not ready." } })
 			.mockResolvedValueOnce({ data: {} });
 		hookState.navState = { ...hookState.navState, url: "http://localhost:5173/" };
 		render(<BrowserPanel active onTogglePopOut={() => undefined} poppedOut={false} session={session} />);
@@ -1530,7 +1530,7 @@ describe("BrowserPanel", () => {
 			);
 		});
 
-		expect(await screen.findByText("AO daemon is not ready.")).toBeInTheDocument();
+		expect(await screen.findByText("Open Agents daemon is not ready.")).toBeInTheDocument();
 		expect(postMock).toHaveBeenCalledTimes(1);
 
 		await userEvent.click(screen.getByRole("button", { name: /retry annotation/i }));
@@ -1556,7 +1556,7 @@ describe("BrowserPanel", () => {
 		expect(screen.queryByText("Pick element")).not.toBeInTheDocument();
 	});
 
-	it("uses AO orange for the active annotation status dot", async () => {
+	it("uses Open Agents orange for the active annotation status dot", async () => {
 		hookState.navState = { ...hookState.navState, url: "http://localhost:5173/" };
 		render(<BrowserPanel active onTogglePopOut={() => undefined} poppedOut={false} session={session} />);
 
@@ -1579,13 +1579,13 @@ describe("BrowserPanel", () => {
 
 	it("keeps an opaque background for the static preview fallback when there is no native browser bridge", () => {
 		hookState.navState = { ...hookState.navState, url: "http://localhost:5173/" };
-		const ao = window.ao;
-		Object.defineProperty(window, "ao", { configurable: true, value: undefined });
+		const openAgents = window.openAgents;
+		Object.defineProperty(window, "openAgents", { configurable: true, value: undefined });
 		try {
 			render(<BrowserPanel active onTogglePopOut={() => undefined} poppedOut={false} session={session} />);
 			expect(screen.getByTestId("browser-viewport")).toHaveAttribute("data-placeholder", "true");
 		} finally {
-			Object.defineProperty(window, "ao", { configurable: true, value: ao });
+			Object.defineProperty(window, "openAgents", { configurable: true, value: openAgents });
 		}
 	});
 });

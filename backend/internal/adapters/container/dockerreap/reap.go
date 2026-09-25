@@ -1,6 +1,6 @@
 // Package dockerreap implements ports.ContainerReaper by shelling out to the
-// docker CLI. It force-removes containers labeled ao.session=<id>, skipping
-// any also labeled ao.spare=true — the opt-out for deliberately shared
+// docker CLI. It force-removes containers labeled open-agents.session=<id>, skipping
+// any also labeled open-agents.spare=true — the opt-out for deliberately shared
 // substrate (a shared postgres, a registry) a worker's task explicitly wants
 // to survive session end.
 //
@@ -22,19 +22,19 @@ import (
 	"strings"
 	"time"
 
-	"github.com/aoagents/agent-orchestrator/backend/internal/domain"
-	aoprocess "github.com/aoagents/agent-orchestrator/backend/internal/process"
+	"github.com/sudo-adduser-jordan/open-agents/backend/internal/domain"
+	openagentsprocess "github.com/sudo-adduser-jordan/open-agents/backend/internal/process"
 )
 
 // SessionLabel is the label key a worker's own `docker run` should set to
-// `--label ao.session=$AO_SESSION_ID` so AO can identify containers it owns.
-const SessionLabel = "ao.session"
+// `--label open-agents.session=$OPEN_AGENTS_SESSION_ID` so Open Agents can identify containers it owns.
+const SessionLabel = "open-agents.session"
 
 // SpareLabel opts a container out of reaping even though it carries
-// SessionLabel — set `--label ao.spare=true` on a deliberately shared
+// SessionLabel — set `--label open-agents.spare=true` on a deliberately shared
 // container (a shared postgres, a registry) that must survive the session
 // that happened to start it.
-const SpareLabel = "ao.spare"
+const SpareLabel = "open-agents.spare"
 
 // reapTimeout bounds every docker CLI call this adapter makes. Kill is
 // user-facing and synchronous, and the reap runs between runtime destroy and
@@ -52,7 +52,7 @@ type commandRunner interface {
 type execRunner struct{}
 
 func (execRunner) Output(ctx context.Context, name string, args ...string) ([]byte, error) {
-	cmd := aoprocess.CommandContext(ctx, name, args...)
+	cmd := openagentsprocess.CommandContext(ctx, name, args...)
 	var stdout, stderr bytes.Buffer
 	cmd.Stdout = &stdout
 	cmd.Stderr = &stderr
@@ -79,11 +79,11 @@ func newWithRunner(r commandRunner) *Reaper {
 }
 
 // ReapSessionContainers force-removes every container labeled
-// ao.session=<id> that is not also labeled ao.spare=true.
+// open-agents.session=<id> that is not also labeled open-agents.spare=true.
 //
 // Any failure to enumerate or inspect containers spares everything found so
 // far and returns the error — reaping is only ever additive-on-certainty,
-// never a best-guess sweep. A missing docker binary is NOT an error: most AO
+// never a best-guess sweep. A missing docker binary is NOT an error: most Open Agents
 // installs have no Docker at all, and that must not surface as a kill
 // failure.
 func (r *Reaper) ReapSessionContainers(ctx context.Context, id domain.SessionID) (int, error) {
@@ -137,7 +137,7 @@ func (r *Reaper) ReapSessionContainers(ctx context.Context, id domain.SessionID)
 
 // isDockerUnavailable reports whether err indicates the docker CLI itself is
 // not installed/runnable, as opposed to a real command failure against a
-// present daemon. Most AO installs run without Docker at all; that must
+// present daemon. Most Open Agents installs run without Docker at all; that must
 // resolve to "nothing to reap," not a kill-blocking error.
 func isDockerUnavailable(err error) bool {
 	if errors.Is(err, context.DeadlineExceeded) {

@@ -12,8 +12,8 @@ import (
 	"testing"
 	"time"
 
-	"github.com/aoagents/agent-orchestrator/backend/internal/config"
-	"github.com/aoagents/agent-orchestrator/backend/internal/runfile"
+	"github.com/sudo-adduser-jordan/open-agents/backend/internal/config"
+	"github.com/sudo-adduser-jordan/open-agents/backend/internal/runfile"
 )
 
 func discardLogger() *slog.Logger {
@@ -85,8 +85,8 @@ func TestHealthProbesIncludeDaemonIdentity(t *testing.T) {
 func TestHealthProbesIncludeAppImageIdentity(t *testing.T) {
 	client := &http.Client{Timeout: 2 * time.Second}
 
-	t.Run("reports AO_APPIMAGE when set", func(t *testing.T) {
-		t.Setenv("AO_APPIMAGE", "/home/user/Apps/agent-orchestrator.AppImage")
+	t.Run("reports OPEN_AGENTS_APPIMAGE when set", func(t *testing.T) {
+		t.Setenv("OPEN_AGENTS_APPIMAGE", "/home/user/Apps/open-agents.AppImage")
 		router := newTestRouter(config.Config{}, discardLogger(), nil)
 		srv := httptest.NewServer(router)
 		defer srv.Close()
@@ -103,14 +103,14 @@ func TestHealthProbesIncludeAppImageIdentity(t *testing.T) {
 			if err := json.NewDecoder(resp.Body).Decode(&body); err != nil {
 				t.Fatalf("decode %s: %v", path, err)
 			}
-			if body.AppImagePath != "/home/user/Apps/agent-orchestrator.AppImage" {
-				t.Errorf("GET %s appImagePath = %q, want the AO_APPIMAGE value", path, body.AppImagePath)
+			if body.AppImagePath != "/home/user/Apps/open-agents.AppImage" {
+				t.Errorf("GET %s appImagePath = %q, want the OPEN_AGENTS_APPIMAGE value", path, body.AppImagePath)
 			}
 		}
 	})
 
-	t.Run("omits appImagePath when AO_APPIMAGE is unset", func(t *testing.T) {
-		t.Setenv("AO_APPIMAGE", "")
+	t.Run("omits appImagePath when OPEN_AGENTS_APPIMAGE is unset", func(t *testing.T) {
+		t.Setenv("OPEN_AGENTS_APPIMAGE", "")
 		router := newTestRouter(config.Config{}, discardLogger(), nil)
 		srv := httptest.NewServer(router)
 		defer srv.Close()

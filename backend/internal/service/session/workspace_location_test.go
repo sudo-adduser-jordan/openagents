@@ -5,19 +5,19 @@ import (
 	"errors"
 	"testing"
 
-	"github.com/aoagents/agent-orchestrator/backend/internal/domain"
-	"github.com/aoagents/agent-orchestrator/backend/internal/httpd/apierr"
+	"github.com/sudo-adduser-jordan/open-agents/backend/internal/domain"
+	"github.com/sudo-adduser-jordan/open-agents/backend/internal/httpd/apierr"
 )
 
 func TestWorkspaceLocationReturnsOnlyLiveSessionWorkspace(t *testing.T) {
 	workspace := t.TempDir()
 	store := newFakeStore()
-	store.sessions["ao-1"] = domain.SessionRecord{
-		ID:       "ao-1",
+	store.sessions["open-agents-1"] = domain.SessionRecord{
+		ID:       "open-agents-1",
 		Metadata: domain.SessionMetadata{WorkspacePath: workspace},
 	}
 
-	got, err := (&Service{store: store}).WorkspaceLocation(context.Background(), "ao-1")
+	got, err := (&Service{store: store}).WorkspaceLocation(context.Background(), "open-agents-1")
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -28,21 +28,21 @@ func TestWorkspaceLocationReturnsOnlyLiveSessionWorkspace(t *testing.T) {
 
 func TestWorkspaceLocationDoesNotFallBackToProjectCheckout(t *testing.T) {
 	store := newFakeStore()
-	store.sessions["ao-1"] = domain.SessionRecord{ID: "ao-1", ProjectID: "ao"}
-	store.projects["ao"] = domain.ProjectRecord{ID: "ao", Path: t.TempDir()}
+	store.sessions["open-agents-1"] = domain.SessionRecord{ID: "open-agents-1", ProjectID: "open-agents"}
+	store.projects["open-agents"] = domain.ProjectRecord{ID: "open-agents", Path: t.TempDir()}
 
-	_, err := (&Service{store: store}).WorkspaceLocation(context.Background(), "ao-1")
+	_, err := (&Service{store: store}).WorkspaceLocation(context.Background(), "open-agents-1")
 	assertAPIErrorCode(t, err, "SESSION_WORKSPACE_NOT_FOUND")
 }
 
 func TestWorkspaceLocationRejectsMissingDirectory(t *testing.T) {
 	store := newFakeStore()
-	store.sessions["ao-1"] = domain.SessionRecord{
-		ID:       "ao-1",
+	store.sessions["open-agents-1"] = domain.SessionRecord{
+		ID:       "open-agents-1",
 		Metadata: domain.SessionMetadata{WorkspacePath: t.TempDir() + "/gone"},
 	}
 
-	_, err := (&Service{store: store}).WorkspaceLocation(context.Background(), "ao-1")
+	_, err := (&Service{store: store}).WorkspaceLocation(context.Background(), "open-agents-1")
 	assertAPIErrorCode(t, err, "SESSION_WORKSPACE_NOT_FOUND")
 }
 
@@ -50,7 +50,7 @@ func TestWorkspaceLocationPreservesStoreFailure(t *testing.T) {
 	store := newFakeStore()
 	store.getSessionErr = errors.New("storage unavailable")
 
-	_, err := (&Service{store: store}).WorkspaceLocation(context.Background(), "ao-1")
+	_, err := (&Service{store: store}).WorkspaceLocation(context.Background(), "open-agents-1")
 	if err == nil || !errors.Is(err, store.getSessionErr) {
 		t.Fatalf("WorkspaceLocation() error = %v, want wrapped storage failure", err)
 	}

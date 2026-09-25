@@ -4,9 +4,9 @@ import (
 	"context"
 	"time"
 
-	"github.com/aoagents/agent-orchestrator/backend/internal/domain"
-	settingssvc "github.com/aoagents/agent-orchestrator/backend/internal/service/settings"
-	"github.com/aoagents/agent-orchestrator/backend/internal/storage/sqlite"
+	"github.com/sudo-adduser-jordan/open-agents/backend/internal/domain"
+	settingssvc "github.com/sudo-adduser-jordan/open-agents/backend/internal/service/settings"
+	"github.com/sudo-adduser-jordan/open-agents/backend/internal/storage/sqlite"
 )
 
 // settingsStore adapts the SQLite store to the settings service's Store.

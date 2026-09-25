@@ -27,7 +27,7 @@ const (
 // starting point: work is scoped before it is executed.
 const DefaultWorkflowMode = WorkflowModePlanning
 
-// Valid reports whether mode is one AO knows how to place on the board.
+// Valid reports whether mode is one Open Agents knows how to place on the board.
 func (m WorkflowMode) Valid() bool {
 	switch m {
 	case WorkflowModePlanning, WorkflowModeBuilding:
@@ -52,7 +52,7 @@ func NormalizeWorkflowMode(mode WorkflowMode) WorkflowMode {
 // empty string means "no mode requested" and yields the zero value with no
 // error, so callers can distinguish absent from invalid and apply their own
 // precedence. Anything else unrecognized is an error: a request that named a
-// mode AO cannot place must fail loudly rather than downgrade.
+// mode Open Agents cannot place must fail loudly rather than downgrade.
 func ParseWorkflowMode(raw string) (WorkflowMode, error) {
 	if raw == "" {
 		return "", nil

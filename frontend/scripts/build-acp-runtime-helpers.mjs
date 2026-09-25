@@ -44,7 +44,7 @@ export function npmInvocation(
  * Preserve Claude's API-retry backoff in the ACP session-failure extension.
  *
  * claude-agent-acp 0.70 publishes retry count and category, but drops the
- * SDK's retry_delay_ms before the event reaches ACP clients. AO patches the
+ * SDK's retry_delay_ms before the event reaches ACP clients. Open Agents patches the
  * pinned compiled adapter during packaging so the extension's ordinary
  * `details` field carries the missing timing. The narrow block match is a
  * deliberate upgrade tripwire: if upstream changes this code, packaging fails
@@ -65,7 +65,7 @@ export function patchClaudeRetryDetails(adapterPath) {
 	const publishAt = block.indexOf(publishMarker);
 	const severityMarker = '                                    severity: "warning",';
 	if (publishAt < 0 || !block.includes(severityMarker)) {
-		throw new Error("claude-agent-acp api_retry block no longer matches AO's retry patch");
+		throw new Error("claude-agent-acp api_retry block no longer matches Open Agents's retry patch");
 	}
 
 	const retryDetailLines = [

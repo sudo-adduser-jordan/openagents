@@ -118,7 +118,7 @@ describe("apiClient runtime base URL", () => {
 
 		const { error } = await apiClient.GET("/api/v1/projects");
 
-		expect(error).toEqual({ message: "AO daemon is not ready." });
+		expect(error).toEqual({ message: "Open Agents daemon is not ready." });
 		expect(getApiBaseUrl()).toBe("");
 		expect(hasTrustedApiBaseUrl()).toBe(false);
 		expect(fetchSpy).not.toHaveBeenCalled();
@@ -129,12 +129,12 @@ describe("apiClient runtime base URL", () => {
 		setApiDaemonStatus({
 			state: "error",
 			code: "exited",
-			message: "AO daemon exited with code 1",
+			message: "Open Agents daemon exited with code 1",
 		});
 
 		const { error } = await apiClient.GET("/api/v1/projects");
 
-		expect(error).toEqual({ code: "exited", message: "AO daemon exited with code 1" });
+		expect(error).toEqual({ code: "exited", message: "Open Agents daemon exited with code 1" });
 	});
 });
 

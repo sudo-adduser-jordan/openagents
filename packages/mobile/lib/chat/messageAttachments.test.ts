@@ -3,30 +3,30 @@ import { attachmentTileSize, isImageAttachment, isSameAttachmentLoad, stagedAtta
 
 describe("mobile Chat staged attachments", () => {
 	it("strips the desktop composer suffix so the image can render instead of the raw path list", () => {
-		const text = "Look at this\n\nAttached files (read these files in the workspace):\n- .ao/attachments/attachment-a1b2c3.png\n- .ao/attachments/attachment-d4e5f6.pdf";
+		const text = "Look at this\n\nAttached files (read these files in the workspace):\n- .open-agents/attachments/attachment-a1b2c3.png\n- .open-agents/attachments/attachment-d4e5f6.pdf";
 		expect(stagedAttachmentParts(text)).toEqual({
 			body: "Look at this",
-			attachments: [".ao/attachments/attachment-a1b2c3.png", ".ao/attachments/attachment-d4e5f6.pdf"],
+			attachments: [".open-agents/attachments/attachment-a1b2c3.png", ".open-agents/attachments/attachment-d4e5f6.pdf"],
 		});
 	});
 
-	it("accepts every AO-shipped wording, including mobile's own and legacy image-only prompts", () => {
+	it("accepts every Open Agents-shipped wording, including mobile's own and legacy image-only prompts", () => {
 		for (const header of [
 			"Attached files (read these files in the workspace for context):",
 			"Attached images (read these files in the workspace for visual context):",
 			"Attached files are available in the worktree:",
 		]) {
-			expect(stagedAttachmentParts(`Hi\n\n${header}\n- .ao/attachments/attachment-1.png`)).toEqual({
+			expect(stagedAttachmentParts(`Hi\n\n${header}\n- .open-agents/attachments/attachment-1.png`)).toEqual({
 				body: "Hi",
-				attachments: [".ao/attachments/attachment-1.png"],
+				attachments: [".open-agents/attachments/attachment-1.png"],
 			});
 		}
 	});
 
 	it("handles an attachment-only message", () => {
-		expect(stagedAttachmentParts("Attached files (read these files in the workspace):\n- .ao/attachments/image-xyz.jpeg")).toEqual({
+		expect(stagedAttachmentParts("Attached files (read these files in the workspace):\n- .open-agents/attachments/image-xyz.jpeg")).toEqual({
 			body: "",
-			attachments: [".ao/attachments/image-xyz.jpeg"],
+			attachments: [".open-agents/attachments/image-xyz.jpeg"],
 		});
 	});
 
@@ -37,9 +37,9 @@ describe("mobile Chat staged attachments", () => {
 	});
 
 	it("round-trips the suffix mobile sends, using the wording desktop can also render", () => {
-		const text = withAttachmentReferences("  Fix this  ", [".ao/attachments/attachment-9.png"]);
-		expect(text).toBe("Fix this\n\nAttached files (read these files in the workspace):\n- .ao/attachments/attachment-9.png");
-		expect(stagedAttachmentParts(text)).toEqual({ body: "Fix this", attachments: [".ao/attachments/attachment-9.png"] });
+		const text = withAttachmentReferences("  Fix this  ", [".open-agents/attachments/attachment-9.png"]);
+		expect(text).toBe("Fix this\n\nAttached files (read these files in the workspace):\n- .open-agents/attachments/attachment-9.png");
+		expect(stagedAttachmentParts(text)).toEqual({ body: "Fix this", attachments: [".open-agents/attachments/attachment-9.png"] });
 		expect(withAttachmentReferences("unchanged", [])).toBe("unchanged");
 	});
 
@@ -59,8 +59,8 @@ describe("mobile Chat staged attachments", () => {
 	});
 
 	it("recognises image paths", () => {
-		expect(isImageAttachment(".ao/attachments/attachment-a.JPG")).toBe(true);
-		expect(isImageAttachment(".ao/attachments/attachment-a.webp")).toBe(true);
-		expect(isImageAttachment(".ao/attachments/attachment-a.pdf")).toBe(false);
+		expect(isImageAttachment(".open-agents/attachments/attachment-a.JPG")).toBe(true);
+		expect(isImageAttachment(".open-agents/attachments/attachment-a.webp")).toBe(true);
+		expect(isImageAttachment(".open-agents/attachments/attachment-a.pdf")).toBe(false);
 	});
 });

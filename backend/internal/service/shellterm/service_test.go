@@ -14,9 +14,9 @@ import (
 	"testing"
 	"time"
 
-	"github.com/aoagents/agent-orchestrator/backend/internal/domain"
-	"github.com/aoagents/agent-orchestrator/backend/internal/httpd/apierr"
-	"github.com/aoagents/agent-orchestrator/backend/internal/ports"
+	"github.com/sudo-adduser-jordan/open-agents/backend/internal/domain"
+	"github.com/sudo-adduser-jordan/open-agents/backend/internal/httpd/apierr"
+	"github.com/sudo-adduser-jordan/open-agents/backend/internal/ports"
 )
 
 const testAppRunID = "app-run-current"
@@ -661,7 +661,7 @@ func TestOpenShellTerminalRejectsUnavailableWindowsShell(t *testing.T) {
 
 func TestOpenShellTerminalPinsPATHToDaemonBinary(t *testing.T) {
 	t.Setenv("PATH", "/usr/bin")
-	daemonExe := filepath.Join(t.TempDir(), "ao")
+	daemonExe := filepath.Join(t.TempDir(), "open-agents")
 
 	cases := []struct {
 		name       string
@@ -669,7 +669,7 @@ func TestOpenShellTerminalPinsPATHToDaemonBinary(t *testing.T) {
 		want       string
 	}{
 		{"pins daemon directory", func() (string, error) { return daemonExe, nil }, filepath.Dir(daemonExe) + string(os.PathListSeparator) + "/usr/bin"},
-		{"keeps inherited environment when binary is not ao", func() (string, error) { return "/opt/aod/ao-daemon", nil }, ""},
+		{"keeps inherited environment when binary is not open-agents", func() (string, error) { return "/opt/open-agents/open-agents-daemon", nil }, ""},
 		{"keeps inherited environment when executable is unavailable", func() (string, error) { return "", errors.New("no executable") }, ""},
 	}
 	for _, tc := range cases {
@@ -710,7 +710,7 @@ func TestOpenCommandTerminalUsesTrustedProcessConfiguration(t *testing.T) {
 	svc := newTestService(rt, st, &fakeProjectRootLocator{})
 
 	term, err := svc.OpenCommandTerminal(context.Background(), OpenCommandTerminalInput{
-		Argv:       []string{"/Applications/AO.app/Contents/MacOS/ao", "codex-login"},
+		Argv:       []string{"/Applications/Open Agents.app/Contents/MacOS/open-agents", "codex-login"},
 		Env:        map[string]string{"CODEX_HOME": "/data/codex-accounts/work/home"},
 		WorkingDir: "/data/codex-accounts/work/home",
 		Title:      "Codex login - Work",
@@ -723,7 +723,7 @@ func TestOpenCommandTerminalUsesTrustedProcessConfiguration(t *testing.T) {
 		t.Fatalf("runtime creates = %d, want 1", len(rt.created))
 	}
 	created := rt.created[0]
-	if got, want := created.Argv, []string{"/Applications/AO.app/Contents/MacOS/ao", "codex-login"}; !slices.Equal(got, want) {
+	if got, want := created.Argv, []string{"/Applications/Open Agents.app/Contents/MacOS/open-agents", "codex-login"}; !slices.Equal(got, want) {
 		t.Errorf("argv = %q, want %q", got, want)
 	}
 	if got := created.Env["CODEX_HOME"]; got != "/data/codex-accounts/work/home" {
@@ -749,7 +749,7 @@ func TestOpenCommandTerminalDestroysRuntimeWhenPersistenceFails(t *testing.T) {
 	svc := newTestService(rt, st, &fakeProjectRootLocator{})
 
 	_, err := svc.OpenCommandTerminal(context.Background(), OpenCommandTerminalInput{
-		Argv:       []string{"/ao", "codex-login"},
+		Argv:       []string{"/open-agents", "codex-login"},
 		WorkingDir: "/data/codex-accounts/work/home",
 		Title:      "Codex login - Work",
 	})

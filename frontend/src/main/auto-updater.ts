@@ -11,7 +11,7 @@ import { mkdir, readFile, unlink, writeFile } from "node:fs/promises";
 import os from "node:os";
 import path from "node:path";
 import semver from "semver";
-import { AO_BUNDLE_ID } from "./stale-app-copies";
+import { OPEN_AGENTS_BUNDLE_ID } from "./stale-app-copies";
 import type { RequestOptions } from "node:http";
 import {
   readUpdateSettings,
@@ -28,7 +28,7 @@ import { reconcileFeaturePin } from "./feature-builds";
 import { evaluateEscalation } from "./escalation-evaluator";
 import { isNetErrorMessage, normalizeReleaseNotes } from "../shared/update-support";
 
-// Current AO uses the stock full-ZIP path. A future compatible build explicitly
+// Current Open Agents uses the stock full-ZIP path. A future compatible build explicitly
 // selects the v2 subclass; old clients never learn its metadata or map URLs.
 const autoUpdater = process.platform === "darwin" && macDifferentialRollout.enabled === true
   ? new MacDifferentialV2Updater({ trustedKeys: macV2TrustedKeys })
@@ -212,22 +212,22 @@ function requiredFreeBytesToStage(archiveBytes: number | undefined): number {
   return Math.min(STAGE_FREE_BYTES_CAP, Math.max(STAGE_FREE_BYTES_FLOOR, derived));
 }
 // Short user-facing lines; the raw ditto/pkzip/codesign detail is logged, not shown.
-const STAGE_STALL_MESSAGE = "Couldn't finish preparing the update. AO stayed open, so nothing changed. Retry to try again.";
+const STAGE_STALL_MESSAGE = "Couldn't finish preparing the update. Open Agents stayed open, so nothing changed. Retry to try again.";
 const STAGE_DISK_MESSAGE = "Not enough disk space to install the update. Free up space, then retry.";
 let nativePreparationBlocked: Error | undefined;
 let rejectNativeOperation: ((error: Error) => void) | undefined;
 let nativePreparation: { version: string; promise: Promise<void>; finish(error?: Error): void } | undefined;
 
 // Squirrel.Mac stages into ~/Library/Caches/<bundleId>.ShipIt. This is the OS
-// updater's own working area: AO only READS it (never writes, keeps no AO state
-// there; AO state stays under ~/.ao) and every read fails open to undefined.
+// updater's own working area: Open Agents only READS it (never writes, keeps no Open Agents state
+// there; Open Agents state stays under ~/.open-agents) and every read fails open to undefined.
 // The path is our own bundle id, not the first ".ShipIt" that happens to be in
 // the cache: another Electron app's staging dir would give a bogus byte signal
 // that keeps the watchdog alive (or falsely full) while our own stage stalls.
 function macShipItDir(): string | undefined {
   if (process.platform !== "darwin") return undefined;
   try {
-    const dir = path.join(os.homedir(), "Library", "Caches", `${AO_BUNDLE_ID}.ShipIt`);
+    const dir = path.join(os.homedir(), "Library", "Caches", `${OPEN_AGENTS_BUNDLE_ID}.ShipIt`);
     return existsSync(dir) ? dir : undefined;
   } catch { return undefined; }
 }
@@ -442,7 +442,7 @@ let automaticCheckNetFailureCounted = false;
 let activeUpdaterPhase: "check" | "download" = "check";
 let pendingUpdateVersion: string | undefined;
 // Stalled-download watchdog. electron-updater keeps its request open when a
-// download stops receiving bytes, so AO kept the last percentage forever, held
+// download stops receiving bytes, so Open Agents kept the last percentage forever, held
 // the updater queue occupied, and offered nothing to retry. Bytes that are
 // genuinely slow still advance the percentage, so inactivity is the signal, not
 // elapsed time.
@@ -494,7 +494,7 @@ let lastCheckedAtMs: number | undefined;
 /**
  * Where renderer pushes go.
  *
- * NOT BrowserWindow.getAllWindows(). Since #3750 the AO shell is a BaseWindow
+ * NOT BrowserWindow.getAllWindows(). Since #3750 the Open Agents shell is a BaseWindow
  * hosting the UI in a WebContentsView, and BrowserWindow.getAllWindows() only
  * ever returns BrowserWindow instances — so enumerating windows here matched
  * nothing and every "updates:status" push was dropped
@@ -649,7 +649,7 @@ async function fetchLatestCompletedPrereleaseTag(
         headers: {
           Accept: "application/vnd.github+json",
           "X-GitHub-Api-Version": "2022-11-28",
-          "User-Agent": `ao-desktop/${app.getVersion()}`,
+          "User-Agent": `open-agents-desktop/${app.getVersion()}`,
           ...(cached ? { "If-None-Match": cached.etag } : {}),
         },
         signal: AbortSignal.timeout(10000),
@@ -983,7 +983,7 @@ function handleMacStagingFailure(err: unknown, requestId = activeUpdaterRequestI
     !/No such file or directory/i.test(message)
   ) return false;
   console.error("macOS update staging failed:", err);
-  // AO's download event precedes native extraction. A failure can also arrive
+  // Open Agents's download event precedes native extraction. A failure can also arrive
   // before that stamp exists; neither case proves an installer is ready.
   discardStagedBuild();
   downloadStalled = false;
@@ -1041,7 +1041,7 @@ async function checkForUpdatesWithDeadline(): Promise<UpdateCheckOutcome> {
     timedOut = true;
     broadcast(withActiveRequest({ state: "error", message: UPDATE_CHECK_TIMEOUT_MESSAGE }));
     // Cancellation aborts the request AND rejects its promise. Do not race the
-    // check: electron-updater must clear its cached promise before AO retries.
+    // check: electron-updater must clear its cached promise before Open Agents retries.
     for (const token of tokens) token.cancel();
   }, UPDATE_CHECK_TIMEOUT_MS);
   timer.unref?.();
@@ -1451,7 +1451,7 @@ let installRejections: { version: string | undefined; count: number } | undefine
 let handledInstallRejection: { version: string | undefined } | undefined;
 
 /**
- * How many times one build may fail verification before AO stops re-preparing
+ * How many times one build may fail verification before Open Agents stops re-preparing
  * it on every check.
  *
  * Two: the first failure buys a re-preparation from the archive already in the
@@ -1526,7 +1526,7 @@ async function clearPendingUpdateCache(): Promise<void> {
   }
 }
 
-// AO_E2E_UPDATE_SENTINEL is the absolute path the end-to-end mac update test
+// OPEN_AGENTS_E2E_UPDATE_SENTINEL is the absolute path the end-to-end mac update test
 // (scripts/e2e-mac-update.mjs) asks the app to write once an update is actually
 // STAGED on disk and ready for the ShipIt swap. Unset in every real build, so
 // this is a complete no-op for users.
@@ -1536,7 +1536,7 @@ async function clearPendingUpdateCache(): Promise<void> {
 // dropping it silently disables the whole macOS update-hop e2e job rather than
 // failing it. That is what happened between #3012 and #4254, and
 // e2e-mac-update.test.mjs now asserts the coupling to keep it from recurring.
-export const E2E_UPDATE_SENTINEL_ENV = "AO_E2E_UPDATE_SENTINEL";
+export const E2E_UPDATE_SENTINEL_ENV = "OPEN_AGENTS_E2E_UPDATE_SENTINEL";
 
 // installE2EUpdateSentinel hangs the sentinel off the NATIVE macOS updater
 // (require("electron").autoUpdater, i.e. Squirrel.Mac), NOT electron-updater's
@@ -1600,7 +1600,7 @@ function wireUpdaterEvents(): void {
         void macRestartProgress?.fail(short.message).catch(() => undefined);
         broadcast({ state: "error", message: short.message });
         // Squirrel can close the windows, then fail to persist its relaunch
-        // request. Restore AO in that still-running process instead of leaving
+        // request. Restore Open Agents in that still-running process instead of leaving
         // the user with no app window and no possible automatic restart.
         restartFailureHandler?.();
       }
@@ -1851,11 +1851,11 @@ function wireUpdaterEvents(): void {
           message:
             exhausted
               ? "Couldn't install the update — the copy failed verification twice. " +
-                "AO has discarded the download and stopped retrying on its own. Check " +
+                "Open Agents has discarded the download and stopped retrying on its own. Check " +
                 "for updates again to start a fresh one, or download the latest build " +
                 "manually and install it over this one."
               : "Couldn't install the update — the downloaded copy failed verification. " +
-                "AO will prepare it again on the next check.",
+                "Open Agents will prepare it again on the next check.",
         }),
       );
       return;
@@ -2115,7 +2115,7 @@ async function requestAutomaticUpdateCheck(
   }
 }
 
-// startAutoUpdates configures electron-updater from the user's ~/.ao settings.
+// startAutoUpdates configures electron-updater from the user's ~/.open-agents settings.
 // Channel controls discovery; enabled controls whether a discovered build is
 // downloaded automatically. Both preferences come from update-settings.
 // Caller guards on app.isPackaged.
@@ -2435,7 +2435,7 @@ export async function setMacDifferentialUpdates(
 // with nothing yet installed in /Applications.
 export function getMacInstallBlocker(): string | undefined {
   if (process.platform !== "darwin") return undefined;
-  // .../Agent Orchestrator.app/Contents/MacOS/<binary> -> the .app bundle root
+  // .../Open Agents.app/Contents/MacOS/<binary> -> the .app bundle root
   const bundle = path.resolve(process.execPath, "..", "..", "..");
   // Everything below assumes that shape. Under `npm start`, and in tests,
   // execPath is a bare node/electron binary and this resolves to some unrelated
@@ -2444,9 +2444,9 @@ export function getMacInstallBlocker(): string | undefined {
   if (!bundle.endsWith(".app")) return undefined;
   if (bundle.includes("/AppTranslocation/")) {
     return (
-      "macOS is running Agent Orchestrator from a temporary read-only location " +
+      "macOS is running Open Agents from a temporary read-only location " +
       "because it was opened straight from where it was downloaded. Quit the app, " +
-      "move Agent Orchestrator.app into /Applications, reopen it from there, and " +
+      "move Open Agents.app into /Applications, reopen it from there, and " +
       "then restart to update."
     );
   }
@@ -2459,9 +2459,9 @@ export function getMacInstallBlocker(): string | undefined {
     // Deliberately does NOT say "move it to /Applications": the app may already
     // be there, and telling someone to do what they have done reads as a bug.
     return (
-      "The update can't be installed because Agent Orchestrator's location isn't " +
+      "The update can't be installed because Open Agents's location isn't " +
       `writable: ${path.dirname(bundle)}. Fix that folder's permissions, or move ` +
-      "Agent Orchestrator.app somewhere you can write to, reopen it, and then " +
+      "Open Agents.app somewhere you can write to, reopen it, and then " +
       "restart to update."
     );
   }
@@ -2557,7 +2557,7 @@ export async function quitAndInstallUpdate(confirmedVersion?: string): Promise<U
       const version = stagedVersion;
       if (!version) throw new Error("The update is no longer ready to install. Check for updates again.");
       await waitForNativePreparation(version);
-      // The helper must acknowledge it is up (its READY handshake) before AO
+      // The helper must acknowledge it is up (its READY handshake) before Open Agents
       // quits. It stays hidden on the normal path and only shows a window if the
       // update stalls or fails.
       progress = await startMacUpdateProgress({
@@ -2581,7 +2581,7 @@ export async function quitAndInstallUpdate(confirmedVersion?: string): Promise<U
         new Promise<void>((resolve) => setTimeout(resolve, 750)),
       ]);
       autoUpdater.quitAndInstall(false, true);
-      if (!macRestartRequested) throw nativePreparationError ?? new Error("The installer could not restart AO.");
+      if (!macRestartRequested) throw nativePreparationError ?? new Error("The installer could not restart Open Agents.");
     } catch (err) {
       macRestartRequested = false;
       stagedInCurrentProcess = false;
@@ -2676,7 +2676,7 @@ export async function ensureUpdatePrefs(stateDir: string): Promise<void> {
     buttons: ["Enable auto-updates", "Not now"],
     defaultId: 0,
     cancelId: 1,
-    message: "Keep Agent Orchestrator up to date automatically?",
+    message: "Keep Open Agents up to date automatically?",
     detail: "You can change this later in Settings.",
   });
   if (optIn.response !== 0) {

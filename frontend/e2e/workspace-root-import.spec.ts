@@ -1,5 +1,5 @@
 import { expect, test } from "@playwright/test";
-import type { AoBridge } from "../src/preload";
+import type { OpenAgentsBridge } from "../src/preload";
 import { agentReadiness } from "../src/renderer/test/agent-readiness-fixtures";
 import { installFakeAgent } from "./support/fake-bridge";
 
@@ -8,7 +8,7 @@ test(`renderer: workspace import preserves the root branch and explains unresolv
 	test.setTimeout(120_000);
 	await installFakeAgent(page, { projectId: "local-root", workers: [] });
 	await page.addInitScript((platform) => {
-		// AO checks all three signals; changing only navigator.platform on a
+		// Open Agents checks all three signals; changing only navigator.platform on a
 		// Mac still takes the macOS path through navigator.userAgent.
 		Object.defineProperty(navigator, "platform", { configurable: true, value: platform });
 		Object.defineProperty(navigator, "userAgent", { configurable: true, value: `Mozilla/5.0 (${platform === "macOS" ? "Macintosh" : platform})` });
@@ -56,8 +56,8 @@ test(`renderer: workspace import preserves the root branch and explains unresolv
 		// The default fixture has a running orchestrator. This test represents a
 		// failed first spawn, so every later CDC/query refresh must also have none.
 		// Otherwise SessionsBoard correctly clears the startup error on refresh.
-		window.__aoFakeAgent!.removeWorker("local-root-orchestrator");
-		const bridge = (window as unknown as { ao: AoBridge }).ao;
+		window.__openAgentsFakeAgent!.removeWorker("local-root-orchestrator");
+		const bridge = (window as unknown as { openAgents: OpenAgentsBridge }).openAgents;
 		bridge.app.chooseDirectory = async () => "/repos/local-root";
 		bridge.app.checkAncestorRepo = async () => undefined;
 		bridge.app.getRepositoryBranch = async () => "trunk";
@@ -81,7 +81,7 @@ test(`renderer: workspace import preserves the root branch and explains unresolv
 	await page.getByRole("button", { name: "Continue", exact: true }).click();
 	await page.getByRole("button", { name: "Create workspace and start", exact: true }).click();
 	await expect(page).toHaveURL(/projects\/local-root/);
-	await expect(page.getByText(/AO could not determine the default branch for the workspace root repository/)).toBeVisible();
+	await expect(page.getByText(/Open Agents could not determine the default branch for the workspace root repository/)).toBeVisible();
 	await expect(page.getByText(/Details:.*remote did not advertise a symbolic HEAD/)).toBeVisible();
 	expect(created).toBe(true);
 	expect(started).toBe(true);

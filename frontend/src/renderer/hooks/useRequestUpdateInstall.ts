@@ -1,6 +1,6 @@
 import { useQueryClient } from "@tanstack/react-query";
 import { useCallback, useRef } from "react";
-import { aoBridge } from "../lib/bridge";
+import { openAgentsBridge } from "../lib/bridge";
 import { sessionsAtRiskFromInstall } from "../lib/update-install-risk";
 import { useUiStore } from "../stores/ui-store";
 import { workspaceQueryOptions } from "./useWorkspaceQuery";
@@ -27,7 +27,7 @@ export function useRequestUpdateInstall(): () => void {
 					openPrompt();
 					return;
 				}
-				await aoBridge.updates.install();
+				await openAgentsBridge.updates.install();
 			} catch {
 				// Unknown worker state still requires explicit confirmation.
 				openPrompt();

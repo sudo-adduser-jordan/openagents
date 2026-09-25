@@ -1,4 +1,4 @@
-// Package reviewgateway prepares AO-owned runtime directories and immutable
+// Package reviewgateway prepares Open Agents-owned runtime directories and immutable
 // task manifests used by interactive reviewer TUIs.
 package reviewgateway
 
@@ -16,7 +16,7 @@ import (
 	"strconv"
 	"strings"
 
-	"github.com/aoagents/agent-orchestrator/backend/internal/domain"
+	"github.com/sudo-adduser-jordan/open-agents/backend/internal/domain"
 )
 
 const manifestVersion = 1
@@ -46,7 +46,7 @@ type Manifest struct {
 	Tasks           []Task           `json:"tasks"`
 }
 
-// Environment is the neutral AO-owned filesystem presented to a reviewer.
+// Environment is the neutral Open Agents-owned filesystem presented to a reviewer.
 // The source checkout is intentionally absent.
 type Environment struct {
 	DataDir          string
@@ -70,13 +70,13 @@ func (e Environment) TUIEnvironment() map[string]string {
 	}
 }
 
-// PrepareHostTrustedEnvironment creates AO-owned discovery and state roots for
+// PrepareHostTrustedEnvironment creates Open Agents-owned discovery and state roots for
 // an experimental host-trusted reviewer. It limits where the CLI stores its own
 // files but intentionally does not claim process, filesystem, or network
 // containment.
 func PrepareHostTrustedEnvironment(dataDir, reviewerID string) (Environment, error) {
 	if strings.TrimSpace(dataDir) == "" || !filepath.IsAbs(dataDir) {
-		return Environment{}, errors.New("review gateway: absolute AO data directory is required")
+		return Environment{}, errors.New("review gateway: absolute Open Agents data directory is required")
 	}
 	if !safeID.MatchString(reviewerID) {
 		return Environment{}, errors.New("review gateway: invalid reviewer id")
@@ -96,15 +96,15 @@ func PrepareHostTrustedEnvironment(dataDir, reviewerID string) (Environment, err
 	return env, nil
 }
 
-// PrepareEnvironment creates a private reviewer root under AO_DATA_DIR and an
+// PrepareEnvironment creates a private reviewer root under OPEN_AGENTS_DATA_DIR and an
 // immutable, content-addressed authorization manifest. It never creates files
 // in the project checkout.
 func PrepareEnvironment(dataDir string, manifest Manifest) (Environment, error) {
 	if strings.TrimSpace(dataDir) == "" {
-		return Environment{}, errors.New("review gateway: AO data directory is required")
+		return Environment{}, errors.New("review gateway: Open Agents data directory is required")
 	}
 	if !filepath.IsAbs(dataDir) {
-		return Environment{}, errors.New("review gateway: AO data directory must be absolute")
+		return Environment{}, errors.New("review gateway: Open Agents data directory must be absolute")
 	}
 	if err := validateManifest(&manifest); err != nil {
 		return Environment{}, err
@@ -176,7 +176,7 @@ func validateManifest(manifest *Manifest) error {
 		}
 		prompt, err := filepath.Abs(task.TaskPromptFile)
 		if err != nil || !pathWithin(manifest.TaskPromptRoot, prompt) {
-			return errors.New("review gateway: task prompt is outside the AO prompt root")
+			return errors.New("review gateway: task prompt is outside the Open Agents prompt root")
 		}
 		seen[task.RunID] = true
 	}

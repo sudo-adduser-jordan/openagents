@@ -35,7 +35,7 @@ Harness Settings continues to show one row per supported harness.
 
 - If the harness is absent and at least one method is viable, the row shows
   **Install**. One click starts the selected method without a second prompt.
-- When multiple methods are available, AO recommends the first viable
+- When multiple methods are available, Open Agents recommends the first viable
   package-manager method. The official vendor installer remains selectable and
   becomes the fallback when package-manager preflight fails.
 - Active jobs keep the existing spinner, durable progress, diagnostics, and
@@ -51,8 +51,8 @@ PowerShell expression. It submits only a harness ID and stable method ID.
 ## Trust Model
 
 Remote scripts are mutable and cannot be proven equivalent to code reviewed
-when AO was released. This is an intentional product trade-off in favor of
-one-click installation. AO limits the resulting authority but does not claim
+when Open Agents was released. This is an intentional product trade-off in favor of
+one-click installation. Open Agents limits the resulting authority but does not claim
 to eliminate vendor supply-chain risk.
 
 Only exact first-party URLs registered in Go source are eligible. A renderer
@@ -60,7 +60,7 @@ request cannot override the URL, interpreter, arguments, environment, download
 limit, or execution timeout. Recipes must use HTTPS. Redirects may be followed
 only for a bounded number of hops and every hop must remain HTTPS.
 
-AO must not use `curl | shell`, `irm | iex`, `shell -c`, or another streaming
+Open Agents must not use `curl | shell`, `irm | iex`, `shell -c`, or another streaming
 execution pipeline. It downloads the complete response first, validates the
 transport and size constraints, records a SHA-256 digest for diagnostics, and
 then executes the saved file.
@@ -95,14 +95,14 @@ of teaching the service to assemble shell pipelines. The operation:
 2. performs an HTTPS GET with a bounded redirect count;
 3. rejects non-success HTTP responses, non-HTTPS redirects, and responses over
    the configured maximum size;
-4. writes the script with mode `0600` inside an AO-owned per-job directory
-   beneath `<AO_DATA_DIR>/installers/tmp`;
+4. writes the script with mode `0600` inside an Open Agents-owned per-job directory
+   beneath `<OPEN_AGENTS_DATA_DIR>/installers/tmp`;
 5. invokes the fixed interpreter with the script path, closed stdin, the
    existing noninteractive environment, and the existing install timeout;
 6. streams bounded stdout/stderr into the durable job diagnostics;
 7. removes the per-job directory after execution on both success and failure.
 
-On Windows, AO selects an already-installed PowerShell executable and runs the
+On Windows, Open Agents selects an already-installed PowerShell executable and runs the
 temporary `.ps1` file with `-NoProfile`, `-NonInteractive`, and
 `-ExecutionPolicy Bypass`. On Unix, it invokes the recipe's fixed `sh` or
 `bash` executable with the temporary file path.
@@ -139,7 +139,7 @@ Claude Code, Codex, Pi, Amp, Droid, Qwen, Autohand, OpenCode, and OMP where
 supported by first-party documentation.
 
 Windows remains instruction-only for harnesses whose vendor documents only WSL
-or no native CLI, currently Goose, Devin, Muse, and Prime Agent. AO does not
+or no native CLI, currently Goose, Devin, Muse, and Prime Agent. Open Agents does not
 silently install into WSL because that would target a different runtime and
 PATH than the native desktop daemon verifies.
 
@@ -167,7 +167,7 @@ Backend tests must cover:
 - HTTPS-only requests and HTTPS-only redirects;
 - bounded redirects, response size, download time, and execution time;
 - closed stdin and noninteractive environment;
-- AO-owned `0700` job directory and `0600` script file permissions on Unix;
+- Open Agents-owned `0700` job directory and `0600` script file permissions on Unix;
 - temporary-file cleanup after success, failure, timeout, and cancellation;
 - PowerShell argv on Windows and `sh`/`bash` argv on Unix;
 - durable state transitions, diagnostics digest, interruption behavior, Droid
@@ -180,7 +180,7 @@ Instructions, and existing progress/recovery/diagnostic behavior is unchanged.
 
 Final verification includes the full Go suite, frontend tests and typecheck,
 generated API drift checks if contracts change, and a real Electron Harness
-Settings installation exercise against isolated AO data. Live testing must use
+Settings installation exercise against isolated Open Agents data. Live testing must use
 a harmless fixture server or a reviewed test script; it must not install or
 reinstall real third-party harnesses without a separate explicit test request.
 

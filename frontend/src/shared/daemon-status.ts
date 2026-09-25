@@ -1,6 +1,6 @@
 // DaemonStatus is the supervisor → renderer handshake payload, shared by the
 // Electron main process (which derives it) and the preload bridge (which types
-// the IPC surface). The renderer picks it up through the preload's AoBridge type.
+// the IPC surface). The renderer picks it up through the preload's OpenAgentsBridge type.
 // Machine-readable failure classification for telemetry. `message` is
 // human-facing and may contain local paths; `code` is what gets reported.
 // Statuses without a code (normal ready, user-initiated stop) are not failures.

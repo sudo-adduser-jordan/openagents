@@ -8,13 +8,13 @@ import "time"
 // never persisted.
 type KanbanColumn string
 
-// KanbanColumn values shown as board lanes by AO clients.
+// KanbanColumn values shown as board lanes by Open Agents clients.
 const (
 	// KanbanBuilding is a session with no PR yet.
 	KanbanBuilding KanbanColumn = "building"
-	// KanbanValidating is a PR inside an AO-driven loop: a review pass running
+	// KanbanValidating is a PR inside an Open Agents-driven loop: a review pass running
 	// on the current head, auto review holding the PR until its own pass
-	// approves, AO addressing review feedback, or AO fixing CI.
+	// approves, Open Agents addressing review feedback, or Open Agents fixing CI.
 	KanbanValidating KanbanColumn = "validating"
 	// KanbanNeedsReview is the review-feedback loop: the PR is in its review
 	// cycle and the next turn is a person's, whether that is giving the review,
@@ -30,8 +30,8 @@ const (
 
 // KanbanSessionFacts are the session-level durable facts the Kanban reducers
 // read: the worker facts DeriveStatus already reads, plus which follow-up loops
-// AO drives on the session's behalf. The inject flags decide whether the
-// review-feedback loop is turned by AO or by a person; the embedded worker
+// Open Agents drives on the session's behalf. The inject flags decide whether the
+// review-feedback loop is turned by Open Agents or by a person; the embedded worker
 // facts are what a session with no PR yet, or a worker that stopped mid-loop,
 // has to report.
 type KanbanSessionFacts struct {
@@ -47,11 +47,11 @@ type KanbanSessionFacts struct {
 	ReviewLocked bool
 }
 
-// KanbanReviewRunFacts summarize AO's own review passes against one PR's
+// KanbanReviewRunFacts summarize Open Agents's own review passes against one PR's
 // current head commit. Passes recorded for an earlier head are excluded before
 // this struct is built, so a stale run can never decide the column.
 type KanbanReviewRunFacts struct {
-	// Present reports that AO recorded at least one pass for the current head.
+	// Present reports that Open Agents recorded at least one pass for the current head.
 	Present bool
 	// Running reports that a pass for the current head is still in flight.
 	Running bool
@@ -59,7 +59,7 @@ type KanbanReviewRunFacts struct {
 	// worker for changes.
 	ChangesRequested bool
 	// Outcome reports that a pass for the current head returned a verdict.
-	// Present without Outcome is a head AO tried and failed to review, which
+	// Present without Outcome is a head Open Agents tried and failed to review, which
 	// still owes the PR the pass auto review promised it.
 	Outcome bool
 	// Failed reports that a pass for the current head ended without producing
@@ -69,8 +69,8 @@ type KanbanReviewRunFacts struct {
 	Cancelled bool
 }
 
-// KanbanExternalReviewFacts are the provider review verdicts on one PR that AO
-// did not author. AO's own provider reviews are matched by review id and
+// KanbanExternalReviewFacts are the provider review verdicts on one PR that Open Agents
+// did not author. Open Agents's own provider reviews are matched by review id and
 // excluded, because the aggregate ReviewDecision mixes both sources and cannot
 // tell whose turn the review-feedback loop is on.
 type KanbanExternalReviewFacts struct {
@@ -108,18 +108,18 @@ func derivePRKanbanColumn(session KanbanSessionFacts, pr KanbanPRFacts) KanbanCo
 		return KanbanValidating
 	case externallyApproved(pr) || pr.Mergeability == MergeMergeable:
 		return KanbanReady
-	case aoOwnsNextStep(session, pr):
+	case openAgentsOwnsNextStep(session, pr):
 		return KanbanValidating
-	// Auto review owns this head until its own pass approves it. A head AO has
+	// Auto review owns this head until its own pass approves it. A head Open Agents has
 	// not reviewed yet, a pass that failed or was cancelled, and a pass that
 	// asked for changes are all "not approved yet" -- auto review's job is to
 	// keep re-reviewing this PR until it can approve, whether or not anything
 	// is configured to act on what it finds in between. Without AutoReview, a
-	// changes-requested verdict is as far as AO's involvement goes, so it does
-	// release the PR from Validating -- see aoOwnsNextStep above.
-	case session.AutoReview && !approvedByAO(pr):
+	// changes-requested verdict is as far as Open Agents's involvement goes, so it does
+	// release the PR from Validating -- see openAgentsOwnsNextStep above.
+	case session.AutoReview && !approvedByOpenAgents(pr):
 		return KanbanValidating
-	// Fallthrough: the PR is in its review cycle and no AO loop is turning it,
+	// Fallthrough: the PR is in its review cycle and no Open Agents loop is turning it,
 	// so the next turn is a person's -- give the review, answer the feedback
 	// already on it, or decide what to do about a failing check.
 	default:
@@ -127,24 +127,24 @@ func derivePRKanbanColumn(session KanbanSessionFacts, pr KanbanPRFacts) KanbanCo
 	}
 }
 
-// approvedByAO reports whether AO's own review pass approved the PR's current
+// approvedByOpenAgents reports whether Open Agents's own review pass approved the PR's current
 // head. A pass that requested changes, one that has not run yet, and one that
 // failed or was cancelled without a verdict are all "not approved."
-func approvedByAO(pr KanbanPRFacts) bool {
+func approvedByOpenAgents(pr KanbanPRFacts) bool {
 	return pr.ReviewRun.Outcome && !pr.ReviewRun.ChangesRequested
 }
 
 // externallyApproved requires both the provider's aggregate decision (which
-// honors dismissed reviews) and a surviving approval AO did not author.
+// honors dismissed reviews) and a surviving approval Open Agents did not author.
 func externallyApproved(pr KanbanPRFacts) bool {
 	return pr.Review == ReviewApproved && pr.ExternalReview.Approved
 }
 
-// aoOwnsNextStep reports whether AO itself is turning the PR's review-feedback
+// openAgentsOwnsNextStep reports whether Open Agents itself is turning the PR's review-feedback
 // loop: its review pass on the current head is still running, it is addressing
 // review feedback, or it is fixing failing CI. When it is not, the same loop
 // continues with a person taking the next turn.
-func aoOwnsNextStep(session KanbanSessionFacts, pr KanbanPRFacts) bool {
+func openAgentsOwnsNextStep(session KanbanSessionFacts, pr KanbanPRFacts) bool {
 	if pr.ReviewRun.Running {
 		return true
 	}
@@ -196,7 +196,7 @@ func kanbanPriority(column KanbanColumn) int {
 // column stays put. Values are already renderable: clients print them as-is.
 type DisplayStatus string
 
-// DisplayStatus values shown on AO session cards, grouped by the column that
+// DisplayStatus values shown on Open Agents session cards, grouped by the column that
 // can produce them.
 const (
 	// Building.
@@ -314,9 +314,9 @@ func buildingDisplayStatus(session KanbanSessionFacts, now time.Time, noSignalGr
 	}
 }
 
-// validatingDisplayStatus reports the AO-driven loop turning the PR. A worker
-// that needs a person outranks the loop it was running, and the work AO is
-// doing outranks the review pass that asked for it. Crediting AO's auto-fix
+// validatingDisplayStatus reports the Open Agents-driven loop turning the PR. A worker
+// that needs a person outranks the loop it was running, and the work Open Agents is
+// doing outranks the review pass that asked for it. Crediting Open Agents's auto-fix
 // loops requires the worker to actually be active right now: a stale
 // AutoInjectCI/AutoInjectReview flag on an idle worker falls through to the
 // plain CI/review-facts reading instead of claiming work nobody is doing.
@@ -352,13 +352,13 @@ func validatingDisplayStatus(session KanbanSessionFacts, pr KanbanPRFacts, now t
 }
 
 // inReviewDisplayStatus reports the review-feedback loop from the person's
-// side. By the column rule, aoOwnsNextStep already routes a PR with failing CI
-// under AutoInjectCI, or an AO-addressed changes request, to Validating before
+// side. By the column rule, openAgentsOwnsNextStep already routes a PR with failing CI
+// under AutoInjectCI, or an Open Agents-addressed changes request, to Validating before
 // this ever runs -- so these guards do not change today's output. They stay
 // here, matching validatingDisplayStatus's shape, so this function reports the
-// AO-policy phrase correctly on its own rather than depending on a rule
+// Open Agents-policy phrase correctly on its own rather than depending on a rule
 // enforced in a different function for its correctness. A dead or idle worker
-// outranks all of it: crediting AO's auto-fix loop requires the worker to
+// outranks all of it: crediting Open Agents's auto-fix loop requires the worker to
 // actually be active right now, and a stale flag on an idle worker falls
 // through to the plain CI/review-facts reading below.
 func inReviewDisplayStatus(session KanbanSessionFacts, pr KanbanPRFacts, now time.Time, noSignalGrace time.Duration) DisplayStatus {
@@ -387,7 +387,7 @@ func inReviewDisplayStatus(session KanbanSessionFacts, pr KanbanPRFacts, now tim
 }
 
 // changesRequestedOn reports whether anyone asked the worker for changes on the
-// PR, whether that was AO's own pass or a person.
+// PR, whether that was Open Agents's own pass or a person.
 func changesRequestedOn(pr KanbanPRFacts) bool {
 	return pr.ReviewRun.ChangesRequested || pr.ExternalReview.ChangesRequested
 }

@@ -89,7 +89,7 @@ function sharedAttachmentDescriptors(attachments: FileAttachment[]): FileAttachm
 	}));
 }
 
-// Staging belongs to the AO session, not to one React mount. A controller or
+// Staging belongs to the Open Agents session, not to one React mount. A controller or
 // surface remount can happen while the daemon is writing bytes; keeping this
 // tiny registry lets the replacement hook remain pending and receive the staged
 // descriptors instead of restoring storage before the write and missing them.
@@ -224,7 +224,7 @@ export function discardCapturedPendingFileAttachments(
 	}
 }
 
-/** Cancel every in-flight renderer generation owned by one logical AO session. */
+/** Cancel every in-flight renderer generation owned by one logical Open Agents session. */
 export function discardPendingFileAttachmentsForSession(sessionId: string): void {
 	for (const key of [...sharedAttachmentEntries.keys()]) {
 		if (attachmentKeyBelongsToSession(key, sessionId)) discardPendingFileAttachments(key);

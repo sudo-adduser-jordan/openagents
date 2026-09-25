@@ -11,11 +11,11 @@ import (
 	"testing"
 	"time"
 
-	"github.com/aoagents/agent-orchestrator/backend/internal/config"
-	"github.com/aoagents/agent-orchestrator/backend/internal/domain"
-	"github.com/aoagents/agent-orchestrator/backend/internal/httpd"
-	"github.com/aoagents/agent-orchestrator/backend/internal/ports"
-	usagesvc "github.com/aoagents/agent-orchestrator/backend/internal/service/usage"
+	"github.com/sudo-adduser-jordan/open-agents/backend/internal/config"
+	"github.com/sudo-adduser-jordan/open-agents/backend/internal/domain"
+	"github.com/sudo-adduser-jordan/open-agents/backend/internal/httpd"
+	"github.com/sudo-adduser-jordan/open-agents/backend/internal/ports"
+	usagesvc "github.com/sudo-adduser-jordan/open-agents/backend/internal/service/usage"
 )
 
 type fakeActivityRecorder struct {
@@ -64,7 +64,7 @@ func TestSessionsAPI_ActivityForwardsUsageMetadataWithoutChangingActivity(t *tes
 	srv := httptest.NewServer(httpd.NewRouterWithControl(config.Config{}, log, nil, httpd.APIDeps{UsageHooks: usage}, httpd.ControlDeps{}))
 	t.Cleanup(srv.Close)
 
-	body, status, _ := doRequest(t, srv, "POST", "/api/v1/sessions/ao-1/activity", `{
+	body, status, _ := doRequest(t, srv, "POST", "/api/v1/sessions/open-agents-1/activity", `{
 		"event":"subagent-stop",
 		"agentSessionId":"native-1",
 		"usage":{
@@ -79,7 +79,7 @@ func TestSessionsAPI_ActivityForwardsUsageMetadataWithoutChangingActivity(t *tes
 	if status != http.StatusOK {
 		t.Fatalf("activity = %d, want 200; body=%s", status, body)
 	}
-	if usage.calls != 1 || usage.gotID != "ao-1" {
+	if usage.calls != 1 || usage.gotID != "open-agents-1" {
 		t.Fatalf("usage calls=%d id=%q", usage.calls, usage.gotID)
 	}
 	if usage.gotSignal.NativeSessionID != "native-1" ||
@@ -97,7 +97,7 @@ func TestSessionsAPI_ActivityContentionRemainsRetryableAndRecordsUsage(t *testin
 	srv := httptest.NewServer(httpd.NewRouterWithControl(config.Config{}, log, nil,
 		httpd.APIDeps{Activity: activity, UsageHooks: usage}, httpd.ControlDeps{}))
 	t.Cleanup(srv.Close)
-	body, status, _ := doRequest(t, srv, "POST", "/api/v1/sessions/ao-1/activity",
+	body, status, _ := doRequest(t, srv, "POST", "/api/v1/sessions/open-agents-1/activity",
 		`{"state":"idle","event":"stop","agentSessionId":"native-1","launchId":"launch-1","usage":{"harness":"opencode","transcriptPath":"/tmp/main.jsonl"}}`)
 	if status != http.StatusServiceUnavailable || !strings.Contains(string(body), "ACTIVITY_PROJECTION_BUSY") {
 		t.Fatalf("contention should be explicitly retryable: %d %s", status, body)
@@ -120,7 +120,7 @@ func TestSessionsAPI_ActivitySanitizesAndBoundsUsageMetadata(t *testing.T) {
 	t.Cleanup(srv.Close)
 
 	overlongPath := "/tmp/" + strings.Repeat("x", 4096) + ".jsonl"
-	body, status, _ := doRequest(t, srv, "POST", "/api/v1/sessions/ao-1/activity", `{
+	body, status, _ := doRequest(t, srv, "POST", "/api/v1/sessions/open-agents-1/activity", `{
 		"event":"subagent-stop",
 		"agentSessionId":"native-1",
 		"usage":{
@@ -177,12 +177,12 @@ func TestSessionsAPI_ActivityForwardsMetadataOnlySessionStartToUsage(t *testing.
 	))
 	t.Cleanup(srv.Close)
 
-	body, status, _ := doRequest(t, srv, "POST", "/api/v1/sessions/ao-1/activity",
+	body, status, _ := doRequest(t, srv, "POST", "/api/v1/sessions/open-agents-1/activity",
 		`{"event":"session-start","agentSessionId":"codex-native-1","launchId":"launch-7"}`)
 	if status != http.StatusOK {
 		t.Fatalf("activity = %d, want 200; body=%s", status, body)
 	}
-	if usage.calls != 1 || usage.gotID != "ao-1" {
+	if usage.calls != 1 || usage.gotID != "open-agents-1" {
 		t.Fatalf("usage calls=%d id=%q", usage.calls, usage.gotID)
 	}
 	if usage.gotSignal.Event != "session-start" ||
@@ -206,7 +206,7 @@ func TestSessionsAPI_ActivityUsageFailureDoesNotRejectAgentSignal(t *testing.T) 
 	))
 	t.Cleanup(srv.Close)
 
-	body, status, _ := doRequest(t, srv, "POST", "/api/v1/sessions/ao-1/activity",
+	body, status, _ := doRequest(t, srv, "POST", "/api/v1/sessions/open-agents-1/activity",
 		`{"state":"idle","event":"session-end","agentSessionId":"native-1"}`)
 	if status != http.StatusOK {
 		t.Fatalf("activity = %d, want 200; body=%s", status, body)
@@ -229,7 +229,7 @@ func TestSessionsAPI_ActivityForwardsOrdinaryEventWithoutUsageMetadata(t *testin
 	))
 	t.Cleanup(srv.Close)
 
-	body, status, _ := doRequest(t, srv, "POST", "/api/v1/sessions/ao-1/activity",
+	body, status, _ := doRequest(t, srv, "POST", "/api/v1/sessions/open-agents-1/activity",
 		`{"state":"active","event":"post-tool-use","agentSessionId":"codex-native-1","launchId":"launch-1"}`)
 	if status != http.StatusOK {
 		t.Fatalf("activity = %d, want 200; body=%s", status, body)
@@ -249,7 +249,7 @@ func TestSessionsAPI_ActivityAppliesSignal(t *testing.T) {
 	rec := &fakeActivityRecorder{}
 	srv := newActivityTestServer(t, rec)
 
-	body, status, _ := doRequest(t, srv, "POST", "/api/v1/sessions/ao-1/activity", `{"state":"waiting_input"}`)
+	body, status, _ := doRequest(t, srv, "POST", "/api/v1/sessions/open-agents-1/activity", `{"state":"waiting_input"}`)
 	if status != http.StatusOK {
 		t.Fatalf("activity = %d, want 200; body=%s", status, body)
 	}
@@ -259,10 +259,10 @@ func TestSessionsAPI_ActivityAppliesSignal(t *testing.T) {
 		State     string `json:"state"`
 	}
 	mustJSON(t, body, &resp)
-	if !resp.OK || resp.SessionID != "ao-1" || resp.State != "waiting_input" {
+	if !resp.OK || resp.SessionID != "open-agents-1" || resp.State != "waiting_input" {
 		t.Fatalf("activity response = %#v", resp)
 	}
-	if rec.calls != 1 || rec.gotID != "ao-1" {
+	if rec.calls != 1 || rec.gotID != "open-agents-1" {
 		t.Fatalf("recorder calls=%d id=%q", rec.calls, rec.gotID)
 	}
 	if !rec.gotSignal.Valid || rec.gotSignal.State != domain.ActivityWaitingInput {
@@ -274,7 +274,7 @@ func TestSessionsAPI_ActivityAcceptsBlocked(t *testing.T) {
 	rec := &fakeActivityRecorder{}
 	srv := newActivityTestServer(t, rec)
 
-	body, status, _ := doRequest(t, srv, "POST", "/api/v1/sessions/ao-1/activity", `{"state":"blocked"}`)
+	body, status, _ := doRequest(t, srv, "POST", "/api/v1/sessions/open-agents-1/activity", `{"state":"blocked"}`)
 	if status != http.StatusOK {
 		t.Fatalf("activity = %d, want 200; body=%s", status, body)
 	}
@@ -290,7 +290,7 @@ func TestSessionsAPI_ActivityThreadsCorrelationFields(t *testing.T) {
 	rec := &fakeActivityRecorder{}
 	srv := newActivityTestServer(t, rec)
 
-	body, status, _ := doRequest(t, srv, "POST", "/api/v1/sessions/ao-1/activity",
+	body, status, _ := doRequest(t, srv, "POST", "/api/v1/sessions/open-agents-1/activity",
 		`{"state":"active","event":"post-tool-use","toolName":"Bash","toolUseId":"toolu_42","launchId":"launch-7"}`)
 	if status != http.StatusOK {
 		t.Fatalf("activity = %d, want 200; body=%s", status, body)
@@ -305,7 +305,7 @@ func TestSessionsAPI_ActivityThreadsConversationCheckpointOrigin(t *testing.T) {
 	rec := &fakeActivityRecorder{}
 	srv := newActivityTestServer(t, rec)
 
-	body, status, _ := doRequest(t, srv, "POST", "/api/v1/sessions/ao-1/activity",
+	body, status, _ := doRequest(t, srv, "POST", "/api/v1/sessions/open-agents-1/activity",
 		`{"state":"active","event":"user-prompt-submit","conversationCheckpointOrigin":"coordination","providerTurnId":"native-turn"}`)
 	if status != http.StatusOK {
 		t.Fatalf("activity = %d, want 200; body=%s", status, body)
@@ -322,7 +322,7 @@ func TestSessionsAPI_ActivityRejectsUnknownConversationCheckpointOrigin(t *testi
 	rec := &fakeActivityRecorder{}
 	srv := newActivityTestServer(t, rec)
 
-	body, status, _ := doRequest(t, srv, "POST", "/api/v1/sessions/ao-1/activity",
+	body, status, _ := doRequest(t, srv, "POST", "/api/v1/sessions/open-agents-1/activity",
 		`{"state":"active","event":"user-prompt-submit","conversationCheckpointOrigin":"provider"}`)
 	if status != http.StatusBadRequest {
 		t.Fatalf("activity = %d, want 400; body=%s", status, body)
@@ -336,7 +336,7 @@ func TestSessionsAPI_ActivityAcceptsMetadataOnlyAgentSessionID(t *testing.T) {
 	rec := &fakeActivityRecorder{}
 	srv := newActivityTestServer(t, rec)
 
-	body, status, _ := doRequest(t, srv, "POST", "/api/v1/sessions/ao-1/activity",
+	body, status, _ := doRequest(t, srv, "POST", "/api/v1/sessions/open-agents-1/activity",
 		`{"event":"session-start","agentSessionId":"native-session-1"}`)
 	if status != http.StatusOK {
 		t.Fatalf("activity = %d, want 200; body=%s", status, body)
@@ -351,7 +351,7 @@ func TestSessionsAPI_ActivityThreadsAgentSessionIDWithState(t *testing.T) {
 	rec := &fakeActivityRecorder{}
 	srv := newActivityTestServer(t, rec)
 
-	body, status, _ := doRequest(t, srv, "POST", "/api/v1/sessions/ao-1/activity",
+	body, status, _ := doRequest(t, srv, "POST", "/api/v1/sessions/open-agents-1/activity",
 		`{"state":"idle","event":"stop","agentSessionId":"native-session-1","observedAt":"2026-09-13T00:00:00Z"}`)
 	if status != http.StatusOK {
 		t.Fatalf("activity = %d, want 200; body=%s", status, body)
@@ -373,7 +373,7 @@ func TestSessionsAPI_ActivityCapsOverlongCorrelationFields(t *testing.T) {
 	for i := range long {
 		long[i] = 'a'
 	}
-	body, status, _ := doRequest(t, srv, "POST", "/api/v1/sessions/ao-1/activity",
+	body, status, _ := doRequest(t, srv, "POST", "/api/v1/sessions/open-agents-1/activity",
 		`{"state":"active","event":"post-tool-use","toolUseId":"`+string(long)+`"}`)
 	if status != http.StatusOK {
 		t.Fatalf("activity = %d, want 200; body=%s", status, body)
@@ -390,7 +390,7 @@ func TestSessionsAPI_ActivityRejectsUnknownState(t *testing.T) {
 	rec := &fakeActivityRecorder{}
 	srv := newActivityTestServer(t, rec)
 
-	body, status, _ := doRequest(t, srv, "POST", "/api/v1/sessions/ao-1/activity", `{"state":"napping"}`)
+	body, status, _ := doRequest(t, srv, "POST", "/api/v1/sessions/open-agents-1/activity", `{"state":"napping"}`)
 	assertErrorCode(t, body, status, http.StatusBadRequest, "INVALID_ACTIVITY_STATE")
 	if rec.calls != 0 {
 		t.Fatalf("recorder should not be called for an invalid state; calls=%d", rec.calls)
@@ -401,7 +401,7 @@ func TestSessionsAPI_ActivityRejectsEmptyMetadataOnlyRequest(t *testing.T) {
 	rec := &fakeActivityRecorder{}
 	srv := newActivityTestServer(t, rec)
 
-	body, status, _ := doRequest(t, srv, "POST", "/api/v1/sessions/ao-1/activity", `{"event":"session-start"}`)
+	body, status, _ := doRequest(t, srv, "POST", "/api/v1/sessions/open-agents-1/activity", `{"event":"session-start"}`)
 	assertErrorCode(t, body, status, http.StatusBadRequest, "ACTIVITY_OR_SESSION_ID_REQUIRED")
 	if rec.calls != 0 {
 		t.Fatalf("recorder should not be called for an empty metadata request; calls=%d", rec.calls)
@@ -413,7 +413,7 @@ func TestSessionsAPI_ActivityRejectsOverlongMetadataOnlySessionID(t *testing.T) 
 	srv := newActivityTestServer(t, rec)
 	longID := strings.Repeat("a", 300)
 
-	body, status, _ := doRequest(t, srv, "POST", "/api/v1/sessions/ao-1/activity",
+	body, status, _ := doRequest(t, srv, "POST", "/api/v1/sessions/open-agents-1/activity",
 		`{"event":"session-start","agentSessionId":"`+longID+`"}`)
 	assertErrorCode(t, body, status, http.StatusBadRequest, "ACTIVITY_OR_SESSION_ID_REQUIRED")
 	if rec.calls != 0 {
@@ -424,7 +424,7 @@ func TestSessionsAPI_ActivityRejectsOverlongMetadataOnlySessionID(t *testing.T) 
 func TestSessionsAPI_ActivityRejectsBadJSON(t *testing.T) {
 	srv := newActivityTestServer(t, &fakeActivityRecorder{})
 
-	body, status, _ := doRequest(t, srv, "POST", "/api/v1/sessions/ao-1/activity", `{`)
+	body, status, _ := doRequest(t, srv, "POST", "/api/v1/sessions/open-agents-1/activity", `{`)
 	assertErrorCode(t, body, status, http.StatusBadRequest, "INVALID_JSON")
 }
 
@@ -438,13 +438,13 @@ func TestSessionsAPI_ActivityMissingSessionIs404(t *testing.T) {
 func TestSessionsAPI_ActivityRecorderErrorIs500(t *testing.T) {
 	srv := newActivityTestServer(t, &fakeActivityRecorder{err: errors.New("boom")})
 
-	body, status, _ := doRequest(t, srv, "POST", "/api/v1/sessions/ao-1/activity", `{"state":"exited"}`)
+	body, status, _ := doRequest(t, srv, "POST", "/api/v1/sessions/open-agents-1/activity", `{"state":"exited"}`)
 	assertErrorCode(t, body, status, http.StatusInternalServerError, "INTERNAL_ERROR")
 }
 
 func TestSessionsAPI_ActivityWithoutRecorderIs501(t *testing.T) {
 	srv := newActivityTestServer(t, nil)
 
-	body, status, _ := doRequest(t, srv, "POST", "/api/v1/sessions/ao-1/activity", `{"state":"idle"}`)
+	body, status, _ := doRequest(t, srv, "POST", "/api/v1/sessions/open-agents-1/activity", `{"state":"idle"}`)
 	assertErrorCode(t, body, status, http.StatusNotImplemented, "NOT_IMPLEMENTED")
 }

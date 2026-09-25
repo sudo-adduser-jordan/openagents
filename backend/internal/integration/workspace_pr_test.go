@@ -5,13 +5,13 @@ import (
 	"errors"
 	"testing"
 
-	"github.com/aoagents/agent-orchestrator/backend/internal/domain"
-	sessionsvc "github.com/aoagents/agent-orchestrator/backend/internal/service/session"
+	"github.com/sudo-adduser-jordan/open-agents/backend/internal/domain"
+	sessionsvc "github.com/sudo-adduser-jordan/open-agents/backend/internal/service/session"
 )
 
 func TestWorkspacePRDiscoveryAndClaimPersist(t *testing.T) {
 	ctx := context.Background()
-	f := newSCMFixture(t, "ao/octo-1-2")
+	f := newSCMFixture(t, "open-agents/octo-1-2")
 	project := domain.ProjectRecord{ID: "octo", Kind: domain.ProjectKindWorkspace, Path: t.TempDir(), RegisteredAt: f.now}
 	if err := f.store.UpsertWorkspaceProject(ctx, project, []domain.WorkspaceRepoRecord{{Name: "hello", RelativePath: "hello", RepoOriginURL: scmTestOriginURL, RegisteredAt: f.now}}); err != nil {
 		t.Fatal(err)
@@ -21,7 +21,7 @@ func TestWorkspacePRDiscoveryAndClaimPersist(t *testing.T) {
 		t.Fatal(err)
 	}
 	observed := failingSCMObservation("https://github.com/octocat/hello/pull/1", 1, "sha1", "build failed")
-	observed.PR.SourceBranch = "ao/octo-1-2-fix"
+	observed.PR.SourceBranch = "open-agents/octo-1-2-fix"
 	observed.PR.HeadRepo = "octocat/hello"
 	f.provider.detected[observed.PR.SourceBranch] = observed.PR
 	f.provider.observations[1] = observed

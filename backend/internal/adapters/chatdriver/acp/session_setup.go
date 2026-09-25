@@ -8,7 +8,7 @@ import (
 
 	acpsdk "github.com/coder/acp-go-sdk"
 
-	"github.com/aoagents/agent-orchestrator/backend/internal/ports"
+	"github.com/sudo-adduser-jordan/open-agents/backend/internal/ports"
 )
 
 func normalizeAdditionalDirectories(cwd string, directories []string, supported bool) ([]string, error) {

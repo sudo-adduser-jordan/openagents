@@ -72,7 +72,7 @@ jobs:
       # fails here rather than on a user's machine.
       - name: Verify generated catalog through the runtime fetcher and cache
         env:
-          AO_PRICING_CATALOG_ROOT: ${{ github.workspace }}
+          OPEN_AGENTS_PRICING_CATALOG_ROOT: ${{ github.workspace }}
         run: |
           set -euo pipefail
           (cd backend && go test ./internal/pricing/catalogsync \

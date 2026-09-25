@@ -9,9 +9,9 @@ import (
 	"testing"
 	"time"
 
-	"github.com/aoagents/agent-orchestrator/backend/internal/domain"
-	"github.com/aoagents/agent-orchestrator/backend/internal/ports"
-	browsersvc "github.com/aoagents/agent-orchestrator/backend/internal/service/browser"
+	"github.com/sudo-adduser-jordan/open-agents/backend/internal/domain"
+	"github.com/sudo-adduser-jordan/open-agents/backend/internal/ports"
+	browsersvc "github.com/sudo-adduser-jordan/open-agents/backend/internal/service/browser"
 )
 
 type recordingBrowserAuthority struct {
@@ -247,7 +247,7 @@ func TestReconcileLive_ChatReconnectPreservesActivity(t *testing.T) {
 	rec := domain.SessionRecord{ID: "mer-1", ProjectID: chatTestProject, Kind: domain.KindWorker,
 		Harness: domain.HarnessOpenCode, Mode: domain.SessionModeChat,
 		Activity: domain.Activity{State: domain.ActivityBlocked, LastActivityAt: before}, UpdatedAt: before,
-		Metadata: domain.SessionMetadata{Branch: "ao/mer-1/root", WorkspacePath: "/ws/mer-1", ProviderConversationID: "thread-1"}}
+		Metadata: domain.SessionMetadata{Branch: "open-agents/mer-1/root", WorkspacePath: "/ws/mer-1", ProviderConversationID: "thread-1"}}
 	st.sessions[rec.ID] = rec
 	if err := m.reconcileLive(context.Background(), rec); err != nil {
 		t.Fatal(err)
@@ -272,7 +272,7 @@ func TestReconcileLive_ChatRelaunchesInExistingWorktree(t *testing.T) {
 		ID: "mer-1", ProjectID: chatTestProject, Kind: domain.KindWorker,
 		Harness: domain.HarnessOpenCode, Mode: domain.SessionModeChat,
 		Metadata: domain.SessionMetadata{
-			Branch: "ao/mer-1/root", WorkspacePath: "/ws/mer-1",
+			Branch: "open-agents/mer-1/root", WorkspacePath: "/ws/mer-1",
 			ProviderConversationID: "thread-existing",
 		},
 	}
@@ -378,7 +378,7 @@ func TestReconcileLive_ChatCompatibilityFailureLeavesNativeResumeRecoverable(t *
 		Harness: domain.HarnessOpenCode, Mode: domain.SessionModeChat,
 		Activity: domain.Activity{State: domain.ActivityActive},
 		Metadata: domain.SessionMetadata{
-			Branch: "ao/mer-1/root", WorkspacePath: "/ws/mer-1",
+			Branch: "open-agents/mer-1/root", WorkspacePath: "/ws/mer-1",
 			ProviderConversationID: "01a03c61-23a9-7111-95e9-2bacb04eb064",
 		},
 	}
@@ -424,7 +424,7 @@ func TestReconcileLive_ChatFailureAfterGenerationClaimLeavesSessionExited(t *tes
 		Harness: domain.HarnessOpenCode, Mode: domain.SessionModeChat,
 		Activity: domain.Activity{State: domain.ActivityActive}, UpdatedAt: now,
 		Metadata: domain.SessionMetadata{
-			Branch: "ao/mer-1/root", WorkspacePath: "/ws/mer-1",
+			Branch: "open-agents/mer-1/root", WorkspacePath: "/ws/mer-1",
 			ProviderConversationID: "thread-existing", ControllerGeneration: "old-generation",
 		},
 	}
@@ -614,7 +614,7 @@ func TestRestoreTerminatedChatOrchestratorPassesProvenProviderBoundary(t *testin
 		Harness: domain.HarnessOpenCode, Mode: domain.SessionModeChat, IsTerminated: true,
 		Activity: domain.Activity{State: domain.ActivityExited},
 		Metadata: domain.SessionMetadata{
-			Branch: "ao/orchestrator", WorkspacePath: "/ws/mer-248",
+			Branch: "open-agents/orchestrator", WorkspacePath: "/ws/mer-248",
 			ProviderConversationID: "native-248",
 		},
 	}
@@ -660,7 +660,7 @@ func seedChatResumeSession(store *fakeStore, state domain.ActivityState) {
 		Activity:  domain.Activity{State: state},
 		Metadata: domain.SessionMetadata{
 			WorkspacePath:          "/ws/mer-1",
-			Branch:                 "ao/mer-1",
+			Branch:                 "open-agents/mer-1",
 			ProviderConversationID: "thread-existing",
 		},
 	}
@@ -1049,14 +1049,14 @@ func TestChatSpawnStartsControllerAndNoRuntime(t *testing.T) {
 	}
 	// The controller must receive the session env, which is what carries the
 	// HookPATH pin in production and is how the agent's own shell commands find
-	// `ao` — the mechanism an orchestrator delegates through.
+	// `open-agents` — the mechanism an orchestrator delegates through.
 	//
 	// The PATH value itself is not asserted here: HookPATH deliberately declines
-	// to pin when the running binary is not named "ao", which is always the case
+	// to pin when the running binary is not named "open-agents", which is always the case
 	// under `go test`. That the pin works end to end was verified against a real
-	// app-server with a fake `ao` on an injected PATH.
+	// app-server with a fake `open-agents` on an injected PATH.
 	if start.Env == nil {
-		t.Error("controller started with no environment; the agent could not resolve `ao`")
+		t.Error("controller started with no environment; the agent could not resolve `open-agents`")
 	}
 	if start.Env[EnvSessionID] == "" {
 		t.Errorf("controller env missing %s; session-scoped hooks would not identify the session", EnvSessionID)
@@ -1328,11 +1328,11 @@ func TestRestoreResumesChatRatherThanRelaunchingATerminal(t *testing.T) {
 	}
 }
 
-// `ao send` and orchestrator-to-worker relay both go through Manager.Send. A chat
+// `open-agents send` and orchestrator-to-worker relay both go through Manager.Send. A chat
 // session has no pane to type into, so without a mode branch the send reached the
 // runtime guard and was refused as "missing runtime handles" — which is true of
 // the handles and wrong about the session, and left chat workers unreachable by
-// AO's own automation.
+// Open Agents's own automation.
 func TestSendRoutesIntoTheChatConversation(t *testing.T) {
 	launcher := &recordingLauncher{}
 	mgr, _, runtime := newChatManager(t, launcher)

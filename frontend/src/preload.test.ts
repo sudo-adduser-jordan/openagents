@@ -1,7 +1,7 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { CLOSE_SHELL_TERMINAL_SHORTCUT_CHANNEL, FOCUS_TERMINAL_SHORTCUT_CHANNEL, KEYBOARD_SHORTCUTS_HELP_CHANNEL, NEXT_SESSION_SHORTCUT_CHANNEL, NEXT_TAB_SHORTCUT_CHANNEL, NEW_SESSION_SHORTCUT_CHANNEL, NEW_SHELL_TERMINAL_SHORTCUT_CHANNEL, OPEN_SETTINGS_SHORTCUT_CHANNEL, PREVIOUS_SESSION_SHORTCUT_CHANNEL, PREVIOUS_TAB_SHORTCUT_CHANNEL, SET_CLOSE_SHELL_TERMINAL_SHORTCUT_ENABLED_CHANNEL } from "./shared/shortcuts";
 import { SET_CHAT_DRAFT_RISK_CHANNEL } from "./shared/chat-draft-risk";
-import type { AoBridge } from "./preload";
+import type { OpenAgentsBridge } from "./preload";
 
 const electronMocks = vi.hoisted(() => {
 	const listeners = new Map<string, (...args: unknown[]) => void>();
@@ -36,10 +36,10 @@ await import("./preload");
 // not the per-call listener onOpenFolderPath registers when invoked.
 const openFolderPathBufferListener = electronMocks.listeners.get("app:openFolderPath");
 
-function exposedBridge(): AoBridge {
-	const call = electronMocks.exposeInMainWorld.mock.calls.find(([key]) => key === "ao");
+function exposedBridge(): OpenAgentsBridge {
+	const call = electronMocks.exposeInMainWorld.mock.calls.find(([key]) => key === "open-agents");
 	if (!call) throw new Error("preload bridge was not exposed");
-	return call[1] as AoBridge;
+	return call[1] as OpenAgentsBridge;
 }
 
 beforeEach(() => {

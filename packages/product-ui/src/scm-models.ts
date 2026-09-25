@@ -21,21 +21,21 @@ export type ReviewDecision = (typeof REVIEW_DECISIONS)[number];
 export const MERGEABILITY_STATES = ["unknown", "mergeable", "conflicting", "blocked", "unstable"] as const;
 export type MergeabilityState = (typeof MERGEABILITY_STATES)[number];
 
-export const AO_REVIEW_RUN_STATUSES = ["running", "complete", "delivered", "failed", "cancelled"] as const;
-export type AOReviewRunStatus = (typeof AO_REVIEW_RUN_STATUSES)[number];
+export const OPEN_AGENTS_REVIEW_RUN_STATUSES = ["running", "complete", "delivered", "failed", "cancelled"] as const;
+export type OpenAgentsReviewRunStatus = (typeof OPEN_AGENTS_REVIEW_RUN_STATUSES)[number];
 
-// The empty value is AO's existing stored "no verdict yet" vocabulary.
-export const AO_REVIEW_VERDICTS = ["", "approved", "changes_requested"] as const;
-export type AOReviewVerdict = (typeof AO_REVIEW_VERDICTS)[number];
+// The empty value is the existing stored "no verdict yet" vocabulary.
+export const OPEN_AGENTS_REVIEW_VERDICTS = ["", "approved", "changes_requested"] as const;
+export type OpenAgentsReviewVerdict = (typeof OPEN_AGENTS_REVIEW_VERDICTS)[number];
 
-export const AO_REVIEW_STATES = [
+export const OPEN_AGENTS_REVIEW_STATES = [
 	"needs_review",
 	"running",
 	"up_to_date",
 	"changes_requested",
 	"ineligible",
 ] as const;
-export type AOReviewState = (typeof AO_REVIEW_STATES)[number];
+export type OpenAgentsReviewState = (typeof OPEN_AGENTS_REVIEW_STATES)[number];
 
 export type PullRequestFailingCheck = {
 	name: string;
@@ -122,7 +122,7 @@ export type PullRequestSummary = {
 	reviewObservedAt: string;
 };
 
-export type AOReviewRun = {
+export type OpenAgentsReviewRun = {
 	id: string;
 	reviewId: string;
 	sessionId: string;
@@ -130,8 +130,8 @@ export type AOReviewRun = {
 	harness: string;
 	pullRequestUrl: string;
 	targetSha: string;
-	status: AOReviewRunStatus;
-	verdict: AOReviewVerdict;
+	status: OpenAgentsReviewRunStatus;
+	verdict: OpenAgentsReviewVerdict;
 	body: string;
 	providerReviewId: string;
 	createdAt: string;
@@ -139,16 +139,16 @@ export type AOReviewRun = {
 	autoInjectReview: boolean;
 };
 
-export type AOPullRequestReviewState = {
+export type OpenAgentsPullRequestReviewState = {
 	pullRequestUrl: string;
 	pullRequestNumber: number;
 	title: string;
 	targetSha: string;
-	status: AOReviewState;
+	status: OpenAgentsReviewState;
 	/** The head SHA of the newest completed run that does not match targetSha. */
 	staleTargetSha?: string;
-	latestRun?: AOReviewRun;
-	previousRun?: AOReviewRun;
+	latestRun?: OpenAgentsReviewRun;
+	previousRun?: OpenAgentsReviewRun;
 };
 
 export type SessionPullRequests = {
@@ -160,6 +160,6 @@ export type SessionReviewState = {
 	sessionId: string;
 	reviewerHandleId?: string;
 	reviewerHarness?: string;
-	reviews: AOPullRequestReviewState[];
-	runs: AOReviewRun[];
+	reviews: OpenAgentsPullRequestReviewState[];
+	runs: OpenAgentsReviewRun[];
 };

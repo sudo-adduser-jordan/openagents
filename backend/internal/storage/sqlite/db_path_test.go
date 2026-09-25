@@ -10,7 +10,7 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/aoagents/agent-orchestrator/backend/internal/domain"
+	"github.com/sudo-adduser-jordan/open-agents/backend/internal/domain"
 )
 
 func TestOpenPreservesDataDirectoryCharacters(t *testing.T) {
@@ -30,7 +30,7 @@ func TestOpenPreservesDataDirectoryCharacters(t *testing.T) {
 			if err := st.UpsertProject(context.Background(), domain.ProjectRecord{ID: "marker", Path: filepath.Join(dir, "repo")}); err != nil {
 				t.Fatal(err)
 			}
-			if _, err := os.Stat(filepath.Join(dir, "ao.db")); err != nil {
+			if _, err := os.Stat(filepath.Join(dir, "open-agents.db")); err != nil {
 				t.Fatalf("database not created in requested directory: %v", err)
 			}
 			if err := st.Close(); err != nil {
@@ -89,10 +89,10 @@ func TestOpenRefusesToHideLegacyDatabase(t *testing.T) {
 			if err == nil || !strings.Contains(err.Error(), "recover the legacy database explicitly") {
 				t.Fatalf("expected actionable legacy-data error, got %v", err)
 			}
-			if _, err := os.Stat(filepath.Join(dir, "ao.db")); !os.IsNotExist(err) {
+			if _, err := os.Stat(filepath.Join(dir, "open-agents.db")); !os.IsNotExist(err) {
 				t.Fatalf("must not create an empty replacement database: %v", err)
 			}
-			db, err := sql.Open("sqlite", "file:"+filepath.Join(dir, "ao.db"))
+			db, err := sql.Open("sqlite", "file:"+filepath.Join(dir, "open-agents.db"))
 			if err != nil {
 				t.Fatal(err)
 			}
@@ -133,13 +133,13 @@ func createLegacyDatabase(t *testing.T, dir string) {
 	if err := os.MkdirAll(dir, 0o750); err != nil {
 		t.Fatal(err)
 	}
-	// The old URI percent-decoded this directory before opening ao.db.
+	// The old URI percent-decoded this directory before opening open-agents.db.
 	if strings.Contains(dir, "%23") {
 		if err := os.MkdirAll(strings.ReplaceAll(dir, "%23", "#"), 0o750); err != nil {
 			t.Fatal(err)
 		}
 	}
-	db, err := sql.Open("sqlite", "file:"+filepath.Join(dir, "ao.db")+pragmas)
+	db, err := sql.Open("sqlite", "file:"+filepath.Join(dir, "open-agents.db")+pragmas)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -150,10 +150,10 @@ func createLegacyDatabase(t *testing.T, dir string) {
 }
 
 func TestDatabaseURIPreservesWindowsPaths(t *testing.T) {
-	for _, dir := range []string{`C:\Users\AO\state#one`, `\\server\share\state%23one`} {
+	for _, dir := range []string{`C:\Users\Open Agents\state#one`, `\\server\share\state%23one`} {
 		uri := databaseURI(dir)
 		decoded, err := url.PathUnescape(strings.TrimPrefix(uri, "file:"))
-		if err != nil || decoded != filepath.Join(dir, "ao.db") {
+		if err != nil || decoded != filepath.Join(dir, "open-agents.db") {
 			t.Fatalf("path did not round trip: %q => %q (%v)", dir, decoded, err)
 		}
 		if strings.HasPrefix(uri, "file://") {

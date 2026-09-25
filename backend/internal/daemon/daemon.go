@@ -1,4 +1,4 @@
-// Package daemon owns the Agent Orchestrator backend process: config loading,
+// Package daemon owns the Open Agents backend process: config loading,
 // loopback HTTP serving, durable storage, CDC fan-out, lifecycle wiring, and
 // graceful shutdown.
 package daemon
@@ -15,44 +15,44 @@ import (
 
 	"github.com/google/uuid"
 
-	"github.com/aoagents/agent-orchestrator/backend/internal/adapters/agent/modelcatalog"
-	chatdriveracp "github.com/aoagents/agent-orchestrator/backend/internal/adapters/chatdriver/acp"
-	"github.com/aoagents/agent-orchestrator/backend/internal/adapters/chatdriver/persistenthost"
-	chatdriverregistry "github.com/aoagents/agent-orchestrator/backend/internal/adapters/chatdriver/registry"
-	"github.com/aoagents/agent-orchestrator/backend/internal/adapters/runtime/runtimeselect"
-	"github.com/aoagents/agent-orchestrator/backend/internal/adapters/systemexec"
-	"github.com/aoagents/agent-orchestrator/backend/internal/autoreview"
-	"github.com/aoagents/agent-orchestrator/backend/internal/browserruntime"
-	"github.com/aoagents/agent-orchestrator/backend/internal/config"
-	"github.com/aoagents/agent-orchestrator/backend/internal/daemon/supervisor"
-	"github.com/aoagents/agent-orchestrator/backend/internal/domain"
-	"github.com/aoagents/agent-orchestrator/backend/internal/httpd"
-	"github.com/aoagents/agent-orchestrator/backend/internal/httpd/controllers"
-	"github.com/aoagents/agent-orchestrator/backend/internal/mobilebridge"
-	"github.com/aoagents/agent-orchestrator/backend/internal/notify"
-	usagepipeline "github.com/aoagents/agent-orchestrator/backend/internal/observe/usage"
-	"github.com/aoagents/agent-orchestrator/backend/internal/ports"
-	"github.com/aoagents/agent-orchestrator/backend/internal/presence"
-	"github.com/aoagents/agent-orchestrator/backend/internal/preview"
-	"github.com/aoagents/agent-orchestrator/backend/internal/previewserver"
-	"github.com/aoagents/agent-orchestrator/backend/internal/push"
-	"github.com/aoagents/agent-orchestrator/backend/internal/runfile"
-	agentsvc "github.com/aoagents/agent-orchestrator/backend/internal/service/agent"
-	"github.com/aoagents/agent-orchestrator/backend/internal/service/agentauth"
-	browsersvc "github.com/aoagents/agent-orchestrator/backend/internal/service/browser"
-	chatsvc "github.com/aoagents/agent-orchestrator/backend/internal/service/chat"
-	devimportsvc "github.com/aoagents/agent-orchestrator/backend/internal/service/devimport"
-	importsvc "github.com/aoagents/agent-orchestrator/backend/internal/service/importer"
-	notificationsvc "github.com/aoagents/agent-orchestrator/backend/internal/service/notification"
-	prsvc "github.com/aoagents/agent-orchestrator/backend/internal/service/pr"
-	projectsvc "github.com/aoagents/agent-orchestrator/backend/internal/service/project"
-	settingssvc "github.com/aoagents/agent-orchestrator/backend/internal/service/settings"
-	"github.com/aoagents/agent-orchestrator/backend/internal/service/systemcheck"
-	"github.com/aoagents/agent-orchestrator/backend/internal/service/systeminstall"
-	usagesvc "github.com/aoagents/agent-orchestrator/backend/internal/service/usage"
-	"github.com/aoagents/agent-orchestrator/backend/internal/skillassets"
-	"github.com/aoagents/agent-orchestrator/backend/internal/storage/sqlite"
-	"github.com/aoagents/agent-orchestrator/backend/internal/terminal"
+	"github.com/sudo-adduser-jordan/open-agents/backend/internal/adapters/agent/modelcatalog"
+	chatdriveracp "github.com/sudo-adduser-jordan/open-agents/backend/internal/adapters/chatdriver/acp"
+	"github.com/sudo-adduser-jordan/open-agents/backend/internal/adapters/chatdriver/persistenthost"
+	chatdriverregistry "github.com/sudo-adduser-jordan/open-agents/backend/internal/adapters/chatdriver/registry"
+	"github.com/sudo-adduser-jordan/open-agents/backend/internal/adapters/runtime/runtimeselect"
+	"github.com/sudo-adduser-jordan/open-agents/backend/internal/adapters/systemexec"
+	"github.com/sudo-adduser-jordan/open-agents/backend/internal/autoreview"
+	"github.com/sudo-adduser-jordan/open-agents/backend/internal/browserruntime"
+	"github.com/sudo-adduser-jordan/open-agents/backend/internal/config"
+	"github.com/sudo-adduser-jordan/open-agents/backend/internal/daemon/supervisor"
+	"github.com/sudo-adduser-jordan/open-agents/backend/internal/domain"
+	"github.com/sudo-adduser-jordan/open-agents/backend/internal/httpd"
+	"github.com/sudo-adduser-jordan/open-agents/backend/internal/httpd/controllers"
+	"github.com/sudo-adduser-jordan/open-agents/backend/internal/mobilebridge"
+	"github.com/sudo-adduser-jordan/open-agents/backend/internal/notify"
+	usagepipeline "github.com/sudo-adduser-jordan/open-agents/backend/internal/observe/usage"
+	"github.com/sudo-adduser-jordan/open-agents/backend/internal/ports"
+	"github.com/sudo-adduser-jordan/open-agents/backend/internal/presence"
+	"github.com/sudo-adduser-jordan/open-agents/backend/internal/preview"
+	"github.com/sudo-adduser-jordan/open-agents/backend/internal/previewserver"
+	"github.com/sudo-adduser-jordan/open-agents/backend/internal/push"
+	"github.com/sudo-adduser-jordan/open-agents/backend/internal/runfile"
+	agentsvc "github.com/sudo-adduser-jordan/open-agents/backend/internal/service/agent"
+	"github.com/sudo-adduser-jordan/open-agents/backend/internal/service/agentauth"
+	browsersvc "github.com/sudo-adduser-jordan/open-agents/backend/internal/service/browser"
+	chatsvc "github.com/sudo-adduser-jordan/open-agents/backend/internal/service/chat"
+	devimportsvc "github.com/sudo-adduser-jordan/open-agents/backend/internal/service/devimport"
+	importsvc "github.com/sudo-adduser-jordan/open-agents/backend/internal/service/importer"
+	notificationsvc "github.com/sudo-adduser-jordan/open-agents/backend/internal/service/notification"
+	prsvc "github.com/sudo-adduser-jordan/open-agents/backend/internal/service/pr"
+	projectsvc "github.com/sudo-adduser-jordan/open-agents/backend/internal/service/project"
+	settingssvc "github.com/sudo-adduser-jordan/open-agents/backend/internal/service/settings"
+	"github.com/sudo-adduser-jordan/open-agents/backend/internal/service/systemcheck"
+	"github.com/sudo-adduser-jordan/open-agents/backend/internal/service/systeminstall"
+	usagesvc "github.com/sudo-adduser-jordan/open-agents/backend/internal/service/usage"
+	"github.com/sudo-adduser-jordan/open-agents/backend/internal/skillassets"
+	"github.com/sudo-adduser-jordan/open-agents/backend/internal/storage/sqlite"
+	"github.com/sudo-adduser-jordan/open-agents/backend/internal/terminal"
 )
 
 // Run starts the daemon and blocks until it exits. SIGINT/SIGTERM drive
@@ -110,11 +110,11 @@ func Run() error {
 	}
 	defer func() { _ = store.Close() }()
 
-	// Refresh the embedded using-ao skill into the data dir so worker sessions
-	// in any project can read the ao CLI catalog from a stable absolute path.
-	// Non-fatal: the skill is an enhancement over `ao --help`, not required.
+	// Refresh the embedded using-open-agents skill into the data dir so worker sessions
+	// in any project can read the open-agents CLI catalog from a stable absolute path.
+	// Non-fatal: the skill is an enhancement over `open-agents --help`, not required.
 	if err := skillassets.Install(cfg.DataDir); err != nil {
-		log.Warn("install using-ao skill", "err", err)
+		log.Warn("install using-open-agents skill", "err", err)
 	}
 
 	// signal.NotifyContext cancels ctx on SIGINT/SIGTERM, which drives the
@@ -175,7 +175,7 @@ func Run() error {
 
 	// Wire the controller-facing session service over the same store + LCM, the
 	// selected runtime, routed git/scratch workspaces, the per-session agent
-	// resolver (AO_AGENT validated here for compatibility), and the agent
+	// resolver (OPEN_AGENTS_AGENT validated here for compatibility), and the agent
 	// messenger, then mount it on the API.
 	chatDrivers := chatdriverregistry.Build(log)
 
@@ -448,7 +448,7 @@ func Run() error {
 		log.Warn("could not reap a stale mobile tunnel", "error", reapErr)
 	}
 	// Looked up again whenever the bridge is enabled, so a cloudflared the user
-	// installs from Connect Mobile is picked up without restarting AO.
+	// installs from Connect Mobile is picked up without restarting Open Agents.
 	bs.ResolveTunnel = func() controllers.TunnelController {
 		res := mobilebridge.ResolveCloudflared(mobilebridge.LocalCloudflaredLookup(cfg.DataDir))
 		if res.NeedsInstall {
@@ -499,7 +499,7 @@ func Run() error {
 		Presence:           presenceTracker,
 		DeviceRoster:       deviceRoster,
 		DeviceLive:         presenceTracker,
-		Import:             importsvc.New(importsvc.Deps{Store: store}),
+		Import:             importsvc.New(importsvc.Deps{}),
 		ShellTerminals:     shellTermSvc,
 		AgentAuth:          agentAuthSvc,
 		Conversations:      chatSvc,
@@ -570,7 +570,7 @@ func Run() error {
 	const supervisorGrace = 5 * time.Second
 
 	if ln, addr, err := supervisor.Listen(cfg.RunFilePath); err != nil {
-		// Non-fatal: without the link the daemon still works (e.g. headless "ao start"),
+		// Non-fatal: without the link the daemon still works (e.g. headless "open-agents start"),
 		// it just will not auto-stop when a frontend dies. Do not block startup on it.
 		log.Warn("supervisor: listener unavailable; frontend-death auto-stop disabled", "err", err)
 	} else {
@@ -669,7 +669,7 @@ func installedAgentHarness(target systeminstall.Target) (string, bool) {
 }
 
 // usagePipelineWatchRoots returns the provider-owned transcript directories the
-// usage watcher should monitor. AO currently certifies no transcript pipeline
+// usage watcher should monitor. Open Agents currently certifies no transcript pipeline
 // beyond opencode native hooks, so there are no provider root directories.
 func usagePipelineWatchRoots(usagesvc.SourceRoots) []string {
 	return nil

@@ -23,12 +23,12 @@ import (
 	"sync"
 	"time"
 
-	"github.com/aoagents/agent-orchestrator/backend/internal/domain"
+	"github.com/sudo-adduser-jordan/open-agents/backend/internal/domain"
 )
 
 const (
 	// ConfigPath is the workspace-relative managed preview configuration file.
-	ConfigPath              = ".ao/launch.json"
+	ConfigPath              = ".open-agents/launch.json"
 	defaultReadyTimeout     = 30 * time.Second
 	maxReadyTimeout         = 55 * time.Second
 	probeInterval           = 150 * time.Millisecond
@@ -51,7 +51,7 @@ const (
 	StateStarting State = "starting"
 	// StateReady indicates that the configured preview URL is responding.
 	StateReady State = "ready"
-	// StateStopping indicates that AO is terminating the preview process.
+	// StateStopping indicates that Open Agents is terminating the preview process.
 	StateStopping State = "stopping"
 	// StateFailed indicates that the preview process could not start, become ready, or stop.
 	StateFailed State = "failed"
@@ -94,8 +94,8 @@ type launchFile struct {
 	Configurations []Configuration `json:"configurations"`
 }
 
-// Configuration is one named server entry in .ao/launch.json. ${PORT} is
-// expanded in runtimeArgs, url, and env values after AO chooses the port.
+// Configuration is one named server entry in .open-agents/launch.json. ${PORT} is
+// expanded in runtimeArgs, url, and env values after Open Agents chooses the port.
 type Configuration struct {
 	Name               string            `json:"name"`
 	RuntimeExecutable  string            `json:"runtimeExecutable"`
@@ -112,7 +112,7 @@ type Configuration struct {
 type serverRun struct {
 	status Status
 	cmd    *exec.Cmd
-	// startTime pins cmd's PID to the process AO launched (kernel start time,
+	// startTime pins cmd's PID to the process Open Agents launched (kernel start time,
 	// captured right after Start). Every group/tree kill re-verifies against
 	// it: once the child is reaped the bare PID may already belong to an
 	// unrelated process group (issue #3475). Written once before the run is
@@ -146,7 +146,7 @@ type persistedProcess struct {
 // State/Error so callers can decide whether to clear the session's preview URL.
 type OnExitFunc func(ctx context.Context, sessionID domain.SessionID, status Status)
 
-// Manager supervises at most one managed preview server per AO session.
+// Manager supervises at most one managed preview server per Open Agents session.
 type Manager struct {
 	log    *slog.Logger
 	client *http.Client
@@ -381,7 +381,7 @@ func (m *Manager) Start(
 	}
 }
 
-// Stop terminates the exact process tree AO launched for the session.
+// Stop terminates the exact process tree Open Agents launched for the session.
 func (m *Manager) Stop(ctx context.Context, sessionID domain.SessionID) (Status, error) {
 	releaseOperation := m.acquireOperation(sessionID)
 	defer releaseOperation()
@@ -418,7 +418,7 @@ func (m *Manager) stop(ctx context.Context, sessionID domain.SessionID) (Status,
 	case <-done:
 		// The root has exited and been reaped. Descendants that ignored
 		// SIGTERM may survive it, but the PID no longer provably belongs to
-		// AO's preview, so nothing is killed: a leaked preview process is
+		// Open Agents's preview, so nothing is killed: a leaked preview process is
 		// safer than a group kill landing on a recycled PID (issue #3475).
 	case <-ctx.Done():
 		go m.forceStopAfterGrace(sessionID, run, cmd, startTime, done)
@@ -515,7 +515,7 @@ func (m *Manager) Close() {
 func (m *Manager) waitForExit(ctx context.Context, sessionID domain.SessionID, run *serverRun) {
 	err := run.cmd.Wait()
 	// Wait has returned, so the PID is back in the OS pool and no longer
-	// provably AO's. No escalation happens here: descendants the dead root
+	// provably Open Agents's. No escalation happens here: descendants the dead root
 	// left behind are leaked rather than group-killed on a number that may
 	// already belong to something else (issue #3475).
 	crashed := false
@@ -585,7 +585,7 @@ func (m *Manager) failAndStop(
 		_ = terminatePreviewProcess(cmd, startTime)
 		select {
 		case <-run.done:
-			// Reaped: the PID is no longer provably AO's, nothing to escalate.
+			// Reaped: the PID is no longer provably Open Agents's, nothing to escalate.
 		case <-time.After(3 * time.Second):
 			_ = forceKillPreviewProcess(cmd, startTime)
 		}
@@ -844,8 +844,8 @@ func previewEnvironment(
 	}
 	env = append(env,
 		"PORT="+strconv.Itoa(port),
-		"AO_PREVIEW_PORT="+strconv.Itoa(port),
-		"AO_SESSION_ID="+string(sessionID),
+		"OPEN_AGENTS_PREVIEW_PORT="+strconv.Itoa(port),
+		"OPEN_AGENTS_SESSION_ID="+string(sessionID),
 	)
 	return env
 }
@@ -859,7 +859,7 @@ func (m *Manager) forceStopAfterGrace(
 ) {
 	select {
 	case <-done:
-		// Reaped: the PID is no longer provably AO's, nothing to escalate.
+		// Reaped: the PID is no longer provably Open Agents's, nothing to escalate.
 	case <-time.After(5 * time.Second):
 		_ = forceKillPreviewProcess(cmd, startTime)
 		select {

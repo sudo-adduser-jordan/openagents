@@ -8,22 +8,22 @@ import (
 
 func TestMergeInheritsDaemonEnvironmentAndAppliesOverlay(t *testing.T) {
 	// Windows has prefix-related names such as PROGRAMFILES and PROGRAMFILES(X86).
-	t.Setenv("AO_PROCESSENV", "prefix")
-	t.Setenv("AO_PROCESSENV(X86)", "related")
-	t.Setenv("AO_PROCESSENV_INHERITED", "parent")
-	t.Setenv("AO_PROCESSENV_REPLACED", "old")
+	t.Setenv("OPEN_AGENTS_PROCESSENV", "prefix")
+	t.Setenv("OPEN_AGENTS_PROCESSENV(X86)", "related")
+	t.Setenv("OPEN_AGENTS_PROCESSENV_INHERITED", "parent")
+	t.Setenv("OPEN_AGENTS_PROCESSENV_REPLACED", "old")
 
 	got := Merge(map[string]string{
-		"AO_PROCESSENV_REPLACED": "new",
-		"AO_PROCESSENV_SESSION":  "session",
+		"OPEN_AGENTS_PROCESSENV_REPLACED": "new",
+		"OPEN_AGENTS_PROCESSENV_SESSION":  "session",
 	})
 	if !slices.IsSorted(got) {
 		t.Fatalf("environment is not sorted: %v", got)
 	}
 	want := map[string]string{
-		"AO_PROCESSENV_INHERITED": "parent",
-		"AO_PROCESSENV_REPLACED":  "new",
-		"AO_PROCESSENV_SESSION":   "session",
+		"OPEN_AGENTS_PROCESSENV_INHERITED": "parent",
+		"OPEN_AGENTS_PROCESSENV_REPLACED":  "new",
+		"OPEN_AGENTS_PROCESSENV_SESSION":   "session",
 	}
 	for _, entry := range got {
 		key, value, ok := strings.Cut(entry, "=")
@@ -45,7 +45,7 @@ func TestMergeWindowsExactPATHWinsConflictingOverlaySpelling(t *testing.T) {
 	for range 1000 {
 		got := merge(
 			[]string{"Path=inherited"},
-			map[string]string{"Path": "project", "PATH": "ao-pinned"},
+			map[string]string{"Path": "project", "PATH": "open-agents-pinned"},
 			true,
 		)
 		var paths []string
@@ -55,8 +55,8 @@ func TestMergeWindowsExactPATHWinsConflictingOverlaySpelling(t *testing.T) {
 				paths = append(paths, entry)
 			}
 		}
-		if !slices.Equal(paths, []string{"PATH=ao-pinned"}) {
-			t.Fatalf("PATH entries = %v, want protected AO PATH", paths)
+		if !slices.Equal(paths, []string{"PATH=open-agents-pinned"}) {
+			t.Fatalf("PATH entries = %v, want protected Open Agents PATH", paths)
 		}
 	}
 }

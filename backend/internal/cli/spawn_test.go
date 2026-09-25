@@ -37,8 +37,8 @@ func TestSpawnHelpListsOpenCodeHarness(t *testing.T) {
 	}
 }
 
-// TestSpawnCommand_MissingProjectContext asserts `ao spawn` gives a project
-// setup hint when neither --project, AO_PROJECT_ID, nor cwd can resolve one.
+// TestSpawnCommand_MissingProjectContext asserts `open-agents spawn` gives a project
+// setup hint when neither --project, OPEN_AGENTS_PROJECT_ID, nor cwd can resolve one.
 func TestSpawnCommand_MissingProjectContext(t *testing.T) {
 	cfg := setConfigEnv(t)
 	var requests []string
@@ -58,7 +58,7 @@ func TestSpawnCommand_MissingProjectContext(t *testing.T) {
 	if err == nil {
 		t.Fatal("expected an error when project context is missing")
 	}
-	if !strings.Contains(err.Error(), "ao project add --path <repo-path> --worker-agent <agent>") {
+	if !strings.Contains(err.Error(), "open-agents project add --path <repo-path> --worker-agent <agent>") {
 		t.Fatalf("error = %v, want project add hint", err)
 	}
 	if want := []string{"GET /api/v1/projects"}; !reflect.DeepEqual(requests, want) {
@@ -66,7 +66,7 @@ func TestSpawnCommand_MissingProjectContext(t *testing.T) {
 	}
 }
 
-// TestProjectAddCommand_RequiresPath asserts `ao project add` rejects a missing
+// TestProjectAddCommand_RequiresPath asserts `open-agents project add` rejects a missing
 // --path before touching the network.
 func TestProjectAddCommand_RequiresPath(t *testing.T) {
 	var out, errb bytes.Buffer
@@ -89,7 +89,7 @@ func TestSpawnClaimPRWiring(t *testing.T) {
 		w.Header().Set("Content-Type", "application/json")
 		switch {
 		case r.Method == http.MethodGet && r.URL.Path == "/api/v1/projects/demo":
-			_, _ = io.WriteString(w, `{"status":"ok","project":{"id":"demo","name":"Demo","path":"/repo/demo","repo":"https://github.com/aoagents/agent-orchestrator","defaultBranch":"main"}}`)
+			_, _ = io.WriteString(w, `{"status":"ok","project":{"id":"demo","name":"Demo","path":"/repo/demo","repo":"https://github.com/sudo-adduser-jordan/open-agents","defaultBranch":"main"}}`)
 		case r.Method == http.MethodPost && r.URL.Path == "/api/v1/agents/readiness/ensure":
 			_, _ = io.WriteString(w, authorizedAgentsJSON("codex"))
 		case r.Method == http.MethodPost && r.URL.Path == "/api/v1/sessions":
@@ -97,10 +97,10 @@ func TestSpawnClaimPRWiring(t *testing.T) {
 		case r.Method == http.MethodPost && r.URL.Path == "/api/v1/sessions/demo-9/pr/claim":
 			var req claimPRRequest
 			_ = json.NewDecoder(r.Body).Decode(&req)
-			if req.PR != "https://github.com/aoagents/agent-orchestrator/pull/142" || req.AllowTakeover {
+			if req.PR != "https://github.com/sudo-adduser-jordan/open-agents/pull/142" || req.AllowTakeover {
 				t.Fatalf("claim request = %#v", req)
 			}
-			_, _ = io.WriteString(w, `{"ok":true,"sessionId":"demo-9","prs":[{"url":"https://github.com/aoagents/agent-orchestrator/pull/142","number":142,"state":"open","ci":"passing","review":"review_required","mergeability":"mergeable","reviewComments":false,"updatedAt":"2026-06-04T12:00:00Z"}],"branchChanged":false,"takenOverFrom":[]}`)
+			_, _ = io.WriteString(w, `{"ok":true,"sessionId":"demo-9","prs":[{"url":"https://github.com/sudo-adduser-jordan/open-agents/pull/142","number":142,"state":"open","ci":"passing","review":"review_required","mergeability":"mergeable","reviewComments":false,"updatedAt":"2026-06-04T12:00:00Z"}],"branchChanged":false,"takenOverFrom":[]}`)
 		default:
 			http.NotFound(w, r)
 		}
@@ -112,7 +112,7 @@ func TestSpawnClaimPRWiring(t *testing.T) {
 	if err != nil {
 		t.Fatalf("spawn claim-pr failed: %v stderr=%s", err, errOut)
 	}
-	if !strings.Contains(out, "claimed https://github.com/aoagents/agent-orchestrator/pull/142") {
+	if !strings.Contains(out, "claimed https://github.com/sudo-adduser-jordan/open-agents/pull/142") {
 		t.Fatalf("output missing claimed label: %s", out)
 	}
 	want := []string{"GET /api/v1/projects/demo", "POST /api/v1/agents/readiness/ensure", "POST /api/v1/sessions", "POST /api/v1/sessions/demo-9/pr/claim"}
@@ -121,7 +121,7 @@ func TestSpawnClaimPRWiring(t *testing.T) {
 	}
 }
 
-// TestSpawnClaimPR_Draft covers #4171: `ao spawn --claim-pr` on a draft PR must
+// TestSpawnClaimPR_Draft covers #4171: `open-agents spawn --claim-pr` on a draft PR must
 // keep the spawned session instead of rolling it back with PR_NOT_OPEN.
 func TestSpawnClaimPR_Draft(t *testing.T) {
 	cfg := setConfigEnv(t)
@@ -131,7 +131,7 @@ func TestSpawnClaimPR_Draft(t *testing.T) {
 		w.Header().Set("Content-Type", "application/json")
 		switch {
 		case r.Method == http.MethodGet && r.URL.Path == "/api/v1/projects/demo":
-			_, _ = io.WriteString(w, `{"status":"ok","project":{"id":"demo","name":"Demo","path":"/repo/demo","repo":"https://github.com/aoagents/agent-orchestrator","defaultBranch":"main"}}`)
+			_, _ = io.WriteString(w, `{"status":"ok","project":{"id":"demo","name":"Demo","path":"/repo/demo","repo":"https://github.com/sudo-adduser-jordan/open-agents","defaultBranch":"main"}}`)
 		case r.Method == http.MethodPost && r.URL.Path == "/api/v1/agents/readiness/ensure":
 			_, _ = io.WriteString(w, authorizedAgentsJSON("codex"))
 		case r.Method == http.MethodPost && r.URL.Path == "/api/v1/sessions":
@@ -139,10 +139,10 @@ func TestSpawnClaimPR_Draft(t *testing.T) {
 		case r.Method == http.MethodPost && r.URL.Path == "/api/v1/sessions/demo-9/pr/claim":
 			var req claimPRRequest
 			_ = json.NewDecoder(r.Body).Decode(&req)
-			if req.PR != "https://github.com/aoagents/agent-orchestrator/pull/4168" {
+			if req.PR != "https://github.com/sudo-adduser-jordan/open-agents/pull/4168" {
 				t.Fatalf("claim request = %#v", req)
 			}
-			_, _ = io.WriteString(w, `{"ok":true,"sessionId":"demo-9","prs":[{"url":"https://github.com/aoagents/agent-orchestrator/pull/4168","number":4168,"state":"draft","ci":"pending","review":"none","mergeability":"unknown","reviewComments":false,"updatedAt":"2026-08-20T12:00:00Z"}],"branchChanged":false,"takenOverFrom":[]}`)
+			_, _ = io.WriteString(w, `{"ok":true,"sessionId":"demo-9","prs":[{"url":"https://github.com/sudo-adduser-jordan/open-agents/pull/4168","number":4168,"state":"draft","ci":"pending","review":"none","mergeability":"unknown","reviewComments":false,"updatedAt":"2026-08-20T12:00:00Z"}],"branchChanged":false,"takenOverFrom":[]}`)
 		default:
 			http.NotFound(w, r)
 		}
@@ -154,7 +154,7 @@ func TestSpawnClaimPR_Draft(t *testing.T) {
 	if err != nil {
 		t.Fatalf("spawn claim-pr draft failed: %v stderr=%s", err, errOut)
 	}
-	if !strings.Contains(out, "claimed https://github.com/aoagents/agent-orchestrator/pull/4168") {
+	if !strings.Contains(out, "claimed https://github.com/sudo-adduser-jordan/open-agents/pull/4168") {
 		t.Fatalf("output missing claimed label: %s", out)
 	}
 	// No rollback: the draft claim succeeded.
@@ -213,7 +213,7 @@ func TestSpawnClaimPRFailureRollsBackSession(t *testing.T) {
 		w.Header().Set("Content-Type", "application/json")
 		switch {
 		case r.Method == http.MethodGet && r.URL.Path == "/api/v1/projects/demo":
-			_, _ = io.WriteString(w, `{"status":"ok","project":{"id":"demo","name":"Demo","path":"/repo/demo","repo":"https://github.com/aoagents/agent-orchestrator","defaultBranch":"main"}}`)
+			_, _ = io.WriteString(w, `{"status":"ok","project":{"id":"demo","name":"Demo","path":"/repo/demo","repo":"https://github.com/sudo-adduser-jordan/open-agents","defaultBranch":"main"}}`)
 		case r.Method == http.MethodPost && r.URL.Path == "/api/v1/agents/readiness/ensure":
 			_, _ = io.WriteString(w, authorizedAgentsJSON("codex"))
 		case r.Method == http.MethodPost && r.URL.Path == "/api/v1/sessions":
@@ -259,7 +259,7 @@ func TestSpawnNoTakeoverRequiresClaimPR(t *testing.T) {
 	}
 }
 
-// TestSpawnCommand_RequiresName asserts `ao spawn` rejects a missing --name
+// TestSpawnCommand_RequiresName asserts `open-agents spawn` rejects a missing --name
 // without contacting the daemon.
 func TestSpawnCommand_RequiresName(t *testing.T) {
 	_, _, err := executeCLI(t, Deps{}, "spawn", "--project", "demo", "--agent", "codex")
@@ -268,7 +268,7 @@ func TestSpawnCommand_RequiresName(t *testing.T) {
 	}
 }
 
-// TestSpawnCommand_RejectsOverlongName asserts `ao spawn` rejects a --name
+// TestSpawnCommand_RejectsOverlongName asserts `open-agents spawn` rejects a --name
 // longer than 20 characters without contacting the daemon.
 func TestSpawnCommand_RejectsOverlongName(t *testing.T) {
 	_, _, err := executeCLI(t, Deps{}, "spawn", "--project", "demo", "--name", strings.Repeat("x", 21))
@@ -350,7 +350,7 @@ func TestSpawnResolvesProjectFromEnvAndDefaultAgent(t *testing.T) {
 	}))
 	t.Cleanup(srv.Close)
 	writeRunFileFor(t, cfg, srv)
-	t.Setenv("AO_PROJECT_ID", "demo")
+	t.Setenv("OPEN_AGENTS_PROJECT_ID", "demo")
 
 	out, errOut, err := executeCLI(t, Deps{ProcessAlive: func(int) bool { return true }}, "spawn", "--prompt", "Fix failing tests in auth", "--name", "worker")
 	if err != nil {
@@ -371,7 +371,7 @@ func TestSpawnResolvesProjectFromEnvAndDefaultAgent(t *testing.T) {
 	}
 }
 
-func TestSpawnResolvesProjectFromAOSessionID(t *testing.T) {
+func TestSpawnResolvesProjectFromOpenAgentsSessionID(t *testing.T) {
 	cfg := setConfigEnv(t)
 	var requests []string
 	var req spawnRequest
@@ -396,7 +396,7 @@ func TestSpawnResolvesProjectFromAOSessionID(t *testing.T) {
 	}))
 	t.Cleanup(srv.Close)
 	writeRunFileFor(t, cfg, srv)
-	t.Setenv("AO_SESSION_ID", "demo-1")
+	t.Setenv("OPEN_AGENTS_SESSION_ID", "demo-1")
 
 	_, errOut, err := executeCLI(t, Deps{ProcessAlive: func(int) bool { return true }}, "spawn", "--prompt", "Fix tests", "--name", "worker")
 	if err != nil {
@@ -411,7 +411,7 @@ func TestSpawnResolvesProjectFromAOSessionID(t *testing.T) {
 	}
 }
 
-func TestSpawnAOSessionIDFailureRequiresProject(t *testing.T) {
+func TestSpawnOpenAgentsSessionIDFailureRequiresProject(t *testing.T) {
 	cfg := setConfigEnv(t)
 	var requests []string
 	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
@@ -427,11 +427,11 @@ func TestSpawnAOSessionIDFailureRequiresProject(t *testing.T) {
 	}))
 	t.Cleanup(srv.Close)
 	writeRunFileFor(t, cfg, srv)
-	t.Setenv("AO_SESSION_ID", "missing")
+	t.Setenv("OPEN_AGENTS_SESSION_ID", "missing")
 
 	_, _, err := executeCLI(t, Deps{ProcessAlive: func(int) bool { return true }}, "spawn", "--agent", "codex", "--name", "worker")
-	if err == nil || !strings.Contains(err.Error(), `project could not be resolved from AO_SESSION_ID "missing"; pass --project`) {
-		t.Fatalf("err=%v, want AO_SESSION_ID project error", err)
+	if err == nil || !strings.Contains(err.Error(), `project could not be resolved from OPEN_AGENTS_SESSION_ID "missing"; pass --project`) {
+		t.Fatalf("err=%v, want OPEN_AGENTS_SESSION_ID project error", err)
 	}
 	want := []string{"GET /api/v1/sessions/missing"}
 	if !reflect.DeepEqual(requests, want) {
@@ -508,7 +508,7 @@ func TestSpawnStandaloneOmitsProject(t *testing.T) {
 	t.Cleanup(srv.Close)
 	writeRunFileFor(t, cfg, srv)
 
-	out, errOut, err := executeCLI(t, Deps{ProcessAlive: func(int) bool { return true }}, "spawn", "--standalone", "--agent", "codex", "--name", "Try AO", "--prompt", "Try AO")
+	out, errOut, err := executeCLI(t, Deps{ProcessAlive: func(int) bool { return true }}, "spawn", "--standalone", "--agent", "codex", "--name", "Try Open Agents", "--prompt", "Try Open Agents")
 	if err != nil {
 		t.Fatalf("spawn failed: %v stderr=%s", err, errOut)
 	}
@@ -563,7 +563,7 @@ func TestSpawnScratchRejectsGitOnlyFlags(t *testing.T) {
 				w.Header().Set("Content-Type", "application/json")
 				switch {
 				case r.Method == http.MethodGet && r.URL.Path == "/api/v1/projects/scratch":
-					_, _ = io.WriteString(w, `{"status":"ok","project":{"id":"scratch","name":"Scratch","kind":"scratch","path":"/ao/scratch","config":{"worker":{"agent":"codex"}}}}`)
+					_, _ = io.WriteString(w, `{"status":"ok","project":{"id":"scratch","name":"Scratch","kind":"scratch","path":"/open-agents/scratch","config":{"worker":{"agent":"codex"}}}}`)
 				default:
 					http.NotFound(w, r)
 				}
@@ -938,7 +938,7 @@ func TestSpawnUnknownAuthEnsureWarnsAndAllows(t *testing.T) {
 	}
 }
 
-// TestSpawnCommand_RejectsInvalidKind asserts `ao spawn` rejects a --kind value
+// TestSpawnCommand_RejectsInvalidKind asserts `open-agents spawn` rejects a --kind value
 // outside worker/orchestrator at the CLI boundary, without contacting the daemon.
 func TestSpawnCommand_RejectsInvalidKind(t *testing.T) {
 	// Pass a valid --name so this exercises the --kind boundary specifically:
@@ -970,7 +970,7 @@ func TestResolveSpawnHarness_OrchestratorDefault(t *testing.T) {
 	if got, err := resolveSpawnHarness("aider", "orchestrator", project); err != nil || got != "aider" {
 		t.Fatalf("explicit agent: got %q err %v, want aider", got, err)
 	}
-	// Unset kind is the default `ao spawn` path and must resolve to worker.agent.
+	// Unset kind is the default `open-agents spawn` path and must resolve to worker.agent.
 	if got, err := resolveSpawnHarness("", "", project); err != nil || got != "codex" {
 		t.Fatalf("unset kind: got %q err %v, want codex", got, err)
 	}
@@ -982,7 +982,7 @@ func TestResolveSpawnHarness_OrchestratorDefault(t *testing.T) {
 	}
 }
 
-// TestSpawnModelFlagWiring asserts `ao spawn --model` sends the model override
+// TestSpawnModelFlagWiring asserts `open-agents spawn --model` sends the model override
 // to the daemon without touching project config.
 func TestSpawnModelFlagWiring(t *testing.T) {
 	cfg := setConfigEnv(t)

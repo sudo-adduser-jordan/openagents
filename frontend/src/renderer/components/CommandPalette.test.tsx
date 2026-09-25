@@ -138,7 +138,7 @@ vi.mock("../lib/api-client", () => ({
 
 
 vi.mock("../lib/bridge", () => ({
-	aoBridge: {
+	openAgentsBridge: {
 		app: { openExternal: openExternalMock },
 		clipboard: { writeText: writeTextMock },
 	},

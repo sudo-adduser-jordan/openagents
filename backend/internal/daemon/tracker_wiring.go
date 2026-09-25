@@ -8,21 +8,21 @@ import (
 	"sync"
 	"time"
 
-	scmgitlab "github.com/aoagents/agent-orchestrator/backend/internal/adapters/scm/gitlab"
-	trackergithub "github.com/aoagents/agent-orchestrator/backend/internal/adapters/tracker/github"
-	trackergitlab "github.com/aoagents/agent-orchestrator/backend/internal/adapters/tracker/gitlab"
-	trackermulti "github.com/aoagents/agent-orchestrator/backend/internal/adapters/tracker/multi"
-	"github.com/aoagents/agent-orchestrator/backend/internal/config"
-	"github.com/aoagents/agent-orchestrator/backend/internal/domain"
-	"github.com/aoagents/agent-orchestrator/backend/internal/ports"
-	aoprocess "github.com/aoagents/agent-orchestrator/backend/internal/process"
+	scmgitlab "github.com/sudo-adduser-jordan/open-agents/backend/internal/adapters/scm/gitlab"
+	trackergithub "github.com/sudo-adduser-jordan/open-agents/backend/internal/adapters/tracker/github"
+	trackergitlab "github.com/sudo-adduser-jordan/open-agents/backend/internal/adapters/tracker/gitlab"
+	trackermulti "github.com/sudo-adduser-jordan/open-agents/backend/internal/adapters/tracker/multi"
+	"github.com/sudo-adduser-jordan/open-agents/backend/internal/config"
+	"github.com/sudo-adduser-jordan/open-agents/backend/internal/domain"
+	"github.com/sudo-adduser-jordan/open-agents/backend/internal/ports"
+	openagentsprocess "github.com/sudo-adduser-jordan/open-agents/backend/internal/process"
 )
 
 func newGitHubTracker() (ports.Tracker, error) {
 	return trackergithub.New(trackergithub.Options{Token: &ghTokenSource{}})
 }
 
-// ghTokenSource mirrors the SCM credential precedence: AO_GITHUB_TOKEN →
+// ghTokenSource mirrors the SCM credential precedence: OPEN_AGENTS_GITHUB_TOKEN →
 // GITHUB_TOKEN (via EnvTokenSource) → `gh auth token` CLI fallback with
 // short-lived caching. This matches the old lazyGitHubTracker's token chain
 // and the GitLab tracker's DefaultTokenSource (env → glab CLI).
@@ -38,7 +38,7 @@ const (
 )
 
 func (s *ghTokenSource) Token(ctx context.Context) (string, error) {
-	env := trackergithub.EnvTokenSource{EnvVars: []string{"AO_GITHUB_TOKEN"}}
+	env := trackergithub.EnvTokenSource{EnvVars: []string{"OPEN_AGENTS_GITHUB_TOKEN"}}
 	if tok, err := env.Token(ctx); err == nil {
 		return tok, nil
 	} else if !errors.Is(err, trackergithub.ErrNoToken) {
@@ -53,7 +53,7 @@ func (s *ghTokenSource) Token(ctx context.Context) (string, error) {
 	}
 	cmdCtx, cancel := context.WithTimeout(ctx, ghTokenCommandTimeout)
 	defer cancel()
-	out, err := aoprocess.CommandContext(cmdCtx, "gh", "auth", "token").Output()
+	out, err := openagentsprocess.CommandContext(cmdCtx, "gh", "auth", "token").Output()
 	if err != nil {
 		return "", err
 	}
@@ -101,7 +101,7 @@ func newMultiTracker(gitlabCfg config.GitLabConfig, logger *slog.Logger) ports.T
 
 	// Probing the environment is a cheap read — no subprocess. Only when no
 	// env token exists do we defer to the gh CLI fallback, lazily.
-	env := trackergithub.EnvTokenSource{EnvVars: []string{"AO_GITHUB_TOKEN"}}
+	env := trackergithub.EnvTokenSource{EnvVars: []string{"OPEN_AGENTS_GITHUB_TOKEN"}}
 	if _, err := env.Token(context.Background()); err == nil {
 		if t, err := newGitHubTracker(); err != nil {
 			logTrackerDisabled(logger, "github", err)

@@ -64,7 +64,7 @@ import { useWindowFullScreen } from "../hooks/useWindowFullScreen";
 import { apiClient, apiErrorCode, apiErrorMessage } from "../lib/api-client";
 import { sessionWorkspaceFilesQueryOptions } from "../hooks/useSessionWorkspaceFiles";
 import { matchWorkspaceFilePath } from "../lib/workspace-file-path";
-import { aoBridge } from "../lib/bridge";
+import { openAgentsBridge } from "../lib/bridge";
 import {
 	capturePendingFileAttachmentsForSession,
 	discardCapturedPendingFileAttachments,
@@ -119,11 +119,11 @@ const EMPTY_AUXILIARY_TAB_ORDER: string[] = [];
 // inset gives a 325px inspector breakpoint for the animation lock.
 const INSPECTOR_COMPACT_MAX_PX = 325;
 const TOPBAR_SECONDARY_COMPACT_MAX_PX = 759;
-const inspectorWidthStorageKey = "ao.inspector.widthPx";
+const inspectorWidthStorageKey = "open-agents.inspector.widthPx";
 // The canvas profile has different constraints from the earlier Browser rail;
 // use a new preference namespace so an old narrow width cannot silently pin it.
-const browserWorkspaceWidthStorageKey = "ao.workspace.browser.canvasWidthPx";
-const inspectorWidthVar = "--ao-inspector-w";
+const browserWorkspaceWidthStorageKey = "open-agents.workspace.browser.canvasWidthPx";
+const inspectorWidthVar = "--open-agents-inspector-w";
 // Closely matches SHELL_PANEL_SPRING's visual settle time. Keeping the CSS
 // width interpolation on the same clock prevents the sidebar from stopping
 // while the browser rail is still visibly drifting.
@@ -485,10 +485,10 @@ export function SessionView({ sessionId }: SessionViewProps) {
 		},
 	});
 	useEffect(() => {
-		aoBridge.app.setChatDraftRisk?.(chatDraftBoundaries, chatDraftDialogCopy(chatDraftBoundaries));
+		openAgentsBridge.app.setChatDraftRisk?.(chatDraftBoundaries, chatDraftDialogCopy(chatDraftBoundaries));
 	}, [chatDraftBoundaries]);
 	useEffect(
-		() => () => aoBridge.app.setChatDraftRisk?.([]),
+		() => () => openAgentsBridge.app.setChatDraftRisk?.([]),
 		[sessionId],
 	);
 	const queryClient = useQueryClient();
@@ -522,7 +522,7 @@ export function SessionView({ sessionId }: SessionViewProps) {
 		phase: "docked",
 	});
 	const [filesPoppedOut, setFilesPoppedOut] = useState(false);
-	const [filesSplit, setFilesSplit] = useState(() => window.localStorage.getItem("ao.files.diffStyle") === "split");
+	const [filesSplit, setFilesSplit] = useState(() => window.localStorage.getItem("open-agents.files.diffStyle") === "split");
 	const [filePreviewRequestsBySession, setFilePreviewRequestsBySession] = useState<
 		Record<string, { path: string; key: number }>
 	>({});
@@ -755,7 +755,7 @@ export function SessionView({ sessionId }: SessionViewProps) {
 	const reviewerQuery = useQuery({
 		queryKey: ["session-reviews", sessionId],
 		enabled: Boolean(
-			window.ao && session && sessionIsActive(session) && !isOrchestratorSession(session) && session.prs.length > 0,
+			window.openAgents && session && sessionIsActive(session) && !isOrchestratorSession(session) && session.prs.length > 0,
 		),
 		refetchInterval: (query) => {
 			const data = query.state.data as ReviewsResponse | undefined;

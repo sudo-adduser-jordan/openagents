@@ -17,8 +17,8 @@ import (
 	"strings"
 	"time"
 
-	"github.com/aoagents/agent-orchestrator/backend/internal/ports"
-	aoprocess "github.com/aoagents/agent-orchestrator/backend/internal/process"
+	"github.com/sudo-adduser-jordan/open-agents/backend/internal/ports"
+	openagentsprocess "github.com/sudo-adduser-jordan/open-agents/backend/internal/process"
 )
 
 const (
@@ -61,7 +61,7 @@ var commandSpecs = map[string]commandSpec{
 	"crush":       {args: []string{"models"}, parser: parseIDLines},
 }
 
-// Base returns the picker behavior AO can provide without executing a CLI.
+// Base returns the picker behavior Open Agents can provide without executing a CLI.
 func Base(agentID string) ports.AgentModelCatalog {
 	now := time.Now().UTC()
 	entryMode := customModelEntryMode(agentID)
@@ -98,7 +98,7 @@ func Base(agentID string) ports.AgentModelCatalog {
 }
 
 // Manual returns the capability-aware fallback used when an adapter has no
-// reliable catalog or discovery fails before AO has a successful cache.
+// reliable catalog or discovery fails before Open Agents has a successful cache.
 func Manual(agentID string) ports.AgentModelCatalog {
 	entryMode := customModelEntryMode(agentID)
 	selectionMode := ports.ModelSelectionCatalog
@@ -310,7 +310,7 @@ func hasDiscoverySource(agentID string) bool {
 }
 
 func modelCommand(ctx context.Context, binary string, args []string, workingDir string, env map[string]string) *exec.Cmd {
-	cmd := aoprocess.CommandContext(ctx, binary, args...) //nolint:gosec // binary is adapter-resolved, args are static
+	cmd := openagentsprocess.CommandContext(ctx, binary, args...) //nolint:gosec // binary is adapter-resolved, args are static
 	cmd.WaitDelay = commandTerminationWait
 	if strings.TrimSpace(workingDir) != "" {
 		cmd.Dir = workingDir
@@ -380,7 +380,7 @@ func BinaryVersion(ctx context.Context, binary string) string {
 
 // CatalogFingerprint hashes every discovery input for an agent: the resolved
 // executable, plus the configuration values the adapter reads. A cached catalog
-// stays valid only while this is unchanged, so configuration AO reads during
+// stays valid only while this is unchanged, so configuration Open Agents reads during
 // discovery must be represented here or an edit would never take effect.
 func CatalogFingerprint(ctx context.Context, agentID, binary, workingDir string, env map[string]string) string {
 	binaryVersion := BinaryVersion(ctx, binary)

@@ -261,9 +261,9 @@ LIMIT 1;
 -- name: ListPRFactsBySession :many
 -- All PR snapshots for a session (every state), with source/target branch for
 -- stack derivation, the unresolved-comment flag, and the human review verdicts
--- AO did not author. The status aggregator filters open vs merged/closed in Go
+-- Open Agents did not author. The status aggregator filters open vs merged/closed in Go
 -- and derives stacks from the branches; the Kanban reducer needs the
--- AO/external split because the aggregate review_decision mixes both sources.
+-- Open Agents/external split because the aggregate review_decision mixes both sources.
 WITH current_pr AS (
     SELECT url, head_sha
     FROM pr

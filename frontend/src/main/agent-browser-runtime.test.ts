@@ -40,7 +40,7 @@ describe("agent-browser command policy", () => {
 	});
 });
 
-describe("AO action translation", () => {
+describe("Open Agents action translation", () => {
 	it("maps the public snapshot and ref contract to native arguments", () => {
 		expect(nativeArgumentsForAction("snapshot", { interactive: true })).toEqual([
 			"snapshot",
@@ -97,7 +97,7 @@ describe("agent-browser runtime lifecycle", () => {
 		processRunner?: (...args: unknown[]) => Promise<{ stdout: string; stderr: string; exitCode: number }>;
 		socketDir?: string;
 	} = {}) {
-		const dataDir = await mkdtemp(path.join(shortTempDir, "ao-browser-runtime-test-"));
+		const dataDir = await mkdtemp(path.join(shortTempDir, "open-agents-browser-runtime-test-"));
 		const bridge = {
 			start: vi.fn(overrides.start ?? (async () => "ws://127.0.0.1:1/fixture")),
 			close: vi.fn(overrides.close ?? (async () => undefined)),
@@ -148,9 +148,9 @@ describe("agent-browser runtime lifecycle", () => {
 				expect(socketDir).toContain(path.join(dataDir, "r-"));
 				expect(socketDir).toMatch(/[\\/]s$/);
 			} else {
-				expect(socketDir).toMatch(/^\/tmp\/ao-br-/);
+				expect(socketDir).toMatch(/^\/tmp\/open-agents-br-/);
 			}
-			expect(namespace).toMatch(/^ao-[0-9a-f]{4}-[0-9a-f]{12}$/);
+			expect(namespace).toMatch(/^s-[0-9a-f]{4}-[0-9a-f]{12}$/);
 			const socketPath = agentBrowserSocketPath(socketDir, namespace);
 			expect(Buffer.byteLength(socketPath, "utf8")).toBeLessThanOrEqual(
 				process.platform === "win32" ? Number.MAX_SAFE_INTEGER : AGENT_BROWSER_UNIX_SOCKET_PATH_MAX_BYTES,
@@ -164,7 +164,7 @@ describe("agent-browser runtime lifecycle", () => {
 		}
 	});
 
-	it("passes only the native runtime allowlist and AO-scoped variables", async () => {
+	it("passes only the native runtime allowlist and Open Agents-scoped variables", async () => {
 		vi.stubEnv("AWS_SECRET_ACCESS_KEY", "should-not-cross-process");
 		vi.stubEnv("HTTP_PROXY", "http://user:secret@example.test:8080");
 		const { dataDir, processRunner, runtime } = await fixture();
@@ -263,7 +263,7 @@ describe("agent-browser runtime lifecycle", () => {
 	});
 
 	it("rejects an oversized Unix socket path before starting the bridge", async () => {
-		const socketBase = await mkdtemp(path.join(os.tmpdir(), "ao-browser-runtime-long-path-test-"));
+		const socketBase = await mkdtemp(path.join(os.tmpdir(), "open-agents-browser-runtime-long-path-test-"));
 		const socketDir = path.join(socketBase, "x".repeat(120));
 		const { dataDir, runtime, bridge } = await fixture({ platform: "darwin", socketDir });
 		try {
@@ -332,30 +332,30 @@ describe("agent-browser runtime lifecycle", () => {
 	});
 
 	it("recovers only confirmed-dead marked run roots", async () => {
-		const dataDir = await mkdtemp(path.join(os.tmpdir(), "ao-browser-scavenge-test-"));
+		const dataDir = await mkdtemp(path.join(os.tmpdir(), "open-agents-browser-scavenge-test-"));
 		try {
 			const dead = path.join(dataDir, "run-101-aaaaaaaaaaaa");
 			const shortDead = path.join(dataDir, "r-eeeeeeeeee");
 			const alive = path.join(dataDir, "run-202-bbbbbbbbbbbb");
 			const malformed = path.join(dataDir, "run-303-cccccccccccc");
 			const empty = path.join(dataDir, "run-404-dddddddddddd");
-			const legacy = path.join(dataDir, "ao-legacy-session");
+			const legacy = path.join(dataDir, "open-agents-legacy-session");
 			await Promise.all([mkdir(dead), mkdir(shortDead), mkdir(alive), mkdir(malformed), mkdir(empty), mkdir(legacy)]);
 			const deadOwnerPath = path.join(dead, "owner.json");
 			const shortDeadOwnerPath = path.join(shortDead, "owner.json");
 			await writeFile(
 				deadOwnerPath,
-				JSON.stringify({ marker: "AO_BROWSER_RUNTIME_V1", pid: 101, startedAt: new Date().toISOString(), token: "a".repeat(32) }),
+				JSON.stringify({ marker: "OPEN_AGENTS_BROWSER_RUNTIME_V1", pid: 101, startedAt: new Date().toISOString(), token: "a".repeat(32) }),
 			);
 			await writeFile(
 				shortDeadOwnerPath,
-				JSON.stringify({ marker: "AO_BROWSER_RUNTIME_V1", pid: 101, startedAt: new Date().toISOString(), token: "e".repeat(32) }),
+				JSON.stringify({ marker: "OPEN_AGENTS_BROWSER_RUNTIME_V1", pid: 101, startedAt: new Date().toISOString(), token: "e".repeat(32) }),
 			);
 			const staleAt = new Date(Date.now() - BROWSER_RUNTIME_RECLAIM_GRACE_MS - 1_000);
 			await Promise.all([utimes(deadOwnerPath, staleAt, staleAt), utimes(shortDeadOwnerPath, staleAt, staleAt)]);
 			await writeFile(
 				path.join(alive, "owner.json"),
-				JSON.stringify({ marker: "AO_BROWSER_RUNTIME_V1", pid: 202, startedAt: new Date().toISOString(), token: "b".repeat(32) }),
+				JSON.stringify({ marker: "OPEN_AGENTS_BROWSER_RUNTIME_V1", pid: 202, startedAt: new Date().toISOString(), token: "b".repeat(32) }),
 			);
 			await writeFile(path.join(malformed, "owner.json"), "not-json");
 			await writeFile(path.join(legacy, "config.json"), "{}\n");
@@ -363,7 +363,7 @@ describe("agent-browser runtime lifecycle", () => {
 			await scavengeBrowserRuntime(dataDir, (pid) => pid === 202);
 
 			expect((await readdir(dataDir)).sort()).toEqual([
-				"ao-legacy-session",
+				"open-agents-legacy-session",
 				"run-202-bbbbbbbbbbbb",
 				"run-303-cccccccccccc",
 				"run-404-dddddddddddd",
@@ -375,9 +375,9 @@ describe("agent-browser runtime lifecycle", () => {
 	});
 
 	it.skipIf(process.platform === "win32")("removes only confirmed-dead socket aliases owned by this data root", async () => {
-		const dataDir = await mkdtemp(path.join(shortTempDir, "ao-browser-alias-data-"));
-		const aliasRoot = await mkdtemp(path.join(shortTempDir, "ao-browser-alias-root-"));
-		const foreignRoot = await mkdtemp(path.join(shortTempDir, "ao-browser-alias-foreign-"));
+		const dataDir = await mkdtemp(path.join(shortTempDir, "open-agents-browser-alias-data-"));
+		const aliasRoot = await mkdtemp(path.join(shortTempDir, "open-agents-browser-alias-root-"));
+		const foreignRoot = await mkdtemp(path.join(shortTempDir, "open-agents-browser-alias-foreign-"));
 		try {
 			const deadTarget = path.join(dataDir, "r-aaaaaaaaaa", "s");
 			const liveTarget = path.join(dataDir, "r-bbbbbbbbbb", "s");
@@ -388,18 +388,18 @@ describe("agent-browser runtime lifecycle", () => {
 				mkdir(foreignTarget, { recursive: true }),
 			]);
 			await Promise.all([
-				symlink(deadTarget, path.join(aliasRoot, "ao-br-101-aaaaaaaaaaaa"), "dir"),
-				symlink(liveTarget, path.join(aliasRoot, "ao-br-202-bbbbbbbbbbbb"), "dir"),
-				symlink(foreignTarget, path.join(aliasRoot, "ao-br-303-cccccccccccc"), "dir"),
-				symlink(deadTarget, path.join(aliasRoot, "ao-br-not-owned"), "dir"),
+				symlink(deadTarget, path.join(aliasRoot, "open-agents-br-101-aaaaaaaaaaaa"), "dir"),
+				symlink(liveTarget, path.join(aliasRoot, "open-agents-br-202-bbbbbbbbbbbb"), "dir"),
+				symlink(foreignTarget, path.join(aliasRoot, "open-agents-br-303-cccccccccccc"), "dir"),
+				symlink(deadTarget, path.join(aliasRoot, "open-agents-br-not-owned"), "dir"),
 			]);
 
 			await scavengeBrowserSocketAliases(dataDir, (pid) => pid === 202, undefined, aliasRoot);
 
 			expect((await readdir(aliasRoot)).sort()).toEqual([
-				"ao-br-202-bbbbbbbbbbbb",
-				"ao-br-303-cccccccccccc",
-				"ao-br-not-owned",
+				"open-agents-br-202-bbbbbbbbbbbb",
+				"open-agents-br-303-cccccccccccc",
+				"open-agents-br-not-owned",
 			]);
 		} finally {
 			await Promise.all([
@@ -481,7 +481,7 @@ describe("agent-browser structured output", () => {
 	});
 });
 
-const nativeBinary = process.env.AO_AGENT_BROWSER_TEST_BINARY;
+const nativeBinary = process.env.OPEN_AGENTS_AGENT_BROWSER_TEST_BINARY;
 describe.skipIf(!nativeBinary)("agent-browser native compatibility", () => {
 	it("connects the pinned native daemon and keeps native tab lifecycle commands aligned", async () => {
 		class DebuggerFixture extends EventEmitter {
@@ -536,7 +536,7 @@ describe.skipIf(!nativeBinary)("agent-browser native compatibility", () => {
 		};
 		const runtime = new AgentBrowserRuntime({
 			binaryPath: nativeBinary!,
-			dataDir: path.join(shortTempDir, "ao-agent-browser-native-test"),
+			dataDir: path.join(shortTempDir, "open-agents-agent-browser-native-test"),
 		});
 		try {
 			const result = await runtime.runAction("native-fixture", "get", { property: "url" }, provider);

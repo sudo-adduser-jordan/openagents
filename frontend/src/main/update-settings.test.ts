@@ -14,7 +14,7 @@ import {
 describe("update-settings", () => {
 	let dir: string;
 	beforeEach(async () => {
-		dir = await mkdtemp(path.join(os.tmpdir(), "ao-update-settings-"));
+		dir = await mkdtemp(path.join(os.tmpdir(), "open-agents-update-settings-"));
 	});
 	afterEach(async () => {
 		await rm(dir, { recursive: true, force: true });

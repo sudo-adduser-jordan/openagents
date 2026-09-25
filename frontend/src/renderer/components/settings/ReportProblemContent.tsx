@@ -7,7 +7,7 @@ import {
 	type ReportProblemEmailProvider,
 	type ReportProblemOutput,
 } from "../../lib/report-problem";
-import { aoBridge } from "../../lib/bridge";
+import { openAgentsBridge } from "../../lib/bridge";
 import { isWindowsPlatform } from "../../lib/platform";
 import { Button } from "../ui/button";
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "../ui/dropdown-menu";
@@ -104,10 +104,10 @@ export function ReportProblemContent({ active }: { active: boolean }) {
 		setCopyError(null);
 		const draft = formatReportProblemDraft(input, diagnostics, output);
 		try {
-			await aoBridge.clipboard.writeText(draft);
+			await openAgentsBridge.clipboard.writeText(draft);
 			const destinationUrl = reportProblemDestinationUrl(input, diagnostics, output, emailProvider);
 			if (destinationUrl) {
-				await aoBridge.app.openExternal(destinationUrl);
+				await openAgentsBridge.app.openExternal(destinationUrl);
 			}
 			setCopiedOutput(output);
 			setSummary("");

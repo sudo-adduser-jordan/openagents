@@ -1,13 +1,13 @@
 import { CheckCircle2, Cookie, History as HistoryIcon, LoaderCircle, TriangleAlert, X } from "lucide-react";
 import { useEffect, useMemo, useRef, useState } from "react";
-import type { AoBridge } from "../../../preload";
+import type { OpenAgentsBridge } from "../../../preload";
 import type {
 	BrowserImportProgress,
 	BrowserImportResult,
 	BrowserImportSource,
 	BrowserImportWarning,
 } from "../../../shared/browser-profile-import";
-import { aoBridge } from "../../lib/bridge";
+import { openAgentsBridge } from "../../lib/bridge";
 import { Button } from "../ui/button";
 import {
 	Dialog,
@@ -23,7 +23,7 @@ import {
 import { Input } from "../ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "../ui/select";
 
-type ImportBridge = AoBridge["browserProfiles"];
+type ImportBridge = OpenAgentsBridge["browserProfiles"];
 type View = "form" | "running" | "result";
 
 export function BrowserImportDialog({
@@ -35,7 +35,7 @@ export function BrowserImportDialog({
 	onOpenChange: (open: boolean) => void;
 	onImported: () => void;
 }) {
-	const bridge = (aoBridge as Partial<AoBridge>).browserProfiles as ImportBridge | undefined;
+	const bridge = (openAgentsBridge as Partial<OpenAgentsBridge>).browserProfiles as ImportBridge | undefined;
 	const [view, setView] = useState<View>("form");
 	const [sources, setSources] = useState<BrowserImportSource[]>([]);
 	const [sourceId, setSourceId] = useState("");
@@ -180,7 +180,7 @@ export function BrowserImportDialog({
 				</DialogClose>
 				<div className={settingsDialogHeaderClass}>
 					<DialogTitle className="settings-dialog-title">{"Import browser data"}</DialogTitle>
-					<DialogDescription>{"Copy selected cookies and history into new, isolated AO profiles. Your source browser is never modified."}</DialogDescription>
+					<DialogDescription>{"Copy selected cookies and history into new, isolated Open Agents profiles. Your source browser is never modified."}</DialogDescription>
 				</div>
 
 				<div className={settingsDialogBodyClass}>
@@ -188,7 +188,7 @@ export function BrowserImportDialog({
 						<p ref={errorRef} tabIndex={-1} className="rounded-lg border border-destructive/40 bg-destructive/10 p-3 text-sm text-destructive" role="alert">{error}</p>
 					) : null}
 					{view === "form" && safariAccessDenied ? (
-						<p className="text-xs text-warning" role="status">{"AO couldn't access Safari's data. In System Settings, open Privacy & Security > Full Disk Access, allow AO, then restart AO and try the import again."}</p>
+						<p className="text-xs text-warning" role="status">{"Open Agents couldn't access Safari's data. In System Settings, open Privacy & Security > Full Disk Access, allow Open Agents, then restart Open Agents and try the import again."}</p>
 					) : null}
 					{view === "form" ? (
 						<ImportForm
@@ -217,8 +217,8 @@ export function BrowserImportDialog({
 						<div className="flex flex-1 flex-col items-center justify-center gap-5 py-12 text-center">
 							<LoaderCircle aria-hidden="true" className="size-8 animate-spin text-accent" />
 							<div>
-								<p className="font-semibold">{({"preparing": "Preparing a safe import…", "permission": "Waiting for macOS Safe Storage permission…", "reading": "Reading copied browser data…", "importing": "Writing new AO profiles…", "keepOpen": "Keep AO open until the import finishes."}[progress?.phase ?? "preparing"] ?? progress?.phase ?? "preparing")}</p>
-								<p className="mt-1 text-xs text-muted-foreground">{"Keep AO open until the import finishes."}</p>
+								<p className="font-semibold">{({"preparing": "Preparing a safe import…", "permission": "Waiting for macOS Safe Storage permission…", "reading": "Reading copied browser data…", "importing": "Writing new Open Agents profiles…", "keepOpen": "Keep Open Agents open until the import finishes."}[progress?.phase ?? "preparing"] ?? progress?.phase ?? "preparing")}</p>
+								<p className="mt-1 text-xs text-muted-foreground">{"Keep Open Agents open until the import finishes."}</p>
 							</div>
 							<div className="h-1.5 w-full max-w-sm overflow-hidden rounded-full bg-muted">
 								<div className="h-full rounded-full bg-accent transition-[width]" style={{ width: `${progressPercent}%` }} />
@@ -261,8 +261,8 @@ function importFailureMessage(reason: unknown, browser: string): string {
 		.replace(/^Error:\s*/i, "")
 		.trim();
 	if (/unable to open database file|database is locked|SQLITE_(?:BUSY|CANTOPEN|LOCKED)|\b(?:EACCES|EBUSY|EPERM)\b/i.test(message)) {
-		if (browser === "Safari") return "AO couldn't access Safari's data. In System Settings, open Privacy & Security > Full Disk Access, allow AO, then restart AO and try the import again.";
-		return `AO couldn't access ${browser}'s profile database. ${browser} may still be using it, or the operating system may be blocking access. Fully close ${browser}, including background processes, then try again. If it still fails, check that the browser profile files are accessible. Encrypted cookies are handled separately and did not cause this error.`;
+		if (browser === "Safari") return "Open Agents couldn't access Safari's data. In System Settings, open Privacy & Security > Full Disk Access, allow Open Agents, then restart Open Agents and try the import again.";
+		return `Open Agents couldn't access ${browser}'s profile database. ${browser} may still be using it, or the operating system may be blocking access. Fully close ${browser}, including background processes, then try again. If it still fails, check that the browser profile files are accessible. Encrypted cookies are handled separately and did not cause this error.`;
 	}
 	return message || fallback;
 }
@@ -375,7 +375,7 @@ function ImportForm({
 function ProfilesStep({ source, selected, onChange }: { source: BrowserImportSource; selected: string[]; onChange: (ids: string[]) => void }) {
 	return (
 		<section className="space-y-2">
-			<p className="text-sm text-muted-foreground">{`Choose the ${source.name} profiles you want to bring into AO.`}</p>
+			<p className="text-sm text-muted-foreground">{`Choose the ${source.name} profiles you want to bring into Open Agents.`}</p>
 			<div className="grid gap-2">
 				{source.profiles.map((profile) => {
 					const checked = selected.includes(profile.id);
@@ -446,7 +446,7 @@ function OptionsStep({
 					<HistoryIcon aria-hidden="true" className="mt-0.5 size-5 shrink-0 text-muted-foreground" />
 					<span className="min-w-0 flex-1">
 						<span className="block text-sm font-medium">{"Browsing history"}</span>
-						<span className="block text-xs text-muted-foreground">{"Adds visited pages to AO address-bar suggestions."}</span>
+						<span className="block text-xs text-muted-foreground">{"Adds visited pages to Open Agents address-bar suggestions."}</span>
 					</span>
 					<input checked={includeHistory} className="mt-0.5 size-4 shrink-0 accent-accent" onChange={(event) => setIncludeHistory(event.target.checked)} type="checkbox" />
 				</label>
@@ -457,7 +457,7 @@ function OptionsStep({
 				{profiles.length > 1 ? (
 					<div className="flex flex-wrap gap-4 text-sm">
 						<label className="flex items-center gap-2"><input checked={destinationMode === "separate"} onChange={() => setDestinationMode("separate")} type="radio" />{"Keep profiles separate"}</label>
-						<label className="flex items-center gap-2"><input checked={destinationMode === "merge"} onChange={() => setDestinationMode("merge")} type="radio" />{"Merge into one new AO profile"}</label>
+						<label className="flex items-center gap-2"><input checked={destinationMode === "merge"} onChange={() => setDestinationMode("merge")} type="radio" />{"Merge into one new Open Agents profile"}</label>
 					</div>
 				) : null}
 				{destinationMode === "merge" ? (
@@ -491,7 +491,7 @@ function ResultStep({ result }: { result: BrowserImportResult }) {
 		<div className="space-y-4">
 			<div className={`flex items-start gap-3 rounded-lg border p-3 ${warning ? "border-warning/30 bg-warning/10" : "border-success/30 bg-success/10"}`} role="status">
 				{warning ? <TriangleAlert aria-hidden="true" className="mt-0.5 size-5 text-warning" /> : <CheckCircle2 aria-hidden="true" className="mt-0.5 size-5 text-success" />}
-				<div><p className="text-sm font-semibold">{(empty ? "Nothing was imported" : (partial ? "Import completed with warnings" : "Import complete"))}</p>{!empty ? <p className="text-xs text-muted-foreground">{`AO imported the supported data available from ${result.sourceName}.`}</p> : null}</div>
+				<div><p className="text-sm font-semibold">{(empty ? "Nothing was imported" : (partial ? "Import completed with warnings" : "Import complete"))}</p>{!empty ? <p className="text-xs text-muted-foreground">{`Open Agents imported the supported data available from ${result.sourceName}.`}</p> : null}</div>
 			</div>
 			{result.entries.map((entry) => (
 				<div className="rounded-lg border border-border p-3" key={entry.destinationProfile.id}>
@@ -522,13 +522,13 @@ function warningText(warning: BrowserImportWarning): string {
 		case "cookie-database-missing": return "No cookie database was available for this source profile.";
 		case "history-database-missing": return "No history database was available for this source profile.";
 		case "isolated-cookies-skipped": return `${count} cookies tied to isolated browser contexts were skipped to avoid mixing site or organization data.`;
-		case "cookie-limit-truncated": return `${count} cookies exceeded AO's import limit and were skipped.`;
-		case "history-limit-truncated": return `${count} history entries exceeded AO's import limit and were skipped.`;
+		case "cookie-limit-truncated": return `${count} cookies exceeded Open Agents's import limit and were skipped.`;
+		case "history-limit-truncated": return `${count} history entries exceeded Open Agents's import limit and were skipped.`;
 		case "encrypted-cookies-skipped": return `${count} encrypted cookies could not be decrypted and were skipped.`;
 		case "expired-cookies-skipped": return `${count} expired cookies were skipped.`;
 		case "invalid-cookies-skipped": return `${count} invalid cookies were skipped.`;
 		case "cookie-attributes-defaulted": return `${count} cookies used safe defaults for attributes unavailable in this browser version.`;
-		case "cookie-write-failed": return `AO could not write ${count} cookies to the new profile.`;
+		case "cookie-write-failed": return `Open Agents could not write ${count} cookies to the new profile.`;
 	}
 }
 
@@ -555,7 +555,7 @@ function applySourceDefaults(
 }
 
 function capabilityText(reason: BrowserImportSource["cookieSupportReason"]): string {
-	if (reason === "chromium-encryption-partial") return "Modern Chromium encryption can prevent some cookies from being imported. AO will report exactly what was skipped.";
+	if (reason === "chromium-encryption-partial") return "Modern Chromium encryption can prevent some cookies from being imported. Open Agents will report exactly what was skipped.";
 	if (reason === "chromium-encryption-unsupported") return "Encrypted Chromium cookies cannot be imported on this platform. Unencrypted cookies and history remain available.";
 	return "Copies usable website cookies into the destination profile.";
 }

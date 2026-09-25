@@ -4,7 +4,7 @@ import {
   DOWNLOAD_URL_MAC_ARM64,
   DOWNLOAD_URL_MAC_X64,
   DOWNLOAD_URL_WINDOWS,
-} from "@ao/shared/constants";
+} from "@openagents/shared/constants";
 import { Cloud, Download } from "lucide-react";
 import type { Metadata } from "next";
 import Image from "next/image";
@@ -18,7 +18,7 @@ import { DesktopAppPreview, PhoneAppPreview } from "./StaticAppPreviews";
 export const metadata: Metadata = {
   title: "Download",
   description:
-    "Download Agent Orchestrator for macOS, Windows, or Linux, and get AO Mobile on iPhone and Android.",
+    "Download Open Agents for macOS, Windows, or Linux, and get Open Agents Mobile on iPhone and Android.",
 };
 
 interface GitHubReleaseAsset {
@@ -115,28 +115,28 @@ export default async function DownloadPage() {
       builds: available([
         build(
           "Mac (Apple silicon)",
-          assetUrl(stable, "agent-orchestrator-darwin-arm64.dmg") ??
-            assetUrl(stable, "agent-orchestrator-darwin-arm64.zip") ??
+          assetUrl(stable, "open-agents-darwin-arm64.dmg") ??
+            assetUrl(stable, "open-agents-darwin-arm64.zip") ??
             DOWNLOAD_URL_MAC_ARM64,
           "Stable",
         ),
         build(
           "Mac (Intel)",
-          assetUrl(stable, "agent-orchestrator-darwin-x64.dmg") ??
-            assetUrl(stable, "agent-orchestrator-darwin-x64.zip") ??
+          assetUrl(stable, "open-agents-darwin-x64.dmg") ??
+            assetUrl(stable, "open-agents-darwin-x64.zip") ??
             DOWNLOAD_URL_MAC_X64,
           "Stable",
         ),
         build(
           "Mac (Apple silicon)",
-          assetUrl(nightly, "agent-orchestrator-darwin-arm64.dmg") ??
-            assetUrl(nightly, "agent-orchestrator-darwin-arm64.zip"),
+          assetUrl(nightly, "open-agents-darwin-arm64.dmg") ??
+            assetUrl(nightly, "open-agents-darwin-arm64.zip"),
           "Nightly",
         ),
         build(
           "Mac (Intel)",
-          assetUrl(nightly, "agent-orchestrator-darwin-x64.dmg") ??
-            assetUrl(nightly, "agent-orchestrator-darwin-x64.zip"),
+          assetUrl(nightly, "open-agents-darwin-x64.dmg") ??
+            assetUrl(nightly, "open-agents-darwin-x64.zip"),
           "Nightly",
         ),
       ]),
@@ -148,7 +148,7 @@ export default async function DownloadPage() {
         build("Windows (x64)", DOWNLOAD_URL_WINDOWS, "Stable"),
         build(
           "Windows (x64)",
-          assetUrl(nightly, "agent-orchestrator-win32-x64.exe"),
+          assetUrl(nightly, "open-agents-win32-x64.exe"),
           "Nightly",
         ),
       ]),
@@ -162,8 +162,8 @@ export default async function DownloadPage() {
           "Linux .deb (x64)",
           assetUrl(
             stable,
-            "agent-orchestrator-linux-x64.deb",
-            /^agent-orchestrator[_-].*(?:amd64|x86_64)\.deb$/i,
+            "open-agents-linux-x64.deb",
+            /^open-agents[_-].*(?:amd64|x86_64)\.deb$/i,
           ),
           "Stable",
         ),
@@ -171,19 +171,19 @@ export default async function DownloadPage() {
           "Linux RPM (x64)",
           assetUrl(
             stable,
-            "agent-orchestrator-linux-x64.rpm",
-            /^agent-orchestrator-.*x86_64\.rpm$/i,
+            "open-agents-linux-x64.rpm",
+            /^open-agents-.*x86_64\.rpm$/i,
           ),
           "Stable",
         ),
         build(
           "Linux AppImage (x64)",
-          assetUrl(nightly, "agent-orchestrator-linux-x64.AppImage"),
+          assetUrl(nightly, "open-agents-linux-x64.AppImage"),
           "Nightly",
         ),
         build(
           "Linux .deb (x64)",
-          assetUrl(nightly, "agent-orchestrator-linux-x64.deb"),
+          assetUrl(nightly, "open-agents-linux-x64.deb"),
           "Nightly",
         ),
       ]),
@@ -196,7 +196,7 @@ export default async function DownloadPage() {
         <div className="mx-auto max-w-7xl">
           <div className="mb-12 select-none text-left">
             <h1 className="text-2xl font-semibold text-foreground sm:text-3xl lg:text-4xl">
-              Use AO everywhere you work
+              Use Open Agents everywhere you work
             </h1>
             <p className="mt-3 text-base text-muted-foreground">
               One workspace to run, review, and ship coding agents across every
@@ -224,7 +224,7 @@ export default async function DownloadPage() {
                   Desktop
                 </h2>
                 <p className="mt-2 text-base text-muted-foreground">
-                  Full AO workspace for planning, running, and reviewing
+                  Full Open Agents workspace for planning, running, and reviewing
                   multi-agent work.
                 </p>
                 <div className="mt-6">
@@ -266,10 +266,10 @@ export default async function DownloadPage() {
               <div className="max-w-3xl">
                 <p className="inline-flex items-center gap-2 text-xs font-medium uppercase tracking-[0.18em] text-muted-foreground">
                   <Cloud className="size-3.5" aria-hidden="true" />
-                  AO Cloud
+                  Open Agents Cloud
                 </p>
                 <h2 className="mt-3 text-2xl font-semibold text-foreground">
-                  Join the AO Cloud waitlist
+                  Join the Open Agents Cloud waitlist
                 </h2>
                 <p className="mt-2 text-sm leading-6 text-muted-foreground">
                   Request early access for shared agent sessions, team handoffs,

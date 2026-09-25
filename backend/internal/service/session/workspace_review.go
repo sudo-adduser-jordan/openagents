@@ -14,8 +14,8 @@ import (
 	"time"
 	"unicode/utf8"
 
-	"github.com/aoagents/agent-orchestrator/backend/internal/domain"
-	"github.com/aoagents/agent-orchestrator/backend/internal/httpd/apierr"
+	"github.com/sudo-adduser-jordan/open-agents/backend/internal/domain"
+	"github.com/sudo-adduser-jordan/open-agents/backend/internal/httpd/apierr"
 )
 
 const (
@@ -599,7 +599,7 @@ func readGitRevision(ctx context.Context, root, spec string) ([]byte, int64, boo
 }
 
 // SearchWorkspaceFiles performs a bounded case-insensitive path search over
-// AO's existing confined all-files read model.
+// Open Agents's existing confined all-files read model.
 func (s *Service) SearchWorkspaceFiles(ctx context.Context, id domain.SessionID, query, cursor string, limit int) (WorkspaceFileSearch, error) {
 	query = strings.TrimSpace(query)
 	if query == "" {

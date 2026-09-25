@@ -82,7 +82,7 @@ export default function SettingsScreen() {
 				contentContainerStyle={styles.content}
 				keyboardShouldPersistTaps="handled"
 			>
-				<SettingsSection title="Desktop" footer={paired ? `${cfg.host}:${cfg.httpPort}` : "Pair this phone with AO on your computer."}>
+				<SettingsSection title="Desktop" footer={paired ? `${cfg.host}:${cfg.httpPort}` : "Pair this phone with Open Agents on your computer."}>
 					<SettingsCard>
 						<CardRow
 							icon="monitor"
@@ -101,7 +101,7 @@ export default function SettingsScreen() {
 					</SettingsCard>
 				</SettingsSection>
 
-				<SettingsSection title="Updates" footer="AO installs compatible updates automatically. Native releases open in your app store.">
+				<SettingsSection title="Updates" footer="Open Agents installs compatible updates automatically. Native releases open in your app store.">
 					<SettingsCard><SoftwareUpdateRow /></SettingsCard>
 				</SettingsSection>
 
@@ -315,7 +315,7 @@ function NotificationsRow() {
 
 	async function onToggle(next: boolean) {
 		if (toggle.blocked) {
-			Alert.alert("Notifications are blocked", "Allow notifications for AO in your system settings, then come back.", [
+			Alert.alert("Notifications are blocked", "Allow notifications for Open Agents in your system settings, then come back.", [
 				{ text: "Not now", style: "cancel" },
 				{ text: "Open settings", onPress: openNotificationSettings },
 			]);
@@ -437,7 +437,7 @@ function SoftwareUpdateRow() {
 			/>
 			{storePrompt ? (
 				<InlinePanel
-					title="A newer AO is ready"
+					title="A newer Open Agents is ready"
 					copy={describePrompt({ version: storePrompt.version, storeConfirmed: storePrompt.storeConfirmed, storeName: Platform.OS === "ios" ? "App Store" : "Play Store" })}
 					primary={`Open ${Platform.OS === "ios" ? "App Store" : "Play Store"}`}
 					secondary="Not now"
@@ -544,7 +544,7 @@ function DisconnectRow({ onForget }: { onForget: () => Promise<void> }) {
 
 function VersionFooter() {
 	const styles = useThemedStyles(makeStyles);
-	return <Text style={styles.versionFooter}>AO {formatVersionLine(buildInfo())}</Text>;
+	return <Text style={styles.versionFooter}>Open Agents {formatVersionLine(buildInfo())}</Text>;
 }
 
 const makeStyles = (t: Theme) => StyleSheet.create({

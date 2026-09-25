@@ -76,7 +76,7 @@ func (c *commandContext) sendMessage(ctx context.Context, opts sendOptions) erro
 		return usageError{errors.New("usage: --message is required")}
 	}
 	message := opts.message
-	if sender := strings.TrimSpace(os.Getenv("AO_SESSION_ID")); !opts.recoverOnly && sender != "" {
+	if sender := strings.TrimSpace(os.Getenv("OPEN_AGENTS_SESSION_ID")); !opts.recoverOnly && sender != "" {
 		message = "[from " + sender + "] " + message
 	}
 	session := strings.TrimSpace(opts.session)
@@ -113,7 +113,7 @@ func (c *commandContext) steerMessage(
 				return fmt.Errorf("%w; delivery handle %s remains unresolved and was not resent", err, clientMessageID)
 			}
 			return fmt.Errorf(
-				"%w; recover this delivery without resending it: ao send --session %s --steer --recover-only --client-message-id %s",
+				"%w; recover this delivery without resending it: open-agents send --session %s --steer --recover-only --client-message-id %s",
 				err, strings.TrimPrefix(sessionPath, "sessions/"), clientMessageID)
 		}
 		if errors.Is(err, errDaemonUnavailable) || !hasResponseErr || responseErr.StatusCode >= 500 {

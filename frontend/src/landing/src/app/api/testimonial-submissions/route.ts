@@ -36,13 +36,13 @@ async function ensureTable(databaseUrl: string) {
     const sql = neon(databaseUrl);
 
     ensureTablePromise = sql`
-      CREATE TABLE IF NOT EXISTS ao_testimonial_submissions (
+      CREATE TABLE IF NOT EXISTS open_agents_testimonial_submissions (
         id BIGSERIAL PRIMARY KEY,
         testimonial TEXT NOT NULL,
         linkedin_url TEXT NOT NULL UNIQUE,
         tweet_url TEXT,
         status TEXT NOT NULL DEFAULT 'pending',
-        source TEXT NOT NULL DEFAULT 'ao_testimonial_submission',
+        source TEXT NOT NULL DEFAULT 'open_agents_testimonial_submission',
         created_at TIMESTAMPTZ NOT NULL DEFAULT now(),
         updated_at TIMESTAMPTZ NOT NULL DEFAULT now()
       )
@@ -69,7 +69,7 @@ export async function POST(request: NextRequest) {
       await ensureTable(databaseUrl);
 
       await sql`
-        INSERT INTO ao_testimonial_submissions (testimonial, linkedin_url, tweet_url)
+        INSERT INTO open_agents_testimonial_submissions (testimonial, linkedin_url, tweet_url)
         VALUES (
           ${data.testimonial},
           ${data.linkedinUrl},
@@ -83,7 +83,7 @@ export async function POST(request: NextRequest) {
           updated_at = now()
       `;
     },
-    failureLog: "AO testimonial storage failed.",
+    failureLog: "Open Agents testimonial storage failed.",
     failureError: "Unable to save testimonial.",
   });
 }

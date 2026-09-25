@@ -5,7 +5,7 @@ import (
 	"errors"
 	"time"
 
-	"github.com/aoagents/agent-orchestrator/backend/internal/domain"
+	"github.com/sudo-adduser-jordan/open-agents/backend/internal/domain"
 )
 
 var (
@@ -48,18 +48,18 @@ const (
 // must satisfy. It supplies the argv and process configuration the Session
 // Manager needs to launch, restore, and read back a native agent session.
 type Agent interface {
-	// GetConfigSpec describes the agent-specific config keys AO can
-	// expose to users in the AO config.
+	// GetConfigSpec describes the agent-specific config keys Open Agents can
+	// expose to users in the Open Agents config.
 	GetConfigSpec(ctx context.Context) (ConfigSpec, error)
 
-	// GetLaunchCommand builds the argv AO should run to start this agent.
+	// GetLaunchCommand builds the argv Open Agents should run to start this agent.
 	GetLaunchCommand(ctx context.Context, cfg LaunchConfig) (cmd []string, err error)
 
-	// GetPromptDeliveryStrategy tells AO whether the prompt is included in
+	// GetPromptDeliveryStrategy tells Open Agents whether the prompt is included in
 	// the launch command or must be sent after the agent process starts.
 	GetPromptDeliveryStrategy(ctx context.Context, cfg LaunchConfig) (PromptDeliveryStrategy, error)
 
-	// GetAgentHooks installs or merges AO hooks into the agent's
+	// GetAgentHooks installs or merges Open Agents hooks into the agent's
 	// native workspace-local hook config. It must preserve user-defined hooks.
 	GetAgentHooks(ctx context.Context, cfg WorkspaceHookConfig) error
 
@@ -87,7 +87,7 @@ type AgentBinaryResolver interface {
 // AgentBinaryPresenceResolver is an optional startup-only refinement for an
 // adapter whose normal binary resolution performs additional validation. It
 // must only inspect local executable paths; it must not start the agent CLI.
-// AO uses it for the first-render prerequisite gate. Identity-sensitive
+// Open Agents uses it for the first-render prerequisite gate. Identity-sensitive
 // adapters may return ErrAgentBinaryIdentityUnknown when existence alone is
 // insufficient; that result remains unknown until a normal identity probe.
 type AgentBinaryPresenceResolver interface {
@@ -105,7 +105,7 @@ type AgentReadinessProvider interface {
 }
 
 // AgentNativeSessionTerminator is an optional adapter capability used before
-// AO destroys a terminal runtime or worktree whose agent may keep running in a
+// Open Agents destroys a terminal runtime or worktree whose agent may keep running in a
 // detached native process. Implementations must affect only the supplied
 // session and leave its transcript resumable.
 type AgentNativeSessionTerminator interface {
@@ -159,10 +159,10 @@ type CustomModelEntryMode string
 const (
 	// CustomModelEntryNone means the agent only accepts its reported choices.
 	CustomModelEntryNone CustomModelEntryMode = "none"
-	// CustomModelEntryDirect means AO may pass a user-entered model id directly.
+	// CustomModelEntryDirect means Open Agents may pass a user-entered model id directly.
 	CustomModelEntryDirect CustomModelEntryMode = "direct"
 	// CustomModelEntryConfigured means custom models must first be configured in
-	// the agent and then discovered by AO as ordinary catalog entries.
+	// the agent and then discovered by Open Agents as ordinary catalog entries.
 	CustomModelEntryConfigured CustomModelEntryMode = "configured"
 )
 
@@ -176,7 +176,7 @@ type AgentModelInfo struct {
 	DefaultEffort string   `json:"defaultEffort,omitempty"`
 }
 
-// AgentModelCatalog is AO's normalized model-picker response.
+// AgentModelCatalog is Open Agents's normalized model-picker response.
 type AgentModelCatalog struct {
 	AgentID          string               `json:"agentId"`
 	SelectionMode    ModelSelectionMode   `json:"selectionMode" enum:"catalog,text,mode"`
@@ -185,7 +185,7 @@ type AgentModelCatalog struct {
 	// AllowCustom is retained for compatibility and is true only for direct entry.
 	AllowCustom bool   `json:"allowCustom"`
 	Source      string `json:"source"`
-	// BinaryVersion is the legacy wire name for AO's non-sensitive executable
+	// BinaryVersion is the legacy wire name for Open Agents's non-sensitive executable
 	// and configuration metadata fingerprint.
 	BinaryVersion string    `json:"binaryVersion,omitempty"`
 	FetchedAt     time.Time `json:"fetchedAt"`
@@ -238,12 +238,12 @@ type AgentModelDiscoverer interface {
 	Manual(agentID string) AgentModelCatalog
 }
 
-// AgentExitDetectionMode describes how AO learns that an agent CLI process
+// AgentExitDetectionMode describes how Open Agents learns that an agent CLI process
 // ended while its terminal runtime remains alive.
 type AgentExitDetectionMode string
 
 const (
-	// AgentExitDetectionSupervisor means AO must wrap the CLI in its generic
+	// AgentExitDetectionSupervisor means Open Agents must wrap the CLI in its generic
 	// process supervisor because the adapter has no reliable exit hook.
 	AgentExitDetectionSupervisor AgentExitDetectionMode = "supervisor"
 )
@@ -255,7 +255,7 @@ type AgentExitDetector interface {
 }
 
 // AgentPromptReadinessProvider is an optional capability for interactive
-// adapters that receive their first task after startup. It lets AO wait until a
+// adapters that receive their first task after startup. It lets Open Agents wait until a
 // terminal UI is ready before injecting text through the runtime. When the
 // adapter also implements TerminalActivityDetector, an authoritative idle
 // detection takes precedence over the fallback text patterns.
@@ -305,7 +305,7 @@ type WaitingTerminalActivityDetector interface {
 
 // PromptReadinessHints describes when an after-start prompt should be sent.
 // Empty patterns mean "send immediately" unless the adapter also implements
-// TerminalActivityDetector, in which case AO waits for an authoritative idle
+// TerminalActivityDetector, in which case Open Agents waits for an authoritative idle
 // detection. A non-positive timeout always preserves immediate delivery.
 type PromptReadinessHints struct {
 	InitialDelay time.Duration
@@ -364,7 +364,7 @@ type BlockedActivitySignaler interface {
 
 // StartupInputReadinessSignaler is an OPTIONAL capability for a TUI adapter
 // whose first lifecycle hook cannot arrive until native startup dialogs have
-// cleared and the agent can safely accept pane input. AO gates user and
+// cleared and the agent can safely accept pane input. Open Agents gates user and
 // automation writes on FirstSignalAt only for adapters that opt in here;
 // hookless adapters must remain usable without manufacturing a signal.
 type StartupInputReadinessSignaler interface {
@@ -373,7 +373,7 @@ type StartupInputReadinessSignaler interface {
 
 // ActiveTurnSteerer is an OPTIONAL capability an Agent adapter implements when
 // submitting input while its harness is mid-turn STEERS the running turn rather
-// than being swallowed, queued, or applied to a dialog. AO uses it to decide
+// than being swallowed, queued, or applied to a dialog. Open Agents uses it to decide
 // whether an unsolicited coordination message may be written into an active
 // session. Adapters that do not implement it are treated as unsafe to steer, so
 // an unknown harness is only ever written to while idle.
@@ -402,7 +402,7 @@ const (
 // share one definition without a translation layer.
 type AgentConfig = domain.AgentConfig
 
-// ConfigSpec describes the agent-specific config keys AO can expose to users.
+// ConfigSpec describes the agent-specific config keys Open Agents can expose to users.
 type ConfigSpec struct {
 	Fields []ConfigField
 }
@@ -417,7 +417,7 @@ type ConfigField struct {
 	Enum        []string
 }
 
-// ConfigFieldType is the primitive value kind AO expects for a field.
+// ConfigFieldType is the primitive value kind Open Agents expects for a field.
 type ConfigFieldType string
 
 // The primitive value kinds a ConfigField can declare.
@@ -440,7 +440,7 @@ type LaunchConfig struct {
 	SessionID   string
 	// NativeSessionID optionally asks an adapter that supports caller-assigned
 	// native identities to use this id for a fresh provider conversation. It is
-	// deliberately separate from SessionID: one stable AO session may create
+	// deliberately separate from SessionID: one stable Open Agents session may create
 	// several provider-native conversations over its lifetime. Adapters whose
 	// CLI assigns native ids ignore this field and report the id through hooks.
 	NativeSessionID string
@@ -490,12 +490,12 @@ type RestoreConfig struct {
 	SystemPromptFile string
 }
 
-// SessionRef identifies an AO session whose agent-owned metadata may be read.
+// SessionRef identifies an Open Agents session whose agent-owned metadata may be read.
 type SessionRef struct {
 	ID            string
 	Metadata      map[string]string
 	WorkspacePath string
-	// DataDir is AO's isolated state root. Native lifecycle commands must use it
+	// DataDir is Open Agents's isolated state root. Native lifecycle commands must use it
 	// as their stable working/configuration root, never the session worktree.
 	DataDir string
 }
@@ -539,7 +539,7 @@ func NormalizePermissionMode(mode PermissionMode) PermissionMode {
 	}
 }
 
-// PromptDeliveryStrategy describes how AO should deliver the initial prompt.
+// PromptDeliveryStrategy describes how Open Agents should deliver the initial prompt.
 type PromptDeliveryStrategy string
 
 // How the orchestrator hands the initial prompt to a freshly launched agent.

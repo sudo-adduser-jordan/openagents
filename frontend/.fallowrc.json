@@ -55,7 +55,7 @@
 	// package.json manifests (they are not declared npm workspaces). Treating
 	// them as workspace members resolves their dependencies against the
 	// correct manifest and lets framework plugins (Next.js) activate for them.
-	// src/landing/packages/* are internally-published packages (@ao/ui etc.)
+	// src/landing/packages/* are internally-published packages (@openagents/ui etc.)
 	// also not declared as npm workspaces; declaring them makes the landing
 	// app's package imports resolve to real files instead of external nodes.
 	"workspaces": {

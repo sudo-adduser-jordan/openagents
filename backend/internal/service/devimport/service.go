@@ -10,8 +10,8 @@ import (
 	"path/filepath"
 	"strings"
 
-	engine "github.com/aoagents/agent-orchestrator/backend/internal/devimport"
-	"github.com/aoagents/agent-orchestrator/backend/internal/httpd/apierr"
+	engine "github.com/sudo-adduser-jordan/open-agents/backend/internal/devimport"
+	"github.com/sudo-adduser-jordan/open-agents/backend/internal/httpd/apierr"
 )
 
 // Store is the live target store used by the daemon.
@@ -19,14 +19,14 @@ type Store interface {
 	engine.Store
 }
 
-// SourceStore is an imported AO store opened read-only for the duration of one
+// SourceStore is an imported Open Agents store opened read-only for the duration of one
 // import run.
 type SourceStore interface {
 	engine.Store
 	Close() error
 }
 
-// SourceOpener opens an AO data directory as a source store.
+// SourceOpener opens an Open Agents data directory as a source store.
 type SourceOpener func(ctx context.Context, dataDir string) (SourceStore, error)
 
 // RunInput configures one project-registry import.
@@ -61,7 +61,7 @@ func New(deps Deps) *Manager {
 	return &Manager{store: deps.Store, targetDataDir: deps.TargetDataDir, openSource: deps.OpenSource}
 }
 
-// RunProjects reads the source AO database read-only and plans or writes into
+// RunProjects reads the source Open Agents database read-only and plans or writes into
 // the daemon's live store.
 func (m *Manager) RunProjects(ctx context.Context, in RunInput) (engine.Report, error) {
 	sourceDataDir, err := resolveDataDir(in.SourceDataDir)
@@ -78,7 +78,7 @@ func (m *Manager) RunProjects(ctx context.Context, in RunInput) (engine.Report, 
 	}
 	if same {
 		return engine.Report{}, apierr.Invalid("DEV_IMPORT_SOURCE_TARGET_SAME",
-			"sourceDataDir must be different from the target AO data dir", map[string]any{"path": sourceDataDir})
+			"sourceDataDir must be different from the target Open Agents data dir", map[string]any{"path": sourceDataDir})
 	}
 	if m.openSource == nil {
 		return engine.Report{}, fmt.Errorf("open source store: dependency is nil")

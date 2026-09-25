@@ -2,7 +2,7 @@ import {
 	canSubmitProjectSetup,
 	ProjectSetupFormView,
 	ProjectSetupHeaderView,
-} from "@aoagents/product-ui";
+} from "@openagents/product-ui";
 import * as Dialog from "@radix-ui/react-dialog";
 import { useQuery } from "@tanstack/react-query";
 import { ChevronLeft, TriangleAlert, X, type LucideIcon } from "lucide-react";
@@ -77,13 +77,13 @@ function projectSheetError(error: string, action: "create" | "clone"): SheetErro
 		case "PROJECT_BARE_REPOSITORY":
 			return {
 				title: "Choose a normal checkout",
-				message: "AO needs a regular working folder, not a bare Git repository.",
+				message: "Open Agents needs a regular working folder, not a bare Git repository.",
 				tone: "warning",
 			};
 		case "UNSUPPORTED_GIT_REPO":
 			return {
 				title: "Choose a valid Git folder",
-				message: "AO could not read the Git metadata here. Repair the repository or choose a plain folder.",
+				message: "Open Agents could not read the Git metadata here. Repair the repository or choose a plain folder.",
 				tone: "warning",
 			};
 		default:
@@ -320,7 +320,7 @@ export function CreateProjectAgentSheet({
 						}
 						setupNotice={
 							repositorySetupNeeded
-								? { message: "If this folder needs Git setup, AO will initialize it and create the first commit before starting.", warning: repositorySetupWarning }
+								? { message: "If this folder needs Git setup, Open Agents will initialize it and create the first commit before starting.", warning: repositorySetupWarning }
 								: null
 						}
 						submitLabel={

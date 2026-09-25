@@ -15,7 +15,7 @@ const { updInstall, updRelaunch, updGetStatus, updOnStatus, workspaceData } = vi
 }));
 
 vi.mock("../lib/bridge", () => ({
-	aoBridge: { updates: { getStatus: updGetStatus, install: updInstall, relaunch: updRelaunch, onStatus: updOnStatus } },
+	openAgentsBridge: { updates: { getStatus: updGetStatus, install: updInstall, relaunch: updRelaunch, onStatus: updOnStatus } },
 }));
 vi.mock("../hooks/useWorkspaceQuery", () => ({
 	useWorkspaceQuery: () => ({ data: workspaceData.current }),
@@ -25,7 +25,7 @@ function session(overrides: Record<string, unknown> = {}) {
 	return {
 		id: "s1",
 		title: "Fix the updater",
-		workspaceName: "agent-orchestrator",
+		workspaceName: "open-agents",
 		provider: "opencode",
 		mode: "chat",
 		status: "working",
@@ -69,7 +69,7 @@ it("shows what the build changes", async () => {
 		new Date(Date.UTC(2026, 8, 2, 17, 13)),
 	);
 	expect(screen.getByText(`Nightly 0.12.11 · ${expected}`)).toBeVisible();
-	expect(screen.queryByText(/Leave AO closed until it reopens/)).toBeNull();
+	expect(screen.queryByText(/Leave Open Agents closed until it reopens/)).toBeNull();
 });
 
 it("renders the nightly build date from the UTC instant", async () => {
@@ -95,7 +95,7 @@ it("names the sessions that would lose a turn and waits for confirmation", async
 
 	const warning = await screen.findByTestId("restart-sessions-warning");
 	expect(warning).toHaveTextContent("1 chat session will lose its current turn");
-	expect(warning).toHaveTextContent("agent-orchestrator · Fix the updater");
+	expect(warning).toHaveTextContent("open-agents · Fix the updater");
 	// The TUI session survives a quit, so naming it would be crying wolf.
 	expect(warning).not.toHaveTextContent("Terminal one");
 
@@ -130,7 +130,7 @@ it.each([false, undefined])(
 
 		const warning = await screen.findByTestId("restart-sessions-warning");
 		expect(warning).toHaveTextContent("1 chat session will lose its current turn");
-		expect(warning).toHaveTextContent("agent-orchestrator · Fix the updater");
+		expect(warning).toHaveTextContent("open-agents · Fix the updater");
 		expect(updInstall).not.toHaveBeenCalled();
 	},
 );
@@ -183,7 +183,7 @@ it("keeps notes and session risks visible, blocks duplicate submits and dismissa
 	expect(screen.queryByTestId("restart-to-update-dialog")).toBeNull();
 });
 
-it("shows an inline failure and retries by relaunching AO", async () => {
+it("shows an inline failure and retries by relaunching Open Agents", async () => {
 	const install = deferredInstall();
 	updRelaunch.mockResolvedValue(undefined);
 	useUiStore.setState({ updateInstallPromptOpen: true });
@@ -191,14 +191,14 @@ it("shows an inline failure and retries by relaunching AO", async () => {
 	await screen.findByText("Safer updates");
 	await userEvent.click(screen.getByRole("button", { name: "Restart & install" }));
 	await act(async () => install.reject(new Error("Error invoking remote method 'updates:install': Error: Couldn't finish preparing the update. Retry to try again.")));
-	expect(screen.getByRole("alert")).toHaveTextContent("AO could not prepare the update. Please try again.");
+	expect(screen.getByRole("alert")).toHaveTextContent("Open Agents could not prepare the update. Please try again.");
 	expect(screen.getByRole("alert")).toHaveTextContent("Couldn't finish preparing the update. Retry to try again.");
 	expect(screen.getByRole("alert")).not.toHaveTextContent("Error invoking remote method");
 	expect(screen.getByText("Safer updates")).toBeVisible();
 	expect(screen.getByRole("button", { name: "Cancel" })).toBeEnabled();
 	expect(screen.getByRole("button", { name: "Close" })).toBeEnabled();
 	expect(screen.queryByRole("progressbar")).toBeNull();
-	// The primary action becomes Retry, and retry restarts AO rather than
+	// The primary action becomes Retry, and retry restarts Open Agents rather than
 	// re-invoking install() against a Squirrel that cannot be reset in-process.
 	await userEvent.click(screen.getByRole("button", { name: "Retry" }));
 	expect(updRelaunch).toHaveBeenCalledTimes(1);
@@ -213,7 +213,7 @@ it("hides the install-on-quit line once preparation fails", async () => {
 	// Shown while nothing has failed: install-on-quit is still armed.
 	expect(screen.getByText(/installs on its own the next time you quit/)).toBeVisible();
 	await userEvent.click(screen.getByRole("button", { name: "Restart & install" }));
-	await act(async () => install.reject(new Error("Couldn't finish preparing the update. AO stayed open, so nothing changed. Retry to try again.")));
+	await act(async () => install.reject(new Error("Couldn't finish preparing the update. Open Agents stayed open, so nothing changed. Retry to try again.")));
 	// The main process turned off install-on-quit on failure, so the promise is
 	// gone rather than contradicting the error.
 	expect(screen.getByRole("alert")).toBeVisible();

@@ -22,10 +22,10 @@ describe("what to show while installing the connector", () => {
 		expect(installView(job({ status: "succeeded" }), false)).toEqual({ kind: "done" });
 	});
 
-	// Linux is unsupported *with* a command, because AO never asks for an
+	// Linux is unsupported *with* a command, because Open Agents never asks for an
 	// administrator password. That is instructions, not a failure — showing it
 	// as an error would tell the user nothing they can act on.
-	it("hands over the command when AO cannot run it itself", () => {
+	it("hands over the command when Open Agents cannot run it itself", () => {
 		const got = installView(
 			job({ status: "unsupported", command: "sudo apt-get install -y cloudflared", error: "needs root" }),
 			false,

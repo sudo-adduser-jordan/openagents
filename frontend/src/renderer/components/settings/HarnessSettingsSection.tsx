@@ -14,7 +14,7 @@ import { closeShellTerminal, shellTerminalsQueryKey } from "../../hooks/useShell
 import type { TerminalSessionState } from "../../hooks/useTerminalSession";
 import { agentLabel, AGENT_OPTIONS, type AgentId } from "../../lib/agent-options";
 import { apiClient, apiErrorCode, apiErrorMessage } from "../../lib/api-client";
-import { aoBridge } from "../../lib/bridge";
+import { openAgentsBridge } from "../../lib/bridge";
 import { cn } from "../../lib/utils";
 import { useShellMaybe } from "../../lib/shell-context";
 import { useResolvedTheme } from "../../stores/ui-store";
@@ -228,7 +228,7 @@ export function HarnessSettingsSection({ titleHidden = false }: { titleHidden?: 
 				params: { path: { agent: agentId } },
 			});
 			if (error || !data) {
-				setActionErrors((current) => ({ ...current, [agentId]: apiErrorMessage(error, `${agentLabel(agentId)} finished installing, but AO could not find its executable.`) }));
+				setActionErrors((current) => ({ ...current, [agentId]: apiErrorMessage(error, `${agentLabel(agentId)} finished installing, but Open Agents could not find its executable.`) }));
 				return;
 			}
 			updateJob(data);
@@ -238,7 +238,7 @@ export function HarnessSettingsSection({ titleHidden = false }: { titleHidden?: 
 	};
 
 	const copyText = async (agentId: AgentId, text: string) => {
-		await aoBridge.clipboard.writeText(text);
+		await openAgentsBridge.clipboard.writeText(text);
 		setCopiedAgent(agentId);
 		window.setTimeout(() => setCopiedAgent((current) => (current === agentId ? null : current)), 1_500);
 	};
@@ -250,7 +250,7 @@ export function HarnessSettingsSection({ titleHidden = false }: { titleHidden?: 
 		try {
 			const plan = agentAuthPlans.get(agentId);
 			if (plan?.launchMode === "documentation") {
-				await aoBridge.app.openExternal(plan.documentationUrl);
+				await openAgentsBridge.app.openExternal(plan.documentationUrl);
 				return;
 			}
 			const result = await startAgentAuth.mutateAsync(agentId);

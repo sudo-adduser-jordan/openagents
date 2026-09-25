@@ -9,9 +9,9 @@ import (
 
 	"github.com/google/uuid"
 
-	"github.com/aoagents/agent-orchestrator/backend/internal/domain"
-	"github.com/aoagents/agent-orchestrator/backend/internal/ports"
-	chatsvc "github.com/aoagents/agent-orchestrator/backend/internal/service/chat"
+	"github.com/sudo-adduser-jordan/open-agents/backend/internal/domain"
+	"github.com/sudo-adduser-jordan/open-agents/backend/internal/ports"
+	chatsvc "github.com/sudo-adduser-jordan/open-agents/backend/internal/service/chat"
 )
 
 type modeConversation struct {
@@ -36,7 +36,7 @@ func (c *modeConversation) SetConfigOption(ctx context.Context, _ string, value 
 }
 
 func TestOpenCodeModeSurvivesControllerRestart(t *testing.T) {
-	for _, mode := range []string{"plan", "build", "ao-plan-project-1"} {
+	for _, mode := range []string{"plan", "build", "open-agents-plan-project-1"} {
 		t.Run(mode, func(t *testing.T) {
 			ctx := context.Background()
 			st := openStore(t)

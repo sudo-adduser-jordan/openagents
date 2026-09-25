@@ -9,7 +9,7 @@ export type PairResult =
 	| { ok: true; config: ServerConfig; host: Host }
 	| {
 			ok: false;
-			reason: "not-ao-qr" | "outdated-desktop" | "no-candidates" | "none-reachable" | "verify-failed";
+			reason: "not-open-agents-qr" | "outdated-desktop" | "no-candidates" | "none-reachable" | "verify-failed";
 		};
 
 export type PairDeps = {
@@ -35,10 +35,10 @@ export type PairDeps = {
 export async function pairFromCode(raw: string, deps: PairDeps): Promise<PairResult> {
 	const offer = parsePairingCode(raw);
 	// Distinguished from unrecognised input so the reason does not depend on
-	// which caller reached here: a v1 code is a real AO code from a desktop too
+	// which caller reached here: a v1 code is a real Open Agents code from a desktop too
 	// old to pair with, and saying so is more useful than "not a pairing code".
 	if (!offer) {
-		return { ok: false, reason: isLegacyPairingCode(raw) ? "outdated-desktop" : "not-ao-qr" };
+		return { ok: false, reason: isLegacyPairingCode(raw) ? "outdated-desktop" : "not-open-agents-qr" };
 	}
 
 	const outcome = await deps.race(offer.endpoints, offer.hostId);

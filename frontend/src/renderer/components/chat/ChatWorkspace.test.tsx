@@ -60,7 +60,7 @@ const terminalPaneState = vi.hoisted(() => ({
 }));
 
 vi.mock("../../lib/bridge", () => ({
-	aoBridge: {
+	openAgentsBridge: {
 		app: {
 			onPreviousTabShortcut: (listener: () => void) => {
 				previousTabListeners.add(listener);
@@ -188,7 +188,7 @@ function humanMessage(text: string): ConversationMessage {
 const chatSession = {
 	id: chatFixture.sessionId,
 	workspaceId: "project-1",
-	workspaceName: "agent-orchestrator",
+	workspaceName: "open-agents",
 	title: "Reviewer chat",
 	provider: "opencode",
 	kind: "worker",
@@ -203,15 +203,15 @@ describe("HumanMessage attachments", () => {
 	function renderImageAttachment(header: string, name: string) {
 		render(
 			<HumanMessage
-				message={humanMessage(`check again\n\n${header}\n- .ao/attachments/${name}`)}
-				sessionId="ao session/1"
+				message={humanMessage(`check again\n\n${header}\n- .open-agents/attachments/${name}`)}
+				sessionId="open-agents session/1"
 			/>,
 		);
 
 		const image = screen.getByRole("img", { name });
 		expect(image).toHaveAttribute(
 			"src",
-			`http://127.0.0.1:3001/api/v1/sessions/ao%20session%2F1/preview/files/.ao/attachments/${name}`,
+			`http://127.0.0.1:3001/api/v1/sessions/open-agents%20session%2F1/preview/files/.open-agents/attachments/${name}`,
 		);
 		expect(screen.getByText("check again")).toBeInTheDocument();
 		expect(
@@ -237,7 +237,7 @@ describe("HumanMessage attachments", () => {
 			"Attached images (read these files in the workspace for visual context):",
 			"image-a1b2c3d4.webp",
 		],
-	])("renders an AO-generated %s image reference as an image", (_source, header, name) => {
+	])("renders an Open Agents-generated %s image reference as an image", (_source, header, name) => {
 		renderImageAttachment(header, name);
 	});
 
@@ -246,9 +246,9 @@ describe("HumanMessage attachments", () => {
 		const { container } = render(
 			<HumanMessage
 				message={humanMessage(
-					`${authoredBody}\n\nAttached files (read these files in the workspace):\n- .ao/attachments/attachment-ab12.png`,
+					`${authoredBody}\n\nAttached files (read these files in the workspace):\n- .open-agents/attachments/attachment-ab12.png`,
 				)}
-				sessionId="ao-1"
+				sessionId="open-agents-1"
 			/>,
 		);
 
@@ -261,9 +261,9 @@ describe("HumanMessage attachments", () => {
 		render(
 			<HumanMessage
 				message={humanMessage(
-					"inspect these\n\nAttached files (read these files in the workspace):\n- .ao/attachments/attachment-ab12.png\n- .ao/attachments/attachment-cd34.pdf",
+					"inspect these\n\nAttached files (read these files in the workspace):\n- .open-agents/attachments/attachment-ab12.png\n- .open-agents/attachments/attachment-cd34.pdf",
 				)}
-				sessionId="ao-1"
+				sessionId="open-agents-1"
 			/>,
 		);
 
@@ -276,7 +276,7 @@ describe("HumanMessage attachments", () => {
 	it("leaves ordinary user-authored path lists untouched", () => {
 		const text =
 			"Document this example:\n\nAttached files (read these files in the workspace):\n- docs/screenshot.png";
-		render(<HumanMessage message={humanMessage(text)} sessionId="ao-1" />);
+		render(<HumanMessage message={humanMessage(text)} sessionId="open-agents-1" />);
 
 		expect(screen.queryByRole("img")).not.toBeInTheDocument();
 		expect(document.body.textContent).toContain(text);
@@ -296,7 +296,7 @@ describe("Chat message timestamps", () => {
 		} satisfies ConversationMessage;
 		render(
 			<>
-				<HumanMessage message={user} sessionId="ao-1" />
+				<HumanMessage message={user} sessionId="open-agents-1" />
 				<AssistantMessage message={assistant} showCopy />
 			</>,
 		);
@@ -326,7 +326,7 @@ describe("Chat message timestamps", () => {
 		render(
 			<>
 				{messages.map((message) => (
-					<HumanMessage key={message.id} message={message} sessionId="ao-1" />
+					<HumanMessage key={message.id} message={message} sessionId="open-agents-1" />
 				))}
 			</>,
 		);
@@ -450,7 +450,7 @@ describe("ChatWorkspace timeline", () => {
 		view.rerender(
 			<ChatWorkspace
 				snapshot={chatFixture}
-				session={{ ...chatSession, id: "ao-demo-orchestrator", kind: "orchestrator" }}
+				session={{ ...chatSession, id: "open-agents-demo-orchestrator", kind: "orchestrator" }}
 				sessionRole="orchestrator"
 			/>,
 		);
@@ -955,7 +955,7 @@ describe("ChatWorkspace timeline", () => {
 				turnId: "turn-2",
 				activityKind: "approval",
 				status: "resolved",
-				summary: "Run gh pr create --base main --head ao/example",
+				summary: "Run gh pr create --base main --head open-agents/example",
 				requestId: "approval-resolved-1",
 				detail: { decision },
 				createdAt: "2026-08-08T00:00:00Z",
@@ -965,7 +965,7 @@ describe("ChatWorkspace timeline", () => {
 		render(<ChatWorkspace snapshot={snapshot} />);
 
 		expect(screen.getByText(label)).toBeInTheDocument();
-		expect(screen.getByText("Run gh pr create --base main --head ao/example")).toBeInTheDocument();
+		expect(screen.getByText("Run gh pr create --base main --head open-agents/example")).toBeInTheDocument();
 		expect(screen.queryByText(/req approval-resolved-1/)).not.toBeInTheDocument();
 		expect(
 			screen.queryByText("Already answered. This card is kept for the record."),
@@ -1103,7 +1103,7 @@ describe("ChatWorkspace timeline", () => {
 	});
 
 	it("reuses anchor measurements while scrolling and refreshes after content mutations", () => {
-		useUiStore.setState({ inspectorSessions: { "ao-long": { isOpen: false, view: "summary" } } });
+		useUiStore.setState({ inspectorSessions: { "open-agents-long": { isOpen: false, view: "summary" } } });
 		render(<ChatWorkspace snapshot={chatFixtureLongHistory(8)} />);
 		const log = screen.getByRole("log");
 		stubGeometry(log, { scrollHeight: 4000, clientHeight: 800, scrollTop: 1000 });
@@ -1129,7 +1129,7 @@ describe("ChatWorkspace timeline", () => {
 	it("provides an interactive conversation minimap", () => {
 		useUiStore.setState({
 			inspectorSessions: {
-				"ao-long": { isOpen: false, view: "summary" },
+				"open-agents-long": { isOpen: false, view: "summary" },
 			},
 		});
 		render(<ChatWorkspace snapshot={chatFixtureLongHistory(8)} />);
@@ -1169,7 +1169,7 @@ describe("ChatWorkspace timeline", () => {
 
 	it("disables the conversation minimap while the inspector is open", () => {
 		useUiStore.setState({
-			inspectorSessions: { "ao-long": { isOpen: true, view: "summary" } },
+			inspectorSessions: { "open-agents-long": { isOpen: true, view: "summary" } },
 		});
 		render(<ChatWorkspace snapshot={chatFixtureLongHistory(8)} />);
 		const log = screen.getByRole("log");
@@ -1196,7 +1196,7 @@ describe("ChatWorkspace timeline", () => {
 
 	it("updates the minimap interaction boundary when the inspector toggles", async () => {
 		useUiStore.setState({
-			inspectorSessions: { "ao-long": { isOpen: false, view: "summary" } },
+			inspectorSessions: { "open-agents-long": { isOpen: false, view: "summary" } },
 		});
 		render(<ChatWorkspace snapshot={chatFixtureLongHistory(8)} />);
 		const log = screen.getByRole("log");
@@ -1206,20 +1206,20 @@ describe("ChatWorkspace timeline", () => {
 		fireEvent.scroll(log);
 		expect(scrollbar.querySelectorAll("[data-chat-scroll-marker]").length).toBeGreaterThan(0);
 
-		act(() => useUiStore.getState().setInspectorOpen("ao-long", true));
+		act(() => useUiStore.getState().setInspectorOpen("open-agents-long", true));
 		await waitFor(() => expect(scrollbar).toHaveAttribute("aria-hidden", "true"));
 		expect(scrollbar).toHaveAttribute("tabindex", "-1");
 		fireEvent.wheel(scrollbar, { deltaY: 200 });
 		expect(log.scrollTop).toBe(1000);
 
-		act(() => useUiStore.getState().setInspectorOpen("ao-long", false));
+		act(() => useUiStore.getState().setInspectorOpen("open-agents-long", false));
 		await waitFor(() => expect(scrollbar).toHaveAttribute("aria-hidden", "false"));
 		expect(scrollbar).toHaveAttribute("tabindex", "0");
 	});
 
 	it("does not recommit the conversation timeline when the inspector toggles", async () => {
 		useUiStore.setState({
-			inspectorSessions: { "ao-long": { isOpen: false, view: "summary" } },
+			inspectorSessions: { "open-agents-long": { isOpen: false, view: "summary" } },
 		});
 		const commits: number[] = [];
 		render(
@@ -1232,14 +1232,14 @@ describe("ChatWorkspace timeline", () => {
 		});
 		commits.length = 0;
 
-		act(() => useUiStore.getState().setInspectorOpen("ao-long", true));
+		act(() => useUiStore.getState().setInspectorOpen("open-agents-long", true));
 
 		expect(commits).toHaveLength(0);
 	});
 
 	it("keeps conversation minimap markers when the transcript fits the viewport", () => {
 		useUiStore.setState({
-			inspectorSessions: { "ao-long": { isOpen: false, view: "summary" } },
+			inspectorSessions: { "open-agents-long": { isOpen: false, view: "summary" } },
 		});
 		render(<ChatWorkspace snapshot={chatFixtureLongHistory(4)} />);
 		const log = screen.getByRole("log");
@@ -1264,7 +1264,7 @@ describe("ChatWorkspace timeline", () => {
 
 	it("re-enables the conversation minimap when the inspector closes again", async () => {
 		useUiStore.setState({
-			inspectorSessions: { "ao-long": { isOpen: false, view: "summary" } },
+			inspectorSessions: { "open-agents-long": { isOpen: false, view: "summary" } },
 		});
 		render(<ChatWorkspace snapshot={chatFixtureLongHistory(8)} />);
 		const log = screen.getByRole("log");
@@ -1287,7 +1287,7 @@ describe("ChatWorkspace timeline", () => {
 
 		act(() => {
 			useUiStore.setState({
-				inspectorSessions: { "ao-long": { isOpen: true, view: "summary" } },
+				inspectorSessions: { "open-agents-long": { isOpen: true, view: "summary" } },
 			});
 		});
 		await waitFor(() => {
@@ -1298,7 +1298,7 @@ describe("ChatWorkspace timeline", () => {
 
 		act(() => {
 			useUiStore.setState({
-				inspectorSessions: { "ao-long": { isOpen: false, view: "summary" } },
+				inspectorSessions: { "open-agents-long": { isOpen: false, view: "summary" } },
 			});
 		});
 		await waitFor(() => {
@@ -1312,7 +1312,7 @@ describe("ChatWorkspace timeline", () => {
 	it("previews the request and response for a hovered conversation marker", () => {
 		useUiStore.setState({
 			inspectorSessions: {
-				"ao-long": { isOpen: false, view: "summary" },
+				"open-agents-long": { isOpen: false, view: "summary" },
 			},
 		});
 		render(<ChatWorkspace snapshot={chatFixtureLongHistory(4)} />);
@@ -1733,9 +1733,9 @@ Requested visual changes:
 - Background: "transparent" → "#32c873"
 
 Reference screenshots:
-- .ao/attachments/browser.png
+- .open-agents/attachments/browser.png
 
-Task: Address the feedback below according to its wording. Visual adjustments are already previewed in AO's shared browser and describe the intended result.
+Task: Address the feedback below according to its wording. Visual adjustments are already previewed in Open Agents's shared browser and describe the intended result.
 </browser_annotations>`,
 		};
 
@@ -2688,14 +2688,14 @@ describe("ChatWorkspace message actions", () => {
 
 		render(<ChatWorkspace {...common} />);
 		expect(screen.getByRole("status")).toHaveTextContent("Saving attachments");
-		await act(async () => finishStaging([".ao/attachments/attachment-pending.txt"]));
+		await act(async () => finishStaging([".open-agents/attachments/attachment-pending.txt"]));
 
 		expect(await screen.findByLabelText("Remove pending.txt")).toBeInTheDocument();
 		await waitFor(() => expect(screen.queryByText("Saving attachments… Wait before leaving this chat.")).toBeNull());
 		expect(readChatSessionDraft(snapshot.sessionId).composer.attachments).toEqual([
 			expect.objectContaining({
 				name: "pending.txt",
-				path: ".ao/attachments/attachment-pending.txt",
+				path: ".open-agents/attachments/attachment-pending.txt",
 			}),
 		]);
 	});
@@ -2732,7 +2732,7 @@ describe("ChatWorkspace message actions", () => {
 		await waitFor(() => expect(onStageAttachments).toHaveBeenCalledTimes(1));
 		firstView.unmount();
 		await act(async () => {
-			finishStaging([".ao/attachments/attachment-unsafe.txt"]);
+			finishStaging([".open-agents/attachments/attachment-unsafe.txt"]);
 			await Promise.resolve();
 			await Promise.resolve();
 		});
@@ -2753,7 +2753,7 @@ describe("ChatWorkspace message actions", () => {
 	it("restores only durably staged attachments and does not resurrect them after an accepted send", async () => {
 		const snapshot = idleSnapshot();
 		const onStageAttachments = vi.fn(async () => [
-			".ao/attachments/attachment-durable.png",
+			".open-agents/attachments/attachment-durable.png",
 		]);
 		const onSend = vi.fn(async (_text: string) => undefined);
 		const common = { snapshot, onSend, onStageAttachments };
@@ -2780,7 +2780,7 @@ describe("ChatWorkspace message actions", () => {
 		await userEvent.click(screen.getByRole("button", { name: "Send message" }));
 		await waitFor(() => expect(onSend).toHaveBeenCalledTimes(1));
 		expect(onSend.mock.calls[0]?.[0]).toContain(
-			".ao/attachments/attachment-durable.png",
+			".open-agents/attachments/attachment-durable.png",
 		);
 		expect(onStageAttachments).toHaveBeenCalledTimes(1);
 		restoredView.unmount();
@@ -3119,7 +3119,7 @@ describe("ChatWorkspace reviewer tabs", () => {
 			onSelectChat: vi.fn(),
 			onEditMessage: vi.fn(async () => undefined),
 			onStageAttachments: vi.fn(async () => [
-				".ao/attachments/attachment-review.png",
+				".open-agents/attachments/attachment-review.png",
 			]),
 		};
 		const view = render(<ChatWorkspace {...common} />);
@@ -3188,7 +3188,7 @@ describe("ChatWorkspace reviewer tabs", () => {
 	});
 
 	it("gives the reviewer terminal working zoom and fullscreen controls", async () => {
-		window.localStorage.setItem("ao.terminal.fontSize", "14");
+		window.localStorage.setItem("open-agents.terminal.fontSize", "14");
 		render(
 			<ChatWorkspace
 				snapshot={idleSnapshot()}
@@ -3206,14 +3206,14 @@ describe("ChatWorkspace reviewer tabs", () => {
 		expect(terminalPaneState.props?.onToggleFullscreen).toEqual(expect.any(Function));
 
 		act(() => terminalPaneState.props?.onChangeFontSize?.(2));
-		expect(window.localStorage.getItem("ao.terminal.fontSize")).toBe("16");
+		expect(window.localStorage.getItem("open-agents.terminal.fontSize")).toBe("16");
 		expect(terminalPaneState.props?.fontSize).toBe(16);
 
 		fireEvent.wheel(screen.getByTestId("chat-reviewer-panel"), {
 			ctrlKey: true,
 			deltaY: -80,
 		});
-		expect(window.localStorage.getItem("ao.terminal.fontSize")).toBe("17");
+		expect(window.localStorage.getItem("open-agents.terminal.fontSize")).toBe("17");
 		expect(terminalPaneState.props?.fontSize).toBe(17);
 
 		const surface = screen.getByLabelText("Chat");
@@ -3605,7 +3605,7 @@ describe("durable queued edits", () => {
 		await waitFor(() => expect(stage).toHaveBeenCalledOnce());
 		fireEvent.keyDown(composer, { key: "Enter" });
 		expect(screen.getByRole("button", { name: "Edit queued message" })).toBeDisabled();
-		await act(async () => settle([".ao/attachments/note.txt"]));
+		await act(async () => settle([".open-agents/attachments/note.txt"]));
 		await waitFor(() => expect(send).toHaveBeenCalledOnce());
 		expect(send.mock.calls[0]?.[0]).toContain("ordinary prompt");
 		await waitFor(() => expect(screen.getByRole("button", { name: "Edit queued message" })).toBeEnabled());

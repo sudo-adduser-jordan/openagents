@@ -7,8 +7,8 @@ import (
 	"context"
 	"fmt"
 
-	"github.com/aoagents/agent-orchestrator/backend/internal/httpd/apierr"
-	"github.com/aoagents/agent-orchestrator/backend/internal/service/shellterm"
+	"github.com/sudo-adduser-jordan/open-agents/backend/internal/httpd/apierr"
+	"github.com/sudo-adduser-jordan/open-agents/backend/internal/service/shellterm"
 )
 
 // ExecutableFinder resolves an executable on the host PATH.
@@ -82,7 +82,7 @@ type StartResult struct {
 	Terminal      shellterm.ShellTerminal `json:"terminal"`
 }
 
-// Service resolves the fixed authentication registry through AO's registered
+// Service resolves the fixed authentication registry through Open Agents's registered
 // harness adapters, with direct PATH lookup only for callers without one.
 type Service struct {
 	executables ExecutableFinder
@@ -95,7 +95,7 @@ func New(executables ExecutableFinder, terminals TerminalOpener) *Service {
 	return NewWithAgentResolver(executables, nil, terminals)
 }
 
-// NewWithAgentResolver creates a service that uses AO's adapter-aware binary
+// NewWithAgentResolver creates a service that uses Open Agents's adapter-aware binary
 // resolver as the authoritative validation and discovery boundary.
 func NewWithAgentResolver(executables ExecutableFinder, agents AgentBinaryResolver, terminals TerminalOpener) *Service {
 	return &Service{executables: executables, agents: agents, terminals: terminals}

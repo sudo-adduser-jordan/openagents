@@ -246,7 +246,7 @@ export function useBrowserAnnotationQueue({
 				}
 				sent = true;
 				stagedScreenshotPathsRef.current.delete(payload);
-				await window.ao?.browser.completeAnnotation?.({
+				await window.openAgents?.browser.completeAnnotation?.({
 					viewId: payload.viewId,
 					tabId: payload.tabId,
 					pageKey: payload.pageKey,
@@ -420,9 +420,9 @@ export function BrowserPanelView({
 	const [urlEditing, setUrlEditing] = useState(false);
 	const { beginPicking, cancelPicking, enqueue, error, failPicking, queuedCount, retryQueued, status } =
 		annotationQueue;
-	const hasNativeBrowser = Boolean(window.ao?.browser);
+	const hasNativeBrowser = Boolean(window.openAgents?.browser);
 	const showStaticPreview = !hasNativeBrowser && navState.url !== "";
-	const canAnnotate = Boolean(window.ao?.browser && viewId && navState.url);
+	const canAnnotate = Boolean(window.openAgents?.browser && viewId && navState.url);
 	const canRetryAnnotation = status === "error" && queuedCount > 0;
 	const [devicePreset, setDevicePreset] = useState<string | null>(null);
 	const [customDeviceWidth, setCustomDeviceWidth] = useState("390");
@@ -488,10 +488,10 @@ export function BrowserPanelView({
 	}, [activeTabId, tabs.length, draggedTopTabId, tabScrollRef]);
 
 	useEffect(() => {
-		if (controlsView !== "profiles" || !window.ao?.browserProfiles) return;
+		if (controlsView !== "profiles" || !window.openAgents?.browserProfiles) return;
 		let canceled = false;
 		setProfilesLoading(true);
-		void window.ao.browserProfiles
+		void window.openAgents.browserProfiles
 			.list()
 			.then((state) => {
 				if (!canceled) setBrowserProfiles(state.profiles);
@@ -509,8 +509,8 @@ export function BrowserPanelView({
 
 	const selectBrowserProfile = useCallback(
 		(profileId: string | null) => {
-			if (!viewId || !window.ao?.browser) return;
-			void window.ao.browser.selectProfile({
+			if (!viewId || !window.openAgents?.browser) return;
+			void window.openAgents.browser.selectProfile({
 				viewId,
 				profileId,
 				labels: {
@@ -529,21 +529,21 @@ export function BrowserPanelView({
 
 	useEffect(() => {
 		if (!viewId) return;
-		if (active) window.ao?.browser.notifyPanelUsed(viewId);
-		else window.ao?.browser.notifyPanelBlur(viewId);
-		return () => window.ao?.browser.notifyPanelBlur(viewId);
+		if (active) window.openAgents?.browser.notifyPanelUsed(viewId);
+		else window.openAgents?.browser.notifyPanelBlur(viewId);
+		return () => window.openAgents?.browser.notifyPanelBlur(viewId);
 	}, [active, viewId]);
 
 	useEffect(
 		() =>
-			window.ao?.browser.onFocusLocation((targetViewId) => {
+			window.openAgents?.browser.onFocusLocation((targetViewId) => {
 				if (targetViewId !== viewId) return;
 				// ⌘T/Ctrl+T focuses the omnibox after opening a tab. When the bar is
 				// portaled into the inspector header it sits outside the panel focus
 				// boundary, so restore the browser shortcut target before the input
 				// takes focus — otherwise the next ⌘T/⌘W falls through to terminal
 				// shortcuts and yank focus to the main pane.
-				window.ao?.browser.notifyPanelUsed(viewId);
+				window.openAgents?.browser.notifyPanelUsed(viewId);
 				if (document.activeElement === urlInputRef.current) {
 					return;
 				}
@@ -554,7 +554,7 @@ export function BrowserPanelView({
 	);
 	useEffect(
 		() =>
-			window.ao?.browser.onReopenClosedTab((targetViewId) => {
+			window.openAgents?.browser.onReopenClosedTab((targetViewId) => {
 				if (targetViewId !== viewId) return;
 				void reopenClosedTab();
 			}),
@@ -597,9 +597,9 @@ export function BrowserPanelView({
 	}, [browserDownloads.downloads.length]);
 
 	const takeScreenshot = useCallback(async () => {
-		if (!viewId || !window.ao?.browser) return;
+		if (!viewId || !window.openAgents?.browser) return;
 		try {
-			await window.ao.browser.captureScreenshot(viewId);
+			await window.openAgents.browser.captureScreenshot(viewId);
 			showGlobalToast("Screenshot copied to clipboard", undefined, "top-center");
 		} catch {
 			showGlobalToast("Could not take screenshot", undefined, "top-center");
@@ -627,7 +627,7 @@ export function BrowserPanelView({
 		const query = urlInput.trim();
 		if (
 			!urlEditing ||
-			!window.ao?.browser ||
+			!window.openAgents?.browser ||
 			!viewId ||
 			!profileState.profileId ||
 			query === navState.url ||
@@ -638,7 +638,7 @@ export function BrowserPanelView({
 		}
 		let current = true;
 		const timer = window.setTimeout(() => {
-			void window.ao!.browser.historySuggestions({ viewId, query }).then(
+			void window.openAgents!.browser.historySuggestions({ viewId, query }).then(
 				(suggestions) => {
 					if (!current || historyRequestGenerationRef.current !== generation) return;
 					setHistorySuggestions(suggestions.slice(0, MAX_HISTORY_SUGGESTIONS));
@@ -663,7 +663,7 @@ export function BrowserPanelView({
 	}, [urlEditing]);
 
 	useEffect(() => {
-		const onPageFocus = window.ao?.browser.onPageFocus;
+		const onPageFocus = window.openAgents?.browser.onPageFocus;
 		if (!onPageFocus) return;
 		return onPageFocus((focusedViewId) => {
 			if (focusedViewId !== viewId) return;
@@ -677,11 +677,11 @@ export function BrowserPanelView({
 	}, [navState.url, viewId]);
 
 	useEffect(() => {
-		const offSubmit = window.ao?.browser.onAnnotationSubmit((payload) => {
+		const offSubmit = window.openAgents?.browser.onAnnotationSubmit((payload) => {
 			if (payload.viewId !== viewId) return;
 			enqueue(payload);
 		});
-		const offCancel = window.ao?.browser.onAnnotationCancel((payload) => {
+		const offCancel = window.openAgents?.browser.onAnnotationCancel((payload) => {
 			if (payload.viewId !== viewId) return;
 			cancelPicking();
 		});
@@ -827,7 +827,7 @@ export function BrowserPanelView({
 				// When docked, this form is portaled into the inspector header and is
 				// therefore outside the browser-panel focus boundary below. Restore the
 				// browser shortcut target when its address input receives focus.
-				if (viewId) window.ao?.browser.notifyPanelUsed(viewId);
+				if (viewId) window.openAgents?.browser.notifyPanelUsed(viewId);
 			}}
 			onSubmit={submit}
 		>
@@ -1116,13 +1116,13 @@ export function BrowserPanelView({
 				) {
 					return;
 				}
-				window.ao?.browser.notifyPanelBlur(viewId);
+				window.openAgents?.browser.notifyPanelBlur(viewId);
 			}}
 			onFocusCapture={() => {
-				if (viewId) window.ao?.browser.notifyPanelUsed(viewId);
+				if (viewId) window.openAgents?.browser.notifyPanelUsed(viewId);
 			}}
 			onPointerDownCapture={() => {
-				if (viewId) window.ao?.browser.notifyPanelUsed(viewId);
+				if (viewId) window.openAgents?.browser.notifyPanelUsed(viewId);
 			}}
 			role="tabpanel"
 		>
@@ -1712,12 +1712,12 @@ function faviconForOpenTab(url: string, tabs: BrowserViewModel["tabs"]): string 
 
 function BrowserSuggestionIcon({ cachedFavicon, url, viewId }: { cachedFavicon?: string; url: string; viewId: string }) {
 	const origin = webOrigin(url);
-	const nativeCompositionEnabled = window.ao?.browser.nativeCompositionEnabled === true;
+	const nativeCompositionEnabled = window.openAgents?.browser.nativeCompositionEnabled === true;
 	const directFavicon = !nativeCompositionEnabled && origin ? `${origin}/favicon.ico` : undefined;
 	const [favicon, setFavicon] = useState(cachedFavicon ?? directFavicon);
 	useEffect(() => {
 		setFavicon(cachedFavicon ?? directFavicon);
-		const historyFavicon = window.ao?.browser.historyFavicon;
+		const historyFavicon = window.openAgents?.browser.historyFavicon;
 		if (cachedFavicon || !nativeCompositionEnabled || !viewId || typeof historyFavicon !== "function") return;
 		let current = true;
 		void historyFavicon({ viewId, url }).then(
@@ -1747,7 +1747,7 @@ function StaticPreview({ url }: { url: string }) {
 	return (
 		<div className="absolute inset-0 overflow-auto bg-background text-foreground">
 			<div className="border-b border-border bg-surface px-4 py-3">
-				<div className="text-caption font-semibold uppercase tracking-wide-md text-muted-foreground">AO Preview</div>
+				<div className="text-caption font-semibold uppercase tracking-wide-md text-muted-foreground">Open Agents Preview</div>
 				<div className="mt-1 truncate font-mono text-xs text-accent">{url}</div>
 			</div>
 			<div className="mx-auto max-w-preview-max px-5 py-6">
@@ -1758,7 +1758,7 @@ function StaticPreview({ url }: { url: string }) {
 								Demo app preview
 							</h1>
 							<p className="mt-1 text-control leading-row text-muted-foreground">
-								The worker exposed a local Vite app with <span className="font-mono">ao preview</span>.
+								The worker exposed a local Vite app with <span className="font-mono">open-agents preview</span>.
 							</p>
 						</div>
 						<span className="rounded-md bg-success/15 px-2.5 py-1 text-caption font-semibold text-success">

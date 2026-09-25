@@ -1,5 +1,5 @@
 import { create } from "zustand";
-import { aoBridge } from "../lib/bridge";
+import { openAgentsBridge } from "../lib/bridge";
 import type { TerminalTarget } from "../types/terminal";
 import {
 	applyDocumentTheme,
@@ -169,8 +169,8 @@ export type OrchestratorReplacementFailure = {
 	requestId?: string;
 };
 
-const sidebarStorageKey = "ao.sidebar.open";
-const developerModeStorageKey = "ao.developerMode";
+const sidebarStorageKey = "open-agents.sidebar.open";
+const developerModeStorageKey = "open-agents.developerMode";
 function getLocalStorage() {
 	if (typeof window === "undefined" || !window.localStorage) return null;
 	return window.localStorage;
@@ -185,7 +185,7 @@ function initialDeveloperMode() {
 }
 
 function syncDeveloperModeToUpdater(enabled: boolean): void {
-	const request = aoBridge.updateSettings?.setMacDifferentialUpdates?.(enabled);
+	const request = openAgentsBridge.updateSettings?.setMacDifferentialUpdates?.(enabled);
 	void request?.catch(() => undefined);
 }
 

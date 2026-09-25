@@ -62,7 +62,7 @@ func stripEnvAssignments(argv []string) (assignments, rest []string) {
 // interactiveTerminalEnv builds the environment inherited by the detached
 // pty-host and, in turn, by the interactive agent process it owns.
 //
-// AO itself may run under an agent or CI process that sets NO_COLOR for
+// Open Agents itself may run under an agent or CI process that sets NO_COLOR for
 // captured logs. That ambient preference must not leak into an interactive
 // terminal. Projects can still opt out of color explicitly through RuntimeConfig
 // or an `env NO_COLOR=...` argv prefix. The native PTY and its xterm clients

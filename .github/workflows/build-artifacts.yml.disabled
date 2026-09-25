@@ -96,10 +96,10 @@ jobs:
         env:
           # Bake the update feed's owner/repo from the repo this build runs in.
           # Without this, forge.config.ts falls back to DEFAULT_RELEASE_REPO,
-          # which went stale across the AgentWrapper -> Untrivial-ai transfer and
+          # which went stale across the repository transfer and
           # left every published build pointing its updater at the old owner,
           # alive only through GitHub's rename redirect (#3523).
-          AO_RELEASE_REPO: ${{ github.repository }}
+          OPEN_AGENTS_RELEASE_REPO: ${{ github.repository }}
         run: npm run make
       - name: Verify baked update feed repo
         # app-update.yml is what electron-updater reads at runtime to build the
@@ -128,17 +128,17 @@ jobs:
             darwin-*)
               # maker-zip output: out/make/zip/darwin/<arch>/<name>-<version>.zip
               src="$(find out/make/zip/darwin -name '*.zip' | head -n1)"
-              name="agent-orchestrator-$PLATFORM.zip"
+              name="open-agents-$PLATFORM.zip"
               ;;
             win32-x64)
               # NSIS (electron-builder) output: out/make/<productName> Setup <version>.exe
               src="$(find out/make -maxdepth 1 -name '*Setup*.exe' | head -n1)"
-              name="agent-orchestrator-win32-x64.exe"
+              name="open-agents-win32-x64.exe"
               ;;
             linux-x64)
               # AppImage (electron-builder) output: out/make/<productName>-<version>.AppImage
               src="$(find out/make -maxdepth 1 -name '*.AppImage' | head -n1)"
-              name="agent-orchestrator-linux-x64.AppImage"
+              name="open-agents-linux-x64.AppImage"
               ;;
             *)
               echo "unknown platform: $PLATFORM" >&2
@@ -155,7 +155,7 @@ jobs:
           echo "$PLATFORM: $name sha256=$hash" >> "$GITHUB_STEP_SUMMARY"
       # The deb maker in forge.config.ts also runs on linux; capture its output
       # as a separate `linux-deb` artifact. It lives in its own dist-deb dir so
-      # the `linux` artifact's agent-orchestrator-linux-x64.* glob below cannot
+      # the `linux` artifact's open-agents-linux-x64.* glob below cannot
       # pick it up. Its digest is merged into the linux-x64 digest fragment so
       # the digests job still reads one fragment per platform.
       - name: Collect Linux .deb and compute digest
@@ -166,7 +166,7 @@ jobs:
           # maker-deb output: out/make/deb/x64/<name>_<version>_amd64.deb
           src="$(find out/make -name '*.deb' | head -n1)"
           if [ -z "$src" ]; then echo "no .deb output found" >&2; exit 1; fi
-          name="agent-orchestrator-linux-x64.deb"
+          name="open-agents-linux-x64.deb"
           cp "$src" "dist-deb/$name"
           hash="$(openssl dgst -sha256 "dist-deb/$name" | awk '{print $NF}')"
           jq --arg f "$name" --arg h "$hash" '. + {($f): $h}' \
@@ -178,13 +178,13 @@ jobs:
         uses: actions/upload-artifact@v4
         with:
           name: linux-deb
-          path: frontend/dist-deb/agent-orchestrator-linux-x64.deb
+          path: frontend/dist-deb/open-agents-linux-x64.deb
           retention-days: 1
           if-no-files-found: error
       # Same story for the rpm maker (Fedora/RHEL/openSUSE, issue #3405). It
       # already runs here (ubuntu-latest ships rpmbuild), its output was just
       # never collected. Own dir for the same reason as the deb: keep it out of
-      # the `linux` artifact's agent-orchestrator-linux-x64.* glob.
+      # the `linux` artifact's open-agents-linux-x64.* glob.
       - name: Collect Linux .rpm and compute digest
         if: matrix.platform == 'linux-x64'
         shell: bash
@@ -193,7 +193,7 @@ jobs:
           # maker-rpm output: out/make/rpm/x64/<name>-<version>-<revision>.x86_64.rpm
           src="$(find out/make -name '*.rpm' | head -n1)"
           if [ -z "$src" ]; then echo "no .rpm output found" >&2; exit 1; fi
-          name="agent-orchestrator-linux-x64.rpm"
+          name="open-agents-linux-x64.rpm"
           cp "$src" "dist-rpm/$name"
           hash="$(openssl dgst -sha256 "dist-rpm/$name" | awk '{print $NF}')"
           jq --arg f "$name" --arg h "$hash" '. + {($f): $h}' \
@@ -205,14 +205,14 @@ jobs:
         uses: actions/upload-artifact@v4
         with:
           name: linux-rpm
-          path: frontend/dist-rpm/agent-orchestrator-linux-x64.rpm
+          path: frontend/dist-rpm/open-agents-linux-x64.rpm
           retention-days: 1
           if-no-files-found: error
       - name: Upload artifact
         uses: actions/upload-artifact@v4
         with:
           name: ${{ matrix.artifact }}
-          path: frontend/dist-artifact/agent-orchestrator-${{ matrix.platform }}.*
+          path: frontend/dist-artifact/open-agents-${{ matrix.platform }}.*
           retention-days: 1
           if-no-files-found: error
       - name: Upload digest

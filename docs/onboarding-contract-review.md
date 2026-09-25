@@ -22,11 +22,11 @@ workspace can be created. The reported failure crossed precisely that boundary.
 
 ## Changes in PR #5126
 
-- Clone destinations can be typed and default to `~/ao/projects` without a
+- Clone destinations can be typed and default to `~/open-agents/projects` without a
   saved selection. A separate button opens the native picker at that folder,
   creating it if needed; the picker permits folder creation. Existing user
   selections remain respected, and cloning creates missing destination parents.
-- Default resolution accepts an AO-initialized local branch before the first
+- Default resolution accepts an Open Agents-initialized local branch before the first
   push, without guessing from an arbitrary current checkout. Remote defaults
   retain precedence, and a failed fetch of a known default still fails.
 - Both the project initializer and the import preparation commit action use
@@ -98,7 +98,7 @@ Retain focused tests, but add boundary/acceptance coverage for these journeys:
 | Journey | Required outcome |
 | --- | --- |
 | Populated remote clone, including non-main defaults | First workspace uses the repository default |
-| Empty remote clone | AO's initial branch seeds the first workspace; first push supersedes local fallback |
+| Empty remote clone | Open Agents's initial branch seeds the first workspace; first push supersedes local fallback |
 | Existing local repository on a feature branch | Explicit, consistent base-selection policy |
 | Plain folder or unborn local repository | Approved initialization preserves contents and records branch identity |
 | Workspace with mixed child readiness | Each child has an actionable result; failed preparation is retryable |

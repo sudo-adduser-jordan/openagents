@@ -14,7 +14,7 @@ describe("editor settings", () => {
 	let stateDir: string;
 
 	beforeEach(async () => {
-		stateDir = await mkdtemp(path.join(os.tmpdir(), "ao-editor-settings-"));
+		stateDir = await mkdtemp(path.join(os.tmpdir(), "open-agents-editor-settings-"));
 	});
 
 	afterEach(async () => {
@@ -27,7 +27,7 @@ describe("editor settings", () => {
 		expect(await readEditorSettings(stateDir)).toEqual({ preferredEditorId: "cursor" });
 	});
 
-	it("atomically persists a supported preferred editor under AO state", async () => {
+	it("atomically persists a supported preferred editor under Open Agents state", async () => {
 		await writeEditorPreference(stateDir, "vscode");
 		expect(await readEditorSettings(stateDir)).toEqual({ preferredEditorId: "vscode" });
 		const raw = await readFile(path.join(stateDir, EDITOR_SETTINGS_FILE_NAME), "utf8");

@@ -8,13 +8,13 @@ import (
 	"testing"
 	"time"
 
-	"github.com/aoagents/agent-orchestrator/backend/internal/domain"
-	"github.com/aoagents/agent-orchestrator/backend/internal/ports"
-	chatsvc "github.com/aoagents/agent-orchestrator/backend/internal/service/chat"
-	"github.com/aoagents/agent-orchestrator/backend/internal/storage/sqlite/store"
+	"github.com/sudo-adduser-jordan/open-agents/backend/internal/domain"
+	"github.com/sudo-adduser-jordan/open-agents/backend/internal/ports"
+	chatsvc "github.com/sudo-adduser-jordan/open-agents/backend/internal/service/chat"
+	"github.com/sudo-adduser-jordan/open-agents/backend/internal/storage/sqlite/store"
 )
 
-// Projection of the provider signal AO used to drop: reasoning streams, plans,
+// Projection of the provider signal Open Agents used to drop: reasoning streams, plans,
 // terminal input, auto-approval reviews, model reroutes, account state, thread
 // state and MCP server health.
 //
@@ -225,7 +225,7 @@ func TestPlanInProgressStaysRunning(t *testing.T) {
 }
 
 // A provider is allowed to omit a final plan notification. Successful turn
-// completion is AO's durable proof that the remaining plan work finished, so
+// completion is Open Agents's durable proof that the remaining plan work finished, so
 // both copies of the plan must settle with the turn instead of leaving a
 // completed answer beside a permanent "0 / N" plan.
 func TestSuccessfulCompletionFinalizesPlanWhenProviderOmitsTerminalPlan(t *testing.T) {
@@ -356,7 +356,7 @@ func TestAccountReportsMergeRatherThanReplace(t *testing.T) {
 	})
 	account := snapshot.Conversation.Account
 	if account.AuthMode != "chatgpt" || account.PlanLabel != "pro" {
-		t.Fatalf("a credential demand blanked what AO already knew: %+v", account)
+		t.Fatalf("a credential demand blanked what Open Agents already knew: %+v", account)
 	}
 	if account.ReauthReason != "unauthorized" {
 		t.Errorf("reason = %q", account.ReauthReason)
@@ -553,14 +553,14 @@ func TestAutoReviewIsItsOwnActivityKind(t *testing.T) {
 		ports.ChatEvent{Kind: ports.ChatEventTurnStarted, ProviderTurnID: "pt-1"},
 		ports.ChatEvent{
 			Kind: ports.ChatEventActivityStarted, ProviderTurnID: "pt-1",
-			ProviderItemID: "ao-review-r1",
+			ProviderItemID: "open-agents-review-r1",
 			ActivityKind:   domain.ActivityKindAutoReview,
 			ActivityStatus: domain.ActivityStatusRunning,
 			Summary:        "Reviewing curl -s https://example.com",
 		},
 		ports.ChatEvent{
 			Kind: ports.ChatEventActivityCompleted, ProviderTurnID: "pt-1",
-			ProviderItemID: "ao-review-r1",
+			ProviderItemID: "open-agents-review-r1",
 			ActivityKind:   domain.ActivityKindAutoReview,
 			ActivityStatus: domain.ActivityStatusCompleted,
 			Summary:        "Auto-approved curl -s https://example.com (low risk)",
@@ -569,9 +569,9 @@ func TestAutoReviewIsItsOwnActivityKind(t *testing.T) {
 	)
 
 	snapshot := h.awaitSnapshot(t, func(s store.ConversationSnapshot) bool {
-		return activityByItem(s, "ao-review-r1").Status == domain.ActivityStatusCompleted
+		return activityByItem(s, "open-agents-review-r1").Status == domain.ActivityStatusCompleted
 	})
-	row := activityByItem(snapshot, "ao-review-r1")
+	row := activityByItem(snapshot, "open-agents-review-r1")
 	if row.Kind != domain.ActivityKindAutoReview {
 		t.Fatalf("kind = %q, want %q", row.Kind, domain.ActivityKindAutoReview)
 	}

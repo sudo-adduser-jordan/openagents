@@ -25,7 +25,7 @@ const apiMocks = vi.hoisted(() => ({
 }));
 
 vi.mock("../lib/bridge", () => ({
-	aoBridge: {
+	openAgentsBridge: {
 		app: {
 			checkAncestorRepo: bridgeMocks.checkAncestorRepo,
 			checkGitRepository: bridgeMocks.checkGitRepository,
@@ -286,7 +286,7 @@ describe("CreateProjectFlow droppedPath", () => {
 
 	it("retains the selected folder and agent sheet after an unrelated create failure", async () => {
 		const user = userEvent.setup();
-		const onCreateProject = vi.fn().mockRejectedValueOnce(new Error("AO daemon is not ready.")).mockResolvedValueOnce(undefined);
+		const onCreateProject = vi.fn().mockRejectedValueOnce(new Error("Open Agents daemon is not ready.")).mockResolvedValueOnce(undefined);
 		apiMocks.POST.mockResolvedValueOnce({ data: projectValidation("/dropped/project") });
 		const { rerender } = render(
 			<CreateProjectFlow mode="choose" {...noop} onCreateProject={onCreateProject} droppedPath={null} />,
@@ -319,14 +319,14 @@ describe("CreateProjectFlow droppedPath", () => {
 	});
 
 	it.each([null, "/chosen/projects"])("uses a sensible clone destination with saved folder %s", async (saved) => {
-		window.localStorage.removeItem("ao.clone.lastDestinationParent");
-		if (saved) window.localStorage.setItem("ao.clone.lastDestinationParent", saved);
+		window.localStorage.removeItem("open-agents.clone.lastDestinationParent");
+		if (saved) window.localStorage.setItem("open-agents.clone.lastDestinationParent", saved);
 		const user = userEvent.setup();
 		const { rerender } = render(<CreateProjectFlow mode="choose" {...noop} openSignal={0} />);
 		rerender(<CreateProjectFlow mode="choose" {...noop} openSignal={1} />);
 		await user.click(await screen.findByRole("button", { name: "Clone from Git" }));
-		expect(await screen.findByTestId("clone-dialog")).toHaveAttribute("data-destination", saved ?? "~/ao/projects");
-		window.localStorage.removeItem("ao.clone.lastDestinationParent");
+		expect(await screen.findByTestId("clone-dialog")).toHaveAttribute("data-destination", saved ?? "~/open-agents/projects");
+		window.localStorage.removeItem("open-agents.clone.lastDestinationParent");
 	});
 
 	it("ignores a drop while the clone-from-Git dialog is open", async () => {
@@ -422,7 +422,7 @@ describe("CreateProjectFlow droppedPath", () => {
 		));
 		expect(screen.getByTestId("clone-dialog")).toBeInTheDocument();
 		expect(useUiStore.getState().globalToast?.body).toBe(
-			"AO cloned the repository but could not verify the checkout. Try again.",
+			"Open Agents cloned the repository but could not verify the checkout. Try again.",
 		);
 		expect(useUiStore.getState().globalToast?.body).not.toContain("request_id");
 	});
@@ -449,7 +449,7 @@ describe("CreateProjectFlow droppedPath", () => {
 		await waitFor(() => expect(cleanupAttempts).toBe(1));
 		expect(screen.getByTestId("clone-dialog")).toBeInTheDocument();
 		expect(useUiStore.getState().globalToast?.body).toBe(
-			"AO could not remove the incomplete checkout. Try again before leaving this flow.",
+			"Open Agents could not remove the incomplete checkout. Try again before leaving this flow.",
 		);
 
 		fireEvent.click(screen.getByText("Back clone"));
@@ -537,7 +537,7 @@ describe("CreateProjectFlow project import validation", () => {
 					// Root repository classification is authoritative even if an older
 					// daemon omits the explicit choose-import-kind transition.
 					nextStep: "continue",
-					warning: "This folder is already a Git project. AO will import it as a project instead of a workspace.",
+					warning: "This folder is already a Git project. Open Agents will import it as a project instead of a workspace.",
 				}),
 			})
 			.mockResolvedValueOnce({ data: projectValidation("/repo/project") });
@@ -771,7 +771,7 @@ describe("CreateProjectFlow project import validation", () => {
 
 		await openSource(user, "Import an existing project");
 
-		await waitFor(() => expect(useUiStore.getState().globalToast?.body).toBe("Choose a folder AO can read."));
+		await waitFor(() => expect(useUiStore.getState().globalToast?.body).toBe("Choose a folder Open Agents can read."));
 		expect(screen.queryByTestId("agent-sheet")).not.toBeInTheDocument();
 		await user.click(screen.getByRole("button", { name: "Back to import source" }));
 		expect(screen.getByRole("button", { name: "Import an existing project" })).toBeInTheDocument();
@@ -850,7 +850,7 @@ describe("CreateProjectFlow project import validation", () => {
 		expect(await screen.findByText("Prepare project")).toBeInTheDocument();
 		expect(screen.queryByText("Project setup")).not.toBeInTheDocument();
 		expect(screen.getByText("project")).toBeInTheDocument();
-		expect(screen.getByText("does not have a GitHub remote. AO will create a repository, add it as origin, and push the current branch.")).toBeInTheDocument();
+		expect(screen.getByText("does not have a GitHub remote. Open Agents will create a repository, add it as origin, and push the current branch.")).toBeInTheDocument();
 		expect(screen.queryByRole("checkbox", { name: "Set up Git for this project" })).not.toBeInTheDocument();
 		expect(screen.queryByText("Git initialization")).not.toBeInTheDocument();
 		expect(screen.queryByText("Initial commit")).not.toBeInTheDocument();
@@ -1157,9 +1157,9 @@ describe("CreateProjectFlow project import validation", () => {
 		await openSource(user, "Import an existing project");
 		await user.click(await screen.findByRole("button", { name: "Submit agents" }));
 
-		await waitFor(() => expect(useUiStore.getState().globalToast?.body).toBe("AO could not create this project. Try again."));
+		await waitFor(() => expect(useUiStore.getState().globalToast?.body).toBe("Open Agents could not create this project. Try again."));
 		const sheet = screen.getByTestId("agent-sheet");
-		expect(sheet).toHaveTextContent("AO could not create this project. Try again.");
+		expect(sheet).toHaveTextContent("Open Agents could not create this project. Try again.");
 		expect(sheet).not.toHaveTextContent("request_id");
 		await waitFor(() => expect(sheet).toHaveClass("modal-shake"));
 	});
@@ -1270,7 +1270,7 @@ describe("CreateProjectFlow project import validation", () => {
 			await waitFor(() => expect(screen.getByRole("button", { name: "Create repository and continue" })).toBeEnabled());
 			await user.click(screen.getByRole("button", { name: "Create repository and continue" }));
 
-		expect(await screen.findByText("Running project setup. AO is preparing this repository now.")).toBeInTheDocument();
+		expect(await screen.findByText("Running project setup. Open Agents is preparing this repository now.")).toBeInTheDocument();
 		expect(screen.getAllByText("In progress")).toHaveLength(1);
 		expect(screen.getAllByText("Queued")).toHaveLength(2);
 		expect(apiMocks.POST).toHaveBeenCalledTimes(2);

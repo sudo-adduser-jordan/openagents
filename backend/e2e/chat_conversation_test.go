@@ -10,10 +10,10 @@ import (
 	"time"
 )
 
-// Scenarios for "what AO shows is what actually happened".
+// Scenarios for "what Open Agents shows is what actually happened".
 //
 // The provider is the authority on model context; these rows are the authority on
-// what AO renders and on delivery state. So the failure this file is looking for
+// what Open Agents renders and on delivery state. So the failure this file is looking for
 // is disagreement: a timeline that claims work the provider never did, an ordering
 // that cannot have happened, or a message the UI shows as sent that never left.
 
@@ -256,9 +256,9 @@ func TestChatInterruptWithNoActiveTurnIsRefusedNotAnError(t *testing.T) {
 	}
 }
 
-// `ao send` and orchestrator-to-worker relay both go through this endpoint. A
+// `open-agents send` and orchestrator-to-worker relay both go through this endpoint. A
 // chat session has no pane to type into, so without a mode branch the send is
-// refused as "missing runtime handles" and chat workers are unreachable by AO's
+// refused as "missing runtime handles" and chat workers are unreachable by Open Agents's
 // own automation.
 func TestChatRelayThroughTheSendEndpointIsAttributedToAutomation(t *testing.T) {
 	requireE2E(t)
@@ -266,7 +266,7 @@ func TestChatRelayThroughTheSendEndpointIsAttributedToAutomation(t *testing.T) {
 	project := seedProject(t, d, "relay")
 	session := chatSession(t, d, project, "Reply with exactly: READY")
 
-	// The endpoint answers 200 with an echo, the same shape `ao send` already
+	// The endpoint answers 200 with an echo, the same shape `open-agents send` already
 	// depends on for a terminal session.
 	d.mustCall("POST", "/sessions/"+session+"/send", http.StatusOK,
 		map[string]any{"message": "Reply with exactly: RELAYED"}, nil)
@@ -285,14 +285,14 @@ func TestChatRelayThroughTheSendEndpointIsAttributedToAutomation(t *testing.T) {
 	if relayed == nil {
 		t.Fatalf("the relayed message is not in the timeline:\n%s", describe(snap))
 	}
-	// AO carried this on someone else's behalf; the timeline must say so rather
+	// Open Agents carried this on someone else's behalf; the timeline must say so rather
 	// than passing it off as something the user typed here.
 	if relayed.Origin != "automation" {
 		t.Errorf("relay origin = %q, want automation", relayed.Origin)
 	}
 }
 
-// Approvals are the one place the provider blocks on AO: it holds its turn until
+// Approvals are the one place the provider blocks on Open Agents: it holds its turn until
 // the client answers a server-to-client request. Everything about it is
 // unforgiving — correlation is by the request's own id, the offered decisions vary
 // per request, and an unanswered request stalls the agent.
@@ -308,7 +308,7 @@ func TestChatApprovalRoundTrip(t *testing.T) {
 	send(t, d, session,
 		// /tmp is inside the workspace-write sandbox on macOS, so it does not
 		// escalate. A write to the home directory does.
-		`Run this exact shell command and tell me its exit code: touch "$HOME/.ao-e2e-approval-probe"`,
+		`Run this exact shell command and tell me its exit code: touch "$HOME/.open-agents-e2e-approval-probe"`,
 		"approval-1")
 
 	snap := d.awaitConversation(session, 2*time.Minute, "an approval request", func(s snapshot) bool {
@@ -325,7 +325,7 @@ func TestChatApprovalRoundTrip(t *testing.T) {
 		t.Fatalf("approval offered no decisions, so the UI has no buttons to render:\n%s", describe(snap))
 	}
 	// The provider varies what it offers and does not always include a decline.
-	// AO must render that list rather than a fixed set, or it invents consent the
+	// Open Agents must render that list rather than a fixed set, or it invents consent the
 	// provider never offered.
 	offered := map[string]bool{}
 	for _, option := range offeredDecisions {
@@ -353,7 +353,7 @@ func TestChatApprovalRoundTrip(t *testing.T) {
 		"/sessions/"+session+"/conversation/approvals/"+approval.RequestID+"/resolve",
 		map[string]any{"decisionId": "definitely-not-a-real-decision"})
 	if status < 400 {
-		t.Errorf("AO accepted a decision the provider never offered (status %d)", status)
+		t.Errorf("Open Agents accepted a decision the provider never offered (status %d)", status)
 	} else if body.Code == "" {
 		t.Errorf("refusal carried no error code: %+v", body)
 	}
@@ -391,25 +391,25 @@ func TestChatApprovalRoundTrip(t *testing.T) {
 	})
 }
 
-// The agent must be able to reach AO's own CLI from inside a chat session. This is
+// The agent must be able to reach Open Agents's own CLI from inside a chat session. This is
 // what makes chat orchestration possible at all: an orchestrator that cannot run
-// `ao` can only talk, not delegate.
-func TestChatAgentCanRunTheAOCLI(t *testing.T) {
+// `open-agents` can only talk, not delegate.
+func TestChatAgentCanRunTheOpenAgentsCLI(t *testing.T) {
 	requireE2E(t)
 	d := startDaemon(t, t.TempDir())
-	project := seedProject(t, d, "aopath")
+	project := seedProject(t, d, "open-agents-path")
 	session := chatSession(t, d, project, "Reply with exactly: READY")
 
 	send(t, d, session,
-		"Run the shell command `ao --version` and reply with its exact output, or reply NOT-FOUND if the command does not exist.",
-		"ao-path")
+		"Run the shell command `open-agents --version` and reply with its exact output, or reply NOT-FOUND if the command does not exist.",
+		"open-agents-path")
 
-	snap := d.awaitConversation(session, 3*time.Minute, "the ao probe to finish", func(s snapshot) bool {
+	snap := d.awaitConversation(session, 3*time.Minute, "the open-agents probe to finish", func(s snapshot) bool {
 		return terminal(s.Turns[len(s.Turns)-1].State)
 	})
 	answer := snap.assistantText()
 	if contains(answer, "NOT-FOUND") || contains(answer, "command not found") {
-		t.Fatalf("the agent could not run `ao` inside a chat session:\n%s", describe(snap))
+		t.Fatalf("the agent could not run `open-agents` inside a chat session:\n%s", describe(snap))
 	}
 }
 
@@ -429,7 +429,7 @@ func TestChatProviderEventsAreArchived(t *testing.T) {
 
 	// The archive is not exposed over HTTP, so this asserts the property the
 	// archive exists to protect: nothing in the timeline is unaccounted for. A
-	// detail payload that will not decode means AO stored something it cannot read
+	// detail payload that will not decode means Open Agents stored something it cannot read
 	// back, which is the same failure with a different symptom.
 	for _, a := range snap.Activities {
 		if len(a.DetailJSON) == 0 {
@@ -446,7 +446,7 @@ func contains(haystack, needle string) bool {
 	return strings.Contains(haystack, needle)
 }
 
-// Model selection has to reach the provider, not just be accepted by AO. The
+// Model selection has to reach the provider, not just be accepted by Open Agents. The
 // catalog comes from the provider — models are added, renamed and gated per
 // account — and the choice applies per turn, so nothing restarts.
 func TestChatModelSelectionComesFromTheProviderAndAppliesToTheNextTurn(t *testing.T) {
@@ -538,7 +538,7 @@ func TestChatModelSelectionComesFromTheProviderAndAppliesToTheNextTurn(t *testin
 		t.Errorf("the agent did not answer on the chosen model:\n%s", describe(answered))
 	}
 
-	// An approval mode outside AO's vocabulary is refused rather than normalized:
+	// An approval mode outside Open Agents's vocabulary is refused rather than normalized:
 	// silently downgrading a permission choice is the one direction that must never
 	// happen by accident.
 	status, body := d.callExpectingError("PATCH", "/sessions/"+session+"/conversation/settings",

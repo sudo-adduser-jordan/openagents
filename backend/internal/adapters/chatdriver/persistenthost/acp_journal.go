@@ -13,7 +13,7 @@ const maxACPJournalBytes int64 = 256 << 20
 var errACPJournalFull = errors.New("persistent ACP prompt journal is full")
 
 // acpPromptJournal is a bounded, host-owned WAL for provider notifications
-// emitted during one active prompt. It is intentionally separate from AO's
+// emitted during one active prompt. It is intentionally separate from Open Agents's
 // SQLite projection: the host appends provider bytes before delivery, while the
 // daemon owns semantic normalization and transactional deduplication.
 type acpPromptJournal struct {

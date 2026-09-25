@@ -296,8 +296,8 @@ function isAccessDenied(error: unknown): boolean {
 
 function safariAccessError(): Error {
 	return Object.assign(new Error(
-		"AO couldn't access Safari's data. In System Settings, open Privacy & Security > Full Disk Access, "
-		+ "allow AO, then restart AO and try the import again.",
+		"Open Agents couldn't access Safari's data. In System Settings, open Privacy & Security > Full Disk Access, "
+		+ "allow Open Agents, then restart Open Agents and try the import again.",
 	), { code: "EACCES" });
 }
 
@@ -925,7 +925,7 @@ async function snapshotSQLite(
 		await source.backup(destination);
 		const output = await stat(destination).catch((error) => {
 			if ((error as NodeJS.ErrnoException).code === "ENOENT") {
-				throw new Error("AO's temporary browser data snapshot disappeared before it could be read. Restart AO and retry the import.");
+				throw new Error("Open Agents's temporary browser data snapshot disappeared before it could be read. Restart Open Agents and retry the import.");
 			}
 			throw error;
 		});

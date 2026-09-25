@@ -1,0 +1,1 @@
+export { OpenAgentsLogo } from "./OpenAgentsLogo";

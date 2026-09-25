@@ -35,7 +35,7 @@ import { usesPreviewWorkspaceData } from "../lib/preview-mode";
 import { ShellProvider } from "../lib/shell-context";
 import { restartProjectOrchestrator } from "../lib/restart-orchestrator";
 import { applyDocumentTheme, applyDocumentThemeStyle } from "../lib/theme";
-import { aoBridge } from "../lib/bridge";
+import { openAgentsBridge } from "../lib/bridge";
 import { handleModifierLinkClick } from "../lib/external-link-policy";
 import { recordProjectOpened } from "../lib/project-history";
 import { cn } from "../lib/utils";
@@ -268,7 +268,7 @@ function ShellLayout() {
 			if (!file) return;
 			// Must be synchronous, on the File taken directly from dataTransfer, in
 			// the same tick as the native drop event — see preload.ts's comment.
-			const path = aoBridge.app.getPathForFile(file);
+			const path = openAgentsBridge.app.getPathForFile(file);
 			if (path) requestCreateProjectFromPath(path);
 		};
 		window.addEventListener("dragenter", handleDragEnter);
@@ -482,7 +482,7 @@ function ShellLayout() {
 		}) => {
 			const status = await refreshDaemonStatus();
 			if (status.state !== "ready" || !status.port) {
-				throw new Error(status.message || "AO daemon is not ready.");
+				throw new Error(status.message || "Open Agents daemon is not ready.");
 			}
 			const { data, error } = await apiClient.POST("/api/v1/projects", {
 				body: {
@@ -548,7 +548,7 @@ function ShellLayout() {
 		}) => {
 			const status = await refreshDaemonStatus();
 			if (status.state !== "ready" || !status.port) {
-				throw new Error(status.message || "AO daemon is not ready.");
+				throw new Error(status.message || "Open Agents daemon is not ready.");
 			}
 			const { data, error } = await apiClient.POST("/api/v1/projects/clone", {
 				signal: input.signal,
@@ -703,13 +703,13 @@ function ShellLayout() {
 	// Send the preference, not the resolved theme, so "system" keeps both surfaces
 	// following the OS instead of freezing matchMedia to a forced value.
 	useEffect(() => {
-		void aoBridge.theme?.set(themePreference);
+		void openAgentsBridge.theme?.set(themePreference);
 	}, [themePreference]);
 
 	// Cursor Agent reads TERM_THEME at spawn from this file. Persist the same
 	// resolved light/dark scheme the terminal uses, not nativeTheme alone.
 	useEffect(() => {
-		void aoBridge.theme?.persistTerminal(resolvedTheme);
+		void openAgentsBridge.theme?.persistTerminal(resolvedTheme);
 	}, [resolvedTheme]);
 
 	// Follow OS appearance while the user keeps Theme on System — updates
@@ -751,7 +751,7 @@ function ShellLayout() {
 	// for the in-scope project, or a standalone agent when no project is in scope.
 	useEffect(
 		() =>
-			aoBridge.app.onNewSessionShortcut(() => {
+			openAgentsBridge.app.onNewSessionShortcut(() => {
 				if (scopedProjectId) {
 					requestNewTask(scopedProjectId);
 				} else {
@@ -761,13 +761,13 @@ function ShellLayout() {
 		[scopedProjectId, requestNewTask],
 	);
 
-	useEffect(() => aoBridge.app.onKeyboardShortcutsHelp(() => setIsKeyboardShortcutsOpen(true)), []);
+	useEffect(() => openAgentsBridge.app.onKeyboardShortcutsHelp(() => setIsKeyboardShortcutsOpen(true)), []);
 
 	// A folder was dropped on the app's taskbar icon/shortcut (main process,
 	// cold start or an already-running instance) — feeds the same drop flow as
 	// dragging a folder into the open window.
 	useEffect(
-		() => aoBridge.app.onOpenFolderPath((path) => requestCreateProjectFromPath(path)),
+		() => openAgentsBridge.app.onOpenFolderPath((path) => requestCreateProjectFromPath(path)),
 		[requestCreateProjectFromPath],
 	);
 
@@ -776,7 +776,7 @@ function ShellLayout() {
 	// tab-strip + button so the two cannot drift apart.
 	useEffect(
 		() =>
-			aoBridge.app.onNewShellTerminalShortcut(() => {
+			openAgentsBridge.app.onNewShellTerminalShortcut(() => {
 				// The project board is not a terminal surface — ⌘T here used to yank
 				// users into the standalone /terminals route (#4772). Sessions and the
 				// dedicated terminals view keep the shortcut; explicit UI can still
@@ -823,13 +823,13 @@ function ShellLayout() {
 	]);
 
 	useEffect(
-		() => aoBridge.app.onOpenSettingsShortcut(() => useUiStore.getState().openGlobalSettings()),
+		() => openAgentsBridge.app.onOpenSettingsShortcut(() => useUiStore.getState().openGlobalSettings()),
 		[],
 	);
 
 	useEffect(() => {
-		const disposePrevious = aoBridge.app.onPreviousSessionShortcut(() => navigateSession(-1));
-		const disposeNext = aoBridge.app.onNextSessionShortcut(() => navigateSession(1));
+		const disposePrevious = openAgentsBridge.app.onPreviousSessionShortcut(() => navigateSession(-1));
+		const disposeNext = openAgentsBridge.app.onNextSessionShortcut(() => navigateSession(1));
 		return () => {
 			disposePrevious();
 			disposeNext();
@@ -838,7 +838,7 @@ function ShellLayout() {
 
 	useEffect(
 		() =>
-			aoBridge.app.onFocusTerminalShortcut(() => {
+			openAgentsBridge.app.onFocusTerminalShortcut(() => {
 				document
 					.querySelector<HTMLElement>(
 						"[data-terminal-activation-phase='visible'] .xterm-helper-textarea, " +
@@ -995,7 +995,7 @@ function ShellLayout() {
 						<div
 							aria-hidden="true"
 							className={cn(
-								"fixed top-0 left-0 z-chrome w-(--ao-sidebar-w,var(--size-sidebar-default)) transition-[height] duration-200 ease-out motion-reduce:transition-none",
+								"fixed top-0 left-0 z-chrome w-(--open-agents-sidebar-w,var(--size-sidebar-default)) transition-[height] duration-200 ease-out motion-reduce:transition-none",
 								isFullScreen ? "pointer-events-none h-0" : "h-traffic-light-clearance",
 							)}
 							ref={sidebarDragStripRef}

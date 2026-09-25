@@ -39,7 +39,7 @@ type linuxPTYConn struct {
 const linuxPTYCloseGrace = 250 * time.Millisecond
 
 func newConPTY(cwd, shellCmd string, shellArgs []string) (ptyConn, error) {
-	// shellCmd and shellArgs are the runtime launch argv assembled by AO's
+	// shellCmd and shellArgs are the runtime launch argv assembled by Open Agents's
 	// trusted agent adapter, not input interpreted by a shell.
 	cmd := exec.Command(shellCmd, shellArgs...) // #nosec G702 -- intentional direct argv execution
 	cmd.Dir = cwd

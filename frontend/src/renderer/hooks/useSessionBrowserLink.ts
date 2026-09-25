@@ -15,7 +15,7 @@ function workspaceFilePreviewURL(uri: string, sessionId: string, workspacePaths:
 	return workspacePath ? attachmentURL(getApiBaseUrl(), sessionId, workspacePath) : undefined;
 }
 
-/** Open a supported link in the active session's AO Browser panel. */
+/** Open a supported link in the active session's Open Agents Browser panel. */
 export function useSessionBrowserLink(
 	session?: WorkspaceSession,
 	openInBrowser?: (uri: string) => Promise<void>,

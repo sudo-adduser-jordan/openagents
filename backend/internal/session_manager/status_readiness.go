@@ -4,7 +4,7 @@ import (
 	"context"
 	"time"
 
-	"github.com/aoagents/agent-orchestrator/backend/internal/domain"
+	"github.com/sudo-adduser-jordan/open-agents/backend/internal/domain"
 )
 
 // A slow or unavailable provider must not leave the board loading forever.

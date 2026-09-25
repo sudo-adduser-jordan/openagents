@@ -95,22 +95,22 @@ const projects: Project[] = [
 	{
 		id: "solkit-ui",
 		name: "solkit-ui",
-		path: "~/ao/solkit-ui",
-		orchestratorPath: "~/ao/solkit-ui/orchestrator",
+		path: "~/open-agents/solkit-ui",
+		orchestratorPath: "~/open-agents/solkit-ui/orchestrator",
 		orchestratorPrompt: "Ship GitHub sign-in. Split route, tests, and docs into parallel tasks.",
 	},
 	{
 		id: "metrics-api",
 		name: "metrics-api",
-		path: "~/ao/metrics-api",
-		orchestratorPath: "~/ao/metrics-api/orchestrator",
+		path: "~/open-agents/metrics-api",
+		orchestratorPath: "~/open-agents/metrics-api/orchestrator",
 		orchestratorPrompt: "Ship alert digests. Split delivery retries, query coverage, and the runbook into parallel tasks.",
 	},
 	{
 		id: "northstar-web",
 		name: "northstar-web",
-		path: "~/ao/northstar-web",
-		orchestratorPath: "~/ao/northstar-web/orchestrator",
+		path: "~/open-agents/northstar-web",
+		orchestratorPath: "~/open-agents/northstar-web/orchestrator",
 		orchestratorPrompt: "Finish the pricing refresh. Split plan cards, mobile QA, and launch docs into parallel tasks.",
 	},
 ];
@@ -122,8 +122,8 @@ const workersByProject: Record<ProjectId, Record<WorkerId, Worker>> = {
 			id: "opencode",
 			task: "Build callback route",
 			provider: "opencode",
-			branch: "ao/ao-12/auth-callback",
-			path: "~/ao/ao-12/auth-callback",
+			branch: "open-agents/open-agents-12/auth-callback",
+			path: "~/open-agents/open-agents-12/auth-callback",
 			statusLabel: "Working",
 			statusTone: status.working,
 			breathe: true,
@@ -134,8 +134,8 @@ const workersByProject: Record<ProjectId, Record<WorkerId, Worker>> = {
 			id: "codex",
 			task: "Add integration tests",
 			provider: "codex",
-			branch: "ao/ao-12/auth-flow",
-			path: "~/ao/ao-12/auth-flow",
+			branch: "open-agents/open-agents-12/auth-flow",
+			path: "~/open-agents/open-agents-12/auth-flow",
 			statusLabel: "In review",
 			statusTone: "#facc15",
 			breathe: true,
@@ -146,8 +146,8 @@ const workersByProject: Record<ProjectId, Record<WorkerId, Worker>> = {
 			id: "cursor",
 			task: "Update setup guide",
 			provider: "cursor",
-			branch: "ao/ao-12/auth-docs",
-			path: "~/ao/ao-12/auth-docs",
+			branch: "open-agents/open-agents-12/auth-docs",
+			path: "~/open-agents/open-agents-12/auth-docs",
 			statusLabel: "Needs input",
 			statusTone: status.needsYou,
 			breathe: true,
@@ -160,8 +160,8 @@ const workersByProject: Record<ProjectId, Record<WorkerId, Worker>> = {
 			id: "opencode",
 			task: "Fix digest retries",
 			provider: "opencode",
-			branch: "ao/ao-14/digest-retries",
-			path: "~/ao/ao-14/digest-retries",
+			branch: "open-agents/open-agents-14/digest-retries",
+			path: "~/open-agents/open-agents-14/digest-retries",
 			statusLabel: "Working",
 			statusTone: status.working,
 			breathe: true,
@@ -172,8 +172,8 @@ const workersByProject: Record<ProjectId, Record<WorkerId, Worker>> = {
 			id: "codex",
 			task: "Add query coverage",
 			provider: "codex",
-			branch: "ao/ao-14/digest-queries",
-			path: "~/ao/ao-14/digest-queries",
+			branch: "open-agents/open-agents-14/digest-queries",
+			path: "~/open-agents/open-agents-14/digest-queries",
 			statusLabel: "In review",
 			statusTone: "#facc15",
 			breathe: true,
@@ -184,8 +184,8 @@ const workersByProject: Record<ProjectId, Record<WorkerId, Worker>> = {
 			id: "cursor",
 			task: "Update alert runbook",
 			provider: "cursor",
-			branch: "ao/ao-14/digest-runbook",
-			path: "~/ao/ao-14/digest-runbook",
+			branch: "open-agents/open-agents-14/digest-runbook",
+			path: "~/open-agents/open-agents-14/digest-runbook",
 			statusLabel: "Working",
 			statusTone: status.ready,
 			breathe: true,
@@ -198,8 +198,8 @@ const workersByProject: Record<ProjectId, Record<WorkerId, Worker>> = {
 			id: "opencode",
 			task: "Refresh pricing cards",
 			provider: "opencode",
-			branch: "ao/ao-16/pricing-cards",
-			path: "~/ao/ao-16/pricing-cards",
+			branch: "open-agents/open-agents-16/pricing-cards",
+			path: "~/open-agents/open-agents-16/pricing-cards",
 			statusLabel: "Working",
 			statusTone: status.working,
 			breathe: true,
@@ -210,8 +210,8 @@ const workersByProject: Record<ProjectId, Record<WorkerId, Worker>> = {
 			id: "codex",
 			task: "Run mobile QA",
 			provider: "codex",
-			branch: "ao/ao-16/mobile-qa",
-			path: "~/ao/ao-16/mobile-qa",
+			branch: "open-agents/open-agents-16/mobile-qa",
+			path: "~/open-agents/open-agents-16/mobile-qa",
 			statusLabel: "Needs input",
 			statusTone: status.needsYou,
 			breathe: true,
@@ -222,8 +222,8 @@ const workersByProject: Record<ProjectId, Record<WorkerId, Worker>> = {
 			id: "cursor",
 			task: "Polish launch docs",
 			provider: "cursor",
-			branch: "ao/ao-16/launch-docs",
-			path: "~/ao/ao-16/launch-docs",
+			branch: "open-agents/open-agents-16/launch-docs",
+			path: "~/open-agents/open-agents-16/launch-docs",
 			statusLabel: "In review",
 			statusTone: "#facc15",
 			breathe: true,
@@ -242,7 +242,7 @@ const sessionMeta: Record<
 		title: "OpenCode",
 		version: "1.0.0",
 		subtitle: "Default model · Full tools",
-		path: "~/ao/solkit-ui/orchestrator",
+		path: "~/open-agents/solkit-ui/orchestrator",
 		tabLabel: "orchestrator",
 	},
 	opencode: {
@@ -307,28 +307,28 @@ const SCRIPT: Step[] = [
 	{ type: "type", session: "orc", text: projectById["solkit-ui"].orchestratorPrompt, marker: "❯" },
 	{ type: "pause", ms: 260 },
 	{ type: "blank", session: "orc" },
-	{ type: "line", session: "orc", tone: "fg", text: "Read(agent-orchestrator.yaml)", marker: "⏺" },
+	{ type: "line", session: "orc", tone: "fg", text: "Read(open-agents.yaml)", marker: "⏺" },
 	{ type: "pause", ms: 220 },
 	{ type: "stream", session: "orc", text: "Breaking this into three worker sessions so the route, the tests, and the guide move independently." },
 	{ type: "pause", ms: 240 },
 	{ type: "blank", session: "orc" },
-	{ type: "line", session: "orc", tone: "fg", text: "Bash(ao spawn --name \"callback route\")", marker: "⏺" },
+	{ type: "line", session: "orc", tone: "fg", text: "Bash(open-agents spawn --name \"callback route\")", marker: "⏺" },
 	{ type: "spawn", session: "opencode" },
 	{ type: "sessionStatus", session: "opencode", label: "Working", tone: status.working, breathe: true },
 	{ type: "pause", ms: 150 },
-	{ type: "line", session: "orc", tone: "dim", text: "Started session ao-12/auth-callback", marker: "⎿" },
+	{ type: "line", session: "orc", tone: "dim", text: "Started session open-agents-12/auth-callback", marker: "⎿" },
 	{ type: "pause", ms: 180 },
-	{ type: "line", session: "orc", tone: "fg", text: "Bash(ao spawn --name \"integration tests\")", marker: "⏺" },
+	{ type: "line", session: "orc", tone: "fg", text: "Bash(open-agents spawn --name \"integration tests\")", marker: "⏺" },
 	{ type: "spawn", session: "codex" },
 	{ type: "sessionStatus", session: "codex", label: "Working", tone: status.working, breathe: true },
 	{ type: "pause", ms: 150 },
-	{ type: "line", session: "orc", tone: "dim", text: "Started session ao-12/auth-flow", marker: "⎿" },
+	{ type: "line", session: "orc", tone: "dim", text: "Started session open-agents-12/auth-flow", marker: "⎿" },
 	{ type: "pause", ms: 180 },
-	{ type: "line", session: "orc", tone: "fg", text: "Bash(ao spawn --name \"setup guide\")", marker: "⏺" },
+	{ type: "line", session: "orc", tone: "fg", text: "Bash(open-agents spawn --name \"setup guide\")", marker: "⏺" },
 	{ type: "spawn", session: "cursor" },
 	{ type: "sessionStatus", session: "cursor", label: "Working", tone: status.working, breathe: true },
 	{ type: "pause", ms: 150 },
-	{ type: "line", session: "orc", tone: "dim", text: "Started session ao-12/auth-docs", marker: "⎿" },
+	{ type: "line", session: "orc", tone: "dim", text: "Started session open-agents-12/auth-docs", marker: "⎿" },
 	{ type: "pause", ms: 250 },
 	{ type: "stream", session: "orc", text: "Workers are live. Opening each terminal directly instead of waiting for any loading state." },
 	{ type: "pause", ms: 180 },
@@ -439,27 +439,27 @@ const SCRIPT: Step[] = [
 	{ type: "type", session: "orc", text: projectById["metrics-api"].orchestratorPrompt, marker: "❯" },
 	{ type: "pause", ms: 240 },
 	{ type: "blank", session: "orc" },
-	{ type: "line", session: "orc", tone: "fg", text: "Read(agent-orchestrator.yaml)", marker: "⏺" },
+	{ type: "line", session: "orc", tone: "fg", text: "Read(open-agents.yaml)", marker: "⏺" },
 	{ type: "pause", ms: 200 },
 	{ type: "stream", session: "orc", text: "Splitting delivery retries, query coverage, and the runbook so the API work and docs can move in parallel." },
 	{ type: "pause", ms: 220 },
-	{ type: "line", session: "orc", tone: "fg", text: "Bash(ao spawn --name \"digest retries\")", marker: "⏺" },
+	{ type: "line", session: "orc", tone: "fg", text: "Bash(open-agents spawn --name \"digest retries\")", marker: "⏺" },
 	{ type: "spawn", session: "opencode" },
 	{ type: "sessionStatus", session: "opencode", label: "Working", tone: status.working, breathe: true },
 	{ type: "pause", ms: 140 },
-	{ type: "line", session: "orc", tone: "dim", text: "Started session ao-14/digest-retries", marker: "⎿" },
+	{ type: "line", session: "orc", tone: "dim", text: "Started session open-agents-14/digest-retries", marker: "⎿" },
 	{ type: "pause", ms: 170 },
-	{ type: "line", session: "orc", tone: "fg", text: "Bash(ao spawn --name \"query coverage\")", marker: "⏺" },
+	{ type: "line", session: "orc", tone: "fg", text: "Bash(open-agents spawn --name \"query coverage\")", marker: "⏺" },
 	{ type: "spawn", session: "codex" },
 	{ type: "sessionStatus", session: "codex", label: "Working", tone: status.working, breathe: true },
 	{ type: "pause", ms: 140 },
-	{ type: "line", session: "orc", tone: "dim", text: "Started session ao-14/digest-queries", marker: "⎿" },
+	{ type: "line", session: "orc", tone: "dim", text: "Started session open-agents-14/digest-queries", marker: "⎿" },
 	{ type: "pause", ms: 170 },
-	{ type: "line", session: "orc", tone: "fg", text: "Bash(ao spawn --name \"runbook\")", marker: "⏺" },
+	{ type: "line", session: "orc", tone: "fg", text: "Bash(open-agents spawn --name \"runbook\")", marker: "⏺" },
 	{ type: "spawn", session: "cursor" },
 	{ type: "sessionStatus", session: "cursor", label: "Working", tone: status.working, breathe: true },
 	{ type: "pause", ms: 140 },
-	{ type: "line", session: "orc", tone: "dim", text: "Started session ao-14/digest-runbook", marker: "⎿" },
+	{ type: "line", session: "orc", tone: "dim", text: "Started session open-agents-14/digest-runbook", marker: "⎿" },
 	{ type: "pause", ms: 180 },
 	{ type: "line", session: "opencode", tone: "working", text: "delegated from orchestrator: fix alert digest retry behavior", marker: "❯" },
 	{ type: "pause", ms: 90 },
@@ -530,27 +530,27 @@ const SCRIPT: Step[] = [
 	{ type: "type", session: "orc", text: projectById["northstar-web"].orchestratorPrompt, marker: "❯" },
 	{ type: "pause", ms: 240 },
 	{ type: "blank", session: "orc" },
-	{ type: "line", session: "orc", tone: "fg", text: "Read(agent-orchestrator.yaml)", marker: "⏺" },
+	{ type: "line", session: "orc", tone: "fg", text: "Read(open-agents.yaml)", marker: "⏺" },
 	{ type: "pause", ms: 200 },
 	{ type: "stream", session: "orc", text: "Splitting the pricing launch into cards, mobile QA, and launch docs so the final polish lands faster." },
 	{ type: "pause", ms: 220 },
-	{ type: "line", session: "orc", tone: "fg", text: "Bash(ao spawn --name \"pricing cards\")", marker: "⏺" },
+	{ type: "line", session: "orc", tone: "fg", text: "Bash(open-agents spawn --name \"pricing cards\")", marker: "⏺" },
 	{ type: "spawn", session: "opencode" },
 	{ type: "sessionStatus", session: "opencode", label: "Working", tone: status.working, breathe: true },
 	{ type: "pause", ms: 140 },
-	{ type: "line", session: "orc", tone: "dim", text: "Started session ao-16/pricing-cards", marker: "⎿" },
+	{ type: "line", session: "orc", tone: "dim", text: "Started session open-agents-16/pricing-cards", marker: "⎿" },
 	{ type: "pause", ms: 170 },
-	{ type: "line", session: "orc", tone: "fg", text: "Bash(ao spawn --name \"mobile qa\")", marker: "⏺" },
+	{ type: "line", session: "orc", tone: "fg", text: "Bash(open-agents spawn --name \"mobile qa\")", marker: "⏺" },
 	{ type: "spawn", session: "codex" },
 	{ type: "sessionStatus", session: "codex", label: "Working", tone: status.working, breathe: true },
 	{ type: "pause", ms: 140 },
-	{ type: "line", session: "orc", tone: "dim", text: "Started session ao-16/mobile-qa", marker: "⎿" },
+	{ type: "line", session: "orc", tone: "dim", text: "Started session open-agents-16/mobile-qa", marker: "⎿" },
 	{ type: "pause", ms: 170 },
-	{ type: "line", session: "orc", tone: "fg", text: "Bash(ao spawn --name \"launch docs\")", marker: "⏺" },
+	{ type: "line", session: "orc", tone: "fg", text: "Bash(open-agents spawn --name \"launch docs\")", marker: "⏺" },
 	{ type: "spawn", session: "cursor" },
 	{ type: "sessionStatus", session: "cursor", label: "Working", tone: status.working, breathe: true },
 	{ type: "pause", ms: 140 },
-	{ type: "line", session: "orc", tone: "dim", text: "Started session ao-16/launch-docs", marker: "⎿" },
+	{ type: "line", session: "orc", tone: "dim", text: "Started session open-agents-16/launch-docs", marker: "⎿" },
 	{ type: "pause", ms: 180 },
 	{ type: "line", session: "opencode", tone: "working", text: "delegated from orchestrator: refresh the pricing cards", marker: "❯" },
 	{ type: "pause", ms: 90 },
@@ -841,9 +841,9 @@ export function DelegationDemo() {
 			setLinesBySession({
 				[sessionKey("solkit-ui", "orc")]: [
 					{ id: "r1", tone: "fg", text: "Ship GitHub sign-in. Split route, tests, and docs into parallel tasks.", marker: "❯" },
-					{ id: "r2", tone: "fg", text: "Bash(ao spawn --name \"callback route\")", marker: "⏺" },
-					{ id: "r3", tone: "fg", text: "Bash(ao spawn --name \"integration tests\")", marker: "⏺" },
-					{ id: "r4", tone: "fg", text: "Bash(ao spawn --name \"setup guide\")", marker: "⏺" },
+					{ id: "r2", tone: "fg", text: "Bash(open-agents spawn --name \"callback route\")", marker: "⏺" },
+					{ id: "r3", tone: "fg", text: "Bash(open-agents spawn --name \"integration tests\")", marker: "⏺" },
+					{ id: "r4", tone: "fg", text: "Bash(open-agents spawn --name \"setup guide\")", marker: "⏺" },
 				],
 				[sessionKey("solkit-ui", "opencode")]: [
 					{ id: "r5", tone: "fg", text: "Build the GitHub callback route.", marker: "❯" },
@@ -927,9 +927,9 @@ export function DelegationDemo() {
 					style={{ ...previewTokens, ...canvasStyle, fontFamily: "var(--font-geist-sans), ui-sans-serif, system-ui, sans-serif" }}
 				>
 					<style>{`
-						@keyframes ao-step-blink { 0%, 49% { opacity: 1; } 50%, 100% { opacity: 0; } }
-						.ao-blink { animation: ao-step-blink 1s step-end infinite; }
-						@media (prefers-reduced-motion: reduce) { .ao-blink { animation: none; } }
+						@keyframes open-agents-step-blink { 0%, 49% { opacity: 1; } 50%, 100% { opacity: 0; } }
+						.open-agents-blink { animation: open-agents-step-blink 1s step-end infinite; }
+						@media (prefers-reduced-motion: reduce) { .open-agents-blink { animation: none; } }
 					`}</style>
 					<div className="grid h-full min-w-0 grid-cols-[200px_minmax(0,1fr)] overflow-hidden bg-[var(--preview-sidebar)] text-[var(--preview-foreground)]">
 						<div className="flex min-h-0">
@@ -989,8 +989,8 @@ function PreviewSidebar({
 				</div>
 			</div>
 			<div className="flex shrink-0 items-center gap-1.5 px-3 pb-2">
-				<img src="/ao-logo.svg" alt="" className="size-[18px] shrink-0 rounded-md" draggable={false} loading="lazy" decoding="async" />
-				<span className="truncate text-sm font-semibold tracking-tight text-[var(--preview-foreground)]">Agent Orchestrator</span>
+				<img src="/open-agents-logo.svg" alt="" className="size-[18px] shrink-0 rounded-md" draggable={false} loading="lazy" decoding="async" />
+				<span className="truncate text-sm font-semibold tracking-tight text-[var(--preview-foreground)]">Open Agents</span>
 			</div>
 			<div className="flex shrink-0 flex-col px-2">
 				<div className="mb-3">
@@ -1264,7 +1264,7 @@ function TerminalPane({
 							<span className="w-[7px] shrink-0">{normalizeMarker(typingText.marker) ?? ""}</span>
 						<span className="min-w-0 whitespace-pre-wrap break-words">
 							{typingText.chars}
-							<span className="inline-block h-[9px] w-[5px] translate-y-[1px] ao-blink bg-[var(--preview-terminal-fg)]" />
+							<span className="inline-block h-[9px] w-[5px] translate-y-[1px] open-agents-blink bg-[var(--preview-terminal-fg)]" />
 						</span>
 					</div>
 				) : null}
@@ -1273,14 +1273,14 @@ function TerminalPane({
 						<span className="w-[7px] shrink-0" />
 						<span className="min-w-0 whitespace-pre-wrap break-words">
 							{streamingText}
-							<span className="inline-block h-[9px] w-[5px] translate-y-[1px] ao-blink bg-[var(--preview-terminal-fg)]" />
+							<span className="inline-block h-[9px] w-[5px] translate-y-[1px] open-agents-blink bg-[var(--preview-terminal-fg)]" />
 						</span>
 					</div>
 				) : null}
 				{!typingText && streamingText === null ? (
 					<div className="flex min-w-0 items-center gap-1.5" style={{ color: lineToneColor.fg }}>
 						<span className="w-[7px] shrink-0">{PROMPT_MARKER}</span>
-						<span className="inline-block h-[10px] w-[5.5px] ao-blink bg-[var(--preview-terminal-fg)]" />
+						<span className="inline-block h-[10px] w-[5.5px] open-agents-blink bg-[var(--preview-terminal-fg)]" />
 					</div>
 				) : null}
 			</div>

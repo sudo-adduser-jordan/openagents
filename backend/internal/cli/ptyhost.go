@@ -5,10 +5,10 @@ import (
 
 	"github.com/spf13/cobra"
 
-	"github.com/aoagents/agent-orchestrator/backend/internal/adapters/runtime/conpty"
+	"github.com/sudo-adduser-jordan/open-agents/backend/internal/adapters/runtime/conpty"
 )
 
-// newPtyHostCommand registers the "ao pty-host" hidden subcommand that the
+// newPtyHostCommand registers the "open-agents pty-host" hidden subcommand that the
 // detached runtime spawns on Windows and macOS to host a PTY over loopback TCP.
 // DisableFlagParsing ensures agent shell args with leading dashes are not
 // consumed by cobra before being passed to RunHost.

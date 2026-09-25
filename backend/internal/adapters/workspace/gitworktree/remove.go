@@ -28,7 +28,7 @@ func (e removeRetryExhaustedError) Unwrap() []error {
 // file because it is being used by another process"), even though nothing is
 // meaningfully using the directory anymore and a retry a moment later succeeds.
 //
-// This is reachable from `ao session kill` on a session whose scoped shell
+// This is reachable from `open-agents session kill` on a session whose scoped shell
 // terminals were just destroyed: Session Manager closes the shells, then
 // removes the worktree immediately, inside the same request. Measured release
 // latency ran past a second with two shells open, so the budget below is

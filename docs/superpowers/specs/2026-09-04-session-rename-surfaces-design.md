@@ -42,7 +42,7 @@ Component tests cover both surfaces and both entry points:
 - editing does not navigate or trigger drag behavior;
 - empty and unchanged names do not call the daemon.
 
-Frontend typecheck and build remain the broader verification gates. The real Electron development app is launched against the local AO data only after automated checks pass so the interaction can be tried manually.
+Frontend typecheck and build remain the broader verification gates. The real Electron development app is launched against the local Open Agents data only after automated checks pass so the interaction can be tried manually.
 
 ## Out of scope
 

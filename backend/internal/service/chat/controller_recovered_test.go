@@ -3,8 +3,8 @@ package chat
 import (
 	"testing"
 
-	"github.com/aoagents/agent-orchestrator/backend/internal/domain"
-	"github.com/aoagents/agent-orchestrator/backend/internal/ports"
+	"github.com/sudo-adduser-jordan/open-agents/backend/internal/domain"
+	"github.com/sudo-adduser-jordan/open-agents/backend/internal/ports"
 )
 
 func TestReconcileNativeHistoryUpgradesRecoveredWithKnownProviderOutcome(t *testing.T) {
@@ -13,7 +13,7 @@ func TestReconcileNativeHistoryUpgradesRecoveredWithKnownProviderOutcome(t *test
 		TurnState: domain.TurnStateCompleted,
 	}}
 	turns := []domain.ConversationTurn{{
-		ID: "ao-turn", ProviderTurnID: "provider-turn", State: domain.TurnStateRecovered,
+		ID: "open-agents-turn", ProviderTurnID: "provider-turn", State: domain.TurnStateRecovered,
 	}}
 
 	got := reconcileNativeHistory(events, turns, nil, nil)
@@ -28,7 +28,7 @@ func TestReconcileNativeHistoryPreservesKnownOutcomeOverRecoveredReplay(t *testi
 		TurnState: domain.TurnStateRecovered,
 	}}
 	turns := []domain.ConversationTurn{{
-		ID: "ao-turn", ProviderTurnID: "provider-turn", State: domain.TurnStateInterrupted,
+		ID: "open-agents-turn", ProviderTurnID: "provider-turn", State: domain.TurnStateInterrupted,
 	}}
 
 	got := reconcileNativeHistory(events, turns, nil, nil)

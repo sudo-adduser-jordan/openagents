@@ -5,11 +5,11 @@ import (
 	"testing"
 	"time"
 
-	"github.com/aoagents/agent-orchestrator/backend/internal/domain"
-	"github.com/aoagents/agent-orchestrator/backend/internal/ports"
-	"github.com/aoagents/agent-orchestrator/backend/internal/storage/sqlite"
-	"github.com/aoagents/agent-orchestrator/backend/internal/storage/sqlite/sqlitetest"
-	"github.com/aoagents/agent-orchestrator/backend/pkg/contract"
+	"github.com/sudo-adduser-jordan/open-agents/backend/internal/domain"
+	"github.com/sudo-adduser-jordan/open-agents/backend/internal/ports"
+	"github.com/sudo-adduser-jordan/open-agents/backend/internal/storage/sqlite"
+	"github.com/sudo-adduser-jordan/open-agents/backend/internal/storage/sqlite/sqlitetest"
+	"github.com/sudo-adduser-jordan/open-agents/backend/pkg/contract"
 )
 
 func TestSessionListDerivesKanbanColumn(t *testing.T) {
@@ -33,7 +33,7 @@ func TestSessionListDerivesKanbanColumn(t *testing.T) {
 			want:   domain.KanbanArchive,
 		},
 		{
-			name:   "a running current-head pass is ao validation work",
+			name:   "a running current-head pass is open-agents validation work",
 			record: domain.SessionRecord{ID: "mer-1", ProjectID: "mer"},
 			pr:     &domain.PRFacts{URL: "pr1", HeadSHA: "head1"},
 			runs:   []domain.CurrentHeadReviewRun{{PRURL: "pr1", Status: domain.ReviewRunRunning}},

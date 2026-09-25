@@ -23,7 +23,7 @@ export function formatFileAnnotationMessage(target: FileAnnotationTarget, feedba
 			? "Entire file"
 			: `${target.side === "old" ? "Old" : "New"} side, line ${target.line ?? "unknown"}`;
 	const lines = [
-		"The user left inline feedback while reviewing a file in AO and asked for a change.",
+		"The user left inline feedback while reviewing a file in Open Agents and asked for a change.",
 		"",
 		"Feedback:",
 		compactText(feedback, MAX_FEEDBACK_LENGTH) || "(empty)",

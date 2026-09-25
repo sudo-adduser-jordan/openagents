@@ -1,4 +1,4 @@
-import { aoBridge } from "./bridge";
+import { openAgentsBridge } from "./bridge";
 
 export function isWebLink(url: string): boolean {
 	try {
@@ -24,7 +24,7 @@ export function isWorkspaceHtmlLink(url: string, workspacePaths: string[]): bool
 
 export async function openLinkInSystemBrowser(url: string): Promise<void> {
 	try {
-		await aoBridge.app.openExternal(url);
+		await openAgentsBridge.app.openExternal(url);
 	} catch (error) {
 		console.warn("Unable to open link in system browser", error);
 	}

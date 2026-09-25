@@ -8,17 +8,17 @@ describe("slowDaemonStartupStatus", () => {
 	it("keeps a live child in starting state and refreshes captured output", () => {
 		const status = slowDaemonStartupStatus({
 			output: "initial recovery output",
-			executablePath: "/Applications/AO.app/ao",
-			workingDirectory: "/Users/example/.ao",
-			handshakePath: "/Users/example/.ao/running.json",
+			executablePath: "/Applications/Open Agents.app/open-agents",
+			workingDirectory: "/Users/example/.open-agents",
+			handshakePath: "/Users/example/.open-agents/running.json",
 		});
 
 		expect(status).toMatchObject({
 			state: "starting",
-			message: "AO daemon is still starting. Session recovery can take a while.",
+			message: "Open Agents daemon is still starting. Session recovery can take a while.",
 			details: "initial recovery output",
-			executablePath: "/Applications/AO.app/ao",
-			workingDirectory: "/Users/example/.ao",
+			executablePath: "/Applications/Open Agents.app/open-agents",
+			workingDirectory: "/Users/example/.open-agents",
 		});
 		expect(status.code).toBeUndefined();
 

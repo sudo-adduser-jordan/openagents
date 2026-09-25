@@ -1,94 +1,96 @@
-# AO CLI
+# Open Agents CLI
 
-The `ao` CLI is a thin Go/Cobra client for the local Agent Orchestrator daemon.
-It starts, discovers, inspects, and stops the daemon through the loopback HTTP
-surface and the `running.json` handshake. It must not open SQLite directly or
-call runtime, workspace, tracker, or agent adapters in-process.
+The `open-agents` CLI is a thin Go/Cobra client for the local Open Agents daemon.
+It resolves, opens, discovers, inspects, and stops the desktop-owned daemon
+through the loopback HTTP surface and the `running.json` handshake. It must not
+open SQLite directly or call runtime, workspace, tracker, or agent adapters
+in-process.
 
-When using the CLI directly from a shell, make sure the daemon is running first
-with `ao start` or by opening the desktop app. Product commands such as
-`ao agent ls` and `ao spawn` call the loopback daemon and will fail with a
-"daemon is not running" error if no `running.json` points at a live process. From
-a source checkout, build and run the local binary explicitly, for example:
+When using the CLI directly from a shell, open the desktop app first (or run
+`open-agents start` to resolve and launch it). Product commands such as
+`open-agents agent ls` and `open-agents spawn` call the loopback daemon and will
+fail with a "daemon is not running" error if no `running.json` points at a live
+process. From a source checkout, build and run the local binary explicitly, for
+example:
 
 ```bash
 cd backend
-go build -o ./bin/ao ./cmd/ao
-./bin/ao agent ls
+go build -o ./bin/open-agents ./cmd/open-agents
+./bin/open-agents agent ls
 ```
 
 ## Current commands
 
-Every product command resolves to a daemon HTTP route. Run `ao <command>
+Every product command resolves to a daemon HTTP route. Run `open-agents <command>
 --help` for the authoritative flag shape.
 
 ### Daemon control
 
 | Command                       | Purpose                                                                                                                           |
 | ----------------------------- | --------------------------------------------------------------------------------------------------------------------------------- |
-| `ao start`                    | Start the daemon in the background and wait for `/readyz`.                                                                        |
-| `ao stop`                     | Gracefully stop the daemon via loopback `POST /shutdown` after verifying daemon identity.                                         |
-| `ao status` / `--json`        | Report daemon state from `running.json`, process liveness, `/healthz`, and `/readyz`.                                             |
-| `ao doctor` / `--json`        | Check config, data directory, DB-file presence, daemon state, `git`, and (on Darwin/Linux) `tmux`; on Windows conpty is built in. |
-| `ao completion <shell>`       | Generate completions for `bash`, `zsh`, `fish`, or `powershell`.                                                                  |
-| `ao version` / `ao --version` | Print build metadata.                                                                                                             |
-| `ao daemon`                   | Hidden internal daemon entrypoint used by `ao start`.                                                                             |
+| `open-agents start`                    | Resolve, fetch when needed, and open the Open Agents desktop app. The desktop app owns the daemon.                                      |
+| `open-agents stop`                     | Gracefully stop the daemon via loopback `POST /shutdown` after verifying daemon identity.                                         |
+| `open-agents status` / `--json`        | Report daemon state from `running.json`, process liveness, `/healthz`, and `/readyz`.                                             |
+| `open-agents doctor` / `--json`        | Check config, data directory, DB-file presence, daemon state, `git`, and (on Darwin/Linux) `tmux`; on Windows conpty is built in. |
+| `open-agents completion <shell>`       | Generate completions for `bash`, `zsh`, `fish`, or `powershell`.                                                                  |
+| `open-agents version` / `open-agents --version` | Print build metadata.                                                                                                             |
+| `open-agents daemon`                   | Hidden internal daemon entrypoint used by the desktop supervisor.                                                                          |
 
 ### Product commands
 
 | Command                             | Daemon route                                   |
 | ----------------------------------- | ---------------------------------------------- |
-| `ao project add`                    | `POST /api/v1/projects`                        |
-| `ao project ls`                     | `GET /api/v1/projects`                         |
-| `ao project get <id>`               | `GET /api/v1/projects/{id}`                    |
-| `ao project set-config <id>`        | `PUT /api/v1/projects/{id}/config`             |
-| `ao project rm <id>`                | `DELETE /api/v1/projects/{id}`                 |
-| `ao agent ls`                       | `POST /api/v1/agents/readiness/ensure` (`display`) |
-| `ao agent ls --refresh`             | `POST /api/v1/agents/refresh` (forced checks) |
-| `ao spawn`                          | Targeted launch ensure, then `POST /api/v1/sessions` |
-| `ao session ls`                     | `GET /api/v1/sessions` plus per-session PR summaries; shows branch, PR, CI, review, unresolved threads, activity, and age. |
-| `ao session get <id>`               | `GET /api/v1/sessions/{id}`                    |
-| `ao session kill <id>`              | `POST /api/v1/sessions/{id}/kill`              |
-| `ao session restore <id>`           | `POST /api/v1/sessions/{id}/restore`           |
-| `ao session exit-agent <id>`        | `POST /api/v1/sessions/{id}/exit-agent`        |
-| `ao session resume-agent <id>`      | `POST /api/v1/sessions/{id}/resume-agent`      |
-| `ao session rename <id> <name>`     | `PATCH /api/v1/sessions/{id}`                  |
-| `ao session cleanup`                | `POST /api/v1/sessions/cleanup`                |
-| `ao session claim-pr [<id>] <pr-ref>` | `POST /api/v1/sessions/{id}/pr/claim`        |
-| `ao plan <id>`                        | `PATCH /api/v1/sessions/{id}/workflow-mode`  |
-| `ao build <id>`                       | `PATCH /api/v1/sessions/{id}/workflow-mode`  |
-| `ao orchestrator ls`                | `GET /api/v1/orchestrators`                    |
-| `ao send`                           | `POST /api/v1/sessions/{id}/send`              |
-| `ao preview [url]`                  | `POST /api/v1/sessions/{id}/preview`           |
-| `ao preview start/status/stop`      | `POST/GET/DELETE /api/v1/sessions/{id}/preview/server` |
-| `ao browser ...`                    | `GET /api/v1/browser/status`, `POST /api/v1/browser/commands` |
-| `ao hooks <agent> <event>`          | `POST /api/v1/sessions/{id}/activity` (hidden) |
+| `open-agents project add`                    | `POST /api/v1/projects`                        |
+| `open-agents project ls`                     | `GET /api/v1/projects`                         |
+| `open-agents project get <id>`               | `GET /api/v1/projects/{id}`                    |
+| `open-agents project set-config <id>`        | `PUT /api/v1/projects/{id}/config`             |
+| `open-agents project rm <id>`                | `DELETE /api/v1/projects/{id}`                 |
+| `open-agents agent ls`                       | `POST /api/v1/agents/readiness/ensure` (`display`) |
+| `open-agents agent ls --refresh`             | `POST /api/v1/agents/refresh` (forced checks) |
+| `open-agents spawn`                          | Targeted launch ensure, then `POST /api/v1/sessions` |
+| `open-agents session ls`                     | `GET /api/v1/sessions` plus per-session PR summaries; shows branch, PR, CI, review, unresolved threads, activity, and age. |
+| `open-agents session get <id>`               | `GET /api/v1/sessions/{id}`                    |
+| `open-agents session kill <id>`              | `POST /api/v1/sessions/{id}/kill`              |
+| `open-agents session restore <id>`           | `POST /api/v1/sessions/{id}/restore`           |
+| `open-agents session exit-agent <id>`        | `POST /api/v1/sessions/{id}/exit-agent`        |
+| `open-agents session resume-agent <id>`      | `POST /api/v1/sessions/{id}/resume-agent`      |
+| `open-agents session rename <id> <name>`     | `PATCH /api/v1/sessions/{id}`                  |
+| `open-agents session cleanup`                | `POST /api/v1/sessions/cleanup`                |
+| `open-agents session claim-pr [<id>] <pr-ref>` | `POST /api/v1/sessions/{id}/pr/claim`        |
+| `open-agents plan <id>`                        | `PATCH /api/v1/sessions/{id}/workflow-mode`  |
+| `open-agents build <id>`                       | `PATCH /api/v1/sessions/{id}/workflow-mode`  |
+| `open-agents orchestrator ls`                | `GET /api/v1/orchestrators`                    |
+| `open-agents send`                           | `POST /api/v1/sessions/{id}/send`              |
+| `open-agents preview [url]`                  | `POST /api/v1/sessions/{id}/preview`           |
+| `open-agents preview start/status/stop`      | `POST/GET/DELETE /api/v1/sessions/{id}/preview/server` |
+| `open-agents browser ...`                    | `GET /api/v1/browser/status`, `POST /api/v1/browser/commands` |
+| `open-agents hooks <agent> <event>`          | `POST /api/v1/sessions/{id}/activity` (hidden) |
 
-`ao agent ls` asks the daemon to ensure display readiness, then prints the
+`open-agents agent ls` asks the daemon to ensure display readiness, then prints the
 existing table or legacy JSON projection. The daemon alone decides whether a
-native check is needed. `--refresh` is a deprecated compatibility flag that
-forces fresh installation and authentication checks before printing.
+native check is needed. `--refresh` forces fresh installation and authentication
+checks before printing.
 
-`ao spawn` resolves project context in this order: explicit `--project`,
-`AO_PROJECT_ID`, `AO_SESSION_ID` (by fetching the current session from the
+`open-agents spawn` resolves project context in this order: explicit `--project`,
+`OPEN_AGENTS_PROJECT_ID`, `OPEN_AGENTS_SESSION_ID` (by fetching the current session from the
 daemon), then the current working directory matched against registered project
-paths. If `AO_SESSION_ID` is set but the session cannot be fetched, pass
-`--project` explicitly. Use `ao spawn --standalone --agent <agent> --name
-<name>` to launch a worker in an AO-managed plain directory without resolving
+paths. If `OPEN_AGENTS_SESSION_ID` is set but the session cannot be fetched, pass
+`--project` explicitly. Use `open-agents spawn --standalone --agent <agent> --name
+<name>` to launch a worker in an Open Agents-managed plain directory without resolving
 or registering a project. Standalone sessions do not support orchestrator,
 branch, issue, or PR-claim options.
 
-`ao session claim-pr <pr-ref>` attaches a PR to the current worker by reading
-`AO_SESSION_ID`. From an orchestrator or external shell, pass the target
-explicitly with `ao session claim-pr <session-id> <pr-ref>`. The explicit form
-remains supported for backward compatibility and cross-session coordination.
+`open-agents session claim-pr <pr-ref>` attaches a PR to the current worker by reading
+`OPEN_AGENTS_SESSION_ID`. From an orchestrator or external shell, pass the target
+explicitly with `open-agents session claim-pr <session-id> <pr-ref>`. The explicit
+form supports cross-session coordination.
 
-`ao plan <id>` and `ao build <id>` move a session between its delivery stages
+`open-agents plan <id>` and `open-agents build <id>` move a session between its delivery stages
 (planning → building) by setting `workflow_mode` on the daemon. Setting either
 stage is also one of the kanban review lock's release paths: a card frozen in
 the review column is released so it can move with its PR facts again.
 
-If `--agent` / `--harness` is omitted, `ao spawn` uses the resolved project's
+If `--agent` / `--harness` is omitted, `open-agents spawn` uses the resolved project's
 `worker.agent` config. Before spawning, the CLI performs one targeted launch
 ensure. It fails early for unsupported or definitely missing harnesses and
 warns-but-continues for unauthorized or unknown observations; daemon session
@@ -99,31 +101,31 @@ daemon validation.
 Standalone spawns require `--agent` because there is no project configuration
 from which to resolve a default harness.
 
-`ao preview` resolves its session from the `AO_SESSION_ID` environment variable
+`open-agents preview` resolves its session from the `OPEN_AGENTS_SESSION_ID` environment variable
 (it is meant to run inside a session), not a flag. With no argument it
 autodetects an `index.html` in the session workspace. Relative file targets are
 resolved from the session workspace root, regardless of the shell's current
-directory, and served through AO's confined loopback preview origin. Absolute
+directory, and served through Open Agents' confined loopback preview origin. Absolute
 paths and `file://` URLs must resolve inside that workspace; explicit HTTP and
 HTTPS targets remain regular browser URLs.
 
-`ao preview start [configuration]` loads `.ao/launch.json` from the session
+`open-agents preview start [configuration]` loads `.open-agents/launch.json` from the session
 workspace, starts that exact command under a session-owned supervisor, selects
 or records its loopback port, waits for readiness, and opens application
 targets in the Browser panel. `status` reports bounded recent logs and `stop`
 terminates the managed process tree. Multiple configurations must be selected
-by name; AO does not assign confidence scores to arbitrary localhost servers.
+by name; Open Agents does not assign confidence scores to arbitrary localhost servers.
 This is an optional, reusable project configuration, not a prerequisite for
 preview. Agents must not create it automatically. Static HTML and Markdown use
 the direct file preview and must not cause package-manager scaffolding,
 dependency installation, or a development server to be introduced.
 
 When a browser-displayable file is the requested artifact, agents should call
-`ao preview <workspace-path>` immediately after creating or materially updating
+`open-agents preview <workspace-path>` immediately after creating or materially updating
 the primary output. Markdown, HTML, PDF, SVG, and common images can be served
 directly. Supporting assets must not replace an active application preview.
 
-`ao browser` also resolves its target from `AO_SESSION_ID`, but controls the
+`open-agents browser` also resolves its target from `OPEN_AGENTS_SESSION_ID`, but controls the
 session-owned live Electron browser rather than only setting its preview URL.
 The target-isolated command set includes `status`, `open`, `snapshot`, `click`,
 `dblclick`, `focus`, `fill`, `type`, `press`, `hover`, `scroll`,
@@ -132,7 +134,7 @@ The target-isolated command set includes `status`, `open`, `snapshot`, `click`,
 `wait`, `screenshot`, `network start/status/list/stop/clear`, `console`, and
 `errors`. The native engine is bound internally; there is no second command or
 connection setup. Logical tab IDs remain stable for the session, and allowed popups
-become AO browser tabs rather than separate OS-browser windows. The AO desktop
+become Open Agents browser tabs rather than separate OS-browser windows. The Open Agents desktop
 app must be open because Electron owns the `WebContentsView`.
 References from a snapshot are invalidated after navigation or DOM replacement;
 they are also invalidated when changing tabs. Take another snapshot when a
@@ -150,12 +152,10 @@ tab/session. Captured data is metadata-only: request and response bodies are
 never read, sensitive headers are omitted, and URL credentials, fragments, and
 query values are redacted.
 
-`go run .` in `backend/` remains a compatibility wrapper around the daemon.
-
-PR actions are available through `ao pr merge` and
-`ao pr resolve-comments`. Review actions are available through `ao review ls`,
-`ao review trigger` (also `execute` and `restart`), `ao review cancel` (also
-`stop`), and `ao review submit`.
+PR actions are available through `open-agents pr merge` and
+`open-agents pr resolve-comments`. Review actions are available through `open-agents review ls`,
+`open-agents review trigger` (also `execute` and `restart`), `open-agents review cancel` (also
+`stop`), and `open-agents review submit`.
 
 ## Configuration
 
@@ -163,33 +163,45 @@ The CLI and daemon share the same environment-driven config:
 
 | Var                   | Default              | Purpose                                                                                        |
 | --------------------- | -------------------- | ---------------------------------------------------------------------------------------------- |
-| `AO_PORT`             | `3001`               | Loopback daemon port.                                                                          |
-| `AO_RUN_FILE`         | `~/.ao/running.json` | PID/port handshake.                                                                            |
-| `AO_DATA_DIR`         | `~/.ao/data`         | SQLite data directory.                                                                         |
-| `AO_REQUEST_TIMEOUT`  | `60s`                | REST request timeout.                                                                          |
-| `AO_SHUTDOWN_TIMEOUT` | `10s`                | Graceful shutdown cap.                                                                         |
-| `AO_KEEP_DAEMON`      | unset (off)          | Keep the desktop app's daemon running after the window closes; stop only via `ao stop`. (fork) |
-| `AO_DISABLE_GPU`      | unset (off)          | Skip Chromium hardware acceleration; escape hatch for broken Linux GPU drivers.                |
+| `OPEN_AGENTS_PORT`             | `3001`               | Loopback daemon port.                                                                          |
+| `OPEN_AGENTS_RUN_FILE`         | `~/.open-agents/running.json` | PID/port handshake.                                                                            |
+| `OPEN_AGENTS_DATA_DIR`         | `~/.open-agents/data`         | SQLite data directory.                                                                         |
+| `OPEN_AGENTS_REQUEST_TIMEOUT`  | `60s`                | REST request timeout.                                                                          |
+| `OPEN_AGENTS_SHUTDOWN_TIMEOUT` | `10s`                | Graceful shutdown cap.                                                                         |
+| `OPEN_AGENTS_KEEP_DAEMON`      | unset (off)          | Keep the desktop app's daemon running after the window closes; stop only via `open-agents stop`. (fork) |
+| `OPEN_AGENTS_DISABLE_GPU`      | unset (off)          | Skip Chromium hardware acceleration; escape hatch for broken Linux GPU drivers.                |
 
 The daemon always binds `127.0.0.1`.
 
 ## Manual smoke test
 
 ```bash
+# Terminal 1: start the daemon directly from the backend wrapper.
+tmp=/tmp/open-agents-cli-smoke
+rm -rf "$tmp"
+mkdir -p "$tmp"
 cd backend
-go build -o /tmp/ao ./cmd/ao
+OPEN_AGENTS_RUN_FILE="$tmp/running.json" \
+OPEN_AGENTS_DATA_DIR="$tmp/data" \
+OPEN_AGENTS_PORT=3037 \
+go run .
+```
 
-tmp=$(mktemp -d)
-export AO_RUN_FILE="$tmp/running.json"
-export AO_DATA_DIR="$tmp/data"
-export AO_PORT=3037
+```bash
+# Terminal 2: inspect and control the daemon through the CLI.
+cd backend
+go build -o /tmp/open-agents ./cmd/open-agents
 
-/tmp/ao status --json
-/tmp/ao doctor
-/tmp/ao start
-/tmp/ao status --json
-/tmp/ao stop
-/tmp/ao status --json
+tmp=/tmp/open-agents-cli-smoke
+export OPEN_AGENTS_RUN_FILE="$tmp/running.json"
+export OPEN_AGENTS_DATA_DIR="$tmp/data"
+export OPEN_AGENTS_PORT=3037
+
+/tmp/open-agents status --json
+/tmp/open-agents doctor
+/tmp/open-agents status --json
+/tmp/open-agents stop
+/tmp/open-agents status --json
 rm -rf "$tmp"
 ```
 
@@ -198,7 +210,7 @@ rm -rf "$tmp"
 Add a product command only when a daemon HTTP route owns the corresponding
 mutation/read; the CLI must call that route rather than reimplementing daemon
 behavior. Commands not yet exposed but with backend routes in place include
-`ao events ...` (over the CDC/SSE endpoint) and CLI parity for PR/review
+`open-agents events ...` (over the CDC/SSE endpoint) and CLI parity for PR/review
 actions.
 
 Do not port old in-process TypeScript CLI behavior that mixed command handling
@@ -209,14 +221,14 @@ with storage and runtime implementation details.
 Workspace projects can claim a PR/MR on their root origin or any registered
 child repository origin. Use the child's full PR/MR URL: numbers still resolve
 against the root's canonical repository or origin, and a root without a remote
-cannot resolve numbers. Check registered children with `ao project get <id> --json`.
+cannot resolve numbers. Check registered children with `open-agents project get <id> --json`.
 Unregistered repositories are rejected even if a checkout has an additional Git
 remote for them. `canonicalRepoURL` requires a valid root origin; it is not a
 workspace child allowlist. Scratch projects cannot claim PRs.
 
 For automatic attribution, workspace sessions recorded on a bare branch such as
-`ao/ws-1` or `ao/ws-1-2` can use hyphen siblings (`ao/ws-1-fix` or
-`ao/ws-1-2-fix`) in registered repositories. Keep the entire recorded branch,
+`open-agents/ws-1` or `open-agents/ws-1-2` can use hyphen siblings (`open-agents/ws-1-fix` or
+`open-agents/ws-1-2-fix`) in registered repositories. Keep the entire recorded branch,
 including collision suffixes. Exact and stacked branches and `/root` slash
 siblings remain supported. Matching prefers the most specific owner and leaves
 ambiguous ownership for explicit claiming. Custom branches and single-repository
@@ -233,12 +245,12 @@ claims match the entire namespace and repository, including GitLab subgroups.
 For a project with no other config:
 
 ```bash
-ao project set-config my-project \
+open-agents project set-config my-project \
   --canonical-repo-url https://github.com/my-org/my-repo
 ```
 
 `set-config` replaces the whole config. For an existing configured project, read
-`ao project get my-project --json`, preserve its `project.config` fields, add
+`open-agents project get my-project --json`, preserve its `project.config` fields, add
 `canonicalRepoURL`, and submit the complete object with `--config-json`. The same
 object is accepted by `PUT /api/v1/projects/{id}/config` as `{"config": {...}}`.
 Use an HTTPS repository URL, without a PR/MR suffix, credentials, query, or fragment.
@@ -246,7 +258,7 @@ Self-managed GitLab URLs and nested namespaces are supported. Explicit ports
 are preserved and must match too; `gitlab.example.com:8443` is a different
 authority from `gitlab.example.com`.
 
-Both `ao session claim-pr 42` and `ao spawn --claim-pr 42` resolve numbers against
+Both `open-agents session claim-pr 42` and `open-agents spawn --claim-pr 42` resolve numbers against
 canonical when configured, otherwise origin. A full PR/MR URL may name either
 identity. Unrelated repositories and different hosts/providers remain rejected.
 Removing `canonicalRepoURL` restores origin-only claims. This does not unlink PRs

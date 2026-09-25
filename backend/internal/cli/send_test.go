@@ -12,7 +12,7 @@ import (
 	"testing"
 	"time"
 
-	"github.com/aoagents/agent-orchestrator/backend/internal/runfile"
+	"github.com/sudo-adduser-jordan/open-agents/backend/internal/runfile"
 )
 
 // sendServer wires an httptest server expecting POST /api/v1/sessions/{id}/send
@@ -60,7 +60,7 @@ func sendServer(t *testing.T, status int, respBody string) (*httptest.Server, *s
 }
 
 func TestSend_Success(t *testing.T) {
-	t.Setenv("AO_SESSION_ID", "")
+	t.Setenv("OPEN_AGENTS_SESSION_ID", "")
 	cfg := setConfigEnv(t)
 	srv, capture := sendServer(t, http.StatusOK,
 		`{"ok":true,"sessionId":"demo-1","message":"hello agent"}`)
@@ -87,7 +87,7 @@ func TestSend_Success(t *testing.T) {
 }
 
 func TestSend_SteerActiveTurnUsesProviderSteeringWithoutQueueing(t *testing.T) {
-	t.Setenv("AO_SESSION_ID", "source-2")
+	t.Setenv("OPEN_AGENTS_SESSION_ID", "source-2")
 	cfg := setConfigEnv(t)
 	var paths, bodies []string
 	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
@@ -126,7 +126,7 @@ func TestSend_SteerActiveTurnUsesProviderSteeringWithoutQueueing(t *testing.T) {
 }
 
 func TestSend_SteerIdleStartsOneNormalChatTurn(t *testing.T) {
-	t.Setenv("AO_SESSION_ID", "")
+	t.Setenv("OPEN_AGENTS_SESSION_ID", "")
 	cfg := setConfigEnv(t)
 	var paths, ids []string
 	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
@@ -168,7 +168,7 @@ func TestSend_SteerIdleStartsOneNormalChatTurn(t *testing.T) {
 }
 
 func TestSend_SteerStateChangeRaceUsesOneAtomicRequest(t *testing.T) {
-	t.Setenv("AO_SESSION_ID", "")
+	t.Setenv("OPEN_AGENTS_SESSION_ID", "")
 	cfg := setConfigEnv(t)
 	var paths []string
 	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
@@ -432,7 +432,7 @@ func TestSend_SteerRecoverOnlyNeverFallsBackToNewMessage(t *testing.T) {
 }
 
 func TestSend_PrefixesMessageWithSenderSessionID(t *testing.T) {
-	t.Setenv("AO_SESSION_ID", "aa-47")
+	t.Setenv("OPEN_AGENTS_SESSION_ID", "aa-47")
 	cfg := setConfigEnv(t)
 	srv, capture := sendServer(t, http.StatusOK,
 		`{"ok":true,"sessionId":"demo-1","message":"hi"}`)
@@ -457,7 +457,7 @@ func TestSend_PrefixesMessageWithSenderSessionID(t *testing.T) {
 }
 
 func TestSend_BlankSenderSessionIDDoesNotPrefixMessage(t *testing.T) {
-	t.Setenv("AO_SESSION_ID", " \t ")
+	t.Setenv("OPEN_AGENTS_SESSION_ID", " \t ")
 	cfg := setConfigEnv(t)
 	srv, capture := sendServer(t, http.StatusOK,
 		`{"ok":true,"sessionId":"demo-1","message":"hello agent"}`)
@@ -481,7 +481,7 @@ func TestSend_BlankSenderSessionIDDoesNotPrefixMessage(t *testing.T) {
 }
 
 func TestSend_PreservesMessageWhitespace(t *testing.T) {
-	t.Setenv("AO_SESSION_ID", "")
+	t.Setenv("OPEN_AGENTS_SESSION_ID", "")
 	cfg := setConfigEnv(t)
 	srv, capture := sendServer(t, http.StatusOK, `{"ok":true,"sessionId":"demo-1","message":"hi"}`)
 	writeRunFileFor(t, cfg, srv)

@@ -9,7 +9,7 @@ import path from "node:path";
 // to end by mac-update-progress.ts and the Swift helper and must not be perturbed
 // just to drive renderer copy. This is a separate, single-purpose marker written
 // on every platform right before quitAndInstall so the renderer can swap the
-// startup loader phrases to "Updating / Restarting AO". It reuses the same
+// startup loader phrases to "Updating / Restarting Open Agents". It reuses the same
 // update-restart directory and atomic-write style; it does not touch active.json.
 //
 // Correctness: the flag is true only for a genuine post-update relaunch of THIS

@@ -1,17 +1,17 @@
-// AO-owned prompt suffixes, not general markdown. Desktop chat, spawn, older
+// Open Agents-owned prompt suffixes, not general markdown. Desktop chat, spawn, older
 // image-only prompts and earlier mobile builds each shipped their own wording;
 // durable history keeps all of them, so the transcript must accept every form.
 // Mirrors frontend/src/renderer/components/chat/messageAttachments.ts.
 const ATTACHMENT_REFERENCE_BLOCK =
 	/(?:^|\n\n)(?:Attached files \(read these files in the workspace(?: for context)?\)|Attached images \(read these files in the workspace for visual context\)|Attached files are available in the worktree):\n((?:- [^\n]+(?:\n|$))+)$/;
-const STAGED_ATTACHMENT_PATH = /^\.ao\/attachments\/(?:attachment|image)-[A-Za-z0-9][A-Za-z0-9._-]*$/;
+const STAGED_ATTACHMENT_PATH = /^\.open-agents\/attachments\/(?:attachment|image)-[A-Za-z0-9][A-Za-z0-9._-]*$/;
 const IMAGE_ATTACHMENT_PATH = /\.(?:png|jpe?g|gif|webp|bmp)$/i;
 
 export function stagedAttachmentParts(text: string): { body: string; attachments: string[] } {
 	const match = ATTACHMENT_REFERENCE_BLOCK.exec(text);
 	if (!match?.[1]) return { body: text, attachments: [] };
 	const attachments = match[1].trimEnd().split("\n").map((line) => line.slice(2));
-	// Only reinterpret paths AO itself stages: prose quoting the same wording about
+	// Only reinterpret paths Open Agents itself stages: prose quoting the same wording about
 	// docs/screenshot.png must stay readable text.
 	if (attachments.some((path) => !STAGED_ATTACHMENT_PATH.test(path))) return { body: text, attachments: [] };
 	return { body: text.slice(0, match.index), attachments };

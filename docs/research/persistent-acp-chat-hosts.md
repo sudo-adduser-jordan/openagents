@@ -10,7 +10,7 @@ providers stream notifications and can ask the client for permission or input.
 A replacement SDK connection cannot infer the old request mapping or outstanding
 responders. Native `session/load`/`session/resume` restores a conversation after
 provider loss; it does not adopt an executing prompt on the same connection.
-TCP delivery also does not prove that AO committed an event to SQLite.
+TCP delivery also does not prove that Open Agents committed an event to SQLite.
 
 These conclusions follow from the normative
 [prompt lifecycle](https://github.com/agentclientprotocol/agent-client-protocol/blob/01b9d6e9c094d31cdea6d88768a9dd31b089ccef/docs/protocol/v1/prompt-turn.mdx),
@@ -19,7 +19,7 @@ and [notification semantics](https://github.com/agentclientprotocol/agent-client
 
 ## Chosen seam
 
-The existing `persistenthost` control plane owns one detached process per AO
+The existing `persistenthost` control plane owns one detached process per Open Agents
 session. Its ACP profile adds connection snapshots, request remapping, stable
 interaction identities, and a bounded prompt journal. The shared ACP driver
 retains typed protocol normalization and provider policy. Chat services retain
@@ -52,13 +52,13 @@ protocol/topology facts, not authenticated testing of every accepted version.
 | Pi | [`victor-software-house/pi-acp@0ef24b2`](https://github.com/victor-software-house/pi-acp/tree/0ef24b24c97ac81a5e87a17d8fd74ef97fb34d8b) |
 | OMP | [`can1357/oh-my-pi@fd6ee56`](https://github.com/can1357/oh-my-pi/tree/fd6ee563c15413685ac43dfce350902a8d75d997) |
 
-Pi has an extra boundary: AO host → thin ACP client → Pi daemon. The thin-client
+Pi has an extra boundary: Open Agents host → thin ACP client → Pi daemon. The thin-client
 connection owns its Pi sessions; retaining it avoids disposal on disconnect
 ([connection cleanup](https://github.com/victor-software-house/pi-acp/blob/0ef24b24c97ac81a5e87a17d8fd74ef97fb34d8b/src/daemon/index.ts)).
-This does not need a second AO ownership abstraction. Actual client, underlying
+This does not need a second Open Agents ownership abstraction. Actual client, underlying
 Pi session, and supported-platform continuity still need vendor E2E coverage.
 The adapter uses Unix sockets; persistence does not imply Pi Windows support.
-AO's explicit bypass-only admission remains unchanged.
+Open Agents's explicit bypass-only admission remains unchanged.
 
 Cursor, Kimchi, and OMP process-fixed permission policies remain fixed.
 Persistence does not add approval support or change version floors. Negotiated
@@ -71,7 +71,7 @@ provider capabilities decide native recovery after actual host loss.
 - Live adoption succeeds without native resume capability and without invoking
   a replacement launch that would fail. Changed model, environment, instructions,
   and mutable settings do not redefine ownership.
-- Initialize/session/prompt are not repeated on live adoption. Durable AO turn
+- Initialize/session/prompt are not repeated on live adoption. Durable Open Agents turn
   ownership is restored before raw replay rebuilds the normalizer.
 - Event and interaction IDs survive attachment changes but use a new random
   namespace after host replacement. Reused provider wire IDs retain causal order.

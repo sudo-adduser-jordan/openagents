@@ -10,18 +10,18 @@ import (
 	"testing"
 	"time"
 
-	"github.com/aoagents/agent-orchestrator/backend/internal/cdc"
-	"github.com/aoagents/agent-orchestrator/backend/internal/config"
-	"github.com/aoagents/agent-orchestrator/backend/internal/domain"
-	"github.com/aoagents/agent-orchestrator/backend/internal/httpd"
-	"github.com/aoagents/agent-orchestrator/backend/internal/lifecycle"
-	"github.com/aoagents/agent-orchestrator/backend/internal/ports"
-	agentsvc "github.com/aoagents/agent-orchestrator/backend/internal/service/agent"
-	prsvc "github.com/aoagents/agent-orchestrator/backend/internal/service/pr"
-	sessionsvc "github.com/aoagents/agent-orchestrator/backend/internal/service/session"
-	sessionmanager "github.com/aoagents/agent-orchestrator/backend/internal/session_manager"
-	"github.com/aoagents/agent-orchestrator/backend/internal/storage/sqlite"
-	"github.com/aoagents/agent-orchestrator/backend/internal/storage/sqlite/sqlitetest"
+	"github.com/sudo-adduser-jordan/open-agents/backend/internal/cdc"
+	"github.com/sudo-adduser-jordan/open-agents/backend/internal/config"
+	"github.com/sudo-adduser-jordan/open-agents/backend/internal/domain"
+	"github.com/sudo-adduser-jordan/open-agents/backend/internal/httpd"
+	"github.com/sudo-adduser-jordan/open-agents/backend/internal/lifecycle"
+	"github.com/sudo-adduser-jordan/open-agents/backend/internal/ports"
+	agentsvc "github.com/sudo-adduser-jordan/open-agents/backend/internal/service/agent"
+	prsvc "github.com/sudo-adduser-jordan/open-agents/backend/internal/service/pr"
+	sessionsvc "github.com/sudo-adduser-jordan/open-agents/backend/internal/service/session"
+	sessionmanager "github.com/sudo-adduser-jordan/open-agents/backend/internal/session_manager"
+	"github.com/sudo-adduser-jordan/open-agents/backend/internal/storage/sqlite"
+	"github.com/sudo-adduser-jordan/open-agents/backend/internal/storage/sqlite/sqlitetest"
 )
 
 type stubRuntime struct {
@@ -358,7 +358,7 @@ func TestReconcile_PreservesFailedLiveSessionAndReapsLeakedTmux(t *testing.T) {
 		Harness:      domain.HarnessOpenCode,
 		IsTerminated: false,
 		Metadata: domain.SessionMetadata{
-			Branch:          "ao/mer-a/root",
+			Branch:          "open-agents/mer-a/root",
 			WorkspacePath:   "/ws/mer-a",
 			RuntimeHandleID: "hdl-A",
 		},
@@ -378,7 +378,7 @@ func TestReconcile_PreservesFailedLiveSessionAndReapsLeakedTmux(t *testing.T) {
 		Harness:      domain.HarnessOpenCode,
 		IsTerminated: true,
 		Metadata: domain.SessionMetadata{
-			Branch:          "ao/mer-b/root",
+			Branch:          "open-agents/mer-b/root",
 			WorkspacePath:   "/ws/mer-b",
 			RuntimeHandleID: "hdl-B",
 		},

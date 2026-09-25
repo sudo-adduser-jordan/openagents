@@ -8,7 +8,7 @@ function deps(overrides: Partial<EditorHandoffDeps> = {}): EditorHandoffDeps {
 		platform: "darwin",
 		env: { PATH: "/bin" },
 		homeDir: "/Users/tester",
-		resolveWorkspace: vi.fn().mockResolvedValue("/worktrees/ao-1"),
+		resolveWorkspace: vi.fn().mockResolvedValue("/worktrees/open-agents-1"),
 		readPreference: vi.fn().mockResolvedValue("cursor"),
 		writePreference: vi.fn().mockResolvedValue(undefined),
 		launch: vi.fn().mockResolvedValue(undefined),
@@ -44,7 +44,7 @@ function installedExecutables(...expectedPaths: string[]) {
 describe("editor handoff", () => {
 	it("detects Dock-installed apps and keeps Finder and Terminal as safe fallbacks", async () => {
 		const handoff = createEditorHandoff(deps());
-		const state = await handoff.getState("ao-1");
+		const state = await handoff.getState("open-agents-1");
 		expect(state).toMatchObject({ preferredEditorId: "cursor", workspaceAvailable: true });
 		expect(state.targets.map(({ id }) => id)).toEqual(["cursor", "vscode", "file-manager", "terminal"]);
 	});
@@ -58,9 +58,9 @@ describe("editor handoff", () => {
 		});
 		const handoff = createEditorHandoff(input);
 
-		const state = await handoff.getState("ao-1");
+		const state = await handoff.getState("open-agents-1");
 		expect(state.targets.map(({ id }) => id)).toContain("neovim");
-		await handoff.open({ sessionId: "ao-1", targetId: "neovim" });
+		await handoff.open({ sessionId: "open-agents-1", targetId: "neovim" });
 
 		expect(input.launch).toHaveBeenCalledWith(
 			"/usr/bin/osascript",
@@ -77,7 +77,7 @@ describe("editor handoff", () => {
 		["kitty", []],
 		["alacritty", ["-e"]],
 	] as const)("opens Neovim through the Linux %s launcher", async (terminalCommand, argsBeforeCommand) => {
-		const workspacePath = "/work trees/ao-1";
+		const workspacePath = "/work trees/open-agents-1";
 		const input = deps({
 			platform: "linux",
 			env: { PATH: "/bin" },
@@ -87,7 +87,7 @@ describe("editor handoff", () => {
 		});
 		const handoff = createEditorHandoff(input);
 
-		await handoff.open({ sessionId: "ao-1", targetId: "neovim" });
+		await handoff.open({ sessionId: "open-agents-1", targetId: "neovim" });
 
 		expect(input.launch).toHaveBeenCalledWith(
 			`/bin/${terminalCommand}`,
@@ -112,7 +112,7 @@ describe("editor handoff", () => {
 		});
 		const handoff = createEditorHandoff(input);
 
-		await handoff.open({ sessionId: "ao-1", targetId: "neovim" });
+		await handoff.open({ sessionId: "open-agents-1", targetId: "neovim" });
 
 		expect(input.launch).toHaveBeenCalledWith(
 			"C:\\Windows\\System32\\cmd.exe",
@@ -125,7 +125,7 @@ describe("editor handoff", () => {
 		const handoff = createEditorHandoff(deps({
 			resolveWorkspace: vi.fn().mockRejectedValue(new Error("Session workspace is not available.")),
 		}));
-		const state = await handoff.getState("ao-1");
+		const state = await handoff.getState("open-agents-1");
 		expect(state.workspaceAvailable).toBe(false);
 		expect(state.unavailableReason).toBe("Session workspace is not available.");
 		expect(state.targets).toHaveLength(4);
@@ -134,19 +134,19 @@ describe("editor handoff", () => {
 	it("opens only the workspace root and persists a chosen editor", async () => {
 		const input = deps();
 		const handoff = createEditorHandoff(input);
-		await expect(handoff.open({ sessionId: "ao-1", targetId: "vscode" })).resolves.toMatchObject({
+		await expect(handoff.open({ sessionId: "open-agents-1", targetId: "vscode" })).resolves.toMatchObject({
 			id: "vscode",
 			kind: "editor",
 		});
-		expect(input.launch).toHaveBeenCalledWith("/bin/code", ["/worktrees/ao-1"], "/worktrees/ao-1");
+		expect(input.launch).toHaveBeenCalledWith("/bin/code", ["/worktrees/open-agents-1"], "/worktrees/open-agents-1");
 		expect(input.writePreference).toHaveBeenCalledWith("vscode");
 	});
 
 	it("opens Finder without changing the editor preference", async () => {
 		const input = deps();
 		const handoff = createEditorHandoff(input);
-		await handoff.open({ sessionId: "ao-1", targetId: "file-manager" });
-		expect(input.openDirectory).toHaveBeenCalledWith("/worktrees/ao-1");
+		await handoff.open({ sessionId: "open-agents-1", targetId: "file-manager" });
+		expect(input.openDirectory).toHaveBeenCalledWith("/worktrees/open-agents-1");
 		expect(input.writePreference).not.toHaveBeenCalled();
 	});
 
@@ -155,7 +155,7 @@ describe("editor handoff", () => {
 			isExecutable: () => false,
 			isDirectory: () => false,
 		}));
-		await expect(handoff.open({ sessionId: "ao-1" })).rejects.toThrow(
+		await expect(handoff.open({ sessionId: "open-agents-1" })).rejects.toThrow(
 			"That editor is not installed. Choose another option.",
 		);
 	});
@@ -163,7 +163,7 @@ describe("editor handoff", () => {
 	it("turns a launcher failure into a visible path-free error", async () => {
 		const input = deps({ launch: vi.fn().mockRejectedValue(new Error("/private/path failed")) });
 		const handoff = createEditorHandoff(input);
-		await expect(handoff.open({ sessionId: "ao-1", targetId: "vscode" })).rejects.toThrow(
+		await expect(handoff.open({ sessionId: "open-agents-1", targetId: "vscode" })).rejects.toThrow(
 			"Could not open VS Code. Check that it is installed and try again.",
 		);
 	});
@@ -177,15 +177,15 @@ describe("editor handoff", () => {
 				isDirectory: (candidatePath) => candidatePath === `/Applications/${bundleName}.app`,
 			});
 			const handoff = createEditorHandoff(input);
-			const state = await handoff.getState("ao-1");
+			const state = await handoff.getState("open-agents-1");
 			const antigravity = state.targets.find(({ id }) => id === "antigravity");
 			expect(antigravity).toEqual({ id: "antigravity", name: "Antigravity IDE", kind: "editor" });
 
-			await handoff.open({ sessionId: "ao-1", targetId: "antigravity" });
+			await handoff.open({ sessionId: "open-agents-1", targetId: "antigravity" });
 			expect(input.launch).toHaveBeenCalledWith(
 				"/usr/bin/open",
-				["-a", bundleName, "/worktrees/ao-1"],
-				"/worktrees/ao-1",
+				["-a", bundleName, "/worktrees/open-agents-1"],
+				"/worktrees/open-agents-1",
 			);
 		},
 	);
@@ -200,15 +200,15 @@ describe("editor handoff", () => {
 				isDirectory: () => false,
 			});
 			const handoff = createEditorHandoff(input);
-			const state = await handoff.getState("ao-1");
+			const state = await handoff.getState("open-agents-1");
 			const antigravity = state.targets.find(({ id }) => id === "antigravity");
 			expect(antigravity).toEqual({ id: "antigravity", name: "Antigravity IDE", kind: "editor" });
 
-			await handoff.open({ sessionId: "ao-1", targetId: "antigravity" });
+			await handoff.open({ sessionId: "open-agents-1", targetId: "antigravity" });
 			expect(input.launch).toHaveBeenCalledWith(
 				`/usr/bin/${command}`,
-				["/worktrees/ao-1"],
-				"/worktrees/ao-1",
+				["/worktrees/open-agents-1"],
+				"/worktrees/open-agents-1",
 			);
 		},
 	);
@@ -223,7 +223,7 @@ describe("editor handoff (win32 fallback discovery)", () => {
 
 	it("finds an editor that is present only in the per-user LOCALAPPDATA install dir", async () => {
 		const handoff = createEditorHandoff(winDeps({ isExecutable: installedExecutables(cursorBin) }));
-		const state = await handoff.getState("ao-1");
+		const state = await handoff.getState("open-agents-1");
 		const cursor = state.targets.find(({ id }) => id === "cursor");
 		expect(cursor).toBeDefined();
 	});
@@ -231,7 +231,7 @@ describe("editor handoff (win32 fallback discovery)", () => {
 	it("finds Antigravity IDE when present in LOCALAPPDATA install dir", async () => {
 		const antigravityBin = path.win32.join("C:", "Users", "tester", "AppData", "Local", "Programs", "Antigravity IDE", "bin", "antigravity-ide.cmd");
 		const handoff = createEditorHandoff(winDeps({ isExecutable: installedExecutables(antigravityBin) }));
-		const state = await handoff.getState("ao-1");
+		const state = await handoff.getState("open-agents-1");
 		const antigravity = state.targets.find(({ id }) => id === "antigravity");
 		expect(antigravity).toEqual({ id: "antigravity", name: "Antigravity IDE", kind: "editor" });
 	});
@@ -244,13 +244,13 @@ describe("editor handoff (win32 fallback discovery)", () => {
 		const cmdShim = path.win32.join(dir, "code.cmd");
 		const input = winDeps({ isExecutable: installedExecutables(shScript, cmdShim) });
 		const handoff = createEditorHandoff(input);
-		await handoff.open({ sessionId: "ao-1", targetId: "vscode" });
-		expect(input.launch).toHaveBeenCalledWith(cmdShim, ["/worktrees/ao-1"], "/worktrees/ao-1");
+		await handoff.open({ sessionId: "open-agents-1", targetId: "vscode" });
+		expect(input.launch).toHaveBeenCalledWith(cmdShim, ["/worktrees/open-agents-1"], "/worktrees/open-agents-1");
 	});
 
 	it("finds an editor installed only in a system Program Files dir", async () => {
 		const handoff = createEditorHandoff(winDeps({ isExecutable: installedExecutables(vscodeSystemBin) }));
-		const state = await handoff.getState("ao-1");
+		const state = await handoff.getState("open-agents-1");
 		const vscode = state.targets.find(({ id }) => id === "vscode");
 		expect(vscode).toBeDefined();
 	});
@@ -259,13 +259,13 @@ describe("editor handoff (win32 fallback discovery)", () => {
 		const pathCode = path.win32.join("C", "bin", "code.cmd");
 		const input = winDeps({ isExecutable: installedExecutables(pathCode, vscodeAgentExec) });
 		const handoff = createEditorHandoff(input);
-		await handoff.open({ sessionId: "ao-1", targetId: "vscode" });
-		expect(input.launch).toHaveBeenCalledWith(pathCode, ["/worktrees/ao-1"], "/worktrees/ao-1");
+		await handoff.open({ sessionId: "open-agents-1", targetId: "vscode" });
+		expect(input.launch).toHaveBeenCalledWith(pathCode, ["/worktrees/open-agents-1"], "/worktrees/open-agents-1");
 	});
 
 	it("resolves a .cmd shim from an install dir via PATHEXT", async () => {
 		const handoff = createEditorHandoff(winDeps({ isExecutable: installedExecutables(vscodeSystemBin) }));
-		const state = await handoff.getState("ao-1");
+		const state = await handoff.getState("open-agents-1");
 		expect(state.targets.some(({ id }) => id === "vscode")).toBe(true);
 	});
 
@@ -278,7 +278,7 @@ describe("editor handoff (win32 fallback discovery)", () => {
 			isExecutable: () => false,
 		});
 		const handoff = createEditorHandoff(input);
-		const state = await handoff.getState("ao-1");
+		const state = await handoff.getState("open-agents-1");
 		expect(state.targets).toEqual([
 			{ id: "file-manager", name: "File Explorer", kind: "file_manager" },
 			{ id: "terminal", name: "Command Prompt", kind: "terminal" },
@@ -287,14 +287,14 @@ describe("editor handoff (win32 fallback discovery)", () => {
 
 	it("leaves editors unavailable on win32 when neither PATH nor install dirs match", async () => {
 		const handoff = createEditorHandoff(winDeps({ isExecutable: () => false }));
-		const state = await handoff.getState("ao-1");
+		const state = await handoff.getState("open-agents-1");
 		expect(state.targets.some(({ id }) => id === "vscode")).toBe(false);
 		expect(state.targets.some(({ id }) => id === "cursor")).toBe(false);
 	});
 
 	it("does not scan install dirs on non-win32 platforms", async () => {
 		const macHandoff = createEditorHandoff(deps({ isExecutable: () => false, isDirectory: () => false }));
-		const state = await macHandoff.getState("ao-1");
+		const state = await macHandoff.getState("open-agents-1");
 		expect(state.targets.some(({ id }) => id === "vscode")).toBe(false);
 	});
 
@@ -306,7 +306,7 @@ describe("editor handoff (win32 fallback discovery)", () => {
 			isExecutable: (candidatePath) => candidatePath === code,
 			isDirectory: () => false,
 		});
-		const state = await createEditorHandoff(input).getState("ao-1");
+		const state = await createEditorHandoff(input).getState("open-agents-1");
 		expect(state.targets.some(({ id }) => id === "vscode")).toBe(true);
 	});
 
@@ -317,9 +317,9 @@ describe("editor handoff (win32 fallback discovery)", () => {
 			isDirectory: () => false,
 		});
 		const handoff = createEditorHandoff(input);
-		expect((await handoff.getState("ao-1")).targets.some(({ id }) => id === "cursor")).toBe(false);
+		expect((await handoff.getState("open-agents-1")).targets.some(({ id }) => id === "cursor")).toBe(false);
 
 		installed.add(cursorBin);
-		expect((await handoff.getState("ao-1")).targets.some(({ id }) => id === "cursor")).toBe(true);
+		expect((await handoff.getState("open-agents-1")).targets.some(({ id }) => id === "cursor")).toBe(true);
 	});
 });

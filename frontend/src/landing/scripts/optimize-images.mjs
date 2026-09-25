@@ -85,11 +85,11 @@ await icon(src("icons", "agy.png"), "app-icons/agents/agy.png", 64);
 await icon(src("icons", "muse.png"), "app-icons/agents/muse.png", 64);
 
 console.log("vector");
-const logoSource = await readFile(src("icons", "ao-logo.svg"), "utf8");
+const logoSource = await readFile(src("icons", "open-agents-logo.svg"), "utf8");
 const logo = svgoOptimize(logoSource, {
   multipass: true,
   plugins: [{ name: "preset-default", params: { overrides: { cleanupNumericValues: { floatPrecision: 2 } } } }],
 });
-await emit(out("ao-logo.svg"), Buffer.from(logo.data));
+await emit(out("open-agents-logo.svg"), Buffer.from(logo.data));
 
 console.log(`\n${generated} files written to public/`);

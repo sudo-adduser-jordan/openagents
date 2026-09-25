@@ -3,7 +3,7 @@ import { useCallback, useEffect, useRef, useState } from "react";
 import type { TerminalSessionState } from "../hooks/useTerminalSession";
 import { useCloseShellTerminal } from "../hooks/useShellTerminals";
 import { useGitHubAuthAutoLoginOffered, useGitHubAuthRequirement, useGitHubAuthTerminal, useStartGitHubAuthTerminal, useSystemRequirementsGate } from "../hooks/useSystemRequirementsGate";
-import { aoBridge } from "../lib/bridge";
+import { openAgentsBridge } from "../lib/bridge";
 import { useShellMaybe } from "../lib/shell-context";
 import { useResolvedTheme, useUiStore } from "../stores/ui-store";
 import { TerminalPane } from "./TerminalPane";
@@ -122,7 +122,7 @@ export function GitHubOnboardingNotice() {
 							<TopbarButton
 								disabled={!cliMissing && (startLogin.isPending || Boolean(terminal && !loginEnded))}
 								onClick={() => cliMissing
-									? void aoBridge.app.openExternal(GITHUB_CLI_INSTALL_URL)
+									? void openAgentsBridge.app.openExternal(GITHUB_CLI_INSTALL_URL)
 									: loginEnded
 										? retryLogin()
 										: openLogin()}

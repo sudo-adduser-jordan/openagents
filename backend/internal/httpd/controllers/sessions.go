@@ -22,16 +22,16 @@ import (
 
 	"github.com/go-chi/chi/v5"
 
-	"github.com/aoagents/agent-orchestrator/backend/internal/attachmentstore"
-	"github.com/aoagents/agent-orchestrator/backend/internal/domain"
-	"github.com/aoagents/agent-orchestrator/backend/internal/httpd/apispec"
-	"github.com/aoagents/agent-orchestrator/backend/internal/httpd/envelope"
-	"github.com/aoagents/agent-orchestrator/backend/internal/ports"
-	previewutil "github.com/aoagents/agent-orchestrator/backend/internal/preview"
-	"github.com/aoagents/agent-orchestrator/backend/internal/previewserver"
-	sessionsvc "github.com/aoagents/agent-orchestrator/backend/internal/service/session"
-	usagesvc "github.com/aoagents/agent-orchestrator/backend/internal/service/usage"
-	"github.com/aoagents/agent-orchestrator/backend/internal/workspacewatch"
+	"github.com/sudo-adduser-jordan/open-agents/backend/internal/attachmentstore"
+	"github.com/sudo-adduser-jordan/open-agents/backend/internal/domain"
+	"github.com/sudo-adduser-jordan/open-agents/backend/internal/httpd/apispec"
+	"github.com/sudo-adduser-jordan/open-agents/backend/internal/httpd/envelope"
+	"github.com/sudo-adduser-jordan/open-agents/backend/internal/ports"
+	previewutil "github.com/sudo-adduser-jordan/open-agents/backend/internal/preview"
+	"github.com/sudo-adduser-jordan/open-agents/backend/internal/previewserver"
+	sessionsvc "github.com/sudo-adduser-jordan/open-agents/backend/internal/service/session"
+	usagesvc "github.com/sudo-adduser-jordan/open-agents/backend/internal/service/usage"
+	"github.com/sudo-adduser-jordan/open-agents/backend/internal/workspacewatch"
 )
 
 const (
@@ -233,7 +233,7 @@ func (c *SessionsController) spawn(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	// Bound the body before decoding: this route is served on the LAN listener
-	// (AO Mobile), not just loopback, and the attachment caps only run after the
+	// (Open Agents Mobile), not just loopback, and the attachment caps only run after the
 	// whole body is decoded. MaxBytesReader stops the read past the limit so an
 	// oversized base64 payload can't allocate in full first.
 	r.Body = http.MaxBytesReader(w, r.Body, maxSpawnBodyBytes)
@@ -253,7 +253,7 @@ func (c *SessionsController) spawn(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	// displayName is optional at the API (the desktop new-task dialog omits it
-	// and the read model falls back to the session id). `ao spawn` makes it
+	// and the read model falls back to the session id). `open-agents spawn` makes it
 	// required CLI-side. When present, it is held to the same length cap here so
 	// a direct API call cannot exceed it.
 	displayName := strings.TrimSpace(in.DisplayName)
@@ -808,7 +808,7 @@ func (c *SessionsController) streamWorkspaceChanges(w http.ResponseWriter, r *ht
 //     workspace-confined preview origin rather than an automatable file: URL.
 //   - External http(s) URLs and host:port dev servers are kept verbatim.
 //
-// Every call bumps the session's preview revision, so re-running `ao preview`
+// Every call bumps the session's preview revision, so re-running `open-agents preview`
 // with the same target still refreshes the panel.
 func (c *SessionsController) setPreview(w http.ResponseWriter, r *http.Request) {
 	if c.Svc == nil {
@@ -867,7 +867,7 @@ func (c *SessionsController) setPreview(w http.ResponseWriter, r *http.Request) 
 	envelope.WriteJSON(w, http.StatusOK, SessionResponse{Session: sessionView(updated)})
 }
 
-// clearPreview resets a session's browser preview to empty (`ao preview
+// clearPreview resets a session's browser preview to empty (`open-agents preview
 // clear`). Unlike setPreview with an empty url it never autodetects: it persists
 // an empty target so the desktop browser panel returns to its blank state. The
 // write still bumps the preview revision, so the panel hears the change over
@@ -1343,7 +1343,7 @@ func (c *SessionsController) kill(w http.ResponseWriter, r *http.Request) {
 // rollback undoes a partially-completed spawn: if the session row is still in
 // seed state (no workspace, no runtime handle yet), the row is deleted
 // outright. If anything observable has landed it falls back to Kill so the
-// runtime/workspace are torn down. Used by `ao spawn --claim-pr` to undo a
+// runtime/workspace are torn down. Used by `open-agents spawn --claim-pr` to undo a
 // session whose claim step failed, avoiding the orphan terminated row a
 // plain Kill would leave behind.
 func (c *SessionsController) rollback(w http.ResponseWriter, r *http.Request) {
@@ -1481,7 +1481,7 @@ func sanitizedOptionalString(value *string) *string {
 }
 
 // activity records an agent activity-state signal reported by an agent hook
-// (via `ao hooks <agent> <event>`). It funnels through the single
+// (via `open-agents hooks <agent> <event>`). It funnels through the single
 // lifecycle.Manager so the reaper and hooks never race on the session's
 // activity/termination columns.
 func (c *SessionsController) activity(w http.ResponseWriter, r *http.Request) {
@@ -1517,7 +1517,7 @@ func (c *SessionsController) activity(w http.ResponseWriter, r *http.Request) {
 	// They are externally-supplied strings headed for logs and in-memory maps,
 	// so sanitize control chars and cap their length (a truncated id could
 	// never match its pre/post counterpart, so overlong values are dropped by
-	// the CLI; the cap here is defense against non-AO callers).
+	// the CLI; the cap here is defense against non-Open Agents callers).
 	sig := ports.ActivitySignal{
 		Timestamp:                    in.ObservedAt,
 		Valid:                        state != "",
@@ -1605,7 +1605,7 @@ func capActivityText(v string, maxLen int) string {
 	if maxLen <= 0 || len(v) <= maxLen {
 		return v
 	}
-	const marker = "\n[... truncated by AO ...]\n"
+	const marker = "\n[... truncated by Open Agents ...]\n"
 	budget := maxLen - len(marker)
 	if budget <= 0 {
 		return ""
@@ -1726,7 +1726,7 @@ func writeSessionPRError(w http.ResponseWriter, r *http.Request, err error) {
 	case errors.Is(err, sessionsvc.ErrSessionNoWorkspace):
 		envelope.WriteAPIError(w, r, http.StatusUnprocessableEntity, "unprocessable", "SESSION_NO_WORKSPACE", "Session has no workspace", nil)
 	case errors.Is(err, sessionsvc.ErrProjectMismatch):
-		envelope.WriteAPIError(w, r, http.StatusUnprocessableEntity, "unprocessable", "PR_PROJECT_MISMATCH", "PR repository must match the project origin, its explicit canonicalRepoURL, or a registered workspace child origin. For workspace projects, check the registered repositories with ao project get <project-id> --json and pass the child's full PR/MR URL. canonicalRepoURL requires a valid root origin and is not a child-repository allowlist. For single-repo forks, configure the upstream HTTPS repository URL with ao project set-config <project-id> --canonical-repo-url <url> (replaces config; preserve existing fields with --config-json). Git remotes alone do not grant trust.", nil)
+		envelope.WriteAPIError(w, r, http.StatusUnprocessableEntity, "unprocessable", "PR_PROJECT_MISMATCH", "PR repository must match the project origin, its explicit canonicalRepoURL, or a registered workspace child origin. For workspace projects, check the registered repositories with open-agents project get <project-id> --json and pass the child's full PR/MR URL. canonicalRepoURL requires a valid root origin and is not a child-repository allowlist. For single-repo forks, configure the upstream HTTPS repository URL with open-agents project set-config <project-id> --canonical-repo-url <url> (replaces config; preserve existing fields with --config-json). Git remotes alone do not grant trust.", nil)
 	case errors.Is(err, sessionsvc.ErrSCMUnavailable):
 		envelope.WriteAPIError(w, r, http.StatusServiceUnavailable, "unavailable", "SCM_UNAVAILABLE", "SCM unavailable", nil)
 	default:
@@ -1737,8 +1737,8 @@ func writeSessionPRError(w http.ResponseWriter, r *http.Request, err error) {
 func discoverPreviewEntry(workspacePath string) (string, bool) {
 	// Use DiscoverWebEntrypoint (index.html variants only), not DiscoverEntry
 	// (which falls back to mostRecentPreviewable — the newest .md/.html in the
-	// workspace). Bare `ao preview` (no args) hits this path, and agent
-	// harnesses run that automatically on new sessions via the using-ao skill.
+	// workspace). Bare `open-agents preview` (no args) hits this path, and agent
+	// harnesses run that automatically on new sessions via the using-open-agents skill.
 	// With the .md fallback, every new session in a Markdown-rich repo opened
 	// its browser panel to an arbitrary repo doc (e.g. test/cli/README.md)
 	// instead of staying empty. Mirrors the poller fix from PR #2860.

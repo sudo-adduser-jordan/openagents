@@ -20,7 +20,7 @@ import { TERMINAL_FONT_SIZE_DEFAULT, TERMINAL_FONT_SIZE_MAX, TERMINAL_FONT_SIZE_
 import { getAgentActivityView } from "../lib/session-presentation";
 import { agentLabel } from "../lib/agent-options";
 import { isLinuxPlatform, isMacPlatform } from "../lib/platform";
-import { aoBridge } from "../lib/bridge";
+import { openAgentsBridge } from "../lib/bridge";
 import { handleTerminalTabListKeyDown } from "../lib/terminal-tabs";
 import { cn } from "../lib/utils";
 import { sidebarOccupiesLayout, useUiStore, type Theme } from "../stores/ui-store";
@@ -82,7 +82,7 @@ type AuxiliaryTab =
 	| { key: string; kind: "shell"; terminal: ShellTerminal }
 	| { key: string; kind: "workspace"; tab: CenterPaneWorkspaceTab };
 
-const terminalFontSizeStorageKey = "ao.terminal.fontSize";
+const terminalFontSizeStorageKey = "open-agents.terminal.fontSize";
 const WHEEL_ZOOM_THRESHOLD = 80;
 const WHEEL_ZOOM_RESET_MS = 250;
 const isMac = isMacPlatform();
@@ -294,7 +294,7 @@ export function CenterPane({
 
 	useEffect(
 		() =>
-			aoBridge.app.onCloseShellTerminalShortcut(() => {
+			openAgentsBridge.app.onCloseShellTerminalShortcut(() => {
 				if (activeWorkspaceTab?.onClose) activeWorkspaceTab.onClose();
 				else if (target.kind === "shell") onCloseShellTerminal?.(target.handleId);
 			}),
@@ -302,8 +302,8 @@ export function CenterPane({
 	);
 
 	useEffect(() => {
-		const disposePrevious = aoBridge.app.onPreviousTabShortcut(() => selectAdjacentTab(-1));
-		const disposeNext = aoBridge.app.onNextTabShortcut(() => selectAdjacentTab(1));
+		const disposePrevious = openAgentsBridge.app.onPreviousTabShortcut(() => selectAdjacentTab(-1));
+		const disposeNext = openAgentsBridge.app.onNextTabShortcut(() => selectAdjacentTab(1));
 		return () => {
 			disposePrevious();
 			disposeNext();
@@ -311,10 +311,10 @@ export function CenterPane({
 	}, [selectAdjacentTab]);
 
 	useEffect(() => {
-		aoBridge.app.setCloseShellTerminalShortcutEnabled(
+		openAgentsBridge.app.setCloseShellTerminalShortcutEnabled(
 			Boolean(activeWorkspaceTab?.onClose) || (target.kind === "shell" && Boolean(onCloseShellTerminal)),
 		);
-		return () => aoBridge.app.setCloseShellTerminalShortcutEnabled(false);
+		return () => openAgentsBridge.app.setCloseShellTerminalShortcutEnabled(false);
 	}, [activeWorkspaceTab, target.kind, onCloseShellTerminal]);
 
 	useEffect(() => {

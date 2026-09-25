@@ -3,7 +3,7 @@ package ports
 import (
 	"errors"
 
-	"github.com/aoagents/agent-orchestrator/backend/internal/domain"
+	"github.com/sudo-adduser-jordan/open-agents/backend/internal/domain"
 )
 
 // ErrSessionNotFound reports an observation for an unknown session id.
@@ -18,8 +18,8 @@ var ErrActivityProjectionContention = errors.New("activity projection contention
 type SpawnConfig struct {
 	ProjectID domain.ProjectID
 	IssueID   domain.IssueID
-	// ParentSessionID identifies the AO orchestrator that requested this worker
-	// through `ao spawn`. The daemon validates this reference and derives any
+	// ParentSessionID identifies the Open Agents orchestrator that requested this worker
+	// through `open-agents spawn`. The daemon validates this reference and derives any
 	// inherited settings itself; callers never supply an inherited policy.
 	ParentSessionID domain.SessionID
 	// TrackerProvider is the issue-tracker provider hint from the CLI's
@@ -48,7 +48,7 @@ type SpawnConfig struct {
 	// RequestedMode is the caller's explicit session mode, or empty to let the
 	// daemon resolve its default. It is validated and persisted before any
 	// controller launches. A later explicit interface transition may replace that
-	// controller while preserving the AO session. An unsupported explicit request
+	// controller while preserving the Open Agents session. An unsupported explicit request
 	// fails the spawn rather than falling back to the other mode.
 	RequestedMode domain.SessionMode
 

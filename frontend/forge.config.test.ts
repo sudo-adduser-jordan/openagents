@@ -22,12 +22,20 @@ vi.mock("./makers/maker-dmg", async (importOriginal) => {
 	return { ...actual, sealDmg, verifyDmg, verifyMacArtifact, isSigningConfigured };
 });
 
-import config, { extraResourcesForPlatform, macSignOptionsForFile } from "./forge.config";
+import config, { canonicalDarwinZipPath, extraResourcesForPlatform, macSignOptionsForFile } from "./forge.config";
 
 // Minimal synthetic Mach-O headers (thin little-endian + fat big-endian), the
 // two on-disk layouts the signing selector must tell apart. Full parser
 // coverage lives in makers/macho-archs.test.ts; here the fixtures exist so the
 // per-file signing decision is exercised against real file bytes.
+describe("canonicalDarwinZipPath", () => {
+	it("uses the Open Agents platform and architecture release identity", () => {
+		expect(canonicalDarwinZipPath("/out/Open Agents-darwin-arm64-0.13.0.zip")).toBe(
+			"/out/open-agents-darwin-arm64-0.13.0.zip",
+		);
+	});
+});
+
 const CPU_TYPE_X86_64 = 0x01000007;
 const CPU_TYPE_ARM64 = 0x0100000c;
 
@@ -65,7 +73,7 @@ let fixtureDir: string;
 function acpNodeWith(contents: Buffer): string {
 	const binDir = join(
 		fixtureDir,
-		"Agent Orchestrator.app",
+		"Open Agents.app",
 		"Contents",
 		"Resources",
 		"acp-runtime",
@@ -87,7 +95,7 @@ afterEach(() => {
 
 describe("native runtime resources", () => {
 	it("fails packaging when the macOS helper was not copied into Resources", async () => {
-		mkdirSync(join(fixtureDir, "AO.app", "Contents", "Resources"), { recursive: true });
+		mkdirSync(join(fixtureDir, "Open Agents.app", "Contents", "Resources"), { recursive: true });
 		const hook = config.hooks?.postPackage;
 		expect(hook).toBeTypeOf("function");
 		if (typeof hook !== "function") return;
@@ -153,7 +161,7 @@ describe("macOS signing", () => {
 	});
 
 	it("keeps electron-osx-sign defaults for every other bundle file", () => {
-		const foreign = join(fixtureDir, "elsewhere", "agent-orchestrator");
+		const foreign = join(fixtureDir, "elsewhere", "open-agents");
 		mkdirSync(join(fixtureDir, "elsewhere"), { recursive: true });
 		writeFileSync(foreign, thinMachO(CPU_TYPE_X86_64));
 		expect(macSignOptionsForFile(foreign)).toEqual({});
@@ -186,8 +194,8 @@ describe("macOS signing", () => {
 	it.each([
 		{
 			name: "an explicit signing identity",
-			env: { APPLE_SIGNING_IDENTITY: "Developer ID Application: AO (TEAMID)" },
-			identity: "Developer ID Application: AO (TEAMID)",
+			env: { APPLE_SIGNING_IDENTITY: "Developer ID Application: Open Agents (TEAMID)" },
+			identity: "Developer ID Application: Open Agents (TEAMID)",
 		},
 		{
 			name: "a CSC_LINK certificate",
@@ -218,16 +226,16 @@ describe("postMake artifact verification", () => {
 
 	it("verifies a signed zip with the canonical script, gated on isSigningConfigured", async () => {
 		isSigningConfigured.mockReturnValue(true);
-		const makeResults = darwinResult(["/out/make/zip/agent-orchestrator-darwin-x64.zip"]);
+		const makeResults = darwinResult(["/out/make/zip/open-agents-darwin-x64.zip"]);
 
 		await config.hooks?.postMake?.({} as never, makeResults);
 
-		expect(verifyMacArtifact).toHaveBeenCalledWith("/out/make/zip/agent-orchestrator-darwin-x64.zip");
+		expect(verifyMacArtifact).toHaveBeenCalledWith("/out/make/zip/open-agents-darwin-x64.zip");
 	});
 
 	it("skips zip verification for an unsigned local build", async () => {
 		isSigningConfigured.mockReturnValue(false);
-		const makeResults = darwinResult(["/out/make/zip/agent-orchestrator-darwin-x64.zip"]);
+		const makeResults = darwinResult(["/out/make/zip/open-agents-darwin-x64.zip"]);
 
 		await config.hooks?.postMake?.({} as never, makeResults);
 
@@ -250,20 +258,20 @@ describe("postMake artifact verification", () => {
 		isSigningConfigured.mockReturnValue(true);
 		sealDmg.mockResolvedValue(true);
 		const makeResults = darwinResult([
-			"/out/make/zip/agent-orchestrator-darwin-x64.zip",
+			"/out/make/zip/open-agents-darwin-x64.zip",
 			"/out/make/app.dmg",
 		]);
 
 		await config.hooks?.postMake?.({} as never, makeResults);
 
-		expect(verifyMacArtifact).toHaveBeenCalledWith("/out/make/zip/agent-orchestrator-darwin-x64.zip");
+		expect(verifyMacArtifact).toHaveBeenCalledWith("/out/make/zip/open-agents-darwin-x64.zip");
 		expect(verifyDmg).toHaveBeenCalledWith("/out/make/app.dmg");
 	});
 
 	it("never verifies non-darwin artifacts", async () => {
 		const makeResults = [
 			{
-				artifacts: ["/out/make/agent-orchestrator.exe"],
+				artifacts: ["/out/make/open-agents.exe"],
 				packageJSON: {},
 				platform: "win32" as const,
 				arch: "x64" as const,
@@ -279,11 +287,11 @@ describe("postMake artifact verification", () => {
 });
 
 describe("packaged authentication callback registration", () => {
-	it("declares ao-app in the macOS bundle and Linux package metadata", () => {
+	it("declares open-agents in the macOS bundle and Linux package metadata", () => {
 		expect(config.packagerConfig?.protocols).toEqual([
 			{
-				name: "Agent Orchestrator authentication callback",
-				schemes: ["ao-app"],
+				name: "Open Agents authentication callback",
+				schemes: ["open-agents"],
 			},
 		]);
 
@@ -297,7 +305,7 @@ describe("packaged authentication callback registration", () => {
 		]) {
 			const maker = makers.find((candidate) => candidate.name === name);
 			expect(maker?.config?.options?.mimeType).toEqual([
-				"x-scheme-handler/ao-app",
+				"x-scheme-handler/open-agents",
 			]);
 		}
 	});

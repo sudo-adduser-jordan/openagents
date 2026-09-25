@@ -12,8 +12,8 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/aoagents/agent-orchestrator/backend/internal/adapters/agent/hookutil"
-	"github.com/aoagents/agent-orchestrator/backend/internal/ports"
+	"github.com/sudo-adduser-jordan/open-agents/backend/internal/adapters/agent/hookutil"
+	"github.com/sudo-adduser-jordan/open-agents/backend/internal/ports"
 )
 
 func TestOpenCodeLocalAuthStatusAuthorizedWithEnv(t *testing.T) {
@@ -411,7 +411,7 @@ func TestGetLaunchCommandBuildsArgv(t *testing.T) {
 		Prompt:           "-fix this",
 		SessionID:        "sess/1",
 		SystemPromptFile: promptFile,
-		SystemPrompt:     "follow AO rules",
+		SystemPrompt:     "follow Open Agents rules",
 	})
 	if err != nil {
 		t.Fatal(err)
@@ -422,7 +422,7 @@ func TestGetLaunchCommandBuildsArgv(t *testing.T) {
 		"env", "OPENCODE_CONFIG=" + configPath,
 		"opencode",
 		"--dangerously-skip-permissions",
-		"--agent", "ao-sess-1",
+		"--agent", "open-agents-sess-1",
 		"--prompt", "-fix this",
 	}
 	if !reflect.DeepEqual(cmd, want) {
@@ -436,8 +436,8 @@ func TestGetLaunchCommandBuildsArgv(t *testing.T) {
 	if err := json.Unmarshal(data, &config); err != nil {
 		t.Fatal(err)
 	}
-	agent := config.Agent["ao-sess-1"]
-	if agent.Mode != "primary" || agent.Prompt != "follow AO rules" {
+	agent := config.Agent["open-agents-sess-1"]
+	if agent.Mode != "primary" || agent.Prompt != "follow Open Agents rules" {
 		t.Fatalf("agent config = %#v, want primary inline prompt", agent)
 	}
 }
@@ -455,7 +455,7 @@ func TestGetLaunchCommandSystemPromptFileConfig(t *testing.T) {
 	}
 
 	configPath := filepath.Join(filepath.Dir(promptFile), "opencode.json")
-	want := []string{"env", "OPENCODE_CONFIG=" + configPath, "opencode", "--agent", "ao-sess-2"}
+	want := []string{"env", "OPENCODE_CONFIG=" + configPath, "opencode", "--agent", "open-agents-sess-2"}
 	if !reflect.DeepEqual(cmd, want) {
 		t.Fatalf("unexpected command\nwant: %#v\n got: %#v", want, cmd)
 	}
@@ -467,7 +467,7 @@ func TestGetLaunchCommandSystemPromptFileConfig(t *testing.T) {
 	if err := json.Unmarshal(data, &config); err != nil {
 		t.Fatal(err)
 	}
-	if got := config.Agent["ao-sess-2"].Prompt; got != "{file:./system.md}" {
+	if got := config.Agent["open-agents-sess-2"].Prompt; got != "{file:./system.md}" {
 		t.Fatalf("agent prompt = %q, want file reference", got)
 	}
 }
@@ -543,7 +543,7 @@ func TestGetAgentHooksInstallsPlugin(t *testing.T) {
 	plugin := &Plugin{resolvedBinary: "opencode"}
 	workspace := t.TempDir()
 
-	// A user's own plugin in the same dir must survive AO's install untouched.
+	// A user's own plugin in the same dir must survive Open Agents's install untouched.
 	pluginDir := filepath.Dir(opencodePluginPath(workspace))
 	if err := os.MkdirAll(pluginDir, 0o755); err != nil {
 		t.Fatal(err)
@@ -574,9 +574,9 @@ func TestGetAgentHooksInstallsPlugin(t *testing.T) {
 	}
 	body := string(data)
 	if !strings.Contains(body, opencodePluginSentinel) {
-		t.Fatalf("installed plugin missing AO sentinel:\n%s", body)
+		t.Fatalf("installed plugin missing Open Agents sentinel:\n%s", body)
 	}
-	// Every normalized activity event must be wired via `ao hooks opencode <event>`.
+	// Every normalized activity event must be wired via `open-agents hooks opencode <event>`.
 	for _, event := range opencodeManagedEvents {
 		want := opencodeHookCommandPrefix + event
 		if !strings.Contains(body, want) {
@@ -613,8 +613,8 @@ func TestGetAgentHooksInstallsPlugin(t *testing.T) {
 	if !strings.Contains(body, "launch_id:") {
 		t.Fatalf("installed plugin missing launch_id in hook payload:\n%s", body)
 	}
-	if !strings.Contains(body, "AO_RUNTIME_LAUNCH_ID") {
-		t.Fatalf("installed plugin missing AO_RUNTIME_LAUNCH_ID reference:\n%s", body)
+	if !strings.Contains(body, "OPEN_AGENTS_RUNTIME_LAUNCH_ID") {
+		t.Fatalf("installed plugin missing OPEN_AGENTS_RUNTIME_LAUNCH_ID reference:\n%s", body)
 	}
 	// Guard against regressing back to subscribing to the deprecated/unreliable
 	// session.idle event (the quoted event string is how a `case` would name it;
@@ -622,7 +622,7 @@ func TestGetAgentHooksInstallsPlugin(t *testing.T) {
 	if strings.Contains(body, `"session.idle"`) {
 		t.Fatalf("plugin subscribes to deprecated session.idle; use session.status(idle):\n%s", body)
 	}
-	// A hung `ao hooks` call must not block opencode forever, so each spawn is
+	// A hung `open-agents hooks` call must not block opencode forever, so each spawn is
 	// time-boxed (parity with the codex 30s hook timeout).
 	if !strings.Contains(body, "timeout:") {
 		t.Fatalf("plugin spawn has no timeout; a hung hook would block opencode:\n%s", body)
@@ -637,20 +637,20 @@ func TestGetAgentHooksInstallsPlugin(t *testing.T) {
 		t.Fatalf("user plugin modified by install: %q", got)
 	}
 
-	// using-ao must land where opencode's skill tool discovers project skills.
+	// using-open-agents must land where opencode's skill tool discovers project skills.
 	skillMD := filepath.Join(opencodeSkillDir(workspace), "SKILL.md")
 	skillBody, err := os.ReadFile(skillMD)
 	if err != nil {
-		t.Fatalf("using-ao SKILL.md missing after install: %v", err)
+		t.Fatalf("using-open-agents SKILL.md missing after install: %v", err)
 	}
-	if !strings.Contains(string(skillBody), "name: using-ao") {
-		t.Fatalf("installed skill missing using-ao frontmatter:\n%s", skillBody)
+	if !strings.Contains(string(skillBody), "name: using-open-agents") {
+		t.Fatalf("installed skill missing using-open-agents frontmatter:\n%s", skillBody)
 	}
-	if managed, err := isAOManagedSkill(workspace); err != nil || !managed {
-		t.Fatalf("isAOManagedSkill after install = (%v, %v), want (true, nil)", managed, err)
+	if managed, err := isOpenAgentsManagedSkill(workspace); err != nil || !managed {
+		t.Fatalf("isOpenAgentsManagedSkill after install = (%v, %v), want (true, nil)", managed, err)
 	}
 	if _, err := os.Stat(filepath.Join(opencodeSkillDir(workspace), "commands", "spawn.md")); err != nil {
-		t.Fatalf("using-ao commands/spawn.md missing after install: %v", err)
+		t.Fatalf("using-open-agents commands/spawn.md missing after install: %v", err)
 	}
 }
 
@@ -659,7 +659,7 @@ func TestGetAgentHooksRefusesToClobberForeignFile(t *testing.T) {
 	workspace := t.TempDir()
 	ctx := context.Background()
 
-	// A non-AO file occupying AO's exact path must NOT be silently overwritten.
+	// A non-Open Agents file occupying Open Agents's exact path must NOT be silently overwritten.
 	pluginPath := opencodePluginPath(workspace)
 	if err := os.MkdirAll(filepath.Dir(pluginPath), 0o755); err != nil {
 		t.Fatal(err)
@@ -671,7 +671,7 @@ func TestGetAgentHooksRefusesToClobberForeignFile(t *testing.T) {
 
 	err := plugin.GetAgentHooks(ctx, ports.WorkspaceHookConfig{WorkspacePath: workspace})
 	if err == nil {
-		t.Fatal("GetAgentHooks overwrote a non-AO file; want a loud error")
+		t.Fatal("GetAgentHooks overwrote a non-Open Agents file; want a loud error")
 	}
 	got, readErr := os.ReadFile(pluginPath)
 	if readErr != nil {
@@ -712,13 +712,13 @@ func TestUninstallHooksRemovesPlugin(t *testing.T) {
 		t.Fatalf("AreHooksInstalled after uninstall = (%v, %v), want (false, nil)", installed, err)
 	}
 	if _, err := os.Stat(opencodePluginPath(workspace)); !os.IsNotExist(err) {
-		t.Fatalf("AO plugin still present after uninstall: err=%v", err)
+		t.Fatalf("Open Agents plugin still present after uninstall: err=%v", err)
 	}
 	if _, err := os.Stat(opencodeSkillDir(workspace)); !os.IsNotExist(err) {
-		t.Fatalf("AO using-ao skill still present after uninstall: err=%v", err)
+		t.Fatalf("Open Agents using-open-agents skill still present after uninstall: err=%v", err)
 	}
 	if _, err := os.Stat(opencodeSkillMarkerPath(workspace)); !os.IsNotExist(err) {
-		t.Fatalf("AO skill marker still present after uninstall: err=%v", err)
+		t.Fatalf("Open Agents skill marker still present after uninstall: err=%v", err)
 	}
 	if _, err := os.Stat(userPlugin); err != nil {
 		t.Fatalf("user plugin removed by uninstall: %v", err)
@@ -759,7 +759,7 @@ func TestGetAgentHooksRefusesToClobberForeignSkill(t *testing.T) {
 	if err := os.MkdirAll(skillDir, 0o755); err != nil {
 		t.Fatal(err)
 	}
-	foreignSkill := []byte("---\nname: using-ao\ndescription: user owned\n---\n# mine\n")
+	foreignSkill := []byte("---\nname: using-open-agents\ndescription: user owned\n---\n# mine\n")
 	foreignPath := filepath.Join(skillDir, "SKILL.md")
 	if err := os.WriteFile(foreignPath, foreignSkill, 0o644); err != nil {
 		t.Fatal(err)
@@ -767,7 +767,7 @@ func TestGetAgentHooksRefusesToClobberForeignSkill(t *testing.T) {
 
 	err := plugin.GetAgentHooks(ctx, ports.WorkspaceHookConfig{WorkspacePath: workspace})
 	if err == nil {
-		t.Fatal("GetAgentHooks overwrote a non-AO skill; want a loud error")
+		t.Fatal("GetAgentHooks overwrote a non-Open Agents skill; want a loud error")
 	}
 	got, readErr := os.ReadFile(foreignPath)
 	if readErr != nil {
@@ -787,7 +787,7 @@ func TestUninstallHooksLeavesForeignSkill(t *testing.T) {
 	if err := os.MkdirAll(skillDir, 0o755); err != nil {
 		t.Fatal(err)
 	}
-	foreignSkill := []byte("---\nname: using-ao\ndescription: user owned\n---\n# mine\n")
+	foreignSkill := []byte("---\nname: using-open-agents\ndescription: user owned\n---\n# mine\n")
 	foreignPath := filepath.Join(skillDir, "SKILL.md")
 	if err := os.WriteFile(foreignPath, foreignSkill, 0o644); err != nil {
 		t.Fatal(err)
@@ -810,7 +810,7 @@ func TestUninstallHooksLeavesForeignFile(t *testing.T) {
 	workspace := t.TempDir()
 	ctx := context.Background()
 
-	// A non-AO file occupying AO's filename must NOT be deleted by uninstall.
+	// A non-Open Agents file occupying Open Agents's filename must NOT be deleted by uninstall.
 	pluginPath := opencodePluginPath(workspace)
 	if err := os.MkdirAll(filepath.Dir(pluginPath), 0o755); err != nil {
 		t.Fatal(err)
@@ -868,7 +868,7 @@ func TestGetRestoreCommandReappliesSystemPromptConfig(t *testing.T) {
 	promptFile := filepath.Join(t.TempDir(), "system.md")
 
 	cmd, ok, err := plugin.GetRestoreCommand(context.Background(), ports.RestoreConfig{
-		SystemPrompt:     "restore AO rules",
+		SystemPrompt:     "restore Open Agents rules",
 		SystemPromptFile: promptFile,
 		Session: ports.SessionRef{
 			ID:       "sess-1",
@@ -885,7 +885,7 @@ func TestGetRestoreCommandReappliesSystemPromptConfig(t *testing.T) {
 	want := []string{
 		"env", "OPENCODE_CONFIG=" + configPath,
 		"opencode",
-		"--agent", "ao-sess-1",
+		"--agent", "open-agents-sess-1",
 		"--session", "ses_abc123",
 	}
 	if !reflect.DeepEqual(cmd, want) {
@@ -899,7 +899,7 @@ func TestGetRestoreCommandReappliesSystemPromptConfig(t *testing.T) {
 	if err := json.Unmarshal(data, &config); err != nil {
 		t.Fatal(err)
 	}
-	if got := config.Agent["ao-sess-1"].Prompt; got != "restore AO rules" {
+	if got := config.Agent["open-agents-sess-1"].Prompt; got != "restore Open Agents rules" {
 		t.Fatalf("agent prompt = %q, want restore rules", got)
 	}
 }

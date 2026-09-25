@@ -9,11 +9,11 @@ import (
 	"strings"
 	"time"
 
-	"github.com/aoagents/agent-orchestrator/backend/internal/domain"
-	"github.com/aoagents/agent-orchestrator/backend/internal/storage/sqlite/gen"
+	"github.com/sudo-adduser-jordan/open-agents/backend/internal/domain"
+	"github.com/sudo-adduser-jordan/open-agents/backend/internal/storage/sqlite/gen"
 )
 
-// UpsertUsageBinding records or refreshes the association between an AO
+// UpsertUsageBinding records or refreshes the association between an Open Agents
 // session and a native root session/thread.
 func (s *Store) UpsertUsageBinding(ctx context.Context, rec domain.UsageBindingRecord) (domain.UsageBindingRecord, error) {
 	s.writeMu.Lock()
@@ -667,7 +667,7 @@ func validateUsageEvent(harness domain.AgentHarness, event domain.ModelUsageEven
 		return fmt.Errorf("invalid usage event identity for %s", harness)
 	}
 	switch event.MeasurementKind {
-	case domain.UsageMeasurementNativeReported, domain.UsageMeasurementAOEstimated,
+	case domain.UsageMeasurementNativeReported, domain.UsageMeasurementOpenAgentsEstimated,
 		domain.UsageMeasurementMixed, domain.UsageMeasurementUnknown:
 	default:
 		return fmt.Errorf("invalid usage measurement kind %q", event.MeasurementKind)

@@ -14,7 +14,7 @@ import { useChatDraftTranslation } from "../../lib/chat-draft-messages";
  * settings because the provider takes all three per turn: choosing one changes the
  * next message and never restarts the agent.
  *
- * Three completions live in the editor — `/` for AO commands and the agent's own
+ * Three completions live in the editor — `/` for Open Agents commands and the agent's own
  * skills, `@` for worktree files, and pasted or dropped files. Completed skills
  * and paths are atomic inline chips but serialize to the plain text the agent
  * expects. The original keyboard contract remains: Enter sends, Shift+Enter makes
@@ -244,7 +244,7 @@ export const ChatComposer = memo(function ChatComposer({
 	attachedTop?: boolean;
 	/** Queued messages rendered above the composer. */
 	queuedDock?: ReactNode;
-	/** Run AO's built-in `/compact` command instead of sending it to the agent. */
+	/** Run Open Agents's built-in `/compact` command instead of sending it to the agent. */
 	onCompact?: () => void | Promise<unknown>;
 	/** The provider is already compacting this conversation. */
 	compacting?: boolean;
@@ -256,7 +256,7 @@ export const ChatComposer = memo(function ChatComposer({
 	autoFocusKey?: string;
 	/** Whether this composer is currently visible and should take focus. */
 	autoFocus?: boolean;
-	/** Durable AO session identity used to scope unsent composer state. */
+	/** Durable Open Agents session identity used to scope unsent composer state. */
 	draftSessionId?: string;
 	/** Immutable daemon identity for this exact incarnation of the session id. */
 	draftSessionIncarnation?: string;
@@ -327,7 +327,7 @@ export const ChatComposer = memo(function ChatComposer({
 	/**
 	 * What Enter does while the agent is working.
 	 *
-	 * Queueing is the safe default and matches `ao send`: the daemon records the
+	 * Queueing is the safe default and matches `open-agents send`: the daemon records the
 	 * message durably and dispatches it when the current turn finishes. Steering is
 	 * timing-sensitive and changes the running turn, so it stays an explicit choice.
 	 */
@@ -442,7 +442,7 @@ export const ChatComposer = memo(function ChatComposer({
 				name: "compact",
 				displayName: "compact",
 				description: "Summarize earlier history to reclaim context",
-				source: "AO",
+				source: "Open Agents",
 			},
 			...skills.filter((skill) => skill.name !== "compact"),
 		];

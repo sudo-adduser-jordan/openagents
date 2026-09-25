@@ -5,7 +5,7 @@ import type { ForgePlatform } from "@electron-forge/shared-types";
 // Electron Forge has no first-party AppImage maker, so we bridge to
 // electron-builder's `buildForge`, exactly as makers/maker-nsis.ts does for the
 // Windows NSIS installer. AppImage is the Linux fetch-and-run artifact for the
-// `ao start` bootstrapper: a single self-contained executable the Go agent can
+// `open-agents start` bootstrapper: a single self-contained executable the Go agent can
 // download from releases/latest/download and run directly, with no system
 // package manager. The deb/rpm makers stay for users who want a system package.
 //
@@ -53,7 +53,7 @@ export default class MakerAppImage extends MakerBase<MakerAppImageConfig> {
 					// startup. Distros shipping only fuse3 (Arch, and any install without
 					// the fuse2 compat package) cannot launch that artifact at all — it
 					// exits 1 with "dlopen(): error loading libfuse.so.2" before Electron
-					// starts, which also breaks `ao start`, since that downloads and runs
+					// starts, which also breaks `open-agents start`, since that downloads and runs
 					// this same AppImage (#4006). Pinning a non-legacy toolset moves the
 					// published artifact onto a runtime with no libfuse2 dependency.
 					// `1.0.3` is the same Runtime 20251108 as `1.0.2`, re-released with an
@@ -69,6 +69,7 @@ export default class MakerAppImage extends MakerBase<MakerAppImageConfig> {
 					},
 					appImage: {
 						...cfg.appImage,
+						artifactName: "open-agents-linux-${arch}-${version}.${ext}",
 					},
 				},
 			},

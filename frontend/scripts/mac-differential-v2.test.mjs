@@ -18,7 +18,7 @@ describe("isolated macOS differential v2 release contract", () => {
     for (const channel of ["latest", "nightly", "pr3288"]) {
       await generateFeeds(f.dir, "2.0.0", channel, "2026-09-05T00:00:00Z");
       const text = readFileSync(join(f.dir, `${channel}-mac.yml`), "utf8");
-      expect(text).not.toMatch(/blockMapSize|aoblockmap|ao-diff-v2|\.blockmap/);
+      expect(text).not.toMatch(/blockMapSize|open-agents-blockmap|open-agents-diff-v2|\.blockmap/);
       expect(text.match(/  - url:/g)).toHaveLength(2);
     }
     expect(readdirSync(f.dir).some(name => name.endsWith(".zip.blockmap"))).toBe(false);
@@ -50,9 +50,9 @@ describe("isolated macOS differential v2 release contract", () => {
     const payload = structuredClone(f.envelope.payload);
     const a = payload.artifacts[0];
     if (fault === "alias") a.zip.url = a.zip.url.replace("-2.0.0.zip", ".zip");
-    if (fault === "legacy-map") a.blockmap.url = a.blockmap.url.replace(".aoblockmap", ".blockmap");
+    if (fault === "legacy-map") a.blockmap.url = a.blockmap.url.replace(".open-agents-blockmap", ".blockmap");
     if (fault === "other-release") a.blockmap.url = a.blockmap.url.replace("/v2.0.0/", "/v1.0.0/");
-    if (fault === "other-repo") a.blockmap.url = a.blockmap.url.replace("Untrivial-ai", "attacker");
+    if (fault === "other-repo") a.blockmap.url = a.blockmap.url.replace("sudo-adduser-jordan", "attacker");
     if (fault === "duplicate-arch") payload.artifacts[1].arch = a.arch;
     if (fault === "bad-commit") payload.candidate.commit = "unknown";
     if (fault === "unknown-field") payload.allow = true;
@@ -73,12 +73,12 @@ describe("isolated macOS differential v2 release contract", () => {
     expect(() => verifyMacV2Assets({ allow: true, dir: f.dir, candidate: f.candidate, channel: "latest", trustedKeys: f.trustedKeys })).toThrow();
     const tampered = structuredClone(f.envelope); tampered.payload.candidate.commit = "c".repeat(40);
     expect(() => verifyMacV2Envelope(Buffer.from(JSON.stringify(tampered)), f.trustedKeys)).toThrow();
-    for (const name of ["alias.aoblockmap", "Agent.Orchestrator-darwin-arm64-2.0.0.zip.blockmap"]) {
+    for (const name of ["alias.open-agents-blockmap", "open-agents-darwin-arm64-2.0.0.zip.blockmap"]) {
       writeFileSync(join(f.dir, name), "injected");
       expect(() => verifyMacV2Assets({ allow: true, dir: f.dir, candidate: f.candidate, channel: "nightly", trustedKeys: f.trustedKeys })).toThrow();
       rmSync(join(f.dir, name));
     }
-    for (const reference of ["blockMapSize: 12", "url: alias.zip.blockmap", "url: alias.zip.aoblockmap", "url: ao-diff-v2-mac.json"]) {
+    for (const reference of ["blockMapSize: 12", "url: alias.zip.blockmap", "url: alias.zip.open-agents-blockmap", "url: open-agents-diff-v2-mac.json"]) {
       writeFileSync(join(f.dir, "nightly-mac.yml"), reference);
       expect(() => verifyMacV2Assets({ allow: true, dir: f.dir, candidate: f.candidate, channel: "nightly", trustedKeys: f.trustedKeys })).toThrow();
       rmSync(join(f.dir, "nightly-mac.yml"));

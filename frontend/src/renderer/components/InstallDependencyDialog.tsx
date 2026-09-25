@@ -3,7 +3,7 @@ import { Check, Copy, XCircle } from "lucide-react";
 import { useCallback, useEffect, useRef, useState } from "react";
 import type { components } from "../../api/schema";
 import { apiClient, apiErrorMessage } from "../lib/api-client";
-import { aoBridge } from "../lib/bridge";
+import { openAgentsBridge } from "../lib/bridge";
 import { cn } from "../lib/utils";
 import { requirementDetailText, requirementDisplayLabel, type SystemRequirement } from "./SystemRequirementsChecklist";
 import {
@@ -22,7 +22,7 @@ type InstallTarget = "tmux" | "gh" | "opencode";
 type AgentInstallTarget = Exclude<InstallTarget, "tmux" | "gh">;
 
 // Labels are the CLIs' own product names — not translated, same treatment as
-// "Agent Orchestrator" itself. Descriptions are ordinary static English copy
+// "Open Agents" itself. Descriptions are ordinary static English copy
 // (see AGENT_INSTALL_DESCRIPTIONS below).
 const AGENT_INSTALL_OPTIONS: Array<{ target: AgentInstallTarget; label: string }> = [
 	{ target: "opencode", label: "opencode" },
@@ -196,14 +196,14 @@ export function InstallDependencyDialog({
 				<div className={settingsDialogHeaderClass}>
 					<DialogTitle className="settings-dialog-title">{title}</DialogTitle>
 					<DialogDescription asChild>
-						<div className="text-control leading-4 text-settings-muted">{"Agent Orchestrator needs a few things on this machine before it can run sessions. Install what's missing below, or quit and finish setup yourself."}</div>
+						<div className="text-control leading-4 text-settings-muted">{"Open Agents needs a few things on this machine before it can run sessions. Install what's missing below, or quit and finish setup yourself."}</div>
 					</DialogDescription>
 				</div>
 
 				<div className={cn(settingsDialogBodyClass, "gap-5")}>
 					{gitBlocking && git ? (
 						<IssueSection label={requirementDisplayLabel(git)} detail={requirementDetailText(git)}>
-							<p className="text-caption leading-snug text-settings-muted">{"Install git from git-scm.com, then restart Agent Orchestrator."}</p>
+							<p className="text-caption leading-snug text-settings-muted">{"Install git from git-scm.com, then restart Open Agents."}</p>
 						</IssueSection>
 					) : null}
 
@@ -299,7 +299,7 @@ export function InstallDependencyDialog({
 					<button
 						type="button"
 						className="settings-footer-button"
-						onClick={() => void window.ao?.menu?.action("app.quit")}
+						onClick={() => void window.openAgents?.menu?.action("app.quit")}
 					>
 						{"Quit"}
 					</button>
@@ -369,8 +369,8 @@ function InstallAction({
 				<p className="text-caption text-settings-muted">
 					{job?.command ? `Installing — ${job.command}` : "Installing…"}
 				</p>
-				<div className="ao-install-progress" aria-hidden="true">
-					<div className="ao-install-progress__bar" />
+				<div className="open-agents-install-progress" aria-hidden="true">
+					<div className="open-agents-install-progress__bar" />
 				</div>
 			</div>
 		);
@@ -417,7 +417,7 @@ function ManualCommand({ command }: { command: string }) {
 	useEffect(() => () => clearTimeout(resetTimer.current), []);
 
 	const copy = () => {
-		void aoBridge.clipboard.writeText(command).then(
+		void openAgentsBridge.clipboard.writeText(command).then(
 			() => {
 				setCopied(true);
 				clearTimeout(resetTimer.current);

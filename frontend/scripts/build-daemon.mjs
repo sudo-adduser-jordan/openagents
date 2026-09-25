@@ -9,10 +9,10 @@ const frontendRoot = resolve(scriptsDir, "..");
 const repoRoot = resolve(frontendRoot, "..");
 const backendRoot = join(repoRoot, "backend");
 const outDir = join(frontendRoot, "daemon");
-const outPath = join(outDir, process.platform === "win32" ? "ao.exe" : "ao");
+const outPath = join(outDir, process.platform === "win32" ? "open-agents.exe" : "open-agents");
 const isWindowsDev = process.platform === "win32" && process.argv.includes("--dev");
 const windowsDevOutDir = join(outDir, `dev-${Date.now()}-${process.pid}`);
-const buildOutPath = isWindowsDev ? join(windowsDevOutDir, "ao.exe") : outPath;
+const buildOutPath = isWindowsDev ? join(windowsDevOutDir, "open-agents.exe") : outPath;
 const windowsDevManifestPath = join(outDir, "dev-daemon.json");
 const minimumGoVersion = parseMinimumGoVersion(readFileSync(join(backendRoot, "go.mod"), "utf8"));
 
@@ -51,7 +51,7 @@ if (isWindowsDev) {
 	mkdirSync(outDir, { recursive: true });
 }
 
-const result = spawnSync("go", ["build", "-o", buildOutPath, "./cmd/ao"], {
+const result = spawnSync("go", ["build", "-o", buildOutPath, "./cmd/open-agents"], {
 	cwd: backendRoot,
 	stdio: "inherit",
 	windowsHide: true,

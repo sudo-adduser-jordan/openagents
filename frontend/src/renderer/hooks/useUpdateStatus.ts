@@ -1,6 +1,6 @@
 import { useEffect, useRef, useState } from "react";
 import type { UpdateStatus } from "../../main/update-settings";
-import { aoBridge } from "../lib/bridge";
+import { openAgentsBridge } from "../lib/bridge";
 
 let current: UpdateStatus = { state: "idle" };
 const listeners = new Set<(status: UpdateStatus) => void>();
@@ -19,13 +19,13 @@ function connect() {
 	let live = true;
 	let pending = false;
 	// Subscribe before reading. A late local snapshot must never replace a push.
-	const off = aoBridge.updates.onStatus(receive);
+	const off = openAgentsBridge.updates.onStatus(receive);
 	const refresh = async () => {
 		if (pending) return;
 		pending = true;
 		const requestedRevision = revision;
 		try {
-			const next = await aoBridge.updates.getStatus();
+			const next = await openAgentsBridge.updates.getStatus();
 			if (live && requestedRevision === revision) receive(next);
 		} catch {
 			// Retain the last known status and retry the local read next time.
@@ -77,7 +77,7 @@ export async function requestUpdateDownload(requestId?: string): Promise<void> {
 	downloadPending = true;
 	receive({ ...current, state: "downloading", percent: undefined, transferred: undefined, total: undefined, requestId });
 	try {
-		await aoBridge.updates.download(requestId);
+		await openAgentsBridge.updates.download(requestId);
 	} catch (error) {
 		if (["downloading"].includes(current.state)) {
 			receive({ ...current, state: "error", message: error instanceof Error ? error.message : "Download failed. Try again." });

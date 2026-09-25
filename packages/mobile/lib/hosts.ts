@@ -33,9 +33,9 @@ export type Host = {
  */
 export const MAX_HOSTS = 10;
 
-const HOSTS_KEY = "ao.hosts";
-const ACTIVE_HOST_KEY = "ao.activeHost";
-const tokenKey = (id: string) => `ao.hostToken.${id}`;
+const HOSTS_KEY = "openAgents.hosts";
+const ACTIVE_HOST_KEY = "openAgents.activeHost";
+const tokenKey = (id: string) => `openAgents.hostToken.${id}`;
 
 /** What is written to AsyncStorage: everything except the token. */
 export type HostMetadata = Omit<Host, "token">;
@@ -169,81 +169,16 @@ export async function removeHost(id: string): Promise<void> {
 	if ((await AsyncStorage.getItem(ACTIVE_HOST_KEY)) === id) await clearActiveHost();
 }
 
-const LEGACY_CONFIG_KEY = "ao.serverConfig";
-const LEGACY_PASSWORD_KEY = "ao.serverPassword";
-
 /**
- * Brings a pre-existing pairing forward into the host list.
+ * Gives a host the stable identity it just reported.
  *
- * Every current user has exactly one machine stored the old way — a single
- * address, port, TLS flag and password. Skipping this would silently unpair all
- * of them on upgrade.
+ * A newly paired host can be stored before the daemon has issued its id. It
+ * connects once to learn that id, then every endpoint it races is checked
+ * against the stored value.
  *
- * The old config carries no host id, because the daemon only started issuing
- * them alongside the endpoint race. A migrated machine therefore starts with an
- * empty id and adopts one on its first successful connect. Until then its
- * identity cannot be verified — which is exactly how the app behaved before
- * this change, so nothing regresses, and it self-corrects after one connect.
- *
- * Idempotent, and it never runs over an existing list.
- */
-/** The password older builds kept inside the AsyncStorage config blob. */
-function legacyPassword(legacy: Record<string, unknown>): string {
-	return typeof legacy.password === "string" ? legacy.password : "";
-}
-
-export async function migrateLegacyConfig(): Promise<void> {
-	if ((await readStored()).length > 0) return;
-
-	let legacy: Record<string, unknown>;
-	try {
-		const raw = await AsyncStorage.getItem(LEGACY_CONFIG_KEY);
-		if (!raw) return;
-		const parsed: unknown = JSON.parse(raw);
-		if (typeof parsed !== "object" || parsed === null) return;
-		legacy = parsed as Record<string, unknown>;
-	} catch {
-		return;
-	}
-
-	const host = typeof legacy.host === "string" ? legacy.host.trim() : "";
-	if (!host) return;
-
-	const port = Number(legacy.httpPort) || 3011;
-	const isSecure = legacy.secure === true;
-	// A Tailscale pairing is the only way the old flow produced a TLS endpoint,
-	// so secure implies the tailnet path; everything else was plain LAN.
-	const kind = isSecure ? "tailscale" : "lan";
-
-	await saveHost({
-		id: "",
-		name: host,
-		platform: "",
-		endpoints: [{ kind, host, port, secure: isSecure }],
-		// SecureStore first, then the config blob. Builds older than the
-		// SecureStore move kept the password inside ao.serverConfig, and the
-		// code that relocates it (loadConfig) runs *after* this migration — so
-		// reading SecureStore alone handed those users an empty token and a
-		// machine they could not authenticate to.
-		token: (await SecureStore.getItemAsync(LEGACY_PASSWORD_KEY)) || legacyPassword(legacy),
-		lastConnected: Date.now(),
-	});
-}
-
-/**
- * Gives a migrated machine the identity it just reported.
- *
- * A pairing carried over from the single-server config has no id — the daemon
- * only began issuing them alongside the endpoint race — so it connects once
- * unverified and adopts one here. From then on every endpoint it races is
- * checked against this value.
- *
- * The token is moved to the new key as part of the same operation. Leaving it
- * under the old one would strand it, and the next connect would find a machine
- * it cannot authenticate to.
- *
- * Only rekeys a machine that genuinely has no identity; a machine that already
- * has one must never be renamed by whatever answered.
+ * The token is moved to the new key as part of the same operation. Only a host
+ * that genuinely has no identity is rekeyed; a host that already has one must
+ * never be renamed by whatever answered.
  */
 export async function adoptHostIdentity(oldId: string, hostId: string): Promise<void> {
 	if (oldId !== "" || hostId === "") return;

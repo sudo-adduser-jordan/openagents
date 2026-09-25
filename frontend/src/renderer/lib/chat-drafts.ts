@@ -3,7 +3,7 @@ import type { ConversationContentSummary } from "../types/conversation";
 /**
  * Renderer-owned, session-scoped Chat drafts.
  *
- * Electron pins this origin's storage beneath AO's userData directory, so a
+ * Electron pins this origin's storage beneath Open Agents's userData directory, so a
  * synchronous localStorage write survives Chat surface teardown, renderer
  * reload, and a supported app restart without putting daemon state in the UI.
  * Attachment bytes are deliberately absent: a descriptor is written only after
@@ -14,7 +14,7 @@ export const CHAT_DRAFT_SCHEMA_VERSION = 2 as const;
 const CHAT_DRAFT_SCOPE_SCHEMA_VERSION = 1 as const;
 
 /**
- * One immutable AO session incarnation. Session ids are human-stable handles and
+ * One immutable Open Agents session incarnation. Session ids are human-stable handles and
  * may be reused after authoritative deletion; createdAt (or another daemon-owned
  * UUID) is what prevents an old renderer draft from entering the replacement.
  */
@@ -464,11 +464,11 @@ function invalidateAcceptedDraftMutation(scope: ChatDraftScopeInput, kind: Draft
 function storageKey(sessionId: string): string {
 	// The key remains stable across schema versions so a future decoder can find
 	// and migrate the prior record rather than orphaning it under a v1-only key.
-	return `ao.chat.draft:${encodeURIComponent(sessionId)}`;
+	return `open-agents.chat.draft:${encodeURIComponent(sessionId)}`;
 }
 
 function scopeLeaseStorageKey(sessionId: string): string {
-	return `ao.chat.draft.active:${encodeURIComponent(sessionId)}`;
+	return `open-agents.chat.draft.active:${encodeURIComponent(sessionId)}`;
 }
 
 function isScopeLease(value: unknown, sessionId: string): value is ChatDraftScopeLease {
@@ -680,7 +680,7 @@ function isAttachment(value: unknown): value is ChatDraftAttachment {
 		typeof attachment.id === "string" &&
 		attachment.id.length > 0 &&
 		typeof attachment.path === "string" &&
-		(attachment.path === "" || attachment.path.startsWith(".ao/attachments/")) &&
+		(attachment.path === "" || attachment.path.startsWith(".open-agents/attachments/")) &&
 		typeof attachment.name === "string" &&
 		typeof attachment.mimeType === "string" &&
 		typeof attachment.bytes === "number" &&

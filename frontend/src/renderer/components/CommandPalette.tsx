@@ -6,7 +6,7 @@ import { useCommandPaletteEnabled } from "../hooks/useCommandPaletteEnabled";
 import { useRestoreSession } from "../hooks/useRestoreSession";
 import { useWorkspaceQuery, workspaceQueryKey } from "../hooks/useWorkspaceQuery";
 import { apiClient, apiErrorMessage } from "../lib/api-client";
-import { aoBridge } from "../lib/bridge";
+import { openAgentsBridge } from "../lib/bridge";
 import {
 	buildCommands,
 	buildSessionActions,
@@ -411,15 +411,15 @@ export function CommandPalette() {
 						closePalette();
 						break;
 					case "copy-branch":
-						await aoBridge.clipboard.writeText(action.branch);
+						await openAgentsBridge.clipboard.writeText(action.branch);
 						closePalette();
 						break;
 				case "open-pr":
-					await aoBridge.app.openExternal(action.url);
+					await openAgentsBridge.app.openExternal(action.url);
 					closePalette();
 					break;
 				case "copy-pr-url":
-					await aoBridge.clipboard.writeText(action.url);
+					await openAgentsBridge.clipboard.writeText(action.url);
 					closePalette();
 					break;
 				case "trigger-review": {

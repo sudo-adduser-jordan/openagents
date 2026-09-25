@@ -3,7 +3,7 @@ package domain
 import (
 	"time"
 
-	"github.com/aoagents/agent-orchestrator/backend/pkg/contract"
+	"github.com/sudo-adduser-jordan/open-agents/backend/pkg/contract"
 )
 
 // ---- PR read model ----
@@ -25,7 +25,7 @@ type PRFacts struct {
 	HeadSHA        string
 	UpdatedAt      time.Time
 	// ExternalApproved and ExternalChangesRequested are the human review
-	// verdicts AO did not author. Review above aggregates AO's own provider
+	// verdicts Open Agents did not author. Review above aggregates Open Agents's own provider
 	// reviews with everyone else's, so it cannot say whose turn the
 	// review-feedback loop is on.
 	ExternalApproved         bool
@@ -51,7 +51,7 @@ type PullRequest struct {
 	Mergeability Mergeability
 	UpdatedAt    time.Time
 	// StateChangedAt is when the current normalized PR lifecycle state became
-	// active. It is seeded from provider timestamps and updated when AO observes
+	// active. It is seeded from provider timestamps and updated when Open Agents observes
 	// a draft/open/merged/closed transition.
 	StateChangedAt time.Time
 
@@ -225,7 +225,7 @@ type MergeReadiness struct {
 }
 
 // ReadyToMerge reports whether the PR has no known blocker left. An unknown or
-// still-running CI result is treated as a blocker: AO only claims readiness it
+// still-running CI result is treated as a blocker: Open Agents only claims readiness it
 // can actually prove.
 func (r MergeReadiness) ReadyToMerge() bool {
 	if r.Merged || r.Closed || r.Draft {
@@ -246,7 +246,7 @@ func (r MergeReadiness) ReadyToMerge() bool {
 }
 
 // MergeReadinessOf projects stored PR facts into the shared readiness rule.
-// hasUnresolvedComments comes from the pr_comment rows AO keeps for the PR,
+// hasUnresolvedComments comes from the pr_comment rows Open Agents keeps for the PR,
 // which only ever hold unresolved human threads.
 func MergeReadinessOf(pr PullRequest, hasUnresolvedComments bool) MergeReadiness {
 	return MergeReadiness{

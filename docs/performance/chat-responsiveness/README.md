@@ -1,6 +1,6 @@
 # Chat responsiveness
 
-This change reduces AO's event-delivery and renderer overhead. It does not change provider inference, session lifecycle, daemon/API contracts, durable messages, approvals, model selection, or the chat layout.
+This change reduces Open Agents's event-delivery and renderer overhead. It does not change provider inference, session lifecycle, daemon/API contracts, durable messages, approvals, model selection, or the chat layout.
 
 ## What was detected and changed
 
@@ -15,7 +15,7 @@ The worker has bounded pending work (32 jobs / 1,000,000 source characters) and 
 
 ## Measurement method
 
-The opt-in Playwright fixture imports the actual AO renderer components and event transport. It uses deterministic synthetic inputs and a fake Electron bridge; these are live browser measurements, **not real-provider latency measurements or a full packaged-app end-to-end test**.
+The opt-in Playwright fixture imports the actual Open Agents renderer components and event transport. It uses deterministic synthetic inputs and a fake Electron bridge; these are live browser measurements, **not real-provider latency measurements or a full packaged-app end-to-end test**.
 
 - **Delivery:** 20 conversation CDC events, 100 ms apart, an active TanStack Query observer, and a simulated 30 ms query. Let the bridge's initial lifecycle refresh settle before the timed workload. Record actual fetch starts/completions and whether they occur before the stream ends.
 - **Streaming:** deliver a 997 UTF-16-character Unicode burst after the initial snapshot. Record time until rendered text exactly matches the received string, then check completion restores the copy button. This measures received-to-DOM-visible lag; it does not instrument display scanout.
@@ -47,12 +47,12 @@ Continuous traffic now causes ten fetches before the stream ends, rather than wa
 From `frontend/`, using the lockfile dependencies and Playwright Chromium:
 
 ```sh
-AO_PERF_BENCH=1 AO_PERF_LABEL=after AO_PERF_DIR="$HOME/.ao/validation/chat-performance" \
-  AO_E2E_PORT=5292 CI=true npm run test:e2e -- \
+OPEN_AGENTS_PERF_BENCH=1 OPEN_AGENTS_PERF_LABEL=after OPEN_AGENTS_PERF_DIR="$HOME/.open-agents/validation/chat-performance" \
+  OPEN_AGENTS_E2E_PORT=5292 CI=true npm run test:e2e -- \
   e2e/chat-performance.spec.ts --workers=1 --repeat-each=3
 ```
 
-Create a detached baseline worktree at `a96322315`, install its lockfile dependencies, and copy `frontend/e2e/chat-performance.spec.ts` plus `frontend/e2e/performance/` into it. Repeat with `AO_PERF_LABEL=baseline` and another free port. Timings are intentionally not CI thresholds; unit regressions enforce scheduling, catch-up, cleanup, grapheme integrity, and geometry reuse.
+Create a detached baseline worktree at `a96322315`, install its lockfile dependencies, and copy `frontend/e2e/chat-performance.spec.ts` plus `frontend/e2e/performance/` into it. Repeat with `OPEN_AGENTS_PERF_LABEL=baseline` and another free port. Timings are intentionally not CI thresholds; unit regressions enforce scheduling, catch-up, cleanup, grapheme integrity, and geometry reuse.
 
 ## Verification
 
@@ -67,7 +67,7 @@ Local validation used Node 24.20.0 on macOS:
 | Product UI typecheck, tests, build, package dry-run | Passed |
 | Pinned agent-browser runtime preparation | Passed; used by full frontend tests |
 | Production Vite renderer build | Passed; separate 72 KB highlighting worker emitted |
-| Built worker under Electron / `app://` / production CSP | Passed |
+| Built worker under Electron / `open-agents://` / production CSP | Passed |
 | Before/after controlled browser workloads | 12 runs per checkout; text and mounted-turn integrity checked |
 | Gitleaks v7.4.0 with the workflow config and PR commit list | 9 commits scanned; no leaks |
 
@@ -78,9 +78,9 @@ One initial complete Vitest run missed the unchanged settings form's temporary â
 The requested `npx @redwoodjs/agent-ci run --all` wrapper stopped before dispatch because the release-artifact workflow requires `VITE_WORKOS_CLIENT_ID`. No release/publishing job was executed. Docker became unavailable before the secret scan, so the pinned Gitleaks v7.4.0 source was built locally and run against a normal disposable clone; the scanner reported all nine PR commits scanned. Applicable frontend workflow commands were therefore run directly; the remote Linux checks remain authoritative for their runner (see the PR Checks tab). Backend/API, mobile, and release-platform workflows are outside this frontend-only diff's path triggers.
 
 
-Native development smoke used an isolated daemon at `127.0.0.1:5322`, renderer at `localhost:5174`, and data/profile/run state under `~/.ao/performance-dev`. The actual Electron window displayed the home screen, and `/api/v1/projects` plus `/api/v1/sessions` returned 200. No existing AO project/session was changed. `ao preview` was attempted but correctly refused because this Codex task has no `AO_SESSION_ID`.
+Native development smoke used an isolated daemon at `127.0.0.1:5322`, renderer at `localhost:5174`, and data/profile/run state under `~/.open-agents/performance-dev`. The actual Electron window displayed the home screen, and `/api/v1/projects` plus `/api/v1/sessions` returned 200. No existing Open Agents project/session was changed. `open-agents preview` was attempted but correctly refused because this Codex task has no `OPEN_AGENTS_SESSION_ID`.
 
-A separate Electron 33.4.11 smoke loaded the built highlighting worker over `app://renderer`, using AO's scheme privileges and the generated production CSP without relaxing it. The returned token tree preserved all 51,000 source characters; see [worker result](built-worker-smoke.json). This tests packaged-origin worker compatibility, not an installer or signed release.
+A separate Electron 33.4.11 smoke loaded the built highlighting worker over `open-agents://renderer`, using Open Agents's scheme privileges and the generated production CSP without relaxing it. The returned token tree preserved all 51,000 source characters; see [worker result](built-worker-smoke.json). This tests packaged-origin worker compatibility, not an installer or signed release.
 
 ## Screenshots
 
@@ -88,9 +88,9 @@ No layout redesign is included. The before/after images show the same long-chat 
 
 | Before | After |
 | --- | --- |
-| ![Before: 250-turn AO chat fixture](assets/baseline-history.png) | ![After: same 250-turn AO chat fixture](assets/after-history.png) |
+| ![Before: 250-turn Open Agents chat fixture](assets/baseline-history.png) | ![After: same 250-turn Open Agents chat fixture](assets/after-history.png) |
 
-![Native AO startup with isolated data](assets/native-home.png)
+![Native Open Agents startup with isolated data](assets/native-home.png)
 
 ## Deliberate limits
 

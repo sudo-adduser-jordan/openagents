@@ -5,7 +5,7 @@ import { getApiBaseUrl } from "../lib/api-client";
 import type { WorkspaceDiffScope, WorkspaceFileDetail } from "../hooks/useSessionWorkspaceFiles";
 import { useUiStore } from "../stores/ui-store";
 import { FileAnnotationComposer, LineFeedbackButtonControl, PanelMessage, type FileAnnotationModel } from "./WorkspaceDiffView";
-import { AO_PIERRE_SURFACE_CSS } from "./diffs/pierreTheme";
+import { OPEN_AGENTS_PIERRE_SURFACE_CSS } from "./diffs/pierreTheme";
 import { usePersistentGutterUtility } from "./diffs/usePersistentGutterUtility";
 
 function formatBytes(bytes: number): string {
@@ -89,7 +89,7 @@ export function ReadOnlyFileView({
 	};
 	return (
 		<div
-			className="ao-pierre-surface min-w-0 select-text"
+			className="open-agents-pierre-surface min-w-0 select-text"
 			data-editing={editing || undefined}
 			onPointerLeave={gutterHover.onPointerLeave}
 			onPointerMove={gutterHover.onPointerMove}
@@ -115,7 +115,7 @@ export function ReadOnlyFileView({
 					themeType: resolvedTheme,
 					tokenizeMaxLength: 200_000,
 					tokenizeMaxLineLength: 2_000,
-					unsafeCSS: AO_PIERRE_SURFACE_CSS,
+					unsafeCSS: OPEN_AGENTS_PIERRE_SURFACE_CSS,
 				}}
 				renderAnnotation={() => <FileAnnotationComposer annotation={annotation} />}
 				onEditChange={(event) => onEditChange?.(event.file.contents)}

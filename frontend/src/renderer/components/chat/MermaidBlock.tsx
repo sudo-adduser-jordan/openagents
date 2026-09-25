@@ -37,7 +37,7 @@ function readTheme(): DiagramTheme {
 	return "dark";
 }
 
-/** Re-renders the diagram when AO's theme flips, like the code theme does. */
+/** Re-renders the diagram when Open Agents's theme flips, like the code theme does. */
 function useDiagramTheme(): DiagramTheme {
 	const [theme, setTheme] = useState<DiagramTheme>(readTheme);
 
@@ -65,7 +65,7 @@ export const MermaidBlock = memo(function MermaidBlock({
 	/** Text still arriving. A block that changes per delta is not worth laying out. */
 	streaming?: boolean;
 	/**
-	 * Where a web link inside the diagram goes. Chat passes its AO Browser
+	 * Where a web link inside the diagram goes. Chat passes its Open Agents Browser
 	 * handler; surfaces without one (file preview) leave it undefined and
 	 * links open in the system browser instead. Either way a click never
 	 * navigates the renderer itself.
@@ -199,8 +199,8 @@ export const MermaidBlock = memo(function MermaidBlock({
 						aria-label="Mermaid diagram"
 						onClick={onDiagramClick}
 						onAuxClick={onDiagramAuxClick}
-						// The theme already matches AO's: the diagram re-renders with
-						// mermaid's dark theme when AO is dark (see
+						// The theme already matches Open Agents's: the diagram re-renders with
+						// mermaid's dark theme when Open Agents is dark (see
 						// useDiagramTheme), so no CSS inversion is applied here.
 						className="mermaid-diagram mx-auto max-w-full [&>svg]:mx-auto [&>svg]:h-auto [&>svg]:max-w-full"
 						dangerouslySetInnerHTML={{ __html: svg }}

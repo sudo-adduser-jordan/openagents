@@ -36,7 +36,7 @@ const deps = (over: Record<string, unknown> = {}) => ({
 describe("pairFromCode", () => {
 	it("stores the machine with every endpoint the code carried", async () => {
 		const d = deps();
-		const got = await pairFromCode(`aomobile://pair#${code}`, d);
+		const got = await pairFromCode(`open-agents-mobile://pair#${code}`, d);
 
 		expect(got.ok).toBe(true);
 		expect(d.saveHost).toHaveBeenCalledWith(
@@ -50,7 +50,7 @@ describe("pairFromCode", () => {
 	});
 
 	it("returns a config for the endpoint that won the race", async () => {
-		const got = await pairFromCode(`aomobile://pair#${code}`, deps());
+		const got = await pairFromCode(`open-agents-mobile://pair#${code}`, deps());
 
 		expect(got.ok).toBe(true);
 		if (got.ok) expect(got.config.host).toBe("192.168.1.42");
@@ -58,7 +58,7 @@ describe("pairFromCode", () => {
 
 	it("makes the newly scanned machine active", async () => {
 		const d = deps();
-		await pairFromCode(`aomobile://pair#${code}`, d);
+		await pairFromCode(`open-agents-mobile://pair#${code}`, d);
 
 		expect(d.setActiveHost).toHaveBeenCalledWith("h_paired");
 	});
@@ -73,7 +73,7 @@ describe("pairFromCode", () => {
 			saveHost: vi.fn(async () => void order.push("save")),
 		});
 
-		await pairFromCode(`aomobile://pair#${code}`, d);
+		await pairFromCode(`open-agents-mobile://pair#${code}`, d);
 
 		expect(order).toEqual(["verify", "save"]);
 	});
@@ -84,7 +84,7 @@ describe("pairFromCode", () => {
 				throw new Error("401");
 			}),
 		});
-		const got = await pairFromCode(`aomobile://pair#${code}`, d);
+		const got = await pairFromCode(`open-agents-mobile://pair#${code}`, d);
 
 		expect(got.ok).toBe(false);
 		if (!got.ok) expect(got.reason).toBe("verify-failed");
@@ -95,12 +95,12 @@ describe("pairFromCode", () => {
 		const got = await pairFromCode("definitely not a pairing code", deps());
 
 		expect(got.ok).toBe(false);
-		if (!got.ok) expect(got.reason).toBe("not-ao-qr");
+		if (!got.ok) expect(got.reason).toBe("not-open-agents-qr");
 	});
 
 	it("reports when none of the code's endpoints answer", async () => {
 		const d = deps({ race: vi.fn(async () => ({ ok: false as const, reason: "none-reachable" as const })) });
-		const got = await pairFromCode(`aomobile://pair#${code}`, d);
+		const got = await pairFromCode(`open-agents-mobile://pair#${code}`, d);
 
 		expect(got.ok).toBe(false);
 		if (!got.ok) expect(got.reason).toBe("none-reachable");
@@ -124,7 +124,7 @@ describe("pairFromCode", () => {
 
 // The reason must not depend on which caller reached pairFromCode: the scan
 // screen checks the code itself before calling, but any other entry point (a
-// deep link, a paste) would otherwise get "not an AO code" for a code AO made.
+// deep link, a paste) would otherwise get "not an Open Agents code" for a code Open Agents made.
 describe("pairFromCode reasons", () => {
 	it("reports an outdated desktop rather than an unrecognised code", async () => {
 		const got = await pairFromCode(JSON.stringify({ v: 1, host: "192.168.1.42", port: 3011 }), deps());
@@ -132,9 +132,9 @@ describe("pairFromCode reasons", () => {
 		if (!got.ok) expect(got.reason).toBe("outdated-desktop");
 	});
 
-	it("still reports genuinely unrecognised input as not an AO code", async () => {
+	it("still reports genuinely unrecognised input as not an Open Agents code", async () => {
 		const got = await pairFromCode("hello world", deps());
 		expect(got.ok).toBe(false);
-		if (!got.ok) expect(got.reason).toBe("not-ao-qr");
+		if (!got.ok) expect(got.reason).toBe("not-open-agents-qr");
 	});
 });

@@ -6,9 +6,9 @@ import (
 	"errors"
 	"fmt"
 
-	"github.com/aoagents/agent-orchestrator/backend/internal/domain"
-	shelltermsvc "github.com/aoagents/agent-orchestrator/backend/internal/service/shellterm"
-	"github.com/aoagents/agent-orchestrator/backend/internal/storage/sqlite/gen"
+	"github.com/sudo-adduser-jordan/open-agents/backend/internal/domain"
+	shelltermsvc "github.com/sudo-adduser-jordan/open-agents/backend/internal/service/shellterm"
+	"github.com/sudo-adduser-jordan/open-agents/backend/internal/storage/sqlite/gen"
 )
 
 var _ shelltermsvc.Store = (*Store)(nil)

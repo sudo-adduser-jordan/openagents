@@ -1,4 +1,4 @@
-import { COMPANY } from "@ao/shared/constants";
+import { COMPANY } from "@openagents/shared/constants";
 import { getBlogPosts } from "@/lib/blog";
 
 
@@ -19,9 +19,9 @@ export async function GET() {
 	const rss = `<?xml version="1.0" encoding="UTF-8"?>
 <rss version="2.0" xmlns:atom="http://www.w3.org/2005/Atom">
   <channel>
-    <title>Agent Orchestrator Blog</title>
+    <title>Open Agents Blog</title>
     <link>${baseUrl}/blog</link>
-    <description>News, updates, and insights from the Agent Orchestrator team about coding agent orchestration and developer productivity.</description>
+    <description>News, updates, and insights from the Open Agents team about coding agent orchestration and developer productivity.</description>
     <language>en-us</language>
     <lastBuildDate>${new Date().toUTCString()}</lastBuildDate>
     <atom:link href="${baseUrl}/feed.xml" rel="self" type="application/rss+xml"/>

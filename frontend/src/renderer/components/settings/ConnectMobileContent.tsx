@@ -2,7 +2,7 @@ import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { Fragment, useEffect, useRef, useState } from "react";
 import { ArrowUpRight, Check, Copy, Loader2, RotateCcw } from "lucide-react";
 import { apiClient, apiErrorMessage } from "../../lib/api-client";
-import { aoBridge } from "../../lib/bridge";
+import { openAgentsBridge } from "../../lib/bridge";
 import { ANDROID_PLAY_STORE_URL, IOS_APP_STORE_URL } from "./ConnectMobileGetApp";
 import { reasonMessage, type SetupMode } from "./ConnectMobileSetup";
 import { StyledQRCode } from "./StyledQRCode";
@@ -25,7 +25,7 @@ const STORE_LINKS = [
 		Icon: AppleIcon,
 		url: IOS_APP_STORE_URL,
 		label: "iOS",
-		ariaLabel: "Open Agent Orchestrator on the App Store",
+		ariaLabel: "Open Open Agents on the App Store",
 		testId: "ios-store-qr",
 	},
 	{
@@ -33,10 +33,12 @@ const STORE_LINKS = [
 		Icon: AndroidIcon,
 		url: ANDROID_PLAY_STORE_URL,
 		label: "Android",
-		ariaLabel: "Open Agent Orchestrator on Google Play",
+		ariaLabel: "Open Open Agents on Google Play",
 		testId: "android-play-qr",
 	},
 ] as const;
+
+const AVAILABLE_STORE_LINKS = STORE_LINKS.flatMap((store) => (store.url ? [{ ...store, url: store.url }] : []));
 
 
 import {
@@ -143,7 +145,7 @@ export function qrIsReady(status: {
 /** The app's registered scheme (app.json `expo.scheme`), not a universal link:
  * it works today, with no association files to host and no store listing
  * required. Universal links can be added later without changing the payload. */
-const PAIRING_LINK_BASE = "aomobile://pair";
+const PAIRING_LINK_BASE = "open-agents-mobile://pair";
 
 /** A decoy with the same payload shape as a real pairing offer. Keeping the
  * same QR version makes the blurred preview look like the code it becomes. */
@@ -429,7 +431,7 @@ export function ConnectMobileContent({ active }: { active: boolean }) {
 
 	return (
 		<div className="flex flex-col gap-4">
-			<p className="text-xs leading-4 text-settings-muted">{"Pair the Agent Orchestrator mobile app with this desktop."}</p>
+			<p className="text-xs leading-4 text-settings-muted">{"Pair the Open Agents mobile app with this desktop."}</p>
 
 			<div className="flex flex-col gap-6 sm:flex-row sm:items-start">
 				{/* Left: the walkthrough. */}
@@ -459,38 +461,41 @@ export function ConnectMobileContent({ active }: { active: boolean }) {
 					    trailing store links; address/password join the list once the QR
 					    is generated. */}
 					<ol className="settings-mobile-steps mt-4 !text-[13px] !leading-6 !text-[color-mix(in_oklch,var(--color-settings-label)_75%,var(--color-text-settings-muted))]">
-						{/* Both stores are a public one-tap listing now, so the step names
-						    both rather than making people pick a platform first — the
-						    choice only ever selected which of these two links to show. */}
 						<li>
-							{"Install Agent Orchestrator on your phone"}{" "}
-							{STORE_LINKS.map(({ key, Icon, url, label, ariaLabel, testId }, index) => (
-								<Fragment key={key}>
-									{index > 0 ? <span className="mx-1 text-settings-muted">{"or"}</span> : null}
-									<Tooltip>
-										<TooltipTrigger asChild>
-											<button
-												type="button"
-												className={STEP_LINK_CLASS}
-												aria-label={ariaLabel}
-												onClick={() => void aoBridge.app.openExternal(url)}
-											>
-												<Icon className="size-3.5 shrink-0" />
-												{label}
-												<ArrowUpRight className="size-3.5" aria-hidden="true" />
-											</button>
-										</TooltipTrigger>
-										<TooltipContent side="bottom" className="p-2" data-testid={testId}>
-											<div className="rounded-md bg-(--color-bg-settings-input) p-2">
-												<StyledQRCode value={url} size={STORE_QR_SIZE} showLogo={false} className="block" />
-											</div>
-										</TooltipContent>
-									</Tooltip>
-								</Fragment>
-							))}
+							{AVAILABLE_STORE_LINKS.length > 0 ? (
+								<>
+									{"Install Open Agents on your phone"}{" "}
+									{AVAILABLE_STORE_LINKS.map(({ key, Icon, url, label, ariaLabel, testId }, index) => (
+										<Fragment key={key}>
+											{index > 0 ? <span className="mx-1 text-settings-muted">{"or"}</span> : null}
+											<Tooltip>
+												<TooltipTrigger asChild>
+													<button
+														type="button"
+														className={STEP_LINK_CLASS}
+														aria-label={ariaLabel}
+														onClick={() => void openAgentsBridge.app.openExternal(url)}
+													>
+														<Icon className="size-3.5 shrink-0" />
+														{label}
+														<ArrowUpRight className="size-3.5" aria-hidden="true" />
+													</button>
+												</TooltipTrigger>
+												<TooltipContent side="bottom" className="p-2" data-testid={testId}>
+													<div className="rounded-md bg-(--color-bg-settings-input) p-2">
+														<StyledQRCode value={url} size={STORE_QR_SIZE} showLogo={false} className="block" />
+													</div>
+												</TooltipContent>
+											</Tooltip>
+										</Fragment>
+									))}
+								</>
+							) : (
+								<span>{"Install Open Agents on your phone once the new store listings are available."}</span>
+							)}
 						</li>
 						{mode === "tailscale" ? <li>{"Install Tailscale here and on your phone, signed into the same account."}</li> : null}
-						<li>{"Generate and scan the QR from the AO app"}</li>
+						<li>{"Generate and scan the QR from the Open Agents app"}</li>
 						{showRealQR && (
 							<>
 								<li data-testid="mobile-pairing-address">
@@ -605,7 +610,7 @@ export function ConnectMobileContent({ active }: { active: boolean }) {
 											<StyledQRCode
 												value={PLACEHOLDER_QR_VALUE}
 												size={QR_CODE_SIZE}
-												className="ao-qr-visual block size-full [&_svg]:size-full"
+												className="open-agents-qr-visual block size-full [&_svg]:size-full"
 											/>
 										</div>
 										<div className="absolute inset-0 flex items-center justify-center">

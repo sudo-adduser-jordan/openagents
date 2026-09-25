@@ -9,8 +9,8 @@ import (
 	"testing"
 	"time"
 
-	"github.com/aoagents/agent-orchestrator/backend/internal/domain"
-	"github.com/aoagents/agent-orchestrator/backend/internal/ports"
+	"github.com/sudo-adduser-jordan/open-agents/backend/internal/domain"
+	"github.com/sudo-adduser-jordan/open-agents/backend/internal/ports"
 )
 
 func TestRuntimeIntegration(t *testing.T) {
@@ -37,7 +37,7 @@ func TestRuntimeIntegration(t *testing.T) {
 		// exec is added by buildLaunchCommand, but we also verify here that output
 		// appears).
 		Argv: []string{"sh", "-c", "echo hello-from-tmux"},
-		Env:  map[string]string{"AO_SESSION_ID": id},
+		Env:  map[string]string{"OPEN_AGENTS_SESSION_ID": id},
 	})
 	if err != nil {
 		t.Fatalf("Create: %v", err)
@@ -136,7 +136,7 @@ func TestRuntimeIntegrationLegacyDefaultSocketIgnoresInheritedTMUX(t *testing.T)
 
 	// tmux's Unix socket path has a small platform limit; Go's ordinary test
 	// temp root is long enough to exceed it on macOS.
-	tmuxTmpDir, err := os.MkdirTemp("/tmp", "ao-tmux-test-")
+	tmuxTmpDir, err := os.MkdirTemp("/tmp", "open-agents-tmux-test-")
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -145,7 +145,7 @@ func TestRuntimeIntegrationLegacyDefaultSocketIgnoresInheritedTMUX(t *testing.T)
 	legacyID := strings.ReplaceAll(t.Name(), "/", "_") + "_legacy"
 	spoofID := strings.ReplaceAll(t.Name(), "/", "_") + "_spoof"
 	privateID := strings.ReplaceAll(t.Name(), "/", "_") + "_private"
-	for _, socketName := range []string{"default", "spoof", "ao"} {
+	for _, socketName := range []string{"default", "spoof", "open-agents"} {
 		t.Cleanup(func() {
 			_ = exec.Command(systemTmux, "-L", socketName, "kill-server").Run()
 		})
@@ -163,7 +163,7 @@ func TestRuntimeIntegrationLegacyDefaultSocketIgnoresInheritedTMUX(t *testing.T)
 	}
 	start("default", legacyID)
 	start("spoof", spoofID)
-	start("ao", privateID)
+	start("open-agents", privateID)
 
 	spoofIdentity, err := exec.Command(
 		systemTmux,
@@ -181,7 +181,7 @@ func TestRuntimeIntegrationLegacyDefaultSocketIgnoresInheritedTMUX(t *testing.T)
 	r := New(Options{
 		Binary:       systemTmux,
 		LegacyBinary: systemTmux,
-		SocketName:   "ao",
+		SocketName:   "open-agents",
 		Timeout:      5 * time.Second,
 	})
 	alive, err := r.IsAlive(context.Background(), ports.RuntimeHandle{ID: legacyID})
@@ -193,7 +193,7 @@ func TestRuntimeIntegrationLegacyDefaultSocketIgnoresInheritedTMUX(t *testing.T)
 		t.Fatalf("spoof-only session probe: %v", err)
 	}
 	if alive {
-		t.Fatal("spoof-only session was misclassified as AO's legacy session")
+		t.Fatal("spoof-only session was misclassified as Open Agents's legacy session")
 	}
 }
 
@@ -204,15 +204,15 @@ func TestRuntimeIntegrationAdoptsLegacyDefaultWhenNamedSocketDoesNotExist(t *tes
 	}
 
 	// Isolate both socket names so the test starts with a live legacy default
-	// server and no named AO server, matching an untouched pre-cutover install.
-	tmuxTmpDir, err := os.MkdirTemp("/tmp", "ao-tmux-migration-test-")
+	// server and no named Open Agents server, matching an untouched pre-cutover install.
+	tmuxTmpDir, err := os.MkdirTemp("/tmp", "open-agents-tmux-migration-test-")
 	if err != nil {
 		t.Fatal(err)
 	}
 	t.Cleanup(func() { _ = os.RemoveAll(tmuxTmpDir) })
 	t.Setenv("TMUX_TMPDIR", tmuxTmpDir)
 	legacyID := strings.ReplaceAll(t.Name(), "/", "_") + "_legacy"
-	for _, socketName := range []string{"default", "ao"} {
+	for _, socketName := range []string{"default", "open-agents"} {
 		t.Cleanup(func() {
 			_ = exec.Command(systemTmux, "-L", socketName, "kill-server").Run()
 		})
@@ -225,18 +225,18 @@ func TestRuntimeIntegrationAdoptsLegacyDefaultWhenNamedSocketDoesNotExist(t *tes
 	).CombinedOutput(); startErr != nil {
 		t.Fatalf("start legacy tmux session: %v: %s", startErr, out)
 	}
-	missingOut, missingErr := exec.Command(systemTmux, "-L", "ao", "has-session", "-t", legacyID).CombinedOutput()
+	missingOut, missingErr := exec.Command(systemTmux, "-L", "open-agents", "has-session", "-t", legacyID).CombinedOutput()
 	if missingErr == nil {
-		t.Fatal("test setup unexpectedly found a named AO server")
+		t.Fatal("test setup unexpectedly found a named Open Agents server")
 	}
 	if !serverSocketAbsentOutput(string(missingOut)) {
-		t.Fatalf("named AO probe = %q, want missing-socket diagnostic", missingOut)
+		t.Fatalf("named Open Agents probe = %q, want missing-socket diagnostic", missingOut)
 	}
 
 	r := New(Options{
 		Binary:       systemTmux,
 		LegacyBinary: systemTmux,
-		SocketName:   "ao",
+		SocketName:   "open-agents",
 		Timeout:      5 * time.Second,
 	})
 	r.enterDelay = 0
@@ -252,8 +252,8 @@ func TestRuntimeIntegrationAdoptsLegacyDefaultWhenNamedSocketDoesNotExist(t *tes
 	if !strings.Contains(out, "legacy-send-ok") {
 		t.Fatalf("legacy output = %q, want legacy-send-ok", out)
 	}
-	if out, probeErr := exec.Command(systemTmux, "-L", "ao", "list-sessions").CombinedOutput(); probeErr == nil {
-		t.Fatalf("legacy discovery unexpectedly created named AO server: %s", out)
+	if out, probeErr := exec.Command(systemTmux, "-L", "open-agents", "list-sessions").CombinedOutput(); probeErr == nil {
+		t.Fatalf("legacy discovery unexpectedly created named Open Agents server: %s", out)
 	}
 }
 
@@ -272,13 +272,13 @@ func TestRuntimeIntegrationSupervisedExitKeepsInteractiveShell(t *testing.T) {
 	t.Cleanup(func() { _ = r.Destroy(context.Background(), ports.RuntimeHandle{ID: tmuxID}) })
 
 	// Re-run this test binary as a long-lived helper with the same controlled
-	// command-line identity as AO's supervisor. The CLI package separately tests
+	// command-line identity as Open Agents's supervisor. The CLI package separately tests
 	// that the real supervisor waits for and reports its child.
 	h, err := r.Create(ctx, ports.RuntimeConfig{
 		SessionID:     domain.SessionID(id),
 		WorkspacePath: workspace,
 		Argv:          []string{os.Args[0], "-test.run=TestSupervisorProcessHelper", "--", "agent-process", "supervise", "--session", id, "--launch", launchID, "--"},
-		Env:           map[string]string{"AO_TMUX_SUPERVISOR_HELPER": "1"},
+		Env:           map[string]string{"OPEN_AGENTS_TMUX_SUPERVISOR_HELPER": "1"},
 	})
 	if err != nil {
 		t.Fatal(err)
@@ -300,7 +300,7 @@ func TestRuntimeIntegrationSupervisedExitKeepsInteractiveShell(t *testing.T) {
 	}
 
 	// The helper exits normally, matching Codex /exit or EOF. The launch shell
-	// must then execute AO's keep-alive interactive shell.
+	// must then execute Open Agents's keep-alive interactive shell.
 	deadline = time.Now().Add(5 * time.Second)
 	for {
 		alive, probeErr := r.IsSupervisedProcessAlive(ctx, h, ref)
@@ -351,7 +351,7 @@ func TestRuntimeIntegrationSupervisedExitKeepsInteractiveShell(t *testing.T) {
 }
 
 func TestSupervisorProcessHelper(t *testing.T) {
-	if os.Getenv("AO_TMUX_SUPERVISOR_HELPER") != "1" {
+	if os.Getenv("OPEN_AGENTS_TMUX_SUPERVISOR_HELPER") != "1" {
 		return
 	}
 	time.Sleep(2 * time.Second)

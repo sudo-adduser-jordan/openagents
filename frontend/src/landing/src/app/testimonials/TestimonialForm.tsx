@@ -10,7 +10,7 @@ import {
 } from "@/lib/testimonial-submission";
 
 const TWEET_INTENT_URL =
-  "https://twitter.com/intent/tweet?text=I%27ve%20been%20using%20%40ao_build%20to%20run%20coding%20agents%20in%20parallel.%20Here%27s%20what%20I%20think%3A&url=https%3A%2F%2Forchestrator.inc";
+  "https://twitter.com/intent/tweet?text=I%27ve%20been%20using%20%40openagents%20to%20run%20coding%20agents%20in%20parallel.%20Here%27s%20what%20I%20think%3A&url=https%3A%2F%2Forchestrator.inc";
 
 export function TestimonialForm() {
   const testimonialId = useId();
@@ -80,7 +80,7 @@ export function TestimonialForm() {
           Testimonial received
         </p>
         <h2 className="mt-3 text-2xl font-semibold text-foreground">
-          Thank you for sharing your AO story.
+          Thank you for sharing your Open Agents story.
         </h2>
         <p className="mt-3 text-sm leading-6 text-muted-foreground">
           We&apos;ll review it for the testimonials section of our website and
@@ -112,7 +112,7 @@ export function TestimonialForm() {
           rows={8}
           maxLength={10_000}
           aria-describedby={testimonialHelpId}
-          placeholder="What changed in the way you work after using AO? A specific outcome or moment is especially helpful."
+          placeholder="What changed in the way you work after using Open Agents? A specific outcome or moment is especially helpful."
           value={testimonial}
           onChange={(event) =>
             setTestimonial((currentValue) =>
@@ -150,7 +150,7 @@ export function TestimonialForm() {
       <div className="grid gap-2">
         <div className="flex items-center justify-between gap-4">
           <label htmlFor={tweetId} className="text-sm font-medium text-foreground lg:text-base">
-            Tweet about AO <span className="font-normal text-muted-foreground">(optional)</span>
+            Tweet about Open Agents <span className="font-normal text-muted-foreground">(optional)</span>
           </label>
           <a
             href={TWEET_INTENT_URL}

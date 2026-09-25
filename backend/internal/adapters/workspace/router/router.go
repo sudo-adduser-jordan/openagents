@@ -5,8 +5,8 @@ import (
 	"errors"
 	"fmt"
 
-	"github.com/aoagents/agent-orchestrator/backend/internal/domain"
-	"github.com/aoagents/agent-orchestrator/backend/internal/ports"
+	"github.com/sudo-adduser-jordan/open-agents/backend/internal/domain"
+	"github.com/sudo-adduser-jordan/open-agents/backend/internal/ports"
 )
 
 // ProjectStore is the project lookup surface needed to choose the workspace
@@ -185,7 +185,7 @@ func (w *Workspace) adapterForProject(ctx context.Context, projectID domain.Proj
 	if w == nil {
 		return nil, errors.New("workspace router: nil router")
 	}
-	// Projectless sessions use AO-managed plain directories. They deliberately
+	// Projectless sessions use Open Agents-managed plain directories. They deliberately
 	// have no Git worktree, branch, tracker, or project row behind them.
 	if projectID == "" {
 		if w.scratch == nil {

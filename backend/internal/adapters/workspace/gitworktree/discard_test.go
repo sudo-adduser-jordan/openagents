@@ -10,8 +10,8 @@ import (
 	"testing"
 	"time"
 
-	"github.com/aoagents/agent-orchestrator/backend/internal/domain"
-	"github.com/aoagents/agent-orchestrator/backend/internal/ports"
+	"github.com/sudo-adduser-jordan/open-agents/backend/internal/domain"
+	"github.com/sudo-adduser-jordan/open-agents/backend/internal/ports"
 )
 
 // A worktree's ignored build output (node_modules and friends) is the bulk of
@@ -329,7 +329,7 @@ func TestDestroyFallsBackToGitWhenTheMoveIsImpossible(t *testing.T) {
 // worktree directory past the removal retry budget. git has already
 // unregistered the directory by then, so nothing is being reconciled anymore;
 // the failure must be typed as deferred rather than a generic teardown error,
-// or `ao session kill` answers 500 and strands the session in the sidebar
+// or `open-agents session kill` answers 500 and strands the session in the sidebar
 // forever (#3408).
 func TestDestroyDefersRemovalFailureWhenTheDirectoryStillExists(t *testing.T) {
 	root := t.TempDir()

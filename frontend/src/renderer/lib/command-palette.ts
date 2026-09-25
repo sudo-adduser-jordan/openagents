@@ -376,7 +376,7 @@ function prReviewCommand(
 		group: "prs",
 		title: `${runLabel} #${pr.number}`,
 		subtitle,
-		keywords: [...keywords, "review", "run review", "re-run review", "ao review"],
+		keywords: [...keywords, "review", "run review", "re-run review", "open-agents review"],
 		searchOnly: true,
 		disabled,
 		disabledReason,

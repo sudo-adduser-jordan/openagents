@@ -65,7 +65,7 @@ describe("Chat draft storage", () => {
 			[
 				{
 					id: "old-attachment",
-					path: ".ao/attachments/old.png",
+					path: ".open-agents/attachments/old.png",
 					name: "old.png",
 					mimeType: "image/png",
 					bytes: 10,
@@ -110,7 +110,7 @@ describe("Chat draft storage", () => {
 				[
 					{
 						id: "new-attachment",
-						path: ".ao/attachments/new.png",
+						path: ".open-agents/attachments/new.png",
 						name: "new.png",
 						mimeType: "image/png",
 						bytes: 20,
@@ -136,7 +136,7 @@ describe("Chat draft storage", () => {
 				[
 					{
 						id: "late-old-attachment",
-						path: ".ao/attachments/late-old.png",
+						path: ".open-agents/attachments/late-old.png",
 						name: "late-old.png",
 						mimeType: "image/png",
 						bytes: 30,
@@ -172,7 +172,7 @@ describe("Chat draft storage", () => {
 			incarnation: replacement.incarnation,
 			composer: {
 				text: "replacement draft",
-				attachments: [{ id: "new-attachment", path: ".ao/attachments/new.png" }],
+				attachments: [{ id: "new-attachment", path: ".open-agents/attachments/new.png" }],
 			},
 			inlineEdit: { turnId: "new-turn", text: "replacement edit" },
 		});
@@ -207,7 +207,7 @@ describe("Chat draft storage", () => {
 		});
 		expect(writeChatComposerText(first, "late obsolete write", backing).ok).toBe(false);
 		expect(writeChatComposerText(replacement, "too early", backing).ok).toBe(false);
-		expect(backing.values.get(`ao.chat.draft:${encodeURIComponent(first.sessionId)}`)).toContain(
+		expect(backing.values.get(`open-agents.chat.draft:${encodeURIComponent(first.sessionId)}`)).toContain(
 			"obsolete",
 		);
 
@@ -270,7 +270,7 @@ describe("Chat draft storage", () => {
 		const scope: ChatDraftScope = { sessionId: "session-abandon", incarnation: "one" };
 		const attachment = {
 			id: "staged",
-			path: ".ao/attachments/staged.png",
+			path: ".open-agents/attachments/staged.png",
 			name: "staged.png",
 			mimeType: "image/png",
 			bytes: 10,
@@ -310,7 +310,7 @@ describe("Chat draft storage", () => {
 			[
 				{
 					id: "attachment-a",
-					path: ".ao/attachments/attachment-a.png",
+					path: ".open-agents/attachments/attachment-a.png",
 					name: "a.png",
 					mimeType: "image/png",
 					bytes: 4,
@@ -334,7 +334,7 @@ describe("Chat draft storage", () => {
 		expect(sessionA.composer.attachments).toEqual([
 			expect.objectContaining({
 				id: "attachment-a",
-				path: ".ao/attachments/attachment-a.png",
+				path: ".open-agents/attachments/attachment-a.png",
 			}),
 		]);
 		expect(sessionA.inlineEdit).toEqual(expect.objectContaining({ turnId: "turn-a", text: "edit A" }));
@@ -394,7 +394,7 @@ describe("Chat draft storage", () => {
 
 	it("rejects corrupt and foreign-session records", () => {
 		const storage = new MemoryStorage();
-		const key = `ao.chat.draft:${encodeURIComponent("session-a")}`;
+		const key = `open-agents.chat.draft:${encodeURIComponent("session-a")}`;
 		storage.setItem(key, "not json");
 		expect(readChatSessionDraft("session-a", storage).composer.text).toBe("");
 		expect(writeChatComposerText("session-a", "recovered", storage).ok).toBe(true);
@@ -455,7 +455,7 @@ describe("Chat draft storage", () => {
 		const attachments = [
 			{
 				id: "attachment-a",
-				path: ".ao/attachments/attachment-a.png",
+				path: ".open-agents/attachments/attachment-a.png",
 				name: "a.png",
 				mimeType: "image/png",
 				bytes: 4,
@@ -467,7 +467,7 @@ describe("Chat draft storage", () => {
 				kind: "send",
 				composerText: "  durable prompt  ",
 				attachments,
-				requestText: "durable prompt\n\nAttached files:\n- .ao/attachments/attachment-a.png",
+				requestText: "durable prompt\n\nAttached files:\n- .open-agents/attachments/attachment-a.png",
 				clientMessageId: "delivery-proof-1",
 			},
 			storage,
@@ -479,7 +479,7 @@ describe("Chat draft storage", () => {
 				kind: "send",
 				state: "dispatching",
 				clientMessageId: "delivery-proof-1",
-				requestText: "durable prompt\n\nAttached files:\n- .ao/attachments/attachment-a.png",
+				requestText: "durable prompt\n\nAttached files:\n- .open-agents/attachments/attachment-a.png",
 			},
 		});
 		const restored = readChatSessionDraft("session-proof", storage);
@@ -1079,7 +1079,7 @@ describe("Chat draft storage", () => {
 		const storage = new MemoryStorage();
 		const attachment = {
 			id: "attachment-equivalent",
-			path: ".ao/attachments/equivalent.png",
+			path: ".open-agents/attachments/equivalent.png",
 			name: "equivalent.png",
 			mimeType: "image/png",
 			bytes: 42,

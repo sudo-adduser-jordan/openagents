@@ -65,7 +65,7 @@ export function describePushToggle(status: PushStatus | null, server: ServerTarg
 		return {
 			value: false,
 			disabled: true,
-			footer: "Connect to your AO server first — notifications turn on once connected.",
+			footer: "Connect to your Open Agents server first — notifications turn on once connected.",
 			blocked: false,
 		};
 	}
@@ -73,7 +73,7 @@ export function describePushToggle(status: PushStatus | null, server: ServerTarg
 		return {
 			value: false,
 			disabled: false,
-			footer: "Notifications are turned off for AO in system settings.",
+			footer: "Notifications are turned off for Open Agents in system settings.",
 			blocked: true,
 		};
 	}
@@ -104,7 +104,7 @@ export function describePushToggle(status: PushStatus | null, server: ServerTarg
 /** Why a registration attempt did not produce a usable token. */
 export type PushRegisterFailure =
 	| "unsupported" // simulator / not a physical device
-	| "not-configured" // no AO server paired yet, so there's nothing to register with
+	| "not-configured" // no Open Agents server paired yet, so there's nothing to register with
 	| "denied" // permission not granted
 	| "no-project-id" // EAS projectId missing from app config
 	| "token-failed" // the OS/Expo refused to mint a token (e.g. no APNs entitlement)
@@ -125,7 +125,7 @@ export type PushRegisterResult =
  * (DNS failure, connection refused, timeout).
  *
  * Reaching the server and being rejected by it is not the same as not reaching
- * it: telling someone with a wrong password to "check that AO is running" sends
+ * it: telling someone with a wrong password to "check that Open Agents is running" sends
  * them to debug the wrong thing.
  */
 export function classifyServerFailure(status: number | undefined): PushRegisterFailure {
@@ -149,49 +149,49 @@ export function describeRegisterFailure(
 	switch (reason) {
 		case "server-unreachable":
 			return {
-				title: "Couldn't reach your AO server",
+				title: "Couldn't reach your Open Agents server",
 				message:
 					"Your device is set up for notifications, but we couldn't reach your server to register it. " +
-					"Check that AO is running and your phone is on the same network, then try again.",
+					"Check that Open Agents is running and your phone is on the same network, then try again.",
 			};
 		case "server-auth":
 			return {
-				title: "Your AO server rejected the request",
+				title: "Your Open Agents server rejected the request",
 				message:
 					"We reached your server, but it wouldn't accept the connection password. " +
-					"Re-enter it under Settings → Connect AO, then try again.",
+					"Re-enter it under Settings → Connect Open Agents, then try again.",
 			};
 		case "server-rate-limited":
 			return {
 				title: "Too many attempts",
-				message: "Your AO server is temporarily refusing new attempts. Wait a minute, then try again.",
+				message: "Your Open Agents server is temporarily refusing new attempts. Wait a minute, then try again.",
 			};
 		case "server-error":
 			return {
-				title: "Your AO server couldn't register this device",
+				title: "Your Open Agents server couldn't register this device",
 				message:
 					`We reached your server, but it returned an error${status ? ` (HTTP ${status})` : ""}. ` +
-					"Check the AO logs on your computer, then try again.",
+					"Check the Open Agents logs on your computer, then try again.",
 			};
 		case "not-configured":
 			return {
-				title: "Connect to your AO server first",
+				title: "Connect to your Open Agents server first",
 				message:
 					"This app isn't paired with a server yet, so there's nothing to register with. " +
-					"Pair with your server under Settings → Connect AO — notifications turn on once connected.",
+					"Pair with your server under Settings → Connect Open Agents — notifications turn on once connected.",
 			};
 		case "token-failed":
 			return {
 				title: "This build can't receive push notifications",
 				message:
 					platform === "ios"
-						? "This build can't receive notifications. Install Agent Orchestrator from the App Store to turn them on."
+						? "This build can't receive notifications. Install Open Agents from the App Store to turn them on."
 						: "The device couldn't provide a push token for this build.",
 			};
 		case "denied":
 			return {
 				title: "Notifications are turned off",
-				message: "Allow notifications for AO in your system settings, then try again.",
+				message: "Allow notifications for Open Agents in your system settings, then try again.",
 			};
 		case "no-project-id":
 			return {

@@ -23,7 +23,7 @@ import {
 	type SessionTimelinePillStatus,
 	type SessionTimelinePillView,
 	type WorkflowMode,
-} from "@aoagents/product-ui";
+} from "@openagents/product-ui";
 import type { SessionActivity, SessionStatus } from "../types/workspace";
 
 export function getAgentActivityView(

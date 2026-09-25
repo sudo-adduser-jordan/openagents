@@ -8,11 +8,11 @@ import (
 
 	"github.com/go-chi/chi/v5"
 
-	"github.com/aoagents/agent-orchestrator/backend/internal/domain"
-	"github.com/aoagents/agent-orchestrator/backend/internal/httpd/apispec"
-	"github.com/aoagents/agent-orchestrator/backend/internal/httpd/envelope"
-	reviewcore "github.com/aoagents/agent-orchestrator/backend/internal/review"
-	reviewsvc "github.com/aoagents/agent-orchestrator/backend/internal/service/review"
+	"github.com/sudo-adduser-jordan/open-agents/backend/internal/domain"
+	"github.com/sudo-adduser-jordan/open-agents/backend/internal/httpd/apispec"
+	"github.com/sudo-adduser-jordan/open-agents/backend/internal/httpd/envelope"
+	reviewcore "github.com/sudo-adduser-jordan/open-agents/backend/internal/review"
+	reviewsvc "github.com/sudo-adduser-jordan/open-agents/backend/internal/service/review"
 )
 
 // ListReviewsResponse is the body of GET /api/v1/sessions/{sessionId}/reviews.
@@ -76,7 +76,7 @@ type KillReviewResponse struct {
 type SubmitReviewItem struct {
 	RunID          string `json:"runId" description:"Review run id being completed."`
 	Verdict        string `json:"verdict" description:"Review verdict: approved or changes_requested."`
-	Body           string `json:"body,omitempty" description:"Review body recorded by AO. Required for changes_requested."`
+	Body           string `json:"body,omitempty" description:"Review body recorded by Open Agents. Required for changes_requested."`
 	GithubReviewID string `json:"githubReviewId,omitempty" description:"Id of the GitHub PR review the reviewer posted, if any."`
 }
 
@@ -84,7 +84,7 @@ type SubmitReviewItem struct {
 type SubmitReviewInput struct {
 	RunID          string             `json:"runId,omitempty" description:"Review run id being completed."`
 	Verdict        string             `json:"verdict,omitempty" description:"Review verdict: approved or changes_requested."`
-	Body           string             `json:"body,omitempty" description:"Review body recorded by AO. Required for changes_requested."`
+	Body           string             `json:"body,omitempty" description:"Review body recorded by Open Agents. Required for changes_requested."`
 	GithubReviewID string             `json:"githubReviewId,omitempty" description:"Id of the GitHub PR review the reviewer posted, if any."`
 	Reviews        []SubmitReviewItem `json:"reviews,omitempty" description:"Batched review results recorded by one reviewer CLI command."`
 }
@@ -129,7 +129,7 @@ func (c *ReviewsController) activity(w http.ResponseWriter, r *http.Request) {
 		case domain.ActivityActive, domain.ActivityIdle, domain.ActivityWaitingInput, domain.ActivityBlocked, domain.ActivityExited:
 		default:
 			// Reviewer hooks are best-effort. If a reviewer CLI stops emitting one
-			// of AO's known activity states, degrade to a no-op instead of turning
+			// of Open Agents's known activity states, degrade to a no-op instead of turning
 			// review-run polling into a surfaced hook failure.
 			state = ""
 		}

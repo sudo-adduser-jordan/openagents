@@ -18,7 +18,7 @@ import (
 // deployed agents such as Kimi still advertise `models` and implement
 // session/set_model. This narrow wire shim preserves that compatibility without
 // downgrading or forking the SDK: ordinary SDK traffic is forwarded unchanged,
-// and only AO-owned string request ids are intercepted.
+// and only Open Agents-owned string request ids are intercepted.
 type legacyACPTransport struct {
 	writer *lockedWriteCloser
 	nextID atomic.Uint64
@@ -104,7 +104,7 @@ func (t *legacyACPTransport) intercept(line []byte) bool {
 
 	var requestID string
 	if len(envelope.ID) > 0 && json.Unmarshal(envelope.ID, &requestID) == nil &&
-		strings.HasPrefix(requestID, "ao-legacy-") {
+		strings.HasPrefix(requestID, "open-agents-legacy-") {
 		t.mu.Lock()
 		pending := t.pending[requestID]
 		delete(t.pending, requestID)
@@ -146,7 +146,7 @@ func (t *legacyACPTransport) modelState() *legacySessionModelState {
 }
 
 func (t *legacyACPTransport) setModel(ctx context.Context, sessionID, modelID string) error {
-	requestID := fmt.Sprintf("ao-legacy-%d", t.nextID.Add(1))
+	requestID := fmt.Sprintf("open-agents-legacy-%d", t.nextID.Add(1))
 	response := make(chan legacyACPResponse, 1)
 	t.mu.Lock()
 	t.pending[requestID] = response

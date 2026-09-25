@@ -5,9 +5,9 @@ import (
 	"errors"
 	"testing"
 
-	acpdriver "github.com/aoagents/agent-orchestrator/backend/internal/adapters/chatdriver/acp"
-	"github.com/aoagents/agent-orchestrator/backend/internal/domain"
-	"github.com/aoagents/agent-orchestrator/backend/internal/ports"
+	acpdriver "github.com/sudo-adduser-jordan/open-agents/backend/internal/adapters/chatdriver/acp"
+	"github.com/sudo-adduser-jordan/open-agents/backend/internal/domain"
+	"github.com/sudo-adduser-jordan/open-agents/backend/internal/ports"
 )
 
 type fakePlugin struct {
@@ -44,7 +44,7 @@ func TestBindingLaunchesExactUserInstalledBinary(t *testing.T) {
 				t.Fatal("Configure did not receive the launch context")
 			}
 			configured = in
-			return []string{"acp"}, map[string]string{"PROVIDER_CONFIG": "/ao/config.json"}, nil
+			return []string{"acp"}, map[string]string{"PROVIDER_CONFIG": "/open-agents/config.json"}, nil
 		},
 	}, nil)
 
@@ -52,9 +52,9 @@ func TestBindingLaunchesExactUserInstalledBinary(t *testing.T) {
 		t.Fatalf("Probe: %v", err)
 	}
 	launch, err := cfg.Launch(launchCtx, acpdriver.LaunchConfig{
-		SessionID: "session-1", DataDir: "/ao", WorkspacePath: "/worktree",
+		SessionID: "session-1", DataDir: "/open-agents", WorkspacePath: "/worktree",
 		Env: map[string]string{"PATH": "/user/bin", "KEEP": "yes"}, Model: "provider/model",
-		Permissions: ports.PermissionModeAcceptEdits, SystemPrompt: "AO rules",
+		Permissions: ports.PermissionModeAcceptEdits, SystemPrompt: "Open Agents rules",
 	})
 	if err != nil {
 		t.Fatalf("Launch: %v", err)
@@ -66,12 +66,12 @@ func TestBindingLaunchesExactUserInstalledBinary(t *testing.T) {
 		t.Fatalf("args = %#v", launch.Args)
 	}
 	if launch.Env["PATH"] != "/user/bin" || launch.Env["KEEP"] != "yes" ||
-		launch.Env["PROVIDER_CONFIG"] != "/ao/config.json" {
+		launch.Env["PROVIDER_CONFIG"] != "/open-agents/config.json" {
 		t.Fatalf("merged env = %#v", launch.Env)
 	}
-	if configured.DataDir != "/ao" || configured.WorkspacePath != "/worktree" ||
+	if configured.DataDir != "/open-agents" || configured.WorkspacePath != "/worktree" ||
 		configured.Model != "provider/model" || configured.Permissions != ports.PermissionModeAcceptEdits ||
-		configured.SystemPrompt != "AO rules" || configured.SessionID != "session-1" {
+		configured.SystemPrompt != "Open Agents rules" || configured.SessionID != "session-1" {
 		t.Fatalf("configure input = %#v", configured)
 	}
 	for _, capability := range []ports.ChatCapability{
@@ -145,12 +145,12 @@ func TestBindingReusesPluginRuntimeEnvironment(t *testing.T) {
 	}, nil)
 
 	launch, err := cfg.Launch(context.Background(), acpdriver.LaunchConfig{
-		DataDir: "/ao", Env: map[string]string{"KEEP": "yes"},
+		DataDir: "/open-agents", Env: map[string]string{"KEEP": "yes"},
 	})
 	if err != nil {
 		t.Fatalf("Launch: %v", err)
 	}
-	if plugin.dataDir != "/ao" || launch.Env["PROVIDER_DATA_DIR"] != "/ao/provider" ||
+	if plugin.dataDir != "/open-agents" || launch.Env["PROVIDER_DATA_DIR"] != "/open-agents/provider" ||
 		launch.Env["KEEP"] != "yes" {
 		t.Fatalf("plugin data dir/env = %q, %#v", plugin.dataDir, launch.Env)
 	}

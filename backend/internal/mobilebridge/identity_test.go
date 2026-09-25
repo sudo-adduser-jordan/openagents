@@ -122,7 +122,7 @@ func TestEnsureIdentityWritesOwnerOnly(t *testing.T) {
 	}
 }
 
-// Identity belongs to the AO installation. Hardware fingerprints remain useful
+// Identity belongs to the Open Agents installation. Hardware fingerprints remain useful
 // diagnostics, but plugging in a dock must not reissue the host id and silently
 // unpair every phone.
 func TestEnsureIdentityKeepsTheHostIDWhenAnInterfaceIsAdded(t *testing.T) {
@@ -168,7 +168,7 @@ func TestEnsureIdentityKeepsTheHostIDWhenAnInterfaceIsRemoved(t *testing.T) {
 	}
 }
 
-// Host identity belongs to the AO installation, not to today's network card.
+// Host identity belongs to the Open Agents installation, not to today's network card.
 // Replacing the only NIC must not silently unpair every phone.
 func TestEnsureIdentityKeepsTheHostIDWhenTheOnlyInterfaceIsReplaced(t *testing.T) {
 	path := filepath.Join(t.TempDir(), "mobile", "identity.json")

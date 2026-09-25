@@ -37,7 +37,7 @@ function findReleaseMutationViolations(workflows: WorkflowSource[]) {
 
 describe("desktop release workflows", () => {
   const workflowsDirectory = path.join(repositoryRoot, ".github", "workflows");
-  const artifactBuilder = path.join(workflowsDirectory, "build-artifacts.yml");
+  const artifactBuilder = path.join(workflowsDirectory, "build-artifacts.yml.disabled");
 
   async function readWorkflows() {
     const names = (await readdir(workflowsDirectory)).filter((name) =>

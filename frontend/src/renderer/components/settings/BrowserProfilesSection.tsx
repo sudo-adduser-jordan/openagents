@@ -1,7 +1,7 @@
 import { Check, Eraser, Import, Pencil, Plus, Trash2 } from "lucide-react";
 import { useEffect, useState } from "react";
-import type { AoBridge } from "../../../preload";
-import { aoBridge } from "../../lib/bridge";
+import type { OpenAgentsBridge } from "../../../preload";
+import { openAgentsBridge } from "../../lib/bridge";
 import { cn } from "../../lib/utils";
 import { ConfirmDialog } from "../ConfirmDialog";
 import { Button } from "../ui/button";
@@ -10,12 +10,12 @@ import { SettingsRow } from "./SettingsRow";
 import { SettingsSection } from "./SettingsSection";
 import { BrowserImportDialog } from "./BrowserImportDialog";
 
-type ProfileBridge = AoBridge["browserProfiles"];
+type ProfileBridge = OpenAgentsBridge["browserProfiles"];
 type Profile = Awaited<ReturnType<ProfileBridge["list"]>>["profiles"][number];
 type DestructiveAction = { kind: "clear" | "delete"; profile: Profile };
 
 export function BrowserProfilesSection({ titleHidden }: { titleHidden?: boolean }) {
-	const bridge = (aoBridge as Partial<AoBridge>).browserProfiles as ProfileBridge | undefined;
+	const bridge = (openAgentsBridge as Partial<OpenAgentsBridge>).browserProfiles as ProfileBridge | undefined;
 	const [profiles, setProfiles] = useState<Awaited<ReturnType<ProfileBridge["list"]>>["profiles"]>([]);
 	const [loading, setLoading] = useState(Boolean(bridge));
 	const [error, setError] = useState("");

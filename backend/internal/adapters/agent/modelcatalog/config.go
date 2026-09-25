@@ -14,7 +14,7 @@ import (
 	"github.com/pelletier/go-toml/v2"
 	"gopkg.in/yaml.v3"
 
-	"github.com/aoagents/agent-orchestrator/backend/internal/ports"
+	"github.com/sudo-adduser-jordan/open-agents/backend/internal/ports"
 )
 
 const modelConfigReadLimit = 2 << 20
@@ -295,7 +295,7 @@ func parseGooseModels(raw []byte) ([]ports.AgentModelInfo, error) {
 	if err := yaml.Unmarshal(raw, &config); err != nil {
 		return nil, err
 	}
-	// AO can pass Goose a model override but not a provider override. Offering
+	// Open Agents can pass Goose a model override but not a provider override. Offering
 	// another provider's models would produce a launch Goose cannot reproduce.
 	provider := strings.TrimSpace(config.ActiveProvider)
 	item, ok := config.Providers[provider]

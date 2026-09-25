@@ -57,7 +57,7 @@ func TestPlan_Success(t *testing.T) {
 		ProcessAlive: func(int) bool { return true },
 	}, "plan", "demo-1")
 	if err != nil {
-		t.Fatalf("ao plan failed: %v\nstderr=%s", err, errOut)
+		t.Fatalf("open-agents plan failed: %v\nstderr=%s", err, errOut)
 	}
 	if capture.path != "/api/v1/sessions/demo-1/workflow-mode" {
 		t.Fatalf("path = %q, want the workflow-mode route", capture.path)
@@ -81,7 +81,7 @@ func TestBuild_Success(t *testing.T) {
 		ProcessAlive: func(int) bool { return true },
 	}, "build", "demo-1")
 	if err != nil {
-		t.Fatalf("ao build failed: %v\nstderr=%s", err, errOut)
+		t.Fatalf("open-agents build failed: %v\nstderr=%s", err, errOut)
 	}
 	if capture.body["workflowMode"] != "building" {
 		t.Fatalf("request body = %#v, want workflowMode building", capture.body)
@@ -102,7 +102,7 @@ func TestPlan_ProjectScopeVerifiesSessionFirst(t *testing.T) {
 		ProcessAlive: func(int) bool { return true },
 	}, "plan", "demo-1", "-p", "demo")
 	if err != nil {
-		t.Fatalf("ao plan with project scope failed: %v\nstderr=%s", err, errOut)
+		t.Fatalf("open-agents plan with project scope failed: %v\nstderr=%s", err, errOut)
 	}
 	if capture.body["workflowMode"] != "planning" {
 		t.Fatalf("request body = %#v, want workflowMode planning", capture.body)

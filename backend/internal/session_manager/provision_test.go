@@ -10,8 +10,8 @@ import (
 	"runtime"
 	"testing"
 
-	"github.com/aoagents/agent-orchestrator/backend/internal/domain"
-	"github.com/aoagents/agent-orchestrator/backend/internal/ports"
+	"github.com/sudo-adduser-jordan/open-agents/backend/internal/domain"
+	"github.com/sudo-adduser-jordan/open-agents/backend/internal/ports"
 )
 
 type fixedBrowserCapability string
@@ -48,27 +48,27 @@ func (s *scriptedBrowserCapabilities) Issue(id domain.SessionID) (string, string
 func TestSpawnEnvProjectVarsCannotOverrideInternal(t *testing.T) {
 	env := spawnEnv("mer-1", "mer", "issue-9", "/data", map[string]string{
 		"FOO":        "bar",
-		EnvSessionID: "hacked", // a project must not override AO-internal vars
+		EnvSessionID: "hacked", // a project must not override Open Agents-internal vars
 		EnvProjectID: "hacked",
 	})
 	if env["FOO"] != "bar" {
 		t.Fatalf("FOO = %q, want bar", env["FOO"])
 	}
 	if env[EnvSessionID] != "mer-1" {
-		t.Fatalf("AO_SESSION_ID = %q, want mer-1 (internal wins)", env[EnvSessionID])
+		t.Fatalf("OPEN_AGENTS_SESSION_ID = %q, want mer-1 (internal wins)", env[EnvSessionID])
 	}
 	if env[EnvProjectID] != "mer" {
-		t.Fatalf("AO_PROJECT_ID = %q, want mer (internal wins)", env[EnvProjectID])
+		t.Fatalf("OPEN_AGENTS_PROJECT_ID = %q, want mer (internal wins)", env[EnvProjectID])
 	}
 }
 
 func TestSpawnEnvWindowsRemovesCaseVariantsOfProtectedVariables(t *testing.T) {
-	env := spawnEnvForOS("mer-1", "mer", "issue-9", `C:\ao`, map[string]string{
-		"ao_session_id": "hacked",
-		"buildMode":     "production",
+	env := spawnEnvForOS("mer-1", "mer", "issue-9", `C:\open-agents`, map[string]string{
+		"open_agents_session_id": "hacked",
+		"buildMode":              "production",
 	}, true)
-	if _, ok := env["ao_session_id"]; ok {
-		t.Fatal("case variant of protected AO_SESSION_ID survived")
+	if _, ok := env["open_agents_session_id"]; ok {
+		t.Fatal("case variant of protected OPEN_AGENTS_SESSION_ID survived")
 	}
 	if env[EnvSessionID] != "mer-1" || env["buildMode"] != "production" {
 		t.Fatalf("environment = %v, want protected ID and untouched project variable spelling", env)
@@ -79,7 +79,7 @@ func TestRuntimeEnvInjectsBrowserCapability(t *testing.T) {
 	manager := &Manager{
 		dataDir:             "/data",
 		browserCapabilities: fixedBrowserCapability("capability-1"),
-		executable:          func() (string, error) { return filepath.Join("/opt", "aod", "ao"), nil },
+		executable:          func() (string, error) { return filepath.Join("/opt", "open-agents", "open-agents"), nil },
 		logger:              slog.New(slog.NewTextHandler(io.Discard, nil)),
 	}
 	env, verifier, err := manager.launchRuntimeEnv("mer-1", "mer", "", nil)
@@ -97,7 +97,7 @@ func TestRuntimeEnvInjectsBrowserCapability(t *testing.T) {
 func TestRuntimeEnvClearsDaemonBrowserRuntimeSecrets(t *testing.T) {
 	manager := &Manager{
 		dataDir:    "/data",
-		executable: func() (string, error) { return filepath.Join("/opt", "aod", "ao"), nil },
+		executable: func() (string, error) { return filepath.Join("/opt", "open-agents", "open-agents"), nil },
 		logger:     slog.New(slog.NewTextHandler(io.Discard, nil)),
 	}
 	env := manager.runtimeEnv("mer-1", "mer", "", map[string]string{
@@ -116,32 +116,32 @@ func TestRuntimeEnvWindowsRemovesCaseVariantsOfProtectedVariables(t *testing.T) 
 	t.Cleanup(func() { envKeysCaseInsensitive = previous })
 
 	manager := &Manager{
-		dataDir:     `C:\ao`,
+		dataDir:     `C:\open-agents`,
 		runFilePath: daemonRunFile,
-		executable:  func() (string, error) { return filepath.Join(t.TempDir(), "ao"), nil },
+		executable:  func() (string, error) { return filepath.Join(t.TempDir(), "open-agents"), nil },
 		logger:      slog.New(slog.NewTextHandler(io.Discard, nil)),
 	}
 	env := manager.runtimeEnv("mer-1", "mer", "issue-9", map[string]string{
-		"Path":                           `C:\project\bin`,
-		"ao_session_id":                  "hacked",
-		"Ao_Project_Id":                  "hacked",
-		"aO_Issue_ID":                    "hacked",
-		"Ao_Data_Dir":                    "hacked",
-		"ao_run_file":                    "hacked",
-		"ao_browser_runtime_token":       "runtime-secret",
-		"ao_browser_runtime_token_stdin": "1",
-		"buildMode":                      "production",
+		"Path":                                    `C:\project\bin`,
+		"open_agents_session_id":                  "hacked",
+		"Open_Agents_Project_Id":                  "hacked",
+		"OPEN_agents_Issue_ID":                    "hacked",
+		"Open_Agents_Data_Dir":                    "hacked",
+		"open_agents_run_file":                    "hacked",
+		"open_agents_browser_runtime_token":       "runtime-secret",
+		"open_agents_browser_runtime_token_stdin": "1",
+		"buildMode":                               "production",
 	})
 
 	for _, key := range []string{
 		"Path",
-		"ao_session_id",
-		"Ao_Project_Id",
-		"aO_Issue_ID",
-		"Ao_Data_Dir",
-		"ao_run_file",
-		"ao_browser_runtime_token",
-		"ao_browser_runtime_token_stdin",
+		"open_agents_session_id",
+		"Open_Agents_Project_Id",
+		"OPEN_agents_Issue_ID",
+		"Open_Agents_Data_Dir",
+		"open_agents_run_file",
+		"open_agents_browser_runtime_token",
+		"open_agents_browser_runtime_token_stdin",
 	} {
 		if _, ok := env[key]; ok {
 			t.Fatalf("case variant %s survived in runtime env: %v", key, env)
@@ -150,8 +150,8 @@ func TestRuntimeEnvWindowsRemovesCaseVariantsOfProtectedVariables(t *testing.T) 
 	if env["PATH"] == "" {
 		t.Fatalf("PATH was not pinned: %v", env)
 	}
-	if env[EnvSessionID] != "mer-1" || env[EnvProjectID] != "mer" || env[EnvIssueID] != "issue-9" || env[EnvDataDir] != `C:\ao` {
-		t.Fatalf("protected AO env = %v", env)
+	if env[EnvSessionID] != "mer-1" || env[EnvProjectID] != "mer" || env[EnvIssueID] != "issue-9" || env[EnvDataDir] != `C:\open-agents` {
+		t.Fatalf("protected Open Agents env = %v", env)
 	}
 	if env[EnvRunFile] != daemonRunFile || env[EnvBrowserRuntimeToken] != "" || env[EnvBrowserRuntimeTokenStdin] != "" {
 		t.Fatalf("runtime protected env = %v", env)
@@ -163,24 +163,24 @@ func TestRuntimeEnvWindowsRemovesCaseVariantsOfProtectedVariables(t *testing.T) 
 
 func TestRuntimeEnvPinsHooksToDaemonRunFile(t *testing.T) {
 	daemonRunFile := filepath.Join(t.TempDir(), "daemon-running.json")
-	t.Setenv("AO_RUN_FILE", filepath.Join(t.TempDir(), "inherited-wrong-daemon.json"))
+	t.Setenv("OPEN_AGENTS_RUN_FILE", filepath.Join(t.TempDir(), "inherited-wrong-daemon.json"))
 	manager := &Manager{
 		dataDir:     "/data",
 		runFilePath: daemonRunFile,
-		executable:  func() (string, error) { return filepath.Join("/opt", "aod", "ao"), nil },
+		executable:  func() (string, error) { return filepath.Join("/opt", "open-agents", "open-agents"), nil },
 		logger:      slog.New(slog.NewTextHandler(io.Discard, nil)),
 	}
 	env := manager.runtimeEnv("mer-1", "mer", "", map[string]string{
-		"AO_RUN_FILE": "/project/cannot-redirect-hooks.json",
+		"OPEN_AGENTS_RUN_FILE": "/project/cannot-redirect-hooks.json",
 	})
-	if got, want := env["AO_RUN_FILE"], daemonRunFile; got != want {
-		t.Fatalf("AO_RUN_FILE = %q, want daemon run-file %q", got, want)
+	if got, want := env["OPEN_AGENTS_RUN_FILE"], daemonRunFile; got != want {
+		t.Fatalf("OPEN_AGENTS_RUN_FILE = %q, want daemon run-file %q", got, want)
 	}
 }
 
 func TestHookPATH(t *testing.T) {
 	sep := string(os.PathListSeparator)
-	daemonExe := filepath.Join("/opt", "aod", "ao")
+	daemonExe := filepath.Join("/opt", "open-agents", "open-agents")
 	daemonDir := filepath.Dir(daemonExe)
 	exeOK := func() (string, error) { return daemonExe, nil }
 
@@ -217,10 +217,10 @@ func TestHookPATH(t *testing.T) {
 			wantErr:    true,
 		},
 		{
-			// A daemon binary not named "ao" cannot anchor `ao` resolution by
+			// A daemon binary not named "open-agents" cannot anchor `open-agents` resolution by
 			// having its directory prepended, so the pin must be refused.
-			name:       "executable not named ao fails",
-			executable: func() (string, error) { return filepath.Join("/opt", "aod", "ao-daemon"), nil },
+			name:       "executable not named open-agents fails",
+			executable: func() (string, error) { return filepath.Join("/opt", "open-agents", "open-agents-daemon"), nil },
 			daemonPATH: "/usr/bin",
 			wantErr:    true,
 		},

@@ -138,7 +138,7 @@ export function ChatComposer({
 	const steerEligible = Boolean(canSteer && hasDraft && attachments.length === 0);
 	const deliveryPresentation = composerDeliveryPresentation({ active, canSteer: Boolean(canSteer), hasDraft, hasAttachments: attachments.length > 0, hasQueued: visibleQueuedMessages.length > 0 });
 	const stopped = snapshot.controller.state === "stopped";
-	const draftKey = `ao.chat.draft.${sessionId}`;
+	const draftKey = `openAgents.chat.draft.${sessionId}`;
 	const openingSuggestion = useRef<string | undefined>(undefined);
 	const pickerGate = useRef(createRequestGate()).current;
 	const latestText = useRef(text);

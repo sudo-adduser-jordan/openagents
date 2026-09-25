@@ -15,7 +15,7 @@ import (
 
 // MachineFingerprint records a diagnostic snapshot of this machine's hardware
 // addresses. It never decides HostID: hardware changes must not silently
-// unpair every phone, and copying AO_DATA_DIR intentionally copies identity.
+// unpair every phone, and copying OPEN_AGENTS_DATA_DIR intentionally copies identity.
 //
 // Deliberately independent of interface order (net.Interfaces() gives no
 // ordering guarantee) and of link state (Wi-Fi being off must not look like a
@@ -43,7 +43,7 @@ func MachineFingerprint(ifaces []net.Interface) string {
 // Identity is the daemon installation's stable identity as seen by paired
 // phones. It is not a secret: the phone compares the HostID it paired with
 // against the one /api/v1/identity reports, so a private address reused on a
-// different network cannot be mistaken for this AO installation.
+// different network cannot be mistaken for this Open Agents installation.
 type Identity struct {
 	HostID string `json:"hostId"`
 	// Fingerprint is the aggregate MachineFingerprint this HostID was issued
@@ -52,12 +52,12 @@ type Identity struct {
 	// Fingerprints is one hash per hardware interface.
 	//
 	// These are diagnostic metadata. They are updated as hardware changes but
-	// never rotate HostID; identity belongs to this AO data directory.
+	// never rotate HostID; identity belongs to this Open Agents data directory.
 	Fingerprints []string `json:"fingerprints,omitempty"`
 }
 
 // IdentityPath returns the identity file location under the data dir
-// (~/.ao/mobile/identity.json).
+// (~/.open-agents/mobile/identity.json).
 func IdentityPath(dataDir string) string {
 	return filepath.Join(dataDir, "mobile", "identity.json")
 }
@@ -79,7 +79,7 @@ func InterfaceFingerprints(ifaces []net.Interface) []string {
 
 // EnsureIdentityFor loads the installation identity at path. Hardware hashes
 // are diagnostic metadata only: docks and NIC replacements must not silently
-// unpair every phone. Copying AO_DATA_DIR therefore copies the identity too;
+// unpair every phone. Copying OPEN_AGENTS_DATA_DIR therefore copies the identity too;
 // resetting it is an explicit operation (remove identity.json), never an
 // inference made from today's network interfaces.
 func EnsureIdentityFor(path string, ifaces []net.Interface) (Identity, error) {

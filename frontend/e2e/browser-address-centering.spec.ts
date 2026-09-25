@@ -44,7 +44,7 @@ async function expectAddressBelowInspectorTabs(page: Page) {
 }
 
 test("@P0 browser address shifts clear of wide tabs and remains centered in the compact inspector", async ({ page }) => {
-	await page.goto("/#/projects/ao-demo/sessions/demo-working");
+	await page.goto("/#/projects/open-agents-demo/sessions/demo-working");
 	await page.locator("#inspector").getByRole("tab", { name: "Browser" }).click();
 	await expect(page.getByTestId("browser-address-bar")).toBeVisible();
 

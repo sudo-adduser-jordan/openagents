@@ -45,7 +45,7 @@ export function SessionFileExplorer({
 	split: controlledSplit,
 }: SessionFileExplorerProps) {
 	const [filter, setFilter] = useState("");
-	const [internalSplit, setInternalSplit] = useState(() => window.localStorage.getItem("ao.files.diffStyle") === "split");
+	const [internalSplit, setInternalSplit] = useState(() => window.localStorage.getItem("open-agents.files.diffStyle") === "split");
 	const split = controlledSplit ?? internalSplit;
 	const [selectedPath, setSelectedPath] = useState<string | null>(null);
 	const annotation = useFileAnnotation(sessionId);
@@ -73,7 +73,7 @@ export function SessionFileExplorer({
 
 	useEffect(() => subscribeWorkspaceFileChanges(sessionId, queryClient), [queryClient, sessionId]);
 	useEffect(() => {
-		window.localStorage.setItem("ao.files.diffStyle", split ? "split" : "unified");
+		window.localStorage.setItem("open-agents.files.diffStyle", split ? "split" : "unified");
 	}, [split]);
 	useEffect(() => {
 		if (!revealRequest) return;

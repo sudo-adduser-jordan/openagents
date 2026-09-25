@@ -8,11 +8,11 @@ import (
 	"sync/atomic"
 	"testing"
 
-	"github.com/aoagents/agent-orchestrator/backend/internal/domain"
-	"github.com/aoagents/agent-orchestrator/backend/internal/ports"
-	browsersvc "github.com/aoagents/agent-orchestrator/backend/internal/service/browser"
-	chatsvc "github.com/aoagents/agent-orchestrator/backend/internal/service/chat"
-	"github.com/aoagents/agent-orchestrator/backend/internal/storage/sqlite/store"
+	"github.com/sudo-adduser-jordan/open-agents/backend/internal/domain"
+	"github.com/sudo-adduser-jordan/open-agents/backend/internal/ports"
+	browsersvc "github.com/sudo-adduser-jordan/open-agents/backend/internal/service/browser"
+	chatsvc "github.com/sudo-adduser-jordan/open-agents/backend/internal/service/chat"
+	"github.com/sudo-adduser-jordan/open-agents/backend/internal/storage/sqlite/store"
 )
 
 // Models the real Codex termination order: detaching the transport stops the
@@ -52,11 +52,11 @@ func TestFailedBranchShutdownPreservesSurvivingHostCredentials(t *testing.T) {
 			return nil, errors.New("credential owner changed")
 		}
 		rotations++
-		return map[string]string{"AO_BROWSER_CAPABILITY": token}, nil
+		return map[string]string{"OPEN_AGENTS_BROWSER_CAPABILITY": token}, nil
 	}
 	driver := fakeDriver{
 		start: func(cfg ports.ChatStartConfig) (ports.ChatConversation, error) {
-			source.browserToken = cfg.Env["AO_BROWSER_CAPABILITY"]
+			source.browserToken = cfg.Env["OPEN_AGENTS_BROWSER_CAPABILITY"]
 			return source, nil
 		},
 		resume: func(cfg ports.ChatResumeConfig) (ports.ChatConversation, error) {

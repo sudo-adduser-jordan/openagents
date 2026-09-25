@@ -14,7 +14,7 @@ import (
 	"strings"
 	"time"
 
-	"github.com/aoagents/agent-orchestrator/backend/internal/ports"
+	"github.com/sudo-adduser-jordan/open-agents/backend/internal/ports"
 )
 
 const (
@@ -23,7 +23,7 @@ const (
 	remoteScriptMaxRedirects    = 5
 )
 
-// RunInstallScript downloads a fixed HTTPS installer into private AO-owned
+// RunInstallScript downloads a fixed HTTPS installer into private Open Agents-owned
 // storage, executes the complete file, and removes it afterward.
 func (a Adapter) RunInstallScript(ctx context.Context, command ports.InstallScriptCommand, stdout, stderr io.Writer) (result ports.InstallScriptResult, err error) {
 	if a.installerRoot == "" {

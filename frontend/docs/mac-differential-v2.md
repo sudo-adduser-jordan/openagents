@@ -1,6 +1,6 @@
 # Isolated macOS differential v2
 
-PR #4906 implements the production client protocol but does not activate it. Current AO explicitly
+PR #4906 implements the production client protocol but does not activate it. Current Open Agents explicitly
 sets macOS `disableDifferentialDownload = true` before checks and uses the stock
 full-ZIP updater. `scripts/mac-differential-rollout.json` stays false and
 `scripts/mac-differential-v2-trust.json` is an empty keyring. Windows/Linux flags
@@ -14,7 +14,7 @@ v2 assets. `latest-mac.yml`, `nightly-mac.yml` and `prN-mac.yml` must permanentl
 remain free of macOS `blockMapSize`, blockmap references and v2 metadata references.
 No conventional `<ZIP URL>.blockmap` asset may exist, including aliases. Legacy
 Provider derives precisely that suffix and has no v2 resolver. Its cached ZIP
-and map cannot make it discover `.aoblockmap` or `ao-diff-v2-mac.json`.
+and map cannot make it discover `.open-agents-blockmap` or `open-agents-diff-v2-mac.json`.
 
 A legacy client can cache a new conventional map even after missing-old-map full
 fallback, then reconstruct on the next release. Neither withholding old maps nor
@@ -25,7 +25,7 @@ the same release, and retain the conventional-sidecar activation counterexample.
 
 ## Metadata and identities
 
-Exact metadata name: `ao-diff-v2-mac.json`, on the candidate's release. The
+Exact metadata name: `open-agents-diff-v2-mac.json`, on the candidate's release. The
 JSON envelope has exactly `payload` and `signature`. Unknown fields are rejected.
 
 The signed payload has:
@@ -34,8 +34,8 @@ The signed payload has:
 | --- | --- |
 | `schemaVersion` | Exactly numeric `2`; missing, string or unknown versions deny |
 | `minimumClientVersion` | Canonical exact SemVer; running version must be greater than or equal, with SemVer prerelease ordering |
-| `protocol` | Exactly `ao-mac-differential-v2` |
-| `repository` | Exactly `Untrivial-ai/agent-orchestrator` |
+| `protocol` | Exactly `open-agents-mac-differential-v2` |
+| `repository` | Exactly `sudo-adduser-jordan/open-agents` |
 | `channel` | Exactly `nightly` in PR1 |
 | `enabled` | Exactly boolean `true`; false/malformed denies |
 | `issuedAt` | Canonical UTC ISO timestamp, no more than 72 hours old and never in the future |
@@ -51,13 +51,13 @@ current version; the actual cached ZIP must independently match size and SHA-512
 A baseline is reconstruction input, not a deployment/adoption requirement.
 
 ZIP names must end with `-darwin-<arch>-<version>.zip`. Both target and baseline
-maps use `<versioned ZIP filename>.aoblockmap`, for example:
+maps use `<versioned ZIP filename>.open-agents-blockmap`, for example:
 
 ```text
-releases/download/v2.0.0/ao-diff-v2-mac.json
-releases/download/v2.0.0/Agent.Orchestrator-darwin-arm64-2.0.0.zip
-releases/download/v2.0.0/Agent.Orchestrator-darwin-arm64-2.0.0.zip.aoblockmap
-releases/download/v2.0.0/Agent.Orchestrator-darwin-arm64-1.0.0.zip.aoblockmap
+releases/download/v2.0.0/open-agents-diff-v2-mac.json
+releases/download/v2.0.0/open-agents-darwin-arm64-2.0.0.zip
+releases/download/v2.0.0/open-agents-darwin-arm64-2.0.0.zip.open-agents-blockmap
+releases/download/v2.0.0/open-agents-darwin-arm64-1.0.0.zip.open-agents-blockmap
 ```
 
 Both maps live on the candidate release; the signed baseline ZIP URL points to
@@ -96,7 +96,7 @@ no v2 assets are generated. The key is supplied by the caller and is never
 serialized. Tests use ephemeral in-memory keys and temporary ZIPs.
 
 Generation calls the existing pinned app-builder blockmap implementation with an
-explicit `.aoblockmap` destination. It never creates a conventional sidecar, even
+explicit `.open-agents-blockmap` destination. It never creates a conventional sidecar, even
 temporarily. The verifier checks the signature against an independently supplied expected candidate/channel context,
 candidate ZIP bytes, both map
 identities, exact v2 inventory, and forbidden legacy feed references/sidecars.
@@ -104,7 +104,7 @@ Unexpected v2 assets, aliases and injected conventional ZIP maps fail. Disabled
 verification rejects every v2 asset. Existing Windows/Linux verification remains
 independent and unchanged.
 
-A separate reviewed `ao-releases` change must:
+A separate reviewed `open-agents-releases` change must:
 
 1. Preserve conventional macOS-map prohibition at generation, pre-upload and
    remote verification; do not weaken legacy feed policy.
@@ -127,8 +127,8 @@ historical ZIPs and maps; manifest removal is the explicit authorization
 revocation operation, not release-history deletion. Short metadata expiry
 bounds stale authorization; flags do not cancel a transfer already started.
 
-The explicit upload inventory is the candidate ZIP, `ao-diff-v2-mac.json`, and
-the candidate and baseline versioned `.aoblockmap` files named by the verified
+The explicit upload inventory is the candidate ZIP, `open-agents-diff-v2-mac.json`, and
+the candidate and baseline versioned `.open-agents-blockmap` files named by the verified
 manifest. Draft redownload verification rejects missing or additional v2 assets
 and every conventional macOS sidecar. Rollback removes the named manifest,
 disables conductor generation, and leaves legacy feeds and historical assets

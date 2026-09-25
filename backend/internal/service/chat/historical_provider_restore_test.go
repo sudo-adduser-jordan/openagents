@@ -8,11 +8,11 @@ import (
 	"testing"
 	"time"
 
-	"github.com/aoagents/agent-orchestrator/backend/internal/domain"
-	"github.com/aoagents/agent-orchestrator/backend/internal/lifecycle"
-	"github.com/aoagents/agent-orchestrator/backend/internal/ports"
-	chatsvc "github.com/aoagents/agent-orchestrator/backend/internal/service/chat"
-	"github.com/aoagents/agent-orchestrator/backend/internal/storage/sqlite"
+	"github.com/sudo-adduser-jordan/open-agents/backend/internal/domain"
+	"github.com/sudo-adduser-jordan/open-agents/backend/internal/lifecycle"
+	"github.com/sudo-adduser-jordan/open-agents/backend/internal/ports"
+	chatsvc "github.com/sudo-adduser-jordan/open-agents/backend/internal/service/chat"
+	"github.com/sudo-adduser-jordan/open-agents/backend/internal/storage/sqlite"
 )
 
 const (
@@ -42,7 +42,7 @@ func seedHistoricalProviderFixture(t *testing.T) historicalProviderFixture {
 	source.Metadata.ProviderConversationID = "native-88"
 	source.Metadata.ControllerGeneration = "generation-88"
 	source.Metadata.WorkspacePath = "/worktrees/orchestrator-88"
-	source.Metadata.Branch = "ao/orchestrator"
+	source.Metadata.Branch = "open-agents/orchestrator"
 	source.Activity = domain.Activity{State: domain.ActivityIdle, LastActivityAt: now}
 	source.UpdatedAt = now
 	if err := st.UpdateSession(ctx, source); err != nil {
@@ -69,7 +69,7 @@ func seedHistoricalProviderFixture(t *testing.T) historicalProviderFixture {
 		Metadata: domain.SessionMetadata{
 			ProviderConversationID: historicalTargetThread,
 			WorkspacePath:          "/worktrees/orchestrator-248",
-			Branch:                 "ao/orchestrator",
+			Branch:                 "open-agents/orchestrator",
 		},
 		CreatedAt: now.Add(2 * time.Second), UpdatedAt: now.Add(2 * time.Second),
 	})

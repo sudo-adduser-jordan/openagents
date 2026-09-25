@@ -29,7 +29,7 @@ const localSession: WorkspaceSession = {
 
 const session = {
 	activity: { state: "active", lastActivityAt: "2026-06-10T00:00:00Z" },
-	branch: "ao/sess-1",
+	branch: "open-agents/sess-1",
 	id: "sess-1",
 	kanbanColumn: "building",
 	kind: "worker",

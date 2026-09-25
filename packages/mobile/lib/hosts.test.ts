@@ -127,125 +127,9 @@ describe("host store", () => {
 	});
 
 	it("survives corrupted storage instead of crashing the app", async () => {
-		plain.set("ao.hosts", "{not json");
+		plain.set("openAgents.hosts", "{not json");
 		const { loadHosts } = await mod();
 		expect(await loadHosts()).toEqual([]);
-	});
-});
-
-describe("migration from the single-server config", () => {
-	beforeEach(() => {
-		plain.clear();
-		secure.clear();
-		vi.resetModules();
-	});
-
-	// Anyone upgrading has one paired machine stored the old way. Losing it
-	// would silently unpair every existing user.
-	it("carries an existing pairing across the upgrade", async () => {
-		plain.set(
-			"ao.serverConfig",
-			JSON.stringify({ host: "192.168.1.42", httpPort: "3011", muxPort: "14801", secure: false }),
-		);
-		secure.set("ao.serverPassword", "legacy-pw");
-
-		const { migrateLegacyConfig, loadHosts } = await mod();
-		await migrateLegacyConfig();
-
-		const got = await loadHosts();
-		expect(got).toHaveLength(1);
-		expect(got[0].endpoints).toEqual([
-			{ kind: "lan", host: "192.168.1.42", port: 3011, secure: false },
-		]);
-		expect(got[0].token).toBe("legacy-pw");
-	});
-
-	// Builds older still kept the password inside the AsyncStorage config blob;
-	// loadConfig() is what moves it into SecureStore, and that runs *after* this
-	// migration. Reading SecureStore alone left those users with an empty token
-	// and a machine they could not authenticate to.
-	it("takes the password from the legacy blob when SecureStore has none", async () => {
-		plain.set(
-			"ao.serverConfig",
-			JSON.stringify({ host: "192.168.1.42", httpPort: "3011", password: "blob-pw" }),
-		);
-
-		const { migrateLegacyConfig, loadHosts } = await mod();
-		await migrateLegacyConfig();
-
-		expect((await loadHosts())[0].token).toBe("blob-pw");
-	});
-
-	// SecureStore is the newer home for it, so it wins where both exist.
-	it("prefers the SecureStore password over the legacy blob", async () => {
-		plain.set(
-			"ao.serverConfig",
-			JSON.stringify({ host: "192.168.1.42", httpPort: "3011", password: "blob-pw" }),
-		);
-		secure.set("ao.serverPassword", "secure-pw");
-
-		const { migrateLegacyConfig, loadHosts } = await mod();
-		await migrateLegacyConfig();
-
-		expect((await loadHosts())[0].token).toBe("secure-pw");
-	});
-
-	// The old config carries no host id — the daemon issues those, and this
-	// pairing predates them. The migrated machine therefore starts unverified
-	// and adopts its identity on the first successful connect.
-	it("leaves the migrated machine without an identity until it connects", async () => {
-		plain.set("ao.serverConfig", JSON.stringify({ host: "192.168.1.42", httpPort: "3011" }));
-		const { migrateLegacyConfig, loadHosts } = await mod();
-		await migrateLegacyConfig();
-
-		expect((await loadHosts())[0].id).toBe("");
-	});
-
-	it("preserves a TLS pairing as a secure endpoint", async () => {
-		plain.set(
-			"ao.serverConfig",
-			JSON.stringify({ host: "mbp.tail1234.ts.net", httpPort: "443", secure: true }),
-		);
-		const { migrateLegacyConfig, loadHosts } = await mod();
-		await migrateLegacyConfig();
-
-		expect((await loadHosts())[0].endpoints[0]).toEqual({
-			kind: "tailscale",
-			host: "mbp.tail1234.ts.net",
-			port: 443,
-			secure: true,
-		});
-	});
-
-	it("is a no-op when there is nothing to migrate", async () => {
-		const { migrateLegacyConfig, loadHosts } = await mod();
-		await migrateLegacyConfig();
-		expect(await loadHosts()).toEqual([]);
-	});
-
-	// Running twice must not produce two copies of the same machine.
-	it("is idempotent", async () => {
-		plain.set("ao.serverConfig", JSON.stringify({ host: "192.168.1.42", httpPort: "3011" }));
-		const { migrateLegacyConfig, loadHosts } = await mod();
-		await migrateLegacyConfig();
-		await migrateLegacyConfig();
-
-		expect(await loadHosts()).toHaveLength(1);
-	});
-
-	it("does not migrate over an already-populated host list", async () => {
-		plain.set("ao.serverConfig", JSON.stringify({ host: "192.168.1.42", httpPort: "3011" }));
-		const { saveHost, migrateLegacyConfig, loadHosts } = await mod();
-		await saveHost({
-			id: "h_real", name: "a", platform: "darwin",
-			endpoints: [], token: "", lastConnected: 5,
-		});
-
-		await migrateLegacyConfig();
-
-		const got = await loadHosts();
-		expect(got).toHaveLength(1);
-		expect(got[0].id).toBe("h_real");
 	});
 });
 
@@ -256,10 +140,10 @@ describe("adopting an identity", () => {
 		vi.resetModules();
 	});
 
-	// A machine migrated from the single-server config connects once with no id
-	// and learns one. Its token has to move with it, or the next connect finds
-	// a machine it cannot authenticate to.
-	it("rekeys a migrated machine and carries its token across", async () => {
+	// A newly paired machine can start with no id and learn one on its first
+	// connection. Its token has to move with it, or the next connect finds a
+	// machine it cannot authenticate to.
+	it("rekeys a newly paired machine and carries its token across", async () => {
 		const { saveHost, adoptHostIdentity, loadHosts } = await mod();
 		await saveHost({
 			id: "", name: "192.168.1.42", platform: "",
@@ -364,10 +248,10 @@ describe("the active host", () => {
 	it("drops the token when a machine is forgotten", async () => {
 		const { saveHost, removeHost } = await mod();
 		await saveHost(host("a"));
-		expect(secure.get("ao.hostToken.a")).toBe("tok-a");
+		expect(secure.get("openAgents.hostToken.a")).toBe("tok-a");
 
 		await removeHost("a");
 
-		expect(secure.get("ao.hostToken.a")).toBeUndefined();
+		expect(secure.get("openAgents.hostToken.a")).toBeUndefined();
 	});
 });

@@ -4,7 +4,7 @@ import {
 	type TaskComposerAgentControl,
 	type TaskComposerModelCatalog,
 	type TaskComposerModelControl,
-} from "@aoagents/product-ui";
+} from "@openagents/product-ui";
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { Loader2 } from "lucide-react";
 import { RequiredAgentField } from "./CreateProjectAgentSheet";

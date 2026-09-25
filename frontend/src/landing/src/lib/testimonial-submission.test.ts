@@ -9,7 +9,7 @@ import {
 
 describe("testimonial word limits", () => {
 	it("counts words separated by any whitespace", () => {
-		expect(countWords("  AO makes\nparallel work\tclear.  ")).toBe(5);
+		expect(countWords("  Open Agents makes\nparallel work\tclear.  ")).toBe(6);
 	});
 
 	it("leaves submissions within the limit unchanged", () => {

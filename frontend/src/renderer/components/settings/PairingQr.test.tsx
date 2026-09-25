@@ -19,17 +19,17 @@ describe("PairingQr", () => {
 	});
 
 	it("renders the real code once it arrives", () => {
-		const { container } = render(<PairingQr value="aomobile://pair#real" size={204} caption={CAPTION} />);
+		const { container } = render(<PairingQr value="open-agents-mobile://pair#real" size={204} caption={CAPTION} />);
 		expect(container.querySelector("[data-qr-value]")).toHaveAttribute(
 			"data-qr-value",
-			"aomobile://pair#real",
+			"open-agents-mobile://pair#real",
 		);
 	});
 
 	// The caption belongs to the wait. Leaving it under a finished code would
 	// claim the app is still working when it is done.
 	it("drops the caption once the code is shown", () => {
-		render(<PairingQr value="aomobile://pair#real" size={204} caption={CAPTION} />);
+		render(<PairingQr value="open-agents-mobile://pair#real" size={204} caption={CAPTION} />);
 		expect(screen.queryByRole("status")).toBeNull();
 	});
 
@@ -39,16 +39,16 @@ describe("PairingQr", () => {
 	// to resolve from and should not fade anything in.
 	it("keeps the placeholder on screen through the resolve", () => {
 		const { container, rerender } = render(<PairingQr value={null} size={204} caption={CAPTION} />);
-		expect(container.querySelectorAll(".ao-qr-decoy").length).toBeGreaterThan(0);
+		expect(container.querySelectorAll(".open-agents-qr-decoy").length).toBeGreaterThan(0);
 
-		rerender(<PairingQr value="aomobile://pair#real" size={204} caption={CAPTION} />);
+		rerender(<PairingQr value="open-agents-mobile://pair#real" size={204} caption={CAPTION} />);
 
 		expect(container.querySelector("[data-qr-value]")).not.toBeNull();
-		expect(container.querySelector(".ao-qr-decoy--settling")).not.toBeNull();
+		expect(container.querySelector(".open-agents-qr-decoy--settling")).not.toBeNull();
 	});
 
 	it("shows no placeholder when a code is available from the start", () => {
-		const { container } = render(<PairingQr value="aomobile://pair#real" size={204} caption={CAPTION} />);
-		expect(container.querySelectorAll(".ao-qr-decoy")).toHaveLength(0);
+		const { container } = render(<PairingQr value="open-agents-mobile://pair#real" size={204} caption={CAPTION} />);
+		expect(container.querySelectorAll(".open-agents-qr-decoy")).toHaveLength(0);
 	});
 });

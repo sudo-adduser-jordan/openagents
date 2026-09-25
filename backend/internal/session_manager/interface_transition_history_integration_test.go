@@ -11,11 +11,11 @@ import (
 
 	"github.com/google/uuid"
 
-	"github.com/aoagents/agent-orchestrator/backend/internal/domain"
-	"github.com/aoagents/agent-orchestrator/backend/internal/lifecycle"
-	"github.com/aoagents/agent-orchestrator/backend/internal/ports"
-	chatsvc "github.com/aoagents/agent-orchestrator/backend/internal/service/chat"
-	"github.com/aoagents/agent-orchestrator/backend/internal/storage/sqlite/sqlitetest"
+	"github.com/sudo-adduser-jordan/open-agents/backend/internal/domain"
+	"github.com/sudo-adduser-jordan/open-agents/backend/internal/lifecycle"
+	"github.com/sudo-adduser-jordan/open-agents/backend/internal/ports"
+	chatsvc "github.com/sudo-adduser-jordan/open-agents/backend/internal/service/chat"
+	"github.com/sudo-adduser-jordan/open-agents/backend/internal/storage/sqlite/sqlitetest"
 )
 
 // Exercise production launch selection, lifecycle, Chat and SQLite together.
@@ -107,7 +107,7 @@ func TestInterfaceTransitionNativeHistoryOwnership(t *testing.T) {
 						Agents: singleAgent{agent: agent}, Runtime: runtime,
 						Workspace: &fakeWorkspace{path: workspace}, Messenger: &fakeMessenger{}, DataDir: dir,
 						LookPath:   func(string) (string, error) { return "/bin/true", nil },
-						Executable: func() (string, error) { return filepath.Join(dir, "bin", "ao"), nil }, Logger: slog.New(slog.DiscardHandler),
+						Executable: func() (string, error) { return filepath.Join(dir, "bin", "open-agents"), nil }, Logger: slog.New(slog.DiscardHandler),
 					})
 					useFastInterfaceTransitionTimings(m)
 					if _, err := m.resumeChatController(ctx, "initial Chat", sess, project,

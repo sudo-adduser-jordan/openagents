@@ -102,7 +102,7 @@ async function runCase(fault = "none", { arch = "arm64", progress = true, disabl
     metadata.signature.value = sign(null, Buffer.from(macV2Canonical(metadata.payload)), f.privateKey).toString("base64");
   }
   if (fault === "alias") {
-    metadata.payload.artifacts.find(entry => entry.arch === arch).blockmap.url = selected.blockmap.url.replace(/[^/]+$/, "alias.aoblockmap");
+    metadata.payload.artifacts.find(entry => entry.arch === arch).blockmap.url = selected.blockmap.url.replace(/[^/]+$/, "alias.open-agents-blockmap");
     metadata.signature.value = sign(null, Buffer.from(macV2Canonical(metadata.payload)), f.privateKey).toString("base64");
   }
   const requests = [], handoffs = [], observations = [];
@@ -118,7 +118,7 @@ async function runCase(fault = "none", { arch = "arm64", progress = true, disabl
       if (fault === "missing-metadata") { send(404, Buffer.from("absent")); return; }
       send(200, Buffer.from(fault === "malformed-metadata" ? "{" : fault === "oversized-metadata" ? "x".repeat(256 * 1024 + 1) : JSON.stringify(metadata))); return;
     }
-    if (name.endsWith(".aoblockmap")) {
+    if (name.endsWith(".open-agents-blockmap")) {
       if (fault === "missing-map") { send(404, Buffer.alloc(0)); return; }
       send(200, readFileSync(join(f.dir, name))); return;
     }
@@ -260,7 +260,7 @@ async function runCase(fault = "none", { arch = "arm64", progress = true, disabl
   if (legacy) {
     expect(provider.getBlockMapFiles).toHaveBeenCalledTimes(1);
     expect(stockDifferential).toHaveBeenCalledTimes(1);
-    expect(requests.some(req => req.name === MAC_V2_METADATA || req.name.endsWith(".aoblockmap"))).toBe(false);
+    expect(requests.some(req => req.name === MAC_V2_METADATA || req.name.endsWith(".open-agents-blockmap"))).toBe(false);
   } else {
     expect(provider.getBlockMapFiles).not.toHaveBeenCalled();
     expect(stockDifferential).not.toHaveBeenCalled();

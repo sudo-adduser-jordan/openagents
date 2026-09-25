@@ -13,7 +13,7 @@ import { BrowserProfileStore } from "./browser-profile-store";
 const tempDirectories: string[] = [];
 
 async function makeStateDir(): Promise<string> {
-	const directory = await mkdtemp(path.join(os.tmpdir(), "ao-browser-profiles-"));
+	const directory = await mkdtemp(path.join(os.tmpdir(), "open-agents-browser-profiles-"));
 	tempDirectories.push(directory);
 	return directory;
 }
@@ -88,7 +88,7 @@ describe("BrowserProfileStore", () => {
 		const partition = browserProfilePartition(profile.id);
 		await store.renameProfile(profile.id, "Personal");
 		expect(browserProfilePartition(profile.id)).toBe(partition);
-		expect(partition).toBe(`persist:ao-browser-profile-${profile.id}`);
+		expect(partition).toBe(`persist:open-agents-browser-profile-${profile.id}`);
 	});
 
 	it("preserves corrupt registries and surfaces a recoverable error", async () => {

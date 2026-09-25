@@ -2,7 +2,7 @@
 
 ## Goal
 
-Make PR #4221's Settings installer trustworthy on macOS and recoverable across UI and daemon restarts without weakening AO's no-sudo policy or moving installer policy into the frontend.
+Make PR #4221's Settings installer trustworthy on macOS and recoverable across UI and daemon restarts without weakening Open Agents's no-sudo policy or moving installer policy into the frontend.
 
 ## Decisions
 
@@ -10,11 +10,11 @@ Make PR #4221's Settings installer trustworthy on macOS and recoverable across U
 
 Harness installation is a daemon job, not a React effect. The daemon persists the latest job for each harness in SQLite. A job records the harness, selected server-owned method, lifecycle status, expected binary destination, captured diagnostics, error text, and timestamps.
 
-The lifecycle is `installing -> verifying -> succeeded|failed`. Jobs left in `installing` or `verifying` when the daemon starts become `interrupted`; AO never assumes they succeeded and never silently reruns them. The Settings page hydrates all current jobs from the daemon and polls while work is active.
+The lifecycle is `installing -> verifying -> succeeded|failed`. Jobs left in `installing` or `verifying` when the daemon starts become `interrupted`; Open Agents never assumes they succeeded and never silently reruns them. The Settings page hydrates all current jobs from the daemon and polls while work is active.
 
 ### Adapter-backed verification
 
-An install is successful only after AO resolves the installed harness through the canonical agent adapter and runs a bounded, non-authenticating version/launch probe against the exact resolved executable. Authentication checks remain part of the existing agent probe flow and are not installation verification.
+An install is successful only after Open Agents resolves the installed harness through the canonical agent adapter and runs a bounded, non-authenticating version/launch probe against the exact resolved executable. Authentication checks remain part of the existing agent probe flow and are not installation verification.
 
 `Verify again` runs only this verifier. `Reinstall` starts the selected installation recipe again.
 
@@ -27,7 +27,7 @@ Automatic installers never use `sudo`, never inherit interactive stdin, and use 
 - npm methods require a supported Node/npm and a writable global prefix.
 - Python harnesses prefer `uv tool`, then `pipx`; raw global `pip` is not an automatic fallback.
 - Homebrew methods require a usable writable Homebrew installation.
-- Official HTTPS installer scripts may run automatically, but AO must download the complete response into its own bounded temporary directory first, record its SHA-256 digest, execute the saved file with a fixed interpreter argv and closed stdin, then remove it. AO never evaluates `curl | shell` pipelines.
+- Official HTTPS installer scripts may run automatically, but Open Agents must download the complete response into its own bounded temporary directory first, record its SHA-256 digest, execute the saved file with a fixed interpreter argv and closed stdin, then remove it. Open Agents never evaluates `curl | shell` pipelines.
 
 ### Diagnostics and recovery
 

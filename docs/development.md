@@ -4,7 +4,7 @@
 (cd backend && go run .) & (cd frontend && npm i; npm run dev)
 ```
 
-How to set up, build, run, and test Agent Orchestrator locally.
+How to set up, build, run, and test Open Agents locally.
 
 ## Prerequisites
 
@@ -24,9 +24,9 @@ Additional runtime dependencies for the daemon:
 ## Project Layout
 
 ```text
-agent-orchestrator/
+open-agents/
   backend/              # Go daemon (Cobra CLI, HTTP API, services, storage)
-    cmd/ao/             # CLI entry point
+    cmd/open-agents/             # CLI entry point
     internal/           # All library code
       cli/              # CLI command implementations
       httpd/            # HTTP controllers, apispec, middleware
@@ -39,7 +39,7 @@ agent-orchestrator/
     e2e/                # Playwright end-to-end tests
   packages/
     mobile/             # React Native (Expo) mobile companion app
-    ao/                 # Legacy npm CLI package (frozen)
+    open-agents/                 # Legacy npm CLI package (frozen)
   docs/                 # Architecture, ADRs, CLI docs, status
   CONTRIBUTING.md       # Contribution guide
 ```
@@ -47,8 +47,8 @@ agent-orchestrator/
 ## Getting the code
 
 ```bash
-git clone https://github.com/AgentWrapper/agent-orchestrator.git
-cd agent-orchestrator
+git clone https://github.com/sudo-adduser-jordan/open-agents.git
+cd open-agents
 npm ci
 ```
 
@@ -113,7 +113,7 @@ cd backend
 go run .
 ```
 
-The CLI is built with Cobra. From `backend/`, run `go run ./cmd/ao --help` for
+The CLI is built with Cobra. From `backend/`, run `go run ./cmd/open-agents --help` for
 available commands.
 
 ### Run tests
@@ -224,8 +224,8 @@ go run .
 
 ```bash
 cd backend
-go run ./cmd/ao status
-go run ./cmd/ao --help
+go run ./cmd/open-agents status
+go run ./cmd/open-agents --help
 ```
 
 ## Testing tips
@@ -264,7 +264,7 @@ go run ./cmd/ao --help
 | `npm run typecheck` has type errors   | API types out of sync   | Run `npm run api` from repo root to regenerate               |
 | `npm run dev` fails on native modules | Missing build tools     | Install Python + C++ build tools for `node-gyp`              |
 | `npm install` or `npm ci` fails       | Node.js version too old | `node --version`; must be 20.19.0+ (see prerequisites above) |
-| Blank window or crash on Linux        | Broken GPU driver stack | Start with `AO_DISABLE_GPU=1` to skip hardware acceleration  |
+| Blank window or crash on Linux        | Broken GPU driver stack | Start with `OPEN_AGENTS_DISABLE_GPU=1` to skip hardware acceleration  |
 
 ### Code generation drift
 

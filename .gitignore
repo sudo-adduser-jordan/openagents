@@ -17,10 +17,10 @@ bin/
 vendor/
 # compiled daemon binary
 /backend/backend
-agent-orchestrator.yaml
+open-agents.yaml
 
 # Backend runtime data artifacts (SQLite store + WAL, CDC event log).
-# Created at AO_DATA_DIR (outside the repo by default); ignored here so a
+# Created at OPEN_AGENTS_DATA_DIR (outside the repo by default); ignored here so a
 # data dir pointed at the tree never gets committed.
 *.db
 *.db-shm
@@ -28,14 +28,15 @@ agent-orchestrator.yaml
 session-events.jsonl
 session-events.jsonl.*
 
-# Agent Orchestrator local session state
-.ao/
+# Open Agents local session state
+.open-agents/
 
 # Local scratch workspace (icon generation, throwaway scripts)
 .cache/
 frontend/.tanstack/
+plan.md
 
-# AO reviewer scratch output. The reviewer agent runs inside the worker's
+# Open Agents reviewer scratch output. The reviewer agent runs inside the worker's
 # worktree; its review writeup must never be committed onto the worker branch.
 /review.md
 
@@ -87,8 +88,8 @@ frontend/agent-browser/
 .agents/*
 !.agents/skills/
 .agents/skills/*
-!.agents/skills/ao-desktop-dev/
-!.agents/skills/ao-desktop-dev/**
+!.agents/skills/open-agents-desktop-dev/
+!.agents/skills/open-agents-desktop-dev/**
 !.agents/skills/bug-triage/
 !.agents/skills/bug-triage/**
 !.agents/skills/pr-description/

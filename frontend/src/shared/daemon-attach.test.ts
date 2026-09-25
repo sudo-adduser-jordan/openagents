@@ -26,24 +26,24 @@ const DEAD = () => false;
 const NO_IDENTITY_ERROR = () => null;
 
 describe("expectedDaemonPort", () => {
-	it("defaults to 3001 when AO_PORT is unset or empty", () => {
+	it("defaults to 3001 when OPEN_AGENTS_PORT is unset or empty", () => {
 		expect(expectedDaemonPort({})).toBe(3001);
-		expect(expectedDaemonPort({ AO_PORT: "" })).toBe(3001);
+		expect(expectedDaemonPort({ OPEN_AGENTS_PORT: "" })).toBe(3001);
 		expect(DEFAULT_DAEMON_PORT).toBe(3001);
 	});
 
-	it("honors a valid AO_PORT override", () => {
-		expect(expectedDaemonPort({ AO_PORT: "3037" })).toBe(3037);
-		expect(expectedDaemonPort({ AO_PORT: "1" })).toBe(1);
-		expect(expectedDaemonPort({ AO_PORT: "65535" })).toBe(65535);
+	it("honors a valid OPEN_AGENTS_PORT override", () => {
+		expect(expectedDaemonPort({ OPEN_AGENTS_PORT: "3037" })).toBe(3037);
+		expect(expectedDaemonPort({ OPEN_AGENTS_PORT: "1" })).toBe(1);
+		expect(expectedDaemonPort({ OPEN_AGENTS_PORT: "65535" })).toBe(65535);
 	});
 
-	it("falls back to the default for an out-of-range or non-integer AO_PORT", () => {
-		expect(expectedDaemonPort({ AO_PORT: "0" })).toBe(3001);
-		expect(expectedDaemonPort({ AO_PORT: "70000" })).toBe(3001);
-		expect(expectedDaemonPort({ AO_PORT: "3001.5" })).toBe(3001);
-		expect(expectedDaemonPort({ AO_PORT: "not-a-number" })).toBe(3001);
-		expect(expectedDaemonPort({ AO_PORT: "-1" })).toBe(3001);
+	it("falls back to the default for an out-of-range or non-integer OPEN_AGENTS_PORT", () => {
+		expect(expectedDaemonPort({ OPEN_AGENTS_PORT: "0" })).toBe(3001);
+		expect(expectedDaemonPort({ OPEN_AGENTS_PORT: "70000" })).toBe(3001);
+		expect(expectedDaemonPort({ OPEN_AGENTS_PORT: "3001.5" })).toBe(3001);
+		expect(expectedDaemonPort({ OPEN_AGENTS_PORT: "not-a-number" })).toBe(3001);
+		expect(expectedDaemonPort({ OPEN_AGENTS_PORT: "-1" })).toBe(3001);
 	});
 });
 
@@ -66,7 +66,7 @@ describe("parseDaemonProbe", () => {
 		expect(
 			parseDaemonProbe("readyz", {
 				...readyBody,
-				executablePath: "/bin/ao",
+				executablePath: "/bin/open-agents",
 				workingDirectory: "/work/data",
 				startupWorkingDirectory: "/work",
 			}),
@@ -74,7 +74,7 @@ describe("parseDaemonProbe", () => {
 			status: "ready",
 			service: DAEMON_SERVICE_NAME,
 			pid: 4242,
-			executablePath: "/bin/ao",
+			executablePath: "/bin/open-agents",
 			workingDirectory: "/work/data",
 			startupWorkingDirectory: "/work",
 		});
@@ -112,9 +112,9 @@ describe("parseDaemonProbe", () => {
 	it("carries appImagePath when the daemon reports it", () => {
 		const probe = parseDaemonProbe("readyz", {
 			...readyBody,
-			appImagePath: "/home/user/Apps/agent-orchestrator.AppImage",
+			appImagePath: "/home/user/Apps/open-agents.AppImage",
 		});
-		expect(probe?.appImagePath).toBe("/home/user/Apps/agent-orchestrator.AppImage");
+		expect(probe?.appImagePath).toBe("/home/user/Apps/open-agents.AppImage");
 	});
 
 	it("drops appImagePath when absent or not a string", () => {
@@ -196,7 +196,7 @@ describe("resolveDaemonFromRunFile", () => {
 			pid: 4242,
 			executablePath: undefined,
 			workingDirectory: undefined,
-			message: "An AO daemon is already running, but it is not ready yet.",
+			message: "An Open Agents daemon is already running, but it is not ready yet.",
 			code: "not_ready",
 		});
 	});
@@ -209,13 +209,13 @@ describe("resolveDaemonFromRunFile", () => {
 				"3001:healthz": { status: "ok", service: DAEMON_SERVICE_NAME, pid: 4242 },
 				"3001:readyz": { status: "ready", service: DAEMON_SERVICE_NAME, pid: 4242, workingDirectory: "/other" },
 			}),
-			identityError: () => "Another AO daemon is already running from /other.",
+			identityError: () => "Another Open Agents daemon is already running from /other.",
 		});
 		expect(result).toMatchObject({
 			state: "error",
 			pid: 4242,
 			port: 3001,
-			message: "Another AO daemon is already running from /other.",
+			message: "Another Open Agents daemon is already running from /other.",
 		});
 	});
 
@@ -229,7 +229,7 @@ describe("resolveDaemonFromRunFile", () => {
 					status: "ready",
 					service: DAEMON_SERVICE_NAME,
 					pid: 4242,
-					executablePath: "/bin/ao",
+					executablePath: "/bin/open-agents",
 					workingDirectory: "/work/backend",
 				},
 			}),
@@ -239,7 +239,7 @@ describe("resolveDaemonFromRunFile", () => {
 			state: "ready",
 			port: 3037,
 			pid: 4242,
-			executablePath: "/bin/ao",
+			executablePath: "/bin/open-agents",
 			workingDirectory: "/work/backend",
 		});
 	});
@@ -264,7 +264,7 @@ describe("resolveDaemonFromPort", () => {
 					status: "ready",
 					service: DAEMON_SERVICE_NAME,
 					pid: 777,
-					executablePath: "/bin/ao",
+					executablePath: "/bin/open-agents",
 					workingDirectory: "/work",
 				},
 			}),
@@ -274,7 +274,7 @@ describe("resolveDaemonFromPort", () => {
 			state: "ready",
 			port: 3001,
 			pid: 777,
-			executablePath: "/bin/ao",
+			executablePath: "/bin/open-agents",
 			workingDirectory: "/work",
 		});
 	});
@@ -294,7 +294,7 @@ describe("resolveDaemonFromPort", () => {
 			pid: 777,
 			executablePath: undefined,
 			workingDirectory: undefined,
-			message: "An AO daemon is already running, but it is not ready yet.",
+			message: "An Open Agents daemon is already running, but it is not ready yet.",
 			code: "not_ready",
 		});
 	});
@@ -304,18 +304,18 @@ describe("resolveDaemonFromPort", () => {
 			expectedPort: 3001,
 			probe: fakeProbe({
 				"3001:healthz": { status: "ok", service: DAEMON_SERVICE_NAME, pid: 777 },
-				"3001:readyz": { status: "ready", service: DAEMON_SERVICE_NAME, pid: 777, executablePath: "/old/ao" },
+				"3001:readyz": { status: "ready", service: DAEMON_SERVICE_NAME, pid: 777, executablePath: "/old/open-agents" },
 			}),
 			identityError: (probe) =>
-				probe.executablePath === "/new/ao"
+				probe.executablePath === "/new/open-agents"
 					? null
-					: `Another AO daemon is already running from ${probe.executablePath}.`,
+					: `Another Open Agents daemon is already running from ${probe.executablePath}.`,
 		});
 		expect(result).toMatchObject({
 			state: "error",
 			port: 3001,
 			pid: 777,
-			message: "Another AO daemon is already running from /old/ao.",
+			message: "Another Open Agents daemon is already running from /old/open-agents.",
 		});
 	});
 
@@ -337,7 +337,7 @@ describe("end-to-end against a real daemon server", () => {
 	});
 
 	// Stand up a server on an ephemeral port. `service` lets us simulate a foreign
-	// (non-AO) server squatting on the port.
+	// (non-Open Agents) server squatting on the port.
 	function startServer(opts: {
 		pid: number;
 		service?: string;
@@ -438,7 +438,7 @@ describe("end-to-end against a real daemon server", () => {
 		expect(result).toBeNull();
 	});
 
-	it("does NOT attach to a foreign (non-AO) server squatting on the port", async () => {
+	it("does NOT attach to a foreign (non-Open Agents) server squatting on the port", async () => {
 		const port = await startServer({ pid: 1, service: "some-other-service" });
 		const result = await resolveDaemonFromPort({
 			expectedPort: port,
@@ -448,34 +448,34 @@ describe("end-to-end against a real daemon server", () => {
 		expect(result).toBeNull();
 	});
 
-	// A foreign AO daemon (correct service, wrong binary) serving the port. The
+	// A foreign Open Agents daemon (correct service, wrong binary) serving the port. The
 	// identity check must surface an error rather than silently attach — the same
 	// guard the run-file path enforces, now enforced on the port-probe path too.
-	it("surfaces an identity error for a foreign AO binary serving the port (does not silently attach)", async () => {
-		const port = await startServer({ pid: 909, executablePath: "/old/build/ao", workingDirectory: "/old/build" });
+	it("surfaces an identity error for a foreign Open Agents binary serving the port (does not silently attach)", async () => {
+		const port = await startServer({ pid: 909, executablePath: "/old/build/open-agents", workingDirectory: "/old/build" });
 		const result = await startupDecision({
 			runFileContents: null, // run-file diverged, so we reach the port probe
 			isProcessAlive: ALIVE,
 			expectedPort: port,
 			identityError: (probe) =>
-				probe.executablePath === "/expected/ao"
+				probe.executablePath === "/expected/open-agents"
 					? null
-					: `Another AO daemon is already running from ${probe.executablePath}.`,
+					: `Another Open Agents daemon is already running from ${probe.executablePath}.`,
 		});
 		expect(result).toMatchObject({
 			state: "error",
 			port,
 			pid: 909,
-			message: "Another AO daemon is already running from /old/build/ao.",
+			message: "Another Open Agents daemon is already running from /old/build/open-agents.",
 		});
 	});
 
-	// THE #367 SCENARIO: a standalone `ao daemon` is serving the port, but the
+	// THE #367 SCENARIO: a standalone `open-agents daemon` is serving the port, but the
 	// run-file diverges — here it names a DEAD pid (e.g. a stale handshake from a
 	// crashed launch). Pre-fix this fell through to spawn() and the Go child
 	// refused with exit 1. Post-fix the port probe attaches instead.
 	it("attaches when a daemon serves the port but the run-file names a dead pid", async () => {
-		const port = await startServer({ pid: 6060, executablePath: "/bin/ao" });
+		const port = await startServer({ pid: 6060, executablePath: "/bin/open-agents" });
 		const result = await startupDecision({
 			runFileContents: runFile(4242, port), // stale pid 4242 ...
 			isProcessAlive: DEAD, // ... which is no longer alive
@@ -485,7 +485,7 @@ describe("end-to-end against a real daemon server", () => {
 			state: "ready",
 			port,
 			pid: 6060, // attached to the daemon actually serving the port
-			executablePath: "/bin/ao",
+			executablePath: "/bin/open-agents",
 			workingDirectory: undefined,
 		});
 	});
@@ -505,7 +505,7 @@ describe("end-to-end against a real daemon server", () => {
 	it("still attaches via the run-file path when everything agrees (no regression)", async () => {
 		const port = await startServer({
 			pid: 4242,
-			executablePath: "/work/backend/ao",
+			executablePath: "/work/backend/open-agents",
 			workingDirectory: "/work/backend",
 		});
 		const result = await startupDecision({

@@ -1,4 +1,4 @@
-// Package commanddetail normalizes provider command metadata for AO's durable
+// Package commanddetail normalizes provider command metadata for Open Agents's durable
 // conversation activity contract.
 package commanddetail
 

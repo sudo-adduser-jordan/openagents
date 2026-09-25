@@ -4,7 +4,7 @@ import type { ReactElement } from "react";
 import { describe, expect, it, vi } from "vitest";
 import { ActivityRow, SteerMessage } from "./ChatTimelineItems";
 import type { ConversationActivity } from "../../types/conversation";
-import { aoBridge } from "../../lib/bridge";
+import { openAgentsBridge } from "../../lib/bridge";
 import { TooltipProvider } from "../ui/tooltip";
 
 function render(ui: ReactElement) {
@@ -70,7 +70,7 @@ describe("reasoning", () => {
 				})}
 			/>,
 		);
-		expect(screen.getByText(/longer than AO stores/i)).toBeInTheDocument();
+		expect(screen.getByText(/longer than Open Agents stores/i)).toBeInTheDocument();
 	});
 
 	// The default install sends the item with no body. A labelled empty row teaches
@@ -90,7 +90,7 @@ describe("MCP tool call", () => {
 		detail: {
 			server: "github",
 			toolName: "search_issues",
-			arguments: { repo: "aoagents/ao", state: "open" },
+			arguments: { repo: "sudo-adduser-jordan/open-agents", state: "open" },
 			result: { total: 2 },
 			success: true,
 		},
@@ -108,7 +108,7 @@ describe("MCP tool call", () => {
 		await userEvent.click(screen.getByRole("button"));
 		expect(screen.getByText("Arguments")).toBeInTheDocument();
 		expect(screen.getByText("Result")).toBeInTheDocument();
-		expect(screen.getByText(/aoagents\/ao/)).toBeInTheDocument();
+		expect(screen.getByText(/sudo-adduser-jordan\/open-agents/)).toBeInTheDocument();
 	});
 
 	it("reports a failed call as failed", () => {
@@ -153,7 +153,7 @@ describe("MCP tool call", () => {
 			/>,
 		);
 		await userEvent.click(screen.getByRole("button"));
-		expect(screen.getByText(/larger than AO stores/i)).toBeInTheDocument();
+		expect(screen.getByText(/larger than Open Agents stores/i)).toBeInTheDocument();
 		expect(screen.getByText(/2\.0 MB/)).toBeInTheDocument();
 	});
 
@@ -285,7 +285,7 @@ describe("steer message", () => {
 	it("shows the user's own words and says they landed mid-turn", () => {
 		render(
 			<SteerMessage
-				sessionId="ao-1"
+				sessionId="open-agents-1"
 				activity={activity({
 					activityKind: "system",
 					summary: "Skip the integration tests",
@@ -310,10 +310,10 @@ describe("provider error", () => {
 		turnId: "019ffd9d-714c-7d31-932f-4e7c10cf5a82",
 		willRetry: true,
 	});
-	// What AO persists: the Codex envelope, prefixed, in summary and detail.error.
+	// What Open Agents persists: the Codex envelope, prefixed, in summary and detail.error.
 	const stored = `provider error: ${envelope.length > 400 ? `${envelope.slice(0, 400)}…` : envelope}`;
 
-	it("unwraps the truncated prefixed payload AO actually stores", () => {
+	it("unwraps the truncated prefixed payload Open Agents actually stores", () => {
 		expect(envelope.length).toBeGreaterThan(400);
 		render(
 			<ActivityRow
@@ -362,7 +362,7 @@ describe("provider error", () => {
 
 	it("renders an arbitrary provider web URL literally and opens it externally", async () => {
 		const user = userEvent.setup();
-		const openExternal = vi.spyOn(aoBridge.app, "openExternal").mockResolvedValue(undefined);
+		const openExternal = vi.spyOn(openAgentsBridge.app, "openExternal").mockResolvedValue(undefined);
 		render(
 			<ActivityRow
 				activity={activity({
@@ -597,7 +597,7 @@ describe("file changes", () => {
 			/>,
 		);
 		await userEvent.click(screen.getByRole("button", { name: /Created/ }));
-		expect(screen.getByText(/longer than AO stores/i)).toBeInTheDocument();
+		expect(screen.getByText(/longer than Open Agents stores/i)).toBeInTheDocument();
 	});
 
 	// Rows written by earlier builds carry no status. The file is still drawn, as a

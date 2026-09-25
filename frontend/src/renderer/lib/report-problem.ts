@@ -1,4 +1,4 @@
-import { aoBridge } from "./bridge";
+import { openAgentsBridge } from "./bridge";
 import { routeSurface } from "./route-surface";
 
 export type ReportProblemOutput = "github" | "discord" | "email";
@@ -23,7 +23,7 @@ const REDACTED_LOCAL_PATH = "[redacted-local-path]";
 const REDACTED_LOCAL_URL = "[redacted-local-url]";
 const REDACTED_SECRET = "[redacted-secret]";
 const DISCORD_SUPPORT_URL = "https://discord.gg/WjKNa7EbB8";
-const GITHUB_NEW_ISSUE_URL = "https://github.com/Untrivial-ai/agent-orchestrator/issues/new";
+const GITHUB_NEW_ISSUE_URL = "https://github.com/sudo-adduser-jordan/open-agents/issues/new";
 const SUPPORT_EMAIL = "prasad@untrivial.ai";
 const SUPPORT_CC_EMAIL = "prateek@untrivial.ai";
 
@@ -57,8 +57,8 @@ export function sanitizeReportText(value: string): string {
 
 export async function collectReportProblemDiagnostics(now = new Date()): Promise<ReportProblemDiagnostics> {
 	const [versionResult, daemonResult] = await Promise.allSettled([
-		aoBridge.app.getVersion(),
-		aoBridge.daemon.getStatus(),
+		openAgentsBridge.app.getVersion(),
+		openAgentsBridge.daemon.getStatus(),
 	]);
 	const daemonStatus = daemonResult.status === "fulfilled" ? daemonResult.value : undefined;
 
@@ -83,7 +83,7 @@ export function formatReportProblemDraft(
 
 	if (output === "discord") {
 		return [
-			"**AO feedback**",
+			"**Open Agents feedback**",
 			`Summary: ${fields.summary}`,
 			`Details: ${fields.details}`,
 			"",
@@ -96,14 +96,14 @@ export function formatReportProblemDraft(
 		return [
 			`To: ${SUPPORT_EMAIL}`,
 			`Cc: ${SUPPORT_CC_EMAIL}`,
-			`Subject: AO feedback: ${fields.summary}`,
+			`Subject: Open Agents feedback: ${fields.summary}`,
 			"",
 			formatEmailBody(fields, diagnosticsBlock),
 		].join("\n");
 	}
 
 	return [
-		`# ${fields.summary === "Not provided" ? "AO feedback" : fields.summary}`,
+		`# ${fields.summary === "Not provided" ? "Open Agents feedback" : fields.summary}`,
 		"",
 		"## Summary",
 		fields.summary,
@@ -124,7 +124,7 @@ export function reportProblemDestinationUrl(
 ): string | null {
 	if (output === "discord") return DISCORD_SUPPORT_URL;
 	if (output === "email") {
-		const subject = `AO feedback: ${reportTitle(input)}`;
+		const subject = `Open Agents feedback: ${reportTitle(input)}`;
 		const body = formatEmailBody(normalizeInput(input), formatDiagnostics(diagnostics));
 		if (emailProvider === "gmail") {
 			const url = new URL("https://mail.google.com/mail/");
@@ -172,7 +172,7 @@ function normalizeInput(input: ReportProblemInput) {
 
 function formatEmailBody(fields: ReturnType<typeof normalizeInput>, diagnosticsBlock: string): string {
 	return [
-		"AO feedback",
+		"Open Agents feedback",
 		"",
 		`Summary: ${fields.summary}`,
 		"",
@@ -186,7 +186,7 @@ function formatEmailBody(fields: ReturnType<typeof normalizeInput>, diagnosticsB
 
 function reportTitle(input: ReportProblemInput): string {
 	const summary = valueOrPlaceholder(input.summary);
-	return summary === "Not provided" ? "AO feedback" : summary;
+	return summary === "Not provided" ? "Open Agents feedback" : summary;
 }
 
 function valueOrPlaceholder(value: string): string {
@@ -196,7 +196,7 @@ function valueOrPlaceholder(value: string): string {
 
 function formatDiagnostics(diagnostics: ReportProblemDiagnostics): string {
 	const lines = [
-		`AO version: ${sanitizeReportText(diagnostics.appVersion) || "unknown"}`,
+		`Open Agents version: ${sanitizeReportText(diagnostics.appVersion) || "unknown"}`,
 		`Build mode: ${sanitizeReportText(diagnostics.buildMode) || "unknown"}`,
 		`Platform: ${sanitizeReportText(diagnostics.platform) || "unknown"}`,
 		`Route surface: ${sanitizeReportText(diagnostics.routeSurface) || "unknown"}`,

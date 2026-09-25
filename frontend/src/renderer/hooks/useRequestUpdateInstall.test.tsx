@@ -7,7 +7,7 @@ import { workspaceQueryOptions } from "./useWorkspaceQuery";
 
 const { install, openPrompt, fetchWorkspaces } = vi.hoisted(() => ({ install: vi.fn(), openPrompt: vi.fn(), fetchWorkspaces: vi.fn() }));
 
-vi.mock("../lib/bridge", () => ({ aoBridge: { updates: { install } } }));
+vi.mock("../lib/bridge", () => ({ openAgentsBridge: { updates: { install } } }));
 vi.mock("../stores/ui-store", () => ({
 	useUiStore: (select: (state: { openUpdateInstallPrompt: () => void }) => unknown) =>
 		select({ openUpdateInstallPrompt: openPrompt }),
@@ -66,7 +66,7 @@ describe("useRequestUpdateInstall", () => {
 	});
 
 	it("confirms when the workspace list has not resolved", async () => {
-		// Unknown is not the same as safe: AO cannot rule out a live turn, so it
+		// Unknown is not the same as safe: Open Agents cannot rule out a live turn, so it
 		// asks rather than quitting out from under one.
 		await renderTrigger()();
 		expect(openPrompt).toHaveBeenCalledTimes(1);

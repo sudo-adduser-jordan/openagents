@@ -55,7 +55,7 @@ const phaseCopy: Record<SessionInterfaceTransition["phase"], string> = {
 };
 
 const targetStopUnconfirmedDetail =
-	"AO could not confirm the target controller stopped. Restart AO to retry shutdown before restoring the original interface.";
+	"Open Agents could not confirm the target controller stopped. Restart Open Agents to retry shutdown before restoring the original interface.";
 
 export function SessionInterfaceSwitchButton({
 	target,
@@ -189,7 +189,7 @@ export function SessionInterfaceSwitchDialog({
 						Switch to {targetName}?
 					</DialogTitle>
 					<DialogDescription className="pt-1 text-xs leading-5">
-						The same AO session, worktree, and agent-native conversation continue in the other interface.
+						The same Open Agents session, worktree, and agent-native conversation continue in the other interface.
 						Completed messages and tool work stay in the agent's context.
 					</DialogDescription>
 				</DialogHeader>
@@ -203,7 +203,7 @@ export function SessionInterfaceSwitchDialog({
 					>
 						<strong className="block text-sm font-medium text-foreground">Finish work, then switch</strong>
 						<span className="mt-1 block text-xs leading-5 text-muted-foreground">
-							Wait for the running turn and anything already queued to finish. New AO messages wait safely
+							Wait for the running turn and anything already queued to finish. New Open Agents messages wait safely
 							for {targetName}.
 						</span>
 					</button>
@@ -328,9 +328,9 @@ export function SessionInterfaceTransitionNotice({
 						(needsRestart
 							? targetStopUnconfirmedDetail
 							: recovered
-								? "AO restored the session in its last committed interface."
+								? "Open Agents restored the session in its last committed interface."
 								: transition.phase === "recovery_required"
-									? "Restart AO to reconcile this session before sending more work."
+									? "Restart Open Agents to reconcile this session before sending more work."
 									: "The original interface remains available. You can retry the switch.")}
 				</p>
 				{transition.phase === "failed" &&

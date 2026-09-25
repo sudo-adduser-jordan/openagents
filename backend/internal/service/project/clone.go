@@ -13,9 +13,9 @@ import (
 	"regexp"
 	"strings"
 
-	"github.com/aoagents/agent-orchestrator/backend/internal/domain"
-	"github.com/aoagents/agent-orchestrator/backend/internal/httpd/apierr"
-	aoprocess "github.com/aoagents/agent-orchestrator/backend/internal/process"
+	"github.com/sudo-adduser-jordan/open-agents/backend/internal/domain"
+	"github.com/sudo-adduser-jordan/open-agents/backend/internal/httpd/apierr"
+	openagentsprocess "github.com/sudo-adduser-jordan/open-agents/backend/internal/process"
 )
 
 var scpStyleGitURL = regexp.MustCompile(`^[^/@:\s]+@[^/:\s]+:(.+)$`)
@@ -28,7 +28,7 @@ var allowedCloneSchemes = map[string]struct{}{
 	"ssh":   {},
 }
 
-const clonePreparationMarker = ".ao-clone-prepared"
+const clonePreparationMarker = ".open-agents-clone-prepared"
 
 // Clone checks out one remote repository into a user-selected parent folder,
 // then registers it through the same Add boundary as an existing local repo.
@@ -41,7 +41,7 @@ func (m *Service) Clone(ctx context.Context, in CloneInput) (Project, error) {
 	}
 	if !repoHasCommit(ctx, prepared.Path) {
 		m.cleanupPreparedCloneAfterFailure(ctx, prepared)
-		return Project{}, apierr.Invalid("CLONE_EMPTY_REPOSITORY", "AO needs a repository with at least one commit.", nil)
+		return Project{}, apierr.Invalid("CLONE_EMPTY_REPOSITORY", "Open Agents needs a repository with at least one commit.", nil)
 	}
 
 	project, err := m.Add(ctx, AddInput{
@@ -136,11 +136,11 @@ func (m *Service) prepareClone(ctx context.Context, in CloneInput) (ClonePrepara
 	}
 
 	if err := os.MkdirAll(parent, 0o750); err != nil {
-		return ClonePreparationResult{}, apierr.Invalid("CLONE_DESTINATION_UNAVAILABLE", "AO could not create the destination folder.", nil)
+		return ClonePreparationResult{}, apierr.Invalid("CLONE_DESTINATION_UNAVAILABLE", "Open Agents could not create the destination folder.", nil)
 	}
-	temporaryPath, err := os.MkdirTemp(parent, ".ao-clone-")
+	temporaryPath, err := os.MkdirTemp(parent, ".open-agents-clone-")
 	if err != nil {
-		return ClonePreparationResult{}, apierr.Invalid("CLONE_DESTINATION_UNAVAILABLE", "AO could not prepare the selected clone destination.", nil)
+		return ClonePreparationResult{}, apierr.Invalid("CLONE_DESTINATION_UNAVAILABLE", "Open Agents could not prepare the selected clone destination.", nil)
 	}
 	cleanupPath := temporaryPath
 	defer func() {
@@ -149,7 +149,7 @@ func (m *Service) prepareClone(ctx context.Context, in CloneInput) (ClonePrepara
 		}
 	}()
 
-	cmd := aoprocess.CommandContext(ctx, "git", "clone", "--origin", "origin", "--", remoteURL, temporaryPath)
+	cmd := openagentsprocess.CommandContext(ctx, "git", "clone", "--origin", "origin", "--", remoteURL, temporaryPath)
 	cmd.Env = append(os.Environ(), "GIT_TERMINAL_PROMPT=0", "GCM_INTERACTIVE=Never")
 	if err := cmd.Run(); err != nil {
 		var executableError *exec.Error
@@ -166,10 +166,10 @@ func (m *Service) prepareClone(ctx context.Context, in CloneInput) (ClonePrepara
 	}
 	preparationID, err := newClonePreparationID()
 	if err != nil {
-		return ClonePreparationResult{}, apierr.Internal("CLONE_PREPARATION_FAILED", "AO could not identify the prepared clone")
+		return ClonePreparationResult{}, apierr.Internal("CLONE_PREPARATION_FAILED", "Open Agents could not identify the prepared clone")
 	}
 	if err := os.WriteFile(filepath.Join(temporaryPath, ".git", clonePreparationMarker), []byte(preparationID+"\n"), 0o600); err != nil {
-		return ClonePreparationResult{}, apierr.Invalid("CLONE_PREPARATION_FAILED", "AO could not mark the prepared clone for cleanup.", nil)
+		return ClonePreparationResult{}, apierr.Invalid("CLONE_PREPARATION_FAILED", "Open Agents could not mark the prepared clone for cleanup.", nil)
 	}
 	if err := os.Rename(temporaryPath, target); err != nil {
 		return ClonePreparationResult{}, apierr.Conflict("CLONE_DESTINATION_EXISTS", "The clone destination became unavailable before the repository could be created.", map[string]any{"path": target})

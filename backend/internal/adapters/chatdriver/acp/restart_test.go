@@ -8,13 +8,13 @@ import (
 	"testing"
 	"time"
 
-	"github.com/aoagents/agent-orchestrator/backend/internal/domain"
-	"github.com/aoagents/agent-orchestrator/backend/internal/ports"
+	"github.com/sudo-adduser-jordan/open-agents/backend/internal/domain"
+	"github.com/sudo-adduser-jordan/open-agents/backend/internal/ports"
 )
 
 func restartFixture(t *testing.T, env map[string]string) (Config, ports.ChatStartConfig) {
 	t.Helper()
-	env["AO_TEST_PERSISTENT_ACP_PROVIDER"] = "1"
+	env["OPEN_AGENTS_TEST_PERSISTENT_ACP_PROVIDER"] = "1"
 	cfg := Config{
 		Harness: domain.HarnessOpenCode,
 		Launch: func(context.Context, LaunchConfig) (Launch, error) {
@@ -29,7 +29,7 @@ func restartFixture(t *testing.T, env map[string]string) (Config, ports.ChatStar
 }
 
 func TestPersistentACPFailedPromptAcknowledgementAllowsNextTurn(t *testing.T) {
-	cfg, start := restartFixture(t, map[string]string{"AO_TEST_PERSISTENT_ACP_ERROR": "1"})
+	cfg, start := restartFixture(t, map[string]string{"OPEN_AGENTS_TEST_PERSISTENT_ACP_ERROR": "1"})
 	conv, err := New(cfg, nil).Start(context.Background(), start)
 	if err != nil {
 		t.Fatal(err)
@@ -66,7 +66,7 @@ func TestPersistentACPFailedPromptAcknowledgementAllowsNextTurn(t *testing.T) {
 }
 
 func TestPersistentACPSetupFailureReleasesNewHost(t *testing.T) {
-	env := map[string]string{"AO_TEST_PERSISTENT_ACP_BAD_SETUP": "1"}
+	env := map[string]string{"OPEN_AGENTS_TEST_PERSISTENT_ACP_BAD_SETUP": "1"}
 	cfg, start := restartFixture(t, env)
 	if _, err := New(cfg, nil).Start(context.Background(), start); err == nil {
 		t.Fatal("invalid session/new response accepted")
@@ -83,7 +83,7 @@ func TestPersistentACPSetupFailureReleasesNewHost(t *testing.T) {
 		}
 		time.Sleep(time.Millisecond)
 	}
-	delete(env, "AO_TEST_PERSISTENT_ACP_BAD_SETUP")
+	delete(env, "OPEN_AGENTS_TEST_PERSISTENT_ACP_BAD_SETUP")
 	conv, err := New(cfg, nil).Start(context.Background(), start)
 	if err != nil {
 		t.Fatalf("fresh retry: %v", err)

@@ -4,7 +4,7 @@ import { useUpdateStatus } from "./useUpdateStatus";
 import type { UpdateStatus } from "../../main/update-settings";
 
 const { getStatus, onStatus } = vi.hoisted(() => ({ getStatus: vi.fn(), onStatus: vi.fn() }));
-vi.mock("../lib/bridge", () => ({ aoBridge: { updates: { getStatus, onStatus } } }));
+vi.mock("../lib/bridge", () => ({ openAgentsBridge: { updates: { getStatus, onStatus } } }));
 
 function Probe() {
 	const status = useUpdateStatus();

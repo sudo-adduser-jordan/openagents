@@ -4,8 +4,8 @@ import (
 	"context"
 	"maps"
 
-	"github.com/aoagents/agent-orchestrator/backend/internal/domain"
-	"github.com/aoagents/agent-orchestrator/backend/internal/ports"
+	"github.com/sudo-adduser-jordan/open-agents/backend/internal/domain"
+	"github.com/sudo-adduser-jordan/open-agents/backend/internal/ports"
 )
 
 // Keep ancestor rows where they were originally recorded. Only a provider-proven
@@ -67,7 +67,7 @@ func (s *Service) withoutInheritedHistory(ctx context.Context, provider ports.Ch
 }
 
 func omitCopiedPrefix(events, mapped []ports.ChatEvent, rows ConversationRows) []ports.ChatEvent {
-	// Approval/input records belong to AO's interaction history, not the native
+	// Approval/input records belong to Open Agents's interaction history, not the native
 	// transcript. Keep those rows, but do not require Codex to replay them.
 	activities := make([]domain.ConversationActivity, 0, len(rows.Activities))
 	for _, activity := range rows.Activities {

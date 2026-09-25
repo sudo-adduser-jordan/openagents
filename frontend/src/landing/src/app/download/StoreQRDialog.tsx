@@ -18,12 +18,12 @@ const COPY: Record<
   { title: string; body: string; action: string }
 > = {
   ios: {
-    title: "Get AO Mobile on iPhone",
+    title: "Get Open Agents Mobile on iPhone",
     body: "Scan with your phone's camera to open the App Store.",
     action: "Open the App Store",
   },
   android: {
-    title: "Get AO Mobile on Android",
+    title: "Get Open Agents Mobile on Android",
     body: "Scan with your phone's camera to open Google Play.",
     action: "Open Google Play",
   },

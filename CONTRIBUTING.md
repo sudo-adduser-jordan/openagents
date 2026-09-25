@@ -26,7 +26,7 @@ Non-trivial work? Comment on the issue or ping Discord first. Get a thumbs-up, t
 
 1. **Join Discord** — say hi and get guidance
 2. **Read the contract** — [AGENTS.md](AGENTS.md) (layout, commands, hard rules, PR hygiene); [docs/documentation-map.md](docs/documentation-map.md) explains which docs are contracts and which are prose
-3. **Pick something focused** — [open issues](https://github.com/AgentWrapper/agent-orchestrator/issues); prefer `good-first-issue` / `help wanted`
+3. **Pick something focused** — [open issues](https://github.com/sudo-adduser-jordan/open-agents/issues); prefer `good-first-issue` / `help wanted`
 4. **Claim it** — comment `I'd like to work on this` and wait for assignment
 5. **Open a clear PR** — narrow change, link the issue, user-visible impact, tests
 6. **Iterate** — address review; maintainers merge
@@ -42,9 +42,9 @@ Two onboarding notes matter on current `main`:
 
 ### Bugs and features
 
-Use the [GitHub issue forms](https://github.com/Untrivial-ai/agent-orchestrator/issues/new/choose) for bugs and feature requests. For bugs, only a description is required. Write a short, concrete report in your own words: what you did and what went wrong. When available, add what you expected, steps to reproduce, how often it happens, AO version and OS, or screenshots/a recording. You can report an intermittent bug even if you cannot reproduce it reliably.
+Use the [GitHub issue forms](https://github.com/sudo-adduser-jordan/open-agents/issues/new/choose) for bugs and feature requests. For bugs, only a description is required. Write a short, concrete report in your own words: what you did and what went wrong. When available, add what you expected, steps to reproduce, how often it happens, Open Agents version and OS, or screenshots/a recording. You can report an intermittent bug even if you cannot reproduce it reliably.
 
-Search existing issues when possible; add your observations to a matching issue. Submit from your own GitHub account so maintainers can follow up with the person who experienced the problem. Please don't ask AO Bot to file reports on your behalf.
+Search existing issues when possible; add your observations to a matching issue. Submit from your own GitHub account so maintainers can follow up with the person who experienced the problem. Please don't ask Open Agents Bot to file reports on your behalf.
 
 Agent assistance is welcome. We recommend asking your local coding agent to use the [bug-triage skill](.agents/skills/bug-triage/SKILL.md) to ask useful follow-up questions and gather supporting evidence. The issue body should contain only observations you supplied, without invented steps, impact, or root-cause claims. Keep agent-collected logs, relevant database excerpts, and analysis in separate, clearly labeled attachments; remove secrets and unrelated personal data before sharing. Evidence and screenshots are optional, and can be added later.
 
@@ -67,4 +67,4 @@ Also follow **PR hygiene** in [AGENTS.md](AGENTS.md): branch from `main`, one is
 
 Be respectful, constructive, and assume good intent. Report problems to maintainers via Discord DM.
 
-Thanks for making agent-orchestrator better for the next person who shows up.
+Thanks for making open-agents better for the next person who shows up.

@@ -1,10 +1,10 @@
 //go:build e2e
 
-// Package cli_test holds the end-to-end suite for the `ao` CLI. It builds the
+// Package cli_test holds the end-to-end suite for the `open-agents` CLI. It builds the
 // real binary and drives it (start/status/doctor/stop + the daemon-control HTTP
 // surface) against fully isolated state — a per-test temp run-file, data dir,
 // and an OS-assigned free loopback port — so it never touches a developer's real
-// AO install. Unlike the Linux-only container smoke test, this runs natively on
+// Open Agents install. Unlike the Linux-only container smoke test, this runs natively on
 // every OS in CI (ubuntu/macos/windows), which is the only way to exercise the
 // unix setsid vs Windows CREATE_NEW_PROCESS_GROUP detach paths and the per-OS
 // os.UserConfigDir resolution.
@@ -29,23 +29,23 @@ import (
 	"time"
 )
 
-// aoBin is the path to the binary built once for the whole suite.
-var aoBin string
+// openAgentsBin is the path to the binary built once for the whole suite.
+var openAgentsBin string
 
 func TestMain(m *testing.M) {
-	dir, err := os.MkdirTemp("", "ao-e2e-bin")
+	dir, err := os.MkdirTemp("", "open-agents-e2e-bin")
 	if err != nil {
 		fmt.Fprintln(os.Stderr, "e2e: mktemp:", err)
 		os.Exit(1)
 	}
-	aoBin = filepath.Join(dir, "ao")
+	openAgentsBin = filepath.Join(dir, "open-agents")
 	if runtime.GOOS == "windows" {
-		aoBin += ".exe"
+		openAgentsBin += ".exe"
 	}
-	build := exec.Command("go", "build", "-o", aoBin, "github.com/aoagents/agent-orchestrator/backend/cmd/ao")
+	build := exec.Command("go", "build", "-o", openAgentsBin, "github.com/sudo-adduser-jordan/open-agents/backend/cmd/open-agents")
 	build.Stdout, build.Stderr = os.Stderr, os.Stderr
 	if err := build.Run(); err != nil {
-		fmt.Fprintln(os.Stderr, "e2e: build ao:", err)
+		fmt.Fprintln(os.Stderr, "e2e: build open-agents:", err)
 		os.Exit(1)
 	}
 	code := m.Run()
@@ -71,13 +71,13 @@ func newEnv(t *testing.T) env {
 }
 
 // environ builds the child env: the ambient environment with every inherited
-// AO_* var stripped (so a real daemon's AO_PORT can't leak in) plus our isolated
-// settings. portOverride, when non-empty, replaces the numeric AO_PORT — used to
+// OPEN_AGENTS_* var stripped (so a real daemon's OPEN_AGENTS_PORT can't leak in) plus our isolated
+// settings. portOverride, when non-empty, replaces the numeric OPEN_AGENTS_PORT — used to
 // inject an invalid value.
 func (e env) environ(portOverride string) []string {
 	out := make([]string, 0, len(os.Environ())+3)
 	for _, kv := range os.Environ() {
-		if strings.HasPrefix(kv, "AO_") {
+		if strings.HasPrefix(kv, "OPEN_AGENTS_") {
 			continue
 		}
 		if strings.HasPrefix(kv, "GITHUB_TOKEN=") || strings.HasPrefix(kv, "GH_TOKEN=") || strings.HasPrefix(kv, "GH_CONFIG_DIR=") {
@@ -89,7 +89,7 @@ func (e env) environ(portOverride string) []string {
 	if portOverride != "" {
 		port = portOverride
 	}
-	return append(out, "AO_RUN_FILE="+e.runFile, "AO_DATA_DIR="+e.dataDir, "AO_PORT="+port, "GH_CONFIG_DIR="+filepath.Join(e.dataDir, "gh-config"))
+	return append(out, "OPEN_AGENTS_RUN_FILE="+e.runFile, "OPEN_AGENTS_DATA_DIR="+e.dataDir, "OPEN_AGENTS_PORT="+port, "GH_CONFIG_DIR="+filepath.Join(e.dataDir, "gh-config"))
 }
 
 func freePort(t *testing.T) int {
@@ -102,7 +102,7 @@ func freePort(t *testing.T) int {
 	return l.Addr().(*net.TCPAddr).Port
 }
 
-// run executes `ao args...` in env e and returns combined output + exit code.
+// run executes `open-agents args...` in env e and returns combined output + exit code.
 func (e env) run(t *testing.T, args ...string) (string, int) {
 	t.Helper()
 	return e.runEnv(t, e.environ(""), args...)
@@ -110,7 +110,7 @@ func (e env) run(t *testing.T, args ...string) (string, int) {
 
 func (e env) runEnv(t *testing.T, environ []string, args ...string) (string, int) {
 	t.Helper()
-	cmd := exec.Command(aoBin, args...)
+	cmd := exec.Command(openAgentsBin, args...)
 	cmd.Env = environ
 	b, err := cmd.CombinedOutput()
 	out := string(b)
@@ -123,7 +123,7 @@ func (e env) runEnv(t *testing.T, environ []string, args ...string) (string, int
 			t.Fatalf("run %v: %v\n%s", args, err, out)
 		}
 	}
-	t.Logf("$ ao %s\n%s(exit %d)", strings.Join(args, " "), out, code)
+	t.Logf("$ open-agents %s\n%s(exit %d)", strings.Join(args, " "), out, code)
 	return out, code
 }
 
@@ -135,15 +135,15 @@ func asExit(err error, target **exec.ExitError) bool {
 	return false
 }
 
-// startDaemon brings the daemon up and registers a stop on cleanup. `ao start`
+// startDaemon brings the daemon up and registers a stop on cleanup. `open-agents start`
 // no longer spawns the daemon (the desktop app owns it now), so the e2e suite
-// drives the hidden `ao daemon` command directly and polls for readiness.
+// drives the hidden `open-agents daemon` command directly and polls for readiness.
 func (e env) startDaemon(t *testing.T) {
 	t.Helper()
-	cmd := exec.Command(aoBin, "daemon")
+	cmd := exec.Command(openAgentsBin, "daemon")
 	cmd.Env = e.environ("")
 	if err := cmd.Start(); err != nil {
-		t.Fatalf("spawn ao daemon: %v", err)
+		t.Fatalf("spawn open-agents daemon: %v", err)
 	}
 	waitDone := make(chan error, 1)
 	go func() { waitDone <- cmd.Wait() }()
@@ -154,10 +154,10 @@ func (e env) startDaemon(t *testing.T) {
 			return
 		case <-time.After(5 * time.Second):
 		}
-		// The daemon did not exit on `ao stop` within the timeout: a shutdown
+		// The daemon did not exit on `open-agents stop` within the timeout: a shutdown
 		// regression is hiding behind a green test. Fail, force-kill, and wait
 		// for the child to be reaped so it cannot survive the test.
-		t.Errorf("daemon process did not exit within 5s of `ao stop`; forcing kill")
+		t.Errorf("daemon process did not exit within 5s of `open-agents stop`; forcing kill")
 		_ = cmd.Process.Kill()
 		<-waitDone
 	})
@@ -223,8 +223,8 @@ func TestE2E_DoctorDoesNotTouchTheStore(t *testing.T) {
 	mustContain(t, out, "database not created yet") // sqlite WARN, never migrated
 
 	// doctor must NOT create/migrate the DB — the daemon is the sole writer.
-	if _, err := os.Stat(filepath.Join(e.dataDir, "ao.db")); err == nil {
-		t.Fatal("doctor created ao.db; the CLI must not open/migrate the store")
+	if _, err := os.Stat(filepath.Join(e.dataDir, "open-agents.db")); err == nil {
+		t.Fatal("doctor created open-agents.db; the CLI must not open/migrate the store")
 	}
 
 	if out, code := e.run(t, "doctor", "--json"); code != 0 || !strings.Contains(out, `"ok": true`) {
@@ -255,15 +255,15 @@ func TestE2E_Lifecycle(t *testing.T) {
 	mustContain(t, out, fmt.Sprintf(`"port": %d`, e.port))
 
 	// the daemon (not the CLI) has created + migrated the store
-	if _, err := os.Stat(filepath.Join(e.dataDir, "ao.db")); err != nil {
-		t.Fatalf("daemon should have created ao.db: %v", err)
+	if _, err := os.Stat(filepath.Join(e.dataDir, "open-agents.db")); err != nil {
+		t.Fatalf("daemon should have created open-agents.db: %v", err)
 	}
 	out, _ = e.run(t, "doctor")
 	mustContain(t, out, "migrations are applied by the daemon")
 
 	// /healthz identity
 	body := httpGet(t, e.port, "/healthz")
-	mustContain(t, body, "agent-orchestrator-daemon")
+	mustContain(t, body, "open-agents-daemon")
 
 	if out, code := e.run(t, "stop"); code != 0 || !strings.Contains(out, "stopped") {
 		t.Fatalf("stop: exit %d, out %s", code, out)
@@ -326,7 +326,7 @@ func TestE2E_ExitCodes(t *testing.T) {
 	}
 	// invalid config is a runtime error (1), not a usage error (2).
 	if _, code := e.runEnv(t, e.environ("notaport"), "status"); code != 1 {
-		t.Fatalf("invalid AO_PORT exit %d, want 1", code)
+		t.Fatalf("invalid OPEN_AGENTS_PORT exit %d, want 1", code)
 	}
 }
 

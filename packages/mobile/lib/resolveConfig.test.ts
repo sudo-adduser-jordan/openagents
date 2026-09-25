@@ -20,10 +20,9 @@ const host = (over: Partial<Host> = {}): Host => ({
 	endpoints: [lan, tunnel], token: "pw", lastConnected: 2, ...over,
 });
 
-const legacy: ServerConfig = { ...DEFAULT_CONFIG, host: "10.0.0.9", httpPort: "3011", password: "old" };
+const stored: ServerConfig = { ...DEFAULT_CONFIG, host: "10.0.0.9", httpPort: "3011", password: "stored" };
 
 const deps = (over: Record<string, unknown> = {}) => ({
-	migrate: vi.fn(async () => {}),
 	activeHost: vi.fn(async () => host()),
 	connect: vi.fn(async (id: string) => ({
 		ok: true as const,
@@ -31,7 +30,7 @@ const deps = (over: Record<string, unknown> = {}) => ({
 		endpoint: lan,
 		hostId: id,
 	})),
-	loadLegacyConfig: vi.fn(async () => legacy),
+	loadStoredConfig: vi.fn(async () => stored),
 	persist: vi.fn(async () => {}),
 	...over,
 });
@@ -65,22 +64,6 @@ describe("resolveActiveConfig", () => {
 
 		expect(d.connect).toHaveBeenCalledWith("h_chosen");
 		expect(got?.host).toBe("192.168.1.42");
-	});
-
-	// Migration runs first, so a user upgrading from the single-server config
-	// has their machine in the list before we look for one.
-	it("migrates an old pairing before looking for machines", async () => {
-		const order: string[] = [];
-		const d = deps({
-			migrate: vi.fn(async () => void order.push("migrate")),
-			activeHost: vi.fn(async () => {
-				order.push("load");
-				return host();
-			}),
-		});
-		await resolveActiveConfig(d);
-
-		expect(order).toEqual(["migrate", "load"]);
 	});
 
 	// The safety net. If the race cannot reach the machine we must still hand

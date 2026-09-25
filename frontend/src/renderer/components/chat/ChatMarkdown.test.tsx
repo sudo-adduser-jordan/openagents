@@ -1,7 +1,7 @@
 import { fireEvent, render, screen, waitFor } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { beforeEach, describe, expect, it, vi } from "vitest";
-import { aoBridge } from "../../lib/bridge";
+import { openAgentsBridge } from "../../lib/bridge";
 import { renderMermaidDiagram } from "../../lib/mermaid-diagram";
 import { ActivityTitle, ChatLinkProvider, ChatMarkdown } from "./ChatMarkdown";
 
@@ -47,7 +47,7 @@ describe("ChatMarkdown", () => {
 		expect(boxes).toHaveLength(2);
 		expect(boxes[0]!.checked).toBe(true);
 		expect(boxes[1]!.checked).toBe(false);
-		// Clicking must not imply AO can rewrite the agent's plan.
+		// Clicking must not imply Open Agents can rewrite the agent's plan.
 		expect(boxes[0]!.readOnly).toBe(true);
 	});
 
@@ -92,16 +92,16 @@ describe("ChatMarkdown", () => {
 		expect(code).toHaveClass("text-markdown-code");
 	});
 
-	it("uses the AO logo colour for file paths and inline notation", () => {
+	it("uses the Open Agents logo colour for file paths and inline notation", () => {
 		render(
 			<ChatMarkdown
-				text={"See `backend/internal/adapters/agent/` and then pass `--resume` to `ao`."}
+				text={"See `backend/internal/adapters/agent/` and then pass `--resume` to `open-agents`."}
 			/>,
 		);
 
 		expect(screen.getByText("backend/internal/adapters/agent/")).toHaveClass("text-markdown-code");
 		expect(screen.getByText("--resume")).toHaveClass("text-markdown-code");
-		expect(screen.getByText("ao")).toHaveClass("text-markdown-code");
+		expect(screen.getByText("open-agents")).toHaveClass("text-markdown-code");
 	});
 
 	it("recognizes standalone filenames and paths with line locations", () => {
@@ -128,10 +128,10 @@ describe("ChatMarkdown", () => {
 		expect(link.getAttribute("rel")).toContain("noreferrer");
 	});
 
-	it("routes a plain web-link click to the AO Browser handler", async () => {
+	it("routes a plain web-link click to the Open Agents Browser handler", async () => {
 		const user = userEvent.setup();
 		const onLinkOpen = vi.fn();
-		const openExternal = vi.spyOn(aoBridge.app, "openExternal").mockResolvedValue(undefined);
+		const openExternal = vi.spyOn(openAgentsBridge.app, "openExternal").mockResolvedValue(undefined);
 		renderWithLinkHandler("see [the issue](https://example.com/i/1)", onLinkOpen);
 
 		await user.click(screen.getByRole("link", { name: "the issue" }));
@@ -141,10 +141,10 @@ describe("ChatMarkdown", () => {
 		openExternal.mockRestore();
 	});
 
-	it("routes workspace file clicks to the AO Browser handler", async () => {
+	it("routes workspace file clicks to the Open Agents Browser handler", async () => {
 		const user = userEvent.setup();
 		const onLinkOpen = vi.fn();
-		const openExternal = vi.spyOn(aoBridge.app, "openExternal").mockResolvedValue(undefined);
+		const openExternal = vi.spyOn(openAgentsBridge.app, "openExternal").mockResolvedValue(undefined);
 		renderWithLinkHandler("see [test-ui-2.html](test-ui-2.html)", onLinkOpen, ["test-ui-2.html"]);
 
 		await user.click(screen.getByRole("link", { name: "test-ui-2.html" }));
@@ -156,7 +156,7 @@ describe("ChatMarkdown", () => {
 
 	it("opens a web link in the system browser on Option/Alt-click", () => {
 		const onLinkOpen = vi.fn();
-		const openExternal = vi.spyOn(aoBridge.app, "openExternal").mockResolvedValue(undefined);
+		const openExternal = vi.spyOn(openAgentsBridge.app, "openExternal").mockResolvedValue(undefined);
 		renderWithLinkHandler("see [the issue](https://example.com/i/1)", onLinkOpen);
 
 		fireEvent.click(screen.getByRole("link", { name: "the issue" }), { altKey: true });
@@ -168,7 +168,7 @@ describe("ChatMarkdown", () => {
 
 	it("opens a web link in the system browser on Cmd-click", () => {
 		const onLinkOpen = vi.fn();
-		const openExternal = vi.spyOn(aoBridge.app, "openExternal").mockResolvedValue(undefined);
+		const openExternal = vi.spyOn(openAgentsBridge.app, "openExternal").mockResolvedValue(undefined);
 		renderWithLinkHandler("see [the issue](https://example.com/i/1)", onLinkOpen);
 
 		fireEvent.click(screen.getByRole("link", { name: "the issue" }), { metaKey: true });
@@ -180,7 +180,7 @@ describe("ChatMarkdown", () => {
 
 	it("opens a web link in the system browser on Ctrl-click", () => {
 		const onLinkOpen = vi.fn();
-		const openExternal = vi.spyOn(aoBridge.app, "openExternal").mockResolvedValue(undefined);
+		const openExternal = vi.spyOn(openAgentsBridge.app, "openExternal").mockResolvedValue(undefined);
 		renderWithLinkHandler("see [the issue](https://example.com/i/1)", onLinkOpen);
 
 		fireEvent.click(screen.getByRole("link", { name: "the issue" }), { ctrlKey: true });
@@ -193,7 +193,7 @@ describe("ChatMarkdown", () => {
 	it("offers 'Open in external browser' on right-click, without opening in the panel", async () => {
 		const user = userEvent.setup();
 		const onLinkOpen = vi.fn();
-		const openExternal = vi.spyOn(aoBridge.app, "openExternal").mockResolvedValue(undefined);
+		const openExternal = vi.spyOn(openAgentsBridge.app, "openExternal").mockResolvedValue(undefined);
 		renderWithLinkHandler("see [the issue](https://example.com/i/1)", onLinkOpen);
 
 		fireEvent.contextMenu(screen.getByRole("link", { name: "the issue" }));
@@ -206,7 +206,7 @@ describe("ChatMarkdown", () => {
 
 	it("offers 'Copy link' on right-click", async () => {
 		const user = userEvent.setup();
-		const writeText = vi.spyOn(aoBridge.clipboard, "writeText").mockResolvedValue(undefined);
+		const writeText = vi.spyOn(openAgentsBridge.clipboard, "writeText").mockResolvedValue(undefined);
 		renderWithLinkHandler("see [the issue](https://example.com/i/1)", vi.fn());
 
 		fireEvent.contextMenu(screen.getByRole("link", { name: "the issue" }));
@@ -229,7 +229,7 @@ describe("ChatMarkdown", () => {
 	it("opens non-web links in the system browser", async () => {
 		const user = userEvent.setup();
 		const onLinkOpen = vi.fn();
-		const openExternal = vi.spyOn(aoBridge.app, "openExternal").mockResolvedValue(undefined);
+		const openExternal = vi.spyOn(openAgentsBridge.app, "openExternal").mockResolvedValue(undefined);
 		renderWithLinkHandler("[Email support](mailto:support@example.com)", onLinkOpen);
 
 		await user.click(screen.getByRole("link", { name: "Email support" }));
@@ -279,8 +279,8 @@ describe("ChatMarkdown", () => {
 	it("renders a fence with no language as a block, not as inline code", () => {
 		// Matching on the `language-*` class alone used to send these down the inline
 		// path, where a whole `go test` transcript rendered as one accent-coloured run.
-		render(<ChatMarkdown text={"```\nok\tgithub.com/aoagents/ao\t0.4s\n```"} />);
-		const code = screen.getByText(/aoagents/);
+		render(<ChatMarkdown text={"```\nok\tgithub.com/sudo-adduser-jordan/open-agents\t0.4s\n```"} />);
+		const code = screen.getByText(/sudo-adduser-jordan/);
 		expect(code.closest("pre")).not.toBeNull();
 		expect(screen.getByRole("button", { name: /copy code/i })).toBeInTheDocument();
 	});

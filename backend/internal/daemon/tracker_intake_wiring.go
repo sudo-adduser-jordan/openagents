@@ -4,10 +4,10 @@ import (
 	"context"
 	"log/slog"
 
-	trackerintake "github.com/aoagents/agent-orchestrator/backend/internal/observe/trackerintake"
-	"github.com/aoagents/agent-orchestrator/backend/internal/ports"
-	sessionsvc "github.com/aoagents/agent-orchestrator/backend/internal/service/session"
-	"github.com/aoagents/agent-orchestrator/backend/internal/storage/sqlite"
+	trackerintake "github.com/sudo-adduser-jordan/open-agents/backend/internal/observe/trackerintake"
+	"github.com/sudo-adduser-jordan/open-agents/backend/internal/ports"
+	sessionsvc "github.com/sudo-adduser-jordan/open-agents/backend/internal/service/session"
+	"github.com/sudo-adduser-jordan/open-agents/backend/internal/storage/sqlite"
 )
 
 // startTrackerIntake wires the opt-in issue-intake loop. The observer always

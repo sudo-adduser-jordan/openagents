@@ -2,7 +2,7 @@
  * Daemon-owned user preferences.
  *
  * Read from and written to the daemon rather than held in the renderer, because
- * `ao spawn`, mobile, and headless spawns resolve the same value. A preference
+ * `open-agents spawn`, mobile, and headless spawns resolve the same value. A preference
  * kept in one client would look correct in Settings and disagree with the others.
  */
 
@@ -23,7 +23,7 @@ export function useSettings() {
 	const query = useQuery({
 		queryKey: settingsQueryKey,
 		// Settings must recover from a transient startup failure. The daemon
-		// can still be booting on first fetch ("AO daemon is starting");
+		// can still be booting on first fetch ("Open Agents daemon is starting");
 		// without a refetch the settings stay stale until a manual reload.
 		// Poll like the workspace query so it self-heals once the daemon is ready.
 		refetchInterval: 15_000,

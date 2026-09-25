@@ -158,7 +158,7 @@ function toLocalWorkspaceSession(
 }
 
 // e2e seam (dev:web only): the Playwright fake-agent harness injects
-// `window.__aoFakeAgent` (see e2e/support/fake-bridge.ts) to drive a
+// `window.__openAgentsFakeAgent` (see e2e/support/fake-bridge.ts) to drive a
 // deterministic, mutable session timeline off the SSE refetch path. Compiled
 // out of the packaged build — the packaged renderer never sets VITE_NO_ELECTRON
 // and always hits the real daemon.
@@ -168,12 +168,12 @@ async function fetchWorkspaces(): Promise<WorkspaceSummary[]> {
 	if (usesPreviewWorkspaceData) {
 		const fake =
 			typeof window !== "undefined"
-				? (window as unknown as { __aoFakeAgent?: FakeAgentSeam }).__aoFakeAgent
+				? (window as unknown as { __openAgentsFakeAgent?: FakeAgentSeam }).__openAgentsFakeAgent
 				: undefined;
 		return fake ? fake.snapshot() : mockWorkspaces;
 	}
 	if (!hasTrustedApiBaseUrl()) {
-		throw new Error("AO daemon API is not ready");
+		throw new Error("Open Agents daemon API is not ready");
 	}
 
 	const [{ data: projectsData, error: projectsError }, { data: sessionsData, error: sessionsError }] =

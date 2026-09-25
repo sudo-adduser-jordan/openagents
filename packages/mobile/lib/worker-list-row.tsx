@@ -118,7 +118,7 @@ export function WorkerListRow({
 	const contextActions = workerContextActions({
 		pinned: Boolean(session.isPinned),
 		terminated,
-		// A live session whose agent has stopped: exited or crashed, but the AO
+		// A live session whose agent has stopped: exited or crashed, but the Open Agents
 		// session around it is still intact, so resuming is the lighter fix.
 		stopped: !terminated && (session.status === "exited" || session.status === "errored"),
 		hasPr: Boolean(prUrl),

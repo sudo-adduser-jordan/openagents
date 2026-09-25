@@ -5,8 +5,8 @@ import (
 	"testing"
 	"time"
 
-	"github.com/aoagents/agent-orchestrator/backend/internal/domain"
-	"github.com/aoagents/agent-orchestrator/backend/internal/ports"
+	"github.com/sudo-adduser-jordan/open-agents/backend/internal/domain"
+	"github.com/sudo-adduser-jordan/open-agents/backend/internal/ports"
 )
 
 // The Kanban column may only be decided by a review pass against the PR's
@@ -100,8 +100,8 @@ func TestListCurrentHeadReviewRunsForSessionKeepsLatestRunPerHarness(t *testing.
 	}
 }
 
-// The aggregate review_decision mixes AO's own provider reviews with everyone
-// else's, so the PR facts must expose the human-only verdicts separately. AO's
+// The aggregate review_decision mixes Open Agents's own provider reviews with everyone
+// else's, so the PR facts must expose the human-only verdicts separately. Open Agents's
 // review is matched by the review id it recorded when it posted.
 func TestListPRFactsForSessionSplitsExternalReviewVerdicts(t *testing.T) {
 	s := newTestStore(t)
@@ -111,7 +111,7 @@ func TestListPRFactsForSessionSplitsExternalReviewVerdicts(t *testing.T) {
 	now := time.Now().UTC().Truncate(time.Second)
 
 	reviews := []domain.PullRequestReview{
-		{ID: "gh-ao", Author: "ao", State: domain.ReviewApproved, SubmittedAt: now},
+		{ID: "gh-open-agents", Author: "open-agents", State: domain.ReviewApproved, SubmittedAt: now},
 		{ID: "gh-bot", Author: "coderabbit", State: domain.ReviewApproved, IsBot: true, SubmittedAt: now},
 	}
 	write := func(url string, extra []domain.PullRequestReview) {
@@ -122,17 +122,17 @@ func TestListPRFactsForSessionSplitsExternalReviewVerdicts(t *testing.T) {
 			t.Fatalf("write %s: %v", url, err)
 		}
 	}
-	write("pr/ao-only", nil)
+	write("pr/open-agents-only", nil)
 	write("pr/human", []domain.PullRequestReview{{ID: "gh-human", Author: "maintainer", State: domain.ReviewChangesRequest, SubmittedAt: now}})
 
-	// AO's own provider review, recorded by id on its review run.
-	if err := s.UpsertReview(ctx, domain.Review{ID: "rev", SessionID: r.ID, ProjectID: "mer", Harness: "codex", PRURL: "pr/ao-only", CreatedAt: now, UpdatedAt: now}); err != nil {
+	// Open Agents's own provider review, recorded by id on its review run.
+	if err := s.UpsertReview(ctx, domain.Review{ID: "rev", SessionID: r.ID, ProjectID: "mer", Harness: "codex", PRURL: "pr/open-agents-only", CreatedAt: now, UpdatedAt: now}); err != nil {
 		t.Fatal(err)
 	}
 	if err := s.InsertReviewRun(ctx, domain.ReviewRun{
-		ID: "run", ReviewID: "rev", SessionID: r.ID, Harness: "codex", PRURL: "pr/ao-only",
+		ID: "run", ReviewID: "rev", SessionID: r.ID, Harness: "codex", PRURL: "pr/open-agents-only",
 		TargetSHA: "head1", Status: domain.ReviewRunComplete, Verdict: domain.VerdictApproved,
-		GithubReviewID: "gh-ao", CreatedAt: now,
+		GithubReviewID: "gh-open-agents", CreatedAt: now,
 	}); err != nil {
 		t.Fatal(err)
 	}
@@ -145,8 +145,8 @@ func TestListPRFactsForSessionSplitsExternalReviewVerdicts(t *testing.T) {
 	for _, f := range facts {
 		byURL[f.URL] = f
 	}
-	if got := byURL["pr/ao-only"]; got.ExternalApproved || got.ExternalChangesRequested {
-		t.Fatalf("ao-authored and bot reviews leaked into external verdicts: %+v", got)
+	if got := byURL["pr/open-agents-only"]; got.ExternalApproved || got.ExternalChangesRequested {
+		t.Fatalf("open-agents-authored and bot reviews leaked into external verdicts: %+v", got)
 	}
 	if got := byURL["pr/human"]; got.ExternalApproved || !got.ExternalChangesRequested {
 		t.Fatalf("human changes request lost: %+v", got)
@@ -209,9 +209,9 @@ func TestListPRFactsForSessionUsesEachReviewerLatestVerdict(t *testing.T) {
 	}
 }
 
-// AO's own provider review must not dismiss a human verdict, even though it is
-// posted under a GitHub account AO cannot distinguish from a person by name.
-func TestListPRFactsForSessionKeepsHumanVerdictOverLaterAOReview(t *testing.T) {
+// Open Agents's own provider review must not dismiss a human verdict, even though it is
+// posted under a GitHub account Open Agents cannot distinguish from a person by name.
+func TestListPRFactsForSessionKeepsHumanVerdictOverLaterOpenAgentsReview(t *testing.T) {
 	s := newTestStore(t)
 	ctx := context.Background()
 	seedProject(t, s, "mer")
@@ -223,7 +223,7 @@ func TestListPRFactsForSessionKeepsHumanVerdictOverLaterAOReview(t *testing.T) {
 		HeadSHA: "head1", UpdatedAt: now, ObservedAt: now,
 	}, nil, []domain.PullRequestReview{
 		{ID: "gh-human", Author: "maintainer", State: domain.ReviewChangesRequest, SubmittedAt: now},
-		{ID: "gh-ao", Author: "maintainer", State: domain.ReviewApproved, SubmittedAt: now.Add(time.Hour)},
+		{ID: "gh-open-agents", Author: "maintainer", State: domain.ReviewApproved, SubmittedAt: now.Add(time.Hour)},
 	}, nil, nil, ports.ReviewWriteReplace); err != nil {
 		t.Fatal(err)
 	}
@@ -233,7 +233,7 @@ func TestListPRFactsForSessionKeepsHumanVerdictOverLaterAOReview(t *testing.T) {
 	if err := s.InsertReviewRun(ctx, domain.ReviewRun{
 		ID: "run", ReviewID: "rev", SessionID: r.ID, Harness: "codex", PRURL: "pr/1",
 		TargetSHA: "head1", Status: domain.ReviewRunComplete, Verdict: domain.VerdictApproved,
-		GithubReviewID: "gh-ao", CreatedAt: now,
+		GithubReviewID: "gh-open-agents", CreatedAt: now,
 	}); err != nil {
 		t.Fatal(err)
 	}
@@ -246,11 +246,11 @@ func TestListPRFactsForSessionKeepsHumanVerdictOverLaterAOReview(t *testing.T) {
 		t.Fatalf("facts = %d, want 1", len(facts))
 	}
 	if facts[0].ExternalApproved || !facts[0].ExternalChangesRequested {
-		t.Fatalf("AO's own approval dismissed a human changes request: %+v", facts[0])
+		t.Fatalf("Open Agents's own approval dismissed a human changes request: %+v", facts[0])
 	}
 }
 
-func TestListPRFactsForSessionSplitsExternalCommentsFromAOInjectedComments(t *testing.T) {
+func TestListPRFactsForSessionSplitsExternalCommentsFromOpenAgentsInjectedComments(t *testing.T) {
 	s := newTestStore(t)
 	ctx := context.Background()
 	seedProject(t, s, "mer")
@@ -258,15 +258,15 @@ func TestListPRFactsForSessionSplitsExternalCommentsFromAOInjectedComments(t *te
 	now := time.Now().UTC().Truncate(time.Second)
 
 	if err := s.UpsertReview(ctx, domain.Review{
-		ID: "rev-ao", SessionID: r.ID, ProjectID: "mer", Harness: "codex",
-		PRURL: "pr/ao", CreatedAt: now, UpdatedAt: now,
+		ID: "rev-open-agents", SessionID: r.ID, ProjectID: "mer", Harness: "codex",
+		PRURL: "pr/open-agents", CreatedAt: now, UpdatedAt: now,
 	}); err != nil {
 		t.Fatal(err)
 	}
 	if err := s.InsertReviewRun(ctx, domain.ReviewRun{
-		ID: "run-ao", ReviewID: "rev-ao", SessionID: r.ID, Harness: "codex",
-		PRURL: "pr/ao", TargetSHA: "head1", Status: domain.ReviewRunComplete,
-		Verdict: domain.VerdictChangesRequested, GithubReviewID: "gh-ao", CreatedAt: now,
+		ID: "run-open-agents", ReviewID: "rev-open-agents", SessionID: r.ID, Harness: "codex",
+		PRURL: "pr/open-agents", TargetSHA: "head1", Status: domain.ReviewRunComplete,
+		Verdict: domain.VerdictChangesRequested, GithubReviewID: "gh-open-agents", CreatedAt: now,
 	}); err != nil {
 		t.Fatal(err)
 	}
@@ -291,8 +291,8 @@ func TestListPRFactsForSessionSplitsExternalCommentsFromAOInjectedComments(t *te
 		ThreadID: "th-pr/external-off", ID: "c-ext-off", ReviewID: "gh-human-off", Author: "maintainer", Body: "please fix",
 		Resolved: false, IsBot: false, CreatedAt: now, AutoInjectReview: false,
 	}})
-	write("pr/ao", []domain.PullRequestComment{{
-		ThreadID: "th-pr/ao", ID: "c-ao", ReviewID: "gh-ao", Author: "ao", Body: "handled automatically",
+	write("pr/open-agents", []domain.PullRequestComment{{
+		ThreadID: "th-pr/open-agents", ID: "c-open-agents", ReviewID: "gh-open-agents", Author: "open-agents", Body: "handled automatically",
 		Resolved: false, IsBot: false, CreatedAt: now, AutoInjectReview: true,
 	}})
 
@@ -310,8 +310,8 @@ func TestListPRFactsForSessionSplitsExternalCommentsFromAOInjectedComments(t *te
 	if got := byURL["pr/external-off"]; !got.ReviewComments || !got.ExternalComments {
 		t.Fatalf("external unresolved comment should stay external when auto inject is off: %+v", got)
 	}
-	if got := byURL["pr/ao"]; !got.ReviewComments || got.ExternalComments {
-		t.Fatalf("AO-authored comment should not surface as external input: %+v", got)
+	if got := byURL["pr/open-agents"]; !got.ReviewComments || got.ExternalComments {
+		t.Fatalf("Open Agents-authored comment should not surface as external input: %+v", got)
 	}
 }
 
@@ -463,7 +463,7 @@ func TestListPRFactsForSessionsIgnoreOlderHeadHumanVerdicts(t *testing.T) {
 	}
 }
 
-func TestListPRFactsForSessionsSplitExternalCommentsFromAOInjectedComments(t *testing.T) {
+func TestListPRFactsForSessionsSplitExternalCommentsFromOpenAgentsInjectedComments(t *testing.T) {
 	s := newTestStore(t)
 	ctx := context.Background()
 	seedProject(t, s, "mer")
@@ -495,25 +495,25 @@ func TestListPRFactsForSessionsSplitExternalCommentsFromAOInjectedComments(t *te
 		t.Fatal(err)
 	}
 	if err := s.UpsertReview(ctx, domain.Review{
-		ID: "rev-ao", SessionID: third.ID, ProjectID: "mer", Harness: "codex",
-		PRURL: "pr/ao", CreatedAt: now, UpdatedAt: now,
+		ID: "rev-open-agents", SessionID: third.ID, ProjectID: "mer", Harness: "codex",
+		PRURL: "pr/open-agents", CreatedAt: now, UpdatedAt: now,
 	}); err != nil {
 		t.Fatal(err)
 	}
 	if err := s.InsertReviewRun(ctx, domain.ReviewRun{
-		ID: "run-ao", ReviewID: "rev-ao", SessionID: third.ID, Harness: "codex",
-		PRURL: "pr/ao", TargetSHA: "head1", Status: domain.ReviewRunComplete,
-		Verdict: domain.VerdictChangesRequested, GithubReviewID: "gh-ao", CreatedAt: now,
+		ID: "run-open-agents", ReviewID: "rev-open-agents", SessionID: third.ID, Harness: "codex",
+		PRURL: "pr/open-agents", TargetSHA: "head1", Status: domain.ReviewRunComplete,
+		Verdict: domain.VerdictChangesRequested, GithubReviewID: "gh-open-agents", CreatedAt: now,
 	}); err != nil {
 		t.Fatal(err)
 	}
 	if err := s.WriteSCMObservation(ctx, domain.PullRequest{
-		URL: "pr/ao", SessionID: third.ID, Number: 3, Review: domain.ReviewRequired,
+		URL: "pr/open-agents", SessionID: third.ID, Number: 3, Review: domain.ReviewRequired,
 		HeadSHA: "head1", UpdatedAt: now, ObservedAt: now,
 	}, nil, nil, []domain.PullRequestReviewThread{
-		{ThreadID: "th-ao", Path: "main.go", Line: 11, Resolved: false, UpdatedAt: now},
+		{ThreadID: "th-open-agents", Path: "main.go", Line: 11, Resolved: false, UpdatedAt: now},
 	}, []domain.PullRequestComment{{
-		ThreadID: "th-ao", ID: "c-ao", ReviewID: "gh-ao", Author: "ao", Body: "handled automatically",
+		ThreadID: "th-open-agents", ID: "c-open-agents", ReviewID: "gh-open-agents", Author: "open-agents", Body: "handled automatically",
 		Resolved: false, IsBot: false, CreatedAt: now, AutoInjectReview: false,
 	}}, ports.ReviewWriteReplace); err != nil {
 		t.Fatal(err)
@@ -530,6 +530,6 @@ func TestListPRFactsForSessionsSplitExternalCommentsFromAOInjectedComments(t *te
 		t.Fatalf("external batch comments lost when auto inject is off: %+v", facts)
 	}
 	if facts := got[third.ID]; len(facts) != 1 || facts[0].ExternalComments || !facts[0].ReviewComments {
-		t.Fatalf("AO batch comments should stay non-external while review comments remain true: %+v", facts)
+		t.Fatalf("Open Agents batch comments should stay non-external while review comments remain true: %+v", facts)
 	}
 }

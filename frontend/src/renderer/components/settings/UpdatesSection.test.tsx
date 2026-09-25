@@ -24,7 +24,7 @@ const {
 }));
 
 vi.mock("../../lib/bridge", () => ({
-	aoBridge: {
+	openAgentsBridge: {
 		app: { getVersion },
 		updates: {
 			getStatus: updGetStatus,

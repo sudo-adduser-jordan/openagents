@@ -1,9 +1,9 @@
 ---
 title: Agent adapters
-description: The terminal harnesses built into AO and the smaller set that also supports structured Chat.
+description: The terminal harnesses built into Open Agents and the smaller set that also supports structured Chat.
 ---
 
-AO compiles agent adapters into the daemon. It uses your locally installed agent CLI and its existing authentication; it does not bundle provider credentials or install adapters from npm.
+Open Agents compiles agent adapters into the daemon. It uses your locally installed agent CLI and its existing authentication; it does not bundle provider credentials or install adapters from npm.
 
 ## Shipped terminal harnesses
 
@@ -22,8 +22,8 @@ The daemon registry currently advertises 26 worker harnesses:
 Run the catalog instead of relying on a static page when scripting:
 
 ```bash
-ao agent ls --refresh
-ao agent ls --refresh --json
+open-agents agent ls --refresh
+open-agents agent ls --refresh --json
 ```
 
 The readiness probe reports whether a harness is supported, installed, and authenticated. Spawn still performs authoritative validation.
@@ -38,16 +38,16 @@ All advertised harnesses can run through their native terminal interface. Four a
 | `opencode` | Native ACP |
 | `droid` | Native ACP |
 
-Every other harness is Terminal UI-only. Choose the initial interface with `ao spawn --mode chat|tui`. Compatible Codex and OpenCode sessions can hand off between Chat and Terminal UI while retaining the AO session and worktree.
+Every other harness is Terminal UI-only. Choose the initial interface with `open-agents spawn --mode chat|tui`. Compatible Codex and OpenCode sessions can hand off between Chat and Terminal UI while retaining the Open Agents session and worktree.
 
 ## Choosing and configuring a harness
 
 ```bash
-ao project set-config my-app --worker-agent codex
-ao spawn --project my-app --name auth-fix --agent opencode --mode chat
+open-agents project set-config my-app --worker-agent codex
+open-agents spawn --project my-app --name auth-fix --agent opencode --mode chat
 ```
 
-`--agent` and `--harness` are aliases. Project configuration may also specify model, permission mode, environment, prompt rules, and separate worker/orchestrator defaults. Use `ao project set-config --help` for the typed fields.
+`--agent` and `--harness` are aliases. Project configuration may also specify model, permission mode, environment, prompt rules, and separate worker/orchestrator defaults. Use `open-agents project set-config --help` for the typed fields.
 
 <Cards>
 	<Card title="Codex" description="Terminal UI and native app-server Chat." href="/docs/plugins/agents/codex" />

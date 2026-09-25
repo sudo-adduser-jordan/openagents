@@ -9,9 +9,9 @@ import {
 	type BoardSessionPresentation,
 	type BoardColumnLabels,
 	type BoardUsagePresentation,
-} from "@aoagents/product-ui";
+} from "@openagents/product-ui";
 import { Check, Copy, GitBranch, LoaderCircle, RotateCcw, Trash2 } from "lucide-react";
-import { aoBridge } from "../lib/bridge";
+import { openAgentsBridge } from "../lib/bridge";
 import { formatTimeCompact } from "../lib/format-time";
 import { formatTokenCount } from "../lib/format-token-count";
 import { prBrowserUrl, sessionPRDisplaySummaries } from "../lib/pr-display";
@@ -382,7 +382,7 @@ function CopyActionButton({ label, value }: { label: string; value: string }) {
 	const copyValue = async (event: MouseEvent<HTMLButtonElement>) => {
 		event.stopPropagation();
 		try {
-			await aoBridge.clipboard.writeText(value);
+			await openAgentsBridge.clipboard.writeText(value);
 		} catch {
 			return;
 		}

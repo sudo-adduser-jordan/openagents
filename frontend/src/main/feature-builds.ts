@@ -7,12 +7,12 @@ const GITHUB_API = "https://api.github.com";
 
 // Default when the baked app-update.yml cannot be read (dev, or a malformed
 // bundle). Matches forge.config.ts DEFAULT_RELEASE_REPO.
-const DEFAULT_REPO = { owner: "Untrivial-ai", repo: "agent-orchestrator" } as const;
+const DEFAULT_REPO = { owner: "sudo-adduser-jordan", repo: "open-agents" } as const;
 
 // Resolve the GitHub repo the app updates from by reading the same bundled
-// app-update.yml that electron-updater uses. Both are baked from AO_RELEASE_REPO
+// app-update.yml that electron-updater uses. Both are baked from OPEN_AGENTS_RELEASE_REPO
 // at build time, so this keeps the feature list and the updater on the SAME repo
-// (a fork build lists that fork's feature releases, not Untrivial-ai's). The
+// (a fork build lists that fork's feature releases, not the canonical repository's). The
 // list and the updater must never diverge, or the picker would offer builds
 // the updater cannot install.
 let cachedRepo: { owner: string; repo: string } | undefined;
@@ -33,7 +33,7 @@ function resolveRepo(): { owner: string; repo: string } {
 }
 
 // Marker embedded in feature-build release bodies by the CI workflow.
-const FEATURE_BUILD_MARKER = "<!-- ao-feature-build:";
+const FEATURE_BUILD_MARKER = "<!-- open-agents-feature-build:";
 
 // Feature builds older than this are dropped from the list, matching the
 // cleanup workflow's 7-day expiry sweep so the app and CI agree on liveness.
@@ -87,7 +87,7 @@ interface MarkerPayload {
 function parseMarker(body: string): MarkerPayload | null {
 	const idx = body.indexOf(FEATURE_BUILD_MARKER);
 	if (idx === -1) return null;
-	// Marker format: <!-- ao-feature-build: {"pr":2270,"base":"main","sha":"abc","slug":"..."} -->
+	// Marker format: <!-- open-agents-feature-build: {"pr":2270,"base":"main","sha":"abc","slug":"..."} -->
 	const start = idx + FEATURE_BUILD_MARKER.length;
 	const end = body.indexOf("-->", start);
 	if (end === -1) return null;
@@ -105,7 +105,7 @@ async function fetchJson<T>(url: string): Promise<T> {
 		headers: {
 			Accept: "application/vnd.github+json",
 			"X-GitHub-Api-Version": "2022-11-28",
-			"User-Agent": `ao-desktop/${app.getVersion()}`,
+			"User-Agent": `open-agents-desktop/${app.getVersion()}`,
 		},
 	});
 	if (!res.ok) throw new Error(`GitHub API ${res.status}: ${url}`);
@@ -129,7 +129,7 @@ async function isPrOpen(pr: number): Promise<boolean> {
 }
 
 /**
- * Fetch and filter the live feature builds: prerelease + ao-feature-build marker
+ * Fetch and filter the live feature builds: prerelease + open-agents-feature-build marker
  * + published within the last 7 days + PR still open, grouped to the newest
  * build per PR, newest-first. THROWS on a releases-fetch failure so callers can
  * tell "no live builds" apart from "could not reach GitHub".

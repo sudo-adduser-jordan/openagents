@@ -20,7 +20,7 @@ import { useMarkAllNotificationsReadMutation, useNotificationsQuery } from "../h
 import { useRestoreSession } from "../hooks/useRestoreSession";
 import { useWorkspaceQuery } from "../hooks/useWorkspaceQuery";
 import type { WorkspaceSummary } from "../types/workspace";
-import { aoBridge } from "../lib/bridge";
+import { openAgentsBridge } from "../lib/bridge";
 import { formatTimeCompact } from "../lib/format-time";
 import {
 	createNotificationsTransport,
@@ -167,11 +167,11 @@ export function NotificationRuntime() {
 	// NotificationRuntime is always mounted in the shell, whereas the notification
 	// bell is absent from the Linux topbar and only mounts on the sessions board.
 	useEffect(() => {
-		void aoBridge.notifications.setBadge(unreadCount);
+		void openAgentsBridge.notifications.setBadge(unreadCount);
 	}, [unreadCount]);
 
 	useEffect(() => {
-		return aoBridge.notifications.onClick((id) => {
+		return openAgentsBridge.notifications.onClick((id) => {
 			const unread = queryClient.getQueryData<NotificationsCache>(unreadNotificationsQueryKey);
 			const recent = queryClient.getQueryData<NotificationsCache>(recentNotificationsQueryKey);
 			const notification = [...getCachedNotifications(unread), ...getCachedNotifications(recent)].find(

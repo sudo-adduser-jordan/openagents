@@ -20,7 +20,7 @@ import {
 	type InspectorReviewSummaryAction,
 	type InspectorTimelineEvent,
 	type InspectorView,
-} from "@aoagents/product-ui";
+} from "@openagents/product-ui";
 import {
 	ArrowUpRight,
 	ChevronDown,
@@ -54,7 +54,7 @@ import { formatTokenCount } from "../lib/format-token-count";
 import type { WorkspaceSession, WorkspaceSummary } from "../types/workspace";
 import { findProjectOrchestrator, sortedPRs, STANDALONE_WORKSPACE_ID } from "../types/workspace";
 import { getAgentActivityView, getSessionTimelinePillView } from "../lib/session-presentation";
-import { aoBridge } from "../lib/bridge";
+import { openAgentsBridge } from "../lib/bridge";
 import { BrowserPanelView, type BrowserAnnotationQueueModel } from "./BrowserPanel";
 import type { BrowserViewModel } from "../hooks/useBrowserView";
 import { useUiStore } from "../stores/ui-store";
@@ -81,7 +81,7 @@ import {
 type ProjectConfig = components["schemas"]["ProjectConfig"];
 type OpenReviewerTerminal = (target: { handleId: string; harness: string }) => void;
 
-export type { InspectorView } from "@aoagents/product-ui";
+export type { InspectorView } from "@openagents/product-ui";
 
 const VIEW_DEFS: {
 	id: InspectorView;
@@ -938,11 +938,11 @@ function ResumeAgentControl({ session }: { session: WorkspaceSession }) {
 		onSuccess: async (data) => {
 			await queryClient.invalidateQueries({ queryKey: workspaceQueryKey });
 			if (data?.resumeMode === "saved_prompt") {
-				void aoBridge.notifications
+				void openAgentsBridge.notifications
 					.show({
 						id: `resume-agent-fallback:${session.id}:${Date.now()}`,
 						title: "Started from saved prompt",
-						body: "AO could not resume the native agent session, so it started a new conversation from the saved prompt.",
+						body: "Open Agents could not resume the native agent session, so it started a new conversation from the saved prompt.",
 					})
 					.catch((err) => {
 						console.warn("Unable to show resume fallback notification", err);
@@ -1079,7 +1079,7 @@ function SessionControls({ session }: { session: WorkspaceSession }) {
 					<InspectorPolicyRow
 						ariaLabel="Terminate session when pull requests merge"
 						checked={Boolean(session.terminateOnPrMerge)}
-						description="When disabled, AO keeps this session open after all pull requests merge."
+						description="When disabled, Open Agents keeps this session open after all pull requests merge."
 						disabled={policy.isPending}
 						id={`merge-policy-${session.id}`}
 						label="Terminate on merge"
@@ -1601,11 +1601,11 @@ function ReviewsSection({
 }
 
 /**
- * AO's own reviewer passes and the reviews humans and bots left on GitHub, in
+ * Open Agents's own reviewer passes and the reviews humans and bots left on GitHub, in
  * one list keyed by PR. They were two sections, which made the same PR appear
  * twice and left the reader joining them up by number; a review is a review,
  * and what matters is who wrote it. Each group inside a PR names its source —
- * "AO opencode" against the agent that ran, "On GitHub" for everyone else.
+ * "Open Agents opencode" against the agent that ran, "On GitHub" for everyone else.
  */
 function MergedReviewsSection({
 	githubPRs,
@@ -1623,15 +1623,15 @@ function MergedReviewsSection({
 	session: WorkspaceSession;
 }) {
 	const queryClient = useQueryClient();
-	const openInAOBrowser = useSessionBrowserLink(session);
+	const openInOpenAgentsBrowser = useSessionBrowserLink(session);
 	const openReviewStates = openReviewStatesFor(session, reviewStates);
 	const runsByPR = runsByPRFrom(openReviewStates, runs);
-	const aoStates = triggeredReviewStatesFrom(openReviewStates, runs);
+	const openAgentsStates = triggeredReviewStatesFrom(openReviewStates, runs);
 
 	// Union by PR number, newest PR first. A PR can appear on either side alone.
-	const byNumber = new Map<number, { ao?: PRReviewState; github?: SessionPRSummary }>();
-	for (const state of aoStates) {
-		byNumber.set(state.prNumber, { ...byNumber.get(state.prNumber), ao: state });
+	const byNumber = new Map<number, { openAgents?: PRReviewState; github?: SessionPRSummary }>();
+	for (const state of openAgentsStates) {
+		byNumber.set(state.prNumber, { ...byNumber.get(state.prNumber), openAgents: state });
 	}
 	for (const pr of githubPRs) {
 		byNumber.set(pr.number, { ...byNumber.get(pr.number), github: pr });
@@ -1668,14 +1668,14 @@ function MergedReviewsSection({
 		});
 		if (error) throw new Error(apiErrorMessage(error, "Unable to send review summary to worker agent"));
 	};
-	const groups: InspectorReviewGroup[] = rows.map(([number, { ao, github }]) => {
-		const aoRuns = ao ? [...(runsByPR.get(ao.prUrl) ?? [])].sort((a, b) => b.createdAt.localeCompare(a.createdAt)) : [];
+	const groups: InspectorReviewGroup[] = rows.map(([number, { openAgents, github }]) => {
+		const openAgentsRuns = openAgents ? [...(runsByPR.get(openAgents.prUrl) ?? [])].sort((a, b) => b.createdAt.localeCompare(a.createdAt)) : [];
 		const entries = (github?.review?.reviews ?? []).filter(
 			(entry) => !externalReviewActorMatchesPRAuthor(entry.reviewerId, github?.author),
 		);
 		const allUnresolvedReviewers = github?.review?.unresolvedBy ?? [];
 		const allResolvedReviewers = github?.review?.resolvedBy ?? [];
-		const agentReviewIds = new Set(aoRuns.map((run) => run.githubReviewId).filter(Boolean));
+		const agentReviewIds = new Set(openAgentsRuns.map((run) => run.githubReviewId).filter(Boolean));
 		const agentComments = new Map<string, { inlineComments: InspectorInlineComment[]; resolvedComments: InspectorInlineComment[] }>();
 		const partitionReviewerComments = (
 			reviewers: typeof allUnresolvedReviewers,
@@ -1714,8 +1714,8 @@ function MergedReviewsSection({
 			(reviewer) => !externalReviewActorMatchesPRAuthor(reviewer.reviewerId, github?.author),
 		);
 		const unresolved = unresolvedReviewers.reduce((count, reviewer) => count + reviewer.count, 0);
-		const reviewRuns = aoRuns.map((run) => {
-			const reviewUrl = aoReviewCommentUrl(run);
+		const reviewRuns = openAgentsRuns.map((run) => {
+			const reviewUrl = openAgentsReviewCommentUrl(run);
 			return {
 				autoInjectReview: run.autoInjectReview,
 				body: run.body,
@@ -1725,7 +1725,7 @@ function MergedReviewsSection({
 				inlineComments: agentComments.get(run.githubReviewId)?.inlineComments ?? [],
 				resolvedComments: agentComments.get(run.githubReviewId)?.resolvedComments ?? [],
 				status: run.status,
-				url: reviewUrl ?? (ao?.prUrl || null),
+				url: reviewUrl ?? (openAgents?.prUrl || null),
 				verdict: githubVerdict(run.verdict),
 			};
 		});
@@ -1828,14 +1828,14 @@ function MergedReviewsSection({
 			});
 		}
 		return {
-			ao: ao
+			openAgents: openAgents
 				? {
-						dimmed: ao.status === "ineligible",
+						dimmed: openAgents.status === "ineligible",
 						historical:
-							ao.status === "needs_review" &&
-							Boolean(ao.previousRun) &&
-							(!ao.latestRun || ao.latestRun.status === "failed" || ao.latestRun.status === "cancelled"),
-						notInjected: aoRuns.some((run) => run.autoInjectReview === false),
+							openAgents.status === "needs_review" &&
+							Boolean(openAgents.previousRun) &&
+							(!openAgents.latestRun || openAgents.latestRun.status === "failed" || openAgents.latestRun.status === "cancelled"),
+						notInjected: openAgentsRuns.some((run) => run.autoInjectReview === false),
 						runs: reviewRuns,
 					}
 				: undefined,
@@ -1865,17 +1865,17 @@ function MergedReviewsSection({
 					}
 				: undefined,
 			meta: [
-				ao ? aoReviewMeta(ao) : `#${number}`,
+				openAgents ? openAgentsReviewMeta(openAgents) : `#${number}`,
 				unresolved > 0 ? `${unresolved} unresolved comments` : null,
 			]
 				.filter(Boolean)
 				.join(" · "),
 			number,
-			title: (ao?.title ?? github?.title)?.trim() || `PR #${number}`,
-			verdict: ao ? reviewVerdict(ao) : undefined,
+			title: (openAgents?.title ?? github?.title)?.trim() || `PR #${number}`,
+			verdict: openAgents ? reviewVerdict(openAgents) : undefined,
 		};
 	}).filter((group) =>
-		Boolean(group.ao || (group.github && (group.github.entries.length > 0 || group.github.unresolved > 0))),
+		Boolean(group.openAgents || (group.github && (group.github.entries.length > 0 || group.github.unresolved > 0))),
 	);
 	return (
 		<InspectorReviewsView
@@ -1885,7 +1885,7 @@ function MergedReviewsSection({
 			labels={labels}
 			onRequestRereview={requestRereview}
 			onResolveInlineComment={resolveInlineComment}
-			onOpenInAOBrowser={openInAOBrowser}
+			onOpenInOpenAgentsBrowser={openInOpenAgentsBrowser}
 			onSendInlineComment={sendInlineCommentToWorker}
 			onSendReviewSummary={sendReviewSummaryToWorker}
 			onViewInlineCommentInFile={(comment) => {
@@ -1906,7 +1906,7 @@ function canRequestPRRereview(verdict: string | undefined, pullRequestUrl: strin
 
 function reviewLabels(): InspectorReviewLabels {
 	return {
-		aoSource: "Agent reviews",
+		openAgentsSource: "Agent reviews",
 		bot: "bot",
 		earlierPass: "Earlier commit",
 		githubSource: "External reviews",
@@ -1915,7 +1915,7 @@ function reviewLabels(): InspectorReviewLabels {
 		noPastReviewSummaries: "No past review summaries yet.",
 		notInjected: "Not injected",
 		openComments: "Open comments",
-		openInAOBrowser: "Open in AO Browser",
+		openInOpenAgentsBrowser: "Open in Open Agents Browser",
 		openInSystemBrowser: "Open in System Browser",
 		openInlineComments: (count) => `${count} open comments`,
 		requestRereviewPR: "Request to re-review PR",
@@ -1938,7 +1938,7 @@ function reviewLabels(): InspectorReviewLabels {
 		commentNumber: (number) => `Comment #${number}`,
 		unresolvedCount: (count) => `${count} unresolved comments`,
 		viewInFile: "View in file",
-		viewInFileWorkInProgress: "Opening files in AO is a work in progress",
+		viewInFileWorkInProgress: "Opening files in Open Agents is a work in progress",
 		viewOnPR: "View on PR",
 	};
 }
@@ -1991,7 +1991,7 @@ function formatInlineReviewCommentMessage(comment: InspectorInlineComment & { re
 	if (url) {
 		lines.push("", `Comment URL: ${url}`);
 	}
-	lines.push("", "You should not need to re-fetch review data unless you need additional context beyond what AO has provided here.");
+	lines.push("", "You should not need to re-fetch review data unless you need additional context beyond what Open Agents has provided here.");
 	return lines.join("\n");
 }
 
@@ -1999,7 +1999,7 @@ function formatReviewSummaryMessage(summary: InspectorReviewSummaryAction): stri
 	const reviewer = sanitizeWorkerMessagePart(summary.reviewerId.trim() || "reviewer");
 	const body = sanitizeWorkerMessagePart(summary.body.trim());
 	const url = sanitizeWorkerMessagePart((summary.url || summary.pullRequestUrl || "").trim());
-	const source = summary.source === "agent" ? "AO agent review" : "external PR review";
+	const source = summary.source === "agent" ? "Open Agents agent review" : "external PR review";
 	const lines = [
 		`A ${source} from ${reviewer} has feedback for your pull request. Address the actionable items, run relevant tests, commit the fixes, and push the branch.`,
 		"",
@@ -2306,7 +2306,7 @@ function reviewRunHasOutcome(run: ReviewRunFacts | undefined): boolean {
 	return Boolean(run?.verdict?.trim());
 }
 
-/** The PRs AO has an agent review outcome for. */
+/** The PRs Open Agents has an agent review outcome for. */
 function triggeredReviewStatesFrom(openReviewStates: PRReviewState[], runs: ReviewRunFacts[]): PRReviewState[] {
 	return openReviewStates.filter(
 		(reviewState) =>
@@ -2318,7 +2318,7 @@ function triggeredReviewStatesFrom(openReviewStates: PRReviewState[], runs: Revi
 	);
 }
 
-function aoReviewMeta(reviewState: PRReviewState): string {
+function openAgentsReviewMeta(reviewState: PRReviewState): string {
 	if (
 		reviewState.status === "needs_review" &&
 		(!reviewState.latestRun ||
@@ -2339,7 +2339,7 @@ function aoReviewMeta(reviewState: PRReviewState): string {
 
 // GitHub anchors a posted review at #pullrequestreview-<id> on the PR page; we
 // only have that link once the run has been delivered to GitHub.
-function aoReviewCommentUrl(run: PRReviewState["latestRun"]): string | null {
+function openAgentsReviewCommentUrl(run: PRReviewState["latestRun"]): string | null {
 	if (!run?.prUrl || !run.githubReviewId) return null;
 	return `${run.prUrl}#pullrequestreview-${run.githubReviewId}`;
 }

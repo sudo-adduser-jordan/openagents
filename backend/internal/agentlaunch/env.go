@@ -12,11 +12,11 @@ import (
 	"strings"
 )
 
-const aoBinaryName = "ao"
+const openAgentsBinaryName = "open-agents"
 
-// PinnedPATH prepends an AO-only directory to the supplied
-// PATH. It rejects executables not named ao because their directory cannot
-// guarantee the identity of a bare ao command.
+// PinnedPATH prepends an Open Agents-only directory to the supplied
+// PATH. It rejects executables not named open-agents because their directory cannot
+// guarantee the identity of a bare open-agents command.
 func PinnedPATH(executable func() (string, error), getenv func(string) string, configured map[string]string, dataDir string) (string, error) {
 	exe, err := executable()
 	if err != nil {
@@ -27,7 +27,7 @@ func PinnedPATH(executable func() (string, error), getenv func(string) string, c
 		return "", err
 	}
 	if dir == "" {
-		return "", fmt.Errorf("daemon executable %s is not named %q", exe, aoBinaryName)
+		return "", fmt.Errorf("daemon executable %s is not named %q", exe, openAgentsBinaryName)
 	}
 	base := configuredPATH(configured, runtime.GOOS == "windows")
 	if base == "" {
@@ -68,7 +68,7 @@ func pinnedDirForExecutable(exe string) string {
 	if runtime.GOOS == "windows" {
 		name = strings.TrimSuffix(strings.ToLower(name), ".exe")
 	}
-	if name != aoBinaryName {
+	if name != openAgentsBinaryName {
 		return ""
 	}
 	return filepath.Dir(exe)

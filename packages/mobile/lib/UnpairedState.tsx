@@ -7,7 +7,7 @@ import { Button, EmptyState } from "./ui";
  *
  * The three tabs each had their own answer to this: Workers explained what was
  * missing and offered the scanner, while Projects and PRs said "No server /
- * Connect to AO in Settings" with no way to act on it — and sent the user to
+ * Connect to Open Agents in Settings" with no way to act on it — and sent the user to
  * hunt through Settings for a field rather than to the scanner that fixes it.
  * PRs did not even render a header, so the tab lost its title at the one moment
  * a new user most needs to know where they are.
@@ -22,7 +22,7 @@ export function UnpairedState() {
 		<EmptyState
 			icon="server"
 			title="No desktop paired"
-			message="Scan the pairing code from AO → Settings → Connect Mobile to drive your agents from here."
+			message="Scan the pairing code from Open Agents → Settings → Connect Mobile to drive your agents from here."
 			action={<Button title="Scan pairing code" icon="maximize" onPress={() => router.push("/pair")} />}
 		/>
 	);

@@ -44,7 +44,7 @@ import { MOBILE_EVENTS } from "./telemetry/events";
 import { mobileTelemetry, trackFeature } from "./telemetry/runtime";
 import { useConversationEventTransport } from "./chat/conversationEvents";
 
-const ACTIVE_PROJECT_KEY = "ao.activeProject";
+const ACTIVE_PROJECT_KEY = "openAgents.activeProject";
 
 // Board-level connection state is derived from the REST poll. The session screen
 // tracks its own terminal mux connection separately.
@@ -103,7 +103,7 @@ type AppState = {
 	renameWorker: (id: string, displayName: string) => Promise<void>;
 	setWorkerPinned: (id: string, pinned: boolean) => Promise<void>;
 	restore: (id: string) => Promise<void>;
-	/** Restart a stopped agent without restoring a terminated AO session. */
+	/** Restart a stopped agent without restoring a terminated Open Agents session. */
 	resumeAgent: (id: string) => Promise<void>;
 	send: (id: string, message: string) => Promise<void>;
 };
@@ -201,7 +201,7 @@ export function AppProvider({ children }: { children: ReactNode }) {
 	}, []);
 
 	// Warm the install id cache as early as possible so the first REST poll tick
-	// (fired from the config effect below) can send X-AO-Install-Id synchronously
+	// (fired from the config effect below) can send X-OPEN-AGENTS-Install-Id synchronously
 	// via cachedInstallId() in api.ts's req(). A module-load side effect would run
 	// this before React Native's AsyncStorage native module is guaranteed ready;
 	// a mount-time effect matches this file's existing pattern (see the active
@@ -550,7 +550,7 @@ export function AppProvider({ children }: { children: ReactNode }) {
 	);
 
 	// Distinct from restore, and the chat screen already relies on the
-	// difference: a terminated AO session is restored, a merely stopped
+	// difference: a terminated Open Agents session is restored, a merely stopped
 	// agent/controller is resumed without resurrecting the session around it.
 	const resumeAgent = useCallback(
 		async (id: string) =>

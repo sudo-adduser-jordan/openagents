@@ -35,7 +35,7 @@ func resolveUserLoginShell(preference string) (argv []string, usedFallback bool)
 }
 
 // resolveWindowsShell honors an explicit selector first. An unavailable named
-// shell or custom executable falls back to the same automatic order AO used
+// shell or custom executable falls back to the same automatic order Open Agents used
 // before shell selection was configurable.
 func resolveWindowsShell(preference string) (argv []string, usedFallback bool) {
 	preference = strings.TrimSpace(preference)
@@ -73,7 +73,7 @@ func resolveWindowsShell(preference string) (argv []string, usedFallback bool) {
 	return resolveAutomaticWindowsShell(), true
 }
 
-// resolveAutomaticWindowsShell preserves AO's historical Windows behavior.
+// resolveAutomaticWindowsShell preserves Open Agents's historical Windows behavior.
 func resolveAutomaticWindowsShell() []string {
 	for _, candidate := range []string{"pwsh.exe", "powershell.exe"} {
 		if argv := resolveKnownWindowsShell(candidate); len(argv) > 0 {

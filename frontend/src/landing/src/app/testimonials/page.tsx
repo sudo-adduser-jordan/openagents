@@ -11,35 +11,35 @@ const testimonialDisplay = Bricolage_Grotesque({
 });
 
 export const metadata: Metadata = {
-  title: "Share Your AO Story",
+  title: "Share Your Open Agents Story",
   description:
-    "Submit your Agent Orchestrator testimonial for the AO website.",
+    "Submit your Open Agents testimonial for the Open Agents website.",
 };
 
 const testimonials = [
   {
     quote:
-      "AO really changes the way you develop. The orchestrator and kanban have been a game changer. I’m no longer confused about what agent is doing what; scoping tasks and spawning them off has been a breeze.",
+      "Open Agents really changes the way you develop. The orchestrator and kanban have been a game changer. I’m no longer confused about what agent is doing what; scoping tasks and spawning them off has been a breeze.",
     author: "Aditi Chauhan, Software Engineer, Docusign",
   },
   {
     quote:
-      "With AO Mobile, I’m able to ship things on the fly, and my agents are never blocked on my input anymore.",
+      "With Open Agents Mobile, I’m able to ship things on the fly, and my agents are never blocked on my input anymore.",
     author: "Dhruv Sharma, Engineering Lead, The Hashgraph group",
   },
   {
     quote:
-      "Before AO, I would ship at most 2–3 PRs a day. Now I consistently ship 5+ PRs every day at work.",
+      "Before Open Agents, I would ship at most 2–3 PRs a day. Now I consistently ship 5+ PRs every day at work.",
     author: "Harshit Singh Bhandari, IEOR @ IIT Bombay",
   },
   {
     quote:
-      "There hasn’t been a day in the last two months when I opened another IDE or ran a coding agent in a terminal app. AO really changes how you think about work. It’s a mindset shift you can’t go back from.",
+      "There hasn’t been a day in the last two months when I opened another IDE or ran a coding agent in a terminal app. Open Agents really changes how you think about work. It’s a mindset shift you can’t go back from.",
     author: "Pritom Mazumdar, Microsoft",
   },
   {
     quote:
-      "AO automatically gets the right agent to address CI failures and review comments. My agents are much more autonomous now, and with the orchestrator + kanban, I’m able to manage more and more of them.",
+      "Open Agents automatically gets the right agent to address CI failures and review comments. My agents are much more autonomous now, and with the orchestrator + kanban, I’m able to manage more and more of them.",
     author: "Aditya Purohit, CTO @ Osvi.ai",
   },
 ];
@@ -52,7 +52,7 @@ export default function TestimonialsPage() {
           <div className="relative overflow-hidden rounded-2xl border border-border bg-card lg:h-[760px]">
             <Image
               src="/optimized/feature2.webp"
-              alt="AO desktop showing agent work moving toward review"
+              alt="Open Agents desktop showing agent work moving toward review"
               fill
               priority
               sizes="(max-width: 1023px) 100vw, 58vw"
@@ -70,11 +70,11 @@ export default function TestimonialsPage() {
                 <h1
                   className={`${testimonialDisplay.className} max-w-4xl text-4xl font-semibold leading-[1.02] text-foreground sm:text-5xl lg:text-6xl`}
                 >
-                  Put your AO experience into words.
+                  Put your Open Agents experience into words.
                 </h1>
                 <p className="mt-5 max-w-2xl text-base leading-7 text-muted-foreground sm:text-lg">
                   Tell other builders what changed when you started orchestrating
-                  coding agents with AO. We&apos;ll feature selected stories in the
+                  coding agents with Open Agents. We&apos;ll feature selected stories in the
                   testimonials section of our website.
                 </p>
               </div>

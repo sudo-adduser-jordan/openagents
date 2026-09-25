@@ -1,5 +1,5 @@
 // Package browserruntime brokers browser commands between the loopback daemon
-// and the Electron process that owns AO's per-session WebContentsView targets.
+// and the Electron process that owns Open Agents's per-session WebContentsView targets.
 package browserruntime
 
 import (
@@ -20,7 +20,7 @@ import (
 
 	"github.com/google/uuid"
 
-	"github.com/aoagents/agent-orchestrator/backend/internal/domain"
+	"github.com/sudo-adduser-jordan/open-agents/backend/internal/domain"
 )
 
 const (
@@ -28,10 +28,10 @@ const (
 	ProtocolVersion = 2
 	// RuntimeTokenStdinEnv tells an app-spawned daemon to read its token once
 	// from the inherited private stdin pipe instead of an environment variable.
-	RuntimeTokenStdinEnv = "AO_BROWSER_RUNTIME_TOKEN_STDIN" //nolint:gosec // Environment variable name, not a credential.
+	RuntimeTokenStdinEnv = "OPEN_AGENTS_BROWSER_RUNTIME_TOKEN_STDIN" //nolint:gosec // Environment variable name, not a credential.
 	// RuntimeAddressEnv carries the exact listener address into running.json so
 	// Electron never has to duplicate the backend's platform-specific naming.
-	RuntimeAddressEnv    = "AO_BROWSER_RUNTIME_ADDRESS"
+	RuntimeAddressEnv    = "OPEN_AGENTS_BROWSER_RUNTIME_ADDRESS"
 	helloTimeout         = 5 * time.Second
 	maxRuntimeFrameBytes = 8 << 20
 )
@@ -110,7 +110,7 @@ type pendingResult struct {
 }
 
 // Broker owns the single active Electron runtime connection. Commands are
-// correlated by request id, so independent AO sessions may use the bridge
+// correlated by request id, so independent Open Agents sessions may use the bridge
 // concurrently without sharing browser targets or results.
 type Broker struct {
 	log *slog.Logger

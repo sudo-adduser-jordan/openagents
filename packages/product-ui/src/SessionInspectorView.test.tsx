@@ -246,7 +246,7 @@ describe("portable inspector presentations", () => {
         externalLink={ExternalLink}
         groups={[
           {
-            ao: {
+            openAgents: {
               notInjected: true,
               runs: [
                 {
@@ -831,7 +831,7 @@ describe("portable inspector presentations", () => {
       <InspectorReviewsView
         externalLink={ExternalLink}
         groups={[{
-          ao: {
+          openAgents: {
             runs: [{
               body: "A rendered Markdown summary whose fit depends on the inspector width.",
               createdAtLabel: "Now",
@@ -908,14 +908,14 @@ describe("portable inspector presentations", () => {
     expect(preview.closest('[role="button"]')).toHaveAttribute("aria-expanded", "true");
   });
 
-  it("offers AO browser, system browser, and worker-send actions for summaries", async () => {
-    const onOpenInAOBrowser = vi.fn();
+  it("offers Open Agents browser, system browser, and worker-send actions for summaries", async () => {
+    const onOpenInOpenAgentsBrowser = vi.fn();
     const onSendReviewSummary = vi.fn().mockResolvedValue(undefined);
     render(
       <InspectorReviewsView
         externalLink={ExternalLink}
         groups={[{
-          ao: {
+          openAgents: {
             runs: [{
               body: "Please update the validation and tests.",
               createdAtLabel: "Now",
@@ -932,7 +932,7 @@ describe("portable inspector presentations", () => {
         }]}
         isLoading={false}
         labels={reviewLabels}
-        onOpenInAOBrowser={onOpenInAOBrowser}
+        onOpenInOpenAgentsBrowser={onOpenInOpenAgentsBrowser}
         onSendReviewSummary={onSendReviewSummary}
         renderAvatar={() => null}
         renderMarkdown={(body) => <p>{body}</p>}
@@ -949,8 +949,8 @@ describe("portable inspector presentations", () => {
     fireEvent.pointerDown(document.body);
     expect(screen.queryByRole("link", { name: "Open in System Browser" })).not.toBeInTheDocument();
     fireEvent.click(reviewActions);
-    fireEvent.click(screen.getByRole("button", { name: "Open in AO Browser" }));
-    expect(onOpenInAOBrowser).toHaveBeenCalledWith("https://github.com/example/repo/pull/12#pullrequestreview-1");
+    fireEvent.click(screen.getByRole("button", { name: "Open in Open Agents Browser" }));
+    expect(onOpenInOpenAgentsBrowser).toHaveBeenCalledWith("https://github.com/example/repo/pull/12#pullrequestreview-1");
     expect(screen.getByRole("link", { name: "Open in System Browser" })).toHaveAttribute(
       "href",
       "https://github.com/example/repo/pull/12#pullrequestreview-1",
@@ -966,7 +966,7 @@ describe("portable inspector presentations", () => {
 });
 
 const reviewLabels: InspectorReviewLabels = {
-  aoSource: "AO",
+  openAgentsSource: "Open Agents",
   bot: "Bot",
   earlierPass: "Earlier pass",
   githubSource: "On GitHub",
@@ -975,7 +975,7 @@ const reviewLabels: InspectorReviewLabels = {
   noPastReviewSummaries: "No summaries",
   notInjected: "Not injected",
   openComments: "Open comments",
-  openInAOBrowser: "Open in AO Browser",
+  openInOpenAgentsBrowser: "Open in Open Agents Browser",
   openInSystemBrowser: "Open in System Browser",
   openInlineComments: (count) => `${count} open comments`,
   requestRereviewPR: "Request to re-review PR",

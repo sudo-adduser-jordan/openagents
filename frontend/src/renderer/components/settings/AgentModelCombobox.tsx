@@ -17,7 +17,7 @@ import {
 const MAX_VISIBLE_MODELS = 50;
 const MODEL_SEARCH_THRESHOLD = 10;
 const MAX_RECENT_MODELS = 3;
-const RECENT_MODELS_STORAGE_KEY = "ao.recentModels.v1";
+const RECENT_MODELS_STORAGE_KEY = "open-agents.recentModels.v1";
 const ignoreEffortChange = () => {};
 
 export type ModelEffortSelection = Pick<ModelTuningControlsProps,

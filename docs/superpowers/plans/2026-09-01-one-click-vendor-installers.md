@@ -4,7 +4,7 @@
 
 **Goal:** Make first-party remote installer scripts a one-click automatic fallback for every natively supported harness in PR #4221.
 
-**Architecture:** The daemon keeps complete authority over harness IDs, URLs, interpreters, and execution policy. `systeminstall` selects a typed remote-script recipe, while `systemexec` downloads the complete HTTPS response into an AO-owned private directory and executes the saved file with closed stdin; the existing durable job and adapter verifier remain the source of installation state.
+**Architecture:** The daemon keeps complete authority over harness IDs, URLs, interpreters, and execution policy. `systeminstall` selects a typed remote-script recipe, while `systemexec` downloads the complete HTTPS response into an Open Agents-owned private directory and executes the saved file with closed stdin; the existing durable job and adapter verifier remain the source of installation state.
 
 **Tech Stack:** Go 1.25, `net/http`, `crypto/sha256`, Electron/React, Vitest, SQLite-backed durable install jobs.
 
@@ -16,7 +16,7 @@
 - The renderer submits only a fixed harness ID and method ID. It never submits a URL, interpreter, script body, argv, or environment.
 - Only exact HTTPS URLs registered in Go source may execute; every redirect must remain HTTPS and the redirect count is bounded.
 - Download the entire bounded response before execution. Never use `curl | shell`, `irm | iex`, `shell -c`, or PowerShell `-Command`.
-- Store temporary scripts only beneath `<AO_DATA_DIR>/installers/tmp`; use `0700` job directories and `0600` script files on Unix, and remove them after every outcome.
+- Store temporary scripts only beneath `<OPEN_AGENTS_DATA_DIR>/installers/tmp`; use `0700` job directories and `0600` script files on Unix, and remove them after every outcome.
 - Keep package managers preferred when viable. The official script is an automatic fallback and a selectable alternate method.
 - Never use `sudo`, interactive stdin, automatic retries, or bulk install-at-startup behavior.
 - Preserve the existing `installing -> verifying -> succeeded|failed` lifecycle, interrupted-job recovery, Droid activity gate, bounded output, and adapter-backed version verification.
@@ -35,7 +35,7 @@
 - Modify: `backend/internal/adapters/systemexec/systemexec_unix_test.go`
 
 **Interfaces:**
-- Consumes: the existing `ports.InstallCommand`, `Adapter.RunInstall`, process-group cancellation helpers, and AO data directory supplied later by daemon wiring.
+- Consumes: the existing `ports.InstallCommand`, `Adapter.RunInstall`, process-group cancellation helpers, and Open Agents data directory supplied later by daemon wiring.
 - Produces: `ports.InstallScriptCommand`, `ports.InstallScriptResult`, `ports.InstallScriptRunner`, `systemexec.New(dataDir string) Adapter`, and `Adapter.RunInstallScript(context.Context, ports.InstallScriptCommand, io.Writer, io.Writer) (ports.InstallScriptResult, error)`.
 
 - [ ] **Step 1: Define the failing port and adapter tests**
@@ -83,9 +83,9 @@ entries, err := os.ReadDir(filepath.Join(dataDir, "installers", "tmp"))
 if err != nil || len(entries) != 0 { t.Fatalf("temporary scripts remain: %v, %v", entries, err) }
 ```
 
-Add `TestNewUsesAODataDir` and assert `New(dataDir).installerRoot` equals
+Add `TestNewUsesOpenAgentsDataDir` and assert `New(dataDir).installerRoot` equals
 `filepath.Join(dataDir, "installers", "tmp")`; this is the regression guard
-for AO's data-directory boundary used by production daemon wiring.
+for Open Agents's data-directory boundary used by production daemon wiring.
 
 Add table cases proving an `http://` initial URL, an HTTPS redirect to HTTP, more than five redirects, a non-2xx response, and a response larger than `4 << 20` bytes return errors without invoking the interpreter. Add a canceled-context case that blocks the server response until `ctx.Done()` and expects `context.Canceled`.
 
@@ -104,7 +104,7 @@ Expected: compilation fails because the script port, adapter constructor, and `R
 
 - [ ] **Step 3: Implement the downloader and private execution boundary**
 
-Change `Adapter` to hold its AO-owned installer root and HTTP client while preserving zero-value behavior for non-script methods:
+Change `Adapter` to hold its Open Agents-owned installer root and HTTP client while preserving zero-value behavior for non-script methods:
 
 ```go
 type Adapter struct {
@@ -512,7 +512,7 @@ In `2026-08-31-safe-harness-installer-design.md`, replace:
 Mutable `curl | shell` recipes are not executed automatically.
 ```
 
-with the approved policy: exact first-party HTTPS scripts are downloaded completely into AO-owned private storage and executed automatically after one Install click; package managers remain preferred; streamed shell pipelines remain prohibited.
+with the approved policy: exact first-party HTTPS scripts are downloaded completely into Open Agents-owned private storage and executed automatically after one Install click; package managers remain preferred; streamed shell pipelines remain prohibited.
 
 In `2026-08-31-safe-harness-installer.md`, replace tests and checklist items that require script-only plans to be manual. Add explicit checklist items for HTTPS enforcement, bounded download/file permissions/cleanup, official-installer fallback selection, and one-click renderer coverage.
 
@@ -572,9 +572,9 @@ npm run build
 
 Expected: every command exits 0.
 
-- [ ] **Step 3: Inspect the real Electron UI against isolated AO data**
+- [ ] **Step 3: Inspect the real Electron UI against isolated Open Agents data**
 
-Launch the desktop app using the `ao-desktop-dev` skill and isolated paths under `~/.ao/dev`. Open Settings → Harness and confirm:
+Launch the desktop app using the `open-agents-desktop-dev` skill and isolated paths under `~/.open-agents/dev`. Open Settings → Harness and confirm:
 
 - Cursor, Kiro, and other natively supported script-only rows show **Install** and method **Official installer**;
 - one click is represented by a single Install button with no confirmation dialog;
@@ -604,11 +604,11 @@ Expected: all verification commands exit 0 and the worktree contains no unrelate
 
 ```bash
 git push origin codex/harness-install-settings-main
-gh pr edit 4221 --repo Untrivial-ai/agent-orchestrator --body-file /tmp/pr-4221-body.md
-gh pr view 4221 --repo Untrivial-ai/agent-orchestrator --json url,headRefOid,statusCheckRollup
+gh pr edit 4221 --repo sudo-adduser-jordan/open-agents --body-file /tmp/pr-4221-body.md
+gh pr view 4221 --repo sudo-adduser-jordan/open-agents --json url,headRefOid,statusCheckRollup
 ```
 
-The updated PR body must state that Install is one click with no extra confirmation, package managers remain preferred, exact first-party HTTPS scripts are downloaded to AO-owned private files before execution, script contents remain mutable vendor-controlled code, and native-unsupported Windows targets remain manual/WSL.
+The updated PR body must state that Install is one click with no extra confirmation, package managers remain preferred, exact first-party HTTPS scripts are downloaded to Open Agents-owned private files before execution, script contents remain mutable vendor-controlled code, and native-unsupported Windows targets remain manual/WSL.
 
 - [ ] **Step 7: Restack authentication PR #4523 only after #4221 is final**
 

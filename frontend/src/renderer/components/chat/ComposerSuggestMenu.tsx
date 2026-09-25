@@ -208,5 +208,5 @@ export function ComposerSuggestMenu({
 
 function displayBadge(badge?: string): string | undefined {
 	if (!badge || badge.toLowerCase() === "agent") return undefined;
-	return badge.toLowerCase() === "ao" ? "AO" : badge;
+	return badge.toLowerCase() === "open-agents" ? "Open Agents" : badge;
 }

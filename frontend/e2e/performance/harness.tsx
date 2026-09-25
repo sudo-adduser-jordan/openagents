@@ -1,5 +1,5 @@
 /// <reference path="../../src/renderer/global.d.ts" />
-// Browser-only workload fixture: real AO rendering, deterministic synthetic data.
+// Browser-only workload fixture: real Open Agents rendering, deterministic synthetic data.
 // This entry is never imported by the application or included in its build.
 import { type ReactNode } from "react";
 import { createRoot } from "react-dom/client";
@@ -206,12 +206,12 @@ export const performanceHarness = {
 	},
 	async history() {
 		useUiStore.setState({
-			inspectorSessions: { "ao-long": { isOpen: false, view: "summary" } },
+			inspectorSessions: { "open-agents-long": { isOpen: false, view: "summary" } },
 		});
 		render(
 			<ChatWorkspace
 				snapshot={chatFixtureLongHistory(250)}
-				sessionTitle="AO responsiveness benchmark"
+				sessionTitle="Open Agents responsiveness benchmark"
 			/>,
 		);
 		await document.fonts.ready;

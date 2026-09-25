@@ -4,7 +4,7 @@ import (
 	"errors"
 	"time"
 
-	"github.com/aoagents/agent-orchestrator/backend/pkg/contract"
+	"github.com/sudo-adduser-jordan/open-agents/backend/pkg/contract"
 )
 
 // ErrDuplicateReviewRun is returned by InsertReviewRun when a run already exists
@@ -26,7 +26,7 @@ type Review struct {
 	// across passes and exposed so the UI can attach its terminal.
 	ReviewerHandleID string `json:"reviewerHandleId"`
 	AgentSessionID   string `json:"agentSessionId"`
-	// ReviewerLaunchID is the AO runtime generation that owns the live reviewer
+	// ReviewerLaunchID is the Open Agents runtime generation that owns the live reviewer
 	// pane on this row. It fences delayed hooks from an older replaced reviewer.
 	ReviewerLaunchID string `json:"-"`
 	// ReviewerActivityState is the latest activity hook reported by the review
@@ -55,13 +55,13 @@ type ReviewRun struct {
 	TargetSHA string          `json:"targetSha"`
 	Status    ReviewRunStatus `json:"status"`
 	Verdict   ReviewVerdict   `json:"verdict"`
-	// Body is the review text the reviewer submitted. It is recorded for AO's
+	// Body is the review text the reviewer submitted. It is recorded for Open Agents's
 	// own tracking; the reviewer also posts the review to the PR itself.
 	Body string `json:"body"`
 	// GithubReviewID is the id of the GitHub PR review the reviewer posted for
 	// this pass (the `gh api .../pulls/{n}/reviews` object id), recorded at
 	// submit time. It is empty when the reviewer could not post to the provider.
-	// When the pass requests changes, AO includes it in the message to the
+	// When the pass requests changes, Open Agents includes it in the message to the
 	// worker so the worker knows exactly which review to address and reply to.
 	GithubReviewID string     `json:"githubReviewId"`
 	CreatedAt      time.Time  `json:"createdAt"`
@@ -82,29 +82,29 @@ const (
 )
 
 // ReviewRunStatus is the lifecycle state of a single review pass.
-type ReviewRunStatus = contract.AOReviewRunStatus
+type ReviewRunStatus = contract.OpenAgentsReviewRunStatus
 
 // Review run statuses.
 const (
-	ReviewRunRunning   = contract.AOReviewRunRunning
-	ReviewRunComplete  = contract.AOReviewRunComplete
-	ReviewRunDelivered = contract.AOReviewRunDelivered
-	ReviewRunFailed    = contract.AOReviewRunFailed
-	ReviewRunCancelled = contract.AOReviewRunCancelled
+	ReviewRunRunning   = contract.OpenAgentsReviewRunRunning
+	ReviewRunComplete  = contract.OpenAgentsReviewRunComplete
+	ReviewRunDelivered = contract.OpenAgentsReviewRunDelivered
+	ReviewRunFailed    = contract.OpenAgentsReviewRunFailed
+	ReviewRunCancelled = contract.OpenAgentsReviewRunCancelled
 )
 
 // ReviewVerdict is the outcome a reviewer reports. The empty verdict marks a
 // run that has not produced an outcome yet.
-type ReviewVerdict = contract.AOReviewVerdict
+type ReviewVerdict = contract.OpenAgentsReviewVerdict
 
 // Review verdicts.
 const (
-	VerdictNone             = contract.AOReviewVerdictNone
-	VerdictApproved         = contract.AOReviewVerdictApproved
-	VerdictChangesRequested = contract.AOReviewVerdictChangesRequested
+	VerdictNone             = contract.OpenAgentsReviewVerdictNone
+	VerdictApproved         = contract.OpenAgentsReviewVerdictApproved
+	VerdictChangesRequested = contract.OpenAgentsReviewVerdictChangesRequested
 )
 
-// CurrentHeadReviewRun is one AO review pass recorded against a PR's current
+// CurrentHeadReviewRun is one Open Agents review pass recorded against a PR's current
 // head commit, reduced to the fields a derived read model needs.
 type CurrentHeadReviewRun struct {
 	SessionID SessionID

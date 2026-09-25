@@ -4,7 +4,7 @@ Operational guidance for coding agents working in this repository. Keep changes 
 
 ## Repo layout
 
-- `backend/` — Go rewrite of Agent Orchestrator: Cobra `ao` CLI, loopback HTTP daemon, services, SQLite storage, lifecycle/reaper, runtime/workspace/agent/tracker adapters, terminal mux, and tests.
+- `backend/` — Go rewrite of Open Agents: Cobra `open-agents` CLI, loopback HTTP daemon, services, SQLite storage, lifecycle/reaper, runtime/workspace/agent/tracker adapters, terminal mux, and tests.
 - `frontend/` — Electron + React supervisor wired to the daemon via the generated typed client. Treat it as a thin supervisor/UI surface; do not move daemon logic into it.
 - `docs/` — current architecture/status notes. Start here before changing lifecycle, CLI, agents, storage, or daemon behavior.
 - `test/` — external smoke/e2e assets, including the CLI fresh-install container check.
@@ -30,7 +30,7 @@ go build ./...
 go test ./...
 go test -race ./...
 go vet ./...
-go run ./cmd/ao start
+go run ./cmd/open-agents start
 ```
 
 Frontend-specific checks:
@@ -41,22 +41,22 @@ npm run typecheck
 npm run build
 ```
 
-When showing or demoing frontend changes, run `ao preview [url]` from inside the session so the change renders in the desktop browser panel (the inspector rail's Browser tab); do not just describe it.
+When showing or demoing frontend changes, run `open-agents preview [url]` from inside the session so the change renders in the desktop browser panel (the inspector rail's Browser tab); do not just describe it.
 
 ### Desktop lab (running the real Electron app for UI review)
 
-For visual verification that needs the real app rather than `ao preview` or `dev:web`, run the checkout in an isolated worktree against scratch data. Never use the invoking working tree (it may hold unrelated uncommitted work) and never touch the user's real `~/.ao` data.
+For visual verification that needs the real app rather than `open-agents preview` or `dev:web`, run the checkout in an isolated worktree against scratch data. Never use the invoking working tree (it may hold unrelated uncommitted work) and never touch the user's real `~/.open-agents` data.
 
 ```bash
-git worktree add /tmp/ao-lab <branch>   # the PR branch under review
-cd /tmp/ao-lab/frontend
+git worktree add /tmp/open-agents-lab <branch>   # the PR branch under review
+cd /tmp/open-agents-lab/frontend
 npm ci                                  # never symlink node_modules from another checkout (see below)
 npm run build:daemon -- --dev
-AO_DATA_DIR=/tmp/ao-lab-data ./node_modules/.bin/electron-forge start
+OPEN_AGENTS_DATA_DIR=/tmp/open-agents-lab-data ./node_modules/.bin/electron-forge start
 ```
 
 - **Run a real `npm ci`.** Symlinking another checkout's `node_modules` makes React resolve from two physical paths and shares the Vite optimizer cache across checkouts: the symptom is a black window with `Invalid hook call` / `useSyncExternalStore` errors in the renderer console. It also writes `.vite/deps` output into the other checkout's tree.
-- **Isolate data with `AO_DATA_DIR`.** The lab starts with an empty board; create throwaway sessions inside it to exercise list/detail flows. The Electron `userData` dir already defaults to a dev path, not the production one.
+- **Isolate data with `OPEN_AGENTS_DATA_DIR`.** The lab starts with an empty board; create throwaway sessions inside it to exercise list/detail flows. The Electron `userData` dir already defaults to a dev path, not the production one.
 - **Diagnose with `ELECTRON_ENABLE_LOGGING=1`.** Renderer console errors (the cause of most blank windows) land in the launcher's stdout.
 - **Killing the forge wrapper is not enough.** The Electron main process cmdline is just `Electron .`, so `pkill -f electron-forge` leaves the app running and the next launch exits silently. Kill the `Electron.app/.../MacOS/Electron` main process explicitly before relaunching.
 - A missing-dependency warning for a lazily imported module (for example `mermaid`, which is dynamically imported on first use) does not blank the window; treat it as informational.
@@ -83,7 +83,7 @@ For code entry points:
 ## Distribution
 
 - The **desktop app** (GitHub Releases) is the canonical, auto-updating install path. Point users there first.
-- **npm still works but is no longer recommended.** `0.10.0` is the final version published to npm; the `@aoagents/ao` package is frozen and will not receive further updates. It remains a legacy on-ramp for users who already have `ao` on their PATH, where `ao start` fetches and opens the desktop build. Do not add features, docs, or flows that treat npm as the intended way to install AO.
+- **The desktop app is the only supported Open Agents installation path.** A previously published npm package remains frozen externally as a historical artifact; it is not an Open Agents install path, compatibility alias, or supported distribution channel. Do not add docs or flows that present it as the new product.
 - **Exactly one publisher.** Only the designated release conductor runs a real publish, on any channel. Divergent artifacts from multiple publishers made the 28-29 Jul macOS incident unreadable. Use the fork dev loop for test builds. Full rule and rationale: `frontend/docs/desktop-release.md`, "Hard rule: exactly one publisher".
 - **Verify macOS artifacts with `frontend/scripts/verify-mac-artifact.sh`, never by hand.** It extracts with `ditto -x -k` and runs `codesign --verify --deep --strict`, `spctl -a -vv -t exec`, `xcrun stapler validate`. Plain `unzip` breaks the seal and yields a convincing false failure; `spctl` without `-vv` prints nothing at all on success.
 - **macOS ships both a `.zip` and a `.dmg`.** The dmg is first install only. The zip and `latest-mac.yml` must keep publishing forever: electron-updater cannot install an update from a dmg. macOS differential updates are permanently disabled (full download only); see issues #3151 and #3267.
@@ -114,7 +114,7 @@ For code entry points:
 - Keep generated OpenAPI/API DTO drift in mind: controller response shapes live in `backend/internal/httpd/controllers/dto.go` and tests may assert CLI/HTTP wire compatibility.
 - Do not add network calls to tests unless the package already has an integration/e2e pattern for them. Prefer `httptest`, fakes, and injected dependencies.
 - Do not commit local run state, daemon data, temporary worktrees, build outputs, or credentials.
-- All AO-owned app state lives under `~/.ao` only. The daemon's data dir, `running.json`, worktrees, and the Electron supervisor's `userData` (Chromium cache, cookies, local/session storage, crash dumps) must resolve under `~/.ao` (overridable via `AO_DATA_DIR`/`AO_RUN_FILE`). Never write to or otherwise use `~/Library/Application Support` or any other OS default app-data location for AO state. The sole read exception is an explicit, user-initiated browser-profile import: it may read only validated, known source-browser profile files, must never write to the source profile, must keep source paths out of the renderer, and must place every snapshot, staging file, and imported result under `~/.ao`. `main.ts` pins Electron's `userData` to `~/.ao/electron`; do not remove that override or rely on Electron's default path.
+- All Open Agents-owned app state lives under `~/.open-agents` only. The daemon's data dir, `running.json`, worktrees, and the Electron supervisor's `userData` (Chromium cache, cookies, local/session storage, crash dumps) must resolve under `~/.open-agents` (overridable via `OPEN_AGENTS_DATA_DIR`/`OPEN_AGENTS_RUN_FILE`). Never write to or otherwise use `~/Library/Application Support` or any other OS default app-data location for Open Agents state. The sole read exception is an explicit, user-initiated browser-profile import: it may read only validated, known source-browser profile files, must never write to the source profile, must keep source paths out of the renderer, and must place every snapshot, staging file, and imported result under `~/.open-agents`. `main.ts` pins Electron's `userData` to `~/.open-agents/electron`; do not remove that override or rely on Electron's default path.
 
 ## API contract changes
 

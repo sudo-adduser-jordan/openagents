@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useState } from "react";
 
-export const SIDEBAR_UPDATE_DISMISSAL_STORAGE_KEY = "ao.sidebar.dismissed-update";
+export const SIDEBAR_UPDATE_DISMISSAL_STORAGE_KEY = "open-agents.sidebar.dismissed-update";
 export const SIDEBAR_UPDATE_DISMISSAL_MS = 24 * 60 * 60 * 1000;
 
 type DismissedSidebarUpdate = {

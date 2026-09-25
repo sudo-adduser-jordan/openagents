@@ -66,12 +66,12 @@ func TestResolveNeverFallsBackToCurrentOrConventionalBranch(t *testing.T) {
 	if !errors.Is(err, ErrUnresolved) {
 		t.Fatalf("Resolve error = %v, want ErrUnresolved", err)
 	}
-	if !strings.Contains(err.Error(), "no remote or AO-recorded default") {
+	if !strings.Contains(err.Error(), "no remote or Open Agents-recorded default") {
 		t.Fatalf("Resolve error = %v, want missing authoritative metadata detail", err)
 	}
 }
 
-func TestResolveUsesBranchAORecordedAtInitialization(t *testing.T) {
+func TestResolveUsesBranchRecordedAtOpenAgentsInitialization(t *testing.T) {
 	repo := localRepo(t, "main")
 	runGit(t, repo, "config", "--local", ManagedDefaultConfigKey, "main")
 	runGit(t, repo, "switch", "-c", "feature/temporary")
@@ -80,19 +80,19 @@ func TestResolveUsesBranchAORecordedAtInitialization(t *testing.T) {
 	if err != nil {
 		t.Fatalf("Resolve: %v", err)
 	}
-	if resolution.Branch != "main" || resolution.Ref != "refs/heads/main" || resolution.Source != SourceAOInitialized {
-		t.Fatalf("resolution = %#v, want AO-initialized main", resolution)
+	if resolution.Branch != "main" || resolution.Ref != "refs/heads/main" || resolution.Source != SourceOpenAgentsInitialized {
+		t.Fatalf("resolution = %#v, want Open Agents-initialized main", resolution)
 	}
 }
 
-func TestResolveBackfillsLegacyAOInitializedRepository(t *testing.T) {
+func TestResolveBackfillsRecordedOpenAgentsInitializedRepository(t *testing.T) {
 	for _, tc := range []struct {
 		name    string
 		author  string
 		email   string
 		subject string
 	}{
-		{name: "initialized folder", author: "Agent Orchestrator", email: "ao@example.com", subject: legacyInitialCommitSubject},
+		{name: "initialized folder", author: "Open Agents", email: "open-agents@example.com", subject: legacyInitialCommitSubject},
 		{name: "workspace root", author: "Developer", email: "developer@example.com", subject: legacyWorkspaceCommitSubject},
 	} {
 		t.Run(tc.name, func(t *testing.T) {
@@ -107,8 +107,8 @@ func TestResolveBackfillsLegacyAOInitializedRepository(t *testing.T) {
 			if err != nil {
 				t.Fatalf("Resolve legacy repository: %v", err)
 			}
-			if resolution.Branch != legacyDefaultBranch || resolution.Ref != "refs/heads/main" || resolution.Source != SourceAOInitialized {
-				t.Fatalf("resolution = %#v, want backfilled AO main", resolution)
+			if resolution.Branch != legacyDefaultBranch || resolution.Ref != "refs/heads/main" || resolution.Source != SourceOpenAgentsInitialized {
+				t.Fatalf("resolution = %#v, want backfilled Open Agents main", resolution)
 			}
 			if got := gitOutput(t, repo, "config", "--local", "--get", ManagedDefaultConfigKey); got != legacyDefaultBranch {
 				t.Fatalf("backfilled marker = %q, want %q", got, legacyDefaultBranch)
@@ -196,8 +196,8 @@ func localRepo(t *testing.T, branch string) string {
 
 func configureGit(t *testing.T, repo string) {
 	t.Helper()
-	runGit(t, repo, "config", "user.email", "ao@example.com")
-	runGit(t, repo, "config", "user.name", "AO Test")
+	runGit(t, repo, "config", "user.email", "open-agents@example.com")
+	runGit(t, repo, "config", "user.name", "Open Agents Test")
 }
 
 func gitOutput(t *testing.T, repo string, args ...string) string {
@@ -224,7 +224,7 @@ func run(t *testing.T, binary string, args ...string) {
 	}
 }
 
-func TestResolveAOInitializedEmptyCloneBeforeAndAfterFirstPush(t *testing.T) {
+func TestResolveOpenAgentsInitializedEmptyCloneBeforeAndAfterFirstPush(t *testing.T) {
 	for _, legacy := range []bool{false, true} {
 		t.Run(fmt.Sprint("legacy=", legacy), func(t *testing.T) {
 			ctx := context.Background()
@@ -233,7 +233,7 @@ func TestResolveAOInitializedEmptyCloneBeforeAndAfterFirstPush(t *testing.T) {
 			repo := filepath.Join(t.TempDir(), "clone")
 			run(t, "git", "clone", origin, repo)
 			configureGit(t, repo)
-			runGit(t, repo, "-c", "user.name=Agent Orchestrator", "commit", "--allow-empty", "-m", "initial commit")
+			runGit(t, repo, "-c", "user.name=Open Agents", "commit", "--allow-empty", "-m", "initial commit")
 			if !legacy {
 				runGit(t, repo, "config", "--local", ManagedDefaultConfigKey, "main")
 			}
@@ -247,7 +247,7 @@ func TestResolveAOInitializedEmptyCloneBeforeAndAfterFirstPush(t *testing.T) {
 				} else {
 					got, err = resolver.Resolve(ctx, ctx, repo)
 				}
-				if err != nil || got.Ref != "refs/heads/main" || got.Source != SourceAOInitialized {
+				if err != nil || got.Ref != "refs/heads/main" || got.Source != SourceOpenAgentsInitialized {
 					t.Fatalf("before first push (inspect=%v): %#v, %v", inspect, got, err)
 				}
 			}
@@ -261,7 +261,7 @@ func TestResolveAOInitializedEmptyCloneBeforeAndAfterFirstPush(t *testing.T) {
 	}
 }
 
-func TestAOInitializedFallbackRejectsExistingRemoteBranches(t *testing.T) {
+func TestOpenAgentsInitializedFallbackRejectsExistingRemoteBranches(t *testing.T) {
 	origin, repo := remoteRepo(t, "main")
 	runGit(t, repo, "config", "--local", ManagedDefaultConfigKey, "main")
 	runGit(t, repo, "symbolic-ref", "--delete", "refs/remotes/origin/HEAD")
@@ -272,7 +272,7 @@ func TestAOInitializedFallbackRejectsExistingRemoteBranches(t *testing.T) {
 	}
 }
 
-func TestAOInitializedFallbackDoesNotOverrideKnownRemoteDefault(t *testing.T) {
+func TestOpenAgentsInitializedFallbackDoesNotOverrideKnownRemoteDefault(t *testing.T) {
 	origin, _ := remoteRepo(t, "trunk")
 	repo := localRepo(t, "main")
 	runGit(t, repo, "config", "--local", ManagedDefaultConfigKey, "main")

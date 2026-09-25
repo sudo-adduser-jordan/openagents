@@ -2,7 +2,7 @@ import * as Dialog from "@radix-ui/react-dialog";
 import { ChevronLeft, Folder, Link2, LoaderCircle, X } from "lucide-react";
 import { AnimatePresence, motion } from "motion/react";
 import { type FormEvent, useCallback, useEffect, useRef, useState } from "react";
-import { aoBridge } from "../lib/bridge";
+import { openAgentsBridge } from "../lib/bridge";
 import { isMacPlatform, isWindowsPlatform } from "../lib/platform";
 import { Button } from "./ui/button";
 import { Input } from "./ui/input";
@@ -17,7 +17,7 @@ export type CloneRepositorySelection = CloneRepositoryDetails & {
 	targetPath: string;
 };
 
-export const LAST_CLONE_DESTINATION_KEY = "ao.clone.lastDestinationParent";
+export const LAST_CLONE_DESTINATION_KEY = "open-agents.clone.lastDestinationParent";
 
 export default function CloneRepositoryDialog({
 	disabled,
@@ -146,7 +146,7 @@ export default function CloneRepositoryDialog({
 		}
 		setRepositoryCheck("checking");
 		const timer = window.setTimeout(() => {
-			void aoBridge.app.checkGitRepository(value.remoteUrl.trim()).then((exists) => {
+			void openAgentsBridge.app.checkGitRepository(value.remoteUrl.trim()).then((exists) => {
 				if (requestId !== repositoryCheckRequest.current) return;
 				setRepositoryCheck(exists ? "valid" : "invalid");
 			}).catch(() => {
@@ -162,9 +162,9 @@ export default function CloneRepositoryDialog({
 		setDestinationPickerError(null);
 		setChoosingDestination(true);
 		try {
-			const selected = await aoBridge.app.chooseDirectory({
+			const selected = await openAgentsBridge.app.chooseDirectory({
 				title: "Choose where to clone the repository",
-				defaultPath: "~/ao/projects",
+				defaultPath: "~/open-agents/projects",
 			});
 			if (requestId !== destinationPickerRequest.current) return;
 			if (!selected) return;
@@ -230,7 +230,7 @@ export default function CloneRepositoryDialog({
 								{"Clone a Git repository"}
 							</Dialog.Title>
 							<Dialog.Description className="sr-only">
-								{"Paste a Git URL and choose where AO should create the local checkout."}
+								{"Paste a Git URL and choose where Open Agents should create the local checkout."}
 							</Dialog.Description>
 						</div>
 						<button
@@ -334,7 +334,7 @@ export default function CloneRepositoryDialog({
 								<p id="cloneDestinationHelp" className="text-pretty text-[12px] leading-5 text-[var(--color-text-import-muted)]">
 									{targetPath
 										? `Repository will be created at ${targetPath}.`
-										: "AO will create a new repository folder inside this destination."}
+										: "Open Agents will create a new repository folder inside this destination."}
 								</p>
 								{destinationError ? (
 									<p id="cloneDestinationError" className="text-pretty text-[12px] leading-5 text-destructive" role="alert">

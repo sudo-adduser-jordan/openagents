@@ -23,7 +23,7 @@ import {
 	type FileAnnotationModel,
 } from "./WorkspaceDiffView";
 import { ReadOnlyFileView } from "./ReadOnlyFileView";
-import { AoDiffFile } from "./diffs/AoDiffFile";
+import { OpenAgentsDiffFile } from "./diffs/OpenAgentsDiffFile";
 import { Button } from "./ui/button";
 import { Tooltip, TooltipContent, TooltipTrigger } from "./ui/tooltip";
 import { MarkdownFileView } from "./markdown/MarkdownFileView";
@@ -286,7 +286,7 @@ export function FileContentPane({
 				{tabs}
 				<EditProvider createEditor={createReviewEditor}>
 				{effectiveMode === "diff" ? (
-					<AoDiffFile
+					<OpenAgentsDiffFile
 						annotation={annotation}
 						detail={detail}
 						fallback={fallback}

@@ -8,7 +8,7 @@ const require = createRequire(import.meta.url);
 const { zipSync } = require("cross-zip");
 
 export async function macV2Fixture(arches = ["arm64", "x64"]) {
-  const dir = mkdtempSync(join(tmpdir(), "ao-v2-fixture-"));
+  const dir = mkdtempSync(join(tmpdir(), "open-agents-v2-fixture-"));
   const source = join(dir, "source");
   const old = join(dir, "old");
   mkdirSync(source); mkdirSync(old);
@@ -26,8 +26,8 @@ export async function macV2Fixture(arches = ["arm64", "x64"]) {
     for (let offset = 0; offset < previous.length; offset += 64) createHash("sha512").update(`${arch}:${offset}`).digest().copy(previous, offset);
     const target = Buffer.from(previous);
     for (let offset = 180_000; offset < 228_000; offset += 64) createHash("sha512").update(`patch:${offset}`).digest().copy(target, offset);
-    const oldPath = join(old, `Agent.Orchestrator-darwin-${arch}-1.0.0.zip`);
-    const zipPath = join(dir, `Agent.Orchestrator-darwin-${arch}-2.0.0.zip`);
+    const oldPath = join(old, `open-agents-darwin-${arch}-1.0.0.zip`);
+    const zipPath = join(dir, `open-agents-darwin-${arch}-2.0.0.zip`);
     zip(previous, oldPath); zip(target, zipPath);
     inputs.push({ arch, zipPath, baseline: { identity: baseline, zipPath: oldPath } });
   }

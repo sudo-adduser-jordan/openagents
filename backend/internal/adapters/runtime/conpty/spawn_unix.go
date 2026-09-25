@@ -15,7 +15,7 @@ import (
 	"time"
 )
 
-// defaultSpawnHost launches the current AO executable as a detached pty-host.
+// defaultSpawnHost launches the current Open Agents executable as a detached pty-host.
 // Setsid keeps the host alive when the daemon exits or Electron updates, while
 // the registry lets the replacement daemon adopt it without touching the PTY.
 func defaultSpawnHost(ctx context.Context, sessionID, cwd string, argv []string, env map[string]string) (string, int, error) {
@@ -47,7 +47,7 @@ func defaultSpawnHost(ctx context.Context, sessionID, cwd string, argv []string,
 	if err != nil {
 		return "", 0, fmt.Errorf("%s pty spawn: stdout pipe: %w", runtime.GOOS, err)
 	}
-	stderrFile, err := os.CreateTemp("", "ao-pty-host-stderr-*.log")
+	stderrFile, err := os.CreateTemp("", "open-agents-pty-host-stderr-*.log")
 	if err != nil {
 		_ = stdout.Close()
 		_ = childStdout.Close()

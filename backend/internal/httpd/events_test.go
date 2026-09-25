@@ -12,8 +12,8 @@ import (
 	"testing"
 	"time"
 
-	"github.com/aoagents/agent-orchestrator/backend/internal/cdc"
-	"github.com/aoagents/agent-orchestrator/backend/internal/config"
+	"github.com/sudo-adduser-jordan/open-agents/backend/internal/cdc"
+	"github.com/sudo-adduser-jordan/open-agents/backend/internal/config"
 )
 
 type fakeEventSource struct {
@@ -199,8 +199,8 @@ func TestEventsStreamClampsCursorAheadOfCurrentDatabaseToHead(t *testing.T) {
 	defer resp.Body.Close()
 
 	// resetEventSource reports a head of 1, so a cursor of 100 lands on 1.
-	if got := resp.Header.Get("X-AO-Event-After"); got != "1" {
-		t.Fatalf("X-AO-Event-After = %q, want 1 (head, not a replay from zero)", got)
+	if got := resp.Header.Get("X-OPEN-AGENTS-Event-After"); got != "1" {
+		t.Fatalf("X-OPEN-AGENTS-Event-After = %q, want 1 (head, not a replay from zero)", got)
 	}
 
 	// The replayed event (seq 1) is at the cursor, so it is not re-sent. Only a

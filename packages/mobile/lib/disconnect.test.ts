@@ -103,7 +103,7 @@ describe("forgetServer", () => {
 });
 
 // The bug this covers: forgetting cleared only the legacy config, so the host
-// record and its token in ao.hostToken.<id> survived. resolveActiveConfig then
+// record and its token in openAgents.hostToken.<id> survived. resolveActiveConfig then
 // raced that machine's endpoints on the next launch and silently reconnected to
 // the server the user had just forgotten.
 describe("forgetServer and the host list", () => {

@@ -48,7 +48,7 @@ export function useGitHubAuthRequirement(loginActive = false) {
 	return useQuery({
 		...githubAuthRequirementQueryOptions,
 		// The browser/device flow can finish before its PTY exit reaches the
-		// renderer. Probe only while AO owns an active login terminal so the card
+		// renderer. Probe only while Open Agents owns an active login terminal so the card
 		// closes promptly after authorization without permanent background polling.
 		refetchInterval: loginActive ? GITHUB_AUTH_POLL_INTERVAL_MS : false,
 	});
@@ -119,7 +119,7 @@ export function useGitHubAuthAutoLoginOffered() {
 	return { offered: query.data, markOffered };
 }
 
-/** Single source of truth for whether the machine satisfies AO's startup
+/** Single source of truth for whether the machine satisfies Open Agents's startup
  *  requirements. Shared by SessionsBoard (which must keep the startup screen
  *  mounted while blocked) and DaemonStartupLoader (which renders the gate) so
  *  both read the same react-query cache entry and never disagree. */

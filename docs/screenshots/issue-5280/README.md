@@ -2,7 +2,7 @@
 
 Captured directly from the running Electron desktop app in an isolated checkout, with its native preload bridge and local daemon connected. The empty standalone chat uses OpenCode's actual 72-model catalog. No task prompt was sent.
 
-The app runs from `/tmp/ao-5280-desktop` with scratch state under `~/.ao/dev/issue-5280`. The renderer uses `http://localhost:5173` and the daemon uses `http://127.0.0.1:55302`. These captures include the real sidebar, chat tab, and composer.
+The app runs from `/tmp/open-agents-5280-desktop` with scratch state under `~/.open-agents/dev/issue-5280`. The renderer uses `http://localhost:5173` and the daemon uses `http://127.0.0.1:55302`. These captures include the real sidebar, chat tab, and composer.
 
 For the before image, only `TurnSettingsBar.tsx` was temporarily restored to its pre-change source at `109c11ada` in the isolated desktop checkout. The after images and recording use the current branch implementation, including the simplified result-count footer. The final source was restored after the comparison.
 

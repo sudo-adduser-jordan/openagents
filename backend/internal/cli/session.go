@@ -281,7 +281,7 @@ func newSessionExitAgentCommand(ctx *commandContext) *cobra.Command {
 	var opts sessionOptions
 	cmd := &cobra.Command{
 		Use:   "exit-agent <id>",
-		Short: "Exit an agent without terminating its AO session",
+		Short: "Exit an agent without terminating its Open Agents session",
 		Args:  oneSessionIDArg,
 		RunE: func(cmd *cobra.Command, args []string) error {
 			id, err := normalizeSessionID(args[0])
@@ -300,7 +300,7 @@ func newSessionResumeAgentCommand(ctx *commandContext) *cobra.Command {
 	var opts sessionOptions
 	cmd := &cobra.Command{
 		Use:   "resume-agent <id>",
-		Short: "Resume an exited agent in its existing AO session",
+		Short: "Resume an exited agent in its existing Open Agents session",
 		Args:  oneSessionIDArg,
 		RunE: func(cmd *cobra.Command, args []string) error {
 			id, err := normalizeSessionID(args[0])
@@ -355,12 +355,12 @@ func newSessionClaimPRCommand(ctx *commandContext) *cobra.Command {
 	cmd := &cobra.Command{
 		Use:   "claim-pr [<session-id>] <pr-ref>",
 		Short: "Attach an existing PR to a session",
-		Long:  "Attach an existing PR to a session. When session-id is omitted, the current session is read from AO_SESSION_ID.",
-		Example: `  # From inside an AO worker session
-  ao session claim-pr 88
+		Long:  "Attach an existing PR to a session. When session-id is omitted, the current session is read from OPEN_AGENTS_SESSION_ID.",
+		Example: `  # From inside an Open Agents worker session
+  open-agents session claim-pr 88
 
   # Target a session explicitly
-  ao session claim-pr mer-3 88`,
+  open-agents session claim-pr mer-3 88`,
 		Args: func(cmd *cobra.Command, args []string) error {
 			if err := cobra.RangeArgs(1, 2)(cmd, args); err != nil {
 				return usageError{err}
@@ -387,9 +387,9 @@ func resolveSessionClaimPRArgs(args []string) (sessionID, ref string, err error)
 		sessionID, err = normalizeSessionID(args[0])
 		return sessionID, args[1], err
 	}
-	sessionID = strings.TrimSpace(os.Getenv("AO_SESSION_ID"))
+	sessionID = strings.TrimSpace(os.Getenv("OPEN_AGENTS_SESSION_ID"))
 	if sessionID == "" {
-		return "", "", usageError{errors.New("session id is required (pass <session-id> or set AO_SESSION_ID)")}
+		return "", "", usageError{errors.New("session id is required (pass <session-id> or set OPEN_AGENTS_SESSION_ID)")}
 	}
 	sessionID, err = normalizeSessionID(sessionID)
 	return sessionID, args[0], err
@@ -939,7 +939,7 @@ func writeSessionList(cmd *cobra.Command, sessions []sessionDTO, summaries map[s
 		}
 	}
 	if hiddenOrchestratorCount > 0 {
-		_, err := fmt.Fprintf(out, "%d orchestrator session%s hidden. Use --all or `ao orchestrator ls` to show.\n", hiddenOrchestratorCount, pluralS(hiddenOrchestratorCount))
+		_, err := fmt.Fprintf(out, "%d orchestrator session%s hidden. Use --all or `open-agents orchestrator ls` to show.\n", hiddenOrchestratorCount, pluralS(hiddenOrchestratorCount))
 		return err
 	}
 	return nil

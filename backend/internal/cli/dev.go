@@ -11,8 +11,8 @@ import (
 
 	"github.com/spf13/cobra"
 
-	"github.com/aoagents/agent-orchestrator/backend/internal/config"
-	"github.com/aoagents/agent-orchestrator/backend/internal/devimport"
+	"github.com/sudo-adduser-jordan/open-agents/backend/internal/config"
+	"github.com/sudo-adduser-jordan/open-agents/backend/internal/devimport"
 )
 
 type devImportProjectsOptions struct {
@@ -43,9 +43,9 @@ func newDevImportProjectsCommand(ctx *commandContext) *cobra.Command {
 	var opts devImportProjectsOptions
 	cmd := &cobra.Command{
 		Use:   "import-projects",
-		Short: "Copy project registry data into the current AO data dir",
-		Long: "Copy active project registry rows from the normal AO data dir into " +
-			"the current AO_DATA_DIR. This copies only project metadata, project config, " +
+		Short: "Copy project registry data into the current Open Agents data dir",
+		Long: "Copy active project registry rows from the normal Open Agents data dir into " +
+			"the current OPEN_AGENTS_DATA_DIR. This copies only project metadata, project config, " +
 			"and workspace child repo registry; sessions and runtime state are never copied.\n\n" +
 			"The target daemon must be running because the import is executed through " +
 			"the daemon HTTP API. Use --dry-run to report planned changes without writing.",
@@ -54,7 +54,7 @@ func newDevImportProjectsCommand(ctx *commandContext) *cobra.Command {
 			return ctx.runDevImportProjects(cmd, opts)
 		},
 	}
-	cmd.Flags().StringVar(&opts.fromDataDir, "from-data-dir", "", "AO data dir to read (default ~/.ao/data)")
+	cmd.Flags().StringVar(&opts.fromDataDir, "from-data-dir", "", "Open Agents data dir to read (default ~/.open-agents/data)")
 	cmd.Flags().BoolVar(&opts.dryRun, "dry-run", false, "Report planned changes without writing")
 	cmd.Flags().BoolVar(&opts.json, "json", false, "Output the import report as JSON")
 	return cmd
@@ -147,7 +147,7 @@ func defaultNormalDataDir() (string, error) {
 	if err != nil {
 		return "", fmt.Errorf("resolve home dir: %w", err)
 	}
-	return filepath.Join(home, ".ao", "data"), nil
+	return filepath.Join(home, ".open-agents", "data"), nil
 }
 
 func expandHomePath(path string) (string, error) {

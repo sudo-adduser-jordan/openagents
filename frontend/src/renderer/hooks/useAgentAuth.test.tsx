@@ -27,11 +27,11 @@ describe("agent authentication hooks", () => {
 	});
 
 	it("starts a fixed agent flow and adds its terminal to an existing cache before navigation", async () => {
-		const terminal = { handleId: "shellterm-auth", workingDir: "/tmp/ao", title: "Log in to Codex", createdAt: new Date().toISOString() };
+		const terminal = { handleId: "shellterm-auth", workingDir: "/tmp/open-agents", title: "Log in to Codex", createdAt: new Date().toISOString() };
 		vi.spyOn(apiClient, "POST").mockResolvedValue({ data: { agentId: "codex", action: "login", terminal } } as never);
 		const client = new QueryClient({ defaultOptions: { mutations: { retry: false } } });
 		client.setQueryData(shellTerminalsQueryKey, [{
-			handleId: "shellterm-existing", workingDir: "/tmp/ao", title: "Existing", createdAt: new Date(0).toISOString(),
+			handleId: "shellterm-existing", workingDir: "/tmp/open-agents", title: "Existing", createdAt: new Date(0).toISOString(),
 		}]);
 		const invalidate = vi.spyOn(client, "invalidateQueries");
 		const { result } = renderHook(() => useStartAgentAuth(), { wrapper: wrapper(client) });

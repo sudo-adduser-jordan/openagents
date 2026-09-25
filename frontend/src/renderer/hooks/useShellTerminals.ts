@@ -146,7 +146,7 @@ export function useOpenShellTerminal() {
 					handleId: `shellterm-preview-${previewShellSeq}`,
 					projectId,
 					sessionId,
-					workingDir: `/Users/demo/Projects/${projectId ?? "ao"}`,
+					workingDir: `/Users/demo/Projects/${projectId ?? "open-agents"}`,
 					title: optimisticShell?.title ?? `Terminal ${previewShellSeq}`,
 					createdAt: new Date().toISOString(),
 				};

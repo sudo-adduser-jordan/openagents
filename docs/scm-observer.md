@@ -1,6 +1,6 @@
 # SCM Observer Architecture
 
-How AO observes pull requests: the polling pipeline, the durable-state rules it
+How Open Agents observes pull requests: the polling pipeline, the durable-state rules it
 must never violate, where PR identity lives today, why repo renames broke it,
 and the target identity design.
 
@@ -46,7 +46,7 @@ graph TB
         API["/api/v1/sessions/:id/pr"]
         UI[frontend pr-display.ts<br/>merge-readiness card]
     end
-    ClaimPath[service/session/claim_pr.go<br/>ao session claim-pr] --> PRStore
+    ClaimPath[service/session/claim_pr.go<br/>open-agents session claim-pr] --> PRStore
     GH --> Multi
     GL --> Multi
     Multi --> Poll
@@ -57,8 +57,8 @@ graph TB
 
 Wiring lives in `backend/internal/daemon/scm_wiring.go`: both providers are
 registered with the `multi` dispatcher; a missing token disables one provider
-without disabling the other. GitHub auth falls back `AO_GITHUB_TOKEN` → `gh
-auth token`; GitLab falls back `AO_GITLAB_TOKEN` → `glab`, plus per-host
+without disabling the other. GitHub auth falls back `OPEN_AGENTS_GITHUB_TOKEN` → `gh
+auth token`; GitLab falls back `OPEN_AGENTS_GITLAB_TOKEN` → `glab`, plus per-host
 static tokens from config.
 
 The observer is deliberately provider-neutral: it never speaks REST/GraphQL
@@ -76,7 +76,7 @@ identity resolution and alias collapse:
    persists a baseline row before the first detail fetch.
 2. **Observer refresh** (the rest of `Poll`): batch GraphQL detail fetches,
    review-thread refreshes, and terminal reconciliation update existing rows.
-3. **Explicit claim** (`ao session claim-pr`, `spawn --claim-pr`, gh-wrapper
+3. **Explicit claim** (`open-agents session claim-pr`, `spawn --claim-pr`, gh-wrapper
    capture): resolves a PR ref against the project origin and claims the row
    for a session, including takeover rules for terminated owners.
 
@@ -178,8 +178,8 @@ transfer is exactly the event that made them disagree.
 | 4 | Repo scan set | owner/name parsed from git remotes + project `RepoOriginURL` | local git config, project record |
 | 5 | Store identity machinery | `provider_id` (unique per provider+host) + `pr_url_alias` | migration 0097, added by #3923 |
 
-Before #4090, after a rename (`AgentWrapper/agent-orchestrator` →
-`Untrivial-ai/agent-orchestrator`):
+Before #4090, after a rename (`sudo-adduser-jordan/open-agents` →
+`sudo-adduser-jordan/open-agents`):
 
 - (1) keeps the old `repo` string forever unless something rewrites it.
 - (2) trusts (1), so subjects poll under the old name — which *works*, because
@@ -201,10 +201,10 @@ Four issues in six weeks, all facets of the same distributed invariant:
 
 | Issue | Facet | Derivations that disagreed |
 |-------|-------|---------------------------|
-| [#2509](https://github.com/Untrivial-ai/agent-orchestrator/issues/2509) | observer reloaded tracked repos without owner/name → check-run 404s | 1 ↔ 2 |
-| [#3922](https://github.com/Untrivial-ai/agent-orchestrator/issues/3922) / PR [#3923](https://github.com/Untrivial-ai/agent-orchestrator/pull/3923) | duplicate rows for one transferred PR → stale row's `conflicting` shown | 1 ↔ 4 (two scan identities each created a row) |
-| [#3252](https://github.com/Untrivial-ai/agent-orchestrator/issues/3252) | new PRs not attributable after transfer; stale project origin | 4 ↔ provider reality |
-| [#4089](https://github.com/Untrivial-ai/agent-orchestrator/issues/4089) | CI/mergeability `unknown` most of the time, flapping ("Checking merge readiness") | 2 ↔ 3 — **regression introduced by #3923** — composed with the discovery clobber below |
+| [#2509](https://github.com/sudo-adduser-jordan/open-agents/issues/2509) | observer reloaded tracked repos without owner/name → check-run 404s | 1 ↔ 2 |
+| [#3922](https://github.com/sudo-adduser-jordan/open-agents/issues/3922) / PR [#3923](https://github.com/sudo-adduser-jordan/open-agents/pull/3923) | duplicate rows for one transferred PR → stale row's `conflicting` shown | 1 ↔ 4 (two scan identities each created a row) |
+| [#3252](https://github.com/sudo-adduser-jordan/open-agents/issues/3252) | new PRs not attributable after transfer; stale project origin | 4 ↔ provider reality |
+| [#4089](https://github.com/sudo-adduser-jordan/open-agents/issues/4089) | CI/mergeability `unknown` most of the time, flapping ("Checking merge readiness") | 2 ↔ 3 — **regression introduced by #3923** — composed with the discovery clobber below |
 
 The #3923 → #4089 sequence is the cautionary tale: #3923 fixed identity at the
 store layer (aliases + `provider_id`) and changed it at the provider layer
@@ -212,7 +212,7 @@ store layer (aliases + `provider_id`) and changed it at the provider layer
 ref), but the observer's dispatch keying between them was not updated. Its
 tests covered each layer separately; no test crossed the seam with a renamed
 repo. The first commit in PR
-[#4090](https://github.com/Untrivial-ai/agent-orchestrator/pull/4090) patched
+[#4090](https://github.com/sudo-adduser-jordan/open-agents/pull/4090) patched
 that seam with a URL-match fallback. The final implementation then removed
 that interim matching layer: subjects and discovery use provider-native IDs,
 and fetch results are attributed positionally to their requesting refs. The
@@ -225,13 +225,13 @@ identity one owner.
 compose. A live DB watch on an affected machine caught the cycle:
 
 ```
-15:47:56  Untrivial-ai/…  passing/blocked  title + hashes set     (heal)
-15:48:27  AgentWrapper/…  unknown/unknown  title gone, hashes WIPED (clobber)
-15:50:23  Untrivial-ai/…  passing/blocked  title + hashes set     (heal)
+15:47:56  sudo-adduser-jordan/…  passing/blocked  title + hashes set     (heal)
+15:48:27  sudo-adduser-jordan/…  unknown/unknown  title gone, hashes WIPED (clobber)
+15:50:23  sudo-adduser-jordan/…  passing/blocked  title + hashes set     (heal)
 ```
 
 The clobber writer is `discoverNewPRs`: a stale remote (`upstream` →
-`AgentWrapper/…`) keeps a second scan identity for the same repository in the
+`sudo-adduser-jordan/…`) keeps a second scan identity for the same repository in the
 scan set (derivation 4). Whichever identity the row does *not* currently carry
 finds the PR "not in subjects" and persists a baseline row — and `UpsertPR`
 overwrites `ci_state`, `mergeability`, `repo`, `title`, and the semantic
@@ -254,7 +254,7 @@ identity dedupe makes the clobber structurally impossible.)
 ## Target Design: ProviderID-Primary Identity
 
 *Implemented in PR
-[#4090](https://github.com/Untrivial-ai/agent-orchestrator/pull/4090) —
+[#4090](https://github.com/sudo-adduser-jordan/open-agents/pull/4090) —
 `identityPRKey` / `keyForTrackedPR` in
 `backend/internal/observe/scm/observer.go`, plus the positional
 `FetchPullRequests` contract below. The observer is net smaller than before

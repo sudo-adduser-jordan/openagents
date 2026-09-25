@@ -1,5 +1,5 @@
 import type { QueryClient, QueryKey } from "@tanstack/react-query";
-import { aoBridge } from "./bridge";
+import { openAgentsBridge } from "./bridge";
 import { getApiBaseUrl, hasTrustedApiBaseUrl, subscribeApiBaseUrl } from "./api-client";
 import { setEventsConnectionState } from "./events-connection";
 import { computeSseRetryDelayMs } from "./sse-backoff";
@@ -265,7 +265,7 @@ export function createEventTransport(queryClient: QueryClient): EventTransport {
 				}
 			};
 
-			const removeDaemonListener = aoBridge.daemon.onStatus(() => {
+			const removeDaemonListener = openAgentsBridge.daemon.onStatus(() => {
 				connectSource();
 				refreshWorkspaces();
 			});

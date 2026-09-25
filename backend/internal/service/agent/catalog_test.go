@@ -11,11 +11,11 @@ import (
 	"testing"
 	"time"
 
-	"github.com/aoagents/agent-orchestrator/backend/internal/adapters"
-	"github.com/aoagents/agent-orchestrator/backend/internal/adapters/agent/modelcatalog"
-	agentregistry "github.com/aoagents/agent-orchestrator/backend/internal/adapters/agent/registry"
-	"github.com/aoagents/agent-orchestrator/backend/internal/domain"
-	"github.com/aoagents/agent-orchestrator/backend/internal/ports"
+	"github.com/sudo-adduser-jordan/open-agents/backend/internal/adapters"
+	"github.com/sudo-adduser-jordan/open-agents/backend/internal/adapters/agent/modelcatalog"
+	agentregistry "github.com/sudo-adduser-jordan/open-agents/backend/internal/adapters/agent/registry"
+	"github.com/sudo-adduser-jordan/open-agents/backend/internal/domain"
+	"github.com/sudo-adduser-jordan/open-agents/backend/internal/ports"
 )
 
 type fakeAgent struct {
@@ -1294,7 +1294,7 @@ func TestModelsFingerprintsTheSameInputsDiscoveryReads(t *testing.T) {
 		"proj-1": {
 			ID:     "proj-1",
 			Path:   "/work/project",
-			Config: domain.ProjectConfig{Env: map[string]string{"AO_TEST_MODEL": "opus"}},
+			Config: domain.ProjectConfig{Env: map[string]string{"OPEN_AGENTS_TEST_MODEL": "opus"}},
 		},
 	}}
 	discoverer := &fakeModelDiscoverer{version: "v1", catalog: ports.AgentModelCatalog{
@@ -1319,7 +1319,7 @@ func TestModelsFingerprintsTheSameInputsDiscoveryReads(t *testing.T) {
 	if !reflect.DeepEqual(*fingerprinted, discoverer.lastRequest) {
 		t.Fatalf("fingerprint request = %#v, want the discovery request %#v", *fingerprinted, discoverer.lastRequest)
 	}
-	if fingerprinted.WorkingDir != "/work/project" || fingerprinted.Env["AO_TEST_MODEL"] != "opus" {
+	if fingerprinted.WorkingDir != "/work/project" || fingerprinted.Env["OPEN_AGENTS_TEST_MODEL"] != "opus" {
 		t.Fatalf("fingerprint request = %#v, want the project working dir and env", *fingerprinted)
 	}
 }

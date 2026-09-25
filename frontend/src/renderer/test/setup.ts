@@ -95,7 +95,7 @@ if (typeof window !== "undefined") {
 	Element.prototype.releasePointerCapture = (() => undefined) as typeof Element.prototype.releasePointerCapture;
 	Element.prototype.scrollIntoView = (() => undefined) as typeof Element.prototype.scrollIntoView;
 
-	window.ao = {
+	window.openAgents = {
 		app: {
 			getVersion: async () => "0.0.0-test",
 			chooseDirectory: async () => null,
@@ -295,10 +295,6 @@ if (typeof window !== "undefined") {
 		tray: {
 			setAttentionState: () => undefined,
 			onOpenSession: () => () => undefined,
-		},
-		appState: {
-			getMigration: async () => ({ status: "pending" }),
-			setMigration: async () => undefined,
 		},
 		updateSettings: {
 			get: async () => ({ enabled: false, channel: "latest", nightlyAck: false, feature: null, macDifferentialUpdates: false }),

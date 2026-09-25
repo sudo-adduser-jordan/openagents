@@ -9,10 +9,10 @@ import (
 	"net/http/httptest"
 	"testing"
 
-	"github.com/aoagents/agent-orchestrator/backend/internal/config"
-	"github.com/aoagents/agent-orchestrator/backend/internal/domain"
-	"github.com/aoagents/agent-orchestrator/backend/internal/httpd"
-	"github.com/aoagents/agent-orchestrator/backend/internal/httpd/apierr"
+	"github.com/sudo-adduser-jordan/open-agents/backend/internal/config"
+	"github.com/sudo-adduser-jordan/open-agents/backend/internal/domain"
+	"github.com/sudo-adduser-jordan/open-agents/backend/internal/httpd"
+	"github.com/sudo-adduser-jordan/open-agents/backend/internal/httpd/apierr"
 )
 
 type fakeDesktopWorkspaceService struct {
@@ -35,13 +35,13 @@ func desktopWorkspaceServer(t *testing.T, svc fakeDesktopWorkspaceService) *http
 }
 
 func TestDesktopWorkspaceLocationReturnsPathToLoopbackSupervisor(t *testing.T) {
-	server := desktopWorkspaceServer(t, fakeDesktopWorkspaceService{path: "/tmp/ao/worktrees/ao-1"})
-	body, status, headers := doRequest(t, server, http.MethodGet, "/api/v1/desktop/sessions/ao-1/workspace", "")
+	server := desktopWorkspaceServer(t, fakeDesktopWorkspaceService{path: "/tmp/open-agents/worktrees/open-agents-1"})
+	body, status, headers := doRequest(t, server, http.MethodGet, "/api/v1/desktop/sessions/open-agents-1/workspace", "")
 	assertJSON(t, headers)
 	if status != http.StatusOK {
 		t.Fatalf("GET desktop workspace = %d, want 200; body=%s", status, body)
 	}
-	if !containsAll(body, `"sessionId":"ao-1"`, `"workspacePath":"/tmp/ao/worktrees/ao-1"`) {
+	if !containsAll(body, `"sessionId":"open-agents-1"`, `"workspacePath":"/tmp/open-agents/worktrees/open-agents-1"`) {
 		t.Fatalf("unexpected body: %s", body)
 	}
 }
@@ -50,12 +50,12 @@ func TestDesktopWorkspaceLocationPreservesServiceNotFound(t *testing.T) {
 	server := desktopWorkspaceServer(t, fakeDesktopWorkspaceService{
 		err: apierr.NotFound("SESSION_WORKSPACE_NOT_FOUND", "Session workspace is not available"),
 	})
-	body, status, _ := doRequest(t, server, http.MethodGet, "/api/v1/desktop/sessions/ao-1/workspace", "")
+	body, status, _ := doRequest(t, server, http.MethodGet, "/api/v1/desktop/sessions/open-agents-1/workspace", "")
 	assertErrorCode(t, body, status, http.StatusNotFound, "SESSION_WORKSPACE_NOT_FOUND")
 }
 
 func TestDesktopWorkspaceLocationSurfacesServiceFailure(t *testing.T) {
 	server := desktopWorkspaceServer(t, fakeDesktopWorkspaceService{err: errors.New("storage unavailable")})
-	body, status, _ := doRequest(t, server, http.MethodGet, "/api/v1/desktop/sessions/ao-1/workspace", "")
+	body, status, _ := doRequest(t, server, http.MethodGet, "/api/v1/desktop/sessions/open-agents-1/workspace", "")
 	assertErrorCode(t, body, status, http.StatusInternalServerError, "INTERNAL_ERROR")
 }

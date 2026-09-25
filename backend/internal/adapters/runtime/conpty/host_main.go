@@ -1,4 +1,4 @@
-// host_main.go is the RunHost entrypoint for the "ao pty-host" subcommand.
+// host_main.go is the RunHost entrypoint for the "open-agents pty-host" subcommand.
 // It is cross-platform: the loopback TCP bind and signal wiring work on all
 // OSes; native PTY creation is OS-gated via build tags.
 package conpty
@@ -13,7 +13,7 @@ import (
 	"syscall"
 )
 
-// RunHost is the "ao pty-host" entrypoint. argv is everything after the
+// RunHost is the "open-agents pty-host" entrypoint. argv is everything after the
 // subcommand name: <sessionId> <cwd> <shellCmd> [shellArg...]
 //
 // It binds 127.0.0.1:0 (OS assigns the port), creates the native PTY, prints
@@ -26,7 +26,7 @@ import (
 // if multi-user isolation is needed.
 func RunHost(args []string, stdout io.Writer) int {
 	if len(args) < 3 {
-		fmt.Fprintf(os.Stderr, "usage: ao pty-host <sessionId> <cwd> <shellCmd> [shellArg...]\n")
+		fmt.Fprintf(os.Stderr, "usage: open-agents pty-host <sessionId> <cwd> <shellCmd> [shellArg...]\n")
 		return 1
 	}
 

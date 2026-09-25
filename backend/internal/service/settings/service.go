@@ -1,6 +1,6 @@
-// Package settings owns AO's daemon-side user preferences.
+// Package settings owns Open Agents's daemon-side user preferences.
 //
-// It exists so every spawn surface — desktop, mobile, `ao spawn`, headless —
+// It exists so every spawn surface — desktop, mobile, `open-agents spawn`, headless —
 // resolves one value. A renderer-held preference would look correct in Settings
 // while disagreeing with the CLI, which is worse than having no control.
 package settings
@@ -10,8 +10,8 @@ import (
 	"fmt"
 	"time"
 
-	"github.com/aoagents/agent-orchestrator/backend/internal/domain"
-	"github.com/aoagents/agent-orchestrator/backend/internal/ports"
+	"github.com/sudo-adduser-jordan/open-agents/backend/internal/domain"
+	"github.com/sudo-adduser-jordan/open-agents/backend/internal/ports"
 )
 
 // Store is the durable preference surface.

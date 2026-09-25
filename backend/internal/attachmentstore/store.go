@@ -1,6 +1,6 @@
 // Package attachmentstore owns the durable copy of files attached to session
 // messages. Worktree copies are projections for agents; the canonical bytes
-// live under AO's data directory so worktree teardown cannot erase history.
+// live under Open Agents's data directory so worktree teardown cannot erase history.
 package attachmentstore
 
 import (
@@ -17,12 +17,12 @@ import (
 	"runtime"
 	"strings"
 
-	"github.com/aoagents/agent-orchestrator/backend/internal/domain"
+	"github.com/sudo-adduser-jordan/open-agents/backend/internal/domain"
 )
 
 const (
 	// WorkspaceDir is the worktree-relative directory named in chat messages.
-	WorkspaceDir = ".ao/attachments"
+	WorkspaceDir = ".open-agents/attachments"
 	durableDir   = "attachments"
 	// MaxFileBytes matches the HTTP attachment limit and also bounds legacy
 	// imports from agent-writable worktrees.
@@ -36,7 +36,7 @@ var (
 	errTooLarge = errors.New("attachment is too large")
 )
 
-// Store persists canonical attachment bytes beneath an AO data directory.
+// Store persists canonical attachment bytes beneath an Open Agents data directory.
 type Store struct {
 	dataDir string
 }
@@ -114,15 +114,15 @@ func (s *Store) ImportWorkspace(ctx context.Context, id domain.SessionID, worksp
 		return fmt.Errorf("open workspace root: %w", err)
 	}
 	defer func() { _ = workspaceRoot.Close() }()
-	aoRoot, err := openChildDir(ctx, workspaceRoot, ".ao", false, 0)
+	openAgentsRoot, err := openChildDir(ctx, workspaceRoot, ".open-agents", false, 0)
 	if errors.Is(err, fs.ErrNotExist) {
 		return nil
 	}
 	if err != nil {
-		return fmt.Errorf("open workspace AO directory: %w", err)
+		return fmt.Errorf("open workspace Open Agents directory: %w", err)
 	}
-	defer func() { _ = aoRoot.Close() }()
-	sourceRoot, err := openChildDir(ctx, aoRoot, "attachments", false, 0)
+	defer func() { _ = openAgentsRoot.Close() }()
+	sourceRoot, err := openChildDir(ctx, openAgentsRoot, "attachments", false, 0)
 	if errors.Is(err, fs.ErrNotExist) {
 		return nil
 	}
@@ -299,7 +299,7 @@ func NameFromWorkspacePath(raw string) (string, bool) {
 	raw = strings.ReplaceAll(raw, `\`, "/")
 	raw = strings.TrimPrefix(raw, "/")
 	parts := strings.Split(raw, "/")
-	if len(parts) != 3 || parts[0] != ".ao" || parts[1] != "attachments" {
+	if len(parts) != 3 || parts[0] != ".open-agents" || parts[1] != "attachments" {
 		return "", false
 	}
 	if validateName(parts[2]) != nil {

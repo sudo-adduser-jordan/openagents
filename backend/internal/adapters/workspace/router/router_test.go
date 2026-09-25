@@ -4,9 +4,9 @@ import (
 	"context"
 	"testing"
 
-	workspacerouter "github.com/aoagents/agent-orchestrator/backend/internal/adapters/workspace/router"
-	"github.com/aoagents/agent-orchestrator/backend/internal/domain"
-	"github.com/aoagents/agent-orchestrator/backend/internal/ports"
+	workspacerouter "github.com/sudo-adduser-jordan/open-agents/backend/internal/adapters/workspace/router"
+	"github.com/sudo-adduser-jordan/open-agents/backend/internal/domain"
+	"github.com/sudo-adduser-jordan/open-agents/backend/internal/ports"
 )
 
 type projectStore struct {
@@ -118,7 +118,7 @@ func TestRouterDelegatesCreateByProjectKind(t *testing.T) {
 		t.Fatalf("create calls scratch/git = %d/%d, want 1/0", scratch.createCalls, git.createCalls)
 	}
 
-	if _, err := r.Create(context.Background(), ports.WorkspaceConfig{ProjectID: "repo", SessionID: "repo-1", Kind: domain.KindWorker, Branch: "ao/repo-1/root"}); err != nil {
+	if _, err := r.Create(context.Background(), ports.WorkspaceConfig{ProjectID: "repo", SessionID: "repo-1", Kind: domain.KindWorker, Branch: "open-agents/repo-1/root"}); err != nil {
 		t.Fatalf("Create repo: %v", err)
 	}
 	if scratch.createCalls != 1 || git.createCalls != 1 {
@@ -162,24 +162,24 @@ func TestRouterDelegatesLifecycleMethodsByProjectKind(t *testing.T) {
 	if err := r.ApplyPreserved(context.Background(), scratchInfo, "ref/scratch-1"); err != nil {
 		t.Fatalf("ApplyPreserved scratch: %v", err)
 	}
-	if err := r.AddExclude(context.Background(), scratchInfo, "/.ao/attachments/"); err != nil {
+	if err := r.AddExclude(context.Background(), scratchInfo, "/.open-agents/attachments/"); err != nil {
 		t.Fatalf("AddExclude scratch: %v", err)
 	}
 	if scratch.destroyCalls != 1 || scratch.forceDestroyCalls != 1 || scratch.stashCalls != 1 || scratch.applyCalls != 1 || scratch.addExcludeCalls != 1 {
 		t.Fatalf("scratch lifecycle calls destroy/force/stash/apply/exclude = %d/%d/%d/%d/%d, want all 1", scratch.destroyCalls, scratch.forceDestroyCalls, scratch.stashCalls, scratch.applyCalls, scratch.addExcludeCalls)
 	}
-	if len(scratch.lastPatterns) != 1 || scratch.lastPatterns[0] != "/.ao/attachments/" {
-		t.Fatalf("scratch exclude patterns = %#v, want /.ao/attachments/", scratch.lastPatterns)
+	if len(scratch.lastPatterns) != 1 || scratch.lastPatterns[0] != "/.open-agents/attachments/" {
+		t.Fatalf("scratch exclude patterns = %#v, want /.open-agents/attachments/", scratch.lastPatterns)
 	}
 	if git.destroyCalls != 0 || git.forceDestroyCalls != 0 || git.stashCalls != 0 || git.applyCalls != 0 || git.addExcludeCalls != 0 {
 		t.Fatalf("git lifecycle calls for scratch = %d/%d/%d/%d/%d, want all 0", git.destroyCalls, git.forceDestroyCalls, git.stashCalls, git.applyCalls, git.addExcludeCalls)
 	}
 
-	repoInfo := ports.WorkspaceInfo{ProjectID: "repo", SessionID: "repo-1", Path: "/tmp/repo", Branch: "ao/repo-1"}
+	repoInfo := ports.WorkspaceInfo{ProjectID: "repo", SessionID: "repo-1", Path: "/tmp/repo", Branch: "open-agents/repo-1"}
 	if err := r.Destroy(context.Background(), repoInfo); err != nil {
 		t.Fatalf("Destroy repo: %v", err)
 	}
-	if err := r.AddExclude(context.Background(), repoInfo, "/.ao/attachments/"); err != nil {
+	if err := r.AddExclude(context.Background(), repoInfo, "/.open-agents/attachments/"); err != nil {
 		t.Fatalf("AddExclude repo: %v", err)
 	}
 	if git.destroyCalls != 1 || git.addExcludeCalls != 1 {
@@ -198,7 +198,7 @@ func TestRouterPreservesWorkspaceProjectDelegation(t *testing.T) {
 		}},
 	})
 
-	if _, err := r.CreateWorkspaceProject(context.Background(), ports.WorkspaceProjectConfig{ProjectID: "workspace", SessionID: "workspace-1", Branch: "ao/workspace-1"}); err != nil {
+	if _, err := r.CreateWorkspaceProject(context.Background(), ports.WorkspaceProjectConfig{ProjectID: "workspace", SessionID: "workspace-1", Branch: "open-agents/workspace-1"}); err != nil {
 		t.Fatalf("CreateWorkspaceProject: %v", err)
 	}
 	if git.projectCreateCalls != 1 {

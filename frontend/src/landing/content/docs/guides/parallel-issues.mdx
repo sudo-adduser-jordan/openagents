@@ -3,7 +3,7 @@ title: Parallel work
 description: Run isolated worker sessions across issues without mixing branches, terminals, or conversations.
 ---
 
-Start each task as its own worker session. Git projects receive separate worktrees and branches; Scratch receives separate AO-managed directories. Chat conversations and Terminal UI runtimes are session-scoped.
+Start each task as its own worker session. Git projects receive separate worktrees and branches; Scratch receives separate Open Agents-managed directories. Chat conversations and Terminal UI runtimes are session-scoped.
 
 ## Start sessions from desktop
 
@@ -12,40 +12,40 @@ Choose a project, create a new task, give it a short display name, then select t
 ## Start sessions from the CLI
 
 ```bash
-ao spawn --project web --name issue-42 --issue 42 --mode chat
-ao spawn --project web --name issue-43 --issue 43 --mode tui
-ao spawn --project api --name auth-fix --prompt "Fix token refresh" --harness codex
+open-agents spawn --project web --name issue-42 --issue 42 --mode chat
+open-agents spawn --project web --name issue-43 --issue 43 --mode tui
+open-agents spawn --project api --name auth-fix --prompt "Fix token refresh" --harness codex
 ```
 
-`ao spawn` accepts flags rather than positional issue identifiers. There is no current `ao batch-spawn`; invoke `ao spawn` once per task or let an orchestrator create workers.
+`open-agents spawn` accepts flags rather than positional issue identifiers. There is no current `open-agents batch-spawn`; invoke `open-agents spawn` once per task or let an orchestrator create workers.
 
 ## What is isolated
 
 | Resource | Isolation |
 | --- | --- |
 | Files | A worktree or Scratch directory per session |
-| Branch | A generated `ao/<session-id>/root` branch unless overridden |
+| Branch | A generated `open-agents/<session-id>/root` branch unless overridden |
 | Agent controller | One committed Chat or Terminal UI controller per session |
 | Chat history | Durable, session-scoped conversation projection |
 | Terminal | Session runtime or session-scoped worktree shell |
 | Browser preview | Dedicated selected-session browser target and ephemeral profile |
 
-AO-managed worktrees live under `~/.ao/data/worktrees`, not `~/.worktrees`. External side effects such as pushes, pull requests, CI runs, and review comments are naturally shared with the repository host.
+Open Agents-managed worktrees live under `~/.open-agents/data/worktrees`, not `~/.worktrees`. External side effects such as pushes, pull requests, CI runs, and review comments are naturally shared with the repository host.
 
 ## Inspect and clean up
 
 ```bash
-ao session ls
-ao session ls --project web --json
-ao session get <session-id>
-ao session kill <session-id>
-ao session cleanup --dry-run
-ao session cleanup
+open-agents session ls
+open-agents session ls --project web --json
+open-agents session get <session-id>
+open-agents session kill <session-id>
+open-agents session cleanup --dry-run
+open-agents session cleanup
 ```
 
 Cleanup reclaims eligible workspaces for terminated sessions. Dirty registered worktrees are preserved and skipped.
 
-`ao status` reports daemon health; it is not the session list and does not have `--watch`.
+`open-agents status` reports daemon health; it is not the session list and does not have `--watch`.
 
 ## Follow the work
 

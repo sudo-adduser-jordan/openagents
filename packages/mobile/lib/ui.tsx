@@ -22,7 +22,7 @@ import { fontScaleCap } from "./tokens";
 import type { ConnStatus } from "./store";
 import { statusVisual, type Theme } from "./theme";
 import { useTheme, useThemedStyles } from "./ThemeProvider";
-// AO mascot glyph (transparent) shown beside each screen heading.
+// Open Agents mascot glyph (transparent) shown beside each screen heading.
 import MASCOT from "../assets/mascot.png";
 
 // A gently breathing dot - the only motion in the UI, reserved for "working".
@@ -256,7 +256,7 @@ export function MascotLamp({ status, size = 40 }: { status?: ConnStatus; size?: 
 			style={[s.mascotWrap, { width: size, height: 35 * k }]}
 			accessible
 			accessibilityRole="image"
-			accessibilityLabel={status ? `AO mascot, ${label}` : "AO mascot"}
+			accessibilityLabel={status ? `Open Agents mascot, ${label}` : "Open Agents mascot"}
 		>
 			<Image source={MASCOT} style={{ width: size, height: 35 * k }} resizeMode="contain" />
 			{status ? (

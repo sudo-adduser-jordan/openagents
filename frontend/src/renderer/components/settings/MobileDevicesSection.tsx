@@ -8,7 +8,7 @@ export const mobileDevicesQueryKey = ["mobile-devices"] as const;
 
 /**
  * Error code the daemon returns from all three roster routes (list/mute/remove)
- * when the on-disk device registry (~/.ao/data/mobile/push-devices.json) failed
+ * when the on-disk device registry (~/.open-agents/data/mobile/push-devices.json) failed
  * to load — e.g. it's corrupt. This is distinct from "you have no devices": an
  * unreadable registry must be surfaced explicitly, never rendered as the empty
  * state.
@@ -117,7 +117,7 @@ export function MobileDevicesSection() {
 					<Loader2 className="size-3 animate-spin" /> {"Loading devices…"}
 				</div>
 			) : registryUnavailable ? (
-				<p className="mt-3 text-caption text-error">{"Device registry unavailable — AO could not read your saved devices."}</p>
+				<p className="mt-3 text-caption text-error">{"Device registry unavailable — Open Agents could not read your saved devices."}</p>
 			) : queryError && !hasData ? (
 				<p className="mt-3 text-caption text-error">{queryError.message}</p>
 			) : devices.length === 0 ? (

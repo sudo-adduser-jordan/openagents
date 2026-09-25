@@ -5,13 +5,13 @@ import (
 	"errors"
 	"log/slog"
 
-	scmgithub "github.com/aoagents/agent-orchestrator/backend/internal/adapters/scm/github"
-	scmgitlab "github.com/aoagents/agent-orchestrator/backend/internal/adapters/scm/gitlab"
-	scmmulti "github.com/aoagents/agent-orchestrator/backend/internal/adapters/scm/multi"
-	"github.com/aoagents/agent-orchestrator/backend/internal/config"
-	"github.com/aoagents/agent-orchestrator/backend/internal/lifecycle"
-	scmobserve "github.com/aoagents/agent-orchestrator/backend/internal/observe/scm"
-	"github.com/aoagents/agent-orchestrator/backend/internal/storage/sqlite"
+	scmgithub "github.com/sudo-adduser-jordan/open-agents/backend/internal/adapters/scm/github"
+	scmgitlab "github.com/sudo-adduser-jordan/open-agents/backend/internal/adapters/scm/gitlab"
+	scmmulti "github.com/sudo-adduser-jordan/open-agents/backend/internal/adapters/scm/multi"
+	"github.com/sudo-adduser-jordan/open-agents/backend/internal/config"
+	"github.com/sudo-adduser-jordan/open-agents/backend/internal/lifecycle"
+	scmobserve "github.com/sudo-adduser-jordan/open-agents/backend/internal/observe/scm"
+	"github.com/sudo-adduser-jordan/open-agents/backend/internal/storage/sqlite"
 )
 
 // startSCMObserver wires the provider-neutral SCM observer with both GitHub
@@ -46,7 +46,7 @@ func startSCMObserver(ctx context.Context, store *sqlite.Store, lcm *lifecycle.M
 
 func newGitHubSCMProvider(logger *slog.Logger) (*scmgithub.Provider, error) {
 	tokens := scmgithub.FallbackTokenSource{
-		scmgithub.EnvTokenSource{EnvVars: []string{"AO_GITHUB_TOKEN"}},
+		scmgithub.EnvTokenSource{EnvVars: []string{"OPEN_AGENTS_GITHUB_TOKEN"}},
 		&scmgithub.GHTokenSource{},
 	}
 	return scmgithub.NewProvider(scmgithub.ProviderOptions{Token: tokens, SkipTokenPreflight: true, Logger: logger})
@@ -54,7 +54,7 @@ func newGitHubSCMProvider(logger *slog.Logger) (*scmgithub.Provider, error) {
 
 func newGitLabSCMProvider(gitlabCfg config.GitLabConfig, logger *slog.Logger) (*scmgitlab.Provider, error) {
 	tokens := scmgitlab.FallbackTokenSource{
-		scmgitlab.EnvTokenSource{EnvVars: []string{"AO_GITLAB_TOKEN"}},
+		scmgitlab.EnvTokenSource{EnvVars: []string{"OPEN_AGENTS_GITLAB_TOKEN"}},
 		&scmgitlab.GLabTokenSource{},
 	}
 	hostTokens := make(map[string]scmgitlab.TokenSource, len(gitlabCfg.HostTokens))

@@ -43,7 +43,7 @@ type browserScreenshotFileResult struct {
 	Height int    `json:"height"`
 }
 
-const browserCapabilityHeader = "X-AO-Browser-Capability"
+const browserCapabilityHeader = "X-OPEN-AGENTS-Browser-Capability"
 const maxBrowserWaitMillis = 55_000
 const (
 	browserUntrustedBegin = "<<<BEGIN UNTRUSTED EXTERNAL CONTENT>>>"
@@ -54,8 +54,8 @@ func newBrowserCommand(ctx *commandContext) *cobra.Command {
 	var jsonOutput bool
 	cmd := &cobra.Command{
 		Use:   "browser",
-		Short: "Inspect and control this AO session's shared desktop browser",
-		Long: "Inspect and control the target-isolated browser owned by the current AO session.\n\n" +
+		Short: "Inspect and control this Open Agents session's shared desktop browser",
+		Long: "Inspect and control the target-isolated browser owned by the current Open Agents session.\n\n" +
 			"The desktop app must be open. Commands operate the same live page the user sees,\n" +
 			"including while the Browser panel is hidden.",
 		Args: noArgs,
@@ -452,7 +452,7 @@ func newBrowserCommand(ctx *commandContext) *cobra.Command {
 			if screenshotBase64 {
 				return writeJSON(cmd.OutOrStdout(), resp)
 			}
-			path := "ao-browser-" + ctx.deps.Now().Format("20060102-150405.000") + ".png"
+			path := "open-agents-browser-" + ctx.deps.Now().Format("20060102-150405.000") + ".png"
 			if len(args) == 1 {
 				path = args[0]
 			}
@@ -572,13 +572,13 @@ func rangeArgs(minimum, maximum int) cobra.PositionalArgs {
 }
 
 func currentBrowserIdentity() (string, string, error) {
-	sessionID := strings.TrimSpace(os.Getenv("AO_SESSION_ID"))
+	sessionID := strings.TrimSpace(os.Getenv("OPEN_AGENTS_SESSION_ID"))
 	if sessionID == "" {
-		return "", "", usageError{errors.New("ao browser must run inside an AO session (AO_SESSION_ID is not set)")}
+		return "", "", usageError{errors.New("open-agents browser must run inside an Open Agents session (OPEN_AGENTS_SESSION_ID is not set)")}
 	}
-	capability := strings.TrimSpace(os.Getenv("AO_BROWSER_CAPABILITY"))
+	capability := strings.TrimSpace(os.Getenv("OPEN_AGENTS_BROWSER_CAPABILITY"))
 	if capability == "" {
-		return "", "", usageError{errors.New("ao browser requires the owning session capability (AO_BROWSER_CAPABILITY is not set)")}
+		return "", "", usageError{errors.New("open-agents browser requires the owning session capability (OPEN_AGENTS_BROWSER_CAPABILITY is not set)")}
 	}
 	return sessionID, capability, nil
 }
@@ -704,7 +704,7 @@ func writeBrowserResult(cmd *cobra.Command, action string, result map[string]any
 
 func browserUntrustedText(value string) string {
 	// Page-controlled text must not be able to inject a delimiter that looks
-	// like the end of AO's trust boundary. Escape only exact marker collisions;
+	// like the end of Open Agents's trust boundary. Escape only exact marker collisions;
 	// the surrounding fixed markers remain easy for humans and agents to parse.
 	value = strings.ReplaceAll(value, browserUntrustedBegin, `\u003c`+browserUntrustedBegin[1:])
 	value = strings.ReplaceAll(value, browserUntrustedEnd, `\u003c`+browserUntrustedEnd[1:])

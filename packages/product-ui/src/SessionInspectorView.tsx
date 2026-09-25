@@ -486,7 +486,7 @@ export type InspectorUnresolvedReviewer = {
 };
 
 export type InspectorReviewGroup = {
-	ao?: {
+	openAgents?: {
 		dimmed?: boolean;
 		historical?: boolean;
 		notInjected?: boolean;
@@ -505,7 +505,7 @@ export type InspectorReviewGroup = {
 };
 
 export type InspectorReviewLabels = {
-	aoSource: string;
+	openAgentsSource: string;
 	bot: string;
 	earlierPass: string;
 	githubSource: string;
@@ -514,7 +514,7 @@ export type InspectorReviewLabels = {
 	noPastReviewSummaries: string;
 	notInjected: string;
 	openComments: string;
-	openInAOBrowser: string;
+	openInOpenAgentsBrowser: string;
 	openInSystemBrowser: string;
 	openInlineComments: (count: number) => string;
 	requestRereviewPR: string;
@@ -548,7 +548,7 @@ export function InspectorReviewsView({
 	labels,
 	onRequestRereview,
 	onResolveInlineComment,
-	onOpenInAOBrowser,
+	onOpenInOpenAgentsBrowser,
 	onSendInlineComment,
 	onSendReviewSummary,
 	onViewInlineCommentInFile,
@@ -561,7 +561,7 @@ export function InspectorReviewsView({
 	labels: InspectorReviewLabels;
 	onRequestRereview?: (review: InspectorGithubReview) => Promise<void> | void;
 	onResolveInlineComment?: (comment: InspectorInlineComment & { reviewerId?: string }) => Promise<void> | void;
-	onOpenInAOBrowser?: (url: string) => void;
+	onOpenInOpenAgentsBrowser?: (url: string) => void;
 	onSendInlineComment?: (comment: InspectorInlineComment & { reviewerId?: string }) => Promise<void> | void;
 	onSendReviewSummary?: (summary: InspectorReviewSummaryAction) => Promise<void> | void;
 	onViewInlineCommentInFile?: (comment: InspectorInlineComment & { reviewerId?: string }) => void;
@@ -587,24 +587,24 @@ export function InspectorReviewsView({
 						title={group.title}
 						verdict={group.verdict}
 					>
-						{group.ao ? (
+						{group.openAgents ? (
 							<div className="flex min-w-0 flex-col gap-2">
 								<ReviewSourceLabel
 									icon={<BotIcon />}
 								>
-									{labels.aoSource}
+									{labels.openAgentsSource}
 								</ReviewSourceLabel>
 								<ReviewRuns
-									dimmed={group.ao.dimmed}
-									historical={group.ao.historical}
+									dimmed={group.openAgents.dimmed}
+									historical={group.openAgents.historical}
 									labels={labels}
 									externalLink={externalLink}
-									onOpenInAOBrowser={onOpenInAOBrowser}
+									onOpenInOpenAgentsBrowser={onOpenInOpenAgentsBrowser}
 									onResolveInlineComment={onResolveInlineComment}
 									onSendInlineComment={onSendInlineComment}
 									renderAvatar={renderAvatar}
 									renderMarkdown={renderMarkdown}
-									runs={group.ao.runs}
+									runs={group.openAgents.runs}
 									onSendReviewSummary={onSendReviewSummary}
 									onViewInlineCommentInFile={onViewInlineCommentInFile}
 								/>
@@ -621,7 +621,7 @@ export function InspectorReviewsView({
 									entries={group.github.entries}
 									externalLink={externalLink}
 									labels={labels}
-									onOpenInAOBrowser={onOpenInAOBrowser}
+									onOpenInOpenAgentsBrowser={onOpenInOpenAgentsBrowser}
 									onRequestRereview={onRequestRereview}
 									onResolveInlineComment={onResolveInlineComment}
 									onSendInlineComment={onSendInlineComment}
@@ -758,7 +758,7 @@ function ReviewRuns({
 	externalLink,
 	historical,
 	labels,
-	onOpenInAOBrowser,
+	onOpenInOpenAgentsBrowser,
 	onResolveInlineComment,
 	onSendInlineComment,
 	onSendReviewSummary,
@@ -771,7 +771,7 @@ function ReviewRuns({
 	externalLink: ExternalLinkComponent;
 	historical?: boolean;
 	labels: InspectorReviewLabels;
-	onOpenInAOBrowser?: (url: string) => void;
+	onOpenInOpenAgentsBrowser?: (url: string) => void;
 	onResolveInlineComment?: (comment: InspectorInlineComment & { reviewerId?: string }) => Promise<void> | void;
 	onSendInlineComment?: (comment: InspectorInlineComment & { reviewerId?: string }) => Promise<void> | void;
 	onSendReviewSummary?: (summary: InspectorReviewSummaryAction) => Promise<void> | void;
@@ -789,7 +789,7 @@ function ReviewRuns({
 			externalLink={externalLink}
 			historical={historical}
 			labels={labels}
-			onOpenInAOBrowser={onOpenInAOBrowser}
+			onOpenInOpenAgentsBrowser={onOpenInOpenAgentsBrowser}
 			onResolveInlineComment={onResolveInlineComment}
 			onSendInlineComment={onSendInlineComment}
 			onSendReviewSummary={onSendReviewSummary}
@@ -806,7 +806,7 @@ function ReviewRunHistory({
 	externalLink,
 	historical,
 	labels,
-	onOpenInAOBrowser,
+	onOpenInOpenAgentsBrowser,
 	onResolveInlineComment,
 	onSendInlineComment,
 	onSendReviewSummary,
@@ -819,7 +819,7 @@ function ReviewRunHistory({
 	externalLink: ExternalLinkComponent;
 	historical?: boolean;
 	labels: InspectorReviewLabels;
-	onOpenInAOBrowser?: (url: string) => void;
+	onOpenInOpenAgentsBrowser?: (url: string) => void;
 	onResolveInlineComment?: (comment: InspectorInlineComment & { reviewerId?: string }) => Promise<void> | void;
 	onSendInlineComment?: (comment: InspectorInlineComment & { reviewerId?: string }) => Promise<void> | void;
 	onSendReviewSummary?: (summary: InspectorReviewSummaryAction) => Promise<void> | void;
@@ -845,7 +845,7 @@ function ReviewRunHistory({
 					labels={labels}
 					renderAvatar={renderAvatar}
 					renderMarkdown={renderMarkdown}
-					onOpenInAOBrowser={onOpenInAOBrowser}
+					onOpenInOpenAgentsBrowser={onOpenInOpenAgentsBrowser}
 					onResolveInlineComment={onResolveInlineComment}
 					onSendInlineComment={onSendInlineComment}
 					onSendReviewSummary={onSendReviewSummary}
@@ -917,7 +917,7 @@ function GithubReviewHistory({
 	entries,
 	externalLink,
 	labels,
-	onOpenInAOBrowser,
+	onOpenInOpenAgentsBrowser,
 	onRequestRereview,
 	onResolveInlineComment,
 	onSendInlineComment,
@@ -928,7 +928,7 @@ function GithubReviewHistory({
 	entries: InspectorGithubReview[];
 	externalLink: ExternalLinkComponent;
 	labels: InspectorReviewLabels;
-	onOpenInAOBrowser?: (url: string) => void;
+	onOpenInOpenAgentsBrowser?: (url: string) => void;
 	onRequestRereview?: (review: InspectorGithubReview) => Promise<void> | void;
 	onResolveInlineComment?: (comment: InspectorInlineComment & { reviewerId?: string }) => Promise<void> | void;
 	onSendInlineComment?: (comment: InspectorInlineComment & { reviewerId?: string }) => Promise<void> | void;
@@ -949,7 +949,7 @@ function GithubReviewHistory({
 					labels={labels}
 					onRequestRereview={onRequestRereview}
 					onResolveInlineComment={onResolveInlineComment}
-					onOpenInAOBrowser={onOpenInAOBrowser}
+					onOpenInOpenAgentsBrowser={onOpenInOpenAgentsBrowser}
 					onSendInlineComment={onSendInlineComment}
 					onSendReviewSummary={onSendReviewSummary}
 					onViewInlineCommentInFile={onViewInlineCommentInFile}
@@ -965,7 +965,7 @@ function ExternalReviewCard({
 	entry,
 	externalLink,
 	labels,
-	onOpenInAOBrowser,
+	onOpenInOpenAgentsBrowser,
 	onRequestRereview,
 	onResolveInlineComment,
 	onSendInlineComment,
@@ -977,7 +977,7 @@ function ExternalReviewCard({
 	entry: InspectorGithubReview;
 	externalLink: ExternalLinkComponent;
 	labels: InspectorReviewLabels;
-	onOpenInAOBrowser?: (url: string) => void;
+	onOpenInOpenAgentsBrowser?: (url: string) => void;
 	onRequestRereview?: (review: InspectorGithubReview) => Promise<void> | void;
 	onResolveInlineComment?: (comment: InspectorInlineComment & { reviewerId?: string }) => Promise<void> | void;
 	onSendInlineComment?: (comment: InspectorInlineComment & { reviewerId?: string }) => Promise<void> | void;
@@ -1026,7 +1026,7 @@ function ExternalReviewCard({
 						{headerContent}
 					</div>
 				)}
-				<ReviewSummaryActions body={body ?? ""} externalLink={externalLink} labels={labels} onOpenInAOBrowser={onOpenInAOBrowser} onRequestRereview={entry.canRequestRereview ? () => onRequestRereview?.(entry) : undefined} onSendReviewSummary={onSendReviewSummary} pullRequestUrl={entry.pullRequestUrl} reviewerId={entry.reviewerId} source="external" url={entry.reviewUrl || entry.pullRequestUrl} />
+				<ReviewSummaryActions body={body ?? ""} externalLink={externalLink} labels={labels} onOpenInOpenAgentsBrowser={onOpenInOpenAgentsBrowser} onRequestRereview={entry.canRequestRereview ? () => onRequestRereview?.(entry) : undefined} onSendReviewSummary={onSendReviewSummary} pullRequestUrl={entry.pullRequestUrl} reviewerId={entry.reviewerId} source="external" url={entry.reviewUrl || entry.pullRequestUrl} />
 			</div>
 			<div className="flex min-w-0 flex-col gap-3 px-1 pt-2 text-left">
 				{body ? (
@@ -1293,7 +1293,7 @@ function ReviewSummaryCard({
 	isEarlier = false,
 	labels,
 	inlineComments = [],
-	onOpenInAOBrowser,
+	onOpenInOpenAgentsBrowser,
 	onResolveInlineComment,
 	onSendInlineComment,
 	onSendReviewSummary,
@@ -1314,7 +1314,7 @@ function ReviewSummaryCard({
 	isEarlier?: boolean;
 	labels: InspectorReviewLabels;
 	inlineComments?: InspectorInlineComment[];
-	onOpenInAOBrowser?: (url: string) => void;
+	onOpenInOpenAgentsBrowser?: (url: string) => void;
 	onResolveInlineComment?: (comment: InspectorInlineComment & { reviewerId?: string }) => Promise<void> | void;
 	onSendInlineComment?: (comment: InspectorInlineComment & { reviewerId?: string }) => Promise<void> | void;
 	onSendReviewSummary?: (summary: InspectorReviewSummaryAction) => Promise<void> | void;
@@ -1348,7 +1348,7 @@ function ReviewSummaryCard({
 					{isEarlier ? <span>{labels.earlierPass}</span> : null}
 					<span className="font-mono">{timestamp}</span>
 				</span>
-				<ReviewSummaryActions body={body ?? ""} className="@max-[420px]/inspector:col-start-2 @max-[420px]/inspector:row-start-1" externalLink={externalLink} labels={labels} onOpenInAOBrowser={onOpenInAOBrowser} onSendReviewSummary={onSendReviewSummary} reviewerId={actor} source={source} url={url} />
+				<ReviewSummaryActions body={body ?? ""} className="@max-[420px]/inspector:col-start-2 @max-[420px]/inspector:row-start-1" externalLink={externalLink} labels={labels} onOpenInOpenAgentsBrowser={onOpenInOpenAgentsBrowser} onSendReviewSummary={onSendReviewSummary} reviewerId={actor} source={source} url={url} />
 			</span>
 			{body ? (
 				<ReviewMarkdownBody
@@ -1430,7 +1430,7 @@ function ReviewSummaryActions({
 	className,
 	externalLink: ExternalLink,
 	labels,
-	onOpenInAOBrowser,
+	onOpenInOpenAgentsBrowser,
 	onRequestRereview,
 	onSendReviewSummary,
 	pullRequestUrl,
@@ -1442,7 +1442,7 @@ function ReviewSummaryActions({
 	className?: string;
 	externalLink: ExternalLinkComponent;
 	labels: InspectorReviewLabels;
-	onOpenInAOBrowser?: (url: string) => void;
+	onOpenInOpenAgentsBrowser?: (url: string) => void;
 	onRequestRereview?: () => Promise<void> | void;
 	onSendReviewSummary?: (summary: InspectorReviewSummaryAction) => Promise<void> | void;
 	pullRequestUrl?: string;
@@ -1485,7 +1485,7 @@ function ReviewSummaryActions({
 				<span className="isolate absolute right-0 top-8 z-[100] flex w-48 flex-col rounded-md border border-border-strong bg-[var(--color-bg-settings-menu)] p-1 text-2xs shadow-[0_16px_40px_rgba(0,0,0,0.65)]">
 					{canSend ? <button className={cn("rounded px-2 py-1.5 text-left hover:bg-interactive-hover disabled:pointer-events-none", sendState === "sent" ? "text-success" : sendState === "error" ? "text-error" : "text-muted-foreground hover:text-foreground")} disabled={sendState === "sending" || sendState === "sent"} onClick={() => void send()} type="button">{sendState === "sent" ? labels.sentToWorkerAgent : sendState === "error" ? labels.sendToWorkerAgentError : labels.sendToWorkerAgent}</button> : null}
 					{onRequestRereview ? <button className={cn("rounded px-2 py-1.5 text-left hover:bg-interactive-hover disabled:pointer-events-none", rereviewState === "requested" ? "text-success" : rereviewState === "error" ? "text-error" : "text-muted-foreground hover:text-foreground")} disabled={rereviewState === "requesting" || rereviewState === "requested"} onClick={() => void requestRereview()} type="button">{rereviewState === "requested" ? labels.rereviewRequested : rereviewState === "error" ? labels.rereviewRequestFailed : labels.requestRereviewPR}</button> : null}
-					{url && onOpenInAOBrowser ? <button className="rounded px-2 py-1.5 text-left text-muted-foreground hover:bg-interactive-hover hover:text-foreground" onClick={() => onOpenInAOBrowser(url)} type="button">{labels.openInAOBrowser}</button> : null}
+					{url && onOpenInOpenAgentsBrowser ? <button className="rounded px-2 py-1.5 text-left text-muted-foreground hover:bg-interactive-hover hover:text-foreground" onClick={() => onOpenInOpenAgentsBrowser(url)} type="button">{labels.openInOpenAgentsBrowser}</button> : null}
 					{url ? <ExternalLink className="rounded px-2 py-1.5 text-muted-foreground no-underline hover:bg-interactive-hover hover:text-foreground" href={url}>{labels.openInSystemBrowser}</ExternalLink> : null}
 				</span>
 			) : null}

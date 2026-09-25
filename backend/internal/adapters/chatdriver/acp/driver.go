@@ -1,7 +1,7 @@
-// Package acp implements AO's provider-neutral Chat driver over the Agent
+// Package acp implements Open Agents's provider-neutral Chat driver over the Agent
 // Client Protocol. Provider packages supply only discovery, launch, metadata,
 // and capability policy; this package owns the ACP lifecycle and translates ACP
-// updates into AO's durable conversation vocabulary.
+// updates into Open Agents's durable conversation vocabulary.
 package acp
 
 import (
@@ -16,15 +16,15 @@ import (
 
 	acpsdk "github.com/coder/acp-go-sdk"
 
-	"github.com/aoagents/agent-orchestrator/backend/internal/adapters/chatdriver/persistenthost"
-	"github.com/aoagents/agent-orchestrator/backend/internal/adapters/chatdriver/processenv"
-	"github.com/aoagents/agent-orchestrator/backend/internal/domain"
-	"github.com/aoagents/agent-orchestrator/backend/internal/ports"
+	"github.com/sudo-adduser-jordan/open-agents/backend/internal/adapters/chatdriver/persistenthost"
+	"github.com/sudo-adduser-jordan/open-agents/backend/internal/adapters/chatdriver/processenv"
+	"github.com/sudo-adduser-jordan/open-agents/backend/internal/domain"
+	"github.com/sudo-adduser-jordan/open-agents/backend/internal/ports"
 )
 
 const handshakeTimeout = 60 * time.Second
 
-// Launch describes one ACP agent process. Command may be either AO's packaged
+// Launch describes one ACP agent process. Command may be either Open Agents's packaged
 // protocol bridge or the exact user-installed provider executable resolved by
 // the existing agent plugin.
 type Launch struct {
@@ -33,7 +33,7 @@ type Launch struct {
 	Env     map[string]string
 }
 
-// LaunchConfig is the resolved AO session context a provider binding may use to
+// LaunchConfig is the resolved Open Agents session context a provider binding may use to
 // construct its process. It intentionally contains no install mechanism: binary
 // ownership stays with the existing agent plugin.
 type LaunchConfig struct {
@@ -58,19 +58,19 @@ type Config struct {
 	// invoking an adapter-specific version flag, which many stdio agents do not
 	// implement and which can emit protocol bytes instead of a version string.
 	ValidateInitialize func(acpsdk.InitializeResponse) error
-	// SessionMeta carries adapter-defined ACP extensions whenever AO creates the
+	// SessionMeta carries adapter-defined ACP extensions whenever Open Agents creates the
 	// provider-side session object: session/new, session/load, or
 	// session/resume. Standing context such as a system prompt is process input,
 	// not transcript history, so a resumed native conversation must receive it
 	// again even though the provider recovers the messages itself.
 	SessionMeta func(LaunchConfig) map[string]any
-	// SessionMode maps AO's approval vocabulary onto this ACP agent's mode ids.
+	// SessionMode maps Open Agents's approval vocabulary onto this ACP agent's mode ids.
 	// Empty means "leave the provider/user default unchanged".
 	SessionMode func(ports.PermissionMode) string
-	// SessionOptions maps AO's per-turn choices onto ACP config option ids.
+	// SessionOptions maps Open Agents's per-turn choices onto ACP config option ids.
 	SessionOptions func(ports.ChatTurnSettings) []SessionOption
 	// PermissionPolicy lets a provider binding resolve permission requests that
-	// have an exact AO policy mapping before the generic client parks them for a
+	// have an exact Open Agents policy mapping before the generic client parks them for a
 	// human. Returning handled=false preserves the ordinary approval flow.
 	PermissionPolicy PermissionPolicy
 	// ClientExtension handles provider-defined agent-to-client JSON-RPC methods.
@@ -86,7 +86,7 @@ type Config struct {
 // TurnSettingsValidator validates live turn settings against launch-time state.
 type TurnSettingsValidator func(ports.PermissionMode, ports.ChatTurnSettings) error
 
-// PermissionPolicy maps the active AO permission mode and the provider's exact
+// PermissionPolicy maps the active Open Agents permission mode and the provider's exact
 // offered choices to an automatic response when the mapping is unambiguous.
 type PermissionPolicy func(
 	ports.PermissionMode,
@@ -166,7 +166,7 @@ func (d *Driver) discoverConfigOptions(ctx context.Context, workingDir string) (
 	return normalizeConfigOptions(resp.ConfigOptions), nil
 }
 
-// Harness identifies the AO harness this ACP transport adapts.
+// Harness identifies the Open Agents harness this ACP transport adapts.
 func (d *Driver) Harness() domain.AgentHarness { return d.cfg.Harness }
 
 // Probe checks the provider binding without creating an ACP session or worktree.
@@ -180,7 +180,7 @@ func (d *Driver) Probe(ctx context.Context) (ports.ChatCapabilities, error) {
 	return cloneCapabilities(d.cfg.Capabilities), nil
 }
 
-// Start creates a new ACP session in the AO worktree.
+// Start creates a new ACP session in the Open Agents worktree.
 func (d *Driver) Start(ctx context.Context, cfg ports.ChatStartConfig) (ports.ChatConversation, error) {
 	if !filepath.IsAbs(cfg.WorkspacePath) {
 		return nil, fmt.Errorf("workspace path must be absolute, got %q", cfg.WorkspacePath)
@@ -264,7 +264,7 @@ func (d *Driver) Start(ctx context.Context, cfg ports.ChatStartConfig) (ports.Ch
 }
 
 // Resume reconnects to the stored ACP session. When the agent advertises
-// session/load, AO uses it to recover both provider context and the normalized
+// session/load, Open Agents uses it to recover both provider context and the normalized
 // transcript; resume-only agents recover context but explicitly report that no
 // typed history replay is available.
 func (d *Driver) Resume(ctx context.Context, cfg ports.ChatResumeConfig) (ports.ChatConversation, error) {
@@ -454,19 +454,19 @@ func (d *Driver) initialize(
 		},
 		ProtocolVersion: acpsdk.ProtocolVersionNumber,
 		ClientInfo: &acpsdk.Implementation{
-			Name:    "agent-orchestrator",
-			Title:   pointer("Agent Orchestrator"),
+			Name:    "open-agents",
+			Title:   pointer("Open Agents"),
 			Version: "0.1.0",
 		},
 		ClientCapabilities: acpsdk.ClientCapabilities{
 			// These transcript-enrichment extensions enrich the transcript. They do
-			// not grant the agent access to AO's terminal or filesystem APIs.
+			// not grant the agent access to Open Agents's terminal or filesystem APIs.
 			Meta: map[string]any{
 				"subagent-transcript": true,
 				"terminal_output":     true,
 				// Agents supporting the JetBrains AIR extension publish retryable
 				// API/transport failures only when the client opts into this
-				// namespaced metadata extension. It is observational: AO receives
+				// namespaced metadata extension. It is observational: Open Agents receives
 				// status, but grants no new capability.
 				"jetbrains": map[string]any{
 					"air": map[string]any{
@@ -581,7 +581,7 @@ func conversationCapabilities(
 	// ResourceLink is a baseline ACP content block rather than an optional prompt
 	// capability. Every ACP conversation preserves it natively.
 	caps[ports.ChatCapabilityResourceLinks] = true
-	// These are facilities AO itself negotiated as the ACP client. An agent that
+	// These are facilities Open Agents itself negotiated as the ACP client. An agent that
 	// never uses them simply produces no matching events.
 	caps[ports.ChatCapabilityElicitation] = true
 	caps[ports.ChatCapabilityNestedAgents] = true

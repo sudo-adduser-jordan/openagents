@@ -1,6 +1,6 @@
 "use client";
 
-import { IOS_APP_STORE_URL } from "@ao/shared/constants";
+import { IOS_APP_STORE_URL } from "@openagents/shared/constants";
 import { useState } from "react";
 import { usePlatform } from "../hooks/useOS";
 import { StoreBadgeButton, StoreBadgeLink } from "./StoreBadge";
@@ -12,6 +12,10 @@ import { StoreQRDialog } from "./StoreQRDialog";
 export function MobileAppCTA() {
   const { mobileOS } = usePlatform();
   const [open, setOpen] = useState(false);
+
+  if (!IOS_APP_STORE_URL) {
+    return <span className="text-sm text-muted-foreground">iOS app coming soon</span>;
+  }
 
   if (mobileOS === "ios") {
     return (

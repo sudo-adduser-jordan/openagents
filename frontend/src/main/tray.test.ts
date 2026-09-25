@@ -67,7 +67,7 @@ function setup() {
 }
 
 const sessionItems = (tray: { template: MenuItem[] }) =>
-	tray.template.filter((item) => typeof item.click === "function" && item.label !== "Show Agent Orchestrator");
+	tray.template.filter((item) => typeof item.click === "function" && item.label !== "Show Open Agents");
 
 afterEach(() => {
 	trayInstances.length = 0;

@@ -76,7 +76,7 @@ func TestTransportDistinguishesEmptyResponses(t *testing.T) {
 		cfg := setConfigEnv(t)
 		srv := transportServer(t, http.StatusOK, ``)
 		c := transportContext(t, cfg, srv)
-		if err := c.postJSON(ctx, "sessions/ao-1/activity", struct{}{}, nil); err != nil {
+		if err := c.postJSON(ctx, "sessions/open-agents-1/activity", struct{}{}, nil); err != nil {
 			t.Fatalf("nil output should tolerate empty body, got: %v", err)
 		}
 	})

@@ -1,6 +1,6 @@
 import { fireEvent, render, screen, waitFor } from "@testing-library/react";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
-import { aoBridge } from "../../lib/bridge";
+import { openAgentsBridge } from "../../lib/bridge";
 import { renderMermaidDiagram } from "../../lib/mermaid-diagram";
 import { MarkdownFileView } from "./MarkdownFileView";
 
@@ -70,10 +70,10 @@ describe("MarkdownFileView", () => {
 	});
 
 	it("opens external links in the system browser", () => {
-		const openExternal = vi.spyOn(aoBridge.app, "openExternal").mockResolvedValue(undefined);
-		render(view("[AO docs](https://example.com/docs)"));
+		const openExternal = vi.spyOn(openAgentsBridge.app, "openExternal").mockResolvedValue(undefined);
+		render(view("[Open Agents docs](https://example.com/docs)"));
 
-		fireEvent.click(screen.getByRole("link", { name: "AO docs" }));
+		fireEvent.click(screen.getByRole("link", { name: "Open Agents docs" }));
 
 		expect(openExternal).toHaveBeenCalledWith("https://example.com/docs");
 	});
@@ -95,7 +95,7 @@ describe("MarkdownFileView", () => {
 	});
 
 	it("scrolls the clicked heading when multiple previews contain the same slug", () => {
-		const writeText = vi.spyOn(aoBridge.clipboard, "writeText").mockResolvedValue(undefined);
+		const writeText = vi.spyOn(openAgentsBridge.clipboard, "writeText").mockResolvedValue(undefined);
 		const { container } = render(
 			<>
 				{view("# Repeat", "docs/one.md")}

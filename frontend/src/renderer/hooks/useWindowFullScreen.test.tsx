@@ -6,7 +6,7 @@ const onFullScreenMock = vi.fn();
 const isMacPlatformMock = vi.fn(() => true);
 
 vi.mock("../lib/bridge", () => ({
-	aoBridge: {
+	openAgentsBridge: {
 		window: {
 			isFullScreen: () => isFullScreenMock(),
 			onFullScreen: (listener: (value: boolean) => void) => onFullScreenMock(listener),

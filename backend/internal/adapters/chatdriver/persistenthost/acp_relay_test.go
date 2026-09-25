@@ -54,7 +54,7 @@ func TestACPRelayReclaimsPromptAcrossAttachment(t *testing.T) {
 		t.Fatalf("replacement request reused provider id %s", nextID)
 	}
 
-	if frame := relayClientFrame(t, relay, []byte(`{"jsonrpc":"2.0","method":"_ao/persistent_prompt_ack","params":{"eventId":"wrong"}}`+"\n"), 2); len(frame) != 0 {
+	if frame := relayClientFrame(t, relay, []byte(`{"jsonrpc":"2.0","method":"_open-agents/persistent_prompt_ack","params":{"eventId":"wrong"}}`+"\n"), 2); len(frame) != 0 {
 		t.Fatalf("private ack leaked to provider: %s", frame)
 	}
 	if replay := relayReplayFrames(t, relay); len(replay) != 2 {

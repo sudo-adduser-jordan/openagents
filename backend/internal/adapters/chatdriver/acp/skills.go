@@ -5,12 +5,12 @@ import (
 
 	acpsdk "github.com/coder/acp-go-sdk"
 
-	"github.com/aoagents/agent-orchestrator/backend/internal/ports"
+	"github.com/sudo-adduser-jordan/open-agents/backend/internal/ports"
 )
 
-// ListSkills exposes ACP's available commands through AO's existing named-skill
+// ListSkills exposes ACP's available commands through Open Agents's existing named-skill
 // boundary. Invocation needs no protocol-specific method: ACP commands are sent
-// as ordinary prompt text beginning with /name, which is already how AO's
+// as ordinary prompt text beginning with /name, which is already how Open Agents's
 // composer inserts a skill.
 func (c *conversation) ListSkills(ctx context.Context) ([]ports.ChatSkill, error) {
 	if err := ctx.Err(); err != nil {

@@ -3,20 +3,20 @@ title: GitHub SCM
 description: Pull request observation, lifecycle feedback, and explicit PR actions.
 ---
 
-AO uses GitHub for the current pull-request lane. Authentication is lazy and non-blocking at daemon startup; use `ao doctor` to inspect local GitHub readiness.
+Open Agents uses GitHub for the current pull-request lane. Authentication is lazy and non-blocking at daemon startup; use `open-agents doctor` to inspect local GitHub readiness.
 
 ## Associate a pull request
 
 Claim a PR while spawning or attach it later:
 
 ```bash
-ao spawn --project my-app --name review-fix --claim-pr 42
-ao session claim-pr 42
+open-agents spawn --project my-app --name review-fix --claim-pr 42
+open-agents session claim-pr 42
 # From outside the worker, target it explicitly:
-ao session claim-pr ao-123 42
+open-agents session claim-pr open-agents-123 42
 ```
 
-Inside a worker, the one-argument form reads the target session from `AO_SESSION_ID`.
+Inside a worker, the one-argument form reads the target session from `OPEN_AGENTS_SESSION_ID`.
 
 PR ownership prevents multiple active workers from silently driving the same pull request. Add `--no-takeover` when a conflicting owner must be treated as an error.
 
@@ -27,9 +27,9 @@ The daemon polls active PRs with ETag guards and semantic diffing. New CI failur
 ## Explicit actions
 
 ```bash
-ao pr merge 42
-ao pr resolve-comments 42
-ao review trigger <worker-session-id>
+open-agents pr merge 42
+open-agents pr resolve-comments 42
+open-agents review trigger <worker-session-id>
 ```
 
 Reviewer agents are configured separately from worker agents. The shipped reviewer harnesses are `codex` and `opencode`.
