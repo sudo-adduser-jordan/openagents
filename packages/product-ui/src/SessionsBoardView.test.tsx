@@ -397,6 +397,72 @@ describe("SessionsBoardView", () => {
 		);
 	});
 
+	describe("active worker edge", () => {
+		function renderCard(session: Partial<BoardSessionPresentation>) {
+			render(
+				<SessionCardView
+					externalLink={ExternalLink}
+					labels={{
+						formatTime: () => "5m ago",
+						intakeIssue: (id) => `Issue ${id}`,
+						pr: {
+							short: "PR",
+							states: { closed: "closed", draft: "draft", merged: "merged", open: "open" },
+						},
+						updatedAt: (timestamp) => `Updated ${timestamp}`,
+					}}
+					renderAvatar={() => null}
+					session={{ ...baseSession, ...session }}
+				/>,
+			);
+			return screen.getByTestId("board-session-card");
+		}
+
+		const activeActivity = { state: "active", lastActivityAt: "2026-08-09T10:05:00Z" } as const;
+
+		it("sweeps the edge while the worker is active", () => {
+			const card = renderCard({ activity: activeActivity, status: "working", displayStatus: "Working" });
+			expect(card).toHaveClass("session-card-active");
+		});
+
+		it.each(["idle", "waiting_input", "blocked", "exited", "unknown"] as const)(
+			"does not sweep the edge while the worker is %s",
+			(state) => {
+				const card = renderCard({
+					activity: { state, lastActivityAt: "2026-08-09T10:05:00Z" },
+					status: "working",
+					displayStatus: "Working",
+				});
+				expect(card).not.toHaveClass("session-card-active");
+			},
+		);
+
+		it("does not sweep the edge when the daemon reports no activity at all", () => {
+			const card = renderCard({ status: "working", displayStatus: "Working" });
+			expect(card).not.toHaveClass("session-card-active");
+		});
+
+		it("leaves the attention pulse alone rather than stacking a second edge", () => {
+			const card = renderCard({
+				activity: activeActivity,
+				displayStatus: "Blocked",
+				status: "working",
+			});
+			expect(card).toHaveClass("animate-attention-card-pulse", "border-status-needs-you");
+			expect(card).not.toHaveClass("session-card-active");
+		});
+
+		it("does not sweep the edge of a finished card", () => {
+			const card = renderCard({
+				activity: activeActivity,
+				displayStatus: "Merged",
+				isTerminated: true,
+				status: "merged",
+			});
+			expect(card).not.toHaveClass("session-card-active");
+		});
+	});
+
 	it("renders a neutral card with grouped multi-PR, usage, and action presentation", () => {
 		const onOpen = vi.fn();
 		const { container } = render(

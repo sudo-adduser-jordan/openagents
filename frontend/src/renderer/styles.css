@@ -1748,6 +1748,54 @@ textarea,
 	}
 }
 
+/* A live worker's card edge sweeps so an active worker reads at a glance without
+   parsing its status text. The angle is a registered custom property because a
+   bare custom property is not interpolatable — without @property the conic
+   gradient jumps instead of rotating. */
+@property --card-active-edge-angle {
+	syntax: "<angle>";
+	initial-value: 0deg;
+	inherits: false;
+}
+
+@keyframes card-active-edge-sweep {
+	to {
+		--card-active-edge-angle: 360deg;
+	}
+}
+
+/* Claims the same ::before as .animate-attention-card-pulse, so a card only ever
+   carries one of the two (see isWorking in SessionCardView). padding plus the
+   content-box mask leaves a 1px ring and keeps the card body clear. */
+.session-card-active::before {
+	position: absolute;
+	inset: 0;
+	border-radius: inherit;
+	padding: 1px;
+	background: conic-gradient(
+		from var(--card-active-edge-angle),
+		transparent 0deg,
+		var(--color-status-working) 70deg,
+		var(--color-status-validating) 120deg,
+		transparent 200deg,
+		transparent 360deg
+	);
+	mask:
+		linear-gradient(#000 0 0) content-box,
+		linear-gradient(#000 0 0);
+	mask-composite: exclude;
+	pointer-events: none;
+	content: "";
+	animation: card-active-edge-sweep 2.6s linear infinite;
+}
+
+@media (prefers-reduced-motion: reduce) {
+	.session-card-active::before {
+		animation: none;
+		background: var(--color-status-working);
+	}
+}
+
 .agent-switch-transfer-pulse {
 	animation: agent-switch-transfer 1.35s cubic-bezier(0.4, 0, 0.2, 1) infinite;
 }

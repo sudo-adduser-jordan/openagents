@@ -24,6 +24,7 @@ import {
 	getBoardLaneView,
 	getDisplayStatusLabel,
 	getSessionStatusView,
+	isAgentActivityWorking,
 	toBoardLane,
 	type BoardLaneView,
 	type ProductUITranslator,
@@ -276,6 +277,13 @@ export function SessionCardView({
 	const statusPresentation = session.statusPresentation;
 	const needsAttention = boardSessionNeedsAttention(session);
 	const needsAttentionChip = needsAttention;
+	// The daemon's activity signal is the only fact that separates a live worker
+	// from a settled card: `status` and `displayStatus` both describe the PR, not
+	// the process, so a worker can be mid-run and still read "Review pending".
+	// The two highlights claim the same ::before, so they are mutually exclusive --
+	// a blocked card keeps its attention pulse and never grows a second edge.
+	const isWorking =
+		!needsAttention && !session.isTerminated && isAgentActivityWorking(session.activity);
 	const lane = getBoardLaneView(
 		toBoardLane(
 			session.kanbanColumn,
@@ -340,6 +348,7 @@ export function SessionCardView({
 					"cursor-pointer hover:bg-interactive-hover focus-within:bg-interactive-hover active:scale-[0.99] has-[.pr-link:active]:scale-100",
 				needsAttention &&
 					"animate-attention-card-pulse border-status-needs-you bg-[color-mix(in_srgb,var(--color-status-needs-you)_8%,var(--color-surface))]",
+				isWorking && "session-card-active",
 			)}
 			data-testid="board-session-card"
 			data-session-id={session.id}
