@@ -1,6 +1,6 @@
 # open-agents manage
 
-Move a manager session into manager mode. In this mode the manager may delegate work by running `open-agents spawn`; delegated workers always start in planning mode.
+Move a manager session into manager mode. In this mode the manager may delegate work by running `open-agents spawn`; delegated workers always start in planning mode. A manager reaches the building stage by reviewing a worker's plan and running `open-agents build <worker-session-id>` — never by editing code itself.
 
 ## Syntax
 

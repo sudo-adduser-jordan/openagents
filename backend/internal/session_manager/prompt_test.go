@@ -80,7 +80,7 @@ func TestSystemPromptGuardAllowsHighLevelRoleAndBehaviorSummary(t *testing.T) {
 	}
 }
 
-func TestBuildSystemPrompt_ManagerRequiresConfirmationAndOpenAgentsOnlyDelegation(t *testing.T) {
+func TestBuildSystemPrompt_ManagerNeverEditsAndOnlyDelegatesToOpenAgents(t *testing.T) {
 	got := buildSystemPromptText(systemPromptConfig{
 		Role:    sessionPromptRoleManager,
 		Project: promptProject{ID: "mer", Name: "Mercury"},
@@ -90,9 +90,11 @@ func TestBuildSystemPrompt_ManagerRequiresConfirmationAndOpenAgentsOnlyDelegatio
 		"A delegated worker always starts in planning mode",
 		"If this manager is switched to planning mode, it must not delegate",
 		"open-agents manage <manager-session-id>",
+		"open-agents plan <session-id>",
+		"open-agents build <worker-session-id>",
 		"Never ever make code changes directly in the manager session",
-		"ask for explicit confirmation before making any code changes",
-		"prefer spawning or redirecting a worker unless the human explicitly confirms",
+		"Never edit source files, resolve merge conflicts",
+		"There is no confirmation path that unlocks direct manager edits",
 		"Do not use the agent runtime's built-in subagent or task-delegation tools for implementation work",
 		"You may coordinate multiple workers, but Open Agents workers only",
 		"open-agents session claim-pr <worker-session-id> <pr-ref>",
@@ -100,6 +102,54 @@ func TestBuildSystemPrompt_ManagerRequiresConfirmationAndOpenAgentsOnlyDelegatio
 		"Add `--model <id>` when the human or task explicitly requests a specific model",
 		"Never drop an explicitly requested `--model` or substitute another model automatically",
 		"ask the human to choose an alternative",
+	} {
+		if !strings.Contains(got, want) {
+			t.Fatalf("manager prompt missing %q:\n%s", want, got)
+		}
+	}
+}
+
+// The manager used to be able to unlock direct edits by confirming them. That
+// contradicted "never edit files", so the escape hatch and its wording are gone
+// and the prompt must not drift back into offering one.
+func TestBuildSystemPrompt_ManagerHasNoDirectEditEscapeHatch(t *testing.T) {
+	got := buildSystemPromptText(systemPromptConfig{
+		Role:    sessionPromptRoleManager,
+		Project: promptProject{ID: "mer", Name: "Mercury"},
+	})
+	for _, unwanted := range []string{
+		"ask for explicit confirmation before making any code changes",
+		"prefer spawning or redirecting a worker unless the human explicitly confirms",
+		"unless the human explicitly confirms direct manager edits are required",
+	} {
+		if strings.Contains(got, unwanted) {
+			t.Fatalf("manager prompt still offers a direct-edit escape hatch (%q):\n%s", unwanted, got)
+		}
+	}
+}
+
+// The loop is the manager's whole job: delegate, review the plan, build, route,
+// then stop for a human. Each step has to be named or the manager skips the
+// review and carries a plan straight into building.
+func TestBuildSystemPrompt_ManagerStatesThePlanToManualReviewLoop(t *testing.T) {
+	got := buildSystemPromptText(systemPromptConfig{
+		Role:    sessionPromptRoleManager,
+		Project: promptProject{ID: "mer", Name: "Mercury"},
+	})
+	for _, want := range []string{
+		"## Coordination Workflow",
+		"**Scope.**",
+		"**Delegate.**",
+		"**Review the plan.**",
+		"Do not advance a plan you have not read",
+		"**Build.**",
+		"`open-agents build <worker-session-id>`",
+		"This is the only way a worker starts implementing",
+		"**Route.**",
+		"**Stop for the human.**",
+		"A person's review is the next step, not yours",
+		"**Return.**",
+		"A frozen review card means a person owes a decision",
 	} {
 		if !strings.Contains(got, want) {
 			t.Fatalf("manager prompt missing %q:\n%s", want, got)

@@ -35,7 +35,7 @@ Available harnesses: `codex`, `aider`, `opencode`, `grok`, `droid`, `amp`, `agy`
 open-agents spawn --project open-agents --kind manager --name "project-manager"
 ```
 
-A manager starts in manager mode and may delegate. Workers created by a manager always start in planning mode; a planning-mode manager cannot delegate.
+A manager starts in manager mode and may delegate. Workers created by a manager always start in planning mode; a planning-mode manager cannot delegate. A worker begins implementing only after the manager has reviewed its plan and run `open-agents build <worker-session-id>`.
 
 ```bash
 # Spawn a worker for issue 142 in the open-agents project

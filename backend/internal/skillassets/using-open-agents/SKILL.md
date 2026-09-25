@@ -15,6 +15,8 @@ trigger: "Using the open-agents CLI in an Open Agents workspace: spawning worker
 | `project` | Register, inspect, configure, or remove projects | Setting up or managing repos Open Agents knows about | [commands/project.md](commands/project.md) |
 | `manager` | List manager sessions | Viewing which sessions are managers | [commands/manager.md](commands/manager.md) |
 | `manage` | Put a manager into delegating manager mode | Re-enabling delegation after planning | [commands/manage.md](commands/manage.md) |
+| `plan` | Move a session into the planning stage | Scoping work before execution, or sending a worker back to planning | [commands/plan.md](commands/plan.md) |
+| `build` | Move a worker into the building stage | Approving a worker's plan so it starts implementing | [commands/build.md](commands/build.md) |
 | `review` | Submit a reviewer result for a worker's PR | Completing a code review loop | [commands/review.md](commands/review.md) |
 | `send` | Send a message to a running agent session | Correcting or directing a live agent | [commands/send.md](commands/send.md) |
 | `preview` | Start a session-owned app or open an exact URL/file | Running and showing the worker's relevant app, Markdown, HTML, PDF, or image | [commands/preview.md](commands/preview.md) |
