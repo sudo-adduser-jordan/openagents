@@ -1,4 +1,5 @@
 import { useQuery, useQueryClient } from "@tanstack/react-query";
+import { resolveWorkflowMode } from "@openagents/product-ui";
 import { Globe2, PanelRight, Plus } from "lucide-react";
 import { useBlocker } from "@tanstack/react-router";
 import { motion, useReducedMotion } from "motion/react";
@@ -88,7 +89,7 @@ import {
 import { hidesShellTopbar, isMacPlatform } from "../lib/platform";
 import { useShell } from "../lib/shell-context";
 import { cn } from "../lib/utils";
-import { isOrchestratorSession, sessionIsActive } from "../types/workspace";
+import { isManagerSession, sessionIsActive } from "../types/workspace";
 import { terminalTargetBelongsToSession, type TerminalTarget } from "../types/terminal";
 import { matchesRendererShortcut } from "../stores/keybindings-store";
 import { useResolvedTheme, useUiStore, type InspectorView } from "../stores/ui-store";
@@ -498,7 +499,7 @@ export function SessionView({ sessionId }: SessionViewProps) {
 	);
 	const workspaceQuery = useWorkspaceSession(sessionId);
 	const theme = useResolvedTheme();
-	const browserOnly = Boolean(workspaceQuery.data && isOrchestratorSession(workspaceQuery.data));
+	const browserOnly = Boolean(workspaceQuery.data && isManagerSession(workspaceQuery.data));
 	const isInspectorOpen = useUiStore((state) => state.inspectorSessions[sessionId]?.isOpen ?? !browserOnly);
 	const inspectorView = useUiStore((state) => browserOnly ? "browser" : state.inspectorSessions[sessionId]?.view ?? "summary");
 	const browserUnseen = useUiStore((state) => Boolean(state.inspectorSessions[sessionId]?.browserUnseen));
@@ -755,7 +756,7 @@ export function SessionView({ sessionId }: SessionViewProps) {
 	const reviewerQuery = useQuery({
 		queryKey: ["session-reviews", sessionId],
 		enabled: Boolean(
-			window.openAgents && session && sessionIsActive(session) && !isOrchestratorSession(session) && session.prs.length > 0,
+			window.openAgents && session && sessionIsActive(session) && !isManagerSession(session) && session.prs.length > 0,
 		),
 		refetchInterval: (query) => {
 			const data = query.state.data as ReviewsResponse | undefined;
@@ -1076,7 +1077,7 @@ export function SessionView({ sessionId }: SessionViewProps) {
 				: current,
 		);
 	}, [availableReviewerTerminal, reviewerQuery.isFetched]);
-	const isOrchestrator = session ? isOrchestratorSession(session) : false;
+	const isManager = session ? isManagerSession(session) : false;
 	const hasInspector = Boolean(session);
 	const sizing = useMemo(() => inspectorSizing(inspectorView), [inspectorView]);
 	const browserEntryWidthFloorRef = useRef<number | null>(null);
@@ -1319,7 +1320,7 @@ export function SessionView({ sessionId }: SessionViewProps) {
 	);
 	const newTerminalError = openShellTerminal.error ? apiErrorMessage(openShellTerminal.error) : undefined;
 	const newShellTerminalAction = useMemo(() =>
-		session && !isOrchestrator ? (
+		session && !isManager ? (
 			<Tooltip>
 				<TooltipTrigger asChild>
 					<TopbarButton
@@ -1336,7 +1337,7 @@ export function SessionView({ sessionId }: SessionViewProps) {
 				</TooltipContent>
 			</Tooltip>
 		) : null,
-		[addShellTerminal, isOrchestrator, newTerminalError, session],
+		[addShellTerminal, isManager, newTerminalError, session],
 	);
 	const fileAnnotation = useFileAnnotation(sessionId);
 	const centerFileTabs = useMemo(
@@ -1629,7 +1630,7 @@ export function SessionView({ sessionId }: SessionViewProps) {
 			setBrowserUnseen(sessionId, false);
 			return;
 		}
-		// Workers and already-revealed orchestrators badge new browser work.
+		// Workers and already-revealed managers badge new browser work.
 		// A new preview target used to force-switch the inspector to the Browser
 		// tab and pop it open, even if the user was looking at something else
 		// entirely (Reviews, a different session's Files tab, mid-typing in
@@ -1704,13 +1705,20 @@ export function SessionView({ sessionId }: SessionViewProps) {
 	// The workflow mode is a per-session delivery stage, so the shortcut always
 	// acts on the session this view is showing. It is registered on the renderer
 	// (like toggle-inspector) rather than the main process, so it never fires for
-	// a background session. A missing mode reads as `planning`, matching the
-	// daemon default for freshly created work.
+	// a background session. Workers toggle planning/building; managers toggle
+	// planning/manager and never enter the worker building stage.
 	const setWorkflowMode = useSetWorkflowMode();
 	const toggleWorkflowMode = useCallback(() => {
 		const session = workspaceQuery.data;
 		if (!session) return;
-		const nextMode = session.workflowMode === "planning" ? "building" : "planning";
+		const managerSession = isManagerSession(session);
+		const currentMode = resolveWorkflowMode(
+			managerSession ? "manager" : "worker",
+			session.workflowMode,
+		);
+		const nextMode = currentMode === "planning"
+			? managerSession ? "manager" as const : "building" as const
+			: "planning" as const;
 		setWorkflowMode.mutate({ sessionId: session.id, workflowMode: nextMode });
 	}, [setWorkflowMode, workspaceQuery.data]);
 
@@ -1993,7 +2001,7 @@ export function SessionView({ sessionId }: SessionViewProps) {
 											<span
 												aria-hidden="true"
 												className="pointer-events-none absolute -right-0.5 -top-0.5 size-1.5 rounded-full bg-primary ring-2 ring-background"
-												data-testid="orchestrator-browser-unseen-indicator"
+												data-testid="manager-browser-unseen-indicator"
 											/>
 										) : null}
 									</span>

@@ -1102,7 +1102,7 @@ UPDATE conversation_activities
 SET status = 'failed', revision = revision + 1, updated_at = ?
 WHERE conversation_id = ? AND kind = 'user_input' AND status = 'pending';
 
--- A project conversation can move to a new orchestrator while the old provider
+-- A project conversation can move to a new manager while the old provider
 -- stream is still closing. Settle only requests owned by turns from that old
 -- session; conversation-wide cleanup would also fail the replacement's requests.
 -- name: FailPendingConversationRequestsForSession :exec

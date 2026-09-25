@@ -12,7 +12,7 @@ import {
 	isAgentActivityWorking,
 	isSessionIdle,
 } from "./session-presentation";
-import { DISPLAY_STATUSES } from "./session-models";
+import { DISPLAY_STATUSES, resolveWorkflowMode } from "./session-models";
 
 describe("session presentation", () => {
 	it.each([
@@ -94,8 +94,18 @@ describe("session presentation", () => {
 	it("splits the pre-PR building column by workflow mode", () => {
 		expect(toBoardLane("building", "working", "planning")).toBe("planning");
 		expect(toBoardLane("building", "working", "building")).toBe("building");
+		expect(toBoardLane("building", "working", "manager")).toBe("building");
 		// A daemon too old to send a mode keeps the pre-existing Building lane.
 		expect(toBoardLane("building", "working")).toBe("building");
+	});
+
+	it("keeps manager and worker workflow defaults role-aware", () => {
+		expect(resolveWorkflowMode("manager")).toBe("manager");
+		expect(resolveWorkflowMode("manager", "planning")).toBe("planning");
+		expect(resolveWorkflowMode("manager", "building")).toBe("manager");
+		expect(resolveWorkflowMode("worker")).toBe("building");
+		expect(resolveWorkflowMode("worker", "planning")).toBe("planning");
+		expect(resolveWorkflowMode("worker", "manager")).toBe("building");
 	});
 
 	it("moves a finished pre-PR build into the review lane", () => {

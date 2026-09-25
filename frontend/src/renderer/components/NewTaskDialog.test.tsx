@@ -47,13 +47,13 @@ function renderDialog() {
 }
 
 function requestBody() {
-	const call = postMock.mock.calls.find(([path]) => path === "/api/v1/orchestrators/delegate");
+	const call = postMock.mock.calls.find(([path]) => path === "/api/v1/managers/delegate");
 	if (!call) throw new Error("delegate was never called");
 	return (call[1] as { body: Record<string, unknown> }).body;
 }
 
 function delegateCalls() {
-	return postMock.mock.calls.filter(([path]) => path === "/api/v1/orchestrators/delegate");
+	return postMock.mock.calls.filter(([path]) => path === "/api/v1/managers/delegate");
 }
 
 const agentInventory = {
@@ -92,7 +92,7 @@ beforeEach(() => {
 	});
 	postMock.mockReset().mockImplementation(async (path: string) => {
 		if (path === "/api/v1/agents/readiness/ensure") return { data: agentInventory, error: undefined };
-		return { data: { ok: true, workerId: "worker-1", orchestratorId: "orch-1" }, error: undefined };
+		return { data: { ok: true, workerId: "worker-1", managerId: "mgr-1" }, error: undefined };
 	});
 });
 
@@ -140,7 +140,7 @@ describe("NewTaskDialog", () => {
 		await user.click(screen.getByRole("button", { name: "Start task" }));
 
 		await waitFor(() => expect(requestBody).not.toThrow());
-		expect(postMock).toHaveBeenCalledWith("/api/v1/orchestrators/delegate", {
+		expect(postMock).toHaveBeenCalledWith("/api/v1/managers/delegate", {
 			body: {
 				projectId: "proj-1",
 				brief,
@@ -251,7 +251,7 @@ describe("NewTaskDialog", () => {
 		// Shift+Enter must NOT submit — it adds a newline.
 		await user.keyboard("{Shift>}{Enter}{/Shift}");
 		await user.type(task, "Second line");
-		expect(postMock).not.toHaveBeenCalledWith("/api/v1/orchestrators/delegate", expect.anything());
+		expect(postMock).not.toHaveBeenCalledWith("/api/v1/managers/delegate", expect.anything());
 
 		// Plain Enter submits the task.
 		await user.keyboard("{Enter}");
@@ -269,11 +269,11 @@ describe("NewTaskDialog", () => {
 
 		// Alt+Enter must NOT submit — Alt is excluded so it can't submit by accident.
 		await user.keyboard("{Alt>}{Enter}{/Alt}");
-		expect(postMock).not.toHaveBeenCalledWith("/api/v1/orchestrators/delegate", expect.anything());
+		expect(postMock).not.toHaveBeenCalledWith("/api/v1/managers/delegate", expect.anything());
 
 		// Shift+Enter must NOT submit — it inserts a newline.
 		await user.keyboard("{Shift>}{Enter}{/Shift}");
-		expect(postMock).not.toHaveBeenCalledWith("/api/v1/orchestrators/delegate", expect.anything());
+		expect(postMock).not.toHaveBeenCalledWith("/api/v1/managers/delegate", expect.anything());
 
 		// Plain Enter submits the task.
 		await user.keyboard("{Enter}");

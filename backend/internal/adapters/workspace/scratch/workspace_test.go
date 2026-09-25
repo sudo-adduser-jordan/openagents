@@ -41,19 +41,19 @@ func TestWorkspaceCreatesBranchlessPerSessionDirectories(t *testing.T) {
 		t.Fatalf("worker dir stat = %#v, %v; want directory", info, err)
 	}
 
-	orchestrator, err := ws.Create(context.Background(), ports.WorkspaceConfig{
+	manager, err := ws.Create(context.Background(), ports.WorkspaceConfig{
 		ProjectID: "scratch",
 		SessionID: "scratch-2",
-		Kind:      domain.KindOrchestrator,
+		Kind:      domain.KindManager,
 	})
 	if err != nil {
-		t.Fatalf("Create orchestrator: %v", err)
+		t.Fatalf("Create manager: %v", err)
 	}
-	if want := filepath.Join(physicalRoot, "scratch", "orchestrators", "scratch-2"); orchestrator.Path != want {
-		t.Fatalf("orchestrator path = %q, want %q", orchestrator.Path, want)
+	if want := filepath.Join(physicalRoot, "scratch", "managers", "scratch-2"); manager.Path != want {
+		t.Fatalf("manager path = %q, want %q", manager.Path, want)
 	}
-	if orchestrator.Branch != "" {
-		t.Fatalf("orchestrator branch = %q, want empty", orchestrator.Branch)
+	if manager.Branch != "" {
+		t.Fatalf("manager branch = %q, want empty", manager.Branch)
 	}
 }
 

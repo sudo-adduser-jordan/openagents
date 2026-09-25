@@ -252,7 +252,7 @@ func TestDeriveKanbanColumnStaleReviewRunStartsANewCycle(t *testing.T) {
 // A card that has entered the review-feedback loop is frozen in needs_review
 // while the ReviewLocked latch is set: no PR fact — a new auto review pass, an
 // approval, mergeability, even a merge — may move it until an explicit
-// plan/build command or a user message releases the latch. Terminated sessions
+// workflow-mode command or a user message releases the latch. Terminated sessions
 // still archive.
 func TestDeriveKanbanColumnReviewLockFreezesCard(t *testing.T) {
 	t.Parallel()

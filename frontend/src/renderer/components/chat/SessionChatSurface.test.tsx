@@ -388,28 +388,28 @@ describe("SessionChatSurface link routing", () => {
 		await waitFor(() => expect(invalidate).toHaveBeenCalledWith({ queryKey: workspaceQueryKey }));
 	});
 
-	it("opens a plain Chat link from an active orchestrator in its Browser panel", async () => {
+	it("opens a plain Chat link from an active manager in its Browser panel", async () => {
 		const user = userEvent.setup();
 		const openInNewTab = vi.fn().mockResolvedValue(undefined);
 		const queryClient = new QueryClient({
 			defaultOptions: { queries: { retry: false }, mutations: { retry: false } },
 		});
-		const orchestratorSession = {
+		const managerSession = {
 			...session,
-			id: "proj-1-orchestrator",
-			title: "orchestrator",
-			kind: "orchestrator",
+			id: "proj-1-manager",
+			title: "manager",
+			kind: "manager",
 		} satisfies WorkspaceSession;
 
 		try {
 			render(
 				<Wrapper client={queryClient}>
-					<SessionChatSurface session={orchestratorSession} onOpenLinkInBrowser={openInNewTab} />
+					<SessionChatSurface session={managerSession} onOpenLinkInBrowser={openInNewTab} />
 				</Wrapper>,
 			);
 			await user.click(screen.getByRole("button", { name: "Open chat link" }));
 
-			expect(useUiStore.getState().inspectorSessions[orchestratorSession.id]).toMatchObject({ isOpen: true, view: "browser" });
+			expect(useUiStore.getState().inspectorSessions[managerSession.id]).toMatchObject({ isOpen: true, view: "browser" });
 			expect(openInNewTab).toHaveBeenCalledWith(LINK);
 			expect(postMock).not.toHaveBeenCalledWith("/api/v1/sessions/{sessionId}/preview", expect.anything());
 		} finally {
@@ -646,8 +646,8 @@ describe("SessionChatSurface link routing", () => {
 	});
 
 	it("remounts the chat workspace when switching between chat sessions", () => {
-		const first = { ...session, id: "proj-orchestrator-1", kind: "orchestrator" as const };
-		const second = { ...session, id: "proj-orchestrator-2", kind: "orchestrator" as const };
+		const first = { ...session, id: "proj-manager-1", kind: "manager" as const };
+		const second = { ...session, id: "proj-manager-2", kind: "manager" as const };
 		const queryClient = new QueryClient({
 			defaultOptions: { queries: { retry: false }, mutations: { retry: false } },
 		});
@@ -659,8 +659,8 @@ describe("SessionChatSurface link routing", () => {
 			</Wrapper>,
 		);
 
-		expect(screen.getByText("Mounted proj-orchestrator-1")).toBeInTheDocument();
-		expect(screen.getByText("Rendered proj-orchestrator-1")).toBeInTheDocument();
+		expect(screen.getByText("Mounted proj-manager-1")).toBeInTheDocument();
+		expect(screen.getByText("Rendered proj-manager-1")).toBeInTheDocument();
 
 		conversationState.snapshot = snapshotFor(second.id);
 		view.rerender(
@@ -669,9 +669,9 @@ describe("SessionChatSurface link routing", () => {
 			</Wrapper>,
 		);
 
-		expect(screen.getByText("Mounted proj-orchestrator-2")).toBeInTheDocument();
-		expect(screen.getByText("Rendered proj-orchestrator-2")).toBeInTheDocument();
-		expect(screen.queryByText("Mounted proj-orchestrator-1")).not.toBeInTheDocument();
+		expect(screen.getByText("Mounted proj-manager-2")).toBeInTheDocument();
+		expect(screen.getByText("Rendered proj-manager-2")).toBeInTheDocument();
+		expect(screen.queryByText("Mounted proj-manager-1")).not.toBeInTheDocument();
 	});
 });
 

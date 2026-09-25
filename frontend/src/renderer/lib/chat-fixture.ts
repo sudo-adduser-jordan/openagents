@@ -251,7 +251,7 @@ export const chatFixture: ConversationSnapshot = {
 				"\tif err != nil {\n" +
 				"\t\treturn nil, err\n" +
 				"\t}\n" +
-				"\treturn m.start(ctx, tree, req.Kind == KindOrchestrator)\n" +
+				"\treturn m.start(ctx, tree, req.Kind == KindManager)\n" +
 				"}\n" +
 				"```\n\n" +
 				"The port itself is small:\n\n" +
@@ -493,7 +493,7 @@ export const chatFixtureSettled: ConversationSnapshot = {
 
 /**
  * A long conversation, for the case the fixtures above cannot show: an
- * orchestrator session that has been running for hours.
+ * manager session that has been running for hours.
  *
  * Generated rather than transcribed because the point is the shape and the count,
  * not the content — a real capture of this length would be thousands of lines of

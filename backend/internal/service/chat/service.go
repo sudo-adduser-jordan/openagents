@@ -387,7 +387,7 @@ func (s *Service) Start(ctx context.Context, cfg StartConfig) (*Controller, erro
 	}
 
 	scope := domain.ConversationScopeSession
-	if cfg.Kind == domain.KindOrchestrator {
+	if cfg.Kind == domain.KindManager {
 		scope = domain.ConversationScopeProject
 	}
 	now := s.now()
@@ -427,7 +427,7 @@ func (s *Service) Start(ctx context.Context, cfg StartConfig) (*Controller, erro
 	} else if scope == domain.ConversationScopeProject &&
 		cfg.ProviderConversationID != "" && cfg.ProviderScopeID != "" {
 		// A coordinator-reserved provider boundary is an ownership transfer, not
-		// permission to steal a project narrative from a newer orchestrator.
+		// permission to steal a project narrative from a newer manager.
 		// Require the durable current_session_id proof the coordinator observed;
 		// ControllerReady/CommitChatSpawn rechecks it after provider I/O.
 		conversation, err = s.store.ConversationForSession(ctx, cfg.SessionID)
@@ -1691,7 +1691,7 @@ func (s *Service) SetTurnSettings(
 
 // RelayChatTurn delivers a message Open Agents is carrying for someone else.
 //
-// Origin is automation, not human: `open-agents send` and an orchestrator writing to a
+// Origin is automation, not human: `open-agents send` and a manager writing to a
 // worker are Open Agents acting on the user's instructions, and the timeline attributes
 // them so rather than passing them off as something the user typed here. The
 // distinction is durable and structural — a reader must not have to infer it

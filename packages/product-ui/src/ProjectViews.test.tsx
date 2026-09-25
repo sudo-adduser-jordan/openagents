@@ -37,7 +37,7 @@ describe("project models", () => {
 			validateProjectSettings({
 				displayName: "",
 				workerAgent: "",
-				orchestratorAgent: "",
+				managerAgent: "",
 				intakeEnabled: true,
 				intakeAssignee: "",
 			}),
@@ -46,7 +46,7 @@ describe("project models", () => {
 			validateProjectSettings({
 				displayName: "Project",
 				workerAgent: "codex",
-				orchestratorAgent: "codex",
+				managerAgent: "codex",
 				intakeEnabled: true,
 				intakeAssignee: "",
 			}),
@@ -54,11 +54,11 @@ describe("project models", () => {
 	});
 
 	it("gates project setup on agents and intake eligibility", () => {
-		expect(canSubmitProjectSetup({ workerAgent: "codex", orchestratorAgent: "codex" })).toBe(true);
+		expect(canSubmitProjectSetup({ workerAgent: "codex", managerAgent: "codex" })).toBe(true);
 		expect(
 			canSubmitProjectSetup({
 				workerAgent: "codex",
-				orchestratorAgent: "codex",
+				managerAgent: "codex",
 				intakeEnabled: true,
 			}),
 		).toBe(false);
@@ -82,7 +82,7 @@ describe("project presentation", () => {
 		const onSubmit = vi.fn();
 		render(
 			<ProjectSetupFormView
-				agentControls={{ worker: <span>Worker control</span>, orchestrator: <span>Orchestrator control</span> }}
+				agentControls={{ worker: <span>Worker control</span>, manager: <span>Manager control</span> }}
 				agents={{
 					cacheMessage: "Cached",
 					loading: false,
@@ -109,7 +109,7 @@ describe("project presentation", () => {
 		const onRetry = vi.fn();
 		render(
 			<ProjectSetupFormView
-				agentControls={{ worker: <span>Worker control</span>, orchestrator: <span>Orchestrator control</span> }}
+				agentControls={{ worker: <span>Worker control</span>, manager: <span>Manager control</span> }}
 				agents={{
 					cacheMessage: "Cached",
 					error: "Could not load agents",

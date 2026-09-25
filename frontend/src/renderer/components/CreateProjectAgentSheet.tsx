@@ -34,7 +34,7 @@ type TrackerIntakeConfig = components["schemas"]["TrackerIntakeConfig"];
 
 export type CreateProjectAgentSelection = {
 	workerAgent: string;
-	orchestratorAgent: string;
+	managerAgent: string;
 	trackerIntake?: TrackerIntakeConfig;
 };
 
@@ -150,12 +150,12 @@ export function CreateProjectAgentSheet({
 		: null;
 	const displayError = agentsError;
 	const [workerAgent, setWorkerAgent] = useState("");
-	const [orchestratorAgent, setOrchestratorAgent] = useState("");
+	const [managerAgent, setManagerAgent] = useState("");
 	const [workerAgentTouched, setWorkerAgentTouched] = useState(false);
-	const [orchestratorAgentTouched, setOrchestratorAgentTouched] = useState(false);
+	const [managerAgentTouched, setManagerAgentTouched] = useState(false);
 	useEnsureAgentReadiness({
-		agentIds: [workerAgent, orchestratorAgent],
-		enabled: contentOpen && (workerAgent !== "" || orchestratorAgent !== ""),
+		agentIds: [workerAgent, managerAgent],
+		enabled: contentOpen && (workerAgent !== "" || managerAgent !== ""),
 	});
 	const isBusy = isCreating || isInitializing;
 	const [intake, setIntake] = useState<IntakeForm>(EMPTY_INTAKE);
@@ -163,7 +163,7 @@ export function CreateProjectAgentSheet({
 	const canSubmit =
 		canSubmitProjectSetup({
 			workerAgent,
-			orchestratorAgent,
+			managerAgent,
 			intakeEnabled: intake.enabled,
 			intakeAssignee: intake.assignee,
 		}) &&
@@ -178,9 +178,9 @@ export function CreateProjectAgentSheet({
 	useEffect(() => {
 		if (open && !wasOpen.current) {
 			setWorkerAgent("");
-			setOrchestratorAgent("");
+			setManagerAgent("");
 			setWorkerAgentTouched(false);
-			setOrchestratorAgentTouched(false);
+			setManagerAgentTouched(false);
 			setIntake(EMPTY_INTAKE);
 		}
 		wasOpen.current = open;
@@ -191,10 +191,10 @@ export function CreateProjectAgentSheet({
 		if (!workerAgentTouched) {
 			setWorkerAgent(defaultAuthorizedAgentForRole(authorizedAgents, sessionHistory, "worker"));
 		}
-		if (!orchestratorAgentTouched) {
-			setOrchestratorAgent(defaultAuthorizedAgentForRole(authorizedAgents, sessionHistory, "orchestrator"));
+		if (!managerAgentTouched) {
+			setManagerAgent(defaultAuthorizedAgentForRole(authorizedAgents, sessionHistory, "manager"));
 		}
-	}, [authorizedAgents, open, orchestratorAgentTouched, sessionHistory, workerAgentTouched]);
+	}, [authorizedAgents, open, managerAgentTouched, sessionHistory, workerAgentTouched]);
 
 	return (
 		<Dialog.Root
@@ -260,20 +260,20 @@ export function CreateProjectAgentSheet({
 									}}
 								/>
 							),
-							orchestrator: (
+							manager: (
 								<RequiredAgentField
-									id="newProjectOrchestratorAgent"
-									label="Orchestrator agent"
-									placeholder="Select orchestrator agent"
-									value={orchestratorAgent}
+									id="newProjectManagerAgent"
+									label="Manager agent"
+									placeholder="Select manager agent"
+									value={managerAgent}
 									agents={agentOptions}
 									disabled={isLoadingAgents}
 									labelClassName="agents-sheet-label"
 									triggerClassName="agents-sheet-control"
 									contentClassName="agents-sheet-menu"
 									onChange={(value) => {
-										setOrchestratorAgent(value);
-										setOrchestratorAgentTouched(true);
+										setManagerAgent(value);
+										setManagerAgentTouched(true);
 									}}
 								/>
 							),
@@ -316,7 +316,7 @@ export function CreateProjectAgentSheet({
 						isBusy={isBusy}
 						onCancel={() => onOpenChange(false)}
 						onSubmit={() =>
-							void onSubmit({ workerAgent, orchestratorAgent, trackerIntake: buildIntake(intake) })
+							void onSubmit({ workerAgent, managerAgent, trackerIntake: buildIntake(intake) })
 						}
 						setupNotice={
 							repositorySetupNeeded

@@ -157,8 +157,8 @@ func newStack(t *testing.T) *stack {
 		Path:         "/repo/mer",
 		RegisteredAt: time.Now(),
 		Config: domain.ProjectConfig{
-			Worker:       domain.RoleOverride{Harness: domain.HarnessOpenCode},
-			Orchestrator: domain.RoleOverride{Harness: domain.HarnessOpenCode},
+			Worker:  domain.RoleOverride{Harness: domain.HarnessOpenCode},
+			Manager: domain.RoleOverride{Harness: domain.HarnessOpenCode},
 		},
 	}); err != nil {
 		t.Fatal(err)
@@ -174,7 +174,7 @@ func newStack(t *testing.T) *stack {
 	return &stack{store: store, sm: sm, mgr: mgr, lcm: lcm, prm: prm, rt: rt, ws: ws, msg: msg}
 }
 
-func TestDelegateEndpointSpawnsOrchestrator(t *testing.T) {
+func TestDelegateEndpointSpawnsManager(t *testing.T) {
 	ctx := context.Background()
 	store, err := sqlitetest.Open(t.TempDir())
 	if err != nil {
@@ -203,7 +203,7 @@ func TestDelegateEndpointSpawnsOrchestrator(t *testing.T) {
 
 	delegate := func() (int, []byte) {
 		t.Helper()
-		request, requestErr := http.NewRequestWithContext(ctx, http.MethodPost, server.URL+"/api/v1/orchestrators/delegate", bytes.NewBufferString(`{"projectId":"mer","brief":"Fix it","agent":"opencode","mode":"tui"}`))
+		request, requestErr := http.NewRequestWithContext(ctx, http.MethodPost, server.URL+"/api/v1/managers/delegate", bytes.NewBufferString(`{"projectId":"mer","brief":"Fix it","agent":"opencode","mode":"tui"}`))
 		if requestErr != nil {
 			t.Fatal(requestErr)
 		}

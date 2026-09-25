@@ -439,9 +439,9 @@ func TestProjectsAPI_RejectsUnknownConfigKeys(t *testing.T) {
 
 	// POST /projects gets the same gate, so add-time config rides the same rail.
 	otherRepo := gitRepo(t, "rejects-unknown-add")
-	body, status, _ = doRequest(t, srv, "POST", "/api/v1/projects", `{"path":`+quote(otherRepo)+`,"projectId":"rej2","config":{"orchestratorRules":"x"}}`)
+	body, status, _ = doRequest(t, srv, "POST", "/api/v1/projects", `{"path":`+quote(otherRepo)+`,"projectId":"rej2","config":{"managerRules":"x"}}`)
 	if status != http.StatusCreated {
-		t.Fatalf("orchestratorRules add config = %d, want 201; body=%s", status, body)
+		t.Fatalf("managerRules add config = %d, want 201; body=%s", status, body)
 	}
 }
 

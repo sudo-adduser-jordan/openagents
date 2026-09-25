@@ -331,7 +331,7 @@ opencode harness currently satisfies that contract. Merely having a Chat/ACP dri
 enough to enable switching for another harness.
 
 The native ID handed over is the current Terminal conversation, which can differ
-from the last Chat provider (for example after replacing an orchestrator). This
+from the last Chat provider (for example after replacing a manager). This
 does not prove that the new provider inherited the old context. Session Manager
 reserves a `ChatProviderHandoff` only from a matching durable TUI→Chat transition;
 ordinary resumes retain the exact-handle check. Chat resumes the verified target,
@@ -505,7 +505,7 @@ sequenceDiagram
 ```mermaid
 erDiagram
     projects o|--o{ sessions : optionally_owns
-    projects o|--o| conversations : optionally_owns_orchestrator_narrative
+    projects o|--o| conversations : optionally_owns_manager_narrative
     sessions ||--o| conversations : owns_worker_narrative
     sessions ||--o{ session_interface_transitions : records_controller_handoffs
     session_interface_transitions ||--o{ session_interface_transition_messages : holds_messages_during_gap

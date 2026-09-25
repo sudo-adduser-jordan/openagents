@@ -246,7 +246,7 @@ func (f *fakeStore) SetSessionWorkflowMode(_ context.Context, id domain.SessionI
 		return false, nil
 	}
 	r.WorkflowMode = mode
-	// A plan/build command is one of the review lock's release paths.
+	// A workflow-mode command is one of the review lock's release paths.
 	r.ReviewLocked = false
 	r.UpdatedAt = updatedAt
 	f.sessions[id] = r
@@ -550,26 +550,66 @@ func TestSessionSetWorkflowModeRejectsUnknownMode(t *testing.T) {
 	}
 }
 
-// A plan/build command is one of the review lock's release paths: the user has
+// A workflow-mode command is one of the review lock's release paths: the user has
 // taken their turn, so a plan command (planning) must clear a latched review
 // freeze. This session has no PR, so the refreshed read does not re-latch.
+func TestSessionSetWorkflowModeRejectsManagerModeForWorker(t *testing.T) {
+	st := newFakeStore()
+	st.sessions["mer-1"] = domain.SessionRecord{
+		ID: "mer-1", ProjectID: "mer", Kind: domain.KindWorker, WorkflowMode: domain.WorkflowModePlanning,
+	}
+
+	_, err := (&Service{store: st}).SetWorkflowMode(context.Background(), "mer-1", domain.WorkflowModeManager)
+	var apiErr *apierr.Error
+	if !errors.As(err, &apiErr) || apiErr.Code != "INVALID_WORKFLOW_MODE" {
+		t.Fatalf("err = %v, want INVALID_WORKFLOW_MODE", err)
+	}
+	if st.sessions["mer-1"].WorkflowMode != domain.WorkflowModePlanning {
+		t.Fatalf("worker workflow mode changed to %q", st.sessions["mer-1"].WorkflowMode)
+	}
+}
+
+func TestSessionSetWorkflowModeRejectsBuildingModeForManager(t *testing.T) {
+	st := newFakeStore()
+	st.sessions["mer-1"] = domain.SessionRecord{
+		ID: "mer-1", ProjectID: "mer", Kind: domain.KindManager, WorkflowMode: domain.WorkflowModeManager,
+	}
+
+	_, err := (&Service{store: st}).SetWorkflowMode(context.Background(), "mer-1", domain.WorkflowModeBuilding)
+	var apiErr *apierr.Error
+	if !errors.As(err, &apiErr) || apiErr.Code != "INVALID_WORKFLOW_MODE" {
+		t.Fatalf("err = %v, want INVALID_WORKFLOW_MODE", err)
+	}
+	if st.sessions["mer-1"].WorkflowMode != domain.WorkflowModeManager {
+		t.Fatalf("manager workflow mode changed to %q", st.sessions["mer-1"].WorkflowMode)
+	}
+}
+
 func TestSessionSetWorkflowModeReleasesReviewLock(t *testing.T) {
-	for _, mode := range []domain.WorkflowMode{domain.WorkflowModePlanning, domain.WorkflowModeBuilding} {
-		t.Run(string(mode), func(t *testing.T) {
+	for _, tc := range []struct {
+		kind domain.SessionKind
+		mode domain.WorkflowMode
+	}{
+		{kind: domain.KindWorker, mode: domain.WorkflowModePlanning},
+		{kind: domain.KindWorker, mode: domain.WorkflowModeBuilding},
+		{kind: domain.KindManager, mode: domain.WorkflowModePlanning},
+		{kind: domain.KindManager, mode: domain.WorkflowModeManager},
+	} {
+		t.Run(string(tc.kind)+"/"+string(tc.mode), func(t *testing.T) {
 			st := newFakeStore()
 			st.sessions["mer-1"] = domain.SessionRecord{
-				ID: "mer-1", ProjectID: "mer", Kind: domain.KindWorker,
-				WorkflowMode: domain.WorkflowModePlanning, ReviewLocked: true,
+				ID: "mer-1", ProjectID: "mer", Kind: tc.kind,
+				WorkflowMode: domain.DefaultWorkflowModeForKind(tc.kind), ReviewLocked: true,
 			}
 
-			sess, err := (&Service{store: st}).SetWorkflowMode(context.Background(), "mer-1", mode)
+			sess, err := (&Service{store: st}).SetWorkflowMode(context.Background(), "mer-1", tc.mode)
 			if err != nil {
 				t.Fatal(err)
 			}
 			if sess.ReviewLocked || st.sessions["mer-1"].ReviewLocked {
-				t.Fatalf("review lock was not released by workflow mode %q: session=%+v stored=%+v", mode, sess, st.sessions["mer-1"])
+				t.Fatalf("review lock was not released by workflow mode %q: session=%+v stored=%+v", tc.mode, sess, st.sessions["mer-1"])
 			}
-			if st.sessions["mer-1"].WorkflowMode != mode {
+			if st.sessions["mer-1"].WorkflowMode != tc.mode {
 				t.Fatalf("workflow mode was not persisted: stored=%+v", st.sessions["mer-1"])
 			}
 		})
@@ -2366,7 +2406,7 @@ func TestSessionRenameMissingSessionReturnsNotFound(t *testing.T) {
 }
 
 // fakeCommander records Kill/Spawn calls so a test can assert the
-// clean-orchestrator ordering without wiring a real session engine.
+// clean-manager ordering without wiring a real session engine.
 type fakeCommander struct {
 	killed          []domain.SessionID
 	retired         []domain.SessionID
@@ -2600,28 +2640,28 @@ func TestTeardownProjectStopsOnKillError(t *testing.T) {
 	}
 }
 
-func TestSpawnOrchestratorCleanRetiresActiveOrchestratorsBeforeSpawn(t *testing.T) {
+func TestSpawnManagerCleanRetiresActiveManagersBeforeSpawn(t *testing.T) {
 	st := newFakeStore()
 	st.projects["mer"] = domain.ProjectRecord{ID: "mer"}
-	// Two active orchestrators plus an unrelated worker and a terminated
-	// orchestrator that must be left alone.
-	st.sessions["mer-1"] = domain.SessionRecord{ID: "mer-1", ProjectID: "mer", Kind: domain.KindOrchestrator}
-	st.sessions["mer-2"] = domain.SessionRecord{ID: "mer-2", ProjectID: "mer", Kind: domain.KindOrchestrator}
+	// Two active managers plus an unrelated worker and a terminated
+	// manager that must be left alone.
+	st.sessions["mer-1"] = domain.SessionRecord{ID: "mer-1", ProjectID: "mer", Kind: domain.KindManager}
+	st.sessions["mer-2"] = domain.SessionRecord{ID: "mer-2", ProjectID: "mer", Kind: domain.KindManager}
 	st.sessions["mer-3"] = domain.SessionRecord{ID: "mer-3", ProjectID: "mer", Kind: domain.KindWorker}
-	st.sessions["mer-4"] = domain.SessionRecord{ID: "mer-4", ProjectID: "mer", Kind: domain.KindOrchestrator, IsTerminated: true}
+	st.sessions["mer-4"] = domain.SessionRecord{ID: "mer-4", ProjectID: "mer", Kind: domain.KindManager, IsTerminated: true}
 
 	fc := &fakeCommander{}
 	svc := &Service{manager: fc, store: st}
 
-	if _, err := svc.SpawnOrchestrator(context.Background(), "mer", true, ""); err != nil {
-		t.Fatalf("SpawnOrchestrator: %v", err)
+	if _, err := svc.SpawnManager(context.Background(), "mer", true, ""); err != nil {
+		t.Fatalf("SpawnManager: %v", err)
 	}
 
 	if len(fc.retired) != 2 {
-		t.Fatalf("retired = %v, want the two active orchestrators", fc.retired)
+		t.Fatalf("retired = %v, want the two active managers", fc.retired)
 	}
 	if len(fc.sent) != 2 {
-		t.Fatalf("retire notices = %v, want the two active orchestrators", fc.sent)
+		t.Fatalf("retire notices = %v, want the two active managers", fc.sent)
 	}
 	if !fc.spawned || fc.killsAtSpawn != 2 {
 		t.Fatalf("spawn must run after both retirements: spawned=%v retirementsAtSpawn=%d", fc.spawned, fc.killsAtSpawn)
@@ -2631,15 +2671,15 @@ func TestSpawnOrchestratorCleanRetiresActiveOrchestratorsBeforeSpawn(t *testing.
 	}
 }
 
-func TestSpawnOrchestratorCleanContinuesWhenRetireNoticeFails(t *testing.T) {
+func TestSpawnManagerCleanContinuesWhenRetireNoticeFails(t *testing.T) {
 	st := newFakeStore()
 	st.projects["mer"] = domain.ProjectRecord{ID: "mer"}
-	st.sessions["mer-1"] = domain.SessionRecord{ID: "mer-1", ProjectID: "mer", Kind: domain.KindOrchestrator}
+	st.sessions["mer-1"] = domain.SessionRecord{ID: "mer-1", ProjectID: "mer", Kind: domain.KindManager}
 	fc := &fakeCommander{sendErr: errors.New("pane closed")}
 	svc := &Service{manager: fc, store: st}
 
-	if _, err := svc.SpawnOrchestrator(context.Background(), "mer", true, ""); err != nil {
-		t.Fatalf("SpawnOrchestrator: %v", err)
+	if _, err := svc.SpawnManager(context.Background(), "mer", true, ""); err != nil {
+		t.Fatalf("SpawnManager: %v", err)
 	}
 	if len(fc.retired) != 1 || fc.retired[0] != "mer-1" {
 		t.Fatalf("retired = %v, want mer-1 despite retire notice failure", fc.retired)
@@ -2649,65 +2689,68 @@ func TestSpawnOrchestratorCleanContinuesWhenRetireNoticeFails(t *testing.T) {
 	}
 }
 
-func TestSpawnOrchestratorCleanPreservesPersistedMode(t *testing.T) {
+func TestSpawnManagerCleanPreservesPersistedMode(t *testing.T) {
 	st := newFakeStore()
 	st.projects["mer"] = domain.ProjectRecord{ID: "mer"}
 	st.sessions["mer-1"] = domain.SessionRecord{
-		ID: "mer-1", ProjectID: "mer", Kind: domain.KindOrchestrator,
+		ID: "mer-1", ProjectID: "mer", Kind: domain.KindManager,
 		Mode: domain.SessionModeChat, CreatedAt: time.Unix(100, 0).UTC(),
 	}
 	fc := &fakeCommander{}
 	svc := &Service{manager: fc, store: st}
 
-	if _, err := svc.SpawnOrchestrator(context.Background(), "mer", true, ""); err != nil {
-		t.Fatalf("SpawnOrchestrator: %v", err)
+	if _, err := svc.SpawnManager(context.Background(), "mer", true, ""); err != nil {
+		t.Fatalf("SpawnManager: %v", err)
 	}
 	if fc.spawnedCfg.RequestedMode != domain.SessionModeChat {
 		t.Fatalf("replacement mode = %q, want persisted chat", fc.spawnedCfg.RequestedMode)
 	}
 }
 
-func TestSpawnOrchestratorCleanHonorsExplicitReplacementMode(t *testing.T) {
+func TestSpawnManagerCleanHonorsExplicitReplacementMode(t *testing.T) {
 	st := newFakeStore()
 	st.projects["mer"] = domain.ProjectRecord{ID: "mer"}
 	st.sessions["mer-1"] = domain.SessionRecord{
-		ID: "mer-1", ProjectID: "mer", Kind: domain.KindOrchestrator,
+		ID: "mer-1", ProjectID: "mer", Kind: domain.KindManager,
 		Mode: domain.SessionModeTUI, CreatedAt: time.Unix(100, 0).UTC(),
 	}
 	fc := &fakeCommander{}
 	svc := &Service{manager: fc, store: st}
 
-	if _, err := svc.SpawnOrchestrator(context.Background(), "mer", true, domain.SessionModeChat); err != nil {
-		t.Fatalf("SpawnOrchestrator: %v", err)
+	if _, err := svc.SpawnManager(context.Background(), "mer", true, domain.SessionModeChat); err != nil {
+		t.Fatalf("SpawnManager: %v", err)
 	}
 	if fc.spawnedCfg.RequestedMode != domain.SessionModeChat {
 		t.Fatalf("replacement mode = %q, want explicit chat", fc.spawnedCfg.RequestedMode)
 	}
 }
 
-func TestSpawnOrchestratorUsesExplicitModeForNewProjectOrchestrator(t *testing.T) {
+func TestSpawnManagerUsesExplicitModeForNewProjectManager(t *testing.T) {
 	st := newFakeStore()
 	st.projects["mer"] = domain.ProjectRecord{ID: "mer"}
 	fc := &fakeCommander{}
 	svc := &Service{manager: fc, store: st}
 
-	if _, err := svc.SpawnOrchestrator(context.Background(), "mer", false, domain.SessionModeChat); err != nil {
-		t.Fatalf("SpawnOrchestrator: %v", err)
+	if _, err := svc.SpawnManager(context.Background(), "mer", false, domain.SessionModeChat); err != nil {
+		t.Fatalf("SpawnManager: %v", err)
 	}
 	if fc.spawnedCfg.RequestedMode != domain.SessionModeChat {
 		t.Fatalf("requested mode = %q, want chat", fc.spawnedCfg.RequestedMode)
 	}
+	if fc.spawnedCfg.RequestedWorkflowMode != domain.WorkflowModeManager {
+		t.Fatalf("workflow mode = %q, want manager", fc.spawnedCfg.RequestedWorkflowMode)
+	}
 }
 
-func TestSpawnOrchestratorCleanRetireNoticeIsBranchNeutral(t *testing.T) {
+func TestSpawnManagerCleanRetireNoticeIsBranchNeutral(t *testing.T) {
 	st := newFakeStore()
 	st.projects["scratch"] = domain.ProjectRecord{ID: "scratch", Kind: domain.ProjectKindScratch}
-	st.sessions["scratch-1"] = domain.SessionRecord{ID: "scratch-1", ProjectID: "scratch", Kind: domain.KindOrchestrator}
+	st.sessions["scratch-1"] = domain.SessionRecord{ID: "scratch-1", ProjectID: "scratch", Kind: domain.KindManager}
 	fc := &fakeCommander{}
 	svc := &Service{manager: fc, store: st}
 
-	if _, err := svc.SpawnOrchestrator(context.Background(), "scratch", true, ""); err != nil {
-		t.Fatalf("SpawnOrchestrator: %v", err)
+	if _, err := svc.SpawnManager(context.Background(), "scratch", true, ""); err != nil {
+		t.Fatalf("SpawnManager: %v", err)
 	}
 	if len(fc.sentMessages) != 1 {
 		t.Fatalf("retire messages = %d, want 1", len(fc.sentMessages))
@@ -2761,7 +2804,7 @@ func TestSpawnStandaloneWorkerDoesNotRequireProject(t *testing.T) {
 
 func TestSpawnStandaloneRejectsProjectFeatures(t *testing.T) {
 	for _, cfg := range []ports.SpawnConfig{
-		{Kind: domain.KindOrchestrator, Harness: domain.HarnessOpenCode},
+		{Kind: domain.KindManager, Harness: domain.HarnessOpenCode},
 		{Kind: domain.KindWorker, Harness: domain.HarnessOpenCode, Branch: "feature/x"},
 		{Kind: domain.KindWorker, Harness: domain.HarnessOpenCode, IssueID: "42"},
 		{Kind: domain.KindWorker},
@@ -3103,12 +3146,12 @@ func TestSpawnIssueContextFromSelfManagedGitLabTracker(t *testing.T) {
 	}
 }
 
-func TestSpawnOrchestratorUnknownProjectReturns404(t *testing.T) {
+func TestSpawnManagerUnknownProjectReturns404(t *testing.T) {
 	st := newFakeStore()
 	fc := &fakeCommander{}
 	svc := &Service{manager: fc, store: st}
 
-	_, err := svc.SpawnOrchestrator(context.Background(), "ghost", false, "")
+	_, err := svc.SpawnManager(context.Background(), "ghost", false, "")
 	var e *apierr.Error
 	if !errors.As(err, &e) || e.Kind != apierr.KindNotFound || e.Code != "PROJECT_NOT_FOUND" {
 		t.Fatalf("err = %v, want apierr.NotFound PROJECT_NOT_FOUND", err)
@@ -3140,7 +3183,7 @@ func TestToAPIErrorMapsWorkspaceBranchSentinels(t *testing.T) {
 		{"unknown harness", fmt.Errorf("spawn: %w: %q", sessionmanager.ErrUnknownHarness, "bogus"), apierr.KindInvalid, "UNKNOWN_HARNESS"},
 		{"missing harness", fmt.Errorf("spawn: %w: configure project worker.agent or pass --harness", sessionmanager.ErrMissingHarness), apierr.KindInvalid, "AGENT_REQUIRED"},
 		{"harness install active", fmt.Errorf("spawn: %w", sessionmanager.ErrHarnessInstallActive), apierr.KindConflict, "HARNESS_INSTALL_ACTIVE"},
-		{"planning orchestrator no tasks", fmt.Errorf("spawn: %w: mer-0 is still planning", sessionmanager.ErrPlanningOrchestratorNoTasks), apierr.KindConflict, "PLANNING_ORCHESTRATOR_NO_TASKS"},
+		{"planning manager no tasks", fmt.Errorf("spawn: %w: mer-0 is still planning", sessionmanager.ErrPlanningManagerNoTasks), apierr.KindConflict, "PLANNING_MANAGER_NO_TASKS"},
 		{"awaiting decision", fmt.Errorf("send mer-1: %w", sessionmanager.ErrAwaitingDecision), apierr.KindConflict, "SESSION_AWAITING_DECISION"},
 		{"startup pending", fmt.Errorf("send mer-1: %w", sessionmanager.ErrStartupPending), apierr.KindConflict, "SESSION_STARTUP_PENDING"},
 		{"agent exited", fmt.Errorf("send mer-1: %w", sessionmanager.ErrAgentExited), apierr.KindConflict, "AGENT_EXITED"},
@@ -3369,13 +3412,13 @@ func TestExitAgentPreservesSessionAndMapsExitedReadModel(t *testing.T) {
 	}
 }
 
-func TestSpawnGenericOrchestratorReturnsExistingActiveSession(t *testing.T) {
+func TestSpawnGenericManagerReturnsExistingActiveSession(t *testing.T) {
 	st := newFakeStore()
 	st.projects["mer"] = domain.ProjectRecord{ID: "mer"}
 	st.sessions["mer-orch"] = domain.SessionRecord{
 		ID:        "mer-orch",
 		ProjectID: "mer",
-		Kind:      domain.KindOrchestrator,
+		Kind:      domain.KindManager,
 		Harness:   domain.HarnessOpenCode,
 	}
 	fc := &fakeCommander{}
@@ -3383,46 +3426,46 @@ func TestSpawnGenericOrchestratorReturnsExistingActiveSession(t *testing.T) {
 
 	got, promptBytes, systemPromptBytes, err := svc.Spawn(context.Background(), ports.SpawnConfig{
 		ProjectID:   "mer",
-		Kind:        domain.KindOrchestrator,
+		Kind:        domain.KindManager,
 		Harness:     domain.HarnessOpenCode,
-		Prompt:      "start another orchestrator",
+		Prompt:      "start another manager",
 		DisplayName: "duplicate",
 	})
 	if err != nil {
 		t.Fatalf("Spawn: %v", err)
 	}
 	if got.ID != "mer-orch" {
-		t.Fatalf("returned id = %q, want existing orchestrator mer-orch", got.ID)
+		t.Fatalf("returned id = %q, want existing manager mer-orch", got.ID)
 	}
 	if promptBytes != 0 || systemPromptBytes != 0 {
 		t.Fatalf("prompt sizes = (%d, %d), want zero for reused session", promptBytes, systemPromptBytes)
 	}
 	if fc.spawned {
-		t.Fatal("manager.Spawn must not be called when an active orchestrator already exists")
+		t.Fatal("manager.Spawn must not be called when an active manager already exists")
 	}
 }
 
-func TestSpawnGenericOrchestratorAllowsReplacementAfterTermination(t *testing.T) {
+func TestSpawnGenericManagerAllowsReplacementAfterTermination(t *testing.T) {
 	st := newFakeStore()
 	st.projects["mer"] = domain.ProjectRecord{ID: "mer"}
 	st.sessions["mer-old"] = domain.SessionRecord{
 		ID:           "mer-old",
 		ProjectID:    "mer",
-		Kind:         domain.KindOrchestrator,
+		Kind:         domain.KindManager,
 		IsTerminated: true,
 	}
 	fc := &fakeCommander{spawnRecord: domain.SessionRecord{
 		ID:        "mer-new",
 		ProjectID: "mer",
-		Kind:      domain.KindOrchestrator,
+		Kind:      domain.KindManager,
 		Harness:   domain.HarnessOpenCode,
 	}}
 	svc := &Service{manager: fc, store: st}
 	cfg := ports.SpawnConfig{
 		ProjectID:   "mer",
-		Kind:        domain.KindOrchestrator,
+		Kind:        domain.KindManager,
 		Harness:     domain.HarnessOpenCode,
-		Branch:      "feature/orchestrator",
+		Branch:      "feature/manager",
 		Prompt:      "coordinate this project",
 		DisplayName: "coordinator",
 	}
@@ -3447,13 +3490,13 @@ func TestSpawnGenericOrchestratorAllowsReplacementAfterTermination(t *testing.T)
 	}
 }
 
-func TestSpawnGenericWorkerUnaffectedByActiveOrchestrator(t *testing.T) {
+func TestSpawnGenericWorkerUnaffectedByActiveManager(t *testing.T) {
 	st := newFakeStore()
 	st.projects["mer"] = domain.ProjectRecord{ID: "mer"}
 	st.sessions["mer-orch"] = domain.SessionRecord{
 		ID:        "mer-orch",
 		ProjectID: "mer",
-		Kind:      domain.KindOrchestrator,
+		Kind:      domain.KindManager,
 	}
 	fc := &fakeCommander{spawnRecord: domain.SessionRecord{
 		ID:        "mer-worker",
@@ -3471,7 +3514,7 @@ func TestSpawnGenericWorkerUnaffectedByActiveOrchestrator(t *testing.T) {
 	}
 }
 
-func TestSpawnGenericOrchestratorSerializesConcurrentRequests(t *testing.T) {
+func TestSpawnGenericManagerSerializesConcurrentRequests(t *testing.T) {
 	st := newFakeStore()
 	st.projects["mer"] = domain.ProjectRecord{ID: "mer"}
 	fc := &fakeCommander{}
@@ -3479,14 +3522,14 @@ func TestSpawnGenericOrchestratorSerializesConcurrentRequests(t *testing.T) {
 		rec := domain.SessionRecord{
 			ID:        "mer-orch",
 			ProjectID: cfg.ProjectID,
-			Kind:      domain.KindOrchestrator,
+			Kind:      domain.KindManager,
 			Harness:   cfg.Harness,
 		}
 		st.sessions[rec.ID] = rec
 		return rec
 	}
 	svc := &Service{manager: fc, store: st}
-	cfg := ports.SpawnConfig{ProjectID: "mer", Kind: domain.KindOrchestrator, Harness: domain.HarnessOpenCode}
+	cfg := ports.SpawnConfig{ProjectID: "mer", Kind: domain.KindManager, Harness: domain.HarnessOpenCode}
 
 	start := make(chan struct{})
 	results := make(chan domain.Session, 2)
@@ -3525,30 +3568,30 @@ func TestSpawnGenericOrchestratorSerializesConcurrentRequests(t *testing.T) {
 	}
 }
 
-// TestSpawnOrchestratorNoCleanReturnsExistingWhenActiveExists is the RED test
-// for the idempotency fix: when an active orchestrator already exists and
-// clean=false, SpawnOrchestrator must return that orchestrator without minting
+// TestSpawnManagerNoCleanReturnsExistingWhenActiveExists is the RED test
+// for the idempotency fix: when an active manager already exists and
+// clean=false, SpawnManager must return that manager without minting
 // a second one. Before the fix this test fails because a duplicate is spawned.
-func TestSpawnOrchestratorNoCleanReturnsExistingWhenActiveExists(t *testing.T) {
+func TestSpawnManagerNoCleanReturnsExistingWhenActiveExists(t *testing.T) {
 	st := newFakeStore()
 	st.projects["mer"] = domain.ProjectRecord{ID: "mer"}
-	// Pre-load an active orchestrator.
-	st.sessions["mer-1"] = domain.SessionRecord{ID: "mer-1", ProjectID: "mer", Kind: domain.KindOrchestrator}
+	// Pre-load an active manager.
+	st.sessions["mer-1"] = domain.SessionRecord{ID: "mer-1", ProjectID: "mer", Kind: domain.KindManager}
 
 	fc := &fakeCommander{}
 	svc := &Service{manager: fc, store: st}
 
-	got, err := svc.SpawnOrchestrator(context.Background(), "mer", false, "")
+	got, err := svc.SpawnManager(context.Background(), "mer", false, "")
 	if err != nil {
-		t.Fatalf("SpawnOrchestrator: %v", err)
+		t.Fatalf("SpawnManager: %v", err)
 	}
-	// Must return the existing orchestrator, not a newly minted one.
+	// Must return the existing manager, not a newly minted one.
 	if got.ID != "mer-1" {
-		t.Fatalf("returned id = %q, want existing orchestrator mer-1", got.ID)
+		t.Fatalf("returned id = %q, want existing manager mer-1", got.ID)
 	}
 	// Must NOT have called manager.Spawn (no duplicate created).
 	if fc.spawned {
-		t.Fatal("manager.Spawn must NOT be called when an active orchestrator already exists")
+		t.Fatal("manager.Spawn must NOT be called when an active manager already exists")
 	}
 	// Must NOT have killed anything.
 	if len(fc.killed) != 0 {
@@ -3560,22 +3603,22 @@ func TestSpawnOrchestratorNoCleanReturnsExistingWhenActiveExists(t *testing.T) {
 	}
 }
 
-// TestSpawnOrchestratorNoCleanSpawnsWhenNoneExists: clean=false spawns a new
-// orchestrator when no active one exists for the project.
-func TestSpawnOrchestratorNoCleanSpawnsWhenNoneExists(t *testing.T) {
+// TestSpawnManagerNoCleanSpawnsWhenNoneExists: clean=false spawns a new
+// manager when no active one exists for the project.
+func TestSpawnManagerNoCleanSpawnsWhenNoneExists(t *testing.T) {
 	st := newFakeStore()
 	st.projects["mer"] = domain.ProjectRecord{ID: "mer"}
-	// No active orchestrator present.
+	// No active manager present.
 
 	fc := &fakeCommander{}
 	svc := &Service{manager: fc, store: st}
 
-	got, err := svc.SpawnOrchestrator(context.Background(), "mer", false, "")
+	got, err := svc.SpawnManager(context.Background(), "mer", false, "")
 	if err != nil {
-		t.Fatalf("SpawnOrchestrator: %v", err)
+		t.Fatalf("SpawnManager: %v", err)
 	}
 	if !fc.spawned {
-		t.Fatal("manager.Spawn must be called when no active orchestrator exists")
+		t.Fatal("manager.Spawn must be called when no active manager exists")
 	}
 	if len(fc.killed) != 0 {
 		t.Fatalf("no kills expected with clean=false, got %v", fc.killed)
@@ -3585,26 +3628,26 @@ func TestSpawnOrchestratorNoCleanSpawnsWhenNoneExists(t *testing.T) {
 	}
 }
 
-func TestSpawnOrchestratorVerifiesReplacementHarness(t *testing.T) {
+func TestSpawnManagerVerifiesReplacementHarness(t *testing.T) {
 	st := newFakeStore()
 	st.projects["mer"] = domain.ProjectRecord{
 		ID:     "mer",
-		Config: domain.ProjectConfig{Orchestrator: domain.RoleOverride{Harness: domain.HarnessOpenCode}},
+		Config: domain.ProjectConfig{Manager: domain.RoleOverride{Harness: domain.HarnessOpenCode}},
 	}
 	fc := &fakeCommander{
 		spawnRecord: domain.SessionRecord{
 			ID:        "mer-9",
 			ProjectID: "mer",
-			Kind:      domain.KindOrchestrator,
+			Kind:      domain.KindManager,
 			Harness:   "codex",
-			Metadata:  domain.SessionMetadata{Branch: "open-agents/mer-orchestrator"},
+			Metadata:  domain.SessionMetadata{Branch: "open-agents/mer-manager"},
 		},
 	}
 	svc := &Service{manager: fc, store: st}
 
-	_, err := svc.SpawnOrchestrator(context.Background(), "mer", false, "")
+	_, err := svc.SpawnManager(context.Background(), "mer", false, "")
 	if err == nil || !strings.Contains(err.Error(), `uses harness "codex", want "opencode"`) {
-		t.Fatalf("SpawnOrchestrator err = %v, want harness verification failure", err)
+		t.Fatalf("SpawnManager err = %v, want harness verification failure", err)
 	}
 }
 

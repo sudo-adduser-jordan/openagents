@@ -8,7 +8,7 @@ export interface Feature {
 export const FEATURES: Feature[] = [
   {
     tag: "Delegation",
-    title: "Tell the orchestrator what you need",
+    title: "Tell the manager what you need",
     description:
       "Every project gets a main agent that runs the fleet for you. Describe the outcome, it plans the work, spawns workers into their own worktrees, keeps them moving, and escalates only what needs a human.",
     colors: ["#7f1d1d", "#991b1b", "#450a0a", "#1a1a2e"],

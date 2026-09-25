@@ -32,7 +32,7 @@ const (
 	// the process exits even if connections are still draining.
 	DefaultShutdownTimeout = 10 * time.Second
 	// DefaultAgent is the compatibility value used when OPEN_AGENTS_AGENT is unset. The
-	// daemon validates it at startup, but worker/orchestrator spawns resolve from
+	// daemon validates it at startup, but worker/manager spawns resolve from
 	// explicit requests or project role config instead of falling back to it.
 	DefaultAgent = "opencode"
 )

@@ -13,13 +13,13 @@ type (
 	IssueID string
 )
 
-// SessionKind distinguishes a worker session from an orchestrator session.
+// SessionKind distinguishes a worker session from a manager session.
 type SessionKind string
 
 // Session kinds.
 const (
-	KindWorker       SessionKind = "worker"
-	KindOrchestrator SessionKind = "orchestrator"
+	KindWorker  SessionKind = "worker"
+	KindManager SessionKind = "manager"
 )
 
 // ConversationCheckpointState records which main-turn boundaries Open Agents has
@@ -179,16 +179,15 @@ type SessionRecord struct {
 	// TerminateOnPRMerge is a user-controlled lifecycle policy. When enabled,
 	// completing the session's PR set through a merge tears down the session.
 	TerminateOnPRMerge bool `json:"terminateOnPrMerge"`
-	// WorkflowMode is the user-controlled delivery stage. New sessions default
-	// to planning; the toggle-modes shortcut (or a build-mode orchestrator
-	// spawning a task) moves work into building. The board's Planning/Building
-	// lanes derive from this field.
-	WorkflowMode WorkflowMode `json:"workflowMode" enum:"planning,building"`
+	// WorkflowMode is the user-controlled delivery posture. Workers default to
+	// planning, managers default to manager mode, and every delegated worker
+	// starts in planning regardless of the requesting manager's posture.
+	WorkflowMode WorkflowMode `json:"workflowMode" enum:"planning,manager,building"`
 	// ReviewLocked is the durable latch that freezes this session's kanban card
 	// in the needs_review column once it enters the review-feedback loop. While
 	// set, PR facts cannot move the card, so a person's owed review decision
 	// cannot be silently preempted by a new auto review pass, an approval, or
-	// mergeability. Released only by an explicit user action: a plan/build
+	// mergeability. Released only by an explicit user action: a workflow-mode
 	// command or a user message to the session (the commit-forward path).
 	ReviewLocked     bool            `json:"reviewLocked"`
 	AutoInjectReview bool            `json:"autoInjectReview"`

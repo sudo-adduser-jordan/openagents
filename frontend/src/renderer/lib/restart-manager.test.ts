@@ -6,8 +6,8 @@ const { spawnMock } = vi.hoisted(() => ({
 	spawnMock: vi.fn(),
 }));
 
-vi.mock("./spawn-orchestrator", () => ({
-	OrchestratorSpawnError: class OrchestratorSpawnError extends Error {
+vi.mock("./spawn-manager", () => ({
+	ManagerSpawnError: class ManagerSpawnError extends Error {
 		constructor(
 			message: string,
 			readonly code?: string,
@@ -17,13 +17,13 @@ vi.mock("./spawn-orchestrator", () => ({
 			super(message);
 		}
 	},
-	spawnOrchestrator: spawnMock,
+	spawnManager: spawnMock,
 }));
 
-import { OrchestratorSpawnError } from "./spawn-orchestrator";
-import { restartProjectOrchestrator } from "./restart-orchestrator";
+import { ManagerSpawnError } from "./spawn-manager";
+import { restartProjectManager } from "./restart-manager";
 
-describe("restartProjectOrchestrator", () => {
+describe("restartProjectManager", () => {
 	beforeEach(() => {
 		spawnMock.mockReset();
 	});
@@ -33,23 +33,23 @@ describe("restartProjectOrchestrator", () => {
 		const invalidateSpy = vi.spyOn(queryClient, "invalidateQueries").mockResolvedValue();
 		const navigate = vi.fn();
 		const setProjectRestarting = vi.fn();
-		const setOrchestratorReplacementError = vi.fn();
+		const setManagerReplacementError = vi.fn();
 		const onError = vi.fn();
 		const failure = new Error("missing goose binary");
 		spawnMock.mockRejectedValue(failure);
 
-		await restartProjectOrchestrator({
+		await restartProjectManager({
 			projectId: "proj-1",
 			queryClient,
 			navigate,
 			setProjectRestarting,
-			setOrchestratorReplacementError,
+			setManagerReplacementError,
 			onError,
 		});
 
 		expect(spawnMock).toHaveBeenCalledWith("proj-1", "restart", true, undefined);
 		expect(invalidateSpy).toHaveBeenCalledWith({ queryKey: workspaceQueryKey });
-		expect(setOrchestratorReplacementError).toHaveBeenNthCalledWith(1, "proj-1", {
+		expect(setManagerReplacementError).toHaveBeenNthCalledWith(1, "proj-1", {
 			message: "missing goose binary",
 		});
 		expect(setProjectRestarting).toHaveBeenNthCalledWith(1, "proj-1", true);
@@ -66,12 +66,12 @@ describe("restartProjectOrchestrator", () => {
 		restartButton.focus();
 		spawnMock.mockResolvedValue("session-2");
 
-		await restartProjectOrchestrator({
+		await restartProjectManager({
 			projectId: "proj-1",
 			queryClient,
 			navigate: vi.fn(),
 			setProjectRestarting: vi.fn(),
-			setOrchestratorReplacementError: vi.fn(),
+			setManagerReplacementError: vi.fn(),
 		});
 
 		expect(restartButton).not.toHaveFocus();
@@ -90,8 +90,8 @@ describe("restartProjectOrchestrator", () => {
 		const navigate = vi.fn();
 		const setError = vi.fn();
 		try {
-			const restart = restartProjectOrchestrator({ projectId: "proj-1", queryClient, navigate,
-				setProjectRestarting: vi.fn(), setOrchestratorReplacementError: setError });
+			const restart = restartProjectManager({ projectId: "proj-1", queryClient, navigate,
+				setProjectRestarting: vi.fn(), setManagerReplacementError: setError });
 			expect(button).toHaveFocus();
 			expect(setError).not.toHaveBeenCalled();
 			completeSpawn("replacement");
@@ -113,21 +113,21 @@ describe("restartProjectOrchestrator", () => {
 		vi.spyOn(queryClient, "invalidateQueries").mockRejectedValue(new Error("refetch failed"));
 		const navigate = vi.fn();
 		const setProjectRestarting = vi.fn();
-		const setOrchestratorReplacementError = vi.fn();
+		const setManagerReplacementError = vi.fn();
 		const onError = vi.fn();
 		const failure = new Error("missing goose binary");
 		spawnMock.mockRejectedValue(failure);
 
-		await restartProjectOrchestrator({
+		await restartProjectManager({
 			projectId: "proj-1",
 			queryClient,
 			navigate,
 			setProjectRestarting,
-			setOrchestratorReplacementError,
+			setManagerReplacementError,
 			onError,
 		});
 
-		expect(setOrchestratorReplacementError).toHaveBeenLastCalledWith("proj-1", {
+		expect(setManagerReplacementError).toHaveBeenLastCalledWith("proj-1", {
 			message: "missing goose binary",
 		});
 		expect(setProjectRestarting).toHaveBeenLastCalledWith("proj-1", false);
@@ -138,9 +138,9 @@ describe("restartProjectOrchestrator", () => {
 	it("preserves typed preflight details and retries with an explicit TUI mode", async () => {
 		const queryClient = new QueryClient({ defaultOptions: { queries: { retry: false } } });
 		vi.spyOn(queryClient, "invalidateQueries").mockResolvedValue();
-		const setOrchestratorReplacementError = vi.fn();
+		const setManagerReplacementError = vi.fn();
 		spawnMock.mockRejectedValue(
-			new OrchestratorSpawnError(
+			new ManagerSpawnError(
 				"Codex is unavailable",
 				"CHAT_DRIVER_UNAVAILABLE",
 				"request-42",
@@ -148,17 +148,17 @@ describe("restartProjectOrchestrator", () => {
 			),
 		);
 
-		await restartProjectOrchestrator({
+		await restartProjectManager({
 			projectId: "proj-1",
 			queryClient,
 			navigate: vi.fn(),
 			setProjectRestarting: vi.fn(),
-			setOrchestratorReplacementError,
+			setManagerReplacementError,
 			mode: "tui",
 		});
 
 		expect(spawnMock).toHaveBeenCalledWith("proj-1", "restart", true, "tui");
-		expect(setOrchestratorReplacementError).toHaveBeenLastCalledWith("proj-1", {
+		expect(setManagerReplacementError).toHaveBeenLastCalledWith("proj-1", {
 			message: "Codex is unavailable",
 			code: "CHAT_DRIVER_UNAVAILABLE",
 			requestId: "request-42",

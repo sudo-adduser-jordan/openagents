@@ -92,7 +92,7 @@ describe("CreateProjectAgentSheet", () => {
 		await waitFor(() => expect(onSubmit).toHaveBeenCalledTimes(1));
 		expect(onSubmit).toHaveBeenCalledWith({
 			workerAgent: "opencode",
-			orchestratorAgent: "opencode",
+			managerAgent: "opencode",
 			trackerIntake: undefined,
 		});
 	});
@@ -104,7 +104,7 @@ describe("CreateProjectAgentSheet", () => {
 				sessions: [
 					{ id: "w1", kind: "worker", provider: "opencode", createdAt: hoursAgo(5) },
 					{ id: "w2", kind: "worker", provider: "opencode", createdAt: hoursAgo(4) },
-					{ id: "o1", kind: "orchestrator", provider: "opencode", createdAt: hoursAgo(3) },
+					{ id: "o1", kind: "manager", provider: "opencode", createdAt: hoursAgo(3) },
 				],
 			},
 		]);
@@ -115,7 +115,7 @@ describe("CreateProjectAgentSheet", () => {
 		await waitFor(() => expect(onSubmit).toHaveBeenCalledTimes(1));
 		expect(onSubmit).toHaveBeenCalledWith({
 			workerAgent: "opencode",
-			orchestratorAgent: "opencode",
+			managerAgent: "opencode",
 			trackerIntake: undefined,
 		});
 	});
@@ -153,7 +153,7 @@ describe("CreateProjectAgentSheet", () => {
 	it("blocks submit when intake is enabled with no assignee, then passes the intake payload once one is set", async () => {
 		const onSubmit = renderSheet();
 		await chooseOption(screen.getByLabelText("Worker agent"), "opencode");
-		await chooseOption(screen.getByLabelText("Orchestrator agent"), "opencode");
+		await chooseOption(screen.getByLabelText("Manager agent"), "opencode");
 
 		await userEvent.click(screen.getByLabelText("Automatically work on assigned issues"));
 		// Enabled with no eligibility rule → submit stays disabled (compact sheet
@@ -166,7 +166,7 @@ describe("CreateProjectAgentSheet", () => {
 		await waitFor(() => expect(onSubmit).toHaveBeenCalledTimes(1));
 		expect(onSubmit).toHaveBeenCalledWith({
 			workerAgent: "opencode",
-			orchestratorAgent: "opencode",
+			managerAgent: "opencode",
 			trackerIntake: { enabled: true, assignee: "octocat" },
 		});
 	});

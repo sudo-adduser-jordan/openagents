@@ -2,7 +2,7 @@
 
 Current `main` ships a working single-user local loop: the Go daemon and the
 Electron/React frontend both drive a live daemon over HTTP/SSE/WebSocket. The
-core GitHub flow works end-to-end: add project → spawn session/orchestrator →
+core GitHub flow works end-to-end: add project → spawn session/manager →
 attach terminal → observe PR → merge.
 
 This file tracks progress. For what the product _is_ and how to run it, see the
@@ -33,7 +33,7 @@ surface (`npm run sqlc`, `npm run api`).
 - CDC poller + broadcaster feeding in-process subscribers and the SSE stream
   at `GET /api/v1/events` (with `Last-Event-ID` replay).
 - Full session lifecycle over HTTP: list, get, spawn, kill, restore, rename,
-  rollback, cleanup, send, activity, PR claim/list. Orchestrator routes
+  rollback, cleanup, send, activity, PR claim/list. Manager routes
   (list/spawn/get) are wired too.
 - One daemon-committed interface per session. TUI sessions retain the established
   tmux/conpty agent runtime; Chat sessions use runtime-less native controllers,
@@ -57,7 +57,7 @@ surface (`npm run sqlc`, `npm run api`).
   for live adoption. Installation changes and launch-only credentials do not
   block adoption. Updater warnings use actual controller ownership rather than
   a provider allowlist. Shared process tests cover the opencode ACP identity.
-- Durable Chat conversations with project-scoped orchestrator continuity,
+- Durable Chat conversations with project-scoped manager continuity,
   session-scoped worker history, bounded history pages, transactional raw-event
   archive/projection, controller-generation fencing, turns, messages,
   activities, approvals, structured input, usage, compaction, and rollback.
@@ -138,7 +138,7 @@ surface (`npm run sqlc`, `npm run api`).
 - Electron main handles daemon discovery, launch, and status reporting.
 - Shell: sidebar (projects + sessions, add/remove project), sessions board,
   session view + inspector, project settings, pull-requests page,
-  spawn-orchestrator flow.
+  spawn-manager flow.
 - SessionView renders from the session's persisted mode: the existing terminal
   surface for TUI, or the durable Chat timeline/composer for Chat. Chat retains
   access to session-scoped worktree shells without creating an agent tmux pane.

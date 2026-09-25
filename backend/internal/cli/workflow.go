@@ -23,13 +23,19 @@ type workflowModeResponse struct {
 	Session      sessionDTO `json:"session"`
 }
 
-// newPlanCommand and newBuildCommand move a session between its delivery
-// stages. A plan/build command is also one of the kanban review lock's release
-// paths: a card frozen in the review column is released so it can move with its
-// PR facts again.
+// newPlanCommand, newManageCommand, and newBuildCommand change a session's
+// delivery posture. A workflow-mode command is also one of the kanban review
+// lock's release paths: a card frozen in the review column is released so it can
+// move with its PR facts again.
 func newPlanCommand(ctx *commandContext) *cobra.Command {
 	return newWorkflowModeCommand(ctx, "plan", "planning",
 		"Move a session into the planning stage",
+	)
+}
+
+func newManageCommand(ctx *commandContext) *cobra.Command {
+	return newWorkflowModeCommand(ctx, "manage", "manager",
+		"Move a session into manager mode",
 	)
 }
 

@@ -17,7 +17,7 @@ import { KeyboardShortcutsDialog } from "../components/KeyboardShortcutsDialog";
 import { KeyboardShortcutsSettingsDialog } from "../components/settings/KeyboardShortcutsSettingsDialog";
 import { ShellTopbar } from "../components/ShellTopbar";
 import { SessionTopbarProvider } from "../components/SessionTopbarPortal";
-import { OrchestratorReplacementDialog } from "../components/OrchestratorReplacementDialog";
+import { ManagerReplacementDialog } from "../components/ManagerReplacementDialog";
 import { RestartToUpdateDialog } from "../components/RestartToUpdateDialog";
 import { Sidebar } from "../components/Sidebar";
 import { SidebarProvider } from "../components/ui/sidebar";
@@ -33,7 +33,7 @@ import { apiClient, apiErrorCode, apiErrorDetails, apiErrorMessage, apiErrorRequ
 import { refreshDaemonStatus } from "../lib/daemon-status";
 import { usesPreviewWorkspaceData } from "../lib/preview-mode";
 import { ShellProvider } from "../lib/shell-context";
-import { restartProjectOrchestrator } from "../lib/restart-orchestrator";
+import { restartProjectManager } from "../lib/restart-manager";
 import { applyDocumentTheme, applyDocumentThemeStyle } from "../lib/theme";
 import { openAgentsBridge } from "../lib/bridge";
 import { handleModifierLinkClick } from "../lib/external-link-policy";
@@ -80,7 +80,7 @@ function findRegisteredWorkspaceByPath(workspaces: WorkspaceSummary[], path: str
 
 type CreateProjectConfigInput = {
 	workerAgent: string;
-	orchestratorAgent: string;
+	managerAgent: string;
 	trackerIntake?: components["schemas"]["TrackerIntakeConfig"];
 	defaultBranch?: string;
 };
@@ -89,12 +89,12 @@ export function createProjectConfig(input: CreateProjectConfigInput): components
 	return {
 		...(input.defaultBranch ? { defaultBranch: input.defaultBranch } : {}),
 		worker: { agent: input.workerAgent as components["schemas"]["RoleOverride"]["agent"] },
-		orchestrator: { agent: input.orchestratorAgent as components["schemas"]["RoleOverride"]["agent"] },
+		manager: { agent: input.managerAgent as components["schemas"]["RoleOverride"]["agent"] },
 		...(input.trackerIntake ? { trackerIntake: input.trackerIntake } : {}),
 	};
 }
 
-// Upper bound for the background orchestrator spawn after project creation.
+// Upper bound for the background manager spawn after project creation.
 // Past this the board releases the provisioning gate and shows the retry
 // banner instead of staying gated forever on a hung spawn.
 const PROVISIONING_TIMEOUT_MS = 120_000;
@@ -336,12 +336,12 @@ function ShellLayout() {
 	const hideShellTopbar = isHomeRoute || selfFramedCenterPanel || shellTopbarHiddenByPlatform;
 	const restartingProjectIds = useUiStore((state) => state.restartingProjectIds);
 	const setProjectRestarting = useUiStore((state) => state.setProjectRestarting);
-	const orchestratorReplacementErrors = useUiStore((state) => state.orchestratorReplacementErrors);
-	const setOrchestratorReplacementError = useUiStore((state) => state.setOrchestratorReplacementError);
-	const setOrchestratorStartupError = useUiStore((state) => state.setOrchestratorStartupError);
+	const managerReplacementErrors = useUiStore((state) => state.managerReplacementErrors);
+	const setManagerReplacementError = useUiStore((state) => state.setManagerReplacementError);
+	const setManagerStartupError = useUiStore((state) => state.setManagerStartupError);
 	const setProjectProvisioning = useUiStore((state) => state.setProjectProvisioning);
 	const showGlobalToast = useUiStore((state) => state.showGlobalToast);
-	const replacementErrorProjectId = Object.keys(orchestratorReplacementErrors)[0] ?? null;
+	const replacementErrorProjectId = Object.keys(managerReplacementErrors)[0] ?? null;
 	const isStartupLoading =
 		!usesPreviewWorkspaceData &&
 		!daemonStatus.code &&
@@ -381,10 +381,10 @@ function ShellLayout() {
 		[queryClient],
 	);
 
-	// Background orchestrator provisioning for a newly created project. Owns
+	// Background manager provisioning for a newly created project. Owns
 	// the provisioning flag, the hung-spawn timeout, the session refresh, and
 	// the retry error end to end — callers must fire and forget it, never await.
-	const provisionOrchestrator = useCallback(
+	const provisionManager = useCallback(
 		async (
 			workspace: WorkspaceSummary,
 			input: CreateProjectConfigInput,
@@ -393,12 +393,12 @@ function ShellLayout() {
 		// Safety: a hung spawn must never wedge the board behind the
 		// provisioning gate. If it outlives this budget, release the gate and
 		// surface the retry banner; a late success still navigates below and
-		// the board clears the banner once the orchestrator appears.
+		// the board clears the banner once the manager appears.
 		const provisioningGuard = window.setTimeout(() => {
 			setProjectProvisioning(workspace.id, false);
-			setOrchestratorStartupError(
+			setManagerStartupError(
 				workspace.id,
-				"Project added, but the orchestrator is taking longer than expected to start. Retry from the board if it does not appear.",
+				"Project added, but the manager is taking longer than expected to start. Retry from the board if it does not appear.",
 			);
 		}, PROVISIONING_TIMEOUT_MS);
 		try {
@@ -409,14 +409,14 @@ function ShellLayout() {
 			} = await apiClient.POST("/api/v1/sessions", {
 				body: {
 					projectId: workspace.id,
-					kind: "orchestrator",
-					harness: input.orchestratorAgent as components["schemas"]["SpawnSessionRequest"]["harness"],
+					kind: "manager",
+					harness: input.managerAgent as components["schemas"]["SpawnSessionRequest"]["harness"],
 				},
 			});
 			if (spawnError || !spawnData?.session?.id) {
 				const message = spawnError
-					? apiErrorMessage(spawnError, `Failed to spawn orchestrator (${spawnResponse.status})`)
-					: `Failed to spawn orchestrator (${spawnResponse.status})`;
+					? apiErrorMessage(spawnError, `Failed to spawn manager (${spawnResponse.status})`)
+					: `Failed to spawn manager (${spawnResponse.status})`;
 				throw new Error(message);
 			}
 			const sessionId = spawnData.session.id;
@@ -434,12 +434,12 @@ function ShellLayout() {
 		} catch (spawnError) {
 			window.clearTimeout(provisioningGuard);
 			setProjectProvisioning(workspace.id, false);
-			const message = spawnError instanceof Error ? spawnError.message : "Could not start orchestrator";
-			const startupMessage = `Project added, but orchestrator did not start: ${message}`;
-			setOrchestratorStartupError(workspace.id, startupMessage);
+			const message = spawnError instanceof Error ? spawnError.message : "Could not start manager";
+			const startupMessage = `Project added, but manager did not start: ${message}`;
+			setManagerStartupError(workspace.id, startupMessage);
 		}
 	},
-	[navigate, queryClient, setOrchestratorStartupError, setProjectProvisioning],
+	[navigate, queryClient, setManagerStartupError, setProjectProvisioning],
 );
 
 	const completeProjectCreation = useCallback(
@@ -455,27 +455,27 @@ function ShellLayout() {
 				path: project.path,
 				workspaceRepos: project.workspaceRepos,
 				type: "main",
-				orchestratorAgent: input.orchestratorAgent as WorkspaceSummary["orchestratorAgent"],
+				managerAgent: input.managerAgent as WorkspaceSummary["managerAgent"],
 				sessions: [],
 			};
 			updateWorkspaces((current) => [workspace, ...current.filter((item) => item.id !== workspace.id)]);
-			setOrchestratorStartupError(workspace.id, null);
+			setManagerStartupError(workspace.id, null);
 			setProjectProvisioning(workspace.id, true);
 			// Navigate to the project board immediately so the IDE paints, then
 			// hand off to the detached provisioning flow. Resolving here (rather
 			// than after the spawn) is what closes the setup modal and makes
-			// the board usable while the orchestrator starts in the background.
+			// the board usable while the manager starts in the background.
 			void navigate({ to: "/projects/$projectId", params: { projectId: workspace.id } });
-			void provisionOrchestrator(workspace, input, _source);
+			void provisionManager(workspace, input, _source);
 		},
-		[navigate, provisionOrchestrator, setOrchestratorStartupError, setProjectProvisioning, updateWorkspaces],
+		[navigate, provisionManager, setManagerStartupError, setProjectProvisioning, updateWorkspaces],
 	);
 
 	const createProject = useCallback(
 		async (input: {
 			path: string;
 			workerAgent: string;
-			orchestratorAgent: string;
+			managerAgent: string;
 			trackerIntake?: components["schemas"]["TrackerIntakeConfig"];
 			asWorkspace?: boolean;
 			clonePreparationId?: string;
@@ -542,7 +542,7 @@ function ShellLayout() {
 			remoteUrl: string;
 			destinationParent: string;
 			workerAgent: string;
-			orchestratorAgent: string;
+			managerAgent: string;
 			trackerIntake?: components["schemas"]["TrackerIntakeConfig"];
 			signal?: AbortSignal;
 		}) => {
@@ -616,18 +616,18 @@ function ShellLayout() {
 		[navigate, queryClient, updateWorkspaces, workspaces],
 	);
 
-	const restartOrchestrator = useCallback(
+	const restartManager = useCallback(
 		async (projectId: string, mode?: "chat" | "tui") => {
-			await restartProjectOrchestrator({
+			await restartProjectManager({
 				projectId,
 				queryClient,
 				navigate,
 				setProjectRestarting,
-				setOrchestratorReplacementError,
+				setManagerReplacementError,
 				mode,
 			});
 		},
-		[navigate, queryClient, setOrchestratorReplacementError, setProjectRestarting],
+		[navigate, queryClient, setManagerReplacementError, setProjectRestarting],
 	);
 
 	useEffect(() => {
@@ -1018,14 +1018,14 @@ function ShellLayout() {
 						isFullScreen={isFullScreen}
 					/>
 				</SidebarProvider>
-				<OrchestratorReplacementDialog
+				<ManagerReplacementDialog
 					pending={Boolean(replacementErrorProjectId && restartingProjectIds.has(replacementErrorProjectId))}
-					error={replacementErrorProjectId ? orchestratorReplacementErrors[replacementErrorProjectId] : undefined}
+					error={replacementErrorProjectId ? managerReplacementErrors[replacementErrorProjectId] : undefined}
 					onOpenChange={(open) => {
-						if (!open && replacementErrorProjectId) setOrchestratorReplacementError(replacementErrorProjectId, null);
+						if (!open && replacementErrorProjectId) setManagerReplacementError(replacementErrorProjectId, null);
 					}}
-					onRetry={(projectId) => void restartOrchestrator(projectId)}
-					onRetryAsTui={(projectId) => void restartOrchestrator(projectId, "tui")}
+					onRetry={(projectId) => void restartManager(projectId)}
+					onRetryAsTui={(projectId) => void restartManager(projectId, "tui")}
 					projectId={replacementErrorProjectId}
 					workspaces={workspaces}
 				/>

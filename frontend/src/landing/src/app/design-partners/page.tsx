@@ -98,11 +98,11 @@ const phases: RoadmapPhase[] = [
       "23 harnesses behind one board - Codex, Cursor, OpenCode, and whatever comes next",
       "Every session in its own git worktree; branches never collide",
       "CI failures and review comments route back to the agent that owns the branch",
-      "An orchestrator plans the work and spawns the workers",
+      "A manager plans the work and spawns the workers",
     ],
     image: ROADMAP_PHASE_IMAGES.fleet,
     imageAlt:
-      "One orchestration workstation coordinating five coding-agent modules across separate worktree lanes",
+      "One management workstation coordinating five coding-agent modules across separate worktree lanes",
   },
   {
     num: "01",

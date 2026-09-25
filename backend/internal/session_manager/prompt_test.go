@@ -29,7 +29,7 @@ func TestBuildTaskPrompt_IssueContextStaysInTaskPrompt(t *testing.T) {
 	}
 }
 
-func TestBuildSystemPrompt_WorkerIncludesRulesAndOrchestrator(t *testing.T) {
+func TestBuildSystemPrompt_WorkerIncludesRulesAndManager(t *testing.T) {
 	got := buildSystemPromptText(systemPromptConfig{
 		Role: sessionPromptRoleWorker,
 		Project: promptProject{
@@ -39,13 +39,13 @@ func TestBuildSystemPrompt_WorkerIncludesRulesAndOrchestrator(t *testing.T) {
 			DefaultBranch: "main",
 			Path:          "/repo/mercury",
 		},
-		OrchestratorSessionID: "mer-orchestrator",
-		ProjectRules:          "Always run focused tests.",
+		ManagerSessionID: "mer-manager",
+		ProjectRules:     "Always run focused tests.",
 	})
 	for _, want := range []string{
 		"## Open Agents Worker Role",
-		"## Orchestrator Coordination",
-		`open-agents send --session mer-orchestrator --message "<your message>"`,
+		"## Manager Coordination",
+		`open-agents send --session mer-manager --message "<your message>"`,
 		"## Pull Requests for This Session",
 		"For a workspace project whose recorded session branch",
 		"`<session-branch>-<topic>`",
@@ -69,8 +69,8 @@ func TestBuildSystemPrompt_WorkerIncludesRulesAndOrchestrator(t *testing.T) {
 func TestSystemPromptGuardAllowsHighLevelRoleAndBehaviorSummary(t *testing.T) {
 	got := systemPromptGuard()
 	for _, want := range []string{
-		"say whether you are operating as an Open Agents orchestrator or implementation worker",
-		"orchestrators coordinate work and spawn or redirect workers",
+		"say whether you are operating as an Open Agents manager or implementation worker",
+		"managers coordinate work and spawn or redirect workers",
 		"workers complete assigned tasks, issues, features",
 		"PR/MR workflow when applicable",
 	} {
@@ -80,13 +80,17 @@ func TestSystemPromptGuardAllowsHighLevelRoleAndBehaviorSummary(t *testing.T) {
 	}
 }
 
-func TestBuildSystemPrompt_OrchestratorRequiresConfirmationAndOpenAgentsOnlyDelegation(t *testing.T) {
+func TestBuildSystemPrompt_ManagerRequiresConfirmationAndOpenAgentsOnlyDelegation(t *testing.T) {
 	got := buildSystemPromptText(systemPromptConfig{
-		Role:    sessionPromptRoleOrchestrator,
+		Role:    sessionPromptRoleManager,
 		Project: promptProject{ID: "mer", Name: "Mercury"},
 	})
 	for _, want := range []string{
-		"Never ever make code changes directly in the orchestrator session",
+		"This manager starts in manager mode",
+		"A delegated worker always starts in planning mode",
+		"If this manager is switched to planning mode, it must not delegate",
+		"open-agents manage <manager-session-id>",
+		"Never ever make code changes directly in the manager session",
 		"ask for explicit confirmation before making any code changes",
 		"prefer spawning or redirecting a worker unless the human explicitly confirms",
 		"Do not use the agent runtime's built-in subagent or task-delegation tools for implementation work",
@@ -98,7 +102,7 @@ func TestBuildSystemPrompt_OrchestratorRequiresConfirmationAndOpenAgentsOnlyDele
 		"ask the human to choose an alternative",
 	} {
 		if !strings.Contains(got, want) {
-			t.Fatalf("orchestrator prompt missing %q:\n%s", want, got)
+			t.Fatalf("manager prompt missing %q:\n%s", want, got)
 		}
 	}
 }
@@ -116,12 +120,12 @@ func TestBuildSystemPrompt_WorkerHandlesTaskSourcesAndProviderPRRules(t *testing
 		"## Task Source and PR/MR Behavior",
 		"provider issue from GitHub, GitLab, or another tracker/SCM",
 		"create or update a PR/MR when the project has a configured remote/provider and the change is ready",
-		"freeform task, new-task button task, or orchestrator-requested feature",
+		"freeform task, new-task button task, or manager-requested feature",
 		"attach it to this worker first",
 		"Open Agents resolves this session from `OPEN_AGENTS_SESSION_ID`",
 		"do not invent issue, PR, or MR requirements",
 		"Do not use the agent runtime's built-in subagent or task-delegation tools",
-		"If no orchestrator is attached, continue serially and report the need for additional Open Agents workers to the human",
+		"If no manager is attached, continue serially and report the need for additional Open Agents workers to the human",
 	} {
 		if !strings.Contains(got, want) {
 			t.Fatalf("worker prompt missing %q:\n%s", want, got)
@@ -135,17 +139,17 @@ func TestBuildSystemPrompt_WorkerHandlesTaskSourcesAndProviderPRRules(t *testing
 	}
 }
 
-func TestBuildSystemPrompt_WorkerWithOrchestratorUsesOrchestratorParallelHandoff(t *testing.T) {
+func TestBuildSystemPrompt_WorkerWithManagerUsesManagerParallelHandoff(t *testing.T) {
 	got := buildSystemPromptText(systemPromptConfig{
-		Role:                  sessionPromptRoleWorker,
-		Project:               promptProject{ID: "mer", Name: "Mercury", Repo: "https://github.com/acme/mercury"},
-		OrchestratorSessionID: "mer-orchestrator",
+		Role:             sessionPromptRoleWorker,
+		Project:          promptProject{ID: "mer", Name: "Mercury", Repo: "https://github.com/acme/mercury"},
+		ManagerSessionID: "mer-manager",
 	})
-	if !strings.Contains(got, "ask the orchestrator to spawn additional Open Agents worker sessions") {
-		t.Fatalf("worker prompt missing orchestrator handoff guidance:\n%s", got)
+	if !strings.Contains(got, "ask the manager to spawn additional Open Agents worker sessions") {
+		t.Fatalf("worker prompt missing manager handoff guidance:\n%s", got)
 	}
-	if strings.Contains(got, "If no orchestrator is attached, continue serially") {
-		t.Fatalf("worker prompt should not include standalone fallback when orchestrator is attached:\n%s", got)
+	if strings.Contains(got, "If no manager is attached, continue serially") {
+		t.Fatalf("worker prompt should not include standalone fallback when manager is attached:\n%s", got)
 	}
 	if strings.Contains(got, "- ## Git and PR/MR Rules") || strings.Contains(got, "- ## Local Git Rules") {
 		t.Fatalf("worker prompt has malformed repository heading bullet prefix:\n%s", got)
@@ -182,7 +186,7 @@ func TestProjectRelativeFileRejectsTraversal(t *testing.T) {
 }
 
 func TestBuildSystemPromptPreservesPublishingScope(t *testing.T) {
-	for _, role := range []sessionPromptRole{sessionPromptRoleWorker, sessionPromptRoleOrchestrator} {
+	for _, role := range []sessionPromptRole{sessionPromptRoleWorker, sessionPromptRoleManager} {
 		for _, repo := range []string{"", "https://github.com/acme/repo"} {
 			t.Run(string(role)+"/"+repo, func(t *testing.T) {
 				got := buildSystemPromptText(systemPromptConfig{Role: role, Project: promptProject{Repo: repo}})

@@ -321,10 +321,11 @@ export const boardAttentionZoneOrder: AttentionZone[] = ["working", "action", "p
 
 /**
  * Board lanes in delivery order: planning -> building -> review -> ready.
- * Planning and Building split the daemon's pre-PR `building` column by the
- * session's workflow mode; Review groups the validating/in-review feedback loop
- * the daemon still reports separately. `archive` is deliberately absent —
- * terminated sessions render in the archive sheet, not as a lane.
+ * Planning and Building split worker delivery stages within the daemon's
+ * pre-PR `building` column; manager sessions are not board cards. Review groups
+ * the validating/in-review feedback loop the daemon still reports separately.
+ * `archive` is deliberately absent — terminated sessions render in the archive
+ * sheet, not as a lane.
  */
 export const boardLaneOrder: BoardLane[] = ["planning", "building", "review", "ready"];
 

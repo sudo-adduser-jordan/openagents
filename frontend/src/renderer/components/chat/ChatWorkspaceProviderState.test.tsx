@@ -286,7 +286,7 @@ describe("model reroute", () => {
 
 
 describe("empty project session permissions", () => {
-	it.each(["orchestrator", "worker"] as const)("exposes permissions and project remembering for an empty %s", async (role) => {
+	it.each(["manager", "worker"] as const)("exposes permissions and project remembering for an empty %s", async (role) => {
 		const user = userEvent.setup();
 		const remember = vi.fn();
 		render(<ChatWorkspace sessionRole={role} snapshot={{ ...chatFixture, items: [], turns: [],

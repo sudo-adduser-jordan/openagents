@@ -159,7 +159,7 @@ export function SettingsDialog() {
 									title={
 										projectSaveState.error ??
 										(projectSaveState.replacementError
-											? `Orchestrator restart failed: ${projectSaveState.replacementError}`
+											? `Manager restart failed: ${projectSaveState.replacementError}`
 											: undefined)
 									}
 								>

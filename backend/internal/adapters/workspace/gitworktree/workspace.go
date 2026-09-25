@@ -744,7 +744,7 @@ func (w *Workspace) ForceDestroy(ctx context.Context, info ports.WorkspaceInfo) 
 	}
 	// Force teardown has no refusal to honour, so the move is unconditional:
 	// rename the directory out of the way, drop the registration, unlink in the
-	// background. This runs on daemon shutdown and orchestrator replacement,
+	// background. This runs on daemon shutdown and manager replacement,
 	// which stalled on the same unlink that used to stall a kill.
 	if discarded, moved := w.discard(path); moved {
 		// A failed prune must leave both halves intact. Deleting anyway would
@@ -1819,7 +1819,7 @@ func validateConfig(cfg ports.WorkspaceConfig) error {
 	if err := validatePathComponent("project id", string(cfg.ProjectID)); err != nil {
 		return err
 	}
-	if cfg.Kind == domain.KindOrchestrator {
+	if cfg.Kind == domain.KindManager {
 		prefix := resolvedSessionPrefix(cfg)
 		if err := validatePathComponent("session prefix", prefix); err != nil {
 			return err
@@ -1886,9 +1886,9 @@ func validatePathComponent(name, value string) error {
 
 func (w *Workspace) managedPath(cfg ports.WorkspaceConfig) (string, error) {
 	var path string
-	if cfg.Kind == domain.KindOrchestrator {
+	if cfg.Kind == domain.KindManager {
 		prefix := resolvedSessionPrefix(cfg)
-		path = filepath.Join(w.managedRoot, string(cfg.ProjectID), "orchestrator", prefix+"-orchestrator")
+		path = filepath.Join(w.managedRoot, string(cfg.ProjectID), "manager", prefix+"-manager")
 	} else {
 		path = filepath.Join(w.managedRoot, string(cfg.ProjectID), string(cfg.SessionID))
 	}

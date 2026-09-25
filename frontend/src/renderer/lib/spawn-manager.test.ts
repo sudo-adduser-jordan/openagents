@@ -1,5 +1,5 @@
 import { describe, expect, it, vi, beforeEach } from "vitest";
-import { isChatPreflightError, OrchestratorSpawnError, spawnOrchestrator } from "./spawn-orchestrator";
+import { isChatPreflightError, ManagerSpawnError, spawnManager } from "./spawn-manager";
 import { apiClient } from "./api-client";
 
 vi.mock("./api-client", () => ({
@@ -22,56 +22,56 @@ vi.mock("./api-client", () => ({
 	},
 }));
 
-describe("spawnOrchestrator", () => {
+describe("spawnManager", () => {
 	beforeEach(() => {
 		vi.clearAllMocks();
 	});
 
 	it("sends clean:true through to the request body when asked", async () => {
 		(apiClient.POST as ReturnType<typeof vi.fn>).mockResolvedValue({
-			data: { orchestrator: { id: "proj-9" } },
+			data: { manager: { id: "proj-9" } },
 			error: undefined,
 			response: { status: 201 },
 		});
-		const id = await spawnOrchestrator("proj", "restore_dialog", true);
+		const id = await spawnManager("proj", "restore_dialog", true);
 		expect(id).toBe("proj-9");
-		expect(apiClient.POST).toHaveBeenCalledWith("/api/v1/orchestrators", {
+		expect(apiClient.POST).toHaveBeenCalledWith("/api/v1/managers", {
 			body: { projectId: "proj", clean: true },
 		});
 	});
 
 	it("defaults clean to false / omitted for the existing call sites", async () => {
 		(apiClient.POST as ReturnType<typeof vi.fn>).mockResolvedValue({
-			data: { orchestrator: { id: "proj-1" } },
+			data: { manager: { id: "proj-1" } },
 			error: undefined,
 			response: { status: 201 },
 		});
-		await spawnOrchestrator("proj", "board");
-		expect(apiClient.POST).toHaveBeenCalledWith("/api/v1/orchestrators", {
+		await spawnManager("proj", "board");
+		expect(apiClient.POST).toHaveBeenCalledWith("/api/v1/managers", {
 			body: { projectId: "proj", clean: false },
 		});
 	});
 
 	it("sends mode only when the user explicitly chooses it", async () => {
 		(apiClient.POST as ReturnType<typeof vi.fn>).mockResolvedValue({
-			data: { orchestrator: { id: "proj-2" } },
+			data: { manager: { id: "proj-2" } },
 			error: undefined,
 			response: { status: 201 },
 		});
-		await spawnOrchestrator("proj", "board", false, "tui");
-		expect(apiClient.POST).toHaveBeenCalledWith("/api/v1/orchestrators", {
+		await spawnManager("proj", "board", false, "tui");
+		expect(apiClient.POST).toHaveBeenCalledWith("/api/v1/managers", {
 			body: { projectId: "proj", clean: false, mode: "tui" },
 		});
 	});
 
-	it("accepts project_clone as a first-class orchestrator spawn source", async () => {
+	it("accepts project_clone as a first-class manager spawn source", async () => {
 		(apiClient.POST as ReturnType<typeof vi.fn>).mockResolvedValue({
-			data: { orchestrator: { id: "proj-8" } },
+			data: { manager: { id: "proj-8" } },
 			error: undefined,
 			response: { status: 201 },
 		});
-		await spawnOrchestrator("proj", "project_clone");
-		expect(apiClient.POST).toHaveBeenCalledWith("/api/v1/orchestrators", {
+		await spawnManager("proj", "project_clone");
+		expect(apiClient.POST).toHaveBeenCalledWith("/api/v1/managers", {
 			body: { projectId: "proj", clean: false },
 		});
 	});
@@ -87,8 +87,8 @@ describe("spawnOrchestrator", () => {
 			response: { status: 400 },
 		});
 
-		const error = await spawnOrchestrator("proj", "board").catch((caught: unknown) => caught);
-		expect(error).toBeInstanceOf(OrchestratorSpawnError);
+		const error = await spawnManager("proj", "board").catch((caught: unknown) => caught);
+		expect(error).toBeInstanceOf(ManagerSpawnError);
 		expect(error).toMatchObject({
 			code: "CHAT_DRIVER_UNAVAILABLE",
 			requestId: "request-42",

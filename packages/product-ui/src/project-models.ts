@@ -11,11 +11,11 @@ export type ProjectSettingsValues = {
 	defaultBranch: string;
 	sessionPrefix: string;
 	workerAgent: string;
-	orchestratorAgent: string;
+	managerAgent: string;
 	workerModel: string;
-	orchestratorModel: string;
+	managerModel: string;
 	workerMode: string;
-	orchestratorMode: string;
+	managerMode: string;
 	permissions: string;
 	reviewerHarness: string;
 	intakeEnabled: boolean;
@@ -31,11 +31,11 @@ export type ProjectSettingsValidationCode =
 export function validateProjectSettings(
 	values: Pick<
 		ProjectSettingsValues,
-		"displayName" | "workerAgent" | "orchestratorAgent" | "intakeEnabled" | "intakeAssignee"
+		"displayName" | "workerAgent" | "managerAgent" | "intakeEnabled" | "intakeAssignee"
 	>,
 	options: { validateIntake?: boolean } = {},
 ): ProjectSettingsValidationCode | null {
-	if (values.workerAgent === "" || values.orchestratorAgent === "") return "agents_required";
+	if (values.workerAgent === "" || values.managerAgent === "") return "agents_required";
 	if (values.displayName.trim() === "") return "name_required";
 	if (options.validateIntake !== false && values.intakeEnabled && values.intakeAssignee.trim() === "") {
 		return "intake_assignee_required";
@@ -45,7 +45,7 @@ export function validateProjectSettings(
 
 export type ProjectSetupSelection = {
 	workerAgent: string;
-	orchestratorAgent: string;
+	managerAgent: string;
 	intakeEnabled?: boolean;
 	intakeAssignee?: string;
 };
@@ -53,7 +53,7 @@ export type ProjectSetupSelection = {
 export function canSubmitProjectSetup(selection: ProjectSetupSelection): boolean {
 	return (
 		selection.workerAgent !== "" &&
-		selection.orchestratorAgent !== "" &&
+		selection.managerAgent !== "" &&
 		(!selection.intakeEnabled || (selection.intakeAssignee?.trim() ?? "") !== "")
 	);
 }

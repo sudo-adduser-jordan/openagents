@@ -20,11 +20,11 @@ import { iconForCommand } from "../lib/command-palette-icons";
 import { isDialogOrMenuOpen } from "../lib/dom-selectors";
 import { isMacPlatform } from "../lib/platform";
 import { sessionReviewsQueryOptions, type PRReviewState } from "../lib/session-reviews";
-import { spawnOrchestrator } from "../lib/spawn-orchestrator";
+import { spawnManager } from "../lib/spawn-manager";
 import { useShell } from "../lib/shell-context";
 import {
-	findProjectOrchestrator,
-	hasConfiguredOrchestratorAgent,
+	findProjectManager,
+	hasConfiguredManagerAgent,
 	openPRs,
 	STANDALONE_WORKSPACE_ID,
 	workerSessions,
@@ -352,28 +352,28 @@ export function CommandPalette() {
 
 	const blockedByRestart = useCallback((projectId: string) => {
 		if (!useUiStore.getState().restartingProjectIds.has(projectId)) return false;
-		setError("Orchestrator restarting");
+		setError("Manager restarting");
 		return true;
 	}, []);
 
-	const openOrchestrator = useCallback(
+	const openManager = useCallback(
 		async (projectId: string) => {
 			if (blockedByRestart(projectId)) return;
-			const orchestrator = findProjectOrchestrator(workspaces, projectId);
-			if (orchestrator) {
-				navigateToTarget(sessionRoute(projectId, orchestrator.id));
+			const manager = findProjectManager(workspaces, projectId);
+			if (manager) {
+				navigateToTarget(sessionRoute(projectId, manager.id));
 				closePalette();
 				return;
 			}
 			const workspace = workspaces.find((candidate) => candidate.id === projectId);
-			if (!hasConfiguredOrchestratorAgent(workspace)) {
+			if (!hasConfiguredManagerAgent(workspace)) {
 				if (workspace) {
 					navigateToTarget({ to: "/projects/$projectId/settings", params: { projectId } });
 					closePalette();
 				}
 				return;
 			}
-			const sessionId = await spawnOrchestrator(projectId, "command_palette");
+			const sessionId = await spawnManager(projectId, "command_palette");
 			await queryClient.invalidateQueries({ queryKey: workspaceQueryKey });
 			navigateToTarget(sessionRoute(projectId, sessionId));
 			closePalette();
@@ -453,8 +453,8 @@ export function CommandPalette() {
 					case "open-new-project":
 						openNewProject();
 						break;
-					case "open-orchestrator":
-							await openOrchestrator(action.projectId);
+					case "open-manager":
+							await openManager(action.projectId);
 							break;
 				}
 			} catch (err) {
@@ -464,7 +464,7 @@ export function CommandPalette() {
 				setPendingId(null);
 			}
 		},
-		[navigateToTarget, closePalette, toggleTheme, openOrchestrator, resumeSession, pushView, blockedByRestart, openNewProject, queryClient],
+		[navigateToTarget, closePalette, toggleTheme, openManager, resumeSession, pushView, blockedByRestart, openNewProject, queryClient],
 	);
 
 	const onSelectItem = useCallback(

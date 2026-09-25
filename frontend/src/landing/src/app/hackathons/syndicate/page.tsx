@@ -16,7 +16,7 @@ const highlights = [
   {
     icon: Users,
     label: "Ship with a crew",
-    text: "A focused community sprint for builders exploring agent orchestration.",
+    text: "A focused community sprint for builders exploring agent management.",
   },
   {
     icon: Sparkles,

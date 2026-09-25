@@ -104,7 +104,7 @@ Version thresholds or adoption of an intermediate release are not isolation.
 
 ## Conductor audit and permanent legacy safety
 
-Orchestrator 250 supplied these source facts:
+Manager 250 supplied these source facts:
 
 - `open-agents-releases` `aa936360`: `_pipeline.yml` creates arm64/x64 ZIPs, calls public
   `feed.mjs`, verifies, uploads `dist/*`, then publishes.

@@ -34,18 +34,18 @@ type DelegateTaskInput struct {
 	Attachments    []ports.SpawnAttachment
 }
 
-// DelegateTaskOutcome identifies the spawned worker. OrchestratorID remains
+// DelegateTaskOutcome identifies the spawned worker. ManagerID remains
 // optional for wire compatibility; asynchronous title refinement does not wait
-// to resolve the coordinator before returning.
+// to resolve the manager before returning.
 type DelegateTaskOutcome struct {
-	OrchestratorID domain.SessionID
-	WorkerID       domain.SessionID
+	ManagerID domain.SessionID
+	WorkerID  domain.SessionID
 }
 
 // DelegateTask spawns the worker directly, matching `open-agents spawn`, with a
 // provisional display name derived from the task brief. Open Agents then best-effort
-// refines that title in the background through the project orchestrator,
-// resuming or creating the coordinator when necessary.
+// refines that title in the background through the project manager,
+// resuming or creating the manager when necessary.
 func (s *Service) DelegateTask(ctx context.Context, in DelegateTaskInput) (DelegateTaskOutcome, error) {
 	if _, err := s.requireProject(ctx, in.ProjectID); err != nil {
 		return DelegateTaskOutcome{}, err
@@ -63,11 +63,12 @@ func (s *Service) DelegateTask(ctx context.Context, in DelegateTaskInput) (Deleg
 
 	effort, effortOverride := optionalTuningValue(in.Effort)
 	worker, _, _, err := s.manager.Spawn(ctx, ports.SpawnConfig{
-		ProjectID:   in.ProjectID,
-		Kind:        domain.KindWorker,
-		Harness:     in.RequestedAgent,
-		Prompt:      prompt,
-		DisplayName: delegatedTaskDisplayName(in.Brief),
+		ProjectID:             in.ProjectID,
+		Kind:                  domain.KindWorker,
+		RequestedWorkflowMode: domain.WorkflowModePlanning,
+		Harness:               in.RequestedAgent,
+		Prompt:                prompt,
+		DisplayName:           delegatedTaskDisplayName(in.Brief),
 		AgentConfig: ports.AgentConfig{
 			Model:       strings.TrimSpace(in.Model),
 			Effort:      effort,
@@ -81,7 +82,7 @@ func (s *Service) DelegateTask(ctx context.Context, in DelegateTaskInput) (Deleg
 		return DelegateTaskOutcome{}, toSpawnAPIError(err)
 	}
 
-	// The worker spawn is the commit point. Coordinator startup and title
+	// The worker spawn is the commit point. Manager startup and title
 	// generation must never hold the new-task response open. A promptless worker
 	// stays idle with its provisional title until the user supplies instructions.
 	if prompt != "" {
@@ -122,54 +123,54 @@ func (s *Service) refineDelegatedTaskTitleInBackground(workerID domain.SessionID
 }
 
 func (s *Service) refineDelegatedTaskTitle(ctx context.Context, workerID domain.SessionID, in DelegateTaskInput) error {
-	orchestratorID, err := s.taskTitleOrchestrator(ctx, in.ProjectID)
+	managerID, err := s.taskTitleManager(ctx, in.ProjectID)
 	if err != nil {
 		return err
 	}
-	if err := s.manager.WaitForMessageDeliveryReady(ctx, orchestratorID); err != nil {
-		return fmt.Errorf("wait for title orchestrator %s: %w", orchestratorID, err)
+	if err := s.manager.WaitForMessageDeliveryReady(ctx, managerID); err != nil {
+		return fmt.Errorf("wait for title manager %s: %w", managerID, err)
 	}
-	if err := s.manager.Send(ctx, orchestratorID, taskTitleDelegationMessage(workerID, in), nil); err != nil {
-		return fmt.Errorf("send title request to %s: %w", orchestratorID, err)
+	if err := s.manager.Send(ctx, managerID, taskTitleDelegationMessage(workerID, in), nil); err != nil {
+		return fmt.Errorf("send title request to %s: %w", managerID, err)
 	}
 	return nil
 }
 
-func (s *Service) taskTitleOrchestrator(ctx context.Context, projectID domain.ProjectID) (domain.SessionID, error) {
-	unlock := s.lockOrchestratorProject(projectID)
-	orchestrators, err := s.activeOrchestrators(ctx, projectID)
+func (s *Service) taskTitleManager(ctx context.Context, projectID domain.ProjectID) (domain.SessionID, error) {
+	unlock := s.lockManagerProject(projectID)
+	managers, err := s.activeManagers(ctx, projectID)
 	if err != nil {
 		unlock()
-		return "", fmt.Errorf("list project orchestrators: %w", err)
+		return "", fmt.Errorf("list project managers: %w", err)
 	}
 
-	running := make([]domain.Session, 0, len(orchestrators))
-	for _, orchestrator := range orchestrators {
-		if orchestrator.Activity.State != domain.ActivityExited {
-			running = append(running, orchestrator)
+	running := make([]domain.Session, 0, len(managers))
+	for _, manager := range managers {
+		if manager.Activity.State != domain.ActivityExited {
+			running = append(running, manager)
 		}
 	}
 	if len(running) > 0 {
-		orchestratorID := newestSession(running).ID
+		managerID := newestSession(running).ID
 		unlock()
-		return orchestratorID, nil
+		return managerID, nil
 	}
-	if len(orchestrators) > 0 {
-		orchestratorID := newestSession(orchestrators).ID
-		_, resumeErr := s.manager.ResumeAgentWithMode(ctx, orchestratorID)
+	if len(managers) > 0 {
+		managerID := newestSession(managers).ID
+		_, resumeErr := s.manager.ResumeAgentWithMode(ctx, managerID)
 		unlock()
 		if resumeErr != nil && !errors.Is(resumeErr, sessionmanager.ErrAgentNotExited) {
-			return "", fmt.Errorf("resume project orchestrator %s: %w", orchestratorID, resumeErr)
+			return "", fmt.Errorf("resume project manager %s: %w", managerID, resumeErr)
 		}
-		return orchestratorID, nil
+		return managerID, nil
 	}
 	unlock()
 
-	orchestrator, err := s.SpawnOrchestrator(ctx, projectID, false, "")
+	manager, err := s.SpawnManager(ctx, projectID, false, "")
 	if err != nil {
-		return "", fmt.Errorf("start project orchestrator: %w", err)
+		return "", fmt.Errorf("start project manager: %w", err)
 	}
-	return orchestrator.ID, nil
+	return manager.ID, nil
 }
 
 func delegatedTaskDisplayName(brief string) string {
@@ -186,7 +187,7 @@ func delegatedTaskDisplayName(brief string) string {
 func taskTitleDelegationMessage(workerID domain.SessionID, in DelegateTaskInput) string {
 	var b strings.Builder
 	b.WriteString("Open Agents TASK TITLE UPDATE\n")
-	b.WriteString("A worker was already spawned directly with the user's task. Do not spawn another worker or orchestrator, and do not implement the task in this orchestrator session.\n")
+	b.WriteString("A worker was already spawned directly with the user's task. Do not spawn another worker or manager, and do not implement the task in this manager session.\n")
 	b.WriteString("Choose a concise task title from the brief and run:\n\n")
 	b.WriteString("open-agents session rename ")
 	b.WriteString(string(workerID))

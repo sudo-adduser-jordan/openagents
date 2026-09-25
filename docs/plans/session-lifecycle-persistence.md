@@ -3,7 +3,7 @@
 ## Goal
 
 Make the intended lifecycle real and lean: on app close, save every running
-session (worker AND orchestrator, no filtering) plus its uncommitted work, then
+session (worker AND manager, no filtering) plus its uncommitted work, then
 force-remove the worktrees. On app launch, recreate the worktrees, replay the
 saved uncommitted work, and restore all sessions. The daemon already starts on
 launch and shuts down + frees its port on quit; this plan fills the missing
@@ -17,7 +17,7 @@ save/restore middle.
    it kills the daemon, so the save runs gracefully (SIGTERM remains the
    fallback and triggers the same daemon-side save path).
 2. **The "last-stop manifest" is the existing SQLite state, not a new file.**
-   `ListAllSessions` already records id, kind (worker/orchestrator), harness,
+   `ListAllSessions` already records id, kind (worker/manager), harness,
    `is_terminated`, and `Metadata{branch, workspacePath, agentSessionId,
 prompt}`. The `session_worktrees` table already has a `preserved_ref` column
    (migration 0009) that nothing currently writes. No manifest.json, no new
@@ -49,7 +49,7 @@ commit-tree`) so tracked + staged + new (non-ignored) files are captured,
 - Preserve ref name is exactly `refs/open-agents/preserved/<session-id>`.
 - Untracked capture respects `.gitignore` (no `-f`, no force-include). Skipped
   ignored paths are logged with a count.
-- No kind filtering anywhere in the save or restore loops: orchestrator and
+- No kind filtering anywhere in the save or restore loops: manager and
   worker sessions are both saved and both restored.
 - Save is strictly capture-then-destroy, per session, with the DB write
   committed before the worktree is removed (crash-safety invariant).
@@ -132,7 +132,7 @@ comment that ForceDestroy is only safe after the work is captured.
     No new column is needed (consistent with Task 6 leaving `state` alone).
     **Check:** Go test with fakes asserting (a) save calls capture-then-force in
     order and writes preserved_ref before ForceDestroy, (b) RestoreAll restores BOTH
-    a worker and an orchestrator, (c) a session the user killed before shutdown is
+    a worker and a manager, (c) a session the user killed before shutdown is
     not resurrected.
 
 ### Task 4 — Wire into daemon boot/shutdown (`daemon.go`)
@@ -173,7 +173,7 @@ unused multi-repo scaffolding.
    branch; stray non-worktree dir → it refuses, restore loop logs and skips.
 3. Base branch moved: worktree re-added on the session's own branch; restores
    to the agent's last state regardless of base.
-4. Orchestrator vs workers: no kind filter in either loop.
+4. Manager vs workers: no kind filter in either loop.
 5. Preserved diff conflicts on apply: keep the ref, leave conflict markers,
    still relaunch the agent. Never delete the ref on failed apply.
 6. Incomplete session (no branch/path): skipped on both save and restore.

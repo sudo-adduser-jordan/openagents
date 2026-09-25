@@ -10,13 +10,13 @@ function render(ui: ReactElement) {
 	return rtlRender(<TooltipProvider>{ui}</TooltipProvider>);
 }
 
-const { getMock, putMock, postMock, navigateMock, closeSettingsMock, setOrchestratorReplacementErrorMock, ensureAgentReadinessMock } = vi.hoisted(() => ({
+const { getMock, putMock, postMock, navigateMock, closeSettingsMock, setManagerReplacementErrorMock, ensureAgentReadinessMock } = vi.hoisted(() => ({
 	getMock: vi.fn(),
 	putMock: vi.fn(),
 	postMock: vi.fn(),
 	navigateMock: vi.fn(),
 	closeSettingsMock: vi.fn(),
-	setOrchestratorReplacementErrorMock: vi.fn(),
+	setManagerReplacementErrorMock: vi.fn(),
 	ensureAgentReadinessMock: vi.fn(),
 }));
 
@@ -37,7 +37,7 @@ vi.mock("../stores/ui-store", () => ({
 	useUiStore: (selector: (state: Record<string, unknown>) => unknown) =>
 		selector({
 			closeSettings: closeSettingsMock,
-			setOrchestratorReplacementError: setOrchestratorReplacementErrorMock,
+			setManagerReplacementError: setManagerReplacementErrorMock,
 		}),
 }));
 
@@ -88,7 +88,7 @@ function TestProjectSettings({
 			<ProjectSettingsForm projectId={projectId} section={section} onSaveState={setSaveState} />
 			{saveState.error && <span>{saveState.error}</span>}
 			{saveState.phase === "saved" && <span>{"Saved"}</span>}
-			{saveState.replacementError && <span>{`Orchestrator restart failed: ${saveState.replacementError}`}</span>}
+			{saveState.replacementError && <span>{`Manager restart failed: ${saveState.replacementError}`}</span>}
 		</>
 	);
 }
@@ -127,7 +127,7 @@ function submitSettings() {
 	fireEvent.submit(document.getElementById("project-settings-form")!);
 }
 
-async function expectReplacementNavigation(sessionId = "proj-1-orch-2") {
+async function expectReplacementNavigation(sessionId = "proj-1-mgr-2") {
 	await waitFor(() =>
 		expect(navigateMock).toHaveBeenCalledWith({
 			to: "/projects/$projectId/sessions/$sessionId",
@@ -179,11 +179,11 @@ beforeEach(() => {
 	postMock.mockReset();
 	navigateMock.mockReset();
 	closeSettingsMock.mockReset();
-	setOrchestratorReplacementErrorMock.mockReset();
+	setManagerReplacementErrorMock.mockReset();
 	ensureAgentReadinessMock.mockReset();
 	putMock.mockResolvedValue({ data: { project: {} }, error: undefined });
 	postMock.mockResolvedValue({
-		data: { orchestrator: { id: "proj-1-orch-2" } },
+		data: { manager: { id: "proj-1-mgr-2" } },
 		error: undefined,
 		response: { status: 200 },
 	});
@@ -200,7 +200,7 @@ describe("ProjectSettingsForm", () => {
 			defaultBranch: "main",
 			config: {
 				worker: { agent: "codex" },
-				orchestrator: { agent: "opencode" },
+				manager: { agent: "opencode" },
 			},
 		});
 
@@ -218,7 +218,7 @@ describe("ProjectSettingsForm", () => {
 		expect(screen.getByRole("button", { name: "Worker approval" })).toHaveTextContent("Auto (Project default)");
 		expect(screen.queryByRole("button", { name: "Refresh agents" })).not.toBeInTheDocument();
 		expect(screen.queryByRole("button", { name: "Refresh worker model list" })).not.toBeInTheDocument();
-		expect(screen.queryByRole("button", { name: "Refresh orchestrator model list" })).not.toBeInTheDocument();
+		expect(screen.queryByRole("button", { name: "Refresh manager model list" })).not.toBeInTheDocument();
 	});
 
 	it("does not have its own close button (dialog handles closing)", async () => {
@@ -231,7 +231,7 @@ describe("ProjectSettingsForm", () => {
 			defaultBranch: "main",
 			config: {
 				worker: { agent: "codex" },
-				orchestrator: { agent: "codex" },
+				manager: { agent: "codex" },
 			},
 		});
 
@@ -253,7 +253,7 @@ describe("ProjectSettingsForm", () => {
 			defaultBranch: "main",
 			config: {
 				worker: { agent: "codex" },
-				orchestrator: { agent: "codex" },
+				manager: { agent: "codex" },
 			},
 		});
 
@@ -281,7 +281,7 @@ describe("ProjectSettingsForm", () => {
 			defaultBranch: "main",
 			config: {
 				worker: { agent: "codex" },
-				orchestrator: { agent: "codex" },
+				manager: { agent: "codex" },
 			},
 		});
 
@@ -304,7 +304,7 @@ describe("ProjectSettingsForm", () => {
 			defaultBranch: "main",
 			config: {
 				worker: { agent: "codex" },
-				orchestrator: { agent: "codex" },
+				manager: { agent: "codex" },
 			},
 		});
 
@@ -333,7 +333,7 @@ describe("ProjectSettingsForm", () => {
 			defaultBranch: "main",
 			config: {
 				worker: { agent: "codex" },
-				orchestrator: { agent: "codex" },
+				manager: { agent: "codex" },
 			},
 		});
 
@@ -353,7 +353,7 @@ describe("ProjectSettingsForm", () => {
 			defaultBranch: "main",
 			config: {
 				worker: { agent: "codex" },
-				orchestrator: { agent: "codex" },
+				manager: { agent: "codex" },
 			},
 		});
 
@@ -375,7 +375,7 @@ describe("ProjectSettingsForm", () => {
 			defaultBranch: "main",
 			config: {
 				worker: { agent: "codex" },
-				orchestrator: { agent: "codex" },
+				manager: { agent: "codex" },
 			},
 		});
 
@@ -396,7 +396,7 @@ describe("ProjectSettingsForm", () => {
 				id: "proj-1", name: "Project One", kind: "single_repo", path: "/repo/project-one",
 				repo: "", defaultBranch: "main", config: {
 					worker: { agent: "codex", agentConfig: { model: "gpt-test", effort: "high" } },
-					orchestrator: { agent: "codex" },
+					manager: { agent: "codex" },
 				},
 			} } };
 		});
@@ -434,7 +434,7 @@ describe("ProjectSettingsForm", () => {
 					agent: "opencode",
 					agentConfig: { model: "worker-model" },
 				},
-				orchestrator: { agent: "opencode" },
+				manager: { agent: "opencode" },
 				agentConfig: {
 					model: "gpt-5.6",
 					permissions: "auto",
@@ -447,21 +447,21 @@ describe("ProjectSettingsForm", () => {
 
 		expect(screen.queryByLabelText("Default branch")).not.toBeInTheDocument();
 		expect(await screen.findByRole("button", { name: "Worker model" })).toHaveTextContent("worker-model");
-		expect(screen.getByRole("button", { name: "Orchestrator model" })).toHaveTextContent("gpt-5.6");
+		expect(screen.getByRole("button", { name: "Manager model" })).toHaveTextContent("gpt-5.6");
 
 		const workerAgent = screen.getByRole("button", { name: "Default worker agent" });
-		const orchestratorAgent = screen.getByRole("button", { name: "Default orchestrator agent" });
+		const managerAgent = screen.getByRole("button", { name: "Default manager agent" });
 		const permissionMode = screen.getByRole("button", { name: "Worker approval" });
 		// opencode is the only agent the daemon reports, so both triggers settle
 		// on the single option once the catalog resolves.
 		expect(workerAgent).toHaveTextContent(/^opencode$/i);
-		expect(orchestratorAgent).toHaveTextContent(/^opencode$/i);
+		expect(managerAgent).toHaveTextContent(/^opencode$/i);
 		expect(permissionMode).toHaveTextContent("Auto");
 
 		await chooseOption(workerAgent, "OpenCode");
-		await chooseOption(orchestratorAgent, "OpenCode");
+		await chooseOption(managerAgent, "OpenCode");
 		await chooseCustomModel("Worker model", "openai/gpt-5.4");
-		await chooseCustomModel("Orchestrator model", "openai/gpt-5.4");
+		await chooseCustomModel("Manager model", "openai/gpt-5.4");
 		await userEvent.click(permissionMode);
 		await userEvent.click(await screen.findByRole("menuitem", { name: "Bypass permissions" }));
 
@@ -484,7 +484,7 @@ describe("ProjectSettingsForm", () => {
 						agent: "opencode",
 						agentConfig: { model: "openai/gpt-5.4", permissions: "bypass-permissions" },
 					},
-					orchestrator: {
+					manager: {
 						agent: "opencode",
 						agentConfig: { model: "openai/gpt-5.4", permissions: "auto" },
 					},
@@ -492,7 +492,7 @@ describe("ProjectSettingsForm", () => {
 				}),
 			},
 		});
-		// The orchestrator agent is unchanged, so no replacement session is
+		// The manager agent is unchanged, so no replacement session is
 		// spawned on save.
 		expect(postMock).not.toHaveBeenCalled();
 		expect(await screen.findByText("Saved")).toBeInTheDocument();
@@ -510,7 +510,7 @@ describe("ProjectSettingsForm", () => {
 				defaultBranch: "develop",
 				sessionPrefix: "po",
 				worker: { agent: "codex" },
-				orchestrator: { agent: "codex" },
+				manager: { agent: "codex" },
 				reviewers: [{ harness: "codex" }],
 			},
 		});
@@ -532,7 +532,7 @@ describe("ProjectSettingsForm", () => {
 			defaultBranch: "main",
 			config: {
 				worker: { agent: "codex" },
-				orchestrator: { agent: "codex" },
+				manager: { agent: "codex" },
 				autoReview: true,
 			},
 		});
@@ -562,7 +562,7 @@ describe("ProjectSettingsForm", () => {
 			defaultBranch: "trunk",
 			config: {
 				worker: { agent: "codex" },
-				orchestrator: { agent: "codex" },
+				manager: { agent: "codex" },
 			},
 		});
 
@@ -610,7 +610,7 @@ describe("ProjectSettingsForm", () => {
 						defaultBranch: "main",
 						config: {
 							worker: { agent: "codex" },
-							orchestrator: { agent: "codex" },
+							manager: { agent: "codex" },
 						},
 					},
 				},
@@ -662,7 +662,7 @@ describe("ProjectSettingsForm", () => {
 						path: "/repo/project-one",
 						repo: "",
 						defaultBranch: "main",
-						config: { worker: { agent: "opencode" }, orchestrator: { agent: "opencode" } },
+						config: { worker: { agent: "opencode" }, manager: { agent: "opencode" } },
 					},
 				},
 				error: undefined,
@@ -693,7 +693,7 @@ describe("ProjectSettingsForm", () => {
 						defaultBranch: "main",
 						config: {
 							worker: { agent: "codex" },
-							orchestrator: { agent: "codex" },
+							manager: { agent: "codex" },
 							reviewers: [
 								{ harness: "codex", agentConfig: { model: "gpt-5", permissions: "bypass-permissions" } },
 							],
@@ -756,7 +756,7 @@ describe("ProjectSettingsForm", () => {
 						defaultBranch: "main",
 						config: {
 							worker: { agent: "opencode" },
-							orchestrator: { agent: "opencode" },
+							manager: { agent: "opencode" },
 							reviewers: [
 								{ harness: "codex", agentConfig: { permissions: "bypass-permissions" } },
 							],
@@ -825,7 +825,7 @@ describe("ProjectSettingsForm", () => {
 						defaultBranch: "main",
 						config: {
 							worker: { agent: "codex" },
-							orchestrator: { agent: "codex" },
+							manager: { agent: "codex" },
 						},
 					},
 				},
@@ -867,7 +867,7 @@ describe("ProjectSettingsForm", () => {
 						defaultBranch: "main",
 						config: {
 							worker: { agent: "codex" },
-							orchestrator: { agent: "codex" },
+							manager: { agent: "codex" },
 						},
 					},
 				},
@@ -901,7 +901,7 @@ describe("ProjectSettingsForm", () => {
 			defaultBranch: "main",
 			config: {
 				worker: { agent: "codex" },
-				orchestrator: { agent: "codex" },
+				manager: { agent: "codex" },
 			},
 		});
 		putMock.mockResolvedValue({
@@ -931,7 +931,7 @@ describe("ProjectSettingsForm", () => {
 			defaultBranch: "main",
 			config: {
 				worker: { agent: "codex" },
-				orchestrator: { agent: "codex" },
+				manager: { agent: "codex" },
 			},
 		});
 
@@ -946,7 +946,7 @@ describe("ProjectSettingsForm", () => {
 		expect(putMock).not.toHaveBeenCalled();
 	});
 
-	it("requires worker and orchestrator agents for existing projects missing role config", async () => {
+	it("requires worker and manager agents for existing projects missing role config", async () => {
 		mockProject({
 			id: "proj-1",
 			name: "Project One",
@@ -959,15 +959,15 @@ describe("ProjectSettingsForm", () => {
 
 		renderSettings("proj-1", undefined, "agents");
 
-		expect(await screen.findByText("Worker and orchestrator agents are required.")).toBeInTheDocument();
+		expect(await screen.findByText("Worker and manager agents are required.")).toBeInTheDocument();
 		expect(screen.getByRole("button", { name: "Default worker agent" })).toHaveTextContent("Select worker agent");
-		expect(screen.getByRole("button", { name: "Default orchestrator agent" })).toHaveTextContent(
-			"Select orchestrator agent",
+		expect(screen.getByRole("button", { name: "Default manager agent" })).toHaveTextContent(
+			"Select manager agent",
 		);
 
 		submitSettings();
 
-		expect(await screen.findAllByText("Worker and orchestrator agents are required.")).toHaveLength(2);
+		expect(await screen.findAllByText("Worker and manager agents are required.")).toHaveLength(2);
 		expect(putMock).not.toHaveBeenCalled();
 	});
 
@@ -981,7 +981,7 @@ describe("ProjectSettingsForm", () => {
 			defaultBranch: "main",
 			config: {
 				worker: { agent: "codex" },
-				orchestrator: { agent: "codex" },
+				manager: { agent: "codex" },
 			},
 		});
 
@@ -1011,7 +1011,7 @@ describe("ProjectSettingsForm", () => {
 						defaultBranch: "main",
 						config: {
 							worker: { agent: "codex" },
-							orchestrator: { agent: "codex" },
+							manager: { agent: "codex" },
 						},
 					},
 				},
@@ -1022,7 +1022,7 @@ describe("ProjectSettingsForm", () => {
 		renderSettings("proj-1", undefined, "agents");
 
 		expect(await screen.findByRole("button", { name: "Default worker agent" })).toBeDisabled();
-		expect(screen.getByRole("button", { name: "Default orchestrator agent" })).toBeDisabled();
+		expect(screen.getByRole("button", { name: "Default manager agent" })).toBeDisabled();
 	});
 
 	it("offers opencode as the only reviewer option", async () => {
@@ -1035,7 +1035,7 @@ describe("ProjectSettingsForm", () => {
 			defaultBranch: "main",
 			config: {
 				worker: { agent: "opencode" },
-				orchestrator: { agent: "opencode" },
+				manager: { agent: "opencode" },
 			},
 		});
 
@@ -1059,7 +1059,7 @@ describe("ProjectSettingsForm", () => {
 			defaultBranch: "main",
 			config: {
 				worker: { agent: "opencode" },
-				orchestrator: { agent: "opencode" },
+				manager: { agent: "opencode" },
 			},
 		});
 
@@ -1082,7 +1082,7 @@ describe("ProjectSettingsForm", () => {
 			defaultBranch: "main",
 			config: {
 				worker: { agent: "opencode" },
-				orchestrator: { agent: "opencode" },
+				manager: { agent: "opencode" },
 			},
 		});
 
@@ -1129,7 +1129,7 @@ describe("ProjectSettingsForm", () => {
 				postCreate: ["npm install"],
 				agentRules: "keep work small",
 				worker: { agent: "codex" },
-				orchestrator: { agent: "codex" },
+				manager: { agent: "codex" },
 				agentConfig: {
 					model: "gpt-5-codex",
 					permissions: "auto",
@@ -1164,7 +1164,7 @@ describe("ProjectSettingsForm", () => {
 					postCreate: ["npm install"],
 					agentRules: "keep work small",
 					worker: { agent: "codex", agentConfig: { model: "gpt-5-codex", permissions: "auto" } },
-					orchestrator: { agent: "codex", agentConfig: { model: "gpt-5-codex", permissions: "auto" } },
+					manager: { agent: "codex", agentConfig: { model: "gpt-5-codex", permissions: "auto" } },
 					agentConfig: undefined,
 				},
 			},
@@ -1185,7 +1185,7 @@ describe("ProjectSettingsForm", () => {
 					defaultBranch: "main",
 					config: {
 						worker: { agent: "codex" },
-						orchestrator: { agent: "codex" },
+						manager: { agent: "codex" },
 					},
 				},
 			},
@@ -1227,7 +1227,7 @@ describe("ProjectSettingsForm", () => {
 					defaultBranch: "main",
 					config: {
 						worker: { agent: "codex" },
-						orchestrator: { agent: "codex" },
+						manager: { agent: "codex" },
 						trackerIntake: {
 							enabled: true,
 							provider: "gitlab",
@@ -1269,7 +1269,7 @@ describe("ProjectSettingsForm", () => {
 					defaultBranch: "main",
 					config: {
 						worker: { agent: "codex" },
-						orchestrator: { agent: "codex" },
+						manager: { agent: "codex" },
 					},
 				},
 			},
@@ -1285,24 +1285,24 @@ describe("ProjectSettingsForm", () => {
 		expect(putMock).not.toHaveBeenCalled();
 	});
 
-	function workspaceWithLegacyOrchestrator(): WorkspaceSummary {
+	function workspaceWithLegacyManager(): WorkspaceSummary {
 	return {
 		id: "proj-1",
 		name: "Project One",
 		path: "/repo/project-one",
-		// A pre-strip orchestrator session may still be running under a
+		// A pre-strip manager session may still be running under a
 		// different provider; saving the project replaces it. The provider
 		// vocabulary only admits opencode now, so the legacy value rides raw.
-		orchestratorAgent: "codex" as unknown as WorkspaceSummary["orchestratorAgent"],
+		managerAgent: "codex" as unknown as WorkspaceSummary["managerAgent"],
 		sessions: [
 			{
-				id: "proj-1-orchestrator",
+				id: "proj-1-manager",
 				workspaceId: "proj-1",
 				workspaceName: "Project One",
-				title: "Orchestrator",
+				title: "Manager",
 				provider: "codex" as unknown as WorkspaceSummary["sessions"][number]["provider"],
-				kind: "orchestrator",
-				branch: "open-agents/proj-1-orchestrator",
+				kind: "manager",
+				branch: "open-agents/proj-1-manager",
 				status: "working",
 				createdAt: "2026-07-03T00:00:00Z",
 				updatedAt: "2026-07-03T00:00:00Z",
@@ -1312,7 +1312,7 @@ describe("ProjectSettingsForm", () => {
 	};
 }
 
-it("restarts the running orchestrator when its provider differs from the saved agent", async () => {
+it("restarts the running manager when its provider differs from the saved agent", async () => {
 		getMock.mockResolvedValue({
 			data: {
 				status: "ok",
@@ -1325,30 +1325,30 @@ it("restarts the running orchestrator when its provider differs from the saved a
 					defaultBranch: "main",
 					config: {
 						worker: { agent: "opencode" },
-						orchestrator: { agent: "opencode" },
+						manager: { agent: "opencode" },
 					},
 				},
 			},
 			error: undefined,
 		});
 
-		renderSettings("proj-1", [workspaceWithLegacyOrchestrator()], "agents");
+		renderSettings("proj-1", [workspaceWithLegacyManager()], "agents");
 
-		const orchestratorAgent = await screen.findByRole("button", { name: "Default orchestrator agent" });
-		expect(orchestratorAgent).toHaveTextContent(/^opencode$/i);
+		const managerAgent = await screen.findByRole("button", { name: "Default manager agent" });
+		expect(managerAgent).toHaveTextContent(/^opencode$/i);
 
 		submitSettings();
 
 		await waitFor(() => expect(putMock).toHaveBeenCalledTimes(1));
 		await waitFor(() => expect(postMock).toHaveBeenCalledTimes(1));
-		expect(postMock).toHaveBeenCalledWith("/api/v1/orchestrators", {
+		expect(postMock).toHaveBeenCalledWith("/api/v1/managers", {
 			body: { projectId: "proj-1", clean: true },
 		});
 		await expectReplacementNavigation();
-		expect(setOrchestratorReplacementErrorMock).not.toHaveBeenCalled();
+		expect(setManagerReplacementErrorMock).not.toHaveBeenCalled();
 	});
 
-	it("keeps the config save successful when orchestrator replacement fails", async () => {
+	it("keeps the config save successful when manager replacement fails", async () => {
 		getMock.mockResolvedValue({
 			data: {
 				status: "ok",
@@ -1361,7 +1361,7 @@ it("restarts the running orchestrator when its provider differs from the saved a
 					defaultBranch: "main",
 					config: {
 						worker: { agent: "opencode" },
-						orchestrator: { agent: "opencode" },
+						manager: { agent: "opencode" },
 					},
 				},
 			},
@@ -1370,31 +1370,31 @@ it("restarts the running orchestrator when its provider differs from the saved a
 		postMock.mockResolvedValue({
 			data: undefined,
 			error: {
-				code: "ORCHESTRATOR_SPAWN_FAILED",
+				code: "MANAGER_SPAWN_FAILED",
 				message: "missing codex binary",
 				requestId: "request-42",
 			},
 			response: { status: 500 },
 		});
 
-		const queryClient = renderSettings("proj-1", [workspaceWithLegacyOrchestrator()], "agents");
+		const queryClient = renderSettings("proj-1", [workspaceWithLegacyManager()], "agents");
 		const invalidateSpy = vi.spyOn(queryClient, "invalidateQueries");
 
-		const orchestratorAgent = await screen.findByRole("button", { name: "Default orchestrator agent" });
-		expect(orchestratorAgent).toHaveTextContent(/^opencode$/i);
+		const managerAgent = await screen.findByRole("button", { name: "Default manager agent" });
+		expect(managerAgent).toHaveTextContent(/^opencode$/i);
 		submitSettings();
 
 		await waitFor(() => expect(putMock).toHaveBeenCalledTimes(1));
 		await waitFor(() => expect(postMock).toHaveBeenCalledTimes(1));
 		expect(await screen.findByText("Saved")).toBeInTheDocument();
-		expect(await screen.findByText("Orchestrator restart failed: missing codex binary")).toBeInTheDocument();
+		expect(await screen.findByText("Manager restart failed: missing codex binary")).toBeInTheDocument();
 		expect(screen.queryByText("Save failed")).not.toBeInTheDocument();
 		expect(invalidateSpy).toHaveBeenCalledWith({ queryKey: ["project", "proj-1"] });
 		expect(invalidateSpy).toHaveBeenCalledWith({ queryKey: workspaceQueryKey });
 		expect(closeSettingsMock).toHaveBeenCalledTimes(1);
-		expect(setOrchestratorReplacementErrorMock).toHaveBeenCalledWith("proj-1", {
+		expect(setManagerReplacementErrorMock).toHaveBeenCalledWith("proj-1", {
 			message: "missing codex binary",
-			code: "ORCHESTRATOR_SPAWN_FAILED",
+			code: "MANAGER_SPAWN_FAILED",
 			requestId: "request-42",
 		});
 	});

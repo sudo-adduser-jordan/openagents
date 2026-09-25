@@ -483,7 +483,7 @@ type RestoreConfig struct {
 	// empty and receive the turn through the interactive terminal instead.
 	Prompt string
 	// SystemPrompt carries the session's standing instructions (e.g. the
-	// orchestrator role). Agent CLIs rebuild their system prompt from flags on
+	// manager role). Agent CLIs rebuild their system prompt from flags on
 	// resume — it is not part of the transcript — so adapters whose CLI has a
 	// system-prompt flag should re-apply this in their resume command.
 	SystemPrompt     string
@@ -542,7 +542,7 @@ func NormalizePermissionMode(mode PermissionMode) PermissionMode {
 // PromptDeliveryStrategy describes how Open Agents should deliver the initial prompt.
 type PromptDeliveryStrategy string
 
-// How the orchestrator hands the initial prompt to a freshly launched agent.
+// How the manager hands the initial prompt to a freshly launched agent.
 const (
 	PromptDeliveryInCommand   PromptDeliveryStrategy = "in_command"
 	PromptDeliveryAfterStart  PromptDeliveryStrategy = "after_start"

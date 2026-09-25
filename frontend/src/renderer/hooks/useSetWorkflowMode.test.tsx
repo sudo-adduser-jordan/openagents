@@ -62,6 +62,18 @@ describe("useSetWorkflowMode", () => {
 		});
 	});
 
+	it("persists Manager mode for a manager session", async () => {
+		patchMock.mockResolvedValue({ data: { workflowMode: "manager" }, error: undefined, response: { status: 200 } });
+		const { result } = renderHook(() => useSetWorkflowMode(), { wrapper: wrapper(newQueryClient()) });
+
+		await act(async () => result.current.mutateAsync({ sessionId: "sess-1", workflowMode: "manager" }));
+
+		expect(patchMock).toHaveBeenCalledWith("/api/v1/sessions/{sessionId}/workflow-mode", {
+			params: { path: { sessionId: "sess-1" } },
+			body: { workflowMode: "manager" },
+		});
+	});
+
 	it("moves the cached board card to the new stage before the round trip", async () => {
 		const queryClient = newQueryClient();
 		const { result } = renderHook(() => useSetWorkflowMode(), { wrapper: wrapper(queryClient) });

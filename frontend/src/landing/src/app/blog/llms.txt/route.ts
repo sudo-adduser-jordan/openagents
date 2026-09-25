@@ -11,7 +11,7 @@ export function GET() {
 	const lines = [
 		`# ${COMPANY.NAME} Blog`,
 		"",
-		`> Articles from the ${COMPANY.NAME} team on parallel coding agents, Git worktrees, and agent orchestration.`,
+		`> Articles from the ${COMPANY.NAME} team on parallel coding agents, Git worktrees, and agent management.`,
 		"",
 		"Append `.md` to any post URL for a markdown version.",
 		"",

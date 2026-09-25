@@ -531,7 +531,7 @@ describe("BrowserPanel", () => {
 	it("shows the domain only in the URL input when unfocused", () => {
 		hookState.navState = {
 			...hookState.navState,
-			url: "https://www.google.com/search?q=agent+orchestrator#results",
+			url: "https://www.google.com/search?q=agent+manager#results",
 		};
 
 		render(<BrowserPanel active onTogglePopOut={() => undefined} poppedOut={false} session={session} />);
@@ -554,7 +554,7 @@ describe("BrowserPanel", () => {
 	});
 
 	it("reveals the full URL on focus, reverts to domain when the page takes focus", async () => {
-		const url = "https://www.google.com/search?q=agent+orchestrator#results";
+		const url = "https://www.google.com/search?q=agent+manager#results";
 		hookState.navState = { ...hookState.navState, url, canGoBack: true };
 		const user = userEvent.setup();
 		render(<BrowserPanel active onTogglePopOut={() => undefined} poppedOut={false} session={session} />);
@@ -581,7 +581,7 @@ describe("BrowserPanel", () => {
 	});
 
 	it("keeps the normal toolbar and full URL while maximized", async () => {
-		const url = "https://www.google.com/search?q=agent+orchestrator";
+		const url = "https://www.google.com/search?q=agent+manager";
 		hookState.navState = { ...hookState.navState, url };
 		const user = userEvent.setup();
 		render(<BrowserPanel active onTogglePopOut={() => undefined} poppedOut session={session} />);
@@ -598,7 +598,7 @@ describe("BrowserPanel", () => {
 	});
 
 	it("opens the current page in the system browser from the address bar", async () => {
-		const url = "https://www.google.com/search?q=agent+orchestrator";
+		const url = "https://www.google.com/search?q=agent+manager";
 		hookState.navState = { ...hookState.navState, url };
 		const openExternal = vi.spyOn(window.openAgents!.app, "openExternal").mockResolvedValue(undefined);
 		render(<BrowserPanel active onTogglePopOut={() => undefined} poppedOut={false} session={session} />);

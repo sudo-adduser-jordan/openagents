@@ -133,10 +133,10 @@ type SessionInterfaceTransitionIDParam struct {
 
 // ListSessionsQuery is the query string accepted by GET /api/v1/sessions.
 type ListSessionsQuery struct {
-	Project          string `query:"project,omitempty" description:"Project id filter."`
-	Active           *bool  `query:"active,omitempty" description:"When true, return non-terminated sessions; when false, return terminated sessions."`
-	OrchestratorOnly *bool  `query:"orchestratorOnly,omitempty" description:"When true, return only orchestrator sessions."`
-	Fresh            *bool  `query:"fresh,omitempty" description:"When true, return only fresh non-terminated sessions."`
+	Project     string `query:"project,omitempty" description:"Project id filter."`
+	Active      *bool  `query:"active,omitempty" description:"When true, return non-terminated sessions; when false, return terminated sessions."`
+	ManagerOnly *bool  `query:"managerOnly,omitempty" description:"When true, return only manager sessions."`
+	Fresh       *bool  `query:"fresh,omitempty" description:"When true, return only fresh non-terminated sessions."`
 }
 
 // CleanupSessionsQuery is the query string accepted by POST /api/v1/sessions/cleanup.
@@ -265,7 +265,7 @@ type SpawnSessionRequest struct {
 	// validates it before deriving inherited worker settings.
 	ParentSessionID domain.SessionID       `json:"parentSessionId,omitempty"`
 	TrackerProvider domain.TrackerProvider `json:"trackerProvider,omitempty" enum:"github,gitlab"`
-	Kind            domain.SessionKind     `json:"kind,omitempty" enum:"worker,orchestrator"`
+	Kind            domain.SessionKind     `json:"kind,omitempty" enum:"worker,manager"`
 	Harness         domain.AgentHarness    `json:"harness,omitempty" enum:"opencode"`
 	Branch          string                 `json:"branch,omitempty"`
 	// Mode picks the conversation controller: chat talks to the agent over a
@@ -630,14 +630,14 @@ type SetSessionMergePolicyResponse struct {
 
 // SetSessionWorkflowModeRequest is the body of PATCH /api/v1/sessions/{sessionId}/workflow-mode.
 type SetSessionWorkflowModeRequest struct {
-	WorkflowMode domain.WorkflowMode `json:"workflowMode" enum:"planning,building"`
+	WorkflowMode domain.WorkflowMode `json:"workflowMode" enum:"planning,manager,building"`
 }
 
 // SetSessionWorkflowModeResponse is the body of PATCH /api/v1/sessions/{sessionId}/workflow-mode.
 type SetSessionWorkflowModeResponse struct {
 	OK           bool                `json:"ok"`
 	SessionID    domain.SessionID    `json:"sessionId"`
-	WorkflowMode domain.WorkflowMode `json:"workflowMode" enum:"planning,building"`
+	WorkflowMode domain.WorkflowMode `json:"workflowMode" enum:"planning,manager,building"`
 	Session      SessionView         `json:"session"`
 }
 
@@ -801,8 +801,8 @@ type SendSessionMessageResponse struct {
 	Message   string           `json:"message"`
 }
 
-// DelegateTaskRequest is the body of POST /api/v1/orchestrators/delegate.
-// An omitted agent tells the orchestrator to use the project's worker default.
+// DelegateTaskRequest is the body of POST /api/v1/managers/delegate.
+// An omitted agent tells the manager to use the project's worker default.
 type DelegateTaskRequest struct {
 	ProjectID domain.ProjectID    `json:"projectId"`
 	Brief     string              `json:"brief" maxLength:"16384"`
@@ -823,11 +823,11 @@ type DelegateTaskRequest struct {
 }
 
 // DelegateTaskResponse confirms which worker was spawned and, when available,
-// which orchestrator received the follow-up title request.
+// which manager received the follow-up title request.
 type DelegateTaskResponse struct {
-	OK             bool             `json:"ok"`
-	WorkerID       domain.SessionID `json:"workerId"`
-	OrchestratorID domain.SessionID `json:"orchestratorId,omitempty"`
+	OK        bool             `json:"ok"`
+	WorkerID  domain.SessionID `json:"workerId"`
+	ManagerID domain.SessionID `json:"managerId,omitempty"`
 }
 
 // SessionPRFacts is the pull-request read shape returned under session PR routes.
@@ -1114,9 +1114,9 @@ type SetReviewActivityResponse struct {
 	ReviewSessionID string `json:"reviewSessionId"`
 }
 
-// OrchestratorIDParam is the {id} path parameter for orchestrator routes.
-type OrchestratorIDParam struct {
-	ID string `path:"id" description:"Orchestrator session identifier, e.g. project-orchestrator."`
+// ManagerIDParam is the {id} path parameter for manager routes.
+type ManagerIDParam struct {
+	ID string `path:"id" description:"Manager session identifier, e.g. project-manager."`
 }
 
 // ReviewSessionIDParam is the {reviewSessionID} path parameter for reviewer-owned routes.
@@ -1124,23 +1124,23 @@ type ReviewSessionIDParam struct {
 	ID string `path:"reviewSessionID" description:"Reviewer session identifier, currently the per-harness review row id."`
 }
 
-// SpawnOrchestratorRequest is the body of POST /api/v1/orchestrators.
-type SpawnOrchestratorRequest struct {
+// SpawnManagerRequest is the body of POST /api/v1/managers.
+type SpawnManagerRequest struct {
 	ProjectID domain.ProjectID `json:"projectId"`
 	Clean     bool             `json:"clean,omitempty"`
-	// Mode applies only when this request creates a project orchestrator. An
-	// idempotent ensure returns the existing orchestrator unchanged, and a clean
-	// replacement inherits the existing orchestrator's currently committed mode.
+	// Mode applies only when this request creates a project manager. An
+	// idempotent ensure returns the existing manager unchanged, and a clean
+	// replacement inherits the existing manager's currently committed mode.
 	Mode domain.SessionMode `json:"mode,omitempty" enum:"chat,tui"`
 }
 
-// SpawnOrchestratorResponse is the body of POST /api/v1/orchestrators.
-type SpawnOrchestratorResponse struct {
-	Orchestrator OrchestratorResponse `json:"orchestrator"`
+// SpawnManagerResponse is the body of POST /api/v1/managers.
+type SpawnManagerResponse struct {
+	Manager ManagerResponse `json:"manager"`
 }
 
-// OrchestratorResponse is the minimal orchestrator read model returned after spawn.
-type OrchestratorResponse struct {
+// ManagerResponse is the minimal manager read model returned after spawn.
+type ManagerResponse struct {
 	ID          domain.SessionID `json:"id"`
 	ProjectID   domain.ProjectID `json:"projectId"`
 	ProjectName string           `json:"projectName,omitempty"`

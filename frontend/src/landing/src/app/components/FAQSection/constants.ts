@@ -17,7 +17,7 @@ export const FAQ_ITEMS: FAQItem[] = [
   {
     question: "How does the parallel agent system work?",
     answer:
-      "Each agent runs in its own isolated Git worktree, which means they can work on different branches or features simultaneously without conflicts. Open Agents's orchestrator spawns workers, routes CI failures and review feedback to the right session, and lets you monitor the entire fleet from one board.",
+      "Each agent runs in its own isolated Git worktree, which means they can work on different branches or features simultaneously without conflicts. Open Agents's manager spawns workers, routes CI failures and review feedback to the right session, and lets you monitor the entire fleet from one board.",
   },
   {
     question: "Is Open Agents free to use?",

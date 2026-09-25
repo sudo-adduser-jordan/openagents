@@ -52,7 +52,7 @@ import { clearTerminateSessionState, useTerminateSession } from "../hooks/useTer
 import { prBrowserUrl, prCanMerge, prCardPresentation, prNounLabel, sessionPRDisplaySummaries } from "../lib/pr-display";
 import { formatTokenCount } from "../lib/format-token-count";
 import type { WorkspaceSession, WorkspaceSummary } from "../types/workspace";
-import { findProjectOrchestrator, sortedPRs, STANDALONE_WORKSPACE_ID } from "../types/workspace";
+import { findProjectManager, sortedPRs, STANDALONE_WORKSPACE_ID } from "../types/workspace";
 import { getAgentActivityView, getSessionTimelinePillView } from "../lib/session-presentation";
 import { openAgentsBridge } from "../lib/bridge";
 import { BrowserPanelView, type BrowserAnnotationQueueModel } from "./BrowserPanel";
@@ -1011,13 +1011,13 @@ function SessionControls({ session }: { session: WorkspaceSession }) {
 
 	const confirmTermination = () => {
 		const workspaces = queryClient.getQueryData<WorkspaceSummary[]>(workspaceQueryKey) ?? [];
-		const orchestrator = findProjectOrchestrator(workspaces, session.workspaceId);
+		const manager = findProjectManager(workspaces, session.workspaceId);
 		setConfirmOpen(false);
 		terminate.mutate(session);
-		if (orchestrator) {
+		if (manager) {
 			void navigate({
 				to: "/projects/$projectId/sessions/$sessionId",
-				params: { projectId: session.workspaceId, sessionId: orchestrator.id },
+				params: { projectId: session.workspaceId, sessionId: manager.id },
 			});
 			return;
 		}
@@ -1072,7 +1072,7 @@ function SessionControls({ session }: { session: WorkspaceSession }) {
 		<Section title="Session controls">
 			<AutoInjectCIPolicyControl session={session} />
 			<AutoInjectReviewPolicyControl session={session} />
-			{session.kind === "orchestrator" ? null : canTerminateNow ? (
+			{session.kind === "manager" ? null : canTerminateNow ? (
 				terminateAction
 			) : (
 				<>
@@ -2022,7 +2022,7 @@ function projectConfig(project: components["schemas"]["ProjectOrDegraded"] | und
 function mockProjectConfig(): ProjectConfig {
 	return {
 		worker: { agent: "opencode" },
-		orchestrator: { agent: "opencode" },
+		manager: { agent: "opencode" },
 		reviewers: [{ harness: "opencode" }],
 	};
 }

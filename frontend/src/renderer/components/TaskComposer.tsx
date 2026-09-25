@@ -134,7 +134,7 @@ export function TaskComposer({
 	const createLocalTask = useCallback(
 		async (input: CreateTaskInput): Promise<string> => {
 			try {
-				const { data, error } = await apiClient.POST("/api/v1/orchestrators/delegate", {
+				const { data, error } = await apiClient.POST("/api/v1/managers/delegate", {
 				body: {
 					projectId: input.projectId,
 					brief: input.brief,

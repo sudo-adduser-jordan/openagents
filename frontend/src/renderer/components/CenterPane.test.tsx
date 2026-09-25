@@ -452,14 +452,14 @@ describe("CenterPane toolbar session label", () => {
 		expect(screen.queryByRole("button", { name: "New terminal" })).toBeNull();
 	});
 
-	it("uses the localized orchestrator label with provider and activity context", () => {
+	it("uses the localized manager label with provider and activity context", () => {
 		renderCenterPane({
-			session: { ...worker, id: "sess-orch", kind: "orchestrator" },
+			session: { ...worker, id: "sess-mgr", kind: "manager" },
 		});
-		const orchestratorTab = screen.getByRole("tab", { name: "Orchestrator · OpenCode · Working" });
-		expect(orchestratorTab).toHaveTextContent("Orchestrator");
-		expect(orchestratorTab).not.toHaveTextContent(worker.title);
-		expect(orchestratorTab.querySelector('img[aria-hidden="true"]')).toBeInTheDocument();
+		const managerTab = screen.getByRole("tab", { name: "Manager · OpenCode · Working" });
+		expect(managerTab).toHaveTextContent("Manager");
+		expect(managerTab).not.toHaveTextContent(worker.title);
+		expect(managerTab.querySelector('img[aria-hidden="true"]')).toBeInTheDocument();
 	});
 
 	it("shows 'No session' when there is no session", () => {

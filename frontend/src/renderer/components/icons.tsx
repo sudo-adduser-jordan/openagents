@@ -26,12 +26,12 @@ export function CodexIcon({ className, ...props }: SVGProps<SVGSVGElement>) {
 	);
 }
 
-// Orchestrator mark: a parent node fanning out to three child nodes, drawn in
+// Manager mark: a parent node fanning out to three child nodes, drawn in
 // lucide's 24x24 stroke style so it drops into the same slots as the lucide
 // icons (size comes from `className`/the parent's `[&_svg]:size-*`). Lucide has
 // no 1-parent / 3-child hierarchy glyph, so we author this one to match the
 // org-chart icon called for in the design.
-export function OrchestratorIcon({ className, ...props }: SVGProps<SVGSVGElement>) {
+export function ManagerIcon({ className, ...props }: SVGProps<SVGSVGElement>) {
 	return (
 		<svg
 			xmlns="http://www.w3.org/2000/svg"

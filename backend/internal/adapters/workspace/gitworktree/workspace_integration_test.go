@@ -86,7 +86,7 @@ func TestWorkspaceIntegrationMixedWorkspaceContentReachesEverySessionKind(t *tes
 		t.Fatalf("new: %v", err)
 	}
 
-	for _, kind := range []domain.SessionKind{domain.KindWorker, domain.KindOrchestrator} {
+	for _, kind := range []domain.SessionKind{domain.KindWorker, domain.KindManager} {
 		t.Run(string(kind), func(t *testing.T) {
 			info, err := ws.CreateWorkspaceProject(context.Background(), ports.WorkspaceProjectConfig{
 				ProjectID: "proj", SessionID: domain.SessionID("mixed-" + kind), Kind: kind, Branch: "open-agents/mixed-" + string(kind),
@@ -670,7 +670,7 @@ func TestWorkspaceIntegrationRemotelessRootUsesImportedDefaultBranch(t *testing.
 		t.Fatal(err)
 	}
 	cfg := ports.WorkspaceProjectConfig{
-		ProjectID: "proj", SessionID: "orch", Kind: "orchestrator", Branch: "open-agents/proj-orch",
+		ProjectID: "proj", SessionID: "orch", Kind: "manager", Branch: "open-agents/proj-orch",
 		RootRepoPath: rootRepo,
 		BaseBranch:   "trunk",
 		Repos:        []ports.WorkspaceProjectRepoConfig{{Name: "api", RelativePath: "api", RepoPath: childRepo}},
@@ -844,7 +844,7 @@ func TestWorkspaceIntegrationWorkspaceProjectCopiesAssetsAndCleansSessionCopy(t 
 
 func TestWorkspaceIntegrationWorkspaceProjectRepairsRemotelessRootDefault(t *testing.T) {
 	git := requireGit(t)
-	for _, kind := range []domain.SessionKind{domain.KindWorker, domain.KindOrchestrator} {
+	for _, kind := range []domain.SessionKind{domain.KindWorker, domain.KindManager} {
 		t.Run(string(kind), func(t *testing.T) {
 			tmp := t.TempDir()
 			rootRepo := filepath.Join(tmp, "root")

@@ -8,6 +8,7 @@ func TestWorkflowModeValid(t *testing.T) {
 		want bool
 	}{
 		{WorkflowModePlanning, true},
+		{WorkflowModeManager, true},
 		{WorkflowModeBuilding, true},
 		{"", false},
 		{"review", false},
@@ -19,9 +20,29 @@ func TestWorkflowModeValid(t *testing.T) {
 	}
 }
 
-// Reads of durable state must always land on a board lane: rows written before
-// this feature have no workflow mode, and a row written by a newer build may
-// carry a stage this build does not know. Both fall back to planning.
+func TestWorkflowModeValidForRole(t *testing.T) {
+	for _, tc := range []struct {
+		kind SessionKind
+		mode WorkflowMode
+		want bool
+	}{
+		{kind: KindWorker, mode: WorkflowModePlanning, want: true},
+		{kind: KindWorker, mode: WorkflowModeBuilding, want: true},
+		{kind: KindWorker, mode: WorkflowModeManager, want: false},
+		{kind: KindManager, mode: WorkflowModePlanning, want: true},
+		{kind: KindManager, mode: WorkflowModeManager, want: true},
+		{kind: KindManager, mode: WorkflowModeBuilding, want: false},
+		{kind: SessionKind("other"), mode: WorkflowModePlanning, want: false},
+	} {
+		if got := tc.mode.ValidForKind(tc.kind); got != tc.want {
+			t.Errorf("WorkflowMode(%q).ValidForKind(%q) = %v, want %v", tc.mode, tc.kind, got, tc.want)
+		}
+	}
+}
+
+// Reads of durable state must always land on a role-compatible mode: rows
+// written before this feature have no workflow mode, and a row written by a
+// newer build may carry a mode this build does not know.
 func TestNormalizeWorkflowModeFallsBackToPlanning(t *testing.T) {
 	for _, tc := range []struct {
 		name string
@@ -31,6 +52,7 @@ func TestNormalizeWorkflowModeFallsBackToPlanning(t *testing.T) {
 		{"empty legacy row", "", WorkflowModePlanning},
 		{"unknown future mode", "review", WorkflowModePlanning},
 		{"planning preserved", WorkflowModePlanning, WorkflowModePlanning},
+		{"manager preserved", WorkflowModeManager, WorkflowModeManager},
 		{"building preserved", WorkflowModeBuilding, WorkflowModeBuilding},
 	} {
 		t.Run(tc.name, func(t *testing.T) {
@@ -57,7 +79,7 @@ func TestParseWorkflowModeRejectsUnknownInsteadOfFallingBack(t *testing.T) {
 		t.Errorf("ParseWorkflowMode(\"\") = %q, want the zero value", mode)
 	}
 
-	for _, want := range []WorkflowMode{WorkflowModePlanning, WorkflowModeBuilding} {
+	for _, want := range []WorkflowMode{WorkflowModePlanning, WorkflowModeManager, WorkflowModeBuilding} {
 		got, err := ParseWorkflowMode(string(want))
 		if err != nil {
 			t.Errorf("ParseWorkflowMode(%q) returned error %v", want, err)
@@ -69,9 +91,20 @@ func TestParseWorkflowModeRejectsUnknownInsteadOfFallingBack(t *testing.T) {
 	}
 }
 
-func TestDefaultWorkflowModeIsPlanning(t *testing.T) {
-	if DefaultWorkflowMode != WorkflowModePlanning {
-		t.Fatalf("DefaultWorkflowMode = %q, want %q so new tasks start in planning",
-			DefaultWorkflowMode, WorkflowModePlanning)
+func TestDefaultWorkflowModeDependsOnRole(t *testing.T) {
+	if got := DefaultWorkflowModeForKind(KindManager); got != WorkflowModeManager {
+		t.Fatalf("manager default = %q, want %q", got, WorkflowModeManager)
+	}
+	if got := DefaultWorkflowModeForKind(KindWorker); got != WorkflowModePlanning {
+		t.Fatalf("worker default = %q, want %q", got, WorkflowModePlanning)
+	}
+	if got := NormalizeWorkflowModeForKind(KindManager, ""); got != WorkflowModeManager {
+		t.Fatalf("malformed manager row = %q, want manager default", got)
+	}
+	if got := NormalizeWorkflowModeForKind(KindWorker, WorkflowModeManager); got != WorkflowModePlanning {
+		t.Fatalf("manager mode on worker row = %q, want planning fallback", got)
+	}
+	if got := NormalizeWorkflowModeForKind(KindManager, WorkflowModeBuilding); got != WorkflowModeManager {
+		t.Fatalf("building mode on manager row = %q, want manager fallback", got)
 	}
 }

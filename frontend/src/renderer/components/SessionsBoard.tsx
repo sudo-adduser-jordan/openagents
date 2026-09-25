@@ -9,8 +9,8 @@ import {
 import { AlertTriangle, LayoutDashboard, RotateCw } from "lucide-react";
 import {
 	type WorkspaceSession,
-	newestActiveOrchestrator,
-	orchestratorHealth,
+	newestActiveManager,
+	managerHealth,
 	workerSessions,
 } from "../types/workspace";
 import {
@@ -31,7 +31,7 @@ import type { components } from "../../api/schema";
 import { NotificationCenter } from "./NotificationCenter";
 import { BoardWelcome, ProjectBoardEmpty } from "./BoardEmptyStates";
 import { TopbarButton, topbarProjectLabelClass } from "./TopbarButton";
-import { restartProjectOrchestrator } from "../lib/restart-orchestrator";
+import { restartProjectManager } from "../lib/restart-manager";
 import { usesPreviewWorkspaceData } from "../lib/preview-mode";
 import { demoBoardSessions } from "../lib/demo-board-sessions";
 import { isLinuxPlatform, isMacPlatform, usesBoardActionsInPanel } from "../lib/platform";
@@ -40,7 +40,7 @@ import { useUiStore } from "../stores/ui-store";
 import { RestoreUnavailableDialog } from "./RestoreUnavailableDialog";
 import { DaemonStartupLoader } from "./DaemonStartupLoader";
 import { useBoardPresentation } from "../hooks/useBoardPresentation";
-import { useProjectOrchestratorAction } from "../hooks/useProjectOrchestratorAction";
+import { useProjectManagerAction } from "../hooks/useProjectManagerAction";
 import { ProjectBoardActions } from "./ProjectBoardActions";
 import {
 	ArchivedSessionCardAdapter,
@@ -136,12 +136,12 @@ export function SessionsBoard({ projectId }: SessionsBoardProps) {
 				]),
 			)
 		: liveUsageBySession;
-	const orchestrator = projectId ? newestActiveOrchestrator(workspaces[0]?.sessions ?? []) : undefined;
-	const projectActions = useProjectOrchestratorAction({ projectId, project: workspace, orchestrator, source: "board" });
+	const manager = projectId ? newestActiveManager(workspaces[0]?.sessions ?? []) : undefined;
+	const projectActions = useProjectManagerAction({ projectId, project: workspace, manager, source: "board" });
 	const { isProjectRestarting, isProvisioning } = projectActions;
 	const setProjectRestarting = useUiStore((state) => state.setProjectRestarting);
-	const setOrchestratorReplacementError = useUiStore((state) => state.setOrchestratorReplacementError);
-	const health = workspace ? orchestratorHealth(workspace, isProjectRestarting) : { state: "ok" as const };
+	const setManagerReplacementError = useUiStore((state) => state.setManagerReplacementError);
+	const health = workspace ? managerHealth(workspace, isProjectRestarting) : { state: "ok" as const };
 
 	const archived = sessions
 		.filter(isArchivedSession)
@@ -203,14 +203,14 @@ export function SessionsBoard({ projectId }: SessionsBoardProps) {
 		[openSession, queryClient],
 	);
 
-	const restartOrchestrator = async () => {
+	const restartManager = async () => {
 		if (!projectId) return;
-		await restartProjectOrchestrator({
+		await restartProjectManager({
 			projectId,
 			queryClient,
 			navigate,
 			setProjectRestarting,
-			setOrchestratorReplacementError,
+			setManagerReplacementError,
 		});
 	};
 
@@ -230,7 +230,7 @@ export function SessionsBoard({ projectId }: SessionsBoardProps) {
 	return (
 		<div className="relative flex h-full min-h-0 flex-col bg-background text-foreground" data-testid="board">
 			{/* macOS: shell topbar is hidden on board routes, so the project/"Board"
-			    crumb + New task / Orchestrator / bell live in this in-panel row.
+			    crumb + New task / Manager / bell live in this in-panel row.
 			    Win/Linux keep the crumb and actions in the framed ShellTopbar.
 			    Welcome skips the row — a dangling "Board" above the import
 			    chooser was review feedback on #2432. */}
@@ -265,7 +265,7 @@ export function SessionsBoard({ projectId }: SessionsBoardProps) {
 						<AlertTriangle className="size-icon-base shrink-0 text-warning" aria-hidden="true" />
 						<span className="min-w-0 flex-1">{health.message}</span>
 						{health.state === "restart_needed" || health.state === "duplicates" ? (
-							<TopbarButton disabled={isProjectRestarting} onClick={() => void restartOrchestrator()} variant="primary">
+							<TopbarButton disabled={isProjectRestarting} onClick={() => void restartManager()} variant="primary">
 								<RotateCw className="size-3.5" aria-hidden="true" />
 								{"Restart"}
 							</TopbarButton>
@@ -288,7 +288,7 @@ export function SessionsBoard({ projectId }: SessionsBoardProps) {
 						aria-hidden="true"
 					/>
 					<span className="min-w-0 flex-1">
-						{"Setting up the project — starting the orchestrator…"}
+						{"Setting up the project — starting the manager…"}
 					</span>
 				</div>
 			) : null}

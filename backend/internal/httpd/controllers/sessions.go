@@ -75,7 +75,7 @@ var (
 type SessionService interface {
 	List(ctx context.Context, filter sessionsvc.ListFilter) ([]domain.Session, error)
 	Spawn(ctx context.Context, cfg ports.SpawnConfig) (domain.Session, int, int, error)
-	SpawnOrchestrator(ctx context.Context, projectID domain.ProjectID, clean bool, requestedMode domain.SessionMode) (domain.Session, error)
+	SpawnManager(ctx context.Context, projectID domain.ProjectID, clean bool, requestedMode domain.SessionMode) (domain.Session, error)
 	Get(ctx context.Context, id domain.SessionID) (domain.Session, error)
 	Restore(ctx context.Context, id domain.SessionID) (sessionsvc.RestoreOutcome, error)
 	ExitAgent(ctx context.Context, id domain.SessionID) (sessionsvc.ExitAgentOutcome, error)
@@ -196,10 +196,10 @@ func (c *SessionsController) Register(r chi.Router) {
 	r.Post("/sessions/{sessionId}/activity", c.activity)
 	r.Post("/sessions/{sessionId}/pin", c.pin)
 	r.Delete("/sessions/{sessionId}/pin", c.unpin)
-	r.Get("/orchestrators", c.listOrchestrators)
-	r.Post("/orchestrators", c.spawnOrchestrator)
-	r.Post("/orchestrators/delegate", c.delegateTask)
-	r.Get("/orchestrators/{id}", c.getOrchestrator)
+	r.Get("/managers", c.listManagers)
+	r.Post("/managers", c.spawnManager)
+	r.Post("/managers/delegate", c.delegateTask)
+	r.Get("/managers/{id}", c.getManager)
 }
 
 // RegisterStreams mounts long-lived session streams outside the REST timeout
@@ -1415,7 +1415,7 @@ func (c *SessionsController) send(w http.ResponseWriter, r *http.Request) {
 
 func (c *SessionsController) delegateTask(w http.ResponseWriter, r *http.Request) {
 	if c.Svc == nil {
-		apispec.NotImplemented(w, r, "POST", "/api/v1/orchestrators/delegate")
+		apispec.NotImplemented(w, r, "POST", "/api/v1/managers/delegate")
 		return
 	}
 	r.Body = http.MaxBytesReader(w, r.Body, maxSpawnBodyBytes)
@@ -1468,7 +1468,7 @@ func (c *SessionsController) delegateTask(w http.ResponseWriter, r *http.Request
 		envelope.WriteError(w, r, err)
 		return
 	}
-	envelope.WriteJSON(w, http.StatusAccepted, DelegateTaskResponse{OK: true, WorkerID: out.WorkerID, OrchestratorID: out.OrchestratorID})
+	envelope.WriteJSON(w, http.StatusAccepted, DelegateTaskResponse{OK: true, WorkerID: out.WorkerID, ManagerID: out.ManagerID})
 }
 
 func sanitizedOptionalString(value *string) *string {
@@ -1614,12 +1614,12 @@ func capActivityText(v string, maxLen int) string {
 	return strings.ToValidUTF8(string([]byte(v)[:head])+marker+string([]byte(v)[len(v)-tail:]), "?")
 }
 
-func (c *SessionsController) spawnOrchestrator(w http.ResponseWriter, r *http.Request) {
+func (c *SessionsController) spawnManager(w http.ResponseWriter, r *http.Request) {
 	if c.Svc == nil {
-		apispec.NotImplemented(w, r, "POST", "/api/v1/orchestrators")
+		apispec.NotImplemented(w, r, "POST", "/api/v1/managers")
 		return
 	}
-	var in SpawnOrchestratorRequest
+	var in SpawnManagerRequest
 	if err := decodeJSON(r, &in); err != nil {
 		envelope.WriteAPIError(w, r, http.StatusBadRequest, "bad_request", "INVALID_JSON", "Invalid JSON body", nil)
 		return
@@ -1634,22 +1634,22 @@ func (c *SessionsController) spawnOrchestrator(w http.ResponseWriter, r *http.Re
 			return
 		}
 	}
-	sess, err := c.Svc.SpawnOrchestrator(r.Context(), in.ProjectID, in.Clean, in.Mode)
+	sess, err := c.Svc.SpawnManager(r.Context(), in.ProjectID, in.Clean, in.Mode)
 	if err != nil {
 		envelope.WriteError(w, r, err)
 		return
 	}
-	envelope.WriteJSON(w, http.StatusCreated, SpawnOrchestratorResponse{
-		Orchestrator: OrchestratorResponse{ID: sess.ID, ProjectID: sess.ProjectID},
+	envelope.WriteJSON(w, http.StatusCreated, SpawnManagerResponse{
+		Manager: ManagerResponse{ID: sess.ID, ProjectID: sess.ProjectID},
 	})
 }
 
-func (c *SessionsController) listOrchestrators(w http.ResponseWriter, r *http.Request) {
+func (c *SessionsController) listManagers(w http.ResponseWriter, r *http.Request) {
 	if c.Svc == nil {
-		apispec.NotImplemented(w, r, "GET", "/api/v1/orchestrators")
+		apispec.NotImplemented(w, r, "GET", "/api/v1/managers")
 		return
 	}
-	sessions, err := c.Svc.List(r.Context(), sessionsvc.ListFilter{OrchestratorOnly: true})
+	sessions, err := c.Svc.List(r.Context(), sessionsvc.ListFilter{ManagerOnly: true})
 	if err != nil {
 		envelope.WriteError(w, r, err)
 		return
@@ -1657,17 +1657,17 @@ func (c *SessionsController) listOrchestrators(w http.ResponseWriter, r *http.Re
 	envelope.WriteJSON(w, http.StatusOK, ListSessionsResponse{Sessions: sessionViews(sessions)})
 }
 
-func (c *SessionsController) getOrchestrator(w http.ResponseWriter, r *http.Request) {
+func (c *SessionsController) getManager(w http.ResponseWriter, r *http.Request) {
 	if c.Svc == nil {
-		apispec.NotImplemented(w, r, "GET", "/api/v1/orchestrators/{id}")
+		apispec.NotImplemented(w, r, "GET", "/api/v1/managers/{id}")
 		return
 	}
-	sess, err := c.Svc.Get(r.Context(), orchestratorID(r))
+	sess, err := c.Svc.Get(r.Context(), managerID(r))
 	if err != nil {
 		envelope.WriteError(w, r, err)
 		return
 	}
-	if sess.Kind != domain.KindOrchestrator {
+	if sess.Kind != domain.KindManager {
 		envelope.WriteAPIError(w, r, http.StatusNotFound, "not_found", "SESSION_NOT_FOUND", "Unknown session", nil)
 		return
 	}
@@ -1678,7 +1678,7 @@ func sessionID(r *http.Request) domain.SessionID {
 	return domain.SessionID(chi.URLParam(r, "sessionId"))
 }
 
-func orchestratorID(r *http.Request) domain.SessionID {
+func managerID(r *http.Request) domain.SessionID {
 	return domain.SessionID(chi.URLParam(r, "id"))
 }
 
@@ -1692,12 +1692,12 @@ func parseSessionListFilter(r *http.Request) (sessionsvc.ListFilter, error) {
 		}
 		filter.Active = &active
 	}
-	if raw := q.Get("orchestratorOnly"); raw != "" {
-		orchestratorOnly, err := strconv.ParseBool(raw)
+	if raw := q.Get("managerOnly"); raw != "" {
+		managerOnly, err := strconv.ParseBool(raw)
 		if err != nil {
-			return sessionsvc.ListFilter{}, errors.New("orchestratorOnly must be a boolean")
+			return sessionsvc.ListFilter{}, errors.New("managerOnly must be a boolean")
 		}
-		filter.OrchestratorOnly = orchestratorOnly
+		filter.ManagerOnly = managerOnly
 	}
 	if raw := q.Get("fresh"); raw != "" {
 		fresh, err := strconv.ParseBool(raw)

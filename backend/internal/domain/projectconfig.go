@@ -40,15 +40,15 @@ type ProjectConfig struct {
 	// AgentRulesFile is a repo-relative Markdown/text file whose contents are
 	// appended to AgentRules for worker sessions.
 	AgentRulesFile string `json:"agentRulesFile,omitempty"`
-	// OrchestratorRules are project-specific standing instructions for
-	// orchestrator sessions.
-	OrchestratorRules string `json:"orchestratorRules,omitempty"`
+	// ManagerRules are project-specific standing instructions for
+	// manager sessions.
+	ManagerRules string `json:"managerRules,omitempty"`
 
 	// AgentConfig is the default agent config for the project.
 	AgentConfig AgentConfig `json:"agentConfig,omitempty"`
-	// Worker and Orchestrator are role-specific harness/agent-config overrides.
-	Worker       RoleOverride `json:"worker,omitempty"`
-	Orchestrator RoleOverride `json:"orchestrator,omitempty"`
+	// Worker and Manager are role-specific harness/agent-config overrides.
+	Worker  RoleOverride `json:"worker,omitempty"`
+	Manager RoleOverride `json:"manager,omitempty"`
 
 	// Reviewers names the agent(s) that review a worker's PR when a review is
 	// triggered. It is configured independently of the Worker override; an empty
@@ -175,7 +175,7 @@ func (c ProjectConfig) Validate() error {
 	if err := validateNameComponent("sessionPrefix", c.SessionPrefix); err != nil {
 		return err
 	}
-	for role, ro := range map[string]RoleOverride{"worker": c.Worker, "orchestrator": c.Orchestrator} {
+	for role, ro := range map[string]RoleOverride{"worker": c.Worker, "manager": c.Manager} {
 		if ro.Harness != "" && !ro.Harness.IsKnown() {
 			return fmt.Errorf("%s.agent: unknown harness %q", role, ro.Harness)
 		}

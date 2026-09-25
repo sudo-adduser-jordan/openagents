@@ -1242,8 +1242,8 @@ func newManager() (*Manager, *fakeStore, *fakeRuntime, *fakeWorkspace) {
 }
 func testRoleAgents() domain.ProjectConfig {
 	return domain.ProjectConfig{
-		Worker:       domain.RoleOverride{Harness: domain.HarnessOpenCode},
-		Orchestrator: domain.RoleOverride{Harness: domain.HarnessOpenCode},
+		Worker:  domain.RoleOverride{Harness: domain.HarnessOpenCode},
+		Manager: domain.RoleOverride{Harness: domain.HarnessOpenCode},
 	}
 }
 
@@ -1340,11 +1340,11 @@ func TestSpawn_ResolvesProjectConfig(t *testing.T) {
 	}
 }
 
-func TestSpawn_InheritsChatOrchestratorPermissions(t *testing.T) {
+func TestSpawn_InheritsChatManagerPermissions(t *testing.T) {
 	m, st, rt, _ := newManager()
 	st.sessions["mer-0"] = domain.SessionRecord{
-		ID: "mer-0", ProjectID: "mer", Kind: domain.KindOrchestrator,
-		WorkflowMode: domain.WorkflowModeBuilding,
+		ID: "mer-0", ProjectID: "mer", Kind: domain.KindManager,
+		WorkflowMode: domain.WorkflowModeManager,
 	}
 	st.conversations["mer-0"] = domain.ConversationRecord{
 		SessionID: "mer-0", Settings: domain.ConversationSettings{ApprovalMode: domain.PermissionModeBypassPermissions},
@@ -1364,7 +1364,7 @@ func TestSpawn_InheritsChatOrchestratorPermissions(t *testing.T) {
 	}
 }
 
-func TestSpawn_IgnoresNonOrchestratorParent(t *testing.T) {
+func TestSpawn_IgnoresNonManagerParent(t *testing.T) {
 	m, st, rt, _ := newManager()
 	st.sessions["mer-0"] = domain.SessionRecord{ID: "mer-0", ProjectID: "mer", Kind: domain.KindWorker}
 	st.conversations["mer-0"] = domain.ConversationRecord{
@@ -1391,69 +1391,71 @@ func (g *rejectingHarnessUseGate) TryBeginHarnessUse(harness domain.AgentHarness
 	return nil, false
 }
 
-func TestSpawn_DefaultsWorkerToPlanning(t *testing.T) {
-	m, _, _, _ := newManager()
-	rec, _, _, err := m.Spawn(ctx, ports.SpawnConfig{ProjectID: "mer", Kind: domain.KindWorker})
-	if err != nil {
-		t.Fatal(err)
-	}
-	if rec.WorkflowMode != domain.WorkflowModePlanning {
-		t.Fatalf("worker workflow mode = %q, want planning", rec.WorkflowMode)
-	}
-}
-
-func TestSpawn_InheritsBuildingFromOrchestrator(t *testing.T) {
-	m, st, _, _ := newManager()
-	st.sessions["mer-0"] = domain.SessionRecord{
-		ID: "mer-0", ProjectID: "mer", Kind: domain.KindOrchestrator,
-		WorkflowMode: domain.WorkflowModeBuilding,
-	}
-	rec, _, _, err := m.Spawn(ctx, ports.SpawnConfig{
-		ProjectID: "mer", Kind: domain.KindWorker, ParentSessionID: "mer-0",
-	})
-	if err != nil {
-		t.Fatal(err)
-	}
-	if rec.WorkflowMode != domain.WorkflowModeBuilding {
-		t.Fatalf("worker workflow mode = %q, want inherited building", rec.WorkflowMode)
+func TestSpawn_DefaultsRoleWorkflowMode(t *testing.T) {
+	for _, tc := range []struct {
+		kind domain.SessionKind
+		want domain.WorkflowMode
+	}{
+		{kind: domain.KindWorker, want: domain.WorkflowModePlanning},
+		{kind: domain.KindManager, want: domain.WorkflowModeManager},
+	} {
+		t.Run(string(tc.kind), func(t *testing.T) {
+			m, _, _, _ := newManager()
+			rec, _, _, err := m.Spawn(ctx, ports.SpawnConfig{ProjectID: "mer", Kind: tc.kind})
+			if err != nil {
+				t.Fatal(err)
+			}
+			if rec.WorkflowMode != tc.want {
+				t.Fatalf("workflow mode = %q, want %q", rec.WorkflowMode, tc.want)
+			}
+		})
 	}
 }
 
-// A planning-mode orchestrator creates no tasks: it plans without executing,
-// so a worker spawn it requests (via `open-agents spawn` from its own shell) is refused
+func TestSpawn_DelegatedWorkersAlwaysStartPlanning(t *testing.T) {
+	for _, parentMode := range []domain.WorkflowMode{domain.WorkflowModeManager} {
+		t.Run(string(parentMode), func(t *testing.T) {
+			m, st, _, _ := newManager()
+			st.sessions["mer-0"] = domain.SessionRecord{
+				ID: "mer-0", ProjectID: "mer", Kind: domain.KindManager,
+				WorkflowMode: parentMode,
+			}
+			rec, _, _, err := m.Spawn(ctx, ports.SpawnConfig{
+				ProjectID: "mer", Kind: domain.KindWorker, ParentSessionID: "mer-0",
+			})
+			if err != nil {
+				t.Fatal(err)
+			}
+			if rec.WorkflowMode != domain.WorkflowModePlanning {
+				t.Fatalf("delegated worker workflow mode = %q, want planning", rec.WorkflowMode)
+			}
+		})
+	}
+}
+
+// A planning-mode manager creates no delegated sessions: the spawn is refused
 // before any durable state, harness use, or worktree exists.
-func TestSpawn_PlanningOrchestratorCannotCreateTask(t *testing.T) {
-	m, st, rt, _ := newManager()
-	st.sessions["mer-0"] = domain.SessionRecord{
-		ID: "mer-0", ProjectID: "mer", Kind: domain.KindOrchestrator,
-		WorkflowMode: domain.WorkflowModePlanning,
-	}
-	_, _, _, err := m.Spawn(ctx, ports.SpawnConfig{
-		ProjectID: "mer", Kind: domain.KindWorker, ParentSessionID: "mer-0",
-	})
-	if !errors.Is(err, ErrPlanningOrchestratorNoTasks) {
-		t.Fatalf("Spawn error = %v, want ErrPlanningOrchestratorNoTasks", err)
-	}
-	if rt.created != 0 {
-		t.Fatal("runtime was created for a task a planning orchestrator may not create")
-	}
-	if _, ok := st.sessions["mer-1"]; ok {
-		t.Fatal("a task session was created for a planning orchestrator")
-	}
-}
-
-// A plan-mode orchestrator may still spawn a coordinator (orchestrator) child:
-// the gate targets worker tasks, not nested coordination roles.
-func TestSpawn_PlanningOrchestratorCanSpawnOrchestratorChild(t *testing.T) {
-	m, st, _, _ := newManager()
-	st.sessions["mer-0"] = domain.SessionRecord{
-		ID: "mer-0", ProjectID: "mer", Kind: domain.KindOrchestrator,
-		WorkflowMode: domain.WorkflowModePlanning,
-	}
-	if _, _, _, err := m.Spawn(ctx, ports.SpawnConfig{
-		ProjectID: "mer", Kind: domain.KindOrchestrator, ParentSessionID: "mer-0",
-	}); err != nil {
-		t.Fatalf("orchestrator child spawn failed: %v", err)
+func TestSpawn_PlanningManagerCannotDelegate(t *testing.T) {
+	for _, kind := range []domain.SessionKind{domain.KindWorker, domain.KindManager} {
+		t.Run(string(kind), func(t *testing.T) {
+			m, st, rt, _ := newManager()
+			st.sessions["mer-0"] = domain.SessionRecord{
+				ID: "mer-0", ProjectID: "mer", Kind: domain.KindManager,
+				WorkflowMode: domain.WorkflowModePlanning,
+			}
+			_, _, _, err := m.Spawn(ctx, ports.SpawnConfig{
+				ProjectID: "mer", Kind: kind, ParentSessionID: "mer-0",
+			})
+			if !errors.Is(err, ErrPlanningManagerNoTasks) {
+				t.Fatalf("Spawn error = %v, want ErrPlanningManagerNoTasks", err)
+			}
+			if rt.created != 0 {
+				t.Fatal("runtime was created for work a planning manager may not delegate")
+			}
+			if _, ok := st.sessions["mer-1"]; ok {
+				t.Fatal("a delegated session was created for a planning manager")
+			}
+		})
 	}
 }
 
@@ -1544,7 +1546,7 @@ func TestSpawnModelPersisted(t *testing.T) {
 // selected harness as an unknown provider alias. The harness picks its own
 // default instead, while harness-neutral permissions still carry over.
 // Both roles resolve through the same override, so both leak the same way; the
-// orchestrator case is asserted explicitly rather than left implied.
+// manager case is asserted explicitly rather than left implied.
 func TestSpawn_DropsRoleModelOnHarnessMismatch(t *testing.T) {
 	roleConfig := domain.RoleOverride{
 		Harness:     domain.HarnessOpenCode,
@@ -1556,7 +1558,7 @@ func TestSpawn_DropsRoleModelOnHarnessMismatch(t *testing.T) {
 		cfg  domain.ProjectConfig
 	}{
 		{"worker", domain.KindWorker, domain.ProjectConfig{Worker: roleConfig}},
-		{"orchestrator", domain.KindOrchestrator, domain.ProjectConfig{Orchestrator: roleConfig}},
+		{"manager", domain.KindManager, domain.ProjectConfig{Manager: roleConfig}},
 	} {
 		t.Run(tc.name, func(t *testing.T) {
 			st := newFakeStore()
@@ -1996,8 +1998,8 @@ func TestSpawn_RejectsMissingRoleHarness(t *testing.T) {
 	if len(st.sessions) != 0 {
 		t.Fatalf("missing worker harness must not create a session row, got %d", len(st.sessions))
 	}
-	if _, _, _, err := m.Spawn(ctx, ports.SpawnConfig{ProjectID: "mer", Kind: domain.KindOrchestrator}); !errors.Is(err, ErrMissingHarness) {
-		t.Fatalf("orchestrator err = %v, want ErrMissingHarness", err)
+	if _, _, _, err := m.Spawn(ctx, ports.SpawnConfig{ProjectID: "mer", Kind: domain.KindManager}); !errors.Is(err, ErrMissingHarness) {
+		t.Fatalf("manager err = %v, want ErrMissingHarness", err)
 	}
 }
 
@@ -4288,12 +4290,12 @@ func TestSpawn_DefaultsBranchUnderDevNamespaceForDevDataDir(t *testing.T) {
 		t.Fatalf("worker branch = %q, want open-agents/dev/mer-1/root", got)
 	}
 
-	orchestrator, _, _, err := m.Spawn(ctx, ports.SpawnConfig{ProjectID: "mer", Kind: domain.KindOrchestrator})
+	manager, _, _, err := m.Spawn(ctx, ports.SpawnConfig{ProjectID: "mer", Kind: domain.KindManager})
 	if err != nil {
 		t.Fatal(err)
 	}
-	if got := st.sessions[orchestrator.ID].Metadata.Branch; got != "open-agents/dev/mer-orchestrator" {
-		t.Fatalf("orchestrator branch = %q, want open-agents/dev/mer-orchestrator", got)
+	if got := st.sessions[manager.ID].Metadata.Branch; got != "open-agents/dev/mer-manager" {
+		t.Fatalf("manager branch = %q, want open-agents/dev/mer-manager", got)
 	}
 }
 
@@ -4472,11 +4474,11 @@ func TestSpawnWorker_IncludesReviewCIAndPlanningInstructions(t *testing.T) {
 	}
 }
 
-func TestSpawnWorker_AppendsActiveOrchestratorContact(t *testing.T) {
+func TestSpawnWorker_AppendsActiveManagerContact(t *testing.T) {
 	st := newFakeStore()
 	st.projects["mer"] = domain.ProjectRecord{ID: "mer", Config: testRoleAgents()}
 	st.num = 1
-	st.sessions["mer-1"] = domain.SessionRecord{ID: "mer-1", ProjectID: "mer", Kind: domain.KindOrchestrator}
+	st.sessions["mer-1"] = domain.SessionRecord{ID: "mer-1", ProjectID: "mer", Kind: domain.KindManager}
 	agent := &recordingAgent{}
 	rt := &fakeRuntime{}
 	ws := &fakeWorkspace{}
@@ -4496,7 +4498,7 @@ func TestSpawnWorker_AppendsActiveOrchestratorContact(t *testing.T) {
 	// Coordination instructions must be in the system prompt, not the user prompt.
 	systemPrompt := agent.lastLaunch.SystemPrompt
 	for _, want := range []string{
-		"## Orchestrator Coordination",
+		"## Manager Coordination",
 		`open-agents send --session mer-1 --message "<your message>"`,
 		"Message it only for true blockers, cross-session coordination",
 	} {
@@ -4504,15 +4506,15 @@ func TestSpawnWorker_AppendsActiveOrchestratorContact(t *testing.T) {
 			t.Fatalf("system prompt missing %q:\n%s", want, systemPrompt)
 		}
 	}
-	if strings.Contains(agent.lastLaunch.Prompt, "## Orchestrator Coordination") {
-		t.Fatalf("orchestrator coordination must not be in the user prompt:\n%s", agent.lastLaunch.Prompt)
+	if strings.Contains(agent.lastLaunch.Prompt, "## Manager Coordination") {
+		t.Fatalf("manager coordination must not be in the user prompt:\n%s", agent.lastLaunch.Prompt)
 	}
 }
 
 func TestSpawnWorker_WritesSystemPromptFile(t *testing.T) {
 	st := newFakeStore()
 	st.num = 1
-	st.sessions["mer-1"] = domain.SessionRecord{ID: "mer-1", ProjectID: "mer", Kind: domain.KindOrchestrator}
+	st.sessions["mer-1"] = domain.SessionRecord{ID: "mer-1", ProjectID: "mer", Kind: domain.KindManager}
 	agent := &recordingAgent{}
 	dataDir := t.TempDir()
 	lookPath := func(string) (string, error) { return "/bin/true", nil }
@@ -4574,11 +4576,11 @@ func TestSpawnWorker_PromptFileFailureBlocksFileOnlyHarness(t *testing.T) {
 	}
 }
 
-func TestSpawnWorker_SkipsTerminatedOrchestratorContact(t *testing.T) {
+func TestSpawnWorker_SkipsTerminatedManagerContact(t *testing.T) {
 	st := newFakeStore()
 	st.projects["mer"] = domain.ProjectRecord{ID: "mer", Config: testRoleAgents()}
 	st.num = 1
-	st.sessions["mer-1"] = domain.SessionRecord{ID: "mer-1", ProjectID: "mer", Kind: domain.KindOrchestrator, IsTerminated: true}
+	st.sessions["mer-1"] = domain.SessionRecord{ID: "mer-1", ProjectID: "mer", Kind: domain.KindManager, IsTerminated: true}
 	agent := &recordingAgent{}
 	rt := &fakeRuntime{}
 	ws := &fakeWorkspace{}
@@ -4590,12 +4592,12 @@ func TestSpawnWorker_SkipsTerminatedOrchestratorContact(t *testing.T) {
 		t.Fatal(err)
 	}
 	systemPrompt := agent.lastLaunch.SystemPrompt
-	if strings.Contains(systemPrompt, "## Orchestrator Coordination") || strings.Contains(systemPrompt, "open-agents send --session mer-1") {
-		t.Fatalf("terminated orchestrator should not be added to system prompt:\n%s", systemPrompt)
+	if strings.Contains(systemPrompt, "## Manager Coordination") || strings.Contains(systemPrompt, "open-agents send --session mer-1") {
+		t.Fatalf("terminated manager should not be added to system prompt:\n%s", systemPrompt)
 	}
 }
 
-func TestSpawnOrchestrator_UsesCoordinatorPrompt(t *testing.T) {
+func TestSpawnManager_UsesCoordinatorPrompt(t *testing.T) {
 	st := newFakeStore()
 	st.projects["mer"] = domain.ProjectRecord{ID: "mer", Config: testRoleAgents()}
 	agent := &recordingAgent{}
@@ -4604,7 +4606,7 @@ func TestSpawnOrchestrator_UsesCoordinatorPrompt(t *testing.T) {
 	lookPath := func(string) (string, error) { return "/bin/true", nil }
 	m := New(Deps{Runtime: rt, Agents: singleAgent{agent: agent}, Workspace: ws, Store: st, Messenger: &fakeMessenger{}, Lifecycle: &fakeLCM{store: st}, LookPath: lookPath})
 
-	_, _, _, err := m.Spawn(ctx, ports.SpawnConfig{ProjectID: "mer", Kind: domain.KindOrchestrator})
+	_, _, _, err := m.Spawn(ctx, ports.SpawnConfig{ProjectID: "mer", Kind: domain.KindManager})
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -4612,7 +4614,7 @@ func TestSpawnOrchestrator_UsesCoordinatorPrompt(t *testing.T) {
 	// Coordinator instructions must be in the system prompt, not the user prompt.
 	systemPrompt := agent.lastLaunch.SystemPrompt
 	for _, want := range []string{
-		"You are the human-facing orchestrator for project mer",
+		"You are the human-facing manager for project mer",
 		`open-agents spawn --project mer --name "<label>" --prompt "<clear worker task>"`,
 		"Before running `open-agents spawn`, count the `--name` label yourself",
 		"coordination-only by default",
@@ -4640,41 +4642,41 @@ func TestSpawnOrchestrator_UsesCoordinatorPrompt(t *testing.T) {
 	if words := len(strings.Fields(m.openAgentsSkillPointer())); words > 220 {
 		t.Fatalf("always-on Open Agents skill pointer grew to %d words; keep details in routed command guides:\n%s", words, m.openAgentsSkillPointer())
 	}
-	if strings.Contains(agent.lastLaunch.Prompt, "You are the human-facing orchestrator") {
+	if strings.Contains(agent.lastLaunch.Prompt, "You are the human-facing manager") {
 		t.Fatalf("coordinator role must not be in the user prompt:\n%s", agent.lastLaunch.Prompt)
 	}
 
-	// A promptless orchestrator gets no auto-generated kickoff turn: spawning
+	// A promptless manager gets no auto-generated kickoff turn: spawning
 	// must deliver nothing to the agent, leaving it idle at an empty input box.
 	if agent.lastLaunch.Prompt != "" {
 		t.Fatalf("prompt = %q, want empty (no kickoff turn)", agent.lastLaunch.Prompt)
 	}
 }
 
-func TestSpawnOrchestrator_ProjectRulesInSystemPrompt(t *testing.T) {
+func TestSpawnManager_ProjectRulesInSystemPrompt(t *testing.T) {
 	cfg := testRoleAgents()
 	cfg.AgentRules = "Worker-only rule."
-	cfg.OrchestratorRules = "Coordinate through workers."
+	cfg.ManagerRules = "Coordinate through workers."
 	st := newFakeStore()
 	st.projects["mer"] = domain.ProjectRecord{ID: "mer", Config: cfg}
 	agent := &recordingAgent{}
 	lookPath := func(string) (string, error) { return "/bin/true", nil }
 	m := New(Deps{Runtime: &fakeRuntime{}, Agents: singleAgent{agent: agent}, Workspace: &fakeWorkspace{}, Store: st, Messenger: &fakeMessenger{}, Lifecycle: &fakeLCM{store: st}, LookPath: lookPath})
 
-	if _, _, _, err := m.Spawn(ctx, ports.SpawnConfig{ProjectID: "mer", Kind: domain.KindOrchestrator}); err != nil {
+	if _, _, _, err := m.Spawn(ctx, ports.SpawnConfig{ProjectID: "mer", Kind: domain.KindManager}); err != nil {
 		t.Fatal(err)
 	}
 
 	systemPrompt := agent.lastLaunch.SystemPrompt
-	if !strings.Contains(systemPrompt, "## Project-Specific Orchestrator Rules") || !strings.Contains(systemPrompt, "Coordinate through workers.") {
-		t.Fatalf("orchestrator rules missing from system prompt:\n%s", systemPrompt)
+	if !strings.Contains(systemPrompt, "## Project-Specific Manager Rules") || !strings.Contains(systemPrompt, "Coordinate through workers.") {
+		t.Fatalf("manager rules missing from system prompt:\n%s", systemPrompt)
 	}
 	if strings.Contains(systemPrompt, "Worker-only rule.") {
-		t.Fatalf("worker rules must not be in orchestrator system prompt:\n%s", systemPrompt)
+		t.Fatalf("worker rules must not be in manager system prompt:\n%s", systemPrompt)
 	}
 }
 
-func TestSpawnOrchestrator_WorkspaceProjectPromptListsRepos(t *testing.T) {
+func TestSpawnManager_WorkspaceProjectPromptListsRepos(t *testing.T) {
 	st := newFakeStore()
 	st.projects["mer"] = domain.ProjectRecord{ID: "mer", Kind: domain.ProjectKindWorkspace, Config: testRoleAgents()}
 	st.workspaceRepo["mer"] = []domain.WorkspaceRepoRecord{
@@ -4687,7 +4689,7 @@ func TestSpawnOrchestrator_WorkspaceProjectPromptListsRepos(t *testing.T) {
 	lookPath := func(string) (string, error) { return "/bin/true", nil }
 	m := New(Deps{Runtime: rt, Agents: singleAgent{agent: agent}, Workspace: ws, Store: st, Messenger: &fakeMessenger{}, Lifecycle: &fakeLCM{store: st}, LookPath: lookPath})
 
-	_, _, _, err := m.Spawn(ctx, ports.SpawnConfig{ProjectID: "mer", Kind: domain.KindOrchestrator})
+	_, _, _, err := m.Spawn(ctx, ports.SpawnConfig{ProjectID: "mer", Kind: domain.KindManager})
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -4740,7 +4742,7 @@ func TestSpawnWorker_WorkspaceProjectPromptListsRepos(t *testing.T) {
 		}
 	}
 	if strings.Contains(systemPrompt, "When spawning workers") {
-		t.Fatalf("worker prompt should not include orchestrator-specific spawn guidance:\n%s", systemPrompt)
+		t.Fatalf("worker prompt should not include manager-specific spawn guidance:\n%s", systemPrompt)
 	}
 }
 
@@ -4750,11 +4752,11 @@ func TestSystemPrompt_AppendsConfidentialityGuard(t *testing.T) {
 		kind domain.SessionKind
 		prep func(st *fakeStore)
 	}{
-		{name: "orchestrator", kind: domain.KindOrchestrator},
-		{name: "worker_with_orchestrator", kind: domain.KindWorker, prep: func(st *fakeStore) {
-			st.sessions["mer-1"] = domain.SessionRecord{ID: "mer-1", ProjectID: "mer", Kind: domain.KindOrchestrator}
+		{name: "manager", kind: domain.KindManager},
+		{name: "worker_with_manager", kind: domain.KindWorker, prep: func(st *fakeStore) {
+			st.sessions["mer-1"] = domain.SessionRecord{ID: "mer-1", ProjectID: "mer", Kind: domain.KindManager}
 		}},
-		{name: "worker_without_orchestrator", kind: domain.KindWorker},
+		{name: "worker_without_manager", kind: domain.KindWorker},
 	}
 	for _, tc := range cases {
 		t.Run(tc.name, func(t *testing.T) {
@@ -4802,16 +4804,16 @@ func TestSystemPrompt_AppendsConfidentialityGuard(t *testing.T) {
 	}
 }
 
-// TestRestore_OrchestratorRederivesSystemPrompt: the system prompt is derived,
-// not persisted, so a restored orchestrator must get its role instructions
+// TestRestore_ManagerRederivesSystemPrompt: the system prompt is derived,
+// not persisted, so a restored manager must get its role instructions
 // recomputed and handed to the agent's native resume command.
-func TestRestore_OrchestratorRederivesSystemPrompt(t *testing.T) {
+func TestRestore_ManagerRederivesSystemPrompt(t *testing.T) {
 	st := newFakeStore()
 	cfg := testRoleAgents()
-	cfg.OrchestratorRules = "Use workers for implementation."
+	cfg.ManagerRules = "Use workers for implementation."
 	st.projects["mer"] = domain.ProjectRecord{ID: "mer", Config: cfg}
 	st.sessions["mer-1"] = domain.SessionRecord{
-		ID: "mer-1", ProjectID: "mer", Kind: domain.KindOrchestrator, IsTerminated: true,
+		ID: "mer-1", ProjectID: "mer", Kind: domain.KindManager, IsTerminated: true,
 		Metadata: domain.SessionMetadata{WorkspacePath: "/ws/mer-1", Branch: "b", AgentSessionID: "agent-x"},
 	}
 	agent := &recordingAgent{}
@@ -4822,7 +4824,7 @@ func TestRestore_OrchestratorRederivesSystemPrompt(t *testing.T) {
 	if _, err := m.RestoreWithMode(ctx, "mer-1"); err != nil {
 		t.Fatal(err)
 	}
-	if !strings.Contains(agent.lastRestore.SystemPrompt, "You are the human-facing orchestrator for project mer") {
+	if !strings.Contains(agent.lastRestore.SystemPrompt, "You are the human-facing manager for project mer") {
 		t.Fatalf("restore system prompt missing coordinator role:\n%s", agent.lastRestore.SystemPrompt)
 	}
 	if !strings.Contains(agent.lastRestore.SystemPrompt, "Use workers for implementation.") {
@@ -4869,7 +4871,7 @@ func TestRestore_PromptFileFailureBlocksFileOnlyHarness(t *testing.T) {
 func TestRestore_FallbackLaunchCarriesSystemPrompt(t *testing.T) {
 	st := newFakeStore()
 	st.sessions["mer-1"] = domain.SessionRecord{
-		ID: "mer-1", ProjectID: "mer", Kind: domain.KindOrchestrator, IsTerminated: true,
+		ID: "mer-1", ProjectID: "mer", Kind: domain.KindManager, IsTerminated: true,
 		Metadata: domain.SessionMetadata{WorkspacePath: "/ws/mer-1", Branch: "b", Prompt: "kick off"},
 	}
 	agent := &recordingAgent{}
@@ -4880,7 +4882,7 @@ func TestRestore_FallbackLaunchCarriesSystemPrompt(t *testing.T) {
 	if _, err := m.RestoreWithMode(ctx, "mer-1"); err != nil {
 		t.Fatal(err)
 	}
-	if !strings.Contains(agent.lastLaunch.SystemPrompt, "You are the human-facing orchestrator for project mer") {
+	if !strings.Contains(agent.lastLaunch.SystemPrompt, "You are the human-facing manager for project mer") {
 		t.Fatalf("fallback launch system prompt missing coordinator role:\n%s", agent.lastLaunch.SystemPrompt)
 	}
 	wantPath := filepath.Join(dataDir, "prompts", "mer-1", "system.md")
@@ -5190,17 +5192,17 @@ func TestRestore_NoRestoreCommandFallsBackToSavedPrompt(t *testing.T) {
 	}
 }
 
-// TestRestore_PromptlessOrchestratorResumesViaAdapter locks the orchestrator
+// TestRestore_PromptlessManagerResumesViaAdapter locks the manager
 // fix: a promptless session with no captured agentSessionId is still restorable
 // when the adapter can resume it (the fake pins a deterministic session id).
 // Before the fix the metadata-only guard rejected it with ErrNotResumable, so
-// every boot abandoned the orchestrator and spawned a fresh one.
-func TestRestore_PromptlessOrchestratorResumesViaAdapter(t *testing.T) {
+// every boot abandoned the manager and spawned a fresh one.
+func TestRestore_PromptlessManagerResumesViaAdapter(t *testing.T) {
 	st := newFakeStore()
 	st.sessions["mer-1"] = domain.SessionRecord{
-		ID: "mer-1", ProjectID: "mer", Kind: domain.KindOrchestrator, IsTerminated: true,
-		// No AgentSessionID, no Prompt: exactly how orchestrators are persisted.
-		Metadata: domain.SessionMetadata{WorkspacePath: "/ws/mer-1", Branch: "open-agents/mer-orchestrator"},
+		ID: "mer-1", ProjectID: "mer", Kind: domain.KindManager, IsTerminated: true,
+		// No AgentSessionID, no Prompt: exactly how managers are persisted.
+		Metadata: domain.SessionMetadata{WorkspacePath: "/ws/mer-1", Branch: "open-agents/mer-manager"},
 		Activity: domain.Activity{State: domain.ActivityExited},
 	}
 	rt := &fakeRuntime{}
@@ -5208,28 +5210,28 @@ func TestRestore_PromptlessOrchestratorResumesViaAdapter(t *testing.T) {
 	m := New(Deps{Runtime: rt, Agents: singleAgent{agent: alwaysResumeAgent{}}, Workspace: &fakeWorkspace{}, Store: st, Messenger: &fakeMessenger{}, Lifecycle: &fakeLCM{store: st}, LookPath: lookPath})
 
 	if _, err := m.RestoreWithMode(ctx, "mer-1"); err != nil {
-		t.Fatalf("promptless orchestrator must restore via adapter resume, got err = %v", err)
+		t.Fatalf("promptless manager must restore via adapter resume, got err = %v", err)
 	}
 	if rt.created != 1 {
 		t.Fatalf("runtime.Create = %d, want 1 (resumed)", rt.created)
 	}
 	if st.sessions["mer-1"].IsTerminated {
-		t.Error("orchestrator must be live after restore")
+		t.Error("manager must be live after restore")
 	}
 }
 
 // TestRestore_PromptlessUnresumableRelaunchesFresh covers the genuine-reboot
 // case: a promptless session whose adapter cannot resume (no native session id,
 // no captured AgentSessionID) must be relaunched fresh via GetLaunchCommand
-// in the SAME id. The orchestrator is the canonical example: after a reboot
+// in the SAME id. The manager is the canonical example: after a reboot
 // where tmux is truly gone, RestoreAll must recover it in place rather than
 // abandon it and mint a new one (which caused the id-increment bug).
 func TestRestore_PromptlessUnresumableRelaunchesFresh(t *testing.T) {
 	st := newFakeStore()
 	st.sessions["mer-1"] = domain.SessionRecord{
-		ID: "mer-1", ProjectID: "mer", Kind: domain.KindOrchestrator, IsTerminated: true,
-		// No AgentSessionID, no Prompt: exactly how an orchestrator is persisted.
-		Metadata: domain.SessionMetadata{WorkspacePath: "/ws/mer-1", Branch: "open-agents/mer-orchestrator"},
+		ID: "mer-1", ProjectID: "mer", Kind: domain.KindManager, IsTerminated: true,
+		// No AgentSessionID, no Prompt: exactly how a manager is persisted.
+		Metadata: domain.SessionMetadata{WorkspacePath: "/ws/mer-1", Branch: "open-agents/mer-manager"},
 		Activity: domain.Activity{State: domain.ActivityExited},
 	}
 	rt := &fakeRuntime{}
@@ -5375,12 +5377,12 @@ func TestRestore_LostDerivedNativeConversationRelaunchesFresh(t *testing.T) {
 	}
 }
 
-// TestRestore_WorkerPointsAtCurrentOrchestrator: a restored worker's
-// coordination hint must reference the orchestrator active at restore time,
+// TestRestore_WorkerPointsAtCurrentManager: a restored worker's
+// coordination hint must reference the manager active at restore time,
 // not the one from its original spawn.
-func TestRestore_WorkerPointsAtCurrentOrchestrator(t *testing.T) {
+func TestRestore_WorkerPointsAtCurrentManager(t *testing.T) {
 	st := newFakeStore()
-	st.sessions["mer-9"] = domain.SessionRecord{ID: "mer-9", ProjectID: "mer", Kind: domain.KindOrchestrator}
+	st.sessions["mer-9"] = domain.SessionRecord{ID: "mer-9", ProjectID: "mer", Kind: domain.KindManager}
 	st.sessions["mer-1"] = domain.SessionRecord{
 		ID: "mer-1", ProjectID: "mer", Kind: domain.KindWorker, IsTerminated: true,
 		Metadata: domain.SessionMetadata{WorkspacePath: "/ws/mer-1", Branch: "b", AgentSessionID: "agent-x"},
@@ -5393,7 +5395,7 @@ func TestRestore_WorkerPointsAtCurrentOrchestrator(t *testing.T) {
 		t.Fatal(err)
 	}
 	if !strings.Contains(agent.lastRestore.SystemPrompt, `open-agents send --session mer-9`) {
-		t.Fatalf("restore system prompt missing current orchestrator contact:\n%s", agent.lastRestore.SystemPrompt)
+		t.Fatalf("restore system prompt missing current manager contact:\n%s", agent.lastRestore.SystemPrompt)
 	}
 }
 
@@ -5531,7 +5533,7 @@ func TestSpawn_MissingBinaryPreservesNonEmptyScratchWorkspaceForRetry(t *testing
 		LookPath:  notFound,
 	})
 
-	_, _, _, err = m.Spawn(ctx, ports.SpawnConfig{ProjectID: "scratch", Kind: domain.KindOrchestrator})
+	_, _, _, err = m.Spawn(ctx, ports.SpawnConfig{ProjectID: "scratch", Kind: domain.KindManager})
 	if !errors.Is(err, ports.ErrAgentBinaryNotFound) {
 		t.Fatalf("first spawn err = %v, want ErrAgentBinaryNotFound", err)
 	}
@@ -5549,7 +5551,7 @@ func TestSpawn_MissingBinaryPreservesNonEmptyScratchWorkspaceForRetry(t *testing
 		t.Fatalf("preserved hook file: %v", err)
 	}
 
-	_, _, _, err = m.Spawn(ctx, ports.SpawnConfig{ProjectID: "scratch", Kind: domain.KindOrchestrator})
+	_, _, _, err = m.Spawn(ctx, ports.SpawnConfig{ProjectID: "scratch", Kind: domain.KindManager})
 	if !errors.Is(err, ports.ErrAgentBinaryNotFound) {
 		t.Fatalf("retry err = %v, want ErrAgentBinaryNotFound", err)
 	}
@@ -5586,7 +5588,7 @@ func TestSpawn_EarlyFailurePreservesNonEmptyScratchWorkspace(t *testing.T) {
 		DataDir:   t.TempDir(),
 	})
 
-	_, _, _, err = m.Spawn(ctx, ports.SpawnConfig{ProjectID: "scratch", Kind: domain.KindOrchestrator})
+	_, _, _, err = m.Spawn(ctx, ports.SpawnConfig{ProjectID: "scratch", Kind: domain.KindManager})
 	if err == nil || !strings.Contains(err.Error(), "provision") {
 		t.Fatalf("Spawn err = %v, want provisioning failure", err)
 	}
@@ -5631,7 +5633,7 @@ func TestSpawn_AfterStartFailurePreservesNonEmptyScratchWorkspace(t *testing.T) 
 
 	_, _, _, err = m.Spawn(ctx, ports.SpawnConfig{
 		ProjectID: "scratch",
-		Kind:      domain.KindOrchestrator,
+		Kind:      domain.KindManager,
 		Prompt:    "continue",
 	})
 	if err == nil || !strings.Contains(err.Error(), "deliver prompt") {
@@ -6681,14 +6683,14 @@ func TestRetireForReplacementCapturesAndReleasesWorkspace(t *testing.T) {
 	st.sessions["mer-orch"] = domain.SessionRecord{
 		ID:        "mer-orch",
 		ProjectID: "mer",
-		Kind:      domain.KindOrchestrator,
-		Metadata:  domain.SessionMetadata{WorkspacePath: "/ws/mer-orch", Branch: "open-agents/mer-orchestrator", RuntimeHandleID: "orch-handle"},
+		Kind:      domain.KindManager,
+		Metadata:  domain.SessionMetadata{WorkspacePath: "/ws/mer-orch", Branch: "open-agents/mer-manager", RuntimeHandleID: "orch-handle"},
 		Activity:  domain.Activity{State: domain.ActivityActive},
 	}
 	st.worktrees["mer-orch"] = []domain.SessionWorktreeRecord{{
 		SessionID:    "mer-orch",
 		RepoName:     domain.RootWorkspaceRepoName,
-		Branch:       "open-agents/mer-orchestrator",
+		Branch:       "open-agents/mer-manager",
 		WorktreePath: "/ws/mer-orch",
 		PreservedRef: "refs/open-agents/preserved/old",
 	}}
@@ -6701,7 +6703,7 @@ func TestRetireForReplacementCapturesAndReleasesWorkspace(t *testing.T) {
 		t.Fatalf("replacement retirement must not write restore markers, got %#v", rows)
 	}
 	if !st.sessions["mer-orch"].IsTerminated {
-		t.Fatal("retired orchestrator must be marked terminated")
+		t.Fatal("retired manager must be marked terminated")
 	}
 	if rt.destroyed != 1 || rt.destroyedIDs[0] != "orch-handle" {
 		t.Fatalf("runtime destroyed = %d ids=%v, want orch-handle", rt.destroyed, rt.destroyedIDs)
@@ -6735,9 +6737,9 @@ func TestRetireForReplacement_NativeTerminationFailurePreservesRuntimeAndWorkspa
 	m.agents = singleAgent{agent: agent}
 	ws.stashRef = "refs/open-agents/preserved/mer-orch"
 	rec := domain.SessionRecord{
-		ID: "mer-orch", ProjectID: "mer", Kind: domain.KindOrchestrator,
+		ID: "mer-orch", ProjectID: "mer", Kind: domain.KindManager,
 		Metadata: domain.SessionMetadata{
-			WorkspacePath: "/ws/mer-orch", Branch: "open-agents/mer-orchestrator",
+			WorkspacePath: "/ws/mer-orch", Branch: "open-agents/mer-manager",
 			RuntimeHandleID: "orch-handle", AgentSessionID: "native-7",
 		},
 		Activity: domain.Activity{State: domain.ActivityActive},
@@ -6763,7 +6765,7 @@ func TestRetireForReplacement_WorkspaceProjectNativeTerminationFailurePreservesR
 	agent := &nativeTerminatingAgent{wantID: "native-7", err: errors.New("prime stop failed")}
 	m.agents = singleAgent{agent: agent}
 	ws.stashRef = "refs/open-agents/preserved/mer-orch"
-	rec := seedNativeWorkspaceProject(st, "mer-orch", domain.KindOrchestrator)
+	rec := seedNativeWorkspaceProject(st, "mer-orch", domain.KindManager)
 
 	err := m.RetireForReplacement(ctx, rec.ID)
 	if err == nil || !strings.Contains(err.Error(), "prime stop failed") {
@@ -6786,7 +6788,7 @@ func TestRetireForReplacement_WorkspaceProjectTerminatesNativeSessionOnce(t *tes
 	m, st, _, _ := newLifecycleManager()
 	agent := &nativeTerminatingAgent{wantID: "native-7"}
 	m.agents = singleAgent{agent: agent}
-	rec := seedNativeWorkspaceProject(st, "mer-orch", domain.KindOrchestrator)
+	rec := seedNativeWorkspaceProject(st, "mer-orch", domain.KindManager)
 
 	if err := m.RetireForReplacement(ctx, rec.ID); err != nil {
 		t.Fatalf("RetireForReplacement err = %v", err)
@@ -6799,7 +6801,7 @@ func TestRetireForReplacement_WorkspaceProjectTerminatesNativeSessionOnce(t *tes
 // TestRetireForReplacementClosesScopedShellTerminalsBeforeForceDestroy covers
 // the coverage gap the second review round flagged: RetireForReplacement
 // force-removes a worktree the same as Kill/Cleanup, and must gate shut any
-// shell terminal scoped to the retiring orchestrator first.
+// shell terminal scoped to the retiring manager first.
 func TestRetireForReplacementClosesScopedShellTerminalsBeforeForceDestroy(t *testing.T) {
 	m, st, _, ws := newLifecycleManager()
 	var sharedLog []string
@@ -6811,8 +6813,8 @@ func TestRetireForReplacementClosesScopedShellTerminalsBeforeForceDestroy(t *tes
 	st.sessions["mer-orch"] = domain.SessionRecord{
 		ID:        "mer-orch",
 		ProjectID: "mer",
-		Kind:      domain.KindOrchestrator,
-		Metadata:  domain.SessionMetadata{WorkspacePath: "/ws/mer-orch", Branch: "open-agents/mer-orchestrator", RuntimeHandleID: "orch-handle"},
+		Kind:      domain.KindManager,
+		Metadata:  domain.SessionMetadata{WorkspacePath: "/ws/mer-orch", Branch: "open-agents/mer-manager", RuntimeHandleID: "orch-handle"},
 		Activity:  domain.Activity{State: domain.ActivityActive},
 	}
 
@@ -6855,8 +6857,8 @@ func TestRetireForReplacementFailsWhenShellTerminalsWontClose(t *testing.T) {
 	st.sessions["mer-orch"] = domain.SessionRecord{
 		ID:        "mer-orch",
 		ProjectID: "mer",
-		Kind:      domain.KindOrchestrator,
-		Metadata:  domain.SessionMetadata{WorkspacePath: "/ws/mer-orch", Branch: "open-agents/mer-orchestrator", RuntimeHandleID: "orch-handle"},
+		Kind:      domain.KindManager,
+		Metadata:  domain.SessionMetadata{WorkspacePath: "/ws/mer-orch", Branch: "open-agents/mer-manager", RuntimeHandleID: "orch-handle"},
 		Activity:  domain.Activity{State: domain.ActivityActive},
 	}
 
@@ -6890,13 +6892,13 @@ func TestRetireForReplacementWorkspaceProjectClosesScopedShellTerminalsBeforeFor
 	st.sessions["mer-orch"] = domain.SessionRecord{
 		ID:        "mer-orch",
 		ProjectID: "mer",
-		Kind:      domain.KindOrchestrator,
-		Metadata:  domain.SessionMetadata{WorkspacePath: "/ws/mer-orch", Branch: "open-agents/mer-orchestrator", RuntimeHandleID: "orch-handle"},
+		Kind:      domain.KindManager,
+		Metadata:  domain.SessionMetadata{WorkspacePath: "/ws/mer-orch", Branch: "open-agents/mer-manager", RuntimeHandleID: "orch-handle"},
 		Activity:  domain.Activity{State: domain.ActivityActive},
 	}
 	st.worktrees["mer-orch"] = []domain.SessionWorktreeRecord{
-		{SessionID: "mer-orch", RepoName: domain.RootWorkspaceRepoName, Branch: "open-agents/mer-orchestrator", WorktreePath: "/ws/mer-orch", State: "active"},
-		{SessionID: "mer-orch", RepoName: "api", Branch: "open-agents/mer-orchestrator", WorktreePath: "/ws/mer-orch/api", State: "active"},
+		{SessionID: "mer-orch", RepoName: domain.RootWorkspaceRepoName, Branch: "open-agents/mer-manager", WorktreePath: "/ws/mer-orch", State: "active"},
+		{SessionID: "mer-orch", RepoName: "api", Branch: "open-agents/mer-manager", WorktreePath: "/ws/mer-orch/api", State: "active"},
 	}
 
 	if err := m.RetireForReplacement(ctx, "mer-orch"); err != nil {
@@ -6934,7 +6936,7 @@ func TestRetireForReplacement_ScratchPreservesWorkspace(t *testing.T) {
 	st.sessions["scratch-1"] = domain.SessionRecord{
 		ID:        "scratch-1",
 		ProjectID: "scratch",
-		Kind:      domain.KindOrchestrator,
+		Kind:      domain.KindManager,
 		Metadata:  domain.SessionMetadata{WorkspacePath: "/ws/scratch-1", RuntimeHandleID: "orch-handle"},
 		Activity:  domain.Activity{State: domain.ActivityActive},
 	}
@@ -6943,7 +6945,7 @@ func TestRetireForReplacement_ScratchPreservesWorkspace(t *testing.T) {
 		t.Fatalf("RetireForReplacement err = %v", err)
 	}
 	if !st.sessions["scratch-1"].IsTerminated {
-		t.Fatal("scratch orchestrator must be marked terminated")
+		t.Fatal("scratch manager must be marked terminated")
 	}
 	if rt.destroyed != 1 || rt.destroyedIDs[0] != "orch-handle" {
 		t.Fatalf("runtime destroyed = %d ids=%v, want orch-handle", rt.destroyed, rt.destroyedIDs)
@@ -6965,14 +6967,14 @@ func TestRetireForReplacementStaleWorkspaceSkipsPreserveAndTerminates(t *testing
 	st.sessions["mer-orch"] = domain.SessionRecord{
 		ID:        "mer-orch",
 		ProjectID: "mer",
-		Kind:      domain.KindOrchestrator,
-		Metadata:  domain.SessionMetadata{WorkspacePath: "/ws/mer-orch", Branch: "open-agents/mer-orchestrator", RuntimeHandleID: "orch-handle"},
+		Kind:      domain.KindManager,
+		Metadata:  domain.SessionMetadata{WorkspacePath: "/ws/mer-orch", Branch: "open-agents/mer-manager", RuntimeHandleID: "orch-handle"},
 		Activity:  domain.Activity{State: domain.ActivityActive},
 	}
 	st.worktrees["mer-orch"] = []domain.SessionWorktreeRecord{{
 		SessionID:    "mer-orch",
 		RepoName:     domain.RootWorkspaceRepoName,
-		Branch:       "open-agents/mer-orchestrator",
+		Branch:       "open-agents/mer-manager",
 		WorktreePath: "/ws/mer-orch",
 		PreservedRef: "refs/open-agents/preserved/old",
 	}}
@@ -6985,7 +6987,7 @@ func TestRetireForReplacementStaleWorkspaceSkipsPreserveAndTerminates(t *testing
 		t.Fatalf("stale replacement must clear restore markers, got %#v", rows)
 	}
 	if !st.sessions["mer-orch"].IsTerminated {
-		t.Fatal("stale replaced orchestrator must be marked terminated")
+		t.Fatal("stale replaced manager must be marked terminated")
 	}
 	if rt.destroyed != 1 || rt.destroyedIDs[0] != "orch-handle" {
 		t.Fatalf("runtime destroyed = %d ids=%v, want orch-handle", rt.destroyed, rt.destroyedIDs)
@@ -7013,14 +7015,14 @@ func TestRetireForReplacementStaleWorkspaceCleanupFailureLeavesSessionActive(t *
 	st.sessions["mer-orch"] = domain.SessionRecord{
 		ID:        "mer-orch",
 		ProjectID: "mer",
-		Kind:      domain.KindOrchestrator,
-		Metadata:  domain.SessionMetadata{WorkspacePath: "/ws/mer-orch", Branch: "open-agents/mer-orchestrator", RuntimeHandleID: "orch-handle"},
+		Kind:      domain.KindManager,
+		Metadata:  domain.SessionMetadata{WorkspacePath: "/ws/mer-orch", Branch: "open-agents/mer-manager", RuntimeHandleID: "orch-handle"},
 		Activity:  domain.Activity{State: domain.ActivityActive},
 	}
 	st.worktrees["mer-orch"] = []domain.SessionWorktreeRecord{{
 		SessionID:    "mer-orch",
 		RepoName:     domain.RootWorkspaceRepoName,
-		Branch:       "open-agents/mer-orchestrator",
+		Branch:       "open-agents/mer-manager",
 		WorktreePath: "/ws/mer-orch",
 		PreservedRef: "refs/open-agents/preserved/old",
 	}}
@@ -7046,14 +7048,14 @@ func TestRetireForReplacementStashFailureLeavesSessionActive(t *testing.T) {
 	st.sessions["mer-orch"] = domain.SessionRecord{
 		ID:        "mer-orch",
 		ProjectID: "mer",
-		Kind:      domain.KindOrchestrator,
-		Metadata:  domain.SessionMetadata{WorkspacePath: "/ws/mer-orch", Branch: "open-agents/mer-orchestrator", RuntimeHandleID: "orch-handle"},
+		Kind:      domain.KindManager,
+		Metadata:  domain.SessionMetadata{WorkspacePath: "/ws/mer-orch", Branch: "open-agents/mer-manager", RuntimeHandleID: "orch-handle"},
 		Activity:  domain.Activity{State: domain.ActivityActive},
 	}
 	st.worktrees["mer-orch"] = []domain.SessionWorktreeRecord{{
 		SessionID:    "mer-orch",
 		RepoName:     domain.RootWorkspaceRepoName,
-		Branch:       "open-agents/mer-orchestrator",
+		Branch:       "open-agents/mer-manager",
 		WorktreePath: "/ws/mer-orch",
 		PreservedRef: "refs/open-agents/preserved/old",
 	}}
@@ -7093,15 +7095,15 @@ func TestRetireForReplacementWorkspaceProjectCapturesAndReleasesEveryRepo(t *tes
 	st.sessions["mer-orch"] = domain.SessionRecord{
 		ID:        "mer-orch",
 		ProjectID: "mer",
-		Kind:      domain.KindOrchestrator,
-		Metadata:  domain.SessionMetadata{WorkspacePath: "/ws/mer-orch", Branch: "open-agents/mer-orchestrator", RuntimeHandleID: "orch-handle"},
+		Kind:      domain.KindManager,
+		Metadata:  domain.SessionMetadata{WorkspacePath: "/ws/mer-orch", Branch: "open-agents/mer-manager", RuntimeHandleID: "orch-handle"},
 		Activity:  domain.Activity{State: domain.ActivityActive},
 	}
 	st.worktrees["mer-orch"] = []domain.SessionWorktreeRecord{
 		{
 			SessionID:    "mer-orch",
 			RepoName:     domain.RootWorkspaceRepoName,
-			Branch:       "open-agents/mer-orchestrator",
+			Branch:       "open-agents/mer-manager",
 			WorktreePath: "/ws/mer-orch",
 			PreservedRef: "refs/open-agents/preserved/old-root",
 			State:        "active",
@@ -7109,7 +7111,7 @@ func TestRetireForReplacementWorkspaceProjectCapturesAndReleasesEveryRepo(t *tes
 		{
 			SessionID:    "mer-orch",
 			RepoName:     "api",
-			Branch:       "open-agents/mer-orchestrator",
+			Branch:       "open-agents/mer-manager",
 			WorktreePath: "/ws/mer-orch/api",
 			PreservedRef: "refs/open-agents/preserved/old-api",
 			State:        "active",
@@ -7124,7 +7126,7 @@ func TestRetireForReplacementWorkspaceProjectCapturesAndReleasesEveryRepo(t *tes
 		t.Fatalf("replacement retirement must not write restore markers, got %#v", rows)
 	}
 	if !st.sessions["mer-orch"].IsTerminated {
-		t.Fatal("retired orchestrator must be marked terminated")
+		t.Fatal("retired manager must be marked terminated")
 	}
 	if rt.destroyed != 1 || rt.destroyedIDs[0] != "orch-handle" {
 		t.Fatalf("runtime destroyed = %d ids=%v, want orch-handle", rt.destroyed, rt.destroyedIDs)
@@ -7161,13 +7163,13 @@ func TestRetireForReplacementWorkspaceProjectRuntimeDestroyFailureKeepsRepoInven
 	st.sessions["mer-orch"] = domain.SessionRecord{
 		ID:        "mer-orch",
 		ProjectID: "mer",
-		Kind:      domain.KindOrchestrator,
-		Metadata:  domain.SessionMetadata{WorkspacePath: "/ws/mer-orch", Branch: "open-agents/mer-orchestrator", RuntimeHandleID: "orch-handle"},
+		Kind:      domain.KindManager,
+		Metadata:  domain.SessionMetadata{WorkspacePath: "/ws/mer-orch", Branch: "open-agents/mer-manager", RuntimeHandleID: "orch-handle"},
 		Activity:  domain.Activity{State: domain.ActivityActive},
 	}
 	st.worktrees["mer-orch"] = []domain.SessionWorktreeRecord{
-		{SessionID: "mer-orch", RepoName: domain.RootWorkspaceRepoName, Branch: "open-agents/mer-orchestrator", WorktreePath: "/ws/mer-orch", State: "active"},
-		{SessionID: "mer-orch", RepoName: "api", Branch: "open-agents/mer-orchestrator", WorktreePath: "/ws/mer-orch/api", State: "active"},
+		{SessionID: "mer-orch", RepoName: domain.RootWorkspaceRepoName, Branch: "open-agents/mer-manager", WorktreePath: "/ws/mer-orch", State: "active"},
+		{SessionID: "mer-orch", RepoName: "api", Branch: "open-agents/mer-manager", WorktreePath: "/ws/mer-orch/api", State: "active"},
 	}
 
 	err := m.RetireForReplacement(ctx, "mer-orch")
@@ -7200,13 +7202,13 @@ func TestRetireForReplacementWorkspaceProjectForceDestroyFailureKeepsRepoInvento
 	st.sessions["mer-orch"] = domain.SessionRecord{
 		ID:        "mer-orch",
 		ProjectID: "mer",
-		Kind:      domain.KindOrchestrator,
-		Metadata:  domain.SessionMetadata{WorkspacePath: "/ws/mer-orch", Branch: "open-agents/mer-orchestrator", RuntimeHandleID: "orch-handle"},
+		Kind:      domain.KindManager,
+		Metadata:  domain.SessionMetadata{WorkspacePath: "/ws/mer-orch", Branch: "open-agents/mer-manager", RuntimeHandleID: "orch-handle"},
 		Activity:  domain.Activity{State: domain.ActivityActive},
 	}
 	st.worktrees["mer-orch"] = []domain.SessionWorktreeRecord{
-		{SessionID: "mer-orch", RepoName: domain.RootWorkspaceRepoName, Branch: "open-agents/mer-orchestrator", WorktreePath: "/ws/mer-orch", State: "active"},
-		{SessionID: "mer-orch", RepoName: "api", Branch: "open-agents/mer-orchestrator", WorktreePath: "/ws/mer-orch/api", State: "active"},
+		{SessionID: "mer-orch", RepoName: domain.RootWorkspaceRepoName, Branch: "open-agents/mer-manager", WorktreePath: "/ws/mer-orch", State: "active"},
+		{SessionID: "mer-orch", RepoName: "api", Branch: "open-agents/mer-manager", WorktreePath: "/ws/mer-orch/api", State: "active"},
 	}
 
 	err := m.RetireForReplacement(ctx, "mer-orch")
@@ -7234,13 +7236,13 @@ func TestRetireForReplacementWorkspaceProjectStaleCleanupFailureKeepsRepoInvento
 	st.sessions["mer-orch"] = domain.SessionRecord{
 		ID:        "mer-orch",
 		ProjectID: "mer",
-		Kind:      domain.KindOrchestrator,
-		Metadata:  domain.SessionMetadata{WorkspacePath: "/ws/mer-orch", Branch: "open-agents/mer-orchestrator", RuntimeHandleID: "orch-handle"},
+		Kind:      domain.KindManager,
+		Metadata:  domain.SessionMetadata{WorkspacePath: "/ws/mer-orch", Branch: "open-agents/mer-manager", RuntimeHandleID: "orch-handle"},
 		Activity:  domain.Activity{State: domain.ActivityActive},
 	}
 	st.worktrees["mer-orch"] = []domain.SessionWorktreeRecord{
-		{SessionID: "mer-orch", RepoName: domain.RootWorkspaceRepoName, Branch: "open-agents/mer-orchestrator", WorktreePath: "/ws/mer-orch", State: "active"},
-		{SessionID: "mer-orch", RepoName: "api", Branch: "open-agents/mer-orchestrator", WorktreePath: "/ws/mer-orch/api", State: "active"},
+		{SessionID: "mer-orch", RepoName: domain.RootWorkspaceRepoName, Branch: "open-agents/mer-manager", WorktreePath: "/ws/mer-orch", State: "active"},
+		{SessionID: "mer-orch", RepoName: "api", Branch: "open-agents/mer-manager", WorktreePath: "/ws/mer-orch/api", State: "active"},
 	}
 
 	err := m.RetireForReplacement(ctx, "mer-orch")
@@ -7262,14 +7264,14 @@ func TestRetireForReplacementForceDestroyFailureLeavesSessionActive(t *testing.T
 	st.sessions["mer-orch"] = domain.SessionRecord{
 		ID:        "mer-orch",
 		ProjectID: "mer",
-		Kind:      domain.KindOrchestrator,
-		Metadata:  domain.SessionMetadata{WorkspacePath: "/ws/mer-orch", Branch: "open-agents/mer-orchestrator", RuntimeHandleID: "orch-handle"},
+		Kind:      domain.KindManager,
+		Metadata:  domain.SessionMetadata{WorkspacePath: "/ws/mer-orch", Branch: "open-agents/mer-manager", RuntimeHandleID: "orch-handle"},
 		Activity:  domain.Activity{State: domain.ActivityActive},
 	}
 	st.worktrees["mer-orch"] = []domain.SessionWorktreeRecord{{
 		SessionID:    "mer-orch",
 		RepoName:     domain.RootWorkspaceRepoName,
-		Branch:       "open-agents/mer-orchestrator",
+		Branch:       "open-agents/mer-manager",
 		WorktreePath: "/ws/mer-orch",
 		PreservedRef: "refs/open-agents/preserved/old",
 	}}
@@ -7296,14 +7298,14 @@ func TestRetireForReplacementRuntimeDestroyFailureBlocksWorkspaceRelease(t *test
 	st.sessions["mer-orch"] = domain.SessionRecord{
 		ID:        "mer-orch",
 		ProjectID: "mer",
-		Kind:      domain.KindOrchestrator,
-		Metadata:  domain.SessionMetadata{WorkspacePath: "/ws/mer-orch", Branch: "open-agents/mer-orchestrator", RuntimeHandleID: "orch-handle"},
+		Kind:      domain.KindManager,
+		Metadata:  domain.SessionMetadata{WorkspacePath: "/ws/mer-orch", Branch: "open-agents/mer-manager", RuntimeHandleID: "orch-handle"},
 		Activity:  domain.Activity{State: domain.ActivityActive},
 	}
 	st.worktrees["mer-orch"] = []domain.SessionWorktreeRecord{{
 		SessionID:    "mer-orch",
 		RepoName:     domain.RootWorkspaceRepoName,
-		Branch:       "open-agents/mer-orchestrator",
+		Branch:       "open-agents/mer-manager",
 		WorktreePath: "/ws/mer-orch",
 		PreservedRef: "refs/open-agents/preserved/old",
 	}}
@@ -7397,7 +7399,7 @@ func TestSaveAndTeardownAll_SkipsAlreadyTerminated(t *testing.T) {
 	}
 }
 
-// TestSaveAndTeardownAll_NoKindFilter: both worker and orchestrator sessions
+// TestSaveAndTeardownAll_NoKindFilter: both worker and manager sessions
 // are saved (no kind filter).
 func TestSaveAndTeardownAll_NoKindFilter(t *testing.T) {
 	m, st, _, _ := newLifecycleManager()
@@ -7407,8 +7409,8 @@ func TestSaveAndTeardownAll_NoKindFilter(t *testing.T) {
 		Activity: domain.Activity{State: domain.ActivityActive},
 	}
 	st.sessions["mer-2"] = domain.SessionRecord{
-		ID: "mer-2", ProjectID: "mer", Kind: domain.KindOrchestrator,
-		Metadata: domain.SessionMetadata{WorkspacePath: "/ws/mer-2", Branch: "open-agents/mer-orchestrator", RuntimeHandleID: "h2"},
+		ID: "mer-2", ProjectID: "mer", Kind: domain.KindManager,
+		Metadata: domain.SessionMetadata{WorkspacePath: "/ws/mer-2", Branch: "open-agents/mer-manager", RuntimeHandleID: "h2"},
 		Activity: domain.Activity{State: domain.ActivityActive},
 	}
 
@@ -7420,13 +7422,13 @@ func TestSaveAndTeardownAll_NoKindFilter(t *testing.T) {
 		t.Error("worker session mer-1 must be saved")
 	}
 	if len(st.worktrees["mer-2"]) == 0 {
-		t.Error("orchestrator session mer-2 must be saved")
+		t.Error("manager session mer-2 must be saved")
 	}
 	if !st.sessions["mer-1"].IsTerminated {
 		t.Error("worker session mer-1 must be terminated")
 	}
 	if !st.sessions["mer-2"].IsTerminated {
-		t.Error("orchestrator session mer-2 must be terminated")
+		t.Error("manager session mer-2 must be terminated")
 	}
 }
 
@@ -7505,9 +7507,9 @@ func TestSaveAndTeardownAll_WorkspaceProjectRegistryDriftPreservesWholeWorkspace
 	}
 }
 
-// TestRestoreAll_RestoresBothWorkerAndOrchestrator verifies (b): RestoreAll
-// restores both a worker and an orchestrator session saved by SaveAndTeardownAll.
-func TestRestoreAll_RestoresBothWorkerAndOrchestrator(t *testing.T) {
+// TestRestoreAll_RestoresBothWorkerAndManager verifies (b): RestoreAll
+// restores both a worker and a manager session saved by SaveAndTeardownAll.
+func TestRestoreAll_RestoresBothWorkerAndManager(t *testing.T) {
 	m, st, rt, _ := newLifecycleManager()
 
 	// Seed two terminated sessions that were saved by SaveAndTeardownAll
@@ -7524,10 +7526,10 @@ func TestRestoreAll_RestoresBothWorkerAndOrchestrator(t *testing.T) {
 	st.sessions["mer-2"] = domain.SessionRecord{
 		ID:           "mer-2",
 		ProjectID:    "mer",
-		Kind:         domain.KindOrchestrator,
+		Kind:         domain.KindManager,
 		Harness:      domain.HarnessOpenCode,
 		IsTerminated: true,
-		Metadata:     domain.SessionMetadata{WorkspacePath: "/ws/mer-2", Branch: "open-agents/mer-orchestrator", AgentSessionID: "agent-o"},
+		Metadata:     domain.SessionMetadata{WorkspacePath: "/ws/mer-2", Branch: "open-agents/mer-manager", AgentSessionID: "agent-o"},
 		Activity:     domain.Activity{State: domain.ActivityExited},
 	}
 	// Write the shutdown-saved marker rows.
@@ -7545,7 +7547,7 @@ func TestRestoreAll_RestoresBothWorkerAndOrchestrator(t *testing.T) {
 		t.Error("worker session mer-1 must be live after RestoreAll")
 	}
 	if st.sessions["mer-2"].IsTerminated {
-		t.Error("orchestrator session mer-2 must be live after RestoreAll")
+		t.Error("manager session mer-2 must be live after RestoreAll")
 	}
 }
 
@@ -8558,9 +8560,9 @@ func TestReconcileLive_ScratchChatReattachesPersistentController(t *testing.T) {
 // session states a daemon restart/upgrade leaves behind and asserts agent
 // sessions are decoupled from the daemon's lifetime:
 //
-//   - an alive orchestrator is ADOPTED in place: same id, still live, its runtime
+//   - an alive manager is ADOPTED in place: same id, still live, its runtime
 //     never torn down, and NO new session minted (the id-increment regression
-//     guard: adoption failure used to mint a fresh orchestrator id 14->15->16).
+//     guard: adoption failure used to mint a fresh manager id 14->15->16).
 //   - an alive worker is adopted as a no-op.
 //   - a worker whose runtime died with the daemon is relaunched in its existing
 //     worktree on this same boot under its ORIGINAL id.
@@ -8569,7 +8571,7 @@ func TestReconcile_AdoptAcrossDaemonRestart(t *testing.T) {
 	st := newFakeStore()
 	st.projects["mer"] = domain.ProjectRecord{ID: "mer", Config: testRoleAgents()}
 	rt := &fakeRuntime{aliveByHandle: map[string]bool{
-		"orch":    true, // orchestrator runtime survived the daemon exit
+		"orch":    true, // manager runtime survived the daemon exit
 		"w-alive": true, // worker runtime survived the daemon exit
 		// "w-dead" is absent -> that worker's runtime died with the daemon.
 	}}
@@ -8578,10 +8580,10 @@ func TestReconcile_AdoptAcrossDaemonRestart(t *testing.T) {
 	lookPath := func(string) (string, error) { return "/bin/true", nil }
 	m := New(Deps{Runtime: rt, Agents: fakeAgents{}, Workspace: ws, Store: st, Messenger: &fakeMessenger{}, Lifecycle: lcm, LookPath: lookPath})
 
-	// Alive orchestrator: the promptless session whose adoption failure used to
-	// mint a fresh orchestrator id. It must be adopted in place.
+	// Alive manager: the promptless session whose adoption failure used to
+	// mint a fresh manager id. It must be adopted in place.
 	st.sessions["mer-1"] = domain.SessionRecord{
-		ID: "mer-1", ProjectID: "mer", Kind: domain.KindOrchestrator, Harness: domain.HarnessOpenCode,
+		ID: "mer-1", ProjectID: "mer", Kind: domain.KindManager, Harness: domain.HarnessOpenCode,
 		Metadata: domain.SessionMetadata{Branch: "open-agents/mer-1/root", WorkspacePath: "/ws/mer-1", RuntimeHandleID: "orch"},
 	}
 	// Alive worker: adopted as a no-op.
@@ -8606,9 +8608,9 @@ func TestReconcile_AdoptAcrossDaemonRestart(t *testing.T) {
 		t.Fatalf("Reconcile: %v", err)
 	}
 
-	// Alive orchestrator + worker adopted in place: same id, still live.
+	// Alive manager + worker adopted in place: same id, still live.
 	if st.sessions["mer-1"].IsTerminated {
-		t.Fatal("alive orchestrator must be adopted in place, not terminated")
+		t.Fatal("alive manager must be adopted in place, not terminated")
 	}
 	if st.sessions["mer-2"].IsTerminated {
 		t.Fatal("alive worker must be adopted in place, not terminated")

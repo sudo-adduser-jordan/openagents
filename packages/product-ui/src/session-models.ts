@@ -29,6 +29,11 @@ export const SESSION_ACTIVITY_STATES = [
 
 export type SessionActivityState = (typeof SESSION_ACTIVITY_STATES)[number];
 
+/** The role that owns a session. Managers coordinate workers; workers execute. */
+export const SESSION_KINDS = ["worker", "manager"] as const;
+
+export type SessionKind = (typeof SESSION_KINDS)[number];
+
 export type SessionActivity = {
 	state: SessionActivityState;
 	lastActivityAt: string;
@@ -70,9 +75,30 @@ export function isBoardLane(value: string): value is BoardLane {
 }
 
 /** User-controlled delivery stage persisted on the session row. */
-export const WORKFLOW_MODES = ["planning", "building"] as const;
+export const WORKFLOW_MODES = ["planning", "manager", "building"] as const;
 
 export type WorkflowMode = (typeof WORKFLOW_MODES)[number];
+
+/**
+ * Normalize a wire/default workflow stage against the session role.
+ *
+ * Managers are coordinating by default and may explicitly plan without
+ * delegating. Workers retain their existing planning/building stages; a manager
+ * stage can therefore never leak into worker presentation.
+ */
+export function resolveWorkflowMode(
+	kind: SessionKind | undefined,
+	workflowMode?: WorkflowMode,
+): WorkflowMode {
+	if (kind === "manager") return workflowMode === "planning" ? "planning" : "manager";
+	return workflowMode === "planning" ? "planning" : "building";
+}
+
+export const WORKFLOW_MODE_LABELS: Record<WorkflowMode, string> = {
+	planning: "Planning",
+	manager: "Manager",
+	building: "Building",
+};
 
 export const DISPLAY_STATUSES = [
 	"Working",

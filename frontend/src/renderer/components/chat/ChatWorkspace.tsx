@@ -31,6 +31,7 @@ import {
 } from "react";
 import { ArrowDown, Loader2, LoaderCircle, TriangleAlert, Undo2 } from "lucide-react";
 import { Reorder, useDragControls } from "motion/react";
+import { resolveWorkflowMode, WORKFLOW_MODE_LABELS } from "@openagents/product-ui";
 import { cn } from "../../lib/utils";
 import {
 	acknowledgeChatInlineEditMutation,
@@ -79,7 +80,7 @@ import type { ShellTerminal } from "../../hooks/useShellTerminals";
 import { sidebarOccupiesLayout, useUiStore } from "../../stores/ui-store";
 import type { TerminalTarget } from "../../types/terminal";
 import {
-	isOrchestratorSession,
+	isManagerSession,
 	type SessionKind,
 	type WorkspaceSession,
 } from "../../types/workspace";
@@ -1114,12 +1115,13 @@ function ChatWorkspaceContent({
 	const stableSettings = useStableValue(snapshot.settings);
 	const stableModelReroute = useStableValue(snapshot.modelReroute);
 	const stablePendingApproval = useStableValue(pendingApproval);
-	// Delivery-stage actions for the finished session. Replaces the daemon's
-	// "Awaiting PR" phrase in both places it shows: the composer stage bar here
-	// and the board card. `working` drives the animated ring; the idle buttons
-	// advance the workflow: confirm planning is done, or approve the pending
-	// edit so the agent commits and the session waits on PR approval.
-	const workflowTone = session?.workflowMode === "planning" ? "planning" : "building";
+	// Delivery-stage actions for the finished session. Managers coordinate by
+	// default and may explicitly plan without delegating; workers retain their
+	// planning/building controls. `working` drives the animated ring.
+	const effectiveSessionRole = session
+		? isManagerSession(session) ? "manager" : "worker"
+		: sessionRole;
+	const workflowTone = resolveWorkflowMode(effectiveSessionRole, session?.workflowMode);
 	const working = Boolean(turn) || busy;
 	const prePR = !session?.kanbanColumn || session.kanbanColumn === "building";
 	const pendingApprovalRequest = Boolean(stablePendingApproval?.requestId);
@@ -1154,7 +1156,21 @@ function ChatWorkspaceContent({
 					data-testid="workflow-stage-bar"
 				>
 					<LoaderCircle aria-hidden="true" className="size-3.5 animate-spin text-foreground" />
-					<span>{workflowTone === "planning" ? "Planning…" : "Building…"}</span>
+					<span>{WORKFLOW_MODE_LABELS[workflowTone]}…</span>
+				</div>
+			);
+		}
+		if (effectiveSessionRole === "manager") {
+			return (
+				<div className="flex items-center gap-2 px-1" data-testid="workflow-stage-bar">
+					<span className="text-2xs font-medium text-muted-foreground">
+						{workflowTone === "planning" ? "Planning — delegation paused" : "Manager"}
+					</span>
+					{workflowTone === "planning" && onConfirmBuilding && !pendingApprovalRequest && !newWorkDisabled ? (
+						<Button variant="outline" size="sm" onClick={confirmBuilding}>
+							Start managing
+						</Button>
+					) : null}
 				</div>
 			);
 		}
@@ -1173,6 +1189,7 @@ function ChatWorkspaceContent({
 		);
 	}, [
 		confirmBuilding,
+		effectiveSessionRole,
 		newWorkDisabled,
 		onConfirmBuilding,
 		pendingApprovalRequest,
@@ -1180,7 +1197,6 @@ function ChatWorkspaceContent({
 		reviewToCommit,
 		session,
 		snapshot.controller.state,
-		
 		workflowTone,
 		working,
 	]);
@@ -1544,6 +1560,7 @@ function ChatWorkspaceContent({
 									draftSessionId={queueEdit ? undefined : snapshot.sessionId}
 									draftSessionIncarnation={draftScope.incarnation}
 									acceptedClientMessageIds={acceptedClientMessageIds}
+									sessionRole={effectiveSessionRole}
 									workflowMode={session?.workflowMode}
 									stageBar={stageBar}
 								/>
@@ -1747,11 +1764,11 @@ function ChatHeader({
 	topbarBounds: TopbarBounds;
 }) {
 	const providerLabel = agentLabel(snapshot.harness);
-	const sessionIsOrchestrator = session
-		? isOrchestratorSession(session)
-		: sessionRole === "orchestrator";
-	const label = sessionIsOrchestrator
-		? "Orchestrator"
+	const sessionIsManager = session
+		? isManagerSession(session)
+		: sessionRole === "manager";
+	const label = sessionIsManager
+		? "Manager"
 		: (sessionTitle || session?.title || snapshot.title || snapshot.sessionId);
 	const tabScrollWatch = `${session?.id ?? ""}|${orderedAuxiliaryTabs.map((tab) => tab.key).join("|")}`;
 	const {

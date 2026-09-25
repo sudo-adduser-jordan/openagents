@@ -47,7 +47,7 @@ export function hidesShellTopbar(): boolean {
 }
 
 /**
- * Board New task / Orchestrator / bell render in the board body instead of the
+ * Board New task / Manager / bell render in the board body instead of the
  * framed shell topbar (macOS only). Win/Linux keep those controls in the topbar.
  *
  * This flipped for Linux as part of fixing hidesShellTopbar() — board actions

@@ -25,13 +25,13 @@ func TestInterfaceTransitionNativeHistoryOwnership(t *testing.T) {
 		t.Run(string(harness), func(t *testing.T) {
 			for _, tc := range []struct {
 				name                   string
-				replaceOrchestrator    bool
+				replaceManager         bool
 				removeTranscript       bool
 				changeTerminalIdentity bool
 			}{
 				{name: "transcript_preserved"},
 				{name: "transcript_unavailable_on_terminal_restart", removeTranscript: true},
-				{name: "project_orchestrator_replacement", replaceOrchestrator: true},
+				{name: "project_manager_replacement", replaceManager: true},
 				{name: "existing_terminal_identity_changed", changeTerminalIdentity: true},
 			} {
 				t.Run(tc.name, func(t *testing.T) {
@@ -46,7 +46,7 @@ func TestInterfaceTransitionNativeHistoryOwnership(t *testing.T) {
 					}
 					st := sqlitetest.MustOpenAt(t, dir)
 					project := domain.ProjectRecord{ID: "history", Path: workspace, RegisteredAt: time.Now(), Config: testRoleAgents()}
-					project.Config.Orchestrator.Harness = harness
+					project.Config.Manager.Harness = harness
 					if err := st.UpsertProject(ctx, project); err != nil {
 						t.Fatal(err)
 					}
@@ -58,7 +58,7 @@ func TestInterfaceTransitionNativeHistoryOwnership(t *testing.T) {
 						t.Fatal(err)
 					}
 					sess, err := st.CreateSession(ctx, domain.SessionRecord{
-						ProjectID: domain.ProjectID(project.ID), Kind: domain.KindOrchestrator, Harness: harness,
+						ProjectID: domain.ProjectID(project.ID), Kind: domain.KindManager, Harness: harness,
 						Mode:      domain.SessionModeChat,
 						Activity:  domain.Activity{State: domain.ActivityIdle, LastActivityAt: time.Now()},
 						Metadata:  domain.SessionMetadata{WorkspacePath: workspace, Branch: "main", ProviderConversationID: original},
@@ -136,14 +136,14 @@ func TestInterfaceTransitionNativeHistoryOwnership(t *testing.T) {
 						return domain.SessionInterfaceTransition{}
 					}
 
-					if tc.replaceOrchestrator {
+					if tc.replaceManager {
 						if err := svc.StopChat(ctx, sess.ID); err != nil {
 							t.Fatal(err)
 						}
 						if err := lcm.MarkTerminated(ctx, sess.ID); err != nil {
 							t.Fatal(err)
 						}
-						sess, _, _, err = m.Spawn(ctx, ports.SpawnConfig{ProjectID: domain.ProjectID(project.ID), Kind: domain.KindOrchestrator, RequestedMode: domain.SessionModeTUI})
+						sess, _, _, err = m.Spawn(ctx, ports.SpawnConfig{ProjectID: domain.ProjectID(project.ID), Kind: domain.KindManager, RequestedMode: domain.SessionModeTUI})
 						if err != nil {
 							t.Fatal(err)
 						}
@@ -204,7 +204,7 @@ func TestInterfaceTransitionNativeHistoryOwnership(t *testing.T) {
 						// Simulate a native context change after launch.
 						terminalID = freshID(string(sess.ID))
 					}
-					if tc.replaceOrchestrator || tc.changeTerminalIdentity || tc.removeTranscript {
+					if tc.replaceManager || tc.changeTerminalIdentity || tc.removeTranscript {
 						expectedNativeID = freshID(string(sess.ID))
 					}
 					if terminalID != expectedNativeID {

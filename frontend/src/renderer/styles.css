@@ -375,10 +375,6 @@
 	width: min(var(--size-dialog-xl), calc(100vw - var(--space-8)));
 }
 
-@utility w-dialog-orchestrator {
-	width: min(var(--size-dialog-orchestrator), calc(100vw - var(--space-8)));
-}
-
 @utility w-command-palette {
 	width: min(var(--size-command-palette), calc(100vw - var(--space-8)));
 }
@@ -2071,7 +2067,7 @@ body.is-resizing-x .session-split[data-workspace-resizing="true"] [data-slot="in
 	box-shadow: none !important;
 }
 
-/* Icon-only trailing controls (project kebab/orchestrator, session pin/kill,
+/* Icon-only trailing controls (project kebab/manager, session pin/kill,
    Projects "+") tint the glyph only — never pick up the focus fill above. */
 .sidebar-focusless .sidebar-icon-action:focus-visible {
 	background-color: transparent !important;
@@ -2743,16 +2739,10 @@ html.sidebar-reordering * {
 }
 
 /* Delivery-stage identity: the composer frame carries the workflow tone so the
-   current mode is visible without reading a label. Every session, orchestrators
-   included, reads by its stage. Declared after the light-theme frame so `:root`
-   raises the specificity past it.
-
-   The colored frame belongs to the executing (building) stage — the default
-   mode in which tasks are created and work happens. It is painted pink (the
-   review token) so the executing frame reads against the neutral canvas.
-   Planning — where the orchestrator produces a plan without creating tasks —
-   keeps the neutral frame, so the colored border no longer advertises a mode
-   that is not executing. */
+   current mode is visible without reading a label. Manager and worker Building
+   are the coordinating/executing stages respectively; both use the explicit
+   pink review token. Planning keeps its quieter planning tone. */
+:root .cursor-chat-composer[data-workflow="manager"],
 :root .cursor-chat-composer[data-workflow="building"] {
 	--composer-border: color-mix(in oklch, var(--color-status-review) 60%, transparent);
 	--composer-border-hover: var(--color-status-review);
@@ -2901,7 +2891,7 @@ html.sidebar-reordering * {
 	}
 }
 
-/* One compact, responsive action contract for Board, Orchestrator, and
+/* One compact, responsive action contract for Board, Manager, and
  * Session topbars. Labels collapse in priority order while their icons and
  * accessible names remain available. */
 .workspace-topbar-actions {
@@ -3065,7 +3055,7 @@ html.sidebar-reordering * {
 }
 
 /* The session topbar lives inside the panel that grows while the inspector
- * moves. Lock the Orchestrator button's final responsive state for that motion
+ * moves. Lock the Manager button's final responsive state for that motion
  * so its label starts changing with the panel instead of at a late breakpoint. */
 .session-split[data-terminal-live-resize="true"]
 	.workspace-topbar-actions

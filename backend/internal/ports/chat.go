@@ -277,7 +277,7 @@ type ChatStartConfig struct {
 	WorkspacePath string
 	// Env is the environment for the driver process and, transitively, for the
 	// shell commands the agent runs. Open Agents passes a HookPATH-augmented copy so the
-	// agent can invoke `open-agents` — that is how an orchestrator delegates.
+	// agent can invoke `open-agents` — that is how a manager delegates.
 	Env map[string]string
 	// PrepareEnv rotates launch-only credentials. Persistent drivers defer it
 	// until they know a new provider process is required; live adoption must keep

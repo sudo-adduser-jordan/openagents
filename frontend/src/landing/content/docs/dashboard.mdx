@@ -9,7 +9,7 @@ The Open Agents desktop app is the main control surface. It runs the local daemo
 
 | Area | What it contains |
 | --- | --- |
-| **Sidebar** | Registered projects and their worker or orchestrator sessions. |
+| **Sidebar** | Registered projects and their worker or manager sessions. |
 | **Board / center pane** | Sessions grouped by their current derived state. |
 | **Session view** | Structured Chat or the live native Terminal UI. |
 | **Inspector** | Pull request, reviews, files, and browser preview for the selected session. |
@@ -69,7 +69,7 @@ The notification center keeps durable alerts for sessions that need input, pull 
 
 ## Project Settings
 
-Project settings configure worker and orchestrator roles without changing the registered repository identity. The desktop app writes through the daemon API; it does not directly edit the database or run session logic in the renderer.
+Project settings configure worker and manager roles without changing the registered repository identity. The desktop app writes through the daemon API; it does not directly edit the database or run session logic in the renderer.
 
 GitHub is the current shipped SCM observation path. Do not expect every tracker or SCM named in historical plugin documentation to be active in the Go rewrite.
 

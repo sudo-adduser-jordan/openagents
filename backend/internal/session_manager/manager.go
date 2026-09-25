@@ -46,7 +46,7 @@ var (
 	// error, not an opaque 500.
 	ErrUnknownHarness = errors.New("session: unknown agent harness")
 	// ErrMissingHarness means neither the spawn request nor the project's role
-	// config selected an agent. Worker/orchestrator spawns must be explicit.
+	// config selected an agent. Worker/manager spawns must be explicit.
 	ErrMissingHarness = errors.New("session: agent harness required")
 	// ErrHarnessInstallActive prevents launch while the harness executable is replaced.
 	ErrHarnessInstallActive = errors.New("session: harness install active")
@@ -57,16 +57,15 @@ var (
 	// ErrScratchBranchUnsupported means a caller tried to force git branch
 	// semantics onto a scratch project.
 	ErrScratchBranchUnsupported = errors.New("session: scratch projects do not support branches")
-	// ErrPlanningOrchestratorNoTasks means a planning-mode orchestrator tried to
-	// create a worker task. Orchestrators plan without executing: worker tasks
-	// may only be created once the orchestrator has been switched to building
-	// with a plan/build toggle. The API maps it to a 409.
-	ErrPlanningOrchestratorNoTasks = errors.New("session: planning orchestrator cannot create tasks")
+	// ErrPlanningManagerNoTasks means a planning-mode manager tried to create a
+	// worker task. Planning managers do not delegate; switch the manager back to
+	// manager mode first. The API maps this to a 409.
+	ErrPlanningManagerNoTasks = errors.New("session: planning manager cannot create tasks")
 	// ErrNotResumable means a terminated session cannot be relaunched: its adapter
 	// cannot natively resume it AND it has no prompt to fresh-launch from, and it is
-	// not an orchestrator (orchestrators are promptless by design and relaunch fresh
-	// with the system prompt only). Workers without a task and without a native
-	// session id have nothing meaningful to restore.
+	// not a manager (managers are promptless by design and relaunch fresh with the
+	// system prompt only). Workers without a task and without a native session id
+	// have nothing meaningful to restore.
 	ErrNotResumable = errors.New("session: nothing to resume from")
 	// ErrExclusiveOperationInProgress means an exclusive provider operation
 	// (kill, retire-for-replacement, restore, resume) already owns the session.
@@ -319,7 +318,7 @@ type Store interface {
 }
 
 // conversationSettingsStore is the narrow optional read boundary for deriving
-// a chat orchestrator's current approval mode during a worker spawn. Older
+// a chat manager's current approval mode during a worker spawn. Older
 // embedders without chat persistence retain project-config-only behavior.
 type conversationSettingsStore interface {
 	ConversationForSession(ctx context.Context, session domain.SessionID) (domain.ConversationRecord, error)
@@ -571,7 +570,7 @@ type BrowserCapabilityIssuer interface {
 // sendConfirmConfig bounds the best-effort activity-confirmation loop run after
 // Send. Open Agents has no delivery ack: open-agents send returns 200 the moment tmux send-keys
 // exits 0, and for a large multiline paste the single Enter may not submit the
-// prompt — so UserPromptSubmit never fires and the orchestrator cannot tell the
+// prompt — so UserPromptSubmit never fires and the manager cannot tell the
 // worker started. confirmActive observes the durable Activity.State (written by
 // the user-prompt-submit hook) and re-sends Enter until the session is active or
 // the budget is exhausted. It never fails the send.
@@ -758,21 +757,19 @@ func (m *Manager) Spawn(ctx context.Context, cfg ports.SpawnConfig) (domain.Sess
 		}
 		cfg.AgentConfig.Permissions = permissions
 	}
-	// A worker inherits its starting delivery stage from the orchestrator that
-	// requested it: a build-mode orchestrator drops the task straight into the
-	// board's Building lane, while every other spawn starts in Planning. A
-	// planning-mode orchestrator cannot create tasks at all — it plans without
-	// executing — so the spawn is refused here, before any durable state,
-	// harness, or worktree exists.
-	workflowMode := domain.DefaultWorkflowMode
+	// Every new manager starts in manager mode and every new worker starts in
+	// planning. In particular, a delegated worker never inherits the requesting
+	// manager's posture: delegation moves the work into a user-reviewed planning
+	// lane even when the manager itself is in manager or building mode. A
+	// planning-mode manager cannot delegate at all, so reject that spawn before
+	// any durable state, harness, or worktree exists.
 	if cfg.ParentSessionID != "" {
-		if err := m.gateOrchestratorTaskCreation(ctx, cfg.ProjectID, cfg.ParentSessionID, cfg.Kind); err != nil {
+		if err := m.gateManagerDelegation(ctx, cfg.ProjectID, cfg.ParentSessionID); err != nil {
 			return domain.SessionRecord{}, 0, 0, err
 		}
-		workflowMode = m.inheritedSpawnWorkflowMode(ctx, cfg.ProjectID, cfg.ParentSessionID)
 	}
 	// A per-project role override picks the harness when the spawn names none,
-	// so a project can default workers to one agent and orchestrators to another.
+	// so a project can default workers to one agent and managers to another.
 	cfg.Harness = effectiveHarness(cfg.Harness, cfg.Kind, project.Config)
 	if cfg.Harness == "" {
 		return domain.SessionRecord{}, 0, 0, fmt.Errorf("spawn: %w: configure project %s.agent or pass --harness", ErrMissingHarness, roleConfigName(cfg.Kind))
@@ -852,7 +849,7 @@ func (m *Manager) Spawn(ctx context.Context, cfg ports.SpawnConfig) (domain.Sess
 	promptBytes := len(prompt)
 	systemPromptBytes := len(systemPrompt)
 
-	rec, err := m.store.CreateSession(ctx, seedRecord(cfg, project.Config, m.clock(), workflowMode))
+	rec, err := m.store.CreateSession(ctx, seedRecord(cfg, project.Config, m.clock()))
 	if err != nil {
 		return domain.SessionRecord{}, 0, 0, wrapSpawnStageEarly(ErrSpawnCreate, err)
 	}
@@ -1049,15 +1046,15 @@ func (m *Manager) resolveChatAgentConfig(cfg ports.SpawnConfig, project domain.P
 }
 
 // inheritedSpawnPermissions derives a worker override from its requesting chat
-// orchestrator. The request supplies identity only: the stored conversation
+// manager. The request supplies identity only: the stored conversation
 // settings remain the authority for the permission policy.
 func (m *Manager) inheritedSpawnPermissions(ctx context.Context, projectID domain.ProjectID, parentID domain.SessionID) (domain.PermissionMode, error) {
 	parent, ok, err := m.store.GetSession(ctx, parentID)
 	if err != nil {
 		return "", fmt.Errorf("load parent session %s: %w", parentID, err)
 	}
-	if !ok || parent.ProjectID != projectID || parent.Kind != domain.KindOrchestrator {
-		// OPEN_AGENTS_SESSION_ID is available in every session, not only orchestrators.
+	if !ok || parent.ProjectID != projectID || parent.Kind != domain.KindManager {
+		// OPEN_AGENTS_SESSION_ID is available in every session, not only managers.
 		// A worker (or a stale/cross-project value) must preserve the historical
 		// project-default spawn behavior rather than gain an inherited policy.
 		return "", nil
@@ -1076,55 +1073,28 @@ func (m *Manager) inheritedSpawnPermissions(ctx context.Context, projectID domai
 	return conversation.Settings.ApprovalMode, nil
 }
 
-// gateOrchestratorTaskCreation refuses a worker task spawned by a
-// planning-mode orchestrator: "the orchestrator creates no tasks in plan
-// mode". An orchestrator delegates by invoking `open-agents spawn` from its own shell,
-// where OPEN_AGENTS_SESSION_ID names the orchestrator as the parent, so this gate is
-// the daemon's enforcement point. Only worker children of a same-project
-// orchestrator are gated; worker parents, cross-project parents, unknown
-// sessions, and non-worker children spawn as before. Like the inheritance
-// below this is a board behavior, but the refusal is a hard rule, so a
-// transient store error falls back permissively (log + allow) rather than
-// lying about the orchestrator's stage.
-func (m *Manager) gateOrchestratorTaskCreation(ctx context.Context, projectID domain.ProjectID, parentID domain.SessionID, kind domain.SessionKind) error {
-	if kind != domain.KindWorker {
-		return nil
-	}
+// gateManagerDelegation refuses any child spawned by a planning-mode
+// manager. A manager delegates by invoking `open-agents spawn` from its own
+// shell, where OPEN_AGENTS_SESSION_ID names the manager as the parent, so this
+// gate is the daemon's enforcement point. Only same-project manager parents are
+// gated; worker parents, cross-project parents, and unknown sessions spawn as
+// before. The refusal is a hard rule, so a transient store error falls back
+// permissively (log + allow) rather than lying about the manager's posture.
+func (m *Manager) gateManagerDelegation(ctx context.Context, projectID domain.ProjectID, parentID domain.SessionID) error {
 	parent, ok, err := m.store.GetSession(ctx, parentID)
 	if err != nil {
-		m.logger.Warn("spawn: load parent for orchestrator task gate",
+		m.logger.Warn("spawn: load parent for manager task gate",
 			"parent", parentID, "error", err)
 		return nil
 	}
-	if !ok || parent.ProjectID != projectID || parent.Kind != domain.KindOrchestrator {
+	if !ok || parent.ProjectID != projectID || parent.Kind != domain.KindManager {
 		return nil
 	}
-	if normalized := domain.NormalizeWorkflowMode(parent.WorkflowMode); normalized == domain.WorkflowModePlanning {
-		return fmt.Errorf("spawn: %w: %s is still planning; switch it to building with `open-agents build %s` before it creates tasks",
-			ErrPlanningOrchestratorNoTasks, parentID, parentID)
+	if domain.NormalizeWorkflowModeForKind(parent.Kind, parent.WorkflowMode) == domain.WorkflowModePlanning {
+		return fmt.Errorf("spawn: %w: %s is still planning; switch it to manager mode with `open-agents manage %s` before it creates tasks",
+			ErrPlanningManagerNoTasks, parentID, parentID)
 	}
 	return nil
-}
-
-// inheritedSpawnWorkflowMode derives a worker's starting delivery stage from its
-// requesting orchestrator. A worker spawned by an orchestrator that has been
-// toggled into building starts in building too, so `open-agents spawn` from a build-mode
-// orchestrator drops the task straight into the board's Building lane. Any other
-// parent — a worker, a missing session, or an orchestrator still planning — keeps
-// the planning default. Unlike the permission policy this is a board placement,
-// not a security boundary, so a read failure logs and falls back rather than
-// aborting the spawn.
-func (m *Manager) inheritedSpawnWorkflowMode(ctx context.Context, projectID domain.ProjectID, parentID domain.SessionID) domain.WorkflowMode {
-	parent, ok, err := m.store.GetSession(ctx, parentID)
-	if err != nil {
-		m.logger.Warn("spawn: load parent for workflow-mode inheritance",
-			"parent", parentID, "error", err)
-		return domain.DefaultWorkflowMode
-	}
-	if !ok || parent.ProjectID != projectID || parent.Kind != domain.KindOrchestrator {
-		return domain.DefaultWorkflowMode
-	}
-	return domain.NormalizeWorkflowMode(parent.WorkflowMode)
 }
 
 // loadProject loads the project record so spawn can resolve its per-project
@@ -1468,7 +1438,7 @@ func (m *Manager) preserveFailedSpawnWorkspace(ctx context.Context, id domain.Se
 
 // effectiveHarness resolves the harness for a spawn: an explicit harness wins;
 // otherwise the project's role override for the session kind applies. Empty is
-// invalid for new worker/orchestrator launches and is rejected by Spawn.
+// invalid for new worker/manager launches and is rejected by Spawn.
 func effectiveHarness(explicit domain.AgentHarness, kind domain.SessionKind, cfg domain.ProjectConfig) domain.AgentHarness {
 	if explicit != "" {
 		return explicit
@@ -1480,8 +1450,8 @@ func effectiveHarness(explicit domain.AgentHarness, kind domain.SessionKind, cfg
 }
 
 func roleConfigName(kind domain.SessionKind) string {
-	if kind == domain.KindOrchestrator {
-		return "orchestrator"
+	if kind == domain.KindManager {
+		return "manager"
 	}
 	return "worker"
 }
@@ -1602,8 +1572,8 @@ func validateSpawnModel(harness domain.AgentHarness, model string) error {
 }
 
 func roleOverride(kind domain.SessionKind, cfg domain.ProjectConfig) domain.RoleOverride {
-	if kind == domain.KindOrchestrator {
-		return cfg.Orchestrator
+	if kind == domain.KindManager {
+		return cfg.Manager
 	}
 	return cfg.Worker
 }
@@ -1870,13 +1840,13 @@ func (m *Manager) Kill(ctx context.Context, id domain.SessionID) (bool, error) {
 	return freed, nil
 }
 
-// RetireForReplacement terminates a live orchestrator and releases its branch
+// RetireForReplacement terminates a live manager and releases its branch
 // for a replacement session. Unlike Kill, this captures uncommitted work before
-// force-removing the worktree, so a dirty canonical orchestrator worktree does
+// force-removing the worktree, so a dirty canonical manager worktree does
 // not block the replacement from claiming the canonical branch.
 //
 // This deliberately does not write a session_worktrees row: those rows are
-// boot-restore markers, and a replaced orchestrator must stay terminated.
+// boot-restore markers, and a replaced manager must stay terminated.
 func (m *Manager) RetireForReplacement(ctx context.Context, id domain.SessionID) error {
 	if err := m.beginAgentOperation(ctx, id, agentOperationRetire); err != nil {
 		if errors.Is(err, errAgentOperationInProgress) {
@@ -2098,8 +2068,8 @@ func (m *Manager) RestoreWithMode(ctx context.Context, id domain.SessionID) (Res
 	// Resumability is decided inside restoreArgv, not here. A promptless session
 	// can still be fully resumable when the harness pins a deterministic session id
 	// (opencode). restoreArgv returns ErrNotResumable only for a promptless,
-	// unresumable non-orchestrator (a worker with no task and no native id to resume).
-	// Orchestrators always relaunch fresh with the system prompt only.
+	// unresumable non-manager (a worker with no task and no native id to resume).
+	// Managers always relaunch fresh with the system prompt only.
 
 	ws, err := m.restoreSessionWorkspace(ctx, project, rec)
 	if err != nil {
@@ -2720,7 +2690,7 @@ func (m *Manager) reconcileLive(ctx context.Context, rec domain.SessionRecord) e
 	// A provider or runtime dependency can be temporarily unavailable during an
 	// app restart (for example, a GUI-launched daemon may have a sparse PATH).
 	// That is not user intent to terminate the Open Agents session, remove its worktree,
-	// or retire an orchestrator. Preserve the durable session and native resume
+	// or retire a manager. Preserve the durable session and native resume
 	// identity, but expose the stopped controller as an exited workload so the
 	// existing Resume Agent path can retry it in place.
 	committed, preserveErr := m.preserveFailedReconcileRelaunch(ctx, rec)
@@ -3495,7 +3465,7 @@ func (m *Manager) send(ctx context.Context, id domain.SessionID, message, client
 	// Chat mode has no pane to type into, so it does not go through the messenger
 	// at all. Without this branch the send reached the runtime guard and was
 	// refused as "missing runtime handles" — true of the handles, wrong about the
-	// session, and it left `open-agents send` and orchestrator-to-worker relay unable to
+	// session, and it left `open-agents send` and manager-to-worker relay unable to
 	// reach a chat worker.
 	if handled, err := m.sendChat(ctx, id, message, clientMessageID); handled {
 		return err
@@ -3870,7 +3840,11 @@ func (m *Manager) cleanupRecords(ctx context.Context, project domain.ProjectID) 
 
 // ---- helpers ----
 
-func seedRecord(cfg ports.SpawnConfig, projectConfig domain.ProjectConfig, now time.Time, workflowMode domain.WorkflowMode) domain.SessionRecord {
+func seedRecord(cfg ports.SpawnConfig, projectConfig domain.ProjectConfig, now time.Time) domain.SessionRecord {
+	workflowMode := domain.DefaultWorkflowModeForKind(cfg.Kind)
+	if cfg.RequestedWorkflowMode.ValidForKind(cfg.Kind) {
+		workflowMode = cfg.RequestedWorkflowMode
+	}
 	return domain.SessionRecord{
 		ProjectID:   cfg.ProjectID,
 		IssueID:     cfg.IssueID,
@@ -3890,15 +3864,15 @@ func seedRecord(cfg ports.SpawnConfig, projectConfig domain.ProjectConfig, now t
 		// New sessions default to tearing themselves down once their PR set
 		// completes through a merge. Users can opt out per session.
 		TerminateOnPRMerge: true,
-		// Planning is the default delivery stage; a build-mode orchestrator
-		// passes building so its task lands directly in the Building lane.
-		WorkflowMode: domain.NormalizeWorkflowMode(workflowMode),
+		// Workers start in planning; managers start ready to coordinate and
+		// delegate. A manager's posture is never inherited by a worker.
+		WorkflowMode: workflowMode,
 	}
 }
 
 func defaultSessionBranch(id domain.SessionID, kind domain.SessionKind, prefix, branchNamespace string) string {
-	if kind == domain.KindOrchestrator {
-		return openAgentsBranch(branchNamespace, prefix+"-orchestrator")
+	if kind == domain.KindManager {
+		return openAgentsBranch(branchNamespace, prefix+"-manager")
 	}
 	// A fresh, unique branch per worker session: gitworktree can't add a worktree
 	// on a branch already checked out elsewhere (e.g. main). Put the root work
@@ -3920,10 +3894,10 @@ func DefaultSpawnBranch(id domain.SessionID, kind domain.SessionKind, prefix str
 	return defaultSessionBranch(id, kind, prefix, branchNamespace)
 }
 
-// DefaultOrchestratorBranch returns the generated canonical orchestrator branch
+// DefaultManagerBranch returns the generated canonical manager branch
 // for a project in the current data-dir namespace.
-func DefaultOrchestratorBranch(prefix, dataDir string) string {
-	return defaultSessionBranch("", domain.KindOrchestrator, prefix, generatedBranchNamespace(dataDir))
+func DefaultManagerBranch(prefix, dataDir string) string {
+	return defaultSessionBranch("", domain.KindManager, prefix, generatedBranchNamespace(dataDir))
 }
 
 func openAgentsBranch(namespace string, parts ...string) string {
@@ -3972,8 +3946,8 @@ func buildPrompt(cfg ports.SpawnConfig) string {
 
 func promptRoleForKind(kind domain.SessionKind) sessionPromptRole {
 	switch kind {
-	case domain.KindOrchestrator:
-		return sessionPromptRoleOrchestrator
+	case domain.KindManager:
+		return sessionPromptRoleManager
 	case domain.KindWorker:
 		return sessionPromptRoleWorker
 	default:
@@ -4077,7 +4051,7 @@ func appendAttachmentReferences(prompt string, refs []string) string {
 }
 
 // buildSpawnTexts returns the user-facing prompt and the system prompt to
-// deliver separately to the agent. Orchestrator role instructions and worker
+// deliver separately to the agent. Manager role instructions and worker
 // coordination hints are placed in the system prompt so they are treated as
 // standing instructions rather than part of the human's task request. A
 // promptless spawn delivers no user prompt at all: the agent simply lands at an
@@ -4093,7 +4067,7 @@ func (m *Manager) buildSpawnTexts(ctx context.Context, cfg ports.SpawnConfig) (p
 
 // buildSystemPrompt derives the standing instructions for a session of the
 // given kind from current store state. Restore recomputes them through here
-// rather than persisting them, so a restored worker points at the orchestrator
+// rather than persisting them, so a restored worker points at the manager
 // that is active now, not the one from its original spawn.
 func (m *Manager) buildSystemPrompt(ctx context.Context, kind domain.SessionKind, projectID domain.ProjectID) (string, error) {
 	project, err := m.loadProject(ctx, projectID)
@@ -4107,16 +4081,16 @@ func (m *Manager) buildSystemPrompt(ctx context.Context, kind domain.SessionKind
 	}
 
 	switch kind {
-	case domain.KindOrchestrator:
-		cfg.OrchestratorRules = project.Config.OrchestratorRules
+	case domain.KindManager:
+		cfg.ManagerRules = project.Config.ManagerRules
 	case domain.KindWorker:
 		if projectID != "" {
-			orchestratorID, ok, err := m.activeOrchestratorSessionID(ctx, projectID)
+			managerID, ok, err := m.activeManagerSessionID(ctx, projectID)
 			if err != nil {
 				return "", err
 			}
 			if ok {
-				cfg.OrchestratorSessionID = string(orchestratorID)
+				cfg.ManagerSessionID = string(managerID)
 			}
 		}
 		rules, err := buildProjectRules(projectRulesConfig{
@@ -4181,8 +4155,8 @@ func (m *Manager) workspaceProjectPrompt(ctx context.Context, kind domain.Sessio
 		return "", fmt.Errorf("list workspace repos for prompt: %w", err)
 	}
 	switch kind {
-	case domain.KindOrchestrator:
-		return workspaceOrchestratorPrompt(repos), nil
+	case domain.KindManager:
+		return workspaceManagerPrompt(repos), nil
 	case domain.KindWorker:
 		return workspaceWorkerPrompt(repos), nil
 	default:
@@ -4190,13 +4164,13 @@ func (m *Manager) workspaceProjectPrompt(ctx context.Context, kind domain.Sessio
 	}
 }
 
-func (m *Manager) activeOrchestratorSessionID(ctx context.Context, project domain.ProjectID) (domain.SessionID, bool, error) {
+func (m *Manager) activeManagerSessionID(ctx context.Context, project domain.ProjectID) (domain.SessionID, bool, error) {
 	recs, err := m.store.ListSessions(ctx, project)
 	if err != nil {
 		return "", false, fmt.Errorf("list sessions for %s: %w", project, err)
 	}
 	for _, rec := range recs {
-		if rec.Kind == domain.KindOrchestrator && !rec.IsTerminated {
+		if rec.Kind == domain.KindManager && !rec.IsTerminated {
 			return rec.ID, true, nil
 		}
 	}
@@ -4255,7 +4229,7 @@ func (m *Manager) cleanupSystemPromptDir(id domain.SessionID) {
 	}
 }
 
-func workspaceOrchestratorPrompt(repos []domain.WorkspaceRepoRecord) string {
+func workspaceManagerPrompt(repos []domain.WorkspaceRepoRecord) string {
 	return fmt.Sprintf(`## Workspace project
 
 This project is a multi-repository workspace. Sessions start at the workspace root. The root repository is %s at path `+"`.`"+`; child repositories are nested below it.
@@ -4901,10 +4875,10 @@ func nativeConversationMissing(ctx context.Context, agent ports.Agent, ref ports
 // transitions also use it when an adapter proves its reserved id has no
 // persisted history, both for preflight and for the actual target launch.
 func freshLaunchArgv(ctx context.Context, agent ports.Agent, id domain.SessionID, workspacePath string, meta domain.SessionMetadata, systemPrompt, systemPromptFile string, agentConfig ports.AgentConfig, kind domain.SessionKind, dataDir string, allowPromptless bool) ([]string, ports.PromptDeliveryStrategy, RestoreMode, error) {
-	// A saved prompt is replayed fresh. An orchestrator is promptless by design
+	// A saved prompt is replayed fresh. A manager is promptless by design
 	// and relaunches with the system prompt only. A promptless WORKER has no task
 	// and no session id to restore from: do not blank-relaunch it.
-	if meta.Prompt == "" && kind != domain.KindOrchestrator && !allowPromptless {
+	if meta.Prompt == "" && kind != domain.KindManager && !allowPromptless {
 		return nil, "", "", ErrNotResumable
 	}
 	// Fall through to a fresh launch. Command-delivered agents receive

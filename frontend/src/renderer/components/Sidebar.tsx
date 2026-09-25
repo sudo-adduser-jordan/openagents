@@ -50,8 +50,8 @@ import type { UpdateStatus } from "../../main/update-settings";
 import { parseNightlyVersion } from "../lib/build-channel";
 import { IS_DEV } from "../lib/is-dev";
 import {
-	hasConfiguredOrchestratorAgent,
-	newestActiveOrchestrator,
+	hasConfiguredManagerAgent,
+	newestActiveManager,
 	openPRs,
 	type WorkspaceSession,
 	type WorkspaceSummary,
@@ -65,7 +65,7 @@ import { openAgentsBridge } from "../lib/bridge";
 import { useCommandPaletteEnabled } from "../hooks/useCommandPaletteEnabled";
 import { workspaceQueryKey } from "../hooks/useWorkspaceQuery";
 import { usePinSession, useUnpinSession } from "../hooks/usePinSession";
-import { spawnOrchestrator } from "../lib/spawn-orchestrator";
+import { spawnManager } from "../lib/spawn-manager";
 import { formatTimeCompact, formatTimeTerse } from "../lib/format-time";
 import { useTerminateSession } from "../hooks/useTerminateSession";
 import { useResizable } from "../hooks/useResizable";
@@ -102,7 +102,7 @@ import {
 	useSidebar,
 } from "./ui/sidebar";
 import { Tooltip, TooltipContent, TooltipTrigger } from "./ui/tooltip";
-import { OrchestratorIcon } from "./icons";
+import { ManagerIcon } from "./icons";
 import openAgentsLogo from "../../../assets/open-agents-logo.svg";
 import { cn } from "../lib/utils";
 import { useUiStore } from "../stores/ui-store";
@@ -119,7 +119,7 @@ import { isMacPlatform } from "../lib/platform";
 const isMac = isMacPlatform();
 const noDragStyle = isMac ? ({ WebkitAppRegion: "no-drag" } as React.CSSProperties) : undefined;
 
-// Shared styling for the per-project hover action buttons (orchestrator, kebab):
+// Shared styling for the per-project hover action buttons (manager, kebab):
 // a 20px square icon button that tints on hover, matching the old
 // SidebarMenuAction footprint. Never painted — `.sidebar-icon-action` also
 // opts out of the sidebar focus fill in styles.css.
@@ -1013,12 +1013,12 @@ const ProjectItem = memo(function ProjectItem({
 	const prefersReducedMotion = useReducedMotion();
 	const activeProjectMatches = selection.activeProjectId === workspace.id;
 	const dashboardActive = activeProjectMatches && !selection.activeSessionId;
-	const orchestratorActive =
+	const managerActive =
 		activeProjectMatches &&
 		workspace.sessions.some(
-			(session) => session.id === selection.activeSessionId && session.kind === "orchestrator",
+			(session) => session.id === selection.activeSessionId && session.kind === "manager",
 		);
-	const projectActive = dashboardActive || orchestratorActive;
+	const projectActive = dashboardActive || managerActive;
 	const queryClient = useQueryClient();
 	const [removeError, setRemoveError] = useState<string | null>(null);
 	const [isRemoving, setIsRemoving] = useState(false);
@@ -1096,45 +1096,45 @@ const ProjectItem = memo(function ProjectItem({
 	const openSession = useCallback((sessionId: string) => {
 		selection.goSession(workspace.id, sessionId);
 	}, [selection, workspace.id]);
-	// The project's live orchestrator (if any) backs the hover Orchestrator
+	// The project's live manager (if any) backs the hover Manager
 	// button: navigate to it when present, otherwise spawn one first.
-	const orchestrator = newestActiveOrchestrator(workspace.sessions);
+	const manager = newestActiveManager(workspace.sessions);
 	const toggleDisclosure = () => {
 		hasInteractedWithDisclosure.current = true;
 		onToggle(workspace.id);
 	};
 
-	// Mirrors ShellTopbar's launcher: attach to the running orchestrator, or
+	// Mirrors ShellTopbar's launcher: attach to the running manager, or
 	// spawn one via the daemon and follow it once the workspace refetches.
-	// Expand a collapsed project so opening the orchestrator also reveals its
+	// Expand a collapsed project so opening the manager also reveals its
 	// session list — otherwise the tree stays shut while you're inside it.
-	const openOrchestrator = async () => {
+	const openManager = async () => {
 		if (isProjectProvisioning || isProjectRestarting) return;
 		if (!expanded) toggleDisclosure();
-		if (orchestrator) {
-			selection.goSession(workspace.id, orchestrator.id);
+		if (manager) {
+			selection.goSession(workspace.id, manager.id);
 			return;
 		}
-		if (!hasConfiguredOrchestratorAgent(workspace)) {
+		if (!hasConfiguredManagerAgent(workspace)) {
 			selection.goSettings(workspace.id);
 			return;
 		}
 		setIsSpawning(true);
 		try {
-			const sessionId = await spawnOrchestrator(workspace.id, "sidebar");
+			const sessionId = await spawnManager(workspace.id, "sidebar");
 			await queryClient.invalidateQueries({ queryKey: workspaceQueryKey });
 			selection.goSession(workspace.id, sessionId);
 		} catch (err) {
-			console.error("Failed to spawn orchestrator:", err);
+			console.error("Failed to spawn manager:", err);
 		} finally {
 			setIsSpawning(false);
 		}
 	};
 
 	// Expanded + already on the project board → collapse. Expanded + on a
-	// session (orchestrator or worker) → board. Collapsed → expand + board.
-	// Do not treat orchestratorActive like the board: the project row is the
-	// one-click path back from the orchestrator button.
+	// session (manager or worker) → board. Collapsed → expand + board.
+	// Do not treat managerActive like the board: the project row is the
+	// one-click path back from the manager button.
 	const onProjectClick = () => {
 		if (consumeDragClick(workspace.id)) return;
 		if (workspace.kind === STANDALONE_PROJECT_KIND) {
@@ -1290,7 +1290,7 @@ const ProjectItem = memo(function ProjectItem({
 									type="button"
 								/>
 							</div>
-							{/* Per-project actions: orchestrator and kebab menu. Outside the row's
+							{/* Per-project actions: manager and kebab menu. Outside the row's
 		navigation surface so their own presses stay independent. */}
 							<div
 								className={cn(
@@ -1307,18 +1307,18 @@ const ProjectItem = memo(function ProjectItem({
 									<TooltipTrigger asChild>
 										<span className="inline-flex">
 											<button
-												aria-current={orchestratorActive ? "page" : undefined}
+												aria-current={managerActive ? "page" : undefined}
 												aria-label={
-													orchestrator
-														? `Open ${workspace.name} orchestrator`
-														: `Spawn ${workspace.name} orchestrator`
+													manager
+														? `Open ${workspace.name} manager`
+														: `Spawn ${workspace.name} manager`
 												}
-													className={cn(HOVER_ACTION_CLASS, orchestratorActive && "text-foreground")}
+													className={cn(HOVER_ACTION_CLASS, managerActive && "text-foreground")}
 													disabled={isSpawning || isProjectProvisioning || isProjectRestarting}
-												onClick={() => void openOrchestrator()}
+												onClick={() => void openManager()}
 												type="button"
 											>
-												<OrchestratorIcon aria-hidden="true" strokeWidth={orchestratorActive ? 2.5 : 2} />
+												<ManagerIcon aria-hidden="true" strokeWidth={managerActive ? 2.5 : 2} />
 											</button>
 										</span>
 									</TooltipTrigger>
@@ -1327,9 +1327,9 @@ const ProjectItem = memo(function ProjectItem({
 												? "Restarting…"
 												: isSpawning
 												? "Spawning…"
-												: orchestrator
-													? "Orchestrator"
-													: "Spawn orchestrator"}
+												: manager
+													? "Manager"
+													: "Spawn manager"}
 									</TooltipContent>
 								</Tooltip>}
 								{workspace.kind === STANDALONE_PROJECT_KIND ? (

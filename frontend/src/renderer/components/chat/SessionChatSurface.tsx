@@ -8,6 +8,7 @@
  */
 
 import { AlertTriangle, Loader2 } from "lucide-react";
+import { resolveWorkflowMode } from "@openagents/product-ui";
 import { memo, useCallback, useEffect, useRef, type ReactNode } from "react";
 import {
 	useConversation,
@@ -27,7 +28,7 @@ import type { Theme } from "../../stores/ui-store";
 import { can } from "../../types/conversation";
 import type { ConversationSnapshot } from "../../types/conversation";
 import type { TerminalTarget } from "../../types/terminal";
-import type { WorkspaceSession } from "../../types/workspace";
+import { isManagerSession, type WorkspaceSession } from "../../types/workspace";
 import { ChatWorkspace } from "./ChatWorkspace";
 
 export interface ConversationWorkState {
@@ -156,21 +157,28 @@ export const SessionChatSurface = memo(function SessionChatSurface({
 	const snapshot = queriedSnapshot?.sessionId === session.id ? queriedSnapshot : undefined;
 	const commands = useConversationCommands(session.id);
 	// The delivery stage is user-controlled state persisted on the session. A
-	// plan or build command typed during the review stage moves the session back
-	// to the matching lane; the composer stage bar confirms it explicitly.
+	// plan or build command moves workers between planning/building and managers
+	// between planning/manager; the composer stage bar confirms it explicitly.
 	const setWorkflowMode = useSetWorkflowMode();
 	const routeWorkflowFromCommand = useCallback(
 		(text: string) => {
 			const first = text.trim().split(/\s+/)[0]?.toLowerCase();
 			if (!first) return;
-			const current = session.workflowMode ?? "building";
+			const managerSession = isManagerSession(session);
+			const current = resolveWorkflowMode(
+				managerSession ? "manager" : "worker",
+				session.workflowMode,
+			);
 			if (first.startsWith("plan") && current !== "planning") {
 				setWorkflowMode.mutate({ sessionId: session.id, workflowMode: "planning" });
-			} else if (first.startsWith("build") && current !== "building") {
-				setWorkflowMode.mutate({ sessionId: session.id, workflowMode: "building" });
+			} else if (first.startsWith("build")) {
+				const next = managerSession ? "manager" as const : "building" as const;
+				if (current !== next) {
+					setWorkflowMode.mutate({ sessionId: session.id, workflowMode: next });
+				}
 			}
 		},
-		[session.id, session.workflowMode, setWorkflowMode],
+		[session, setWorkflowMode],
 	);
 	const projectPermissions = useRememberProjectPermissions(session.workspaceId, snapshot?.harness);
 	const {
@@ -388,7 +396,10 @@ export const SessionChatSurface = memo(function SessionChatSurface({
 				commandError={commands.error}
 				onDecide={commands.resolve}
 				onConfirmBuilding={() =>
-					setWorkflowMode.mutate({ sessionId: session.id, workflowMode: "building" })}
+					setWorkflowMode.mutate({
+						sessionId: session.id,
+						workflowMode: isManagerSession(session) ? "manager" : "building",
+					})}
 				onResolveInput={commands.resolveInput}
 				onInterrupt={commands.interrupt}
 				onResumeAgent={() => {

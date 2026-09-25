@@ -19,7 +19,7 @@ export const metadata: Metadata = {
 const testimonials = [
   {
     quote:
-      "Open Agents really changes the way you develop. The orchestrator and kanban have been a game changer. I’m no longer confused about what agent is doing what; scoping tasks and spawning them off has been a breeze.",
+      "Open Agents really changes the way you develop. The manager and kanban have been a game changer. I’m no longer confused about what agent is doing what; scoping tasks and spawning them off has been a breeze.",
     author: "Aditi Chauhan, Software Engineer, Docusign",
   },
   {
@@ -34,7 +34,7 @@ const testimonials = [
   },
   {
     quote:
-      "Open Agents automatically gets the right agent to address CI failures and review comments. My agents are much more autonomous now, and with the orchestrator + kanban, I’m able to manage more and more of them.",
+      "Open Agents automatically gets the right agent to address CI failures and review comments. My agents are much more autonomous now, and with the manager + kanban, I’m able to manage more and more of them.",
     author: "Aditya Purohit, CTO @ Osvi.ai",
   },
 ];
@@ -68,7 +68,7 @@ export default function TestimonialsPage() {
                   Put your Open Agents experience into words.
                 </h1>
                 <p className="mt-5 max-w-2xl text-base leading-7 text-muted-foreground sm:text-lg">
-                  Tell other builders what changed when you started orchestrating
+                  Tell other builders what changed when you started managing
                   coding agents with Open Agents. We&apos;ll feature selected stories in the
                   testimonials section of our website.
                 </p>

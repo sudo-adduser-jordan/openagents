@@ -13,7 +13,7 @@
 [![Discord](https://img.shields.io/badge/Discord-555?style=flat&logo=discord&logoColor=white)](https://discord.com/invite/UZv7JjxbwG)
 
 Give every coding task its own agent, workspace, and feedback loop.<br />
-Plan and delegate larger outcomes with a project-aware orchestrator.<br />
+Plan and delegate larger outcomes with a project-aware manager.<br />
 Follow every worker, pull request, CI run, and review in a live Kanban.
 
 [**Download Open Agents**](#install) &nbsp;&bull;&nbsp; [Documentation](https://orchestrator.inc/docs) &nbsp;&bull;&nbsp; [Releases](https://github.com/sudo-adduser-jordan/open-agents/releases) &nbsp;&bull;&nbsp; [Contributing](CONTRIBUTING.md) &nbsp;&bull;&nbsp; [Discord](https://discord.com/invite/UZv7JjxbwG)
@@ -56,19 +56,19 @@ Open a worker at any time to continue the conversation, attach to its terminal, 
 
 <img src="docs/assets/readme/new-task.png" alt="Create a new task in Open Agents with an agent and model selected" width="100%" />
 
-## The orchestrator plans across the project
+## The manager plans across the project
 
-The project orchestrator is Open Agents' persistent planning and coordination agent. It works at the level above individual tasks: the product direction, technical strategy, priorities, and sequence of work across the repository.
+The project manager is Open Agents' persistent planning and coordination agent. It works at the level above individual tasks: the product direction, technical strategy, priorities, and sequence of work across the repository.
 
-Use the orchestrator to explore an idea before implementation, brainstorm product and technical approaches, reason through tradeoffs, identify high-impact work, and turn an ambiguous outcome into a concrete plan. Its project-scoped conversation preserves goals, decisions, constraints, and earlier reasoning. It combines that planning history with repository context and live Open Agents state, including active workers, ownership, pull requests, CI, and reviews. This keeps planning grounded in both the project and the work already underway.
+Use the manager to explore an idea before implementation, brainstorm product and technical approaches, reason through tradeoffs, identify high-impact work, and turn an ambiguous outcome into a concrete plan. Its project-scoped conversation preserves goals, decisions, constraints, and earlier reasoning. It combines that planning history with repository context and live Open Agents state, including active workers, ownership, pull requests, CI, and reviews. This keeps planning grounded in both the project and the work already underway.
 
-When a plan becomes actionable, the orchestrator can break it into focused tasks, spawn or redirect workers, pass each worker the relevant context, follow their progress, and coordinate follow-up work. The orchestrator owns planning and delegation; workers own implementation, tests, commits, and pull requests.
+When a plan becomes actionable, the manager can break it into focused tasks, spawn or redirect workers, pass each worker the relevant context, follow their progress, and coordinate follow-up work. The manager owns planning and delegation; workers own implementation, tests, commits, and pull requests.
 
-<img src="docs/assets/readme/orchestrator.png" alt="Open Agents coordinating multiple workers and passing them focused project context" width="100%" />
+<img src="docs/assets/readme/manager.png" alt="Open Agents coordinating multiple workers and passing them focused project context" width="100%" />
 
 ## The Kanban keeps the system legible
 
-Every worker appears on the same live board, whether you started it from **New task** or the orchestrator delegated it. Open Agents derives each card's position from session, pull request, CI, and review facts, turning the Kanban into an operational view of the project:
+Every worker appears on the same live board, whether you started it from **New task** or the manager delegated it. Open Agents derives each card's position from session, pull request, CI, and review facts, turning the Kanban into an operational view of the project:
 
 - **Working:** workers that are actively implementing or ready for another instruction
 - **Needs you:** blocked sessions, missing input, failed CI, requested changes, or lost signals
@@ -81,11 +81,11 @@ Each card keeps the task, agent, branch, activity, pull request, and status toge
 
 ## One workflow, from idea to merge
 
-1. **Start at the right level.** Give a clear task directly to a worker, or develop a larger outcome with the project orchestrator and let it shape the plan.
-2. **Delegate focused work.** Start workers yourself or have the orchestrator create them with the context and ownership they need.
+1. **Start at the right level.** Give a clear task directly to a worker, or develop a larger outcome with the project manager and let it shape the plan.
+2. **Delegate focused work.** Start workers yourself or have the manager create them with the context and ownership they need.
 3. **Build in isolation.** Every Git-backed worker gets its own branch and worktree; standalone agents get Open Agents-managed branchless directories without requiring a project or repository.
 4. **Supervise live state.** Open Agents follows agent activity, pull requests, CI, review feedback, and merge conflicts, then reflects those facts on the Kanban.
-5. **Close the feedback loop.** Inspect any worker directly, make project-level decisions with the orchestrator, and return actionable failures or review comments to the agent that owns the work.
+5. **Close the feedback loop.** Inspect any worker directly, make project-level decisions with the manager, and return actionable failures or review comments to the agent that owns the work.
 
 Open Agents works with the coding agents and source-control workflow you already use. Agents keep their native strengths; Open Agents supplies the project context, isolated execution, coordination, and operational view that make them work as a system.
 

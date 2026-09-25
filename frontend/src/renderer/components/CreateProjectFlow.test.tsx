@@ -65,7 +65,7 @@ vi.mock("./CreateProjectAgentSheet", async (importOriginal) => ({
 	}: {
 		error?: string | null;
 		kind: string;
-		onSubmit: (selection: { workerAgent: string; orchestratorAgent: string }) => Promise<void>;
+		onSubmit: (selection: { workerAgent: string; managerAgent: string }) => Promise<void>;
 		open: boolean;
 		path: string | null;
 		shake?: boolean;
@@ -75,7 +75,7 @@ vi.mock("./CreateProjectAgentSheet", async (importOriginal) => ({
 				{error ? <span>{error}</span> : null}
 				<button
 					type="button"
-					onClick={() => void onSubmit({ workerAgent: "codex", orchestratorAgent: "codex" })}
+					onClick={() => void onSubmit({ workerAgent: "codex", managerAgent: "codex" })}
 				>
 					Submit agents
 				</button>
@@ -1179,7 +1179,7 @@ describe("CreateProjectFlow project import validation", () => {
 				path: "/repo/project",
 				asWorkspace: false,
 				workerAgent: "codex",
-				orchestratorAgent: "codex",
+				managerAgent: "codex",
 			}),
 		);
 		// The daemon resolves the base branch itself; the import must not
@@ -1220,7 +1220,7 @@ describe("CreateProjectFlow project import validation", () => {
 				asWorkspace: true,
 				defaultBranch: "main",
 				workerAgent: "codex",
-				orchestratorAgent: "codex",
+				managerAgent: "codex",
 			}),
 		);
 		expect(bridgeMocks.getRepositoryBranch).toHaveBeenCalledWith("/repo/project");

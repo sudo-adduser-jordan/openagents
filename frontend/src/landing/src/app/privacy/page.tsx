@@ -173,7 +173,7 @@ export default function PrivacyPage() {
             <Bullets>
               <Bullet>
                 <Strong>The Open Agents desktop app and CLI</Strong> — the local
-                orchestrator that supervises coding agents in git worktrees on
+                manager that supervises coding agents in git worktrees on
                 your computer.
               </Bullet>
               <Bullet>

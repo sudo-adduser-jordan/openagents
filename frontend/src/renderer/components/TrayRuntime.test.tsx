@@ -69,7 +69,7 @@ function workspaces(): WorkspaceSummary[] {
 				worker({ id: "s-work", title: "working", status: "working" }),
 				worker({ id: "s-merge", title: "merge me", status: "mergeable" }),
 				worker({ id: "s-merged", title: "already merged", status: "merged" }),
-				worker({ id: "orch", title: "orchestrator", kind: "orchestrator", status: "needs_input" }),
+				worker({ id: "mgr", title: "manager", kind: "manager", status: "needs_input" }),
 			],
 		},
 	];

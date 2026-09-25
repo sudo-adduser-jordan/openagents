@@ -364,8 +364,8 @@ func TestWiring_StartSessionSpawnsScratchWithoutGitRepo(t *testing.T) {
 		Kind:         domain.ProjectKindScratch,
 		RegisteredAt: time.Now(),
 		Config: domain.ProjectConfig{
-			Worker:       domain.RoleOverride{Harness: domain.HarnessOpenCode},
-			Orchestrator: domain.RoleOverride{Harness: domain.HarnessOpenCode},
+			Worker:  domain.RoleOverride{Harness: domain.HarnessOpenCode},
+			Manager: domain.RoleOverride{Harness: domain.HarnessOpenCode},
 		},
 	}); err != nil {
 		t.Fatalf("UpsertProject: %v", err)

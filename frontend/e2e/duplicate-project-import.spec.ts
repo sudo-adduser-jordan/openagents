@@ -5,12 +5,12 @@ import { installFakeAgent } from "./support/fake-bridge";
 
 // Renderer integration: real project-add API client and import dialogs, with
 // deterministic daemon responses and a fake native picker/workspace snapshot.
-test("renderer: importing an alias opens the registered project without starting another orchestrator @T0", async ({ page }) => {
+test("renderer: importing an alias opens the registered project without starting another manager @T0", async ({ page }) => {
 	const projectId = "already-registered";
 	const selectedPath = "/alias/registered-project";
 	await installFakeAgent(page, { projectId, projectName: projectId, workers: [] });
 	let creates = 0;
-	let orchestratorStarts = 0;
+	let managerStarts = 0;
 	await page.route("http://127.0.0.1:8080/api/v1/**", async (route) => {
 		const pathname = new URL(route.request().url()).pathname;
 		if (pathname === "/api/v1/agents/readiness" || pathname === "/api/v1/agents/readiness/ensure") {
@@ -33,7 +33,7 @@ test("renderer: importing an alias opens the registered project without starting
 			} });
 			return;
 		}
-		if (pathname.startsWith("/api/v1/orchestrators") && route.request().method() === "POST") orchestratorStarts++;
+		if (pathname.startsWith("/api/v1/managers") && route.request().method() === "POST") managerStarts++;
 		await route.fulfill({ json: { status: "ok", project: { id: projectId, config: {} } } });
 	});
 	await page.goto("/#/");
@@ -49,5 +49,5 @@ test("renderer: importing an alias opens the registered project without starting
 	await expect(page.getByText("Opened the registered project for this folder.")).toBeVisible();
 	await expect(page.getByRole("dialog")).toHaveCount(0);
 	expect(creates).toBe(1);
-	expect(orchestratorStarts).toBe(0);
+	expect(managerStarts).toBe(0);
 });

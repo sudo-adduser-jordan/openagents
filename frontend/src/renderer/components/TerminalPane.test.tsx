@@ -132,11 +132,11 @@ const worker = {
 	prs: [],
 } satisfies WorkspaceSession;
 
-const orchestrator = {
+const manager = {
 	...worker,
-	id: "sess-orch",
-	title: "orchestrate",
-	kind: "orchestrator",
+	id: "sess-mgr",
+	title: "Manager session",
+	kind: "manager",
 } satisfies WorkspaceSession;
 
 beforeEach(() => {
@@ -357,13 +357,13 @@ describe("TerminalPane empty states", () => {
 		}
 	});
 
-	it("shows orchestrator-specific startup copy for a pending orchestrator terminal", () => {
-		const view = renderPane(orchestrator);
+	it("shows manager-specific startup copy for a pending manager terminal", () => {
+		const view = renderPane(manager);
 		try {
 			expect(screen.getByText("Starting session")).toBeInTheDocument();
 			expect(
 				screen.getByText(
-					"Preparing the orchestrator terminal. This can take a moment while Open Agents creates the workspace and starts the agent.",
+					"Preparing the manager terminal. This can take a moment while Open Agents creates the workspace and starts the agent.",
 				),
 			).toBeInTheDocument();
 			expect(screen.queryByText(/worker terminal/i)).not.toBeInTheDocument();
@@ -904,12 +904,12 @@ describe("terminal link preview", () => {
 		}
 	});
 
-	it("opens orchestrator links in its Browser inspector", () => {
-		const view = renderPane(orchestrator);
+	it("opens manager links in its Browser inspector", () => {
+		const view = renderPane(manager);
 		try {
 			act(() => terminalLinkHandler?.("http://localhost:3000"));
 			expect(postMock).toHaveBeenCalledWith("/api/v1/sessions/{sessionId}/preview", {
-				params: { path: { sessionId: orchestrator.id } }, body: { url: "http://localhost:3000" },
+				params: { path: { sessionId: manager.id } }, body: { url: "http://localhost:3000" },
 			});
 		} finally {
 			view.restore();

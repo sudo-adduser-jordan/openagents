@@ -6,7 +6,7 @@ import { CloudWaitlistForm } from "./CloudWaitlistForm";
 export const metadata: Metadata = {
   title: "Open Agents Cloud Waitlist",
   description:
-    "Join the Open Agents Cloud waitlist for hosted agent orchestration.",
+    "Join the Open Agents Cloud waitlist for hosted agent management.",
 };
 
 const notes = [

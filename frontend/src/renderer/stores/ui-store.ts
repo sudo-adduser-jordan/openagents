@@ -79,12 +79,12 @@ export type UiState = {
 	/** When true, developer-only release controls are available. Default off. */
 	developerMode: boolean;
 	restartingProjectIds: ReadonlySet<string>;
-	// Projects whose initial orchestrator spawn (after import/clone) is still
+	// Projects whose initial manager spawn (after import/clone) is still
 	// running in the background. The board renders a progress banner and gates
 	// session actions until the spawn settles, instead of blocking navigation.
 	provisioningProjectIds: ReadonlySet<string>;
-	orchestratorReplacementErrors: Record<string, OrchestratorReplacementFailure>;
-	orchestratorStartupErrors: Record<string, string>;
+	managerReplacementErrors: Record<string, ManagerReplacementFailure>;
+	managerStartupErrors: Record<string, string>;
 	globalToasts: GlobalToast[];
 	globalToast: GlobalToast | null;
 	globalToastSequence: number;
@@ -149,8 +149,8 @@ export type UiState = {
 	setCommandPaletteOpen: (open: boolean) => void;
 	setProjectRestarting: (projectId: string, restarting: boolean) => void;
 	setProjectProvisioning: (projectId: string, provisioning: boolean) => void;
-	setOrchestratorReplacementError: (projectId: string, failure: OrchestratorReplacementFailure | null) => void;
-	setOrchestratorStartupError: (projectId: string, message: string | null) => void;
+	setManagerReplacementError: (projectId: string, failure: ManagerReplacementFailure | null) => void;
+	setManagerStartupError: (projectId: string, message: string | null) => void;
 	showGlobalToast: (title: string, body?: string, style?: GlobalToast["tone"] | GlobalToast["placement"]) => void;
 	dismissGlobalToast: (nonce: number) => void;
 	clearGlobalToast: () => void;
@@ -163,7 +163,7 @@ export type UiState = {
 	clearVisibleTerminalKind: (sessionId: string) => void;
 };
 
-export type OrchestratorReplacementFailure = {
+export type ManagerReplacementFailure = {
 	message: string;
 	code?: string;
 	requestId?: string;
@@ -218,8 +218,8 @@ export const useUiStore = create<UiState>((set, get) => ({
 	developerMode: initialDeveloperModeValue,
 	restartingProjectIds: new Set<string>(),
 	provisioningProjectIds: new Set<string>(),
-	orchestratorReplacementErrors: {},
-	orchestratorStartupErrors: {},
+	managerReplacementErrors: {},
+	managerStartupErrors: {},
 	globalToasts: [],
 	globalToast: null,
 	globalToastSequence: 0,
@@ -307,7 +307,7 @@ export const useUiStore = create<UiState>((set, get) => ({
 		}),
 	initializeInspectorSession: (sessionId, hasBrowserContent, hasInspector) =>
 		set((state) => {
-			// Sessions without an inspector (e.g. orchestrator sessions) must not
+			// Sessions without an inspector (e.g. manager sessions) must not
 			// gain a store entry at all — leave inspectorSessions[sessionId]
 			// undefined so callers that key off its presence stay correct.
 			if (!hasInspector) return state;
@@ -383,25 +383,25 @@ export const useUiStore = create<UiState>((set, get) => ({
 			}
 			return { provisioningProjectIds };
 		}),
-	setOrchestratorReplacementError: (projectId, failure) =>
+	setManagerReplacementError: (projectId, failure) =>
 		set((state) => {
-			const orchestratorReplacementErrors = { ...state.orchestratorReplacementErrors };
+			const managerReplacementErrors = { ...state.managerReplacementErrors };
 			if (failure) {
-				orchestratorReplacementErrors[projectId] = failure;
+				managerReplacementErrors[projectId] = failure;
 			} else {
-				delete orchestratorReplacementErrors[projectId];
+				delete managerReplacementErrors[projectId];
 			}
-			return { orchestratorReplacementErrors };
+			return { managerReplacementErrors };
 		}),
-	setOrchestratorStartupError: (projectId, message) =>
+	setManagerStartupError: (projectId, message) =>
 		set((state) => {
-			const orchestratorStartupErrors = { ...state.orchestratorStartupErrors };
+			const managerStartupErrors = { ...state.managerStartupErrors };
 			if (message) {
-				orchestratorStartupErrors[projectId] = message;
+				managerStartupErrors[projectId] = message;
 			} else {
-				delete orchestratorStartupErrors[projectId];
+				delete managerStartupErrors[projectId];
 			}
-			return { orchestratorStartupErrors };
+			return { managerStartupErrors };
 		}),
 	showGlobalToast: (title, body, style) =>
 		set((state) => {
@@ -419,12 +419,12 @@ export const useUiStore = create<UiState>((set, get) => ({
 	clearGlobalToast: () => set({ globalToast: null, globalToasts: [], globalToastSequence: 0 }),
 	requestNewTask: (projectId) => {
 		// Central gate: every New Task entry point (buttons, sidebar menus,
-		// shortcuts) funnels through here, so a project whose orchestrator is
+		// shortcuts) funnels through here, so a project whose manager is
 		// still provisioning cannot start tasks before it exists.
 		if (get().provisioningProjectIds.has(projectId)) {
 			get().showGlobalToast(
 				"Project is still being set up",
-				"The orchestrator is starting. Try again in a moment.",
+				"The manager is starting. Try again in a moment.",
 				"info",
 			);
 			return;

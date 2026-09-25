@@ -11,7 +11,7 @@ export const MAX_ATTACHMENTS_BYTES = 25 * 1024 * 1024;
 
 const mb = (bytes: number) => Math.round(bytes / (1024 * 1024));
 
-/** A single file staged for a task/orchestrator brief. */
+/** A single file staged for a task/manager brief. */
 export type FileAttachment = {
 	/** Stable id for list keys and removal. */
 	id: string;

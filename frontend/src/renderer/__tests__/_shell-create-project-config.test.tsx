@@ -2,15 +2,15 @@ import { describe, expect, it } from "vitest";
 import { createProjectConfig } from "../routes/_shell";
 
 describe("createProjectConfig", () => {
-	it("persists selected worker and orchestrator agents without tracker intake by default", () => {
+	it("persists selected worker and manager agents without tracker intake by default", () => {
 		expect(
 			createProjectConfig({
 				workerAgent: "opencode",
-				orchestratorAgent: "opencode",
+				managerAgent: "opencode",
 			}),
 		).toEqual({
 			worker: { agent: "opencode" },
-			orchestrator: { agent: "opencode" },
+			manager: { agent: "opencode" },
 		});
 	});
 
@@ -18,12 +18,12 @@ describe("createProjectConfig", () => {
 		expect(
 			createProjectConfig({
 				workerAgent: "cursor",
-				orchestratorAgent: "opencode",
+				managerAgent: "opencode",
 				trackerIntake: { enabled: true, provider: "github", assignee: "octocat" },
 			}),
 		).toEqual({
 			worker: { agent: "cursor" },
-			orchestrator: { agent: "opencode" },
+			manager: { agent: "opencode" },
 			trackerIntake: { enabled: true, provider: "github", assignee: "octocat" },
 		});
 	});

@@ -2442,10 +2442,10 @@ func TestInterfaceTransitionReleasesTUIInputAfterPreflightFailure(t *testing.T) 
 	}
 }
 
-func TestInterfaceTransitionTUIToChatRebuildsOrchestratorStandingContext(t *testing.T) {
+func TestInterfaceTransitionTUIToChatRebuildsManagerStandingContext(t *testing.T) {
 	manager, store, _, chat, _ := newTransitionManager(t, domain.SessionModeTUI)
 	rec := store.sessions["session-1"]
-	rec.Kind = domain.KindOrchestrator
+	rec.Kind = domain.KindManager
 	store.sessions["session-1"] = rec
 
 	transition, err := manager.StartInterfaceTransition(context.Background(), "session-1", domain.SessionModeChat, domain.SessionInterfaceTransitionDrain, domain.SessionInterfaceTransitionHistoryStrict)
@@ -2457,8 +2457,8 @@ func TestInterfaceTransitionTUIToChatRebuildsOrchestratorStandingContext(t *test
 	if settled.Phase != domain.SessionInterfaceTransitionCompleted {
 		t.Fatalf("phase = %s, error = %s", settled.Phase, settled.ErrorDetail)
 	}
-	if !strings.Contains(chat.start.SystemPrompt, "human-facing orchestrator") {
-		t.Fatalf("Chat target did not receive orchestrator standing context: %q", chat.start.SystemPrompt)
+	if !strings.Contains(chat.start.SystemPrompt, "human-facing manager") {
+		t.Fatalf("Chat target did not receive manager standing context: %q", chat.start.SystemPrompt)
 	}
 }
 

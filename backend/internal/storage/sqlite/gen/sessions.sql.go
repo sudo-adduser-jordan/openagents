@@ -1005,7 +1005,7 @@ type SetSessionReviewLockedParams struct {
 
 // SetSessionReviewLocked latches or releases the review column freeze. The
 // service engages it when a card first lands in needs_review and releases it
-// on plan/build commands and on user messages (the commit-forward path). It
+// on workflow-mode commands and on user messages (the commit-forward path). It
 // returns ok=false when the id does not exist.
 func (q *Queries) SetSessionReviewLocked(ctx context.Context, arg SetSessionReviewLockedParams) (int64, error) {
 	result, err := q.db.ExecContext(ctx, setSessionReviewLocked, arg.ReviewLocked, arg.UpdatedAt, arg.ID)
@@ -1067,11 +1067,11 @@ type SetSessionWorkflowModeParams struct {
 	ID           domain.SessionID
 }
 
-// SetSessionWorkflowMode moves a session between its delivery stages
-// ("planning" and "building"). A plan/build command is also one of the review
-// lock's release paths: the user has taken their turn, so any review freeze is
-// cleared together with the mode change. It returns ok=false when the id does
-// not exist.
+// SetSessionWorkflowMode changes a session's delivery posture
+// ("planning", "manager", or "building"). A workflow-mode command is also one
+// of the review lock's release paths: the user has taken their turn, so any
+// review freeze is cleared together with the mode change. It returns ok=false
+// when the id does not exist.
 func (q *Queries) SetSessionWorkflowMode(ctx context.Context, arg SetSessionWorkflowModeParams) (int64, error) {
 	result, err := q.db.ExecContext(ctx, setSessionWorkflowMode, arg.WorkflowMode, arg.UpdatedAt, arg.ID)
 	if err != nil {

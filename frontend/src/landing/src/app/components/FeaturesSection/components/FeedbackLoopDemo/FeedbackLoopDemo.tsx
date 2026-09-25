@@ -600,7 +600,7 @@ function TerminalPane({ lines, typingText, streamingText }: { lines: DisplayLine
 						Default model · Full tools
 					</div>
 					<div className="text-[var(--preview-terminal-dim)]">
-						~/open-agents/solkit-ui/orchestrator
+						~/open-agents/solkit-ui/manager
 					</div>
 				</div>
 			</div>

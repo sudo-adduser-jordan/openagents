@@ -30,7 +30,7 @@ const ctx = vi.hoisted(() => {
 			name: "app",
 			path: "/repos/app",
 			type: "main",
-			orchestratorAgent: "opencode",
+			managerAgent: "opencode",
 			sessions: [
 				{
 					id: "w-merge",
@@ -69,12 +69,12 @@ const ctx = vi.hoisted(() => {
 					prs: [],
 				},
 				{
-					id: "orch",
+					id: "mgr",
 					workspaceId: "proj-1",
 					workspaceName: "app",
-					title: "orchestrate",
+					title: "Manager session",
 					provider: "opencode",
-					kind: "orchestrator",
+					kind: "manager",
 					branch: "main",
 					status: "working",
 					updatedAt: "2026-06-10T00:00:00Z",
@@ -87,7 +87,7 @@ const ctx = vi.hoisted(() => {
 			name: "lib",
 			path: "/repos/lib",
 			type: "main",
-			orchestratorAgent: "opencode",
+			managerAgent: "opencode",
 			sessions: [],
 		},
 	];
@@ -120,7 +120,7 @@ vi.mock("../lib/shell-context", () => ({
 	useShell: () => ({ cloneProject: vi.fn(), createProject: vi.fn(), initializeProjectRepository: vi.fn(), daemonStatus: {} }),
 }));
 
-vi.mock("../lib/spawn-orchestrator", () => ({ spawnOrchestrator: spawnMock }));
+vi.mock("../lib/spawn-manager", () => ({ spawnManager: spawnMock }));
 
 vi.mock("../lib/api-client", () => ({
 	apiClient: {
@@ -240,8 +240,8 @@ const paletteInput = () => screen.queryByPlaceholderText(/search projects/i);
 beforeEach(() => {
 	ctx.params = {};
 	ctx.enabled = true;
-	ctx.workspaces[0].orchestratorAgent = "opencode";
-	ctx.workspaces[1].orchestratorAgent = "opencode";
+	ctx.workspaces[0].managerAgent = "opencode";
+	ctx.workspaces[1].managerAgent = "opencode";
 	ctx.workspaces[0].sessions[0].prs = [];
 	navigateMock.mockReset();
 	spawnMock.mockReset();
@@ -550,24 +550,24 @@ describe("CommandPalette actions", () => {
 		expect(spawnMock).not.toHaveBeenCalled();
 	});
 
-	it("does not spawn Open orchestrator while the project is restarting", async () => {
+	it("does not spawn Open manager while the project is restarting", async () => {
 		ctx.params = { projectId: "proj-1" };
 		act(() => useUiStore.setState({ restartingProjectIds: new Set(["proj-1"]) }));
 		renderPalette();
 		act(() => useUiStore.getState().setCommandPaletteOpen(true));
 		await screen.findByPlaceholderText(/search projects/i);
-		fireEvent.click(screen.getByText("Open orchestrator"));
+		fireEvent.click(screen.getByText("Open manager"));
 		expect(spawnMock).not.toHaveBeenCalled();
 		expect(navigateMock).not.toHaveBeenCalled();
 	});
 
-	it("opens project settings instead of spawning when no orchestrator agent is configured", async () => {
+	it("opens project settings instead of spawning when no manager agent is configured", async () => {
 		ctx.params = { projectId: "proj-2" };
-		ctx.workspaces[1].orchestratorAgent = undefined;
+		ctx.workspaces[1].managerAgent = undefined;
 		renderPalette();
 		act(() => useUiStore.getState().setCommandPaletteOpen(true));
 		await screen.findByPlaceholderText(/search projects/i);
-		fireEvent.click(screen.getByText("Open orchestrator"));
+		fireEvent.click(screen.getByText("Open manager"));
 
 		expect(useUiStore.getState().settingsModal).toEqual({ scope: "project", projectId: "proj-2" });
 		expect(navigateMock).not.toHaveBeenCalled();
@@ -602,25 +602,25 @@ describe("CommandPalette actions", () => {
 		});
 	});
 
-	it("spawns only once when Open orchestrator is selected twice (in-flight guard)", async () => {
+	it("spawns only once when Open manager is selected twice (in-flight guard)", async () => {
 		ctx.params = { projectId: "proj-2" };
 		spawnMock.mockReturnValueOnce(new Promise<string>(() => {}));
 		renderPalette();
 		act(() => useUiStore.getState().setCommandPaletteOpen(true));
 		await screen.findByPlaceholderText(/search projects/i);
-		const item = screen.getByText("Open orchestrator");
+		const item = screen.getByText("Open manager");
 		fireEvent.click(item);
 		fireEvent.click(item);
 		expect(spawnMock).toHaveBeenCalledTimes(1);
 	});
 
-	it("keeps the palette open and shows an error when spawning an orchestrator fails", async () => {
+	it("keeps the palette open and shows an error when spawning a manager fails", async () => {
 		ctx.params = { projectId: "proj-2" };
 		spawnMock.mockRejectedValueOnce(new Error("daemon down"));
 		renderPalette();
 		act(() => useUiStore.getState().setCommandPaletteOpen(true));
 		await screen.findByPlaceholderText(/search projects/i);
-		fireEvent.click(screen.getByText("Open orchestrator"));
+		fireEvent.click(screen.getByText("Open manager"));
 		expect(await screen.findByRole("alert")).toHaveTextContent("daemon down");
 		expect(spawnMock).toHaveBeenCalledWith("proj-2", "command_palette");
 		expect(useUiStore.getState().isCommandPaletteOpen).toBe(true);

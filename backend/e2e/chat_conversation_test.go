@@ -256,7 +256,7 @@ func TestChatInterruptWithNoActiveTurnIsRefusedNotAnError(t *testing.T) {
 	}
 }
 
-// `open-agents send` and orchestrator-to-worker relay both go through this endpoint. A
+// `open-agents send` and manager-to-worker relay both go through this endpoint. A
 // chat session has no pane to type into, so without a mode branch the send is
 // refused as "missing runtime handles" and chat workers are unreachable by Open Agents's
 // own automation.
@@ -392,7 +392,7 @@ func TestChatApprovalRoundTrip(t *testing.T) {
 }
 
 // The agent must be able to reach Open Agents's own CLI from inside a chat session. This is
-// what makes chat orchestration possible at all: an orchestrator that cannot run
+// what makes chat orchestration possible at all: a manager that cannot run
 // `open-agents` can only talk, not delegate.
 func TestChatAgentCanRunTheOpenAgentsCLI(t *testing.T) {
 	requireE2E(t)

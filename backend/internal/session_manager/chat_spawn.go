@@ -40,7 +40,7 @@ type ChatLauncher interface {
 	// turn or reports why.
 	StartChatTurn(ctx context.Context, id domain.SessionID, text string) (string, error)
 	// RelayChatTurn delivers a message Open Agents is carrying on someone else's behalf —
-	// `open-agents send`, an orchestrator writing to a worker, an automation — as a turn
+	// `open-agents send`, a manager writing to a worker, an automation — as a turn
 	// attributed to automation rather than to the human at the keyboard.
 	RelayChatTurn(ctx context.Context, id domain.SessionID, text string) (string, error)
 	// RelayChatTurnWithID is the durable-retry form. Implementations must pass

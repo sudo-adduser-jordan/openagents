@@ -5,13 +5,13 @@ import { expect, test } from "@playwright/test";
 // lib/mock-data.ts instead of hitting a daemon. The tests run in Chromium
 // (no window.openAgents), so the terminal shows its browser-preview surface.
 
-test("renders the orchestrator-first workbench shell", async ({ page }) => {
+test("renders the manager-first workbench shell", async ({ page }) => {
 	await page.goto("/");
-	// The single pinned Orchestrator anchor + the Projects group + a name-only worker row.
-	await expect(page.getByRole("button", { name: "Orchestrator", exact: true })).toBeVisible();
+	// The single pinned Manager anchor + the Projects group + a name-only worker row.
+	await expect(page.getByRole("button", { name: "Manager", exact: true })).toBeVisible();
 	await expect(page.getByText("Projects", { exact: true })).toBeVisible();
 	await expect(page.getByRole("button", { name: "fix-webgl-fallback", exact: true })).toBeVisible();
-	// Orchestrator side rail = the quiet Workers list.
+	// Manager side rail = the quiet Workers list.
 	await expect(page.getByText("Workers", { exact: true })).toBeVisible();
 });
 

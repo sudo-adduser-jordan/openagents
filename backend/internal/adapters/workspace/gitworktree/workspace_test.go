@@ -123,7 +123,7 @@ func TestManagedPathSafety(t *testing.T) {
 	}
 }
 
-func TestOrchestratorManagedPath(t *testing.T) {
+func TestManagerManagedPath(t *testing.T) {
 	root := t.TempDir()
 	ws, err := New(Options{ManagedRoot: root, RepoResolver: StaticRepoResolver{"proj": root}})
 	if err != nil {
@@ -134,14 +134,14 @@ func TestOrchestratorManagedPath(t *testing.T) {
 		cfg := ports.WorkspaceConfig{
 			ProjectID:     "proj",
 			SessionID:     "proj-1",
-			Kind:          domain.KindOrchestrator,
+			Kind:          domain.KindManager,
 			SessionPrefix: "open-agents-agents",
 		}
 		path, err := ws.managedPath(cfg)
 		if err != nil {
 			t.Fatalf("managed path: %v", err)
 		}
-		want := filepath.Join(ws.managedRoot, "proj", "orchestrator", "open-agents-agents-orchestrator")
+		want := filepath.Join(ws.managedRoot, "proj", "manager", "open-agents-agents-manager")
 		if path != want {
 			t.Fatalf("path = %q, want %q", path, want)
 		}
@@ -151,13 +151,13 @@ func TestOrchestratorManagedPath(t *testing.T) {
 		cfg := ports.WorkspaceConfig{
 			ProjectID: "longprojectid123",
 			SessionID: "longprojectid123-1",
-			Kind:      domain.KindOrchestrator,
+			Kind:      domain.KindManager,
 		}
 		path, err := ws.managedPath(cfg)
 		if err != nil {
 			t.Fatalf("managed path: %v", err)
 		}
-		want := filepath.Join(ws.managedRoot, "longprojectid123", "orchestrator", "longprojecti-orchestrator")
+		want := filepath.Join(ws.managedRoot, "longprojectid123", "manager", "longprojecti-manager")
 		if path != want {
 			t.Fatalf("path = %q, want %q", path, want)
 		}
@@ -167,13 +167,13 @@ func TestOrchestratorManagedPath(t *testing.T) {
 		cfg := ports.WorkspaceConfig{
 			ProjectID: "proj",
 			SessionID: "proj-1",
-			Kind:      domain.KindOrchestrator,
+			Kind:      domain.KindManager,
 		}
 		path, err := ws.managedPath(cfg)
 		if err != nil {
 			t.Fatalf("managed path: %v", err)
 		}
-		want := filepath.Join(ws.managedRoot, "proj", "orchestrator", "proj-orchestrator")
+		want := filepath.Join(ws.managedRoot, "proj", "manager", "proj-manager")
 		if path != want {
 			t.Fatalf("path = %q, want %q", path, want)
 		}
@@ -187,16 +187,16 @@ func TestCreateReusesRegisteredWorktreeAtExpectedPath(t *testing.T) {
 	if err != nil {
 		t.Fatalf("new: %v", err)
 	}
-	path := filepath.Join(ws.managedRoot, "proj", "orchestrator", "proj-orchestrator")
+	path := filepath.Join(ws.managedRoot, "proj", "manager", "proj-manager")
 	if err := os.MkdirAll(path, 0o755); err != nil {
 		t.Fatalf("create registered worktree path: %v", err)
 	}
 	cfg := ports.WorkspaceConfig{
 		ProjectID:     "proj",
 		SessionID:     "proj-1",
-		Kind:          domain.KindOrchestrator,
+		Kind:          domain.KindManager,
 		SessionPrefix: "proj",
-		Branch:        "open-agents/proj-orchestrator",
+		Branch:        "open-agents/proj-manager",
 		BaseBranch:    "main",
 	}
 	ws.run = func(_ context.Context, _ string, args ...string) ([]byte, error) {
@@ -205,7 +205,7 @@ func TestCreateReusesRegisteredWorktreeAtExpectedPath(t *testing.T) {
 		case strings.Contains(joined, "check-ref-format"):
 			return nil, nil
 		case strings.Contains(joined, "worktree list --porcelain"):
-			return []byte("worktree " + path + "\nbranch refs/heads/open-agents/proj-orchestrator\n"), nil
+			return []byte("worktree " + path + "\nbranch refs/heads/open-agents/proj-manager\n"), nil
 		case strings.Contains(joined, "rev-parse --verify --quiet"):
 			return []byte("sha\n"), nil
 		default:
@@ -218,8 +218,8 @@ func TestCreateReusesRegisteredWorktreeAtExpectedPath(t *testing.T) {
 	if err != nil {
 		t.Fatalf("Create: %v", err)
 	}
-	if info.Path != path || info.Branch != "open-agents/proj-orchestrator" {
-		t.Fatalf("info = %#v, want path %q branch open-agents/proj-orchestrator", info, path)
+	if info.Path != path || info.Branch != "open-agents/proj-manager" {
+		t.Fatalf("info = %#v, want path %q branch open-agents/proj-manager", info, path)
 	}
 }
 
@@ -237,13 +237,13 @@ func TestCreateRecreatesMissingRegisteredWorktreeWithForce(t *testing.T) {
 		t.Fatalf("new: %v", err)
 	}
 	// Deliberately not created on disk: the registration is stale.
-	path := filepath.Join(ws.managedRoot, "proj", "orchestrator", "proj-orchestrator")
+	path := filepath.Join(ws.managedRoot, "proj", "manager", "proj-manager")
 	cfg := ports.WorkspaceConfig{
 		ProjectID:     "proj",
 		SessionID:     "proj-1",
-		Kind:          domain.KindOrchestrator,
+		Kind:          domain.KindManager,
 		SessionPrefix: "proj",
-		Branch:        "open-agents/proj-orchestrator",
+		Branch:        "open-agents/proj-manager",
 		BaseBranch:    "main",
 	}
 
@@ -257,12 +257,12 @@ func TestCreateRecreatesMissingRegisteredWorktreeWithForce(t *testing.T) {
 		case strings.Contains(joined, "check-ref-format"):
 			return nil, nil
 		case strings.Contains(joined, "worktree list --porcelain"):
-			return []byte("worktree " + path + "\nbranch refs/heads/open-agents/proj-orchestrator\n"), nil
-		case strings.Contains(joined, "rev-parse --verify --quiet refs/heads/open-agents/proj-orchestrator"):
+			return []byte("worktree " + path + "\nbranch refs/heads/open-agents/proj-manager\n"), nil
+		case strings.Contains(joined, "rev-parse --verify --quiet refs/heads/open-agents/proj-manager"):
 			return nil, nil
 		case strings.Contains(joined, "rev-parse --verify --quiet"):
 			return []byte("sha\n"), nil
-		case strings.Contains(joined, "worktree add --force "+path+" open-agents/proj-orchestrator"):
+		case strings.Contains(joined, "worktree add --force "+path+" open-agents/proj-manager"):
 			return nil, nil
 		default:
 			t.Fatalf("unexpected git invocation: %v", args)
@@ -315,13 +315,13 @@ func TestRestoreRecreatesMissingRegisteredWorktreeWithForce(t *testing.T) {
 	if err != nil {
 		t.Fatalf("new: %v", err)
 	}
-	path := filepath.Join(ws.managedRoot, "proj", "orchestrator", "proj-orchestrator")
+	path := filepath.Join(ws.managedRoot, "proj", "manager", "proj-manager")
 	cfg := ports.WorkspaceConfig{
 		ProjectID:     "proj",
 		SessionID:     "proj-1",
-		Kind:          domain.KindOrchestrator,
+		Kind:          domain.KindManager,
 		SessionPrefix: "proj",
-		Branch:        "open-agents/proj-orchestrator",
+		Branch:        "open-agents/proj-manager",
 		BaseBranch:    "main",
 		Path:          path,
 	}
@@ -334,12 +334,12 @@ func TestRestoreRecreatesMissingRegisteredWorktreeWithForce(t *testing.T) {
 		case strings.Contains(joined, "check-ref-format"):
 			return nil, nil
 		case strings.Contains(joined, "worktree list --porcelain"):
-			return []byte("worktree " + path + "\nbranch refs/heads/open-agents/proj-orchestrator\n"), nil
-		case strings.Contains(joined, "rev-parse --verify --quiet refs/heads/open-agents/proj-orchestrator"):
+			return []byte("worktree " + path + "\nbranch refs/heads/open-agents/proj-manager\n"), nil
+		case strings.Contains(joined, "rev-parse --verify --quiet refs/heads/open-agents/proj-manager"):
 			return nil, nil
 		case strings.Contains(joined, "rev-parse --verify --quiet"):
 			return []byte("sha\n"), nil
-		case strings.Contains(joined, "worktree add --force "+path+" open-agents/proj-orchestrator"):
+		case strings.Contains(joined, "worktree add --force "+path+" open-agents/proj-manager"):
 			return nil, nil
 		default:
 			t.Fatalf("unexpected git invocation: %v", args)
@@ -376,8 +376,8 @@ func TestRestoreRecreatesOnRegisteredBranchNotCfgBranch(t *testing.T) {
 	if err != nil {
 		t.Fatalf("new: %v", err)
 	}
-	path := filepath.Join(ws.managedRoot, "proj", "orchestrator", "proj-orchestrator")
-	const registeredBranch = "open-agents/proj-orchestrator/gh-pages-landing"
+	path := filepath.Join(ws.managedRoot, "proj", "manager", "proj-manager")
+	const registeredBranch = "open-agents/proj-manager/gh-pages-landing"
 	// cfg.Branch deliberately differs from the stale registration's branch
 	// (and is not a prefix of it, so a substring match on the recorded git
 	// invocations cannot accidentally pass either way), mirroring how Open Agents
@@ -386,9 +386,9 @@ func TestRestoreRecreatesOnRegisteredBranchNotCfgBranch(t *testing.T) {
 	cfg := ports.WorkspaceConfig{
 		ProjectID:     "proj",
 		SessionID:     "proj-1",
-		Kind:          domain.KindOrchestrator,
+		Kind:          domain.KindManager,
 		SessionPrefix: "proj",
-		Branch:        "open-agents/proj-orchestrator/root",
+		Branch:        "open-agents/proj-manager/root",
 		BaseBranch:    "main",
 		Path:          path,
 	}
@@ -471,7 +471,7 @@ func workspaceProjectRepoFake(t *testing.T, ws *Workspace, output, worktreeList 
 func TestCreateWorkspaceProjectRepoAddsWithForceWhenRegistrationIsStale(t *testing.T) {
 	root := t.TempDir()
 	repo := t.TempDir()
-	output := filepath.Join(root, "proj", "orchestrator", "proj-orchestrator", "api")
+	output := filepath.Join(root, "proj", "manager", "proj-manager", "api")
 	ws, err := New(Options{ManagedRoot: root, RepoResolver: StaticRepoResolver{"proj": repo}})
 	if err != nil {
 		t.Fatalf("new: %v", err)
@@ -523,7 +523,7 @@ func TestCreateWorkspaceProjectRepoAddsWithForceWhenRegistrationIsStale(t *testi
 func TestCreateWorkspaceProjectRepoRecoveryRetriesOnExistingBranchForm(t *testing.T) {
 	root := t.TempDir()
 	repo := t.TempDir()
-	output := filepath.Join(root, "proj", "orchestrator", "proj-orchestrator", "api")
+	output := filepath.Join(root, "proj", "manager", "proj-manager", "api")
 	ws, err := New(Options{ManagedRoot: root, RepoResolver: StaticRepoResolver{"proj": repo}})
 	if err != nil {
 		t.Fatalf("new: %v", err)
@@ -603,7 +603,7 @@ func TestCreateWorkspaceProjectRepoRecoveryRetriesOnExistingBranchForm(t *testin
 func TestAddNewBranchWorktreeRecoveryFailureReportsBothErrors(t *testing.T) {
 	root := t.TempDir()
 	repo := t.TempDir()
-	output := filepath.Join(root, "proj", "orchestrator", "proj-orchestrator", "api")
+	output := filepath.Join(root, "proj", "manager", "proj-manager", "api")
 	ws, err := New(Options{ManagedRoot: root, RepoResolver: StaticRepoResolver{"proj": repo}})
 	if err != nil {
 		t.Fatalf("new: %v", err)

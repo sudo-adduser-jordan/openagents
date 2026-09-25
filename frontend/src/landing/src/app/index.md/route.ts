@@ -19,7 +19,7 @@ export function GET() {
     "",
     "## Features",
     "",
-    "- **Fleet orchestration**: delegate to a main agent that plans, spawns workers, and keeps sessions moving, you stay the reviewer.",
+    "- **Fleet management**: delegate to a main agent that plans, spawns workers, and keeps sessions moving, you stay the reviewer.",
     "- **Live board**: every session flows across one board, working, needs you, in review, ready to merge, with agent, branch, and PR state on each card.",
     "- **CI + review routing**: failed checks and review comments route back to the session that owns the branch, the right agent fixes the right thing.",
     "- **Any CLI agent**: Codex, OpenCode, Cursor, Aider, Goose, and 18 more. 23 harnesses total, with per-project agent choice.",

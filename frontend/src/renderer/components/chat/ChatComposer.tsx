@@ -68,7 +68,8 @@ import {
 } from "../../hooks/useFileAttachments";
 import { File } from "lucide-react";
 import type { ChatSkill, ChatSteerOutcome } from "../../types/conversation";
-import type { WorkflowMode } from "../../types/workspace";
+import { resolveWorkflowMode } from "@openagents/product-ui";
+import type { SessionKind, WorkflowMode } from "../../types/workspace";
 import {
 	acknowledgeChatComposerMutation,
 	beginChatComposerMutation,
@@ -178,6 +179,7 @@ export const ChatComposer = memo(function ChatComposer({
 	draftSessionId,
 	draftSessionIncarnation,
 	acceptedClientMessageIds,
+	sessionRole = "worker",
 	workflowMode,
 	stageBar,
 }: {
@@ -262,7 +264,9 @@ export const ChatComposer = memo(function ChatComposer({
 	draftSessionIncarnation?: string;
 	/** Client ids already present in daemon-authoritative conversation history. */
 	acceptedClientMessageIds?: ReadonlySet<string>;
-	/** User-controlled delivery stage; tints the composer border. */
+	/** Session role controls which delivery stages are valid. */
+	sessionRole?: SessionKind;
+	/** User-controlled delivery stage; tints and labels the composer. */
 	workflowMode?: WorkflowMode;
 	/**
 	 * Session workflow stage actions rendered above the composer frame (the
@@ -1385,9 +1389,9 @@ export const ChatComposer = memo(function ChatComposer({
 			</div>
 		);
 
-	// Every session carries its delivery stage, orchestrators included.
-	// Absent workflow mode reads as `building`, matching the daemon default.
-	const workflowTone = workflowMode === "planning" ? "planning" : "building";
+	// Workers keep Planning/Building. Managers default to the coordinating
+	// Manager stage and only enter Planning when explicitly switched there.
+	const workflowTone = resolveWorkflowMode(sessionRole, workflowMode);
 
 	if (approval) {
 		return withQueueStack(

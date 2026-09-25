@@ -27,7 +27,7 @@ type sessionStore interface {
 	// made the reducer's previously read session stale.
 	UpdateSessionFromActivitySignal(ctx context.Context, rec domain.SessionRecord, expectedRevision int64) (bool, error)
 	// ListSessions returns every session in a project. The dispatcher reads it
-	// to resolve the current orchestrator at delivery time.
+	// to resolve the current manager at delivery time.
 	ListSessions(ctx context.Context, project domain.ProjectID) ([]domain.SessionRecord, error)
 	// ListPRsBySession returns every PR row tracked for the session. The
 	// reducer reads it to apply the multi-PR completion rule (terminate only

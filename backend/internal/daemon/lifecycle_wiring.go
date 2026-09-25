@@ -436,7 +436,7 @@ func (r reviewerAgentAuth) AuthStatus(ctx context.Context, harness domain.Review
 // buildAgentResolver constructs the per-session agent resolver the Session
 // Manager consumes (sessionmanager.Deps.Agents): a registry of the shipped
 // adapters. It still validates OPEN_AGENTS_AGENT at startup for compatibility with the
-// config surface, but worker/orchestrator spawns must provide a resolved
+// config surface, but worker/manager spawns must provide a resolved
 // harness before calling Agent.
 func buildAgentResolver(defaultAgent string, log *slog.Logger) (ports.AgentResolver, error) {
 	if defaultAgent == "" {

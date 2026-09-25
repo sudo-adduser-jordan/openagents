@@ -21,9 +21,9 @@ import {
 import { useAgentReadinessQuery, useEnsureAgentReadiness } from "../hooks/useAgentReadinessQuery";
 import { useWorkspaceQuery, workspaceQueryKey } from "../hooks/useWorkspaceQuery";
 import { apiClient, apiErrorMessage } from "../lib/api-client";
-import { OrchestratorSpawnError, spawnOrchestrator } from "../lib/spawn-orchestrator";
-import { type OrchestratorReplacementFailure, useUiStore } from "../stores/ui-store";
-import { newestActiveOrchestrator } from "../types/workspace";
+import { ManagerSpawnError, spawnManager } from "../lib/spawn-manager";
+import { type ManagerReplacementFailure, useUiStore } from "../stores/ui-store";
+import { newestActiveManager } from "../types/workspace";
 import { RequiredAgentField } from "./CreateProjectAgentSheet";
 import { buildIntake, deriveRepoPath, deriveRepoHost, IntakeFields, type IntakeForm } from "./IntakeFields";
 import { ProductExternalLink } from "./ProductExternalLink";
@@ -46,7 +46,7 @@ const projectQueryKey = (id: string) => ["project", id] as const;
 type SettingsSaveResult = {
 	replacementError: string | null;
 	replacementSessionId: string | null;
-	replacementFailure: OrchestratorReplacementFailure | null;
+	replacementFailure: ManagerReplacementFailure | null;
 	spawnError: unknown;
 };
 
@@ -122,27 +122,27 @@ function SettingsBody({
 	const queryClient = useQueryClient();
 	const navigate = useNavigate();
 	const closeSettings = useUiStore((state) => state.closeSettings);
-	const setOrchestratorReplacementError = useUiStore((state) => state.setOrchestratorReplacementError);
+	const setManagerReplacementError = useUiStore((state) => state.setManagerReplacementError);
 	const workspaceQuery = useWorkspaceQuery();
 	const config = project.config ?? {};
 	const isScratchProject = project.kind === "scratch";
 	const workspace = workspaceQuery.data?.find((item) => item.id === projectId);
-	const activeOrchestrator = newestActiveOrchestrator(workspace?.sessions ?? []);
+	const activeManager = newestActiveManager(workspace?.sessions ?? []);
 	const intake: TrackerIntakeConfig = config.trackerIntake ?? {};
 	const [form, setForm] = useState({
 		displayName: project.name,
 		defaultBranch: config.defaultBranch ?? DEFAULT_BRANCH_AUTO,
 		sessionPrefix: config.sessionPrefix ?? "",
 		workerAgent: config.worker?.agent ?? "",
-		orchestratorAgent: config.orchestrator?.agent ?? "",
+		managerAgent: config.manager?.agent ?? "",
 		workerModel: config.worker?.agentConfig?.model ?? config.agentConfig?.model ?? "",
 		workerEffort: config.worker?.agentConfig?.effort ?? config.agentConfig?.effort ?? "",
 		workerPermissions: config.worker?.agentConfig?.permissions ?? config.agentConfig?.permissions ?? "",
-		orchestratorModel: config.orchestrator?.agentConfig?.model ?? config.agentConfig?.model ?? "",
-		orchestratorEffort: config.orchestrator?.agentConfig?.effort ?? config.agentConfig?.effort ?? "",
-		orchestratorPermissions: config.orchestrator?.agentConfig?.permissions ?? config.agentConfig?.permissions ?? "",
+		managerModel: config.manager?.agentConfig?.model ?? config.agentConfig?.model ?? "",
+		managerEffort: config.manager?.agentConfig?.effort ?? config.agentConfig?.effort ?? "",
+		managerPermissions: config.manager?.agentConfig?.permissions ?? config.agentConfig?.permissions ?? "",
 		workerMode: config.worker?.agentConfig?.mode ?? config.agentConfig?.mode ?? "",
-		orchestratorMode: config.orchestrator?.agentConfig?.mode ?? config.agentConfig?.mode ?? "",
+		managerMode: config.manager?.agentConfig?.mode ?? config.agentConfig?.mode ?? "",
 		reviewerHarness: config.reviewers?.[0]?.harness ?? "",
 		reviewerModel: config.reviewers?.[0]?.agentConfig?.model ?? config.agentConfig?.model ?? "",
 		reviewerMode: config.reviewers?.[0]?.agentConfig?.mode ?? config.agentConfig?.mode ?? "",
@@ -157,14 +157,14 @@ function SettingsBody({
 	const [showSaving, setShowSaving] = useState(false);
 	const [replacementError, setReplacementError] = useState<string | null>(null);
 	const [validationError, setValidationError] = useState<string | null>(null);
-	const [tuningValidity, setTuningValidity] = useState({ worker: true, orchestrator: true, reviewer: true });
-	const initialOrchestratorAgent = config.orchestrator?.agent ?? "";
-	const missingRequiredAgent = form.workerAgent === "" || form.orchestratorAgent === "";
+	const [tuningValidity, setTuningValidity] = useState({ worker: true, manager: true, reviewer: true });
+	const initialManagerAgent = config.manager?.agent ?? "";
+	const missingRequiredAgent = form.workerAgent === "" || form.managerAgent === "";
 	const agentsQuery = useAgentReadinessQuery();
 	useEnsureAgentReadiness();
 	useEnsureAgentReadiness({
-		agentIds: [form.workerAgent, form.orchestratorAgent, form.reviewerHarness],
-		enabled: form.workerAgent !== "" || form.orchestratorAgent !== "" || form.reviewerHarness !== "",
+		agentIds: [form.workerAgent, form.managerAgent, form.reviewerHarness],
+		enabled: form.workerAgent !== "" || form.managerAgent !== "" || form.reviewerHarness !== "",
 	});
 	const agentCatalog = agentsQuery.data;
 
@@ -203,15 +203,15 @@ function SettingsBody({
 							agent: form.workerAgent,
 							agentConfig: buildRoleAgentConfig(config.worker?.agentConfig, form.workerModel, form.workerMode, form.workerAgent === "codex" ? form.workerEffort : "", form.workerPermissions),
 						},
-						orchestrator: {
-							...config.orchestrator,
-							agent: form.orchestratorAgent,
+						manager: {
+							...config.manager,
+							agent: form.managerAgent,
 							agentConfig: buildRoleAgentConfig(
-								config.orchestrator?.agentConfig,
-								form.orchestratorModel,
-								form.orchestratorMode,
-								form.orchestratorAgent === "codex" ? form.orchestratorEffort : "",
-								form.orchestratorPermissions,
+								config.manager?.agentConfig,
+								form.managerModel,
+								form.managerMode,
+								form.managerAgent === "codex" ? form.managerEffort : "",
+								form.managerPermissions,
 							),
 						},
 						agentConfig: blankToUndefined({
@@ -231,15 +231,15 @@ function SettingsBody({
 							agent: form.workerAgent,
 							agentConfig: buildRoleAgentConfig(config.worker?.agentConfig, form.workerModel, form.workerMode, form.workerAgent === "codex" ? form.workerEffort : "", form.workerPermissions),
 						},
-						orchestrator: {
-							...config.orchestrator,
-							agent: form.orchestratorAgent,
+						manager: {
+							...config.manager,
+							agent: form.managerAgent,
 							agentConfig: buildRoleAgentConfig(
-								config.orchestrator?.agentConfig,
-								form.orchestratorModel,
-								form.orchestratorMode,
-								form.orchestratorAgent === "codex" ? form.orchestratorEffort : "",
-								form.orchestratorPermissions,
+								config.manager?.agentConfig,
+								form.managerModel,
+								form.managerMode,
+								form.managerAgent === "codex" ? form.managerEffort : "",
+								form.managerPermissions,
 							),
 						},
 						agentConfig: blankToUndefined({
@@ -261,11 +261,11 @@ function SettingsBody({
 			});
 			if (error) throw new Error(apiErrorMessage(error));
 			if (
-				form.orchestratorAgent !== initialOrchestratorAgent ||
-				(activeOrchestrator && activeOrchestrator.provider !== form.orchestratorAgent)
+				form.managerAgent !== initialManagerAgent ||
+				(activeManager && activeManager.provider !== form.managerAgent)
 			) {
 				try {
-					const sessionId = await spawnOrchestrator(projectId, "settings", true);
+					const sessionId = await spawnManager(projectId, "settings", true);
 					return {
 						replacementError: null,
 						replacementSessionId: sessionId,
@@ -273,10 +273,10 @@ function SettingsBody({
 						spawnError: null,
 					} satisfies SettingsSaveResult;
 				} catch (error) {
-					const replacementFailure: OrchestratorReplacementFailure = {
+					const replacementFailure: ManagerReplacementFailure = {
 						message:
-							error instanceof Error ? error.message : "Could not replace orchestrator",
-						...(error instanceof OrchestratorSpawnError
+							error instanceof Error ? error.message : "Could not replace manager",
+						...(error instanceof ManagerSpawnError
 							? { code: error.code, requestId: error.requestId }
 							: {}),
 					};
@@ -314,7 +314,7 @@ function SettingsBody({
 
 			if (result.replacementFailure) {
 				closeSettings();
-				setOrchestratorReplacementError(projectId, result.replacementFailure);
+				setManagerReplacementError(projectId, result.replacementFailure);
 			}
 		},
 	});
@@ -375,14 +375,14 @@ function SettingsBody({
 				if (validation) {
 					setValidationError(
 						validation === "agents_required"
-							? "Worker and orchestrator agents are required."
+							? "Worker and manager agents are required."
 							: validation === "name_required"
 								? "Project name is required."
 								: "Enabling intake requires an assignee.",
 					);
 					return;
 				}
-				if (!tuningValidity.worker || !tuningValidity.orchestrator || !tuningValidity.reviewer) {
+				if (!tuningValidity.worker || !tuningValidity.manager || !tuningValidity.reviewer) {
 					setValidationError("Choose supported model tuning values before saving.");
 					return;
 				}
@@ -456,39 +456,39 @@ function SettingsBody({
 								onValidityChange={(valid) => setTuningValidity((value) => ({ ...value, worker: valid }))}
 							/>
 						}
-						orchestratorArea={
+						managerArea={
 							<RequiredAgentField
-								id="orchestratorAgent"
+								id="managerAgent"
 								variant="settings-row"
-								value={form.orchestratorAgent}
-								placeholder="Select orchestrator agent"
-								label="Default orchestrator agent"
+								value={form.managerAgent}
+								placeholder="Select manager agent"
+								label="Default manager agent"
 								agents={agentCatalog?.agents}
 								disabled={agentsQuery.isFetching && agentCatalog === undefined}
-								invalid={validationError !== null && form.orchestratorAgent === ""}
+								invalid={validationError !== null && form.managerAgent === ""}
 								onChange={(v) =>
 									setForm((f) => ({
 										...f,
-										orchestratorAgent: v,
-										orchestratorModel: "",
-										orchestratorMode: "",
-										orchestratorEffort: "",
+										managerAgent: v,
+										managerModel: "",
+										managerMode: "",
+										managerEffort: "",
 									}))
 								}
 							/>
 						}
-						orchestratorModelArea={
+						managerModelArea={
 							<AgentModelField
-								role="orchestrator"
-								agentId={form.orchestratorAgent}
+								role="manager"
+								agentId={form.managerAgent}
 								projectId={projectId}
-								model={form.orchestratorModel}
-								mode={form.orchestratorMode}
-								effort={form.orchestratorEffort}
-								onModelChange={(orchestratorModel) => setForm((f) => ({ ...f, orchestratorModel }))}
-								onModeChange={(orchestratorMode) => setForm((f) => ({ ...f, orchestratorMode }))}
-								onEffortChange={(orchestratorEffort) => setForm((f) => ({ ...f, orchestratorEffort }))}
-								onValidityChange={(valid) => setTuningValidity((value) => ({ ...value, orchestrator: valid }))}
+								model={form.managerModel}
+								mode={form.managerMode}
+								effort={form.managerEffort}
+								onModelChange={(managerModel) => setForm((f) => ({ ...f, managerModel }))}
+								onModeChange={(managerMode) => setForm((f) => ({ ...f, managerMode }))}
+								onEffortChange={(managerEffort) => setForm((f) => ({ ...f, managerEffort }))}
+								onValidityChange={(valid) => setTuningValidity((value) => ({ ...value, manager: valid }))}
 							/>
 						}
 						permissions={{
@@ -501,12 +501,12 @@ function SettingsBody({
 							),
 							label: `${"Worker"} approval`,
 						}}
-						orchestratorPermissions={{
-							control: <PermissionModeSelect ariaLabel={`${"Orchestrator"} approval`} value={form.orchestratorPermissions} onChange={(v) => setForm((f) => ({ ...f, orchestratorPermissions: v }))} />,
-							label: `${"Orchestrator"} approval`,
+						managerPermissions={{
+							control: <PermissionModeSelect ariaLabel={`${"Manager"} approval`} value={form.managerPermissions} onChange={(v) => setForm((f) => ({ ...f, managerPermissions: v }))} />,
+							label: `${"Manager"} approval`,
 						}}
 						missingRequiredMessage={
-							missingRequiredAgent ? "Worker and orchestrator agents are required." : null
+							missingRequiredAgent ? "Worker and manager agents are required." : null
 						}
 					/>
 				{!isScratchProject && (
@@ -660,7 +660,7 @@ function AgentModelField({
 	onEffortChange,
 	onValidityChange,
 }: {
-	role: "worker" | "orchestrator" | "reviewer";
+	role: "worker" | "manager" | "reviewer";
 	agentId: string;
 	projectId: string;
 	model: string;
@@ -690,8 +690,8 @@ function AgentModelField({
 	const label = {
 		workerMode: "Worker mode",
 		workerModel: "Worker model",
-		orchestratorMode: "Orchestrator mode",
-		orchestratorModel: "Orchestrator model",
+		managerMode: "Manager mode",
+		managerModel: "Manager model",
 		reviewerMode: "Reviewer mode",
 		reviewerModel: "Reviewer model",
 	}[`${role}${isMode ? "Mode" : "Model"}`] ?? role;
@@ -774,7 +774,7 @@ function AgentModelField({
 							effort,
 							onEffortChange,
 							onValidityChange,
-							roleLabel: ({"worker": "Worker", "orchestrator": "Orchestrator", "reviewer": "Reviewer"}[role] ?? role),
+							roleLabel: ({"worker": "Worker", "manager": "Manager", "reviewer": "Reviewer"}[role] ?? role),
 						} : undefined}
 					/>
 				</div>

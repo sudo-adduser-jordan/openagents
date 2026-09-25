@@ -2,64 +2,96 @@ package domain
 
 import "fmt"
 
-// WorkflowMode is the user-controlled delivery stage of a session: where its
-// work sits between task creation and merge. Unlike SessionMode (which
-// conversation controller runs the session), WorkflowMode is a board
-// placement: a session is "planning" until a user (or a build-mode
-// orchestrator) pushes it into "building".
+// WorkflowMode is the user-controlled delivery posture of a session. Unlike
+// SessionMode, which selects the conversation controller, WorkflowMode controls
+// whether work is being scoped, coordinated by a manager, or executed.
 //
-//   - WorkflowModePlanning: the session is being scoped/designed before work
-//     starts. This is the default for every new task; the board shows it in the
-//     Planning lane.
-//   - WorkflowModeBuilding: the session is executing — writing code, opening
-//     PRs, and moving through review to merge. The board shows it in the
-//     Building lane (then Review and Ready as PR facts arrive).
+//   - WorkflowModePlanning scopes or designs work before execution. A manager in
+//     this mode may not delegate.
+//   - WorkflowModeManager lets a human-facing manager coordinate work and
+//     delegate it to workers. Every newly created manager starts here.
+//   - WorkflowModeBuilding executes work directly and advances toward review.
 type WorkflowMode string
 
 // The workflow modes.
 const (
 	WorkflowModePlanning WorkflowMode = "planning"
+	WorkflowModeManager  WorkflowMode = "manager"
 	WorkflowModeBuilding WorkflowMode = "building"
 )
 
-// DefaultWorkflowMode is what a new session gets unless a build-mode
-// orchestrator spawns it straight into building. Planning is always the
-// starting point: work is scoped before it is executed.
-const DefaultWorkflowMode = WorkflowModePlanning
+// DefaultWorkflowModeForKind returns the durable starting mode for a new
+// session. Workers always begin in planning; managers begin ready to
+// coordinate and delegate.
+func DefaultWorkflowModeForKind(kind SessionKind) WorkflowMode {
+	if kind == KindManager {
+		return WorkflowModeManager
+	}
+	return WorkflowModePlanning
+}
 
-// Valid reports whether mode is one Open Agents knows how to place on the board.
+// ValidForKind reports whether mode is valid for the session role. Manager mode
+// is exclusive to manager sessions; building is exclusive to workers; planning
+// is shared by both roles.
+func (m WorkflowMode) ValidForKind(kind SessionKind) bool {
+	if !m.Valid() {
+		return false
+	}
+	switch m {
+	case WorkflowModePlanning:
+		return kind == KindManager || kind == KindWorker
+	case WorkflowModeManager:
+		return kind == KindManager
+	case WorkflowModeBuilding:
+		return kind == KindWorker
+	default:
+		return false
+	}
+}
+
+// NormalizeWorkflowModeForKind collapses an empty, unrecognized, or
+// role-incompatible mode to the safe default for that session role.
+func NormalizeWorkflowModeForKind(kind SessionKind, mode WorkflowMode) WorkflowMode {
+	if mode.ValidForKind(kind) {
+		return mode
+	}
+	return DefaultWorkflowModeForKind(kind)
+}
+
+// Valid reports whether mode is one Open Agents knows how to apply to some
+// session role.
 func (m WorkflowMode) Valid() bool {
 	switch m {
-	case WorkflowModePlanning, WorkflowModeBuilding:
+	case WorkflowModePlanning, WorkflowModeManager, WorkflowModeBuilding:
 		return true
 	default:
 		return false
 	}
 }
 
-// NormalizeWorkflowMode collapses an empty or unrecognized mode to the
-// default. Use it when reading durable state: a row written before this
-// feature, or by a newer build that knows a mode this one does not, must
-// still land somewhere safe (Planning).
+// NormalizeWorkflowMode collapses an empty or unrecognized mode to Planning for
+// callers that do not have a session kind. Use NormalizeWorkflowModeForKind when
+// the kind is available so a malformed manager row still receives the safe
+// manager default.
 func NormalizeWorkflowMode(mode WorkflowMode) WorkflowMode {
 	if mode.Valid() {
 		return mode
 	}
-	return DefaultWorkflowMode
+	return WorkflowModePlanning
 }
 
 // ParseWorkflowMode converts caller-supplied input into a mode, strictly. An
 // empty string means "no mode requested" and yields the zero value with no
 // error, so callers can distinguish absent from invalid and apply their own
 // precedence. Anything else unrecognized is an error: a request that named a
-// mode Open Agents cannot place must fail loudly rather than downgrade.
+// mode Open Agents cannot apply must fail loudly rather than downgrade.
 func ParseWorkflowMode(raw string) (WorkflowMode, error) {
 	if raw == "" {
 		return "", nil
 	}
 	mode := WorkflowMode(raw)
 	if !mode.Valid() {
-		return "", fmt.Errorf("unknown workflow mode %q: want %q or %q", raw, WorkflowModePlanning, WorkflowModeBuilding)
+		return "", fmt.Errorf("unknown workflow mode %q: want %q, %q, or %q", raw, WorkflowModePlanning, WorkflowModeManager, WorkflowModeBuilding)
 	}
 	return mode, nil
 }

@@ -345,6 +345,58 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/v1/managers": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** List manager sessions across projects */
+        get: operations["listManagers"];
+        put?: never;
+        /** Spawn a manager session */
+        post: operations["spawnManager"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/managers/{id}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Fetch one manager session */
+        get: operations["getManager"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/managers/delegate": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Start a worker task and ask the manager to title it */
+        post: operations["delegateTask"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/v1/notifications": {
         parameters: {
             query?: never;
@@ -407,58 +459,6 @@ export interface paths {
         get: operations["streamNotifications"];
         put?: never;
         post?: never;
-        delete?: never;
-        options?: never;
-        head?: never;
-        patch?: never;
-        trace?: never;
-    };
-    "/api/v1/orchestrators": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        /** List orchestrator sessions across projects */
-        get: operations["listOrchestrators"];
-        put?: never;
-        /** Spawn an orchestrator session */
-        post: operations["spawnOrchestrator"];
-        delete?: never;
-        options?: never;
-        head?: never;
-        patch?: never;
-        trace?: never;
-    };
-    "/api/v1/orchestrators/{id}": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        /** Fetch one orchestrator session */
-        get: operations["getOrchestrator"];
-        put?: never;
-        post?: never;
-        delete?: never;
-        options?: never;
-        head?: never;
-        patch?: never;
-        trace?: never;
-    };
-    "/api/v1/orchestrators/delegate": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        get?: never;
-        put?: never;
-        /** Start a worker task and ask the orchestrator to title it */
-        post: operations["delegateTask"];
         delete?: never;
         options?: never;
         head?: never;
@@ -1612,7 +1612,7 @@ export interface paths {
         delete?: never;
         options?: never;
         head?: never;
-        /** Move a session between planning and building */
+        /** Set a session's planning, manager, or building workflow mode */
         patch: operations["setSessionWorkflowMode"];
         trace?: never;
     };
@@ -2249,7 +2249,7 @@ export interface components {
             /** Format: date-time */
             updatedAt: string;
             /** @enum {string} */
-            workflowMode: "planning" | "building";
+            workflowMode: "planning" | "manager" | "building";
         };
         ControllersSetSessionAutoReviewRequest: {
             enabled: boolean;
@@ -2519,8 +2519,8 @@ export interface components {
             projectId: string;
         };
         DelegateTaskResponse: {
+            managerId?: string;
             ok: boolean;
-            orchestratorId?: string;
             workerId: string;
         };
         DesktopWorkspaceLocationResponse: {
@@ -2749,6 +2749,11 @@ export interface components {
             sessionId: string;
             truncated: boolean;
         };
+        ManagerResponse: {
+            id: string;
+            projectId: string;
+            projectName?: string;
+        };
         MarkAllNotificationsReadRequest: {
             /** @description Acknowledge exactly these notifications. Omit to acknowledge every unread notification; paginating clients should send the ids they actually rendered so later pages stay unread. */
             ids?: string[];
@@ -2815,11 +2820,6 @@ export interface components {
             /** @description Windows shell selector: auto, git-bash, pwsh, powershell, cmd, or a custom executable path. Ignored on macOS and Linux. */
             shell?: string;
         };
-        OrchestratorResponse: {
-            id: string;
-            projectId: string;
-            projectName?: string;
-        };
         PRReviewState: {
             latestRun?: components["schemas"]["ReviewRun"];
             prNumber: number;
@@ -2877,8 +2877,8 @@ export interface components {
             env?: {
                 [key: string]: string;
             };
-            orchestrator?: components["schemas"]["RoleOverride"];
-            orchestratorRules?: string;
+            manager?: components["schemas"]["RoleOverride"];
+            managerRules?: string;
             postCreate?: string[];
             reviewers?: components["schemas"]["DomainReviewerConfig"][];
             sessionPrefix?: string;
@@ -2900,8 +2900,8 @@ export interface components {
             id: string;
             /** @enum {string} */
             kind: "single_repo" | "workspace" | "scratch";
+            managerAgent?: string;
             name: string;
-            orchestratorAgent?: string;
             path: string;
             resolveError?: string;
             sessionPrefix: string;
@@ -3310,14 +3310,14 @@ export interface components {
         };
         SetSessionWorkflowModeRequest: {
             /** @enum {string} */
-            workflowMode: "planning" | "building";
+            workflowMode: "planning" | "manager" | "building";
         };
         SetSessionWorkflowModeResponse: {
             ok: boolean;
             session: components["schemas"]["ControllersSessionView"];
             sessionId: string;
             /** @enum {string} */
-            workflowMode: "planning" | "building";
+            workflowMode: "planning" | "manager" | "building";
         };
         SettingsResponse: {
             chatHarnesses: string[];
@@ -3336,14 +3336,14 @@ export interface components {
             title: string;
             workingDir: string;
         };
-        SpawnOrchestratorRequest: {
+        SpawnManagerRequest: {
             clean?: boolean;
             /** @enum {string} */
             mode?: "chat" | "tui";
             projectId: string;
         };
-        SpawnOrchestratorResponse: {
-            orchestrator: components["schemas"]["OrchestratorResponse"];
+        SpawnManagerResponse: {
+            manager: components["schemas"]["ManagerResponse"];
         };
         SpawnSessionRequest: {
             attachments?: components["schemas"]["AttachmentInput"][];
@@ -3353,7 +3353,7 @@ export interface components {
             harness?: "opencode";
             issueId?: string;
             /** @enum {string} */
-            kind?: "worker" | "orchestrator";
+            kind?: "worker" | "manager";
             /** @enum {string} */
             mode?: "chat" | "tui";
             model?: string;
@@ -4752,6 +4752,223 @@ export interface operations {
             };
         };
     };
+    listManagers: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ListSessionsResponse"];
+                };
+            };
+            /** @description Internal Server Error */
+            500: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["APIError"];
+                };
+            };
+            /** @description Not Implemented */
+            501: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["APIError"];
+                };
+            };
+        };
+    };
+    spawnManager: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["SpawnManagerRequest"];
+            };
+        };
+        responses: {
+            /** @description Created */
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SpawnManagerResponse"];
+                };
+            };
+            /** @description Bad Request */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["APIError"];
+                };
+            };
+            /** @description Not Found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["APIError"];
+                };
+            };
+            /** @description Internal Server Error */
+            500: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["APIError"];
+                };
+            };
+            /** @description Not Implemented */
+            501: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["APIError"];
+                };
+            };
+        };
+    };
+    getManager: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description Manager session identifier, e.g. project-manager. */
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SessionResponse"];
+                };
+            };
+            /** @description Not Found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["APIError"];
+                };
+            };
+            /** @description Internal Server Error */
+            500: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["APIError"];
+                };
+            };
+            /** @description Not Implemented */
+            501: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["APIError"];
+                };
+            };
+        };
+    };
+    delegateTask: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["DelegateTaskRequest"];
+            };
+        };
+        responses: {
+            /** @description Accepted */
+            202: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["DelegateTaskResponse"];
+                };
+            };
+            /** @description Bad Request */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["APIError"];
+                };
+            };
+            /** @description Not Found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["APIError"];
+                };
+            };
+            /** @description Conflict */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["APIError"];
+                };
+            };
+            /** @description Internal Server Error */
+            500: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["APIError"];
+                };
+            };
+            /** @description Not Implemented */
+            501: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["APIError"];
+                };
+            };
+        };
+    };
     listNotifications: {
         parameters: {
             query?: {
@@ -4939,223 +5156,6 @@ export interface operations {
                 };
                 content: {
                     "text/event-stream": string;
-                };
-            };
-            /** @description Internal Server Error */
-            500: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["APIError"];
-                };
-            };
-            /** @description Not Implemented */
-            501: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["APIError"];
-                };
-            };
-        };
-    };
-    listOrchestrators: {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        requestBody?: never;
-        responses: {
-            /** @description OK */
-            200: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["ListSessionsResponse"];
-                };
-            };
-            /** @description Internal Server Error */
-            500: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["APIError"];
-                };
-            };
-            /** @description Not Implemented */
-            501: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["APIError"];
-                };
-            };
-        };
-    };
-    spawnOrchestrator: {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        requestBody: {
-            content: {
-                "application/json": components["schemas"]["SpawnOrchestratorRequest"];
-            };
-        };
-        responses: {
-            /** @description Created */
-            201: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["SpawnOrchestratorResponse"];
-                };
-            };
-            /** @description Bad Request */
-            400: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["APIError"];
-                };
-            };
-            /** @description Not Found */
-            404: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["APIError"];
-                };
-            };
-            /** @description Internal Server Error */
-            500: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["APIError"];
-                };
-            };
-            /** @description Not Implemented */
-            501: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["APIError"];
-                };
-            };
-        };
-    };
-    getOrchestrator: {
-        parameters: {
-            query?: never;
-            header?: never;
-            path: {
-                /** @description Orchestrator session identifier, e.g. project-orchestrator. */
-                id: string;
-            };
-            cookie?: never;
-        };
-        requestBody?: never;
-        responses: {
-            /** @description OK */
-            200: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["SessionResponse"];
-                };
-            };
-            /** @description Not Found */
-            404: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["APIError"];
-                };
-            };
-            /** @description Internal Server Error */
-            500: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["APIError"];
-                };
-            };
-            /** @description Not Implemented */
-            501: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["APIError"];
-                };
-            };
-        };
-    };
-    delegateTask: {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        requestBody: {
-            content: {
-                "application/json": components["schemas"]["DelegateTaskRequest"];
-            };
-        };
-        responses: {
-            /** @description Accepted */
-            202: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["DelegateTaskResponse"];
-                };
-            };
-            /** @description Bad Request */
-            400: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["APIError"];
-                };
-            };
-            /** @description Not Found */
-            404: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["APIError"];
-                };
-            };
-            /** @description Conflict */
-            409: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["APIError"];
                 };
             };
             /** @description Internal Server Error */
@@ -5896,8 +5896,8 @@ export interface operations {
                 project?: string;
                 /** @description When true, return non-terminated sessions; when false, return terminated sessions. */
                 active?: null | boolean;
-                /** @description When true, return only orchestrator sessions. */
-                orchestratorOnly?: null | boolean;
+                /** @description When true, return only manager sessions. */
+                managerOnly?: null | boolean;
                 /** @description When true, return only fresh non-terminated sessions. */
                 fresh?: null | boolean;
             };

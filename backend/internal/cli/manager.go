@@ -10,54 +10,54 @@ import (
 	"github.com/spf13/cobra"
 )
 
-type orchestratorListOptions struct {
+type managerListOptions struct {
 	json bool
 }
 
-type orchestratorListOutput struct {
+type managerListOutput struct {
 	Data []sessionListEntry `json:"data"`
 }
 
-func newOrchestratorCommand(ctx *commandContext) *cobra.Command {
+func newManagerCommand(ctx *commandContext) *cobra.Command {
 	cmd := &cobra.Command{
-		Use:   "orchestrator",
-		Short: "Manage orchestrator sessions",
+		Use:   "manager",
+		Short: "Manage manager sessions",
 	}
-	cmd.AddCommand(newOrchestratorListCommand(ctx))
+	cmd.AddCommand(newManagerListCommand(ctx))
 	return cmd
 }
 
-func newOrchestratorListCommand(ctx *commandContext) *cobra.Command {
-	var opts orchestratorListOptions
+func newManagerListCommand(ctx *commandContext) *cobra.Command {
+	var opts managerListOptions
 	cmd := &cobra.Command{
 		Use:     "ls",
 		Aliases: []string{"list"},
-		Short:   "List orchestrator sessions",
+		Short:   "List manager sessions",
 		Args:    noArgs,
 		RunE: func(cmd *cobra.Command, _ []string) error {
-			return ctx.listOrchestrators(cmd.Context(), cmd, opts)
+			return ctx.listManagers(cmd.Context(), cmd, opts)
 		},
 	}
 	cmd.Flags().BoolVar(&opts.json, "json", false, "Output as JSON")
 	return cmd
 }
 
-func (c *commandContext) listOrchestrators(ctx context.Context, cmd *cobra.Command, opts orchestratorListOptions) error {
+func (c *commandContext) listManagers(ctx context.Context, cmd *cobra.Command, opts managerListOptions) error {
 	var res sessionListResponse
-	if err := c.getJSON(ctx, "orchestrators", &res); err != nil {
+	if err := c.getJSON(ctx, "managers", &res); err != nil {
 		return err
 	}
-	orchestrators := filterAndSortOrchestrators(res.Sessions)
+	managers := filterAndSortManagers(res.Sessions)
 	if opts.json {
-		return writeJSON(cmd.OutOrStdout(), orchestratorListOutput{Data: sessionListEntries(orchestrators, nil)})
+		return writeJSON(cmd.OutOrStdout(), managerListOutput{Data: sessionListEntries(managers, nil)})
 	}
-	return writeOrchestratorList(cmd, orchestrators)
+	return writeManagerList(cmd, managers)
 }
 
-func filterAndSortOrchestrators(sessions []sessionDTO) []sessionDTO {
+func filterAndSortManagers(sessions []sessionDTO) []sessionDTO {
 	out := make([]sessionDTO, 0, len(sessions))
 	for _, sess := range sessions {
-		if sess.Kind != "orchestrator" {
+		if sess.Kind != "manager" {
 			continue
 		}
 		out = append(out, sess)
@@ -71,10 +71,10 @@ func filterAndSortOrchestrators(sessions []sessionDTO) []sessionDTO {
 	return out
 }
 
-func writeOrchestratorList(cmd *cobra.Command, sessions []sessionDTO) error {
+func writeManagerList(cmd *cobra.Command, sessions []sessionDTO) error {
 	out := cmd.OutOrStdout()
 	if len(sessions) == 0 {
-		_, err := fmt.Fprintln(out, "(no orchestrators)")
+		_, err := fmt.Fprintln(out, "(no managers)")
 		return err
 	}
 	currentProject := ""
@@ -93,7 +93,7 @@ func writeOrchestratorList(cmd *cobra.Command, sessions []sessionDTO) error {
 		if _, err := fmt.Fprintf(out, "  %s", sess.ID); err != nil {
 			return err
 		}
-		parts := orchestratorLineParts(sess)
+		parts := managerLineParts(sess)
 		if len(parts) > 0 {
 			if _, err := fmt.Fprintf(out, "  %s", strings.Join(parts, "  ")); err != nil {
 				return err
@@ -106,7 +106,7 @@ func writeOrchestratorList(cmd *cobra.Command, sessions []sessionDTO) error {
 	return nil
 }
 
-func orchestratorLineParts(sess sessionDTO) []string {
+func managerLineParts(sess sessionDTO) []string {
 	parts := []string{}
 	if !sess.Activity.LastActivityAt.IsZero() {
 		parts = append(parts, "("+formatSessionAge(time.Since(sess.Activity.LastActivityAt))+")")

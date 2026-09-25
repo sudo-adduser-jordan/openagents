@@ -38,7 +38,7 @@ const shellMocks = vi.hoisted(() => {
 							path: string;
 							defaultBranch?: string;
 							workerAgent: string;
-							orchestratorAgent: string;
+							managerAgent: string;
 							asWorkspace?: boolean;
 						}) => Promise<void>;
 				  }
@@ -195,7 +195,7 @@ vi.mock("../components/DaemonStartupLoader", () => ({
 	DaemonStartupLoader: () => <div data-testid="daemon-startup-loader" />,
 }));
 vi.mock("../components/CommandPalette", () => ({ CommandPalette: () => null }));
-vi.mock("../components/OrchestratorReplacementDialog", () => ({ OrchestratorReplacementDialog: () => null }));
+vi.mock("../components/ManagerReplacementDialog", () => ({ ManagerReplacementDialog: () => null }));
 vi.mock("../components/ShellTopbar", () => ({ ShellTopbar: () => null }));
 vi.mock("../components/TitlebarNav", async () => {
 	const { sidebarIsVisible, useUiStore: useStore } = await vi.importActual<
@@ -385,7 +385,7 @@ describe("shell workspace startup", () => {
 			shellMocks.state.shellValue?.createProject?.({
 				path: "/one/",
 				workerAgent: "codex",
-				orchestratorAgent: "codex",
+				managerAgent: "codex",
 			}),
 		).resolves.toBeUndefined();
 
@@ -403,7 +403,7 @@ describe("shell workspace startup", () => {
 		} });
 		await renderShell();
 		await expect(shellMocks.state.shellValue?.createProject?.({
-			path: "/alias/one", workerAgent: "codex", orchestratorAgent: "codex",
+			path: "/alias/one", workerAgent: "codex", managerAgent: "codex",
 		})).resolves.toBeUndefined();
 		expect(shellMocks.navigate).toHaveBeenCalledWith({
 			to: "/projects/$projectId", params: { projectId: "proj-1" },
@@ -417,7 +417,7 @@ describe("shell workspace startup", () => {
 		} });
 		await renderShell();
 		shellMocks.queryClient.fetchQuery.mockResolvedValueOnce([{ ...workspaces[0], id: "new-registration", path: "/canonical" }]);
-		await expect(shellMocks.state.shellValue?.createProject?.({ path: "/alias", workerAgent: "codex", orchestratorAgent: "codex" })).resolves.toBeUndefined();
+		await expect(shellMocks.state.shellValue?.createProject?.({ path: "/alias", workerAgent: "codex", managerAgent: "codex" })).resolves.toBeUndefined();
 		expect(shellMocks.queryClient.fetchQuery).toHaveBeenCalledWith(expect.objectContaining({ staleTime: 0, retry: false }));
 		expect(shellMocks.navigate).toHaveBeenCalledWith({ to: "/projects/$projectId", params: { projectId: "new-registration" } });
 	});
@@ -429,7 +429,7 @@ describe("shell workspace startup", () => {
 				code: "PATH_ALREADY_REGISTERED", message: "Already registered", requestId: "request-4403", details: { existingProjectId },
 			} });
 			await renderShell();
-			await expect(shellMocks.state.shellValue?.createProject?.({ path: "/unknown", workerAgent: "codex", orchestratorAgent: "codex" })).rejects.toMatchObject({
+			await expect(shellMocks.state.shellValue?.createProject?.({ path: "/unknown", workerAgent: "codex", managerAgent: "codex" })).rejects.toMatchObject({
 				code: "PATH_ALREADY_REGISTERED", requestId: "request-4403", details: { existingProjectId },
 			});
 			expect(shellMocks.navigate).not.toHaveBeenCalled();
@@ -443,7 +443,7 @@ describe("shell workspace startup", () => {
 		} });
 		await renderShell();
 		shellMocks.queryClient.fetchQuery.mockRejectedValueOnce(new Error("refresh failed"));
-		await expect(shellMocks.state.shellValue?.createProject?.({ path: "/unknown", workerAgent: "codex", orchestratorAgent: "codex" })).rejects.toMatchObject({ code: "PATH_ALREADY_REGISTERED", message: "Already registered" });
+		await expect(shellMocks.state.shellValue?.createProject?.({ path: "/unknown", workerAgent: "codex", managerAgent: "codex" })).rejects.toMatchObject({ code: "PATH_ALREADY_REGISTERED", message: "Already registered" });
 		expect(shellMocks.navigate).not.toHaveBeenCalled();
 	});
 
@@ -467,7 +467,7 @@ describe("shell workspace startup", () => {
 			path: "/repo/project",
 			defaultBranch: "main",
 			workerAgent: "codex",
-			orchestratorAgent: "codex",
+			managerAgent: "codex",
 		});
 
 		expect(apiClient.POST).toHaveBeenCalledWith("/api/v1/projects", {
@@ -477,7 +477,7 @@ describe("shell workspace startup", () => {
 				config: {
 					defaultBranch: "main",
 					worker: { agent: "codex" },
-					orchestrator: { agent: "codex" },
+					manager: { agent: "codex" },
 				},
 			},
 		});

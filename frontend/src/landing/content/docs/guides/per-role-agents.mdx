@@ -1,23 +1,27 @@
 ---
 title: Per-role agents
-description: Configure separate harnesses and models for worker and orchestrator sessions.
+description: Configure separate harnesses and models for worker and manager sessions.
 ---
 
 Open Agents has two session roles:
 
 - A **worker** implements a focused task in an isolated workspace and may own pull requests.
-- An **orchestrator** supervises a project, monitors sessions, and delegates implementation to workers.
+- A **manager** supervises a project, monitors sessions, and delegates implementation to workers.
+
+Manager sessions start in **Manager** mode. In that mode the manager can delegate;
+in **Planning** mode it can plan without creating workers. Workers created by a
+manager start in Planning so the manager can review and sequence the work.
 
 Role and interface are separate choices. Either role can start in structured Chat or Terminal UI when its harness supports that interface.
 
 ## Configure roles
 
-Open the project settings in the desktop app and choose the worker and orchestrator agents. The CLI can set the initial agents while registering a project:
+Open the project settings in the desktop app and choose the worker and manager agents. The CLI can set the initial agents while registering a project:
 
 ```bash
 open-agents project add --path /absolute/path/to/repo \
   --worker-agent codex \
-  --orchestrator-agent opencode
+  --manager-agent opencode
 ```
 
 For a full configuration replacement, the stored JSON shape is:
@@ -31,7 +35,7 @@ For a full configuration replacement, the stored JSON shape is:
       "permissions": "bypass-permissions"
     }
   },
-  "orchestrator": {
+  "manager": {
     "agent": "opencode",
     "agentConfig": {
       "model": "gpt-5"
@@ -42,12 +46,12 @@ For a full configuration replacement, the stored JSON shape is:
 
 Pass the object itself with `open-agents project set-config <project-id> --config-json '<json-object>'`; the flag does not read a file. This replaces the project config, so preserve any existing setup, rules, reviewers, or intake fields.
 
-## Start an orchestrator or worker
+## Start a manager or worker
 
-The desktop provides dedicated new-session and orchestrator flows. From the CLI:
+The desktop provides dedicated new-session and manager flows. From the CLI:
 
 ```bash
-open-agents spawn --project my-project --kind orchestrator \
+open-agents spawn --project my-project --kind manager \
   --name supervisor --mode chat
 
 open-agents spawn --project my-project --kind worker \
@@ -65,7 +69,7 @@ Compatible Codex and OpenCode sessions expose **Open Chat** or **Open Terminal U
 
 ## Project rules
 
-Use `agentRules` and `agentRulesFile` for worker instructions. Use `orchestratorRules` for supervision-specific guidance. These are stored in the typed project config and injected into the appropriate session role.
+Use `agentRules` and `agentRulesFile` for worker instructions. Use `managerRules` for supervision-specific guidance. These are stored in the typed project config and injected into the appropriate session role.
 
 <Callout type="info">
 	Open Agents uses the provider CLI already installed and authenticated on your machine. Run `open-agents doctor` if a configured harness fails preflight.

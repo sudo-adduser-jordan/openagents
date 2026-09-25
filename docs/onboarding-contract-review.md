@@ -1,7 +1,7 @@
 # Desktop project onboarding contract review
 
 Scope: local desktop project creation, cloning, existing-folder imports,
-workspace imports, Git preparation, registration, and first orchestrator startup.
+workspace imports, Git preparation, registration, and first manager startup.
 This is a code-path review prompted by the `untrivial` empty-clone failure, not
 an exhaustive interactive audit. Cloud provisioning and all native
 picker/platform combinations remain outside this review.
@@ -69,10 +69,10 @@ as evidence that startup must succeed.
 Reuse existing Git resolution and agent readiness services for these facts;
 do not introduce another independent validator in the renderer.
 
-### Consolidate orchestrator startup and errors
+### Consolidate manager startup and errors
 
 Automatic startup in `routes/_shell.tsx` calls `/sessions` directly and converts
-failures to strings. Later startup uses `spawnOrchestrator`, `/orchestrators`,
+failures to strings. Later startup uses `spawnManager`, `/managers`,
 and a typed error. The formatter then interprets codes and repository details
 embedded in text. Review the endpoint defaults and consolidate the shared
 startup/error contract while preserving the chosen harness and session mode.

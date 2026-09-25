@@ -41,8 +41,8 @@ func seedHistoricalProviderFixture(t *testing.T) historicalProviderFixture {
 	}
 	source.Metadata.ProviderConversationID = "native-88"
 	source.Metadata.ControllerGeneration = "generation-88"
-	source.Metadata.WorkspacePath = "/worktrees/orchestrator-88"
-	source.Metadata.Branch = "open-agents/orchestrator"
+	source.Metadata.WorkspacePath = "/worktrees/manager-88"
+	source.Metadata.Branch = "open-agents/manager"
 	source.Activity = domain.Activity{State: domain.ActivityIdle, LastActivityAt: now}
 	source.UpdatedAt = now
 	if err := st.UpdateSession(ctx, source); err != nil {
@@ -55,7 +55,7 @@ func seedHistoricalProviderFixture(t *testing.T) historicalProviderFixture {
 	}
 	created, err := st.AppendUserMessage(ctx, conversation.ID, source.ID,
 		source.Metadata.ControllerGeneration, domain.ConversationMessage{
-			ID: "old-user-message", Text: "preserve the old orchestrator transcript",
+			ID: "old-user-message", Text: "preserve the old manager transcript",
 			Origin: domain.MessageOriginHuman, ClientMessageID: "old-client-message",
 		}, "old-turn", now.Add(time.Second))
 	if err != nil || !created {
@@ -63,13 +63,13 @@ func seedHistoricalProviderFixture(t *testing.T) historicalProviderFixture {
 	}
 
 	target, err := st.CreateSession(ctx, domain.SessionRecord{
-		ProjectID: testProject, Kind: domain.KindOrchestrator,
+		ProjectID: testProject, Kind: domain.KindManager,
 		Harness: domain.HarnessOpenCode, Mode: domain.SessionModeChat, IsTerminated: true,
 		Activity: domain.Activity{State: domain.ActivityExited, LastActivityAt: now.Add(2 * time.Second)},
 		Metadata: domain.SessionMetadata{
 			ProviderConversationID: historicalTargetThread,
-			WorkspacePath:          "/worktrees/orchestrator-248",
-			Branch:                 "open-agents/orchestrator",
+			WorkspacePath:          "/worktrees/manager-248",
+			Branch:                 "open-agents/manager",
 		},
 		CreatedAt: now.Add(2 * time.Second), UpdatedAt: now.Add(2 * time.Second),
 	})
@@ -222,7 +222,7 @@ func TestHistoricalProjectProviderRestoreAppendsOwnershipEpochAtomically(t *test
 
 	controller, err := svc.Start(ctx, chatsvc.StartConfig{
 		SessionID: fixture.target.ID, ProjectID: testProject,
-		Kind: domain.KindOrchestrator, Harness: domain.HarnessOpenCode,
+		Kind: domain.KindManager, Harness: domain.HarnessOpenCode,
 		WorkspacePath:          fixture.target.Metadata.WorkspacePath,
 		ProviderConversationID: historicalTargetThread,
 		ProviderScopeID:        historicalTransitionID + ":provider",
@@ -283,7 +283,7 @@ func TestHistoricalProjectProviderRestoreAppendsOwnershipEpochAtomically(t *test
 		t.Fatalf("load restored transcript: %v", err)
 	}
 	if len(snapshot.Messages) != 3 ||
-		snapshot.Messages[0].Text != "preserve the old orchestrator transcript" ||
+		snapshot.Messages[0].Text != "preserve the old manager transcript" ||
 		snapshot.Messages[1].Text != "restore my prior question" ||
 		snapshot.Messages[2].Text != "restored prior answer" {
 		t.Fatalf("restored transcript = %+v", snapshot.Messages)
@@ -319,7 +319,7 @@ func TestHistoricalProjectProviderRestoreAppendsOwnershipEpochAtomically(t *test
 	}
 	if _, err := svc.Start(ctx, chatsvc.StartConfig{
 		SessionID: fixture.target.ID, ProjectID: testProject,
-		Kind: domain.KindOrchestrator, Harness: domain.HarnessOpenCode,
+		Kind: domain.KindManager, Harness: domain.HarnessOpenCode,
 		WorkspacePath:          fixture.target.Metadata.WorkspacePath,
 		ProviderConversationID: historicalTargetThread,
 		ControllerReady:        historicalControllerReady(lcm, restored),
@@ -377,7 +377,7 @@ func TestHistoricalProjectProviderRestoreFailureNeverPublishesEpoch(t *testing.T
 			})
 			_, err := svc.Start(context.Background(), chatsvc.StartConfig{
 				SessionID: fixture.target.ID, ProjectID: testProject,
-				Kind: domain.KindOrchestrator, Harness: domain.HarnessOpenCode,
+				Kind: domain.KindManager, Harness: domain.HarnessOpenCode,
 				WorkspacePath:          fixture.target.Metadata.WorkspacePath,
 				ProviderConversationID: historicalTargetThread,
 				ProviderScopeID:        historicalTransitionID + ":provider",
@@ -404,7 +404,7 @@ func TestHistoricalProjectProviderRestoreRejectsWrongReturnedHandle(t *testing.T
 	})
 	_, err := svc.Start(context.Background(), chatsvc.StartConfig{
 		SessionID: fixture.target.ID, ProjectID: testProject,
-		Kind: domain.KindOrchestrator, Harness: domain.HarnessOpenCode,
+		Kind: domain.KindManager, Harness: domain.HarnessOpenCode,
 		WorkspacePath:          fixture.target.Metadata.WorkspacePath,
 		ProviderConversationID: historicalTargetThread,
 		ProviderScopeID:        historicalTransitionID + ":provider",
@@ -460,7 +460,7 @@ func TestHistoricalProjectProviderRestoreCommitFailureRollsBack(t *testing.T) {
 	})
 	_, err := svc.Start(context.Background(), chatsvc.StartConfig{
 		SessionID: fixture.target.ID, ProjectID: testProject,
-		Kind: domain.KindOrchestrator, Harness: domain.HarnessOpenCode,
+		Kind: domain.KindManager, Harness: domain.HarnessOpenCode,
 		WorkspacePath:          fixture.target.Metadata.WorkspacePath,
 		ProviderConversationID: historicalTargetThread,
 		ProviderScopeID:        historicalTransitionID + ":provider",
@@ -485,7 +485,7 @@ func TestHistoricalProjectProviderRestoreRejectsUnprovedMismatch(t *testing.T) {
 	})
 	_, err := svc.Start(context.Background(), chatsvc.StartConfig{
 		SessionID: fixture.target.ID, ProjectID: testProject,
-		Kind: domain.KindOrchestrator, Harness: domain.HarnessOpenCode,
+		Kind: domain.KindManager, Harness: domain.HarnessOpenCode,
 		WorkspacePath:          fixture.target.Metadata.WorkspacePath,
 		ProviderConversationID: historicalTargetThread,
 		// No Session Manager proof => no reserved ProviderScopeID.
@@ -503,7 +503,7 @@ func TestHistoricalProjectProviderRestoreRejectsStaleOwnerAndHead(t *testing.T) 
 	t.Run("owner changed before provider open", func(t *testing.T) {
 		fixture := seedHistoricalProviderFixture(t)
 		other, err := fixture.store.CreateSession(context.Background(), domain.SessionRecord{
-			ProjectID: testProject, Kind: domain.KindOrchestrator,
+			ProjectID: testProject, Kind: domain.KindManager,
 			Harness: domain.HarnessOpenCode, Mode: domain.SessionModeChat,
 			Activity:  domain.Activity{State: domain.ActivityIdle},
 			CreatedAt: fixture.now, UpdatedAt: fixture.now,
@@ -526,7 +526,7 @@ func TestHistoricalProjectProviderRestoreRejectsStaleOwnerAndHead(t *testing.T) 
 		})
 		_, err = svc.Start(context.Background(), chatsvc.StartConfig{
 			SessionID: fixture.target.ID, ProjectID: testProject,
-			Kind: domain.KindOrchestrator, Harness: domain.HarnessOpenCode,
+			Kind: domain.KindManager, Harness: domain.HarnessOpenCode,
 			WorkspacePath:          fixture.target.Metadata.WorkspacePath,
 			ProviderConversationID: historicalTargetThread,
 			ProviderScopeID:        historicalTransitionID + ":provider",
@@ -547,7 +547,7 @@ func TestHistoricalProjectProviderRestoreRejectsStaleOwnerAndHead(t *testing.T) 
 	t.Run("conversation owner", func(t *testing.T) {
 		fixture := seedHistoricalProviderFixture(t)
 		other, err := fixture.store.CreateSession(context.Background(), domain.SessionRecord{
-			ID: "p1-249", ProjectID: testProject, Kind: domain.KindOrchestrator,
+			ID: "p1-249", ProjectID: testProject, Kind: domain.KindManager,
 			Harness: domain.HarnessOpenCode, Mode: domain.SessionModeChat,
 			Activity:  domain.Activity{State: domain.ActivityIdle},
 			CreatedAt: fixture.now, UpdatedAt: fixture.now,
@@ -565,7 +565,7 @@ func TestHistoricalProjectProviderRestoreRejectsStaleOwnerAndHead(t *testing.T) 
 		})
 		_, err = svc.Start(context.Background(), chatsvc.StartConfig{
 			SessionID: fixture.target.ID, ProjectID: testProject,
-			Kind: domain.KindOrchestrator, Harness: domain.HarnessOpenCode,
+			Kind: domain.KindManager, Harness: domain.HarnessOpenCode,
 			WorkspacePath:          fixture.target.Metadata.WorkspacePath,
 			ProviderConversationID: historicalTargetThread,
 			ProviderScopeID:        historicalTransitionID + ":provider",
@@ -586,7 +586,7 @@ func TestHistoricalProjectProviderRestoreRejectsStaleOwnerAndHead(t *testing.T) 
 	t.Run("active head", func(t *testing.T) {
 		fixture := seedHistoricalProviderFixture(t)
 		competing, err := fixture.store.CreateSession(context.Background(), domain.SessionRecord{
-			ID: "p1-249", ProjectID: testProject, Kind: domain.KindOrchestrator,
+			ID: "p1-249", ProjectID: testProject, Kind: domain.KindManager,
 			Harness: domain.HarnessOpenCode, Mode: domain.SessionModeChat,
 			Activity:  domain.Activity{State: domain.ActivityIdle},
 			CreatedAt: fixture.now, UpdatedAt: fixture.now,
@@ -604,7 +604,7 @@ func TestHistoricalProjectProviderRestoreRejectsStaleOwnerAndHead(t *testing.T) 
 		})
 		_, err = svc.Start(context.Background(), chatsvc.StartConfig{
 			SessionID: fixture.target.ID, ProjectID: testProject,
-			Kind: domain.KindOrchestrator, Harness: domain.HarnessOpenCode,
+			Kind: domain.KindManager, Harness: domain.HarnessOpenCode,
 			WorkspacePath:          fixture.target.Metadata.WorkspacePath,
 			ProviderConversationID: historicalTargetThread,
 			ProviderScopeID:        historicalTransitionID + ":provider",
@@ -650,7 +650,7 @@ func assertHistoricalTargetUnchanged(t *testing.T, fixture historicalProviderFix
 	}
 	if snapshot.Conversation.ActiveBranchID != fixture.root.ID ||
 		len(snapshot.Messages) != 1 ||
-		snapshot.Messages[0].Text != "preserve the old orchestrator transcript" {
+		snapshot.Messages[0].Text != "preserve the old manager transcript" {
 		t.Fatalf("failed restore changed transcript/head: %+v", snapshot)
 	}
 	events, err := fixture.store.ProviderEventsSince(

@@ -533,7 +533,7 @@ func TestSpawnStandaloneRejectsProjectOnlyOptions(t *testing.T) {
 		{name: "branch", args: []string{"--branch", "feature/x"}},
 		{name: "issue", args: []string{"--issue", "42"}},
 		{name: "claim pr", args: []string{"--claim-pr", "42"}},
-		{name: "orchestrator", args: []string{"--kind", "orchestrator"}},
+		{name: "manager", args: []string{"--kind", "manager"}},
 	} {
 		t.Run(tc.name, func(t *testing.T) {
 			args := []string{"spawn", "--standalone", "--agent", "codex", "--name", "Notes"}
@@ -939,46 +939,46 @@ func TestSpawnUnknownAuthEnsureWarnsAndAllows(t *testing.T) {
 }
 
 // TestSpawnCommand_RejectsInvalidKind asserts `open-agents spawn` rejects a --kind value
-// outside worker/orchestrator at the CLI boundary, without contacting the daemon.
+// outside worker/manager at the CLI boundary, without contacting the daemon.
 func TestSpawnCommand_RejectsInvalidKind(t *testing.T) {
 	// Pass a valid --name so this exercises the --kind boundary specifically:
 	// spawn validates the required --name before --kind, so omitting it would
 	// trip the "--name is required" error instead of the kind error.
-	_, _, err := executeCLI(t, Deps{}, "spawn", "--project", "demo", "--name", "orch", "--kind", "orchestartor")
-	if err == nil || ExitCode(err) != 2 || !strings.Contains(err.Error(), `--kind must be "worker" or "orchestrator"`) {
+	_, _, err := executeCLI(t, Deps{}, "spawn", "--project", "demo", "--name", "manager", "--kind", "coordinator")
+	if err == nil || ExitCode(err) != 2 || !strings.Contains(err.Error(), `--kind must be "worker" or "manager"`) {
 		t.Fatalf("err=%v exit=%d, want --kind validation error", err, ExitCode(err))
 	}
 }
 
-// TestResolveSpawnHarness_OrchestratorDefault asserts the orchestrator role falls
-// back to the project's orchestrator agent (and worker to the worker agent), while
+// TestResolveSpawnHarness_ManagerDefault asserts the manager role falls
+// back to the project's manager agent (and worker to the worker agent), while
 // an explicit --agent always wins.
-func TestResolveSpawnHarness_OrchestratorDefault(t *testing.T) {
+func TestResolveSpawnHarness_ManagerDefault(t *testing.T) {
 	project := projectDetails{
 		ID: "demo",
 		Config: &projectConfig{
-			Worker:       roleOverride{Agent: "codex"},
-			Orchestrator: roleOverride{Agent: "codex"},
+			Worker:  roleOverride{Agent: "codex"},
+			Manager: roleOverride{Agent: "codex"},
 		},
 	}
-	if got, err := resolveSpawnHarness("", "orchestrator", project); err != nil || got != "codex" {
-		t.Fatalf("orchestrator default: got %q err %v, want codex", got, err)
+	if got, err := resolveSpawnHarness("", "manager", project); err != nil || got != "codex" {
+		t.Fatalf("manager default: got %q err %v, want codex", got, err)
 	}
 	if got, err := resolveSpawnHarness("", "worker", project); err != nil || got != "codex" {
 		t.Fatalf("worker default: got %q err %v, want codex", got, err)
 	}
-	if got, err := resolveSpawnHarness("aider", "orchestrator", project); err != nil || got != "aider" {
+	if got, err := resolveSpawnHarness("aider", "manager", project); err != nil || got != "aider" {
 		t.Fatalf("explicit agent: got %q err %v, want aider", got, err)
 	}
 	// Unset kind is the default `open-agents spawn` path and must resolve to worker.agent.
 	if got, err := resolveSpawnHarness("", "", project); err != nil || got != "codex" {
 		t.Fatalf("unset kind: got %q err %v, want codex", got, err)
 	}
-	// Orchestrator spawn with no orchestrator.agent configured surfaces the
-	// --orchestrator-agent hint (the error branch this PR adds).
-	noOrch := projectDetails{ID: "demo", Config: &projectConfig{Worker: roleOverride{Agent: "codex"}}}
-	if _, err := resolveSpawnHarness("", "orchestrator", noOrch); err == nil || !strings.Contains(err.Error(), "--orchestrator-agent") {
-		t.Fatalf("missing orchestrator agent: err=%v, want --orchestrator-agent hint", err)
+	// Manager spawn with no manager.agent configured surfaces the
+	// --manager-agent hint (the error branch this PR adds).
+	noManager := projectDetails{ID: "demo", Config: &projectConfig{Worker: roleOverride{Agent: "codex"}}}
+	if _, err := resolveSpawnHarness("", "manager", noManager); err == nil || !strings.Contains(err.Error(), "--manager-agent") {
+		t.Fatalf("missing manager agent: err=%v, want --manager-agent hint", err)
 	}
 }
 

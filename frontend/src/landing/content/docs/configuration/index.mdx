@@ -20,7 +20,7 @@ To set the default agents while registering the project:
 ```bash
 open-agents project add --path /absolute/path/to/repo \
   --worker-agent codex \
-  --orchestrator-agent opencode
+  --manager-agent opencode
 ```
 
 Open Agents also supports workspace projects, which contain a root repository and direct child repositories:
@@ -41,7 +41,7 @@ open-agents project set-config <project-id> --worker-agent codex
 
 `set-config` replaces the stored project configuration. Prefer project settings in the desktop app for interactive edits, or first inspect `open-agents project get <project-id> --json` before replacing configuration in a script. `--config-json` accepts a JSON object string, not a filename.
 
-Current project configuration is typed. It covers the base branch, session prefix, environment variables, symlinks, setup commands, worker and orchestrator agents, agent options, project rules, reviewer agents, tracker intake, and container cleanup. Unknown fields are rejected instead of being silently ignored.
+Current project configuration is typed. It covers the base branch, session prefix, environment variables, symlinks, setup commands, worker and manager agents, agent options, project rules, reviewer agents, tracker intake, and container cleanup. Unknown fields are rejected instead of being silently ignored.
 
 See [Projects](/docs/configuration/projects) for the current field reference.
 

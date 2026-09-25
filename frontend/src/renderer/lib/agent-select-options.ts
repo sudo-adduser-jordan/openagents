@@ -1,4 +1,4 @@
-import { isOrchestratorSession, type WorkspaceSession } from "../types/workspace";
+import { isManagerSession, type WorkspaceSession } from "../types/workspace";
 
 export type AgentInfo = {
 	authentication: {
@@ -70,7 +70,7 @@ export function agentUsageCompare(a: AgentInfo, b: AgentInfo): number {
 export function defaultAuthorizedAgentForRole(
 	authorizedAgents: AgentInfo[],
 	sessions: RoleSession[],
-	role: "worker" | "orchestrator",
+	role: "worker" | "manager",
 ): string {
 	const eligible = new Set(authorizedAgents.map((agent) => agent.id));
 	const usage = new Map<string, { count: number; latest: number }>();
@@ -97,10 +97,10 @@ export function defaultAuthorizedAgentForRole(
 		})[0]?.id ?? "";
 }
 
-// Role matching reuses the board's definition: orchestrators are explicit,
+// Role matching reuses the board's definition: managers are explicit,
 // everything else counts as worker history.
-function isRoleSession(session: RoleSession, role: "worker" | "orchestrator"): boolean {
-	return role === "orchestrator" ? isOrchestratorSession(session) : !isOrchestratorSession(session);
+function isRoleSession(session: RoleSession, role: "worker" | "manager"): boolean {
+	return role === "manager" ? isManagerSession(session) : !isManagerSession(session);
 }
 
 function agentStatus(agent: AgentInfo): Pick<RankedAgentOption, "status" | "statusTone"> {

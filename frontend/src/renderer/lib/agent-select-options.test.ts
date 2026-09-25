@@ -95,7 +95,7 @@ describe("defaultAuthorizedAgentForRole", () => {
 
 	function session(
 		provider: RoleSession["provider"],
-		kind: "worker" | "orchestrator" | undefined,
+		kind: "worker" | "manager" | undefined,
 		createdAt: string,
 		id = `${provider}-${kind ?? "unknown"}-${createdAt}`,
 	): RoleSession {
@@ -110,7 +110,7 @@ describe("defaultAuthorizedAgentForRole", () => {
 
 	it("returns opencode from an empty history when it is the only authorized agent", () => {
 		expect(defaultAuthorizedAgentForRole(agents, [], "worker")).toBe("opencode");
-		expect(defaultAuthorizedAgentForRole(agents, [], "orchestrator")).toBe("opencode");
+		expect(defaultAuthorizedAgentForRole(agents, [], "manager")).toBe("opencode");
 	});
 
 	it("ignores sessions older than 48 hours without losing the default", () => {

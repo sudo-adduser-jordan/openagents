@@ -57,7 +57,7 @@ func TestWaitForMessageDeliveryReadyWaitsForTerminalIdleMarker(t *testing.T) {
 	st.sessions["orch"] = domain.SessionRecord{
 		ID:        "orch",
 		ProjectID: "open-agents",
-		Kind:      domain.KindOrchestrator,
+		Kind:      domain.KindManager,
 		Harness:   domain.HarnessOpenCode,
 		Mode:      domain.SessionModeTUI,
 		Activity:  domain.Activity{State: domain.ActivityIdle},
@@ -79,7 +79,7 @@ func TestWaitForMessageDeliveryReadyHonorsContextWhileTerminalStarts(t *testing.
 	st.sessions["orch"] = domain.SessionRecord{
 		ID:        "orch",
 		ProjectID: "open-agents",
-		Kind:      domain.KindOrchestrator,
+		Kind:      domain.KindManager,
 		Harness:   domain.HarnessOpenCode,
 		Mode:      domain.SessionModeTUI,
 		Activity:  domain.Activity{State: domain.ActivityIdle},
@@ -100,7 +100,7 @@ func TestWaitForMessageDeliveryReadyAcceptsProvenEmptyComposer(t *testing.T) {
 	st.sessions["orch"] = domain.SessionRecord{
 		ID:        "orch",
 		ProjectID: "open-agents",
-		Kind:      domain.KindOrchestrator,
+		Kind:      domain.KindManager,
 		Harness:   domain.HarnessOpenCode,
 		Mode:      domain.SessionModeTUI,
 		Activity:  domain.Activity{State: domain.ActivityIdle},
@@ -119,7 +119,7 @@ func TestWaitForMessageDeliveryReadyAcceptsProvenEmptyComposerWhileWaitingInput(
 	st.sessions["orch"] = domain.SessionRecord{
 		ID:        "orch",
 		ProjectID: "open-agents",
-		Kind:      domain.KindOrchestrator,
+		Kind:      domain.KindManager,
 		Harness:   domain.HarnessOpenCode,
 		Mode:      domain.SessionModeTUI,
 		Activity:  domain.Activity{State: domain.ActivityWaitingInput},
@@ -140,7 +140,7 @@ func TestWaitForMessageDeliveryReadyRejectsWaitingInputWithoutExplicitCapability
 	st.sessions["orch"] = domain.SessionRecord{
 		ID:        "orch",
 		ProjectID: "open-agents",
-		Kind:      domain.KindOrchestrator,
+		Kind:      domain.KindManager,
 		Harness:   domain.HarnessOpenCode,
 		Mode:      domain.SessionModeTUI,
 		Activity:  domain.Activity{State: domain.ActivityWaitingInput},

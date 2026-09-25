@@ -707,11 +707,11 @@ func TestManager_UpdateSettings(t *testing.T) {
 	}
 
 	cfg := domain.ProjectConfig{
-		DefaultBranch:     "develop",
-		Env:               map[string]string{"FOO": "bar"},
-		AgentRules:        "Run focused tests.",
-		OrchestratorRules: "Delegate implementation.",
-		AgentConfig:       domain.AgentConfig{Model: "gpt-5.6"},
+		DefaultBranch: "develop",
+		Env:           map[string]string{"FOO": "bar"},
+		AgentRules:    "Run focused tests.",
+		ManagerRules:  "Delegate implementation.",
+		AgentConfig:   domain.AgentConfig{Model: "gpt-5.6"},
 	}
 	proj, err := m.UpdateSettings(ctx, "open-agents", project.UpdateSettingsInput{
 		DisplayName: "  Open Agents Project  ",
@@ -735,7 +735,7 @@ func TestManager_UpdateSettings(t *testing.T) {
 	if got.Project == nil || got.Project.Name != "Open Agents Project" || got.Project.Config == nil || got.Project.Config.Env["FOO"] != "bar" {
 		t.Fatalf("Get project = %#v", got.Project)
 	}
-	if got.Project.Config.AgentRules != "Run focused tests." || got.Project.Config.OrchestratorRules != "Delegate implementation." {
+	if got.Project.Config.AgentRules != "Run focused tests." || got.Project.Config.ManagerRules != "Delegate implementation." {
 		t.Fatalf("Get rules config = %#v", got.Project.Config)
 	}
 
@@ -773,7 +773,7 @@ func TestManager_ListIncludesOnlySummarySafeProjectConfig(t *testing.T) {
 	cfg := domain.ProjectConfig{
 		DefaultBranch: "develop",
 		Env:           map[string]string{"GITHUB_TOKEN": "secret"},
-		Orchestrator:  domain.RoleOverride{Harness: domain.HarnessOpenCode},
+		Manager:       domain.RoleOverride{Harness: domain.HarnessOpenCode},
 	}
 	if _, err := m.Add(ctx, project.AddInput{Path: repo, ProjectID: ptr("open-agents"), Config: &cfg}); err != nil {
 		t.Fatalf("Add: %v", err)
@@ -786,8 +786,8 @@ func TestManager_ListIncludesOnlySummarySafeProjectConfig(t *testing.T) {
 	if len(list) != 1 {
 		t.Fatalf("List len = %d, want 1", len(list))
 	}
-	if list[0].OrchestratorAgent != domain.HarnessOpenCode {
-		t.Fatalf("summary orchestrator agent = %q, want codex", list[0].OrchestratorAgent)
+	if list[0].ManagerAgent != domain.HarnessOpenCode {
+		t.Fatalf("summary manager agent = %q, want codex", list[0].ManagerAgent)
 	}
 }
 
@@ -1975,7 +1975,7 @@ func TestManager_SetPermissionsPreservesConfig(t *testing.T) {
 	if _, err := m.Add(ctx, project.AddInput{Path: gitRepo(t), ProjectID: ptr("open-agents")}); err != nil {
 		t.Fatal(err)
 	}
-	cfg := domain.ProjectConfig{DefaultBranch: "develop", Env: map[string]string{"KEEP": "yes"}, AgentRules: "keep rules", AgentConfig: domain.AgentConfig{Model: "base", Permissions: domain.PermissionModeDefault}, Worker: domain.RoleOverride{AgentConfig: domain.AgentConfig{Model: "worker", Permissions: domain.PermissionModeAcceptEdits}}, Orchestrator: domain.RoleOverride{AgentConfig: domain.AgentConfig{Model: "orchestrator", Permissions: domain.PermissionModeBypassPermissions}}}
+	cfg := domain.ProjectConfig{DefaultBranch: "develop", Env: map[string]string{"KEEP": "yes"}, AgentRules: "keep rules", AgentConfig: domain.AgentConfig{Model: "base", Permissions: domain.PermissionModeDefault}, Worker: domain.RoleOverride{AgentConfig: domain.AgentConfig{Model: "worker", Permissions: domain.PermissionModeAcceptEdits}}, Manager: domain.RoleOverride{AgentConfig: domain.AgentConfig{Model: "manager", Permissions: domain.PermissionModeBypassPermissions}}}
 	if _, err := m.UpdateSettings(ctx, "open-agents", project.UpdateSettingsInput{DisplayName: "Keep name", Config: cfg}); err != nil {
 		t.Fatal(err)
 	}
@@ -1985,7 +1985,7 @@ func TestManager_SetPermissionsPreservesConfig(t *testing.T) {
 	}
 	cfg.AgentConfig.Permissions = domain.PermissionModeAuto
 	cfg.Worker.AgentConfig.Permissions = ""
-	cfg.Orchestrator.AgentConfig.Permissions = ""
+	cfg.Manager.AgentConfig.Permissions = ""
 	if got.Name != "Keep name" || got.Config == nil || !reflect.DeepEqual(*got.Config, cfg) {
 		t.Fatalf("unexpected result: %#v config %#v", got, got.Config)
 	}

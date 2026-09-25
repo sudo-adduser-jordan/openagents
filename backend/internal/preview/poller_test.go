@@ -291,7 +291,7 @@ func TestPollerSkipsNonWorkerSessions(t *testing.T) {
 	writeFile(t, filepath.Join(workspace, "index.html"), "<main>hello</main>")
 	svc := &fakePreviewSessions{sessions: []domain.SessionRecord{{
 		ID:   "open-agents-orch",
-		Kind: domain.KindOrchestrator,
+		Kind: domain.KindManager,
 		Metadata: domain.SessionMetadata{
 			WorkspacePath: workspace,
 		},
@@ -303,7 +303,7 @@ func TestPollerSkipsNonWorkerSessions(t *testing.T) {
 	}
 
 	if len(svc.sets) != 0 {
-		t.Fatalf("sets = %#v, want no preview updates for orchestrator sessions", svc.sets)
+		t.Fatalf("sets = %#v, want no preview updates for manager sessions", svc.sets)
 	}
 }
 

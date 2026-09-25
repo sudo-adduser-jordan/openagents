@@ -72,7 +72,7 @@ describe("useWorkspaceQuery", () => {
 							id: "proj-1",
 							name: "my-app",
 							path: "/home/me/my-app",
-							orchestratorAgent: "codex",
+							managerAgent: "codex",
 						},
 					],
 				},
@@ -129,7 +129,7 @@ describe("useWorkspaceQuery", () => {
 			id: "proj-1",
 			name: "my-app",
 			path: "/home/me/my-app",
-			orchestratorAgent: "opencode",
+			managerAgent: "opencode",
 		});
 		expect(workspace.sessions).toHaveLength(2);
 		expect(workspace.sessions[0]).toMatchObject({
@@ -212,7 +212,7 @@ describe("useWorkspaceQuery", () => {
 			if (url === "/api/v1/projects") {
 				return {
 					data: {
-						projects: [{ id: "proj-1", name: "workspace3", path: "/tmp/workspace3", orchestratorAgent: "codex" }],
+						projects: [{ id: "proj-1", name: "workspace3", path: "/tmp/workspace3", managerAgent: "codex" }],
 					},
 					error: undefined,
 				};
@@ -221,15 +221,15 @@ describe("useWorkspaceQuery", () => {
 				return { data: { sessions: [] }, error: undefined };
 			}
 			if (url === "/api/v1/sessions/{sessionId}") {
-				expect(options?.params?.path?.sessionId).toBe("sess-orch");
+				expect(options?.params?.path?.sessionId).toBe("sess-mgr");
 				return {
 					data: {
 						session: {
-							id: "sess-orch",
+							id: "sess-mgr",
 							projectId: "proj-1",
-							displayName: "orchestrate",
+							displayName: "Manager session",
 							harness: "codex",
-							kind: "orchestrator",
+							kind: "manager",
 							mode: "tui",
 							status: "working",
 							kanbanColumn: "building",
@@ -257,21 +257,21 @@ describe("useWorkspaceQuery", () => {
 			<QueryClientProvider client={queryClient}>{children}</QueryClientProvider>
 		);
 
-		const { result } = renderHook(() => useWorkspaceSession("sess-orch"), { wrapper: localWrapper });
+		const { result } = renderHook(() => useWorkspaceSession("sess-mgr"), { wrapper: localWrapper });
 
-		await waitFor(() => expect(result.current.data?.id).toBe("sess-orch"));
+		await waitFor(() => expect(result.current.data?.id).toBe("sess-mgr"));
 		expect(result.current.data).toMatchObject({
-			id: "sess-orch",
+			id: "sess-mgr",
 			workspaceId: "proj-1",
 			workspaceName: "workspace3",
-			title: "orchestrate",
+			title: "Manager session",
 			provider: "opencode",
-			kind: "orchestrator",
+			kind: "manager",
 		});
 		await waitFor(() => {
 			const cached = queryClient.getQueryData<WorkspaceSummary[]>(workspaceQueryKey);
 			expect(Array.isArray(cached)).toBe(true);
-			expect(cached?.[0]?.sessions.some((session: { id: string }) => session.id === "sess-orch")).toBe(true);
+			expect(cached?.[0]?.sessions.some((session: { id: string }) => session.id === "sess-mgr")).toBe(true);
 		});
 	});
 
@@ -462,7 +462,7 @@ describe("useWorkspaceQuery", () => {
 						{ id: "mergeable", projectId: "proj-1", displayName: "Mergeable", harness: "codex", status: "mergeable", updatedAt: "2026-08-01T00:00:00Z" },
 						{ id: "working", projectId: "proj-1", displayName: "Working", harness: "codex", status: "working", updatedAt: "2026-08-01T00:00:00Z" },
 						{ id: "merged", projectId: "proj-1", displayName: "Merged", harness: "codex", status: "merged", updatedAt: "2026-08-01T00:00:00Z" },
-						{ id: "orchestrator", projectId: "proj-1", displayName: "Orchestrator", harness: "codex", kind: "orchestrator", status: "needs_input", updatedAt: "2026-08-01T00:00:00Z" },
+						{ id: "manager", projectId: "proj-1", displayName: "Manager", harness: "codex", kind: "manager", status: "needs_input", updatedAt: "2026-08-01T00:00:00Z" },
 					],
 				},
 				error: undefined,
@@ -480,8 +480,8 @@ describe("useWorkspaceQuery", () => {
 
 describe("useWorkspaceScope board presentation", () => {
 	it.each([
-		{ kind: "orchestrator", isTerminated: false, expected: false },
-		{ kind: "orchestrator", isTerminated: true, expected: false },
+		{ kind: "manager", isTerminated: false, expected: false },
+		{ kind: "manager", isTerminated: true, expected: false },
 		{ kind: "worker", isTerminated: false, expected: true },
 		{ kind: "worker", isTerminated: true, expected: true },
 		{ kind: undefined, isTerminated: false, expected: true },

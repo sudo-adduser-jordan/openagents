@@ -14,7 +14,7 @@ import type { CommandGroupId, CommandItem } from "./command-palette";
 /** Exact-id icons for known actions. Add new command ids here as they ship. */
 const COMMAND_ICONS: Record<string, LucideIcon> = {
 	"current-new-task": SquarePen,
-	"current-open-orchestrator": Bot,
+	"current-open-manager": Bot,
 	"current-project-settings": Settings,
 	"current-copy-branch": Copy,
 	"global-new-project": FolderPlus,

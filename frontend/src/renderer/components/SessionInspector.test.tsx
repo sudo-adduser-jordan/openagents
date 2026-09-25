@@ -302,8 +302,8 @@ afterEach(() => {
 });
 
 describe("SessionInspector tabs", () => {
-  it("shows only Browser content without navigation tabs for an orchestrator", () => {
-    renderWithQuery(<SessionInspector browserOnly session={session([], { kind: "orchestrator" })} />);
+  it("shows only Browser content without navigation tabs for a manager", () => {
+    renderWithQuery(<SessionInspector browserOnly session={session([], { kind: "manager" })} />);
     expect(screen.queryByRole("tablist")).not.toBeInTheDocument();
     expect(screen.getByText("Browser")).toBeInTheDocument();
     expect(screen.queryByRole("tab", { name: "Summary" })).not.toBeInTheDocument();
@@ -1001,20 +1001,20 @@ describe("SessionInspector completion controls", () => {
     );
   });
 
-  it("terminates a live merged session and returns to its orchestrator immediately", async () => {
+  it("terminates a live merged session and returns to its manager immediately", async () => {
     postMock.mockReturnValue(new Promise(() => {}));
     const worker = session([pr(7, "merged")], { status: "merged" });
-    const orchestrator = session([], {
-      id: "orch-1",
-      kind: "orchestrator",
-      title: "orchestrator",
+    const manager = session([], {
+      id: "mgr-1",
+      kind: "manager",
+      title: "manager",
     });
     renderWithQuery(<SessionInspector session={worker} />, [
       {
         id: "ws-1",
         name: "my-app",
         path: "/repo",
-        sessions: [worker, orchestrator],
+        sessions: [worker, manager],
       },
     ]);
 
@@ -1041,7 +1041,7 @@ describe("SessionInspector completion controls", () => {
     expect(screen.queryByRole("dialog")).not.toBeInTheDocument();
     expect(navigateMock).toHaveBeenCalledWith({
       to: "/projects/$projectId/sessions/$sessionId",
-      params: { projectId: "ws-1", sessionId: "orch-1" },
+      params: { projectId: "ws-1", sessionId: "mgr-1" },
     });
   });
 
@@ -1128,9 +1128,9 @@ describe("SessionInspector completion controls", () => {
     ).not.toBeInTheDocument();
   });
 
-  it("does not show completion controls for orchestrator sessions", () => {
+  it("does not show completion controls for manager sessions", () => {
     renderWithQuery(
-      <SessionInspector session={session([], { kind: "orchestrator" })} />,
+      <SessionInspector session={session([], { kind: "manager" })} />,
     );
 
     expect(screen.queryByText("Completion")).not.toBeInTheDocument();

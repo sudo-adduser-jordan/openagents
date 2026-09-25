@@ -14,7 +14,7 @@ import {
 	toProjectKind,
 	toSessionActivity,
 	toSessionStatus,
-	newestActiveOrchestrator,
+	newestActiveManager,
 	attentionZone,
 	workerSessions,
 	type WorkspaceSession,
@@ -75,7 +75,7 @@ function toWorkspaceSession(
 			}
 			: undefined,
 		autoReviewEnabled: session.autoReviewEnabled ?? false,
-		kind: session.kind === "orchestrator" ? "orchestrator" : session.kind === "worker" ? "worker" : undefined,
+		kind: session.kind === "manager" ? "manager" : session.kind === "worker" ? "worker" : undefined,
 		mode: session.mode === "chat" ? "chat" : "tui",
 		branch: session.branch || undefined,
 		status,
@@ -131,7 +131,7 @@ function toLocalWorkspaceSession(
 			permissions: session.reviewerConfig.permissions ?? undefined,
 		} : undefined,
 		autoReviewEnabled: session.autoReviewEnabled ?? false,
-		kind: session.kind === "orchestrator" ? "orchestrator" : session.kind === "worker" ? "worker" : undefined,
+		kind: session.kind === "manager" ? "manager" : session.kind === "worker" ? "worker" : undefined,
 		// Carried through verbatim: the session surface must render from
 		// the mode this session was created with, not from the current default.
 		mode: session.mode === "chat" ? "chat" : "tui",
@@ -192,7 +192,7 @@ async function fetchWorkspaces(): Promise<WorkspaceSummary[]> {
 			kind,
 			path: project.path,
 			folderMissing: project.folderMissing,
-			orchestratorAgent: project.orchestratorAgent ? toAgentProvider(project.orchestratorAgent) : undefined,
+			managerAgent: project.managerAgent ? toAgentProvider(project.managerAgent) : undefined,
 			sessions: sessions
 				.filter((session) => session.projectId === project.id)
 				.map((session) => toWorkspaceSession(session, project)),
@@ -291,10 +291,10 @@ export function useWorkspaceSession(sessionId: string) {
 }
 
 export type WorkspaceScope = {
-	project?: Pick<WorkspaceSummary, "id" | "kind" | "name" | "orchestratorAgent">;
+	project?: Pick<WorkspaceSummary, "id" | "kind" | "name" | "managerAgent">;
 	hasWorkerSessions: boolean;
 	session?: WorkspaceSession;
-	orchestrator?: WorkspaceSession;
+	manager?: WorkspaceSession;
 };
 
 function selectWorkspaceScope(
@@ -315,13 +315,13 @@ function selectWorkspaceScope(
 				id: workspace.id,
 				kind: workspace.kind,
 				name: workspace.name,
-				orchestratorAgent: workspace.orchestratorAgent,
+				managerAgent: workspace.managerAgent,
 			}
 		: undefined;
 	return {
 		project, session,
 		hasWorkerSessions: workspace ? workerSessions(workspace.sessions).length > 0 : false,
-		orchestrator: workspace ? newestActiveOrchestrator(workspace.sessions) : undefined,
+		manager: workspace ? newestActiveManager(workspace.sessions) : undefined,
 	};
 }
 

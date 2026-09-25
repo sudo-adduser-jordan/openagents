@@ -1,7 +1,7 @@
 import {
 	attentionZone,
 	attentionZoneOrder,
-	isOrchestratorSession,
+	isManagerSession,
 	openPRs,
 	sessionIsActive,
 	sessionNeedsAttention,
@@ -32,7 +32,7 @@ export type CommandAction =
 	| { kind: "navigate"; target: NavigateTarget }
 	| { kind: "open-new-task"; projectId: string }
 	| { kind: "open-new-project" }
-	| { kind: "open-orchestrator"; projectId: string }
+	| { kind: "open-manager"; projectId: string }
 	| { kind: "open-session-actions"; sessionId: string }
 	| { kind: "resume-session"; projectId: string; sessionId: string }
 	| { kind: "copy-branch"; branch: string }
@@ -134,7 +134,7 @@ export function buildSessionActions(
 		action: { kind: "navigate", target: jumpTarget(workspace, session) },
 	});
 
-	if (!sessionIsActive(session) && !isOrchestratorSession(session)) {
+	if (!sessionIsActive(session) && !isManagerSession(session)) {
 		items.push({
 			id: `session-action:resume:${session.id}`,
 			group: "current",
@@ -145,7 +145,7 @@ export function buildSessionActions(
 		});
 	}
 
-	if (session.branch && !isOrchestratorSession(session) && !isSyntheticBranch(session)) {
+	if (session.branch && !isManagerSession(session) && !isSyntheticBranch(session)) {
 		items.push({
 			id: `session-action:copy-branch:${session.id}`,
 			group: "current",
@@ -187,7 +187,7 @@ export function buildCommands(ctx: CommandPaletteContext): CommandItem[] {
 		disabledReason: !currentProject
 			? "No current project"
 			: isProjectRestarting
-				? "Orchestrator restarting"
+				? "Manager restarting"
 				: undefined,
 		...(currentProject ? { action: { kind: "open-new-task" as const, projectId: currentProject.id } } : {}),
 	});
@@ -195,14 +195,14 @@ export function buildCommands(ctx: CommandPaletteContext): CommandItem[] {
 	if (currentProject) {
 		if (currentProject.id !== STANDALONE_WORKSPACE_ID) {
 			items.push({
-				id: "current-open-orchestrator",
+				id: "current-open-manager",
 				group: "current",
-				title: "Open orchestrator",
+				title: "Open manager",
 				subtitle: currentProject.name,
-				keywords: ["orchestrator", "spawn", currentProject.name],
+				keywords: ["manager", "spawn", currentProject.name],
 				disabled: isProjectRestarting,
-				disabledReason: isProjectRestarting ? "Orchestrator restarting" : undefined,
-				action: { kind: "open-orchestrator", projectId: currentProject.id },
+				disabledReason: isProjectRestarting ? "Manager restarting" : undefined,
+				action: { kind: "open-manager", projectId: currentProject.id },
 			});
 			items.push({
 				id: "current-project-settings",
@@ -219,7 +219,7 @@ export function buildCommands(ctx: CommandPaletteContext): CommandItem[] {
 	}
 
 	const currentBranch = currentSession?.branch;
-	if (currentSession && currentBranch && !isOrchestratorSession(currentSession) && !isSyntheticBranch(currentSession)) {
+	if (currentSession && currentBranch && !isManagerSession(currentSession) && !isSyntheticBranch(currentSession)) {
 		items.push({
 			id: "current-copy-branch",
 			group: "current",

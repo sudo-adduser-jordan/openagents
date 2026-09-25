@@ -58,8 +58,9 @@ Every product command resolves to a daemon HTTP route. Run `open-agents <command
 | `open-agents session cleanup`                | `POST /api/v1/sessions/cleanup`                |
 | `open-agents session claim-pr [<id>] <pr-ref>` | `POST /api/v1/sessions/{id}/pr/claim`        |
 | `open-agents plan <id>`                        | `PATCH /api/v1/sessions/{id}/workflow-mode`  |
+| `open-agents manage <id>`                      | `PATCH /api/v1/sessions/{id}/workflow-mode`  |
 | `open-agents build <id>`                       | `PATCH /api/v1/sessions/{id}/workflow-mode`  |
-| `open-agents orchestrator ls`                | `GET /api/v1/orchestrators`                    |
+| `open-agents manager ls`                       | `GET /api/v1/managers`                         |
 | `open-agents send`                           | `POST /api/v1/sessions/{id}/send`              |
 | `open-agents preview [url]`                  | `POST /api/v1/sessions/{id}/preview`           |
 | `open-agents preview start/status/stop`      | `POST/GET/DELETE /api/v1/sessions/{id}/preview/server` |
@@ -77,18 +78,21 @@ daemon), then the current working directory matched against registered project
 paths. If `OPEN_AGENTS_SESSION_ID` is set but the session cannot be fetched, pass
 `--project` explicitly. Use `open-agents spawn --standalone --agent <agent> --name
 <name>` to launch a worker in an Open Agents-managed plain directory without resolving
-or registering a project. Standalone sessions do not support orchestrator,
+or registering a project. Standalone sessions do not support manager,
 branch, issue, or PR-claim options.
 
 `open-agents session claim-pr <pr-ref>` attaches a PR to the current worker by reading
-`OPEN_AGENTS_SESSION_ID`. From an orchestrator or external shell, pass the target
+`OPEN_AGENTS_SESSION_ID`. From a manager or external shell, pass the target
 explicitly with `open-agents session claim-pr <session-id> <pr-ref>`. The explicit
 form supports cross-session coordination.
 
-`open-agents plan <id>` and `open-agents build <id>` move a session between its delivery stages
-(planning → building) by setting `workflow_mode` on the daemon. Setting either
-stage is also one of the kanban review lock's release paths: a card frozen in
-the review column is released so it can move with its PR facts again.
+`open-agents plan <id>` and `open-agents build <id>` move a worker between its delivery
+stages (planning → building) by setting `workflow_mode` on the daemon. Use
+`open-agents manage <id>` to put a manager into Manager mode. A manager starts in
+Manager mode, can delegate from that mode, and cannot delegate while it is in
+Planning mode. Workers delegated by a manager start in Planning. Setting any
+stage is also one of the kanban review lock's release paths: a card frozen in the
+review column is released so it can move with its PR facts again.
 
 If `--agent` / `--harness` is omitted, `open-agents spawn` uses the resolved project's
 `worker.agent` config. Before spawning, the CLI performs one targeted launch

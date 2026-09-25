@@ -16,7 +16,7 @@ import (
 // Use the production lifecycle and reopen SQLite: the fake lifecycle copies
 // metadata wholesale and cannot catch fields dropped by the real reducer.
 func TestAgentSessionModelSurvivesRestore(t *testing.T) {
-	for _, kind := range []domain.SessionKind{domain.KindWorker, domain.KindOrchestrator} {
+	for _, kind := range []domain.SessionKind{domain.KindWorker, domain.KindManager} {
 		for _, selection := range []struct {
 			name         string
 			projectModel string
@@ -54,7 +54,7 @@ func TestAgentSessionModelSurvivesRestore(t *testing.T) {
 							Worker: domain.RoleOverride{
 								Harness: domain.HarnessOpenCode, AgentConfig: domain.AgentConfig{Model: selection.roleModel},
 							},
-							Orchestrator: domain.RoleOverride{
+							Manager: domain.RoleOverride{
 								Harness: domain.HarnessOpenCode, AgentConfig: domain.AgentConfig{Model: selection.roleModel},
 							},
 						},
@@ -120,7 +120,7 @@ func TestAgentSessionModelSurvivesRestore(t *testing.T) {
 					}
 					project.Config.AgentConfig.Model = "changed-project-model"
 					project.Config.Worker.AgentConfig.Model = "changed-worker-model"
-					project.Config.Orchestrator.AgentConfig.Model = "changed-orchestrator-model"
+					project.Config.Manager.AgentConfig.Model = "changed-manager-model"
 					if err := store.UpsertProject(ctx, project); err != nil {
 						t.Fatal(err)
 					}

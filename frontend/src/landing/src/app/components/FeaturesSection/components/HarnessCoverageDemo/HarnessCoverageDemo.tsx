@@ -37,7 +37,7 @@ const harnesses = [
 	},
 ] as const;
 
-type Field = "worker" | "orchestrator";
+type Field = "worker" | "manager";
 type Harness = (typeof harnesses)[number];
 type SelectableEntry = { harness: Harness; index: number };
 
@@ -62,7 +62,7 @@ function nextSelectable(value: number) {
 }
 
 function otherField(field: Field): Field {
-	return field === "worker" ? "orchestrator" : "worker";
+	return field === "worker" ? "manager" : "worker";
 }
 
 function HarnessIcon({ src }: { src: string }) {
@@ -80,14 +80,14 @@ function HarnessIcon({ src }: { src: string }) {
 
 export function HarnessCoverageDemo() {
 	const rootRef = useRef<HTMLDivElement>(null);
-	const [openField, setOpenField] = useState<Field | null>("orchestrator");
+	const [openField, setOpenField] = useState<Field | null>("manager");
 	const [worker, setWorker] = useState(DEFAULT_INDEX);
-	const [orchestrator, setOrchestrator] = useState(DEFAULT_INDEX);
+	const [manager, setManager] = useState(DEFAULT_INDEX);
 	const [refreshing, setRefreshing] = useState(false);
 
-	const openFieldRef = useRef<Field | null>("orchestrator");
+	const openFieldRef = useRef<Field | null>("manager");
 	const workerRef = useRef(DEFAULT_INDEX);
-	const orchestratorRef = useRef(DEFAULT_INDEX);
+	const managerRef = useRef(DEFAULT_INDEX);
 	const interactingRef = useRef(false);
 	const inViewRef = useRef(true);
 	const refreshTimerRef = useRef(0);
@@ -101,8 +101,8 @@ export function HarnessCoverageDemo() {
 	}, [worker]);
 
 	useEffect(() => {
-		orchestratorRef.current = orchestrator;
-	}, [orchestrator]);
+		managerRef.current = manager;
+	}, [manager]);
 
 	useEffect(() => {
 		const node = rootRef.current;
@@ -121,7 +121,7 @@ export function HarnessCoverageDemo() {
 	useEffect(() => {
 		let cancelled = false;
 		let timeoutId = 0;
-		let current: Field = openFieldRef.current ?? "orchestrator";
+		let current: Field = openFieldRef.current ?? "manager";
 		let phase: "open" | "closed" = "open";
 		let remaining = OPEN_MS;
 
@@ -131,7 +131,7 @@ export function HarnessCoverageDemo() {
 			if (field === "worker") {
 				setWorker(nextSelectable(workerRef.current));
 			} else {
-				setOrchestrator(nextSelectable(orchestratorRef.current));
+				setManager(nextSelectable(managerRef.current));
 			}
 			setOpenField(field);
 			current = field;
@@ -207,7 +207,7 @@ export function HarnessCoverageDemo() {
 		const harness = harnesses[index];
 		if (!harness || !isSelectable(harness.status)) return;
 		if (openField === "worker") setWorker(index);
-		if (openField === "orchestrator") setOrchestrator(index);
+		if (openField === "manager") setManager(index);
 		setOpenField(null);
 	};
 
@@ -259,12 +259,12 @@ export function HarnessCoverageDemo() {
 
 					<SettingsRow
 						icon={<Network className="size-3.5 shrink-0 text-[var(--preview-muted-foreground)]" aria-hidden="true" />}
-						label="Default orchestrator agent"
+						label="Default manager agent"
 						trailing={
 							<HarnessTrigger
-								harness={harnesses[orchestrator]}
-								open={openField === "orchestrator"}
-								onClick={() => toggleField("orchestrator")}
+								harness={harnesses[manager]}
+								open={openField === "manager"}
+								onClick={() => toggleField("manager")}
 							/>
 						}
 					/>
@@ -300,7 +300,7 @@ export function HarnessCoverageDemo() {
 							<div className="flex min-h-0 flex-1 flex-col gap-1.5 overflow-y-auto">
 								{harnesses.map((harness, index) => {
 									const selected =
-										openField === "worker" ? worker === index : orchestrator === index;
+										openField === "worker" ? worker === index : manager === index;
 									const disabled = !isSelectable(harness.status);
 									return (
 									<button

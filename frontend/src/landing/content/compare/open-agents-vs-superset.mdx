@@ -11,20 +11,20 @@ keywords:
   - "Open Agents vs Superset"
   - "Superset alternative"
   - "parallel coding agents"
-  - "open source agent orchestration"
+  - "open source agent management"
 ---
 
 ## Short answer
 
 Choose **Open Agents (Open Agents)** when the unit of work is an issue that must reach a reviewed, passing pull request. Choose **Superset** when you want an open-source agent workspace with an integrated editor, terminal, browser, and diff experience.
 
-Both products run CLI agents in isolated worktrees. [Superset describes itself as an open-source AI coding platform](https://docs.superset.sh/overview); [Open Agents is a local orchestration layer that tracks agents through PR completion](https://orchestrator.inc/docs/).
+Both products run CLI agents in isolated worktrees. [Superset describes itself as an open-source AI coding platform](https://docs.superset.sh/overview); [Open Agents is a local management layer that tracks agents through PR completion](https://orchestrator.inc/docs/).
 
 ## At a glance
 
 | Area | Open Agents | Superset |
 | --- | --- | --- |
-| Primary workflow | Issue and PR lifecycle orchestration | Interactive coding-agent workspace |
+| Primary workflow | Issue and PR lifecycle management | Interactive coding-agent workspace |
 | Agent isolation | Worktree or clone workspace plugins | Git worktrees |
 | Review loop | CI and review feedback can return to the owning agent automatically | Built-in diff and commit workflow |
 | Extensibility | Plugin slots for agents, trackers, SCMs, runtimes, workspaces, notifiers, and terminals | CLI-agent integrations, MCP, and workspace tooling |
@@ -33,7 +33,7 @@ Both products run CLI agents in isolated worktrees. [Superset describes itself a
 
 ## Why choose Open Agents
 
-Open Agents is stronger when supervising work matters more than editing inside the orchestrator. Sessions are connected to tracker items, branches, pull requests, checks, and reviews. Reactions can notify or re-engage the correct agent when external state changes.
+Open Agents is stronger when supervising work matters more than editing inside the manager. Sessions are connected to tracker items, branches, pull requests, checks, and reviews. Reactions can notify or re-engage the correct agent when external state changes.
 
 This creates a consistent issue-to-merge workflow even when projects use different agent CLIs or infrastructure. Open Agents's thin desktop supervisor and local CLI sit above those tools rather than trying to become the code editor itself.
 

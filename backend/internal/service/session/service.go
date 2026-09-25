@@ -49,10 +49,10 @@ type Store interface {
 
 // ListFilter captures API-facing session list query filters.
 type ListFilter struct {
-	ProjectID        domain.ProjectID
-	Active           *bool
-	OrchestratorOnly bool
-	Fresh            bool
+	ProjectID   domain.ProjectID
+	Active      *bool
+	ManagerOnly bool
+	Fresh       bool
 }
 
 // commander is the command-side surface Service delegates to: the
@@ -158,21 +158,21 @@ type scmProvider interface {
 // session operations to the internal sessionmanager.Manager and owns read-model
 // assembly, including user-facing display status derivation.
 type Service struct {
-	manager             commander
-	store               Store
-	prClaimer           ports.PRClaimer
-	scm                 scmProvider
-	tracker             ports.Tracker
-	clock               func() time.Time
-	dataDir             string
-	logger              *slog.Logger
-	backgroundContext   context.Context
-	agentReadiness      ports.AgentReadinessProvider
-	runBackground       func(func())
-	orchestratorLocksMu sync.Mutex
-	orchestratorLocks   map[domain.ProjectID]*sync.Mutex
-	workspaceCache      *workspaceCache
-	workspaceEditsMu    sync.Mutex
+	manager           commander
+	store             Store
+	prClaimer         ports.PRClaimer
+	scm               scmProvider
+	tracker           ports.Tracker
+	clock             func() time.Time
+	dataDir           string
+	logger            *slog.Logger
+	backgroundContext context.Context
+	agentReadiness    ports.AgentReadinessProvider
+	runBackground     func(func())
+	managerLocksMu    sync.Mutex
+	managerLocks      map[domain.ProjectID]*sync.Mutex
+	workspaceCache    *workspaceCache
+	workspaceEditsMu  sync.Mutex
 	// workspaceGroup coalesces concurrent cache-miss compare/status lookups
 	// for the same (session, root): "Expand All" on many files fires that
 	// many GetWorkspaceFile calls at once, and without this each one would
@@ -246,11 +246,11 @@ func (s *Service) Spawn(ctx context.Context, cfg ports.SpawnConfig) (domain.Sess
 	if cfg.ProjectID == "" && cfg.Kind != domain.KindWorker {
 		return domain.Session{}, 0, 0, apierr.Invalid("STANDALONE_WORKER_REQUIRED", "Standalone sessions must be workers", nil)
 	}
-	if cfg.Kind == domain.KindOrchestrator {
-		unlock := s.lockOrchestratorProject(cfg.ProjectID)
+	if cfg.Kind == domain.KindManager {
+		unlock := s.lockManagerProject(cfg.ProjectID)
 		defer unlock()
 
-		existing, err := s.activeOrchestrators(ctx, cfg.ProjectID)
+		existing, err := s.activeManagers(ctx, cfg.ProjectID)
 		if err != nil {
 			return domain.Session{}, 0, 0, err
 		}
@@ -338,18 +338,18 @@ func (s *Service) requireProject(ctx context.Context, id domain.ProjectID) (doma
 	return rec, nil
 }
 
-// SpawnOrchestrator spawns an orchestrator session for a project. When clean is
-// true it first tears down any active orchestrator(s) for that project so the new
-// one is the only live coordinator. When clean is false it is idempotent: if an
-// active orchestrator already exists it is returned as-is. A business rule that
+// SpawnManager spawns a manager session for a project. When clean is
+// true it first tears down any active manager(s) for that project so the new
+// one is the only live manager. When clean is false it is idempotent: if an
+// active manager already exists it is returned as-is. A business rule that
 // belongs here, not in the HTTP controller.
-func (s *Service) SpawnOrchestrator(
+func (s *Service) SpawnManager(
 	ctx context.Context,
 	projectID domain.ProjectID,
 	clean bool,
 	requestedMode domain.SessionMode,
 ) (domain.Session, error) {
-	unlock := s.lockOrchestratorProject(projectID)
+	unlock := s.lockManagerProject(projectID)
 	defer unlock()
 
 	project, err := s.requireProject(ctx, projectID)
@@ -358,26 +358,26 @@ func (s *Service) SpawnOrchestrator(
 	}
 	mode := requestedMode
 	if clean {
-		existing, err := s.activeOrchestrators(ctx, projectID)
+		existing, err := s.activeManagers(ctx, projectID)
 		if err != nil {
 			return domain.Session{}, err
 		}
 		if len(existing) > 0 && mode == "" {
 			// Clean replacement preserves the controller contract of the
-			// orchestrator being replaced only when the caller did not make an
+			// manager being replaced only when the caller did not make an
 			// explicit choice. The global default still must not silently flip an
-			// existing project's coordinator, but an explicit replacement mode is
+			// existing project's manager, but an explicit replacement mode is
 			// authoritative.
 			mode = newestSession(existing).Mode
 		}
-		for _, orch := range existing {
-			_ = s.sendRetireNotice(ctx, orch.ID)
-			if err := s.manager.RetireForReplacement(ctx, orch.ID); err != nil {
+		for _, activeManager := range existing {
+			_ = s.sendRetireNotice(ctx, activeManager.ID)
+			if err := s.manager.RetireForReplacement(ctx, activeManager.ID); err != nil {
 				return domain.Session{}, toAPIError(err)
 			}
 		}
 	} else {
-		existing, err := s.activeOrchestrators(ctx, projectID)
+		existing, err := s.activeManagers(ctx, projectID)
 		if err != nil {
 			return domain.Session{}, err
 		}
@@ -386,46 +386,47 @@ func (s *Service) SpawnOrchestrator(
 		}
 	}
 	sess, _, _, err := s.spawn(ctx, ports.SpawnConfig{
-		ProjectID:     projectID,
-		Kind:          domain.KindOrchestrator,
-		RequestedMode: mode,
+		ProjectID:             projectID,
+		Kind:                  domain.KindManager,
+		RequestedWorkflowMode: domain.WorkflowModeManager,
+		RequestedMode:         mode,
 	})
 	if err != nil {
 		return domain.Session{}, err
 	}
-	if err := s.verifyOrchestratorReplacement(project, sess); err != nil {
+	if err := s.verifyManagerReplacement(project, sess); err != nil {
 		return domain.Session{}, err
 	}
 	return sess, nil
 }
 
-func (s *Service) activeOrchestrators(ctx context.Context, projectID domain.ProjectID) ([]domain.Session, error) {
+func (s *Service) activeManagers(ctx context.Context, projectID domain.ProjectID) ([]domain.Session, error) {
 	active := true
-	return s.List(ctx, ListFilter{ProjectID: projectID, Active: &active, OrchestratorOnly: true})
+	return s.List(ctx, ListFilter{ProjectID: projectID, Active: &active, ManagerOnly: true})
 }
 
-const orchestratorRetireNotice = "Open Agents is replacing this project orchestrator. Stop coordinating new work now; a fresh orchestrator will take over in a new workspace."
+const managerRetireNotice = "Open Agents is replacing this project manager. Stop coordinating new work now; a fresh manager will take over in a new workspace."
 
 func (s *Service) sendRetireNotice(ctx context.Context, id domain.SessionID) error {
-	if err := s.manager.Send(ctx, id, orchestratorRetireNotice, nil); err != nil {
+	if err := s.manager.Send(ctx, id, managerRetireNotice, nil); err != nil {
 		return fmt.Errorf("send retire notice to %s: %w", id, err)
 	}
 	return nil
 }
 
-func (s *Service) verifyOrchestratorReplacement(project domain.ProjectRecord, sess domain.Session) error {
+func (s *Service) verifyManagerReplacement(project domain.ProjectRecord, sess domain.Session) error {
 	if sess.IsTerminated {
-		return fmt.Errorf("orchestrator replacement verification failed: new session %s is terminated", sess.ID)
+		return fmt.Errorf("manager replacement verification failed: new session %s is terminated", sess.ID)
 	}
-	if sess.Kind != domain.KindOrchestrator {
-		return fmt.Errorf("orchestrator replacement verification failed: new session %s has kind %q", sess.ID, sess.Kind)
+	if sess.Kind != domain.KindManager {
+		return fmt.Errorf("manager replacement verification failed: new session %s has kind %q", sess.ID, sess.Kind)
 	}
-	if expected := project.Config.Orchestrator.Harness; expected != "" && sess.Harness != expected {
-		return fmt.Errorf("orchestrator replacement verification failed: new session %s uses harness %q, want %q", sess.ID, sess.Harness, expected)
+	if expected := project.Config.Manager.Harness; expected != "" && sess.Harness != expected {
+		return fmt.Errorf("manager replacement verification failed: new session %s uses harness %q, want %q", sess.ID, sess.Harness, expected)
 	}
-	expectedBranch := sessionmanager.DefaultOrchestratorBranch(serviceSessionPrefix(project), s.dataDir)
+	expectedBranch := sessionmanager.DefaultManagerBranch(serviceSessionPrefix(project), s.dataDir)
 	if sess.Metadata.Branch != "" && sess.Metadata.Branch != expectedBranch {
-		return fmt.Errorf("orchestrator replacement verification failed: new session %s uses branch %q, want %q", sess.ID, sess.Metadata.Branch, expectedBranch)
+		return fmt.Errorf("manager replacement verification failed: new session %s uses branch %q, want %q", sess.ID, sess.Metadata.Branch, expectedBranch)
 	}
 	return nil
 }
@@ -461,17 +462,17 @@ func sessionNewer(a, b domain.SessionRecord) bool {
 	return string(a.ID) > string(b.ID)
 }
 
-func (s *Service) lockOrchestratorProject(projectID domain.ProjectID) func() {
-	s.orchestratorLocksMu.Lock()
-	if s.orchestratorLocks == nil {
-		s.orchestratorLocks = make(map[domain.ProjectID]*sync.Mutex)
+func (s *Service) lockManagerProject(projectID domain.ProjectID) func() {
+	s.managerLocksMu.Lock()
+	if s.managerLocks == nil {
+		s.managerLocks = make(map[domain.ProjectID]*sync.Mutex)
 	}
-	mu := s.orchestratorLocks[projectID]
+	mu := s.managerLocks[projectID]
 	if mu == nil {
 		mu = &sync.Mutex{}
-		s.orchestratorLocks[projectID] = mu
+		s.managerLocks[projectID] = mu
 	}
-	s.orchestratorLocksMu.Unlock()
+	s.managerLocksMu.Unlock()
 
 	mu.Lock()
 	return mu.Unlock
@@ -690,12 +691,23 @@ func (s *Service) SetTerminateOnPRMerge(ctx context.Context, id domain.SessionID
 	return s.Get(ctx, id)
 }
 
-// SetWorkflowMode moves a session between its delivery stages and returns the
-// refreshed read model. The board's Planning/Building lanes derive from this.
+// SetWorkflowMode changes a session's delivery posture and returns the refreshed
+// read model.
 func (s *Service) SetWorkflowMode(ctx context.Context, id domain.SessionID, mode domain.WorkflowMode) (domain.Session, error) {
 	if !mode.Valid() {
 		return domain.Session{}, apierr.Invalid("INVALID_WORKFLOW_MODE",
-			fmt.Sprintf("workflow mode must be %q or %q", domain.WorkflowModePlanning, domain.WorkflowModeBuilding), nil)
+			fmt.Sprintf("workflow mode must be %q, %q, or %q", domain.WorkflowModePlanning, domain.WorkflowModeManager, domain.WorkflowModeBuilding), nil)
+	}
+	current, ok, err := s.store.GetSession(ctx, id)
+	if err != nil {
+		return domain.Session{}, fmt.Errorf("get session %s for workflow mode: %w", id, err)
+	}
+	if !ok {
+		return domain.Session{}, apierr.NotFound("SESSION_NOT_FOUND", "Unknown session")
+	}
+	if !mode.ValidForKind(current.Kind) {
+		return domain.Session{}, apierr.Invalid("INVALID_WORKFLOW_MODE",
+			fmt.Sprintf("workflow mode %q is not valid for %s sessions", mode, current.Kind), nil)
 	}
 	updated, err := s.store.SetSessionWorkflowMode(ctx, id, mode, time.Now().UTC())
 	if err != nil {
@@ -915,7 +927,7 @@ func matchesSessionFilter(rec domain.SessionRecord, filter ListFilter) bool {
 	if filter.Active != nil && rec.IsTerminated == *filter.Active {
 		return false
 	}
-	if filter.OrchestratorOnly && rec.Kind != domain.KindOrchestrator {
+	if filter.ManagerOnly && rec.Kind != domain.KindManager {
 		return false
 	}
 	if filter.Fresh && rec.IsTerminated {
@@ -980,7 +992,7 @@ func (s *Service) toSessionWithFacts(rec domain.SessionRecord, prs []domain.PRFa
 // review pass, an approval, or mergeability) until the human acts. It is
 // idempotent: it fires at most once per review episode — the read path checks
 // the durable flag first, and the store's UPDATE is a no-op once latched — so a
-// board refresh never writes. Only an explicit plan/build command or a user
+// board refresh never writes. Only an explicit workflow-mode command or a user
 // message releases the latch.
 func (s *Service) latchReviewLock(ctx context.Context, rec domain.SessionRecord, column domain.KanbanColumn) {
 	if rec.ReviewLocked || rec.IsTerminated || column != domain.KanbanNeedsReview {
@@ -991,7 +1003,7 @@ func (s *Service) latchReviewLock(ctx context.Context, rec domain.SessionRecord,
 	}
 }
 
-// releaseReviewLock clears a session's review freeze (plan/build commands do
+// releaseReviewLock clears a session's review freeze (workflow-mode commands do
 // this through SetSessionWorkflowMode; user messages go through Send). The
 // store UPDATE is idempotent, so when the freeze is already released no row
 // changes and no CDC event fires.
@@ -1077,8 +1089,8 @@ func mapSessionError(err error) error {
 		return apierr.Invalid("UNSUPPORTED_MODEL", err.Error(), nil)
 	case errors.Is(err, sessionmanager.ErrScratchBranchUnsupported):
 		return apierr.Invalid("SCRATCH_BRANCH_UNSUPPORTED", err.Error(), nil)
-	case errors.Is(err, sessionmanager.ErrPlanningOrchestratorNoTasks):
-		return apierr.Conflict("PLANNING_ORCHESTRATOR_NO_TASKS", err.Error(), nil)
+	case errors.Is(err, sessionmanager.ErrPlanningManagerNoTasks):
+		return apierr.Conflict("PLANNING_MANAGER_NO_TASKS", err.Error(), nil)
 	case errors.Is(err, ports.ErrWorkspaceBranchCheckedOutElsewhere):
 		return apierr.Conflict("BRANCH_CHECKED_OUT_ELSEWHERE", err.Error(), nil)
 	case errors.Is(err, ports.ErrWorkspaceDefaultBranchUnresolved):

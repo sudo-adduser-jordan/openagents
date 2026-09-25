@@ -91,11 +91,11 @@ func newSpawnCommand(ctx *commandContext) *cobra.Command {
 			if opts.mode != "" && opts.mode != "chat" && opts.mode != "tui" {
 				return usageError{fmt.Errorf(`--mode must be "chat" or "tui"`)}
 			}
-			if opts.kind != "" && opts.kind != "worker" && opts.kind != "orchestrator" {
-				return usageError{fmt.Errorf(`--kind must be "worker" or "orchestrator"`)}
+			if opts.kind != "" && opts.kind != "worker" && opts.kind != "manager" {
+				return usageError{fmt.Errorf(`--kind must be "worker" or "manager"`)}
 			}
 			if opts.standalone {
-				if opts.kind == "orchestrator" {
+				if opts.kind == "manager" {
 					return usageError{fmt.Errorf("standalone sessions must be workers")}
 				}
 				if strings.TrimSpace(opts.branch) != "" || strings.TrimSpace(opts.issue) != "" || strings.TrimSpace(opts.claimPR) != "" {
@@ -214,8 +214,8 @@ func newSpawnCommand(ctx *commandContext) *cobra.Command {
 	})
 	f.StringVar(&opts.project, "project", "", "Project id to spawn the session in (default: OPEN_AGENTS_PROJECT_ID or the current registered repo)")
 	f.BoolVar(&opts.standalone, "standalone", false, "Spawn a projectless worker in an Open Agents-managed plain directory (requires --agent)")
-	f.StringVar(&opts.harness, "harness", "", "Agent harness / --agent: opencode (default: project worker.agent; orchestrator spawns default to project orchestrator.agent; required if the project has none)")
-	f.StringVar(&opts.kind, "kind", "", "Session role: worker or orchestrator (default: worker)")
+	f.StringVar(&opts.harness, "harness", "", "Agent harness / --agent: opencode (default: project worker.agent; manager spawns default to project manager.agent; required if the project has none)")
+	f.StringVar(&opts.kind, "kind", "", "Session role: worker or manager (default: worker)")
 	f.StringVar(&opts.mode, "mode", "", "Initial session interface: chat (structured agent connection) or tui (the agent's native terminal). Omitted uses the daemon default; compatible sessions can switch later.")
 	f.StringVar(&opts.branch, "branch", "", "Branch for git project sessions (default: open-agents/<session-id>/root; unsupported for standalone or Scratch sessions)")
 	f.StringVar(&opts.prompt, "prompt", "", "Initial prompt for the agent")
@@ -365,8 +365,8 @@ func resolveSpawnHarness(explicit, kind string, project projectDetails) (string,
 		return harness, nil
 	}
 	if project.Config != nil {
-		if kind == "orchestrator" {
-			if harness := strings.TrimSpace(project.Config.Orchestrator.Agent); harness != "" {
+		if kind == "manager" {
+			if harness := strings.TrimSpace(project.Config.Manager.Agent); harness != "" {
 				return harness, nil
 			}
 		} else {
@@ -375,8 +375,8 @@ func resolveSpawnHarness(explicit, kind string, project projectDetails) (string,
 			}
 		}
 	}
-	if kind == "orchestrator" {
-		return "", usageError{fmt.Errorf("agent could not be resolved; pass --agent or configure `open-agents project set-config %s --orchestrator-agent <agent>`", project.ID)}
+	if kind == "manager" {
+		return "", usageError{fmt.Errorf("agent could not be resolved; pass --agent or configure `open-agents project set-config %s --manager-agent <agent>`", project.ID)}
 	}
 	return "", usageError{fmt.Errorf("agent could not be resolved; pass --agent or configure `open-agents project set-config %s --worker-agent <agent>`", project.ID)}
 }

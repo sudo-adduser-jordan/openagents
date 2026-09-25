@@ -436,7 +436,7 @@ describe("ChatWorkspace timeline", () => {
 		expect(onDecide).toHaveBeenCalledWith("drain-approval", "allow_once");
 	});
 
-	it("labels worker and orchestrator primary tabs with accessible provider context", () => {
+	it("labels worker and manager primary tabs with accessible provider context", () => {
 		const view = render(<ChatWorkspace snapshot={chatFixture} session={chatSession} sessionRole="worker" />);
 
 		expect(screen.getByLabelText("Chat")).toHaveAttribute("data-session-role", "worker");
@@ -450,25 +450,25 @@ describe("ChatWorkspace timeline", () => {
 		view.rerender(
 			<ChatWorkspace
 				snapshot={chatFixture}
-				session={{ ...chatSession, id: "open-agents-demo-orchestrator", kind: "orchestrator" }}
-				sessionRole="orchestrator"
+				session={{ ...chatSession, id: "open-agents-demo-manager", kind: "manager" }}
+				sessionRole="manager"
 			/>,
 		);
 
-		expect(screen.getByLabelText("Chat")).toHaveAttribute("data-session-role", "orchestrator");
+		expect(screen.getByLabelText("Chat")).toHaveAttribute("data-session-role", "manager");
 		expect(screen.getByTestId("session-workspace-topbar")).toBeInTheDocument();
 		const actionRegion = screen.getByTestId("session-action-region");
 		expect(actionRegion).toHaveClass("pl-2", "pr-3");
 		expect(actionRegion).not.toHaveClass("px-3");
-		expect(screen.getByRole("tab", { name: "Orchestrator · OpenCode · Working" })).toBeInTheDocument();
+		expect(screen.getByRole("tab", { name: "Manager · OpenCode · Working" })).toBeInTheDocument();
 
 		view.rerender(
 			<ChatWorkspace
 				snapshot={chatFixture}
-				session={{ ...chatSession, id: "legacy-orchestrator", kind: undefined }}
+				session={{ ...chatSession, id: "legacy-manager", kind: undefined }}
 			/>,
 		);
-		expect(screen.getByRole("tab", { name: "Orchestrator · OpenCode · Working" })).toBeInTheDocument();
+		expect(screen.getByRole("tab", { name: "Manager · OpenCode · Working" })).toBeInTheDocument();
 	});
 
 	it("refreshes the owning workspace after renaming the primary chat tab", async () => {
@@ -1660,6 +1660,47 @@ describe("ChatWorkspace workflow stage bar", () => {
 		render(<ChatWorkspace snapshot={workingSnapshot()} session={sessionAt({ workflowMode: "planning" })} />);
 
 		expect(screen.getByTestId("workflow-stage-bar")).toHaveTextContent("Planning…");
+	});
+
+	it("labels a manager's working ring Manager rather than Building", () => {
+		render(
+			<ChatWorkspace
+				snapshot={workingSnapshot()}
+				session={sessionAt({ kind: "manager", workflowMode: "manager" })}
+			/>,
+		);
+
+		const bar = screen.getByTestId("workflow-stage-bar");
+		expect(bar).toHaveTextContent("Manager…");
+		expect(bar).not.toHaveTextContent("Building…");
+	});
+
+	it("keeps a manager explicitly labeled and delegates only from Manager mode", () => {
+		const onConfirmBuilding = vi.fn();
+		const { rerender } = render(
+			<ChatWorkspace
+				snapshot={idleSnapshot()}
+				session={sessionAt({ kind: "manager", workflowMode: "manager" })}
+				onConfirmBuilding={onConfirmBuilding}
+			/>,
+		);
+
+		const managing = screen.getByTestId("workflow-stage-bar");
+		expect(managing).toHaveTextContent("Manager");
+		expect(within(managing).queryByRole("button", { name: "Commit" })).not.toBeInTheDocument();
+
+		rerender(
+			<ChatWorkspace
+				snapshot={idleSnapshot()}
+				session={sessionAt({ kind: "manager", workflowMode: "planning" })}
+				onConfirmBuilding={onConfirmBuilding}
+			/>,
+		);
+		const planning = screen.getByTestId("workflow-stage-bar");
+		expect(planning).toHaveTextContent("Planning — delegation paused");
+		expect(within(planning).queryByRole("button", { name: "Commit" })).not.toBeInTheDocument();
+		fireEvent.click(within(planning).getByRole("button", { name: "Start managing" }));
+		expect(onConfirmBuilding).toHaveBeenCalledTimes(1);
 	});
 
 	it("approves the pending edit when the user reviews to commit", async () => {

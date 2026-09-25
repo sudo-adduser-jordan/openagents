@@ -17,14 +17,14 @@ function render(ui: ReactNode) {
 // first-run states, mocking only the HTTP client, the router, and the native
 // folder picker: an empty daemon shows the import chooser (no column shells), a
 // fresh project shows the task invitation, and any session brings the columns back.
-const { getMock, postMock, deleteMock, navigateMock, chooseDirectoryMock, clipboardWriteMock, spawnOrchestratorMock, terminalPanePropsMock, paramsMock, boardActionsInPanelMock } = vi.hoisted(() => ({
+const { getMock, postMock, deleteMock, navigateMock, chooseDirectoryMock, clipboardWriteMock, spawnManagerMock, terminalPanePropsMock, paramsMock, boardActionsInPanelMock } = vi.hoisted(() => ({
 	getMock: vi.fn(),
 	postMock: vi.fn(),
 	deleteMock: vi.fn(),
 	navigateMock: vi.fn(),
 	chooseDirectoryMock: vi.fn(),
 	clipboardWriteMock: vi.fn(),
-	spawnOrchestratorMock: vi.fn(),
+	spawnManagerMock: vi.fn(),
 	terminalPanePropsMock: vi.fn(),
 	paramsMock: { projectId: undefined as string | undefined, sessionId: undefined as string | undefined },
 	boardActionsInPanelMock: vi.fn(() => false),
@@ -35,10 +35,10 @@ vi.mock("../../lib/platform", async (importOriginal) => ({
 	usesBoardActionsInPanel: () => boardActionsInPanelMock(),
 }));
 
-vi.mock("../../lib/spawn-orchestrator", () => ({
+vi.mock("../../lib/spawn-manager", () => ({
 	isChatPreflightError: (error: unknown) =>
 		error instanceof Error && (error as Error & { code?: string }).code === "CHAT_DRIVER_UNAVAILABLE",
-	spawnOrchestrator: spawnOrchestratorMock,
+	spawnManager: spawnManagerMock,
 }));
 
 vi.mock("../../lib/api-client", () => ({
@@ -82,7 +82,7 @@ import type { WorkspaceSummary } from "../../types/workspace";
 import { ShellProvider, type ShellContextValue } from "../../lib/shell-context";
 import { useUiStore } from "../../stores/ui-store";
 
-type Project = { id: string; name: string; path: string; orchestratorAgent?: string };
+type Project = { id: string; name: string; path: string; managerAgent?: string };
 type Session = Record<string, unknown>;
 
 function respondWith(
@@ -130,7 +130,7 @@ const project: Project = {
 	id: "proj-1",
 	name: "my-app",
 	path: "/repo/my-app",
-	orchestratorAgent: "opencode",
+	managerAgent: "opencode",
 };
 
 const workerSession: Session = {
@@ -145,12 +145,12 @@ const workerSession: Session = {
 	prs: [],
 };
 
-const orchestratorSession: Session = {
-	id: "proj-1-orchestrator",
+const managerSession: Session = {
+	id: "proj-1-manager",
 	projectId: "proj-1",
-	displayName: "orchestrator",
+	displayName: "manager",
 	harness: "codex",
-	kind: "orchestrator",
+	kind: "manager",
 	status: "working",
 	isTerminated: false,
 	updatedAt: "2026-07-04T10:00:00Z",
@@ -207,8 +207,8 @@ beforeEach(() => {
 	});
 	deleteMock.mockResolvedValue({ error: undefined });
 	useUiStore.setState({
-		orchestratorReplacementErrors: {},
-		orchestratorStartupErrors: {},
+		managerReplacementErrors: {},
+		managerStartupErrors: {},
 		provisioningProjectIds: new Set(),
 		restartingProjectIds: new Set(),
 		settingsModal: null,
@@ -459,19 +459,19 @@ describe("project board with no sessions", () => {
 
 		expect(await screen.findByText("No worker sessions yet")).toBeInTheDocument();
 		// Both launchers remain reachable from the empty-state invitation.
-		expect(screen.getAllByRole("button", { name: "Spawn Orchestrator" }).length).toBeGreaterThan(0);
+		expect(screen.getAllByRole("button", { name: "Spawn Manager" }).length).toBeGreaterThan(0);
 		expect(screen.getAllByRole("button", { name: "New task" }).length).toBeGreaterThan(0);
 		expect(screen.queryByText("Add a project")).not.toBeInTheDocument();
 		expect(columnCount()).toBe(0);
 	});
 
-	it("surfaces the daemon error when spawning the orchestrator fails", async () => {
+	it("surfaces the daemon error when spawning the manager fails", async () => {
 		respondWith([project], []);
-		spawnOrchestratorMock.mockRejectedValue(new Error("branch is already checked out in another worktree"));
+		spawnManagerMock.mockRejectedValue(new Error("branch is already checked out in another worktree"));
 		renderBoard(<SessionsBoard projectId="proj-1" />);
 
 		await screen.findByText("No worker sessions yet");
-		const [spawnButton] = screen.getAllByRole("button", { name: "Spawn Orchestrator" });
+		const [spawnButton] = screen.getAllByRole("button", { name: "Spawn Manager" });
 		await userEvent.click(spawnButton);
 
 		expect(await screen.findByText(/branch is already checked out/)).toBeInTheDocument();
@@ -482,78 +482,78 @@ describe("project board with no sessions", () => {
 		const preflightError = Object.assign(new Error("Codex is unavailable"), {
 			code: "CHAT_DRIVER_UNAVAILABLE",
 		});
-		spawnOrchestratorMock.mockRejectedValueOnce(preflightError).mockResolvedValueOnce("proj-1-orchestrator");
+		spawnManagerMock.mockRejectedValueOnce(preflightError).mockResolvedValueOnce("proj-1-manager");
 		renderBoard(<SessionsBoard projectId="proj-1" />);
 
 		await screen.findByText("No worker sessions yet");
-		const [spawnButton] = screen.getAllByRole("button", { name: "Spawn Orchestrator" });
+		const [spawnButton] = screen.getAllByRole("button", { name: "Spawn Manager" });
 		await userEvent.click(spawnButton);
 		await userEvent.click(await screen.findByRole("button", { name: "Create as Terminal UI" }));
 
-		expect(spawnOrchestratorMock).toHaveBeenNthCalledWith(1, "proj-1", "board", false, undefined);
-		expect(spawnOrchestratorMock).toHaveBeenNthCalledWith(2, "proj-1", "board", false, "tui");
+		expect(spawnManagerMock).toHaveBeenNthCalledWith(1, "proj-1", "board", false, undefined);
+		expect(spawnManagerMock).toHaveBeenNthCalledWith(2, "proj-1", "board", false, "tui");
 	});
 
-	it("opens project settings instead of spawning when no orchestrator agent is configured", async () => {
-		const unconfiguredProject = { ...project, orchestratorAgent: undefined };
+	it("opens project settings instead of spawning when no manager agent is configured", async () => {
+		const unconfiguredProject = { ...project, managerAgent: undefined };
 		respondWith([unconfiguredProject], []);
 		renderBoard(<SessionsBoard projectId="proj-1" />);
 
 		await screen.findByText("No worker sessions yet");
-		const [spawnButton] = screen.getAllByRole("button", { name: "Spawn Orchestrator" });
+		const [spawnButton] = screen.getAllByRole("button", { name: "Spawn Manager" });
 		await userEvent.click(spawnButton);
 
 		expect(useUiStore.getState().settingsModal).toEqual({ scope: "project", projectId: "proj-1" });
 		expect(navigateMock).not.toHaveBeenCalled();
-		expect(spawnOrchestratorMock).not.toHaveBeenCalled();
+		expect(spawnManagerMock).not.toHaveBeenCalled();
 	});
 
 	it("shows the project creation startup error after navigating to the project board", async () => {
 		respondWith([project], []);
 		useUiStore
 			.getState()
-			.setOrchestratorStartupError(
+			.setManagerStartupError(
 				"proj-1",
-				"Project added, but orchestrator did not start: branch is already checked out in another worktree",
+				"Project added, but manager did not start: branch is already checked out in another worktree",
 			);
 		renderBoard(<SessionsBoard projectId="proj-1" />);
 
-		expect(await screen.findByText(/Project added, but orchestrator did not start/)).toBeInTheDocument();
+		expect(await screen.findByText(/Project added, but manager did not start/)).toBeInTheDocument();
 		expect(screen.getByText(/branch is already checked out/)).toBeInTheDocument();
 	});
 
-	it("shows a provisioning banner and gates actions while the orchestrator starts in the background", async () => {
+	it("shows a provisioning banner and gates actions while the manager starts in the background", async () => {
 		respondWith([project], []);
 		useUiStore.getState().setProjectProvisioning("proj-1", true);
 		renderBoard(<SessionsBoard projectId="proj-1" />);
 
 		expect(await screen.findByRole("status")).toHaveTextContent(/Setting up the project/);
-		for (const button of screen.getAllByRole("button", { name: "Spawn Orchestrator" })) {
+		for (const button of screen.getAllByRole("button", { name: "Spawn Manager" })) {
 			expect(button).toBeDisabled();
 		}
 		useUiStore.getState().setProjectProvisioning("proj-1", false);
 		await waitFor(() => expect(screen.queryByRole("status")).not.toBeInTheDocument());
 	});
 
-	it("clears the project creation startup error when retrying orchestrator spawn", async () => {
+	it("clears the project creation startup error when retrying manager spawn", async () => {
 		respondWith([project], []);
 		useUiStore
 			.getState()
-			.setOrchestratorStartupError(
+			.setManagerStartupError(
 				"proj-1",
-				"Project added, but orchestrator did not start: branch is already checked out in another worktree",
+				"Project added, but manager did not start: branch is already checked out in another worktree",
 			);
-		spawnOrchestratorMock.mockResolvedValue("proj-1-orchestrator");
+		spawnManagerMock.mockResolvedValue("proj-1-manager");
 		renderBoard(<SessionsBoard projectId="proj-1" />);
 
-		await screen.findByText(/Project added, but orchestrator did not start/);
-		const [spawnButton] = screen.getAllByRole("button", { name: "Spawn Orchestrator" });
+		await screen.findByText(/Project added, but manager did not start/);
+		const [spawnButton] = screen.getAllByRole("button", { name: "Spawn Manager" });
 		await userEvent.click(spawnButton);
 
 		await waitFor(() =>
-			expect(screen.queryByText(/Project added, but orchestrator did not start/)).not.toBeInTheDocument(),
+			expect(screen.queryByText(/Project added, but manager did not start/)).not.toBeInTheDocument(),
 		);
-		expect(useUiStore.getState().orchestratorStartupErrors["proj-1"]).toBeUndefined();
+		expect(useUiStore.getState().managerStartupErrors["proj-1"]).toBeUndefined();
 	});
 
 	it("clears a project creation startup error when switching projects", async () => {
@@ -561,13 +561,13 @@ describe("project board with no sessions", () => {
 		respondWith([project, otherProject], []);
 		useUiStore
 			.getState()
-			.setOrchestratorStartupError(
+			.setManagerStartupError(
 				"proj-1",
-				"Project added, but orchestrator did not start: branch is already checked out in another worktree",
+				"Project added, but manager did not start: branch is already checked out in another worktree",
 			);
 		const { rerender } = renderBoard(<SessionsBoard projectId="proj-1" />);
 
-		await screen.findByText(/Project added, but orchestrator did not start/);
+		await screen.findByText(/Project added, but manager did not start/);
 		rerender(
 			<QueryClientProvider client={lastQueryClient!}>
 				<ShellProvider value={lastShell!}>
@@ -577,33 +577,33 @@ describe("project board with no sessions", () => {
 		);
 
 		await screen.findByText("No worker sessions yet");
-		await waitFor(() => expect(useUiStore.getState().orchestratorStartupErrors["proj-1"]).toBeUndefined());
-		expect(screen.queryByText(/Project added, but orchestrator did not start/)).not.toBeInTheDocument();
+		await waitFor(() => expect(useUiStore.getState().managerStartupErrors["proj-1"]).toBeUndefined());
+		expect(screen.queryByText(/Project added, but manager did not start/)).not.toBeInTheDocument();
 	});
 
-	it("clears a project creation startup error once an orchestrator exists", async () => {
-		respondWith([project], [orchestratorSession]);
+	it("clears a project creation startup error once a manager exists", async () => {
+		respondWith([project], [managerSession]);
 		useUiStore
 			.getState()
-			.setOrchestratorStartupError(
+			.setManagerStartupError(
 				"proj-1",
-				"Project added, but orchestrator did not start: branch is already checked out in another worktree",
+				"Project added, but manager did not start: branch is already checked out in another worktree",
 			);
 		renderBoard(<SessionsBoard projectId="proj-1" />);
 
 		await screen.findByText("No worker sessions yet");
-		await waitFor(() => expect(useUiStore.getState().orchestratorStartupErrors["proj-1"]).toBeUndefined());
-		expect(screen.queryByText(/Project added, but orchestrator did not start/)).not.toBeInTheDocument();
+		await waitFor(() => expect(useUiStore.getState().managerStartupErrors["proj-1"]).toBeUndefined());
+		expect(screen.queryByText(/Project added, but manager did not start/)).not.toBeInTheDocument();
 	});
 
 	it("clears a stale spawn error when switching projects", async () => {
 		const otherProject: Project = { id: "proj-2", name: "other-app", path: "/repo/other-app" };
 		respondWith([project, otherProject], []);
-		spawnOrchestratorMock.mockRejectedValue(new Error("branch is already checked out in another worktree"));
+		spawnManagerMock.mockRejectedValue(new Error("branch is already checked out in another worktree"));
 		const { rerender } = renderBoard(<SessionsBoard projectId="proj-1" />);
 
 		await screen.findByText("No worker sessions yet");
-		const [spawnButton] = screen.getAllByRole("button", { name: "Spawn Orchestrator" });
+		const [spawnButton] = screen.getAllByRole("button", { name: "Spawn Manager" });
 		await userEvent.click(spawnButton);
 		await screen.findByText(/branch is already checked out/);
 
@@ -649,12 +649,12 @@ describe.each([false, true])("shared project board actions, in-panel header=%s",
 		renderBoard(board());
 		const empty = await screen.findByTestId("project-board-empty");
 		const headerTask = screen.getAllByRole("button", { name: "New task" }).find((button) => !empty.contains(button))!;
-		const headerOrchestrator = screen.getAllByRole("button", { name: "Spawn Orchestrator" }).find((button) => !empty.contains(button))!;
+		const headerManager = screen.getAllByRole("button", { name: "Spawn Manager" }).find((button) => !empty.contains(button))!;
 		expect(headerTask).toHaveClass("topbar-control--secondary", "topbar-control--labeled");
-		expect(headerOrchestrator).toHaveClass("topbar-control--secondary", "topbar-control--labeled");
+		expect(headerManager).toHaveClass("topbar-control--secondary", "topbar-control--labeled");
 		expect(headerTask).toHaveAttribute("data-priority", "primary");
 		expect(headerTask.querySelector("[data-compact-label]")).not.toBeNull();
-		expect(within(empty).getByRole("button", { name: "Spawn Orchestrator" })).toHaveClass("topbar-control--primary");
+		expect(within(empty).getByRole("button", { name: "Spawn Manager" })).toHaveClass("topbar-control--primary");
 		expect(within(empty).getByRole("button", { name: "New task" })).toHaveClass("topbar-control--accent");
 
 		for (const button of screen.getAllByRole("button", { name: "New task" })) {
@@ -671,7 +671,7 @@ describe.each([false, true])("shared project board actions, in-panel header=%s",
 			updateWorkers([session]);
 			await waitFor(() => expect(screen.queryByTestId("project-board-empty")).not.toBeInTheDocument());
 			expect(screen.getByRole("button", { name: "New task" })).toHaveClass("topbar-control--accent");
-			expect(screen.getByRole("button", { name: "Spawn Orchestrator" })).toHaveClass("topbar-control--primary");
+			expect(screen.getByRole("button", { name: "Spawn Manager" })).toHaveClass("topbar-control--primary");
 		}
 		updateWorkers([]);
 		await screen.findByTestId("project-board-empty");
@@ -681,14 +681,14 @@ describe.each([false, true])("shared project board actions, in-panel header=%s",
 	it("shares pending state and Terminal UI recovery after either copy starts a request", async () => {
 		respondWith([project], []);
 		let rejectSpawn!: (error: Error) => void;
-		spawnOrchestratorMock.mockImplementationOnce(() => new Promise<string>((_resolve, reject) => { rejectSpawn = reject; }));
-		spawnOrchestratorMock.mockResolvedValueOnce("orch-retry");
+		spawnManagerMock.mockImplementationOnce(() => new Promise<string>((_resolve, reject) => { rejectSpawn = reject; }));
+		spawnManagerMock.mockResolvedValueOnce("mgr-retry");
 		renderBoard(board());
 		await screen.findByTestId("project-board-empty");
-		const buttons = screen.getAllByRole("button", { name: "Spawn Orchestrator" });
+		const buttons = screen.getAllByRole("button", { name: "Spawn Manager" });
 		expect(buttons).toHaveLength(2);
 		act(() => { buttons[0].click(); buttons[1].click(); });
-		await waitFor(() => expect(spawnOrchestratorMock).toHaveBeenCalledTimes(1));
+		await waitFor(() => expect(spawnManagerMock).toHaveBeenCalledTimes(1));
 		for (const button of buttons) {
 			expect(button).toBeDisabled();
 			expect(button).toHaveAttribute("aria-busy", "true");
@@ -697,10 +697,10 @@ describe.each([false, true])("shared project board actions, in-panel header=%s",
 		expect(await screen.findByText("Chat driver unavailable")).toBeInTheDocument();
 		for (const button of buttons) expect(button).toBeEnabled();
 		await userEvent.click(await screen.findByRole("button", { name: "Create as Terminal UI" }));
-		await waitFor(() => expect(spawnOrchestratorMock).toHaveBeenCalledTimes(2));
-		expect(spawnOrchestratorMock).toHaveBeenLastCalledWith("proj-1", "board", false, "tui");
+		await waitFor(() => expect(spawnManagerMock).toHaveBeenCalledTimes(2));
+		expect(spawnManagerMock).toHaveBeenLastCalledWith("proj-1", "board", false, "tui");
 		await waitFor(() => expect(navigateMock).toHaveBeenCalledWith({
-			to: "/projects/$projectId/sessions/$sessionId", params: { projectId: "proj-1", sessionId: "orch-retry" },
+			to: "/projects/$projectId/sessions/$sessionId", params: { projectId: "proj-1", sessionId: "mgr-retry" },
 		}));
 	});
 
@@ -708,18 +708,18 @@ describe.each([false, true])("shared project board actions, in-panel header=%s",
 		respondWith([project, { ...project, id: "proj-2", name: "other-app" }], []);
 		let resolveSpawn!: (id: string) => void;
 		let rejectSpawn!: (error: Error) => void;
-		spawnOrchestratorMock.mockImplementationOnce(() => new Promise<string>((resolve, reject) => {
+		spawnManagerMock.mockImplementationOnce(() => new Promise<string>((resolve, reject) => {
 			resolveSpawn = resolve; rejectSpawn = reject;
 		}));
 		const view = renderBoard(board());
 		await screen.findByTestId("project-board-empty");
-		await userEvent.click(screen.getAllByRole("button", { name: "Spawn Orchestrator" })[0]);
-		await waitFor(() => expect(spawnOrchestratorMock).toHaveBeenCalledTimes(1));
+		await userEvent.click(screen.getAllByRole("button", { name: "Spawn Manager" })[0]);
+		await waitFor(() => expect(spawnManagerMock).toHaveBeenCalledTimes(1));
 		view.rerender(<QueryClientProvider client={lastQueryClient!}><ShellProvider value={lastShell!}>{board("proj-2")}</ShellProvider></QueryClientProvider>);
 		await waitFor(() => {
-			for (const button of screen.getAllByRole("button", { name: "Spawn Orchestrator" })) expect(button).toBeEnabled();
+			for (const button of screen.getAllByRole("button", { name: "Spawn Manager" })) expect(button).toBeEnabled();
 		});
-		act(() => outcome === "success" ? resolveSpawn("old-project-orchestrator") : rejectSpawn(new Error("Old project failed")));
+		act(() => outcome === "success" ? resolveSpawn("old-project-manager") : rejectSpawn(new Error("Old project failed")));
 		await waitFor(() => expect(lastQueryClient!.isMutating()).toBe(0));
 		expect(navigateMock).not.toHaveBeenCalled();
 		expect(screen.queryByText("Old project failed")).not.toBeInTheDocument();
@@ -733,6 +733,6 @@ describe.each([false, true])("shared project board actions, in-panel header=%s",
 		if (state === "missing") await waitFor(() => expect(lastQueryClient!.getQueryState(workspaceQueryKey)?.status).toBe("success"));
 		expect(screen.queryByTestId("project-board-empty")).not.toBeInTheDocument();
 		expect(screen.getByRole("button", { name: "New task" })).toHaveClass("topbar-control--accent");
-		expect(screen.getByRole("button", { name: "Spawn Orchestrator" })).toHaveClass("topbar-control--primary");
+		expect(screen.getByRole("button", { name: "Spawn Manager" })).toHaveClass("topbar-control--primary");
 	});
 });

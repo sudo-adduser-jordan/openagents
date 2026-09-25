@@ -48,7 +48,7 @@ func openStore(t *testing.T) *sqlite.Store {
 	if _, err := st.CreateSession(ctx, domain.SessionRecord{
 		ID:        testSession,
 		ProjectID: testProject,
-		Kind:      domain.KindOrchestrator,
+		Kind:      domain.KindManager,
 		Harness:   domain.HarnessOpenCode,
 		Mode:      domain.SessionModeChat,
 		CreatedAt: time.Now().UTC(),
@@ -627,13 +627,13 @@ func TestServicePassesRecomputedSystemPromptToResume(t *testing.T) {
 	_, err = svc.Start(context.Background(), chatsvc.StartConfig{
 		SessionID: testSession, ProjectID: testProject, Harness: domain.HarnessOpenCode,
 		DataDir: dataDir, WorkspacePath: workspace, ProviderConversationID: "thread-1",
-		SystemPrompt: "Recomputed Open Agents orchestrator instructions",
+		SystemPrompt: "Recomputed Open Agents manager instructions",
 	})
 	if err != nil {
 		t.Fatalf("Start resume: %v", err)
 	}
 	if resumed.ProviderConversationID != "thread-1" || resumed.DataDir != dataDir || resumed.WorkspacePath != workspace ||
-		resumed.SystemPrompt != "Recomputed Open Agents orchestrator instructions" || resumed.Model != "gpt-test" ||
+		resumed.SystemPrompt != "Recomputed Open Agents manager instructions" || resumed.Model != "gpt-test" ||
 		resumed.Effort != "high" {
 		t.Fatalf("resume config = %#v", resumed)
 	}
@@ -887,7 +887,7 @@ func TestFreshProjectStartPersistsNewProviderScopeForSubsequentResume(t *testing
 	before, sourceBranch := seedProjectConversationWithProviderHistory(
 		t, st, "fresh-project-conversation", now)
 	targetSession, err := st.CreateSession(ctx, domain.SessionRecord{
-		ProjectID: testProject, Kind: domain.KindOrchestrator, Harness: domain.HarnessOpenCode,
+		ProjectID: testProject, Kind: domain.KindManager, Harness: domain.HarnessOpenCode,
 		Mode: domain.SessionModeChat, CreatedAt: now.Add(time.Second), UpdatedAt: now.Add(time.Second),
 	})
 	if err != nil {
@@ -911,7 +911,7 @@ func TestFreshProjectStartPersistsNewProviderScopeForSubsequentResume(t *testing
 	lifecycleManager := lifecycle.New(st, nil)
 
 	controller, err := svc.Start(ctx, chatsvc.StartConfig{
-		SessionID: targetSession.ID, ProjectID: testProject, Kind: domain.KindOrchestrator,
+		SessionID: targetSession.ID, ProjectID: testProject, Kind: domain.KindManager,
 		Harness: domain.HarnessOpenCode, WorkspacePath: t.TempDir(),
 		ControllerReady: func(result chatsvc.StartResult) (chatsvc.ControllerCommit, error) {
 			if result.ProviderBoundary == nil {
@@ -973,7 +973,7 @@ func TestFreshProjectStartPersistsNewProviderScopeForSubsequentResume(t *testing
 	})
 	t.Cleanup(func() { _ = restarted.Stop(context.Background(), targetSession.ID) })
 	if _, err := restarted.Start(ctx, chatsvc.StartConfig{
-		SessionID: targetSession.ID, ProjectID: testProject, Kind: domain.KindOrchestrator,
+		SessionID: targetSession.ID, ProjectID: testProject, Kind: domain.KindManager,
 		Harness: domain.HarnessOpenCode, WorkspacePath: t.TempDir(),
 		ProviderConversationID: "fresh-provider-thread",
 		HistoryMode:            ports.ChatHistoryDeferred,
@@ -1008,7 +1008,7 @@ func TestFreshProjectProviderStartFailurePreservesSourceHeadAndOwner(t *testing.
 	})
 
 	_, err := svc.Start(ctx, chatsvc.StartConfig{
-		SessionID: testSession, ProjectID: testProject, Kind: domain.KindOrchestrator,
+		SessionID: testSession, ProjectID: testProject, Kind: domain.KindManager,
 		Harness: domain.HarnessOpenCode, WorkspacePath: t.TempDir(),
 	})
 	if !errors.Is(err, providerErr) {
@@ -1057,7 +1057,7 @@ func TestFreshProjectControllerReadyFailurePreservesSourceHeadAndOwner(t *testin
 	})
 
 	_, err := svc.Start(ctx, chatsvc.StartConfig{
-		SessionID: testSession, ProjectID: testProject, Kind: domain.KindOrchestrator,
+		SessionID: testSession, ProjectID: testProject, Kind: domain.KindManager,
 		Harness: domain.HarnessOpenCode, WorkspacePath: t.TempDir(),
 		ControllerReady: func(result chatsvc.StartResult) (chatsvc.ControllerCommit, error) {
 			reservedBoundary = result.ProviderBoundary
@@ -2714,7 +2714,7 @@ func TestFreshProjectControllerRecordsNativeContextBoundary(t *testing.T) {
 	if _, err := st.CreateSession(ctx, domain.SessionRecord{
 		ID:        replacement,
 		ProjectID: testProject,
-		Kind:      domain.KindOrchestrator,
+		Kind:      domain.KindManager,
 		Harness:   domain.HarnessOpenCode,
 		Mode:      domain.SessionModeChat,
 		Activity:  domain.Activity{State: domain.ActivityActive, LastActivityAt: now},
@@ -2746,7 +2746,7 @@ func TestFreshProjectControllerRecordsNativeContextBoundary(t *testing.T) {
 		Now: func() time.Time { return now.Add(time.Minute) },
 	})
 	start := chatsvc.StartConfig{
-		SessionID: replacement, ProjectID: testProject, Kind: domain.KindOrchestrator,
+		SessionID: replacement, ProjectID: testProject, Kind: domain.KindManager,
 		Harness: domain.HarnessOpenCode, WorkspacePath: t.TempDir(),
 	}
 	if _, err := svc.Start(ctx, start); err != nil {
@@ -2830,14 +2830,14 @@ func TestFreshProjectControllerStartFailureKeepsPreviousHistoryHidden(t *testing
 	}
 	if _, err := st.AppendUserMessage(ctx, conversation.ID, testSession, "old-generation",
 		domain.ConversationMessage{
-			ID: "old-message", Text: "old orchestrator history", Origin: domain.MessageOriginHuman,
+			ID: "old-message", Text: "old manager history", Origin: domain.MessageOriginHuman,
 		}, "old-turn", now.Add(time.Second)); err != nil {
 		t.Fatalf("seed old history: %v", err)
 	}
 
 	replacementRecord, err := st.CreateSession(ctx, domain.SessionRecord{
 		ProjectID: testProject,
-		Kind:      domain.KindOrchestrator,
+		Kind:      domain.KindManager,
 		Harness:   domain.HarnessOpenCode,
 		Mode:      domain.SessionModeChat,
 		Activity:  domain.Activity{State: domain.ActivityActive, LastActivityAt: now},
@@ -2864,7 +2864,7 @@ func TestFreshProjectControllerStartFailureKeepsPreviousHistoryHidden(t *testing
 		Now: func() time.Time { return now.Add(2 * time.Second) },
 	})
 	if _, err := svc.Start(ctx, chatsvc.StartConfig{
-		SessionID: replacement, ProjectID: testProject, Kind: domain.KindOrchestrator,
+		SessionID: replacement, ProjectID: testProject, Kind: domain.KindManager,
 		Harness: domain.HarnessOpenCode, WorkspacePath: t.TempDir(),
 	}); err == nil || !strings.Contains(err.Error(), "provider failed") {
 		t.Fatalf("Start replacement error = %v, want provider failure", err)
@@ -4630,7 +4630,7 @@ func TestServiceStopAllClosesHealthyControllerAfterStuckStreamExhaustsShutdownCo
 	st := openStore(t)
 	now := time.Date(2026, 9, 14, 15, 0, 0, 0, time.UTC)
 	healthyRecord, err := st.CreateSession(context.Background(), domain.SessionRecord{
-		ProjectID: testProject, Kind: domain.KindOrchestrator, Harness: domain.HarnessOpenCode,
+		ProjectID: testProject, Kind: domain.KindManager, Harness: domain.HarnessOpenCode,
 		Mode: domain.SessionModeChat, CreatedAt: now, UpdatedAt: now,
 	})
 	if err != nil {
@@ -4729,7 +4729,7 @@ func TestServiceStopAllReturnsByDeadlineWhenControllerGateIsHeld(t *testing.T) {
 	st := openStore(t)
 	now := time.Date(2026, 9, 14, 17, 0, 0, 0, time.UTC)
 	healthyRecord, err := st.CreateSession(context.Background(), domain.SessionRecord{
-		ProjectID: testProject, Kind: domain.KindOrchestrator, Harness: domain.HarnessOpenCode,
+		ProjectID: testProject, Kind: domain.KindManager, Harness: domain.HarnessOpenCode,
 		Mode: domain.SessionModeChat, CreatedAt: now, UpdatedAt: now,
 	})
 	if err != nil {
@@ -5235,14 +5235,14 @@ func TestInitialPromptIsAttributedToTheUser(t *testing.T) {
 }
 
 // A relayed message is Open Agents carrying someone else's words: `open-agents send`, or an
-// orchestrator writing to a worker. It must be attributed to automation, not
+// manager writing to a worker. It must be attributed to automation, not
 // passed off as something the user typed here — the timeline distinguishes the
 // two structurally, and a reader should never have to infer it from a prefix.
 func TestRelayedMessageIsAttributedToAutomation(t *testing.T) {
 	h := newHarness(t)
 	ctx := context.Background()
 
-	if _, err := h.svc.RelayChatTurn(ctx, testSession, "orchestrator: rebase onto main"); err != nil {
+	if _, err := h.svc.RelayChatTurn(ctx, testSession, "manager: rebase onto main"); err != nil {
 		t.Fatalf("RelayChatTurn: %v", err)
 	}
 
@@ -5256,7 +5256,7 @@ func TestRelayedMessageIsAttributedToAutomation(t *testing.T) {
 	if msg.Role != domain.MessageRoleUser {
 		t.Errorf("relay role = %q; a relay is still an inbound request", msg.Role)
 	}
-	if got := h.conv.sentTexts(); len(got) != 1 || got[0] != "orchestrator: rebase onto main" {
+	if got := h.conv.sentTexts(); len(got) != 1 || got[0] != "manager: rebase onto main" {
 		t.Fatalf("provider received %v, want the relayed text dispatched", got)
 	}
 }
@@ -6513,7 +6513,7 @@ func TestReservedBoundaryAdoptsSuccessorHandleWithoutRewritingHistory(t *testing
 
 	var boundaryBranch domain.ConversationBranch
 	_, err := svc.Start(ctx, chatsvc.StartConfig{
-		SessionID: testSession, ProjectID: testProject, Kind: domain.KindOrchestrator,
+		SessionID: testSession, ProjectID: testProject, Kind: domain.KindManager,
 		Harness: domain.HarnessOpenCode, WorkspacePath: t.TempDir(),
 		ProviderConversationID: successor,
 		ProviderScopeID:        boundary,

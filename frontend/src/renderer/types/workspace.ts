@@ -8,6 +8,7 @@ import {
 	type KanbanColumn,
 	type SessionActivity,
 	type SessionActivityState,
+	type SessionKind,
 	type SessionStatus,
 	type WorkflowMode,
 } from "@openagents/product-ui";
@@ -15,7 +16,7 @@ import {
 import type { ReviewerHarnessId } from "../lib/reviewer-harnesses";
 
 export { toKanbanColumn, toSessionActivity, toSessionStatus };
-export type { KanbanColumn, SessionActivity, SessionActivityState, SessionStatus, WorkflowMode };
+export type { KanbanColumn, SessionActivity, SessionActivityState, SessionKind, SessionStatus, WorkflowMode };
 
 export type AgentProvider = AgentId;
 
@@ -26,8 +27,6 @@ export type ChangedFile = {
 	deletions: number;
 	staged?: boolean;
 };
-
-export type SessionKind = "worker" | "orchestrator";
 
 /** Lifecycle state of a single pull request, mirrors the daemon's enum. */
 export type PRState = "open" | "draft" | "merged" | "closed";
@@ -95,10 +94,9 @@ export type WorkspaceSession = {
 	 */
 	kanbanColumn?: KanbanColumn;
 	/**
-	 * User-controlled delivery stage, persisted on the session row. Splits the
-	 * daemon's pre-PR `building` column into the Planning and Building board
-	 * lanes. Absent means Building, so a daemon too old to send one keeps cards
-	 * where they already were.
+	 * User-controlled delivery stage, persisted on the session row. Workers use
+	 * Planning/Building; managers use Planning/Manager. An absent stage is
+	 * normalized against the role at the presentation boundary.
 	 */
 	workflowMode?: WorkflowMode;
 	/**
@@ -210,28 +208,28 @@ export function primaryPR(session: WorkspaceSession): PullRequestFacts | undefin
 	return sortedPRs(session)[0];
 }
 
-export function isOrchestratorSession(session: Pick<WorkspaceSession, "id" | "kind">): boolean {
-	return session.kind === "orchestrator" || session.id.endsWith("-orchestrator");
+export function isManagerSession(session: Pick<WorkspaceSession, "id" | "kind">): boolean {
+	return session.kind === "manager" || session.id.endsWith("-manager");
 }
 
 /**
- * The project's LIVE orchestrator, if any. Terminated orchestrator rows stay in
+ * The project's LIVE manager, if any. Terminated manager rows stay in
  * the session list (the daemon returns all sessions, ordered by spawn number),
- * so an earlier dead orchestrator must not shadow a live one — its zellij
+ * so an earlier dead manager must not shadow a live one — its zellij
  * session is deleted and attaching to it dead-ends in an instant
- * "[process exited]". No live orchestrator → undefined, so the topbar offers
+ * "[process exited]". No live manager → undefined, so the topbar offers
  * Spawn instead of navigating to a dead session.
  */
-export function findProjectOrchestrator(
+export function findProjectManager(
 	workspaces: WorkspaceSummary[],
 	projectId: string,
 ): WorkspaceSession | undefined {
 	const workspace = workspaces.find((w) => w.id === projectId);
-	return newestActiveOrchestrator(workspace?.sessions ?? []);
+	return newestActiveManager(workspace?.sessions ?? []);
 }
 
-export function newestActiveOrchestrator(sessions: WorkspaceSession[]): WorkspaceSession | undefined {
-	const active = sessions.filter((session) => isOrchestratorSession(session) && sessionIsActive(session));
+export function newestActiveManager(sessions: WorkspaceSession[]): WorkspaceSession | undefined {
+	const active = sessions.filter((session) => isManagerSession(session) && sessionIsActive(session));
 	return active.reduce<WorkspaceSession | undefined>(
 		(newest, session) => (!newest || sessionNewer(session, newest) ? session : newest),
 		undefined,
@@ -278,7 +276,7 @@ function validTimestamp(value?: string): number | undefined {
 }
 
 export function workerSessions(sessions: WorkspaceSession[]): WorkspaceSession[] {
-	return sessions.filter((s) => !isOrchestratorSession(s));
+	return sessions.filter((s) => !isManagerSession(s));
 }
 
 /** Worker sessions ordered by session update time, newest first. */
@@ -312,7 +310,7 @@ export type WorkspaceSummary = {
 	folderMissing?: boolean;
 	workspaceRepos?: WorkspaceRepoSummary[];
 	type?: "main" | "worktree";
-	orchestratorAgent?: AgentProvider;
+	managerAgent?: AgentProvider;
 	accentColor?: string;
 	diff?: {
 		additions: number;
@@ -321,47 +319,47 @@ export type WorkspaceSummary = {
 	sessions: WorkspaceSession[];
 };
 
-export function hasConfiguredOrchestratorAgent(
-	workspace: Pick<WorkspaceSummary, "orchestratorAgent"> | undefined,
+export function hasConfiguredManagerAgent(
+	workspace: Pick<WorkspaceSummary, "managerAgent"> | undefined,
 ): boolean {
-	return Boolean(workspace?.orchestratorAgent);
+	return Boolean(workspace?.managerAgent);
 }
 
-export function orchestratorNeedsRestart(workspace: WorkspaceSummary, orchestrator?: WorkspaceSession): boolean {
-	if (!orchestrator || !workspace.orchestratorAgent) return false;
-	return orchestrator.provider !== workspace.orchestratorAgent;
+export function managerNeedsRestart(workspace: WorkspaceSummary, manager?: WorkspaceSession): boolean {
+	if (!manager || !workspace.managerAgent) return false;
+	return manager.provider !== workspace.managerAgent;
 }
 
-export type OrchestratorHealth =
+export type ManagerHealth =
 	| { state: "ok" }
 	| { state: "restarting"; message: string }
 	| { state: "restart_needed"; message: string }
 	| { state: "missing"; message: string }
 	| { state: "duplicates"; message: string };
 
-export function orchestratorHealth(workspace: WorkspaceSummary, restarting = false): OrchestratorHealth {
+export function managerHealth(workspace: WorkspaceSummary, restarting = false): ManagerHealth {
 	if (restarting) {
 		return {
 			state: "restarting",
-			message: "Restarting orchestrator. New tasks wait until the replacement is ready.",
+			message: "Restarting manager. New tasks wait until the replacement is ready.",
 		};
 	}
-	const active = workspace.sessions.filter((session) => isOrchestratorSession(session) && sessionIsActive(session));
+	const active = workspace.sessions.filter((session) => isManagerSession(session) && sessionIsActive(session));
 	if (active.length > 1) {
 		return {
 			state: "duplicates",
 			message:
-				"Multiple orchestrators are active. The newest one is used; stale ones will be cleaned up on daemon reconcile.",
+				"Multiple managers are active. The newest one is used; stale ones will be cleaned up on daemon reconcile.",
 		};
 	}
-	const orchestrator = newestActiveOrchestrator(workspace.sessions);
-	if (!orchestrator) {
-		return { state: "missing", message: "No orchestrator is running for this project." };
+	const manager = newestActiveManager(workspace.sessions);
+	if (!manager) {
+		return { state: "missing", message: "No manager is running for this project." };
 	}
-	if (orchestratorNeedsRestart(workspace, orchestrator)) {
+	if (managerNeedsRestart(workspace, manager)) {
 		return {
 			state: "restart_needed",
-			message: `Configured orchestrator agent is ${workspace.orchestratorAgent}; running agent is ${orchestrator.provider}.`,
+			message: `Configured manager agent is ${workspace.managerAgent}; running agent is ${manager.provider}.`,
 		};
 	}
 	return { state: "ok" };

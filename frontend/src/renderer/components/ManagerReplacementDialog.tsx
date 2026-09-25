@@ -1,9 +1,9 @@
 import * as Dialog from "@radix-ui/react-dialog";
 import { useNavigate } from "@tanstack/react-router";
 import { AlertTriangle, RotateCw, X } from "lucide-react";
-import { isChatPreflightCode } from "../lib/spawn-orchestrator";
-import type { OrchestratorReplacementFailure } from "../stores/ui-store";
-import { findProjectOrchestrator, type WorkspaceSummary } from "../types/workspace";
+import { isChatPreflightCode } from "../lib/spawn-manager";
+import type { ManagerReplacementFailure } from "../stores/ui-store";
+import { findProjectManager, type WorkspaceSummary } from "../types/workspace";
 import { Button } from "./ui/button";
 import {
 	settingsDialogContentClass,
@@ -11,17 +11,17 @@ import {
 	settingsDialogHeaderClass,
 } from "./ui/dialog";
 
-type OrchestratorReplacementDialogProps = {
+type ManagerReplacementDialogProps = {
 	projectId: string | null;
 	pending?: boolean;
-	error?: OrchestratorReplacementFailure;
+	error?: ManagerReplacementFailure;
 	workspaces: WorkspaceSummary[];
 	onOpenChange: (open: boolean) => void;
 	onRetry: (projectId: string) => void;
 	onRetryAsTui: (projectId: string) => void;
 };
 
-export function OrchestratorReplacementDialog({
+export function ManagerReplacementDialog({
 	projectId,
 	pending = false,
 	error,
@@ -29,17 +29,17 @@ export function OrchestratorReplacementDialog({
 	onOpenChange,
 	onRetry,
 	onRetryAsTui,
-}: OrchestratorReplacementDialogProps) {
+}: ManagerReplacementDialogProps) {
 	const navigate = useNavigate();
 	const open = Boolean(projectId && error);
-	const orchestrator = projectId ? findProjectOrchestrator(workspaces, projectId) : undefined;
+	const manager = projectId ? findProjectManager(workspaces, projectId) : undefined;
 
 	const openCurrent = () => {
-		if (!projectId || !orchestrator) return;
+		if (!projectId || !manager) return;
 		onOpenChange(false);
 		void navigate({
 			to: "/projects/$projectId/sessions/$sessionId",
-			params: { projectId, sessionId: orchestrator.id },
+			params: { projectId, sessionId: manager.id },
 		});
 	};
 
@@ -54,7 +54,7 @@ export function OrchestratorReplacementDialog({
 				<Dialog.Overlay className="dialog-overlay data-[state=open]:animate-overlay-in" />
 				<Dialog.Content
 					aria-busy={pending}
-					className={`${settingsDialogContentClass} fixed left-1/2 top-1/2 w-dialog-orchestrator -translate-x-1/2 -translate-y-1/2 data-[state=open]:animate-modal-in`}
+					className={`${settingsDialogContentClass} fixed left-1/2 top-1/2 w-dialog-lg -translate-x-1/2 -translate-y-1/2 data-[state=open]:animate-modal-in`}
 				>
 					<Dialog.Close asChild>
 						<button
@@ -72,9 +72,9 @@ export function OrchestratorReplacementDialog({
 								<AlertTriangle className="size-icon-base" aria-hidden="true" />
 							</div>
 							<div className="min-w-0 flex-1">
-								<Dialog.Title className="settings-dialog-title">{"Orchestrator replacement failed"}</Dialog.Title>
+								<Dialog.Title className="settings-dialog-title">{"Manager replacement failed"}</Dialog.Title>
 								<Dialog.Description className="mt-1 text-control leading-5 text-settings-muted">
-									{error?.message ?? "The project orchestrator could not be replaced."}
+									{error?.message ?? "The project manager could not be replaced."}
 								</Dialog.Description>
 							</div>
 						</div>
@@ -90,9 +90,9 @@ export function OrchestratorReplacementDialog({
 								{"Create as Terminal UI"}
 							</Button>
 						) : null}
-						{orchestrator ? (
+						{manager ? (
 							<Button type="button" variant="footer" disabled={pending} onClick={openCurrent}>
-								{"Open current orchestrator"}
+								{"Open current manager"}
 							</Button>
 						) : null}
 						<Button

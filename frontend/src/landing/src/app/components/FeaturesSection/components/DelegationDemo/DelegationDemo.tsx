@@ -87,8 +87,8 @@ type Project = {
 	id: ProjectId;
 	name: string;
 	path: string;
-	orchestratorPath: string;
-	orchestratorPrompt: string;
+	managerPath: string;
+	managerPrompt: string;
 };
 
 const projects: Project[] = [
@@ -96,22 +96,22 @@ const projects: Project[] = [
 		id: "solkit-ui",
 		name: "solkit-ui",
 		path: "~/open-agents/solkit-ui",
-		orchestratorPath: "~/open-agents/solkit-ui/orchestrator",
-		orchestratorPrompt: "Ship GitHub sign-in. Split route, tests, and docs into parallel tasks.",
+		managerPath: "~/open-agents/solkit-ui/manager",
+		managerPrompt: "Ship GitHub sign-in. Split route, tests, and docs into parallel tasks.",
 	},
 	{
 		id: "metrics-api",
 		name: "metrics-api",
 		path: "~/open-agents/metrics-api",
-		orchestratorPath: "~/open-agents/metrics-api/orchestrator",
-		orchestratorPrompt: "Ship alert digests. Split delivery retries, query coverage, and the runbook into parallel tasks.",
+		managerPath: "~/open-agents/metrics-api/manager",
+		managerPrompt: "Ship alert digests. Split delivery retries, query coverage, and the runbook into parallel tasks.",
 	},
 	{
 		id: "northstar-web",
 		name: "northstar-web",
 		path: "~/open-agents/northstar-web",
-		orchestratorPath: "~/open-agents/northstar-web/orchestrator",
-		orchestratorPrompt: "Finish the pricing refresh. Split plan cards, mobile QA, and launch docs into parallel tasks.",
+		managerPath: "~/open-agents/northstar-web/manager",
+		managerPrompt: "Finish the pricing refresh. Split plan cards, mobile QA, and launch docs into parallel tasks.",
 	},
 ];
 
@@ -242,8 +242,8 @@ const sessionMeta: Record<
 		title: "OpenCode",
 		version: "1.0.0",
 		subtitle: "Default model · Full tools",
-		path: "~/open-agents/solkit-ui/orchestrator",
-		tabLabel: "orchestrator",
+		path: "~/open-agents/solkit-ui/manager",
+		tabLabel: "manager",
 	},
 	opencode: {
 		icon: "/app-icons/agents/opencode.svg",
@@ -304,7 +304,7 @@ const workerOrder: WorkerId[] = ["opencode", "codex", "cursor"];
 
 const SCRIPT: Step[] = [
 	{ type: "pause", ms: 900 },
-	{ type: "type", session: "orc", text: projectById["solkit-ui"].orchestratorPrompt, marker: "❯" },
+	{ type: "type", session: "orc", text: projectById["solkit-ui"].managerPrompt, marker: "❯" },
 	{ type: "pause", ms: 260 },
 	{ type: "blank", session: "orc" },
 	{ type: "line", session: "orc", tone: "fg", text: "Read(open-agents.yaml)", marker: "⏺" },
@@ -332,7 +332,7 @@ const SCRIPT: Step[] = [
 	{ type: "pause", ms: 250 },
 	{ type: "stream", session: "orc", text: "Workers are live. Opening each terminal directly instead of waiting for any loading state." },
 	{ type: "pause", ms: 180 },
-	{ type: "line", session: "opencode", tone: "working", text: "delegated from orchestrator: build the GitHub callback route", marker: "❯" },
+	{ type: "line", session: "opencode", tone: "working", text: "delegated from manager: build the GitHub callback route", marker: "❯" },
 	{ type: "pause", ms: 90 },
 	{ type: "line", session: "opencode", tone: "fg", text: "Read(src/auth/index.ts)", marker: "⏺" },
 	{ type: "pause", ms: 80 },
@@ -348,7 +348,7 @@ const SCRIPT: Step[] = [
 	{ type: "pause", ms: 100 },
 	{ type: "line", session: "opencode", tone: "dim", text: "+48 -2 lines", marker: "⎿" },
 	{ type: "pause", ms: 260 },
-	{ type: "line", session: "codex", tone: "working", text: "delegated from orchestrator: cover the callback flow with integration tests", marker: "❯" },
+	{ type: "line", session: "codex", tone: "working", text: "delegated from manager: cover the callback flow with integration tests", marker: "❯" },
 	{ type: "pause", ms: 90 },
 	{ type: "line", session: "codex", tone: "fg", text: "Write(tests/auth/callback.spec.ts)", marker: "⏺" },
 	{ type: "pause", ms: 80 },
@@ -364,7 +364,7 @@ const SCRIPT: Step[] = [
 	{ type: "pause", ms: 80 },
 	{ type: "line", session: "codex", tone: "dim", text: "11 passing, 1 flaky stale-state assertion", marker: "⎿" },
 	{ type: "pause", ms: 170 },
-	{ type: "line", session: "cursor", tone: "working", text: "delegated from orchestrator: update the auth setup guide", marker: "❯" },
+	{ type: "line", session: "cursor", tone: "working", text: "delegated from manager: update the auth setup guide", marker: "❯" },
 	{ type: "pause", ms: 90 },
 	{ type: "line", session: "cursor", tone: "fg", text: "Edit(docs/auth/setup.md)", marker: "⏺" },
 	{ type: "pause", ms: 80 },
@@ -436,7 +436,7 @@ const SCRIPT: Step[] = [
 	{ type: "cursor", target: "project-metrics-api", click: true },
 	{ type: "project", project: "metrics-api" },
 	{ type: "pause", ms: 180 },
-	{ type: "type", session: "orc", text: projectById["metrics-api"].orchestratorPrompt, marker: "❯" },
+	{ type: "type", session: "orc", text: projectById["metrics-api"].managerPrompt, marker: "❯" },
 	{ type: "pause", ms: 240 },
 	{ type: "blank", session: "orc" },
 	{ type: "line", session: "orc", tone: "fg", text: "Read(open-agents.yaml)", marker: "⏺" },
@@ -461,7 +461,7 @@ const SCRIPT: Step[] = [
 	{ type: "pause", ms: 140 },
 	{ type: "line", session: "orc", tone: "dim", text: "Started session open-agents-14/digest-runbook", marker: "⎿" },
 	{ type: "pause", ms: 180 },
-	{ type: "line", session: "opencode", tone: "working", text: "delegated from orchestrator: fix alert digest retry behavior", marker: "❯" },
+	{ type: "line", session: "opencode", tone: "working", text: "delegated from manager: fix alert digest retry behavior", marker: "❯" },
 	{ type: "pause", ms: 90 },
 	{ type: "line", session: "opencode", tone: "fg", text: "Edit(internal/alerts/retry.go)", marker: "⏺" },
 	{ type: "pause", ms: 80 },
@@ -473,7 +473,7 @@ const SCRIPT: Step[] = [
 	{ type: "pause", ms: 80 },
 	{ type: "line", session: "opencode", tone: "dim", text: "Need persisted attempt token for dedupe", marker: "⎿" },
 	{ type: "pause", ms: 180 },
-	{ type: "line", session: "codex", tone: "working", text: "delegated from orchestrator: add digest query coverage", marker: "❯" },
+	{ type: "line", session: "codex", tone: "working", text: "delegated from manager: add digest query coverage", marker: "❯" },
 	{ type: "pause", ms: 90 },
 	{ type: "line", session: "codex", tone: "fg", text: "Write(internal/alerts/digest_query_test.go)", marker: "⏺" },
 	{ type: "pause", ms: 80 },
@@ -485,7 +485,7 @@ const SCRIPT: Step[] = [
 	{ type: "pause", ms: 80 },
 	{ type: "line", session: "codex", tone: "dim", text: "Query suite green, opening PR next", marker: "⎿" },
 	{ type: "pause", ms: 180 },
-	{ type: "line", session: "cursor", tone: "working", text: "delegated from orchestrator: refresh the alert digest runbook", marker: "❯" },
+	{ type: "line", session: "cursor", tone: "working", text: "delegated from manager: refresh the alert digest runbook", marker: "❯" },
 	{ type: "pause", ms: 90 },
 	{ type: "line", session: "cursor", tone: "fg", text: "Edit(docs/runbooks/alert-digests.md)", marker: "⏺" },
 	{ type: "pause", ms: 80 },
@@ -527,7 +527,7 @@ const SCRIPT: Step[] = [
 	{ type: "cursor", target: "project-northstar-web", click: true },
 	{ type: "project", project: "northstar-web" },
 	{ type: "pause", ms: 180 },
-	{ type: "type", session: "orc", text: projectById["northstar-web"].orchestratorPrompt, marker: "❯" },
+	{ type: "type", session: "orc", text: projectById["northstar-web"].managerPrompt, marker: "❯" },
 	{ type: "pause", ms: 240 },
 	{ type: "blank", session: "orc" },
 	{ type: "line", session: "orc", tone: "fg", text: "Read(open-agents.yaml)", marker: "⏺" },
@@ -552,7 +552,7 @@ const SCRIPT: Step[] = [
 	{ type: "pause", ms: 140 },
 	{ type: "line", session: "orc", tone: "dim", text: "Started session open-agents-16/launch-docs", marker: "⎿" },
 	{ type: "pause", ms: 180 },
-	{ type: "line", session: "opencode", tone: "working", text: "delegated from orchestrator: refresh the pricing cards", marker: "❯" },
+	{ type: "line", session: "opencode", tone: "working", text: "delegated from manager: refresh the pricing cards", marker: "❯" },
 	{ type: "pause", ms: 90 },
 	{ type: "line", session: "opencode", tone: "fg", text: "Edit(app/pricing/cards.tsx)", marker: "⏺" },
 	{ type: "pause", ms: 80 },
@@ -564,7 +564,7 @@ const SCRIPT: Step[] = [
 	{ type: "pause", ms: 80 },
 	{ type: "line", session: "opencode", tone: "dim", text: "Need consistent vertical rhythm with new cards", marker: "⎿" },
 	{ type: "pause", ms: 180 },
-	{ type: "line", session: "codex", tone: "working", text: "delegated from orchestrator: run mobile QA for pricing", marker: "❯" },
+	{ type: "line", session: "codex", tone: "working", text: "delegated from manager: run mobile QA for pricing", marker: "❯" },
 	{ type: "pause", ms: 90 },
 	{ type: "line", session: "codex", tone: "fg", text: "Bash(pnpm test mobile-pricing -- --viewport=390)", marker: "⏺" },
 	{ type: "pause", ms: 80 },
@@ -576,7 +576,7 @@ const SCRIPT: Step[] = [
 	{ type: "pause", ms: 80 },
 	{ type: "line", session: "codex", tone: "dim", text: "430px and 768px both clean", marker: "⎿" },
 	{ type: "pause", ms: 180 },
-	{ type: "line", session: "cursor", tone: "working", text: "delegated from orchestrator: polish the launch docs", marker: "❯" },
+	{ type: "line", session: "cursor", tone: "working", text: "delegated from manager: polish the launch docs", marker: "❯" },
 	{ type: "pause", ms: 90 },
 	{ type: "line", session: "cursor", tone: "fg", text: "Edit(docs/launch/pricing-refresh.md)", marker: "⏺" },
 	{ type: "pause", ms: 80 },
@@ -858,11 +858,11 @@ export function DelegationDemo() {
 					{ id: "r10", tone: "fg", text: "Update the auth setup guide.", marker: "❯" },
 					{ id: "r11", tone: "error", text: "Decision needed: PKCE or implicit flow?", marker: "⏺" },
 				],
-				[sessionKey("metrics-api", "orc")]: [{ id: "r12", tone: "fg", text: projectById["metrics-api"].orchestratorPrompt, marker: "❯" }],
+				[sessionKey("metrics-api", "orc")]: [{ id: "r12", tone: "fg", text: projectById["metrics-api"].managerPrompt, marker: "❯" }],
 				[sessionKey("metrics-api", "opencode")]: [{ id: "r13", tone: "fg", text: "Fix alert digest retry behavior.", marker: "❯" }],
 				[sessionKey("metrics-api", "codex")]: [{ id: "r14", tone: "fg", text: "Add digest query coverage.", marker: "❯" }],
 				[sessionKey("metrics-api", "cursor")]: [{ id: "r15", tone: "fg", text: "Update the alert digest runbook.", marker: "❯" }],
-				[sessionKey("northstar-web", "orc")]: [{ id: "r16", tone: "fg", text: projectById["northstar-web"].orchestratorPrompt, marker: "❯" }],
+				[sessionKey("northstar-web", "orc")]: [{ id: "r16", tone: "fg", text: projectById["northstar-web"].managerPrompt, marker: "❯" }],
 				[sessionKey("northstar-web", "opencode")]: [{ id: "r17", tone: "fg", text: "Refresh the pricing cards.", marker: "❯" }],
 				[sessionKey("northstar-web", "codex")]: [{ id: "r18", tone: "error", text: "Decision needed: stack CTA buttons at 390px?", marker: "⏺" }],
 				[sessionKey("northstar-web", "cursor")]: [{ id: "r19", tone: "dim", text: "Docs branch ready for review", marker: "⎿" }],
@@ -1160,7 +1160,7 @@ function PreviewTopbar({
 	const activeWorker = active === "orc" ? null : workerFor(project.id, active);
 	const meta =
 		active === "orc"
-			? { ...sessionMeta.orc, path: project.orchestratorPath, tabLabel: project.name }
+			? { ...sessionMeta.orc, path: project.managerPath, tabLabel: project.name }
 			: { ...sessionMeta[active], path: activeWorker!.path, tabLabel: activeWorker!.task };
 	const dotColor = active === "orc" ? status.working : statuses[active].tone;
 	const shouldPulse = active === "orc" || statuses[active].breathe;
@@ -1211,7 +1211,7 @@ function TerminalPane({
 }) {
 	const meta =
 		active === "orc"
-			? { ...sessionMeta.orc, path: project.orchestratorPath, tabLabel: project.name }
+			? { ...sessionMeta.orc, path: project.managerPath, tabLabel: project.name }
 			: { ...sessionMeta[active], path: workerFor(project.id, active).path, tabLabel: workerFor(project.id, active).task };
 	const scrollRef = useRef<HTMLDivElement>(null);
 

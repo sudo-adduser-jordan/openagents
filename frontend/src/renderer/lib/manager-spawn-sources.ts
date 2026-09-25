@@ -1,4 +1,4 @@
-export const ORCHESTRATOR_SPAWN_SOURCES = [
+export const MANAGER_SPAWN_SOURCES = [
 	"board",
 	"restore_dialog",
 	"topbar",
@@ -10,4 +10,4 @@ export const ORCHESTRATOR_SPAWN_SOURCES = [
 	"command_palette",
 ] as const;
 
-export type OrchestratorSpawnSource = (typeof ORCHESTRATOR_SPAWN_SOURCES)[number];
+export type ManagerSpawnSource = (typeof MANAGER_SPAWN_SOURCES)[number];

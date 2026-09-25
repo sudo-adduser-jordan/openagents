@@ -136,13 +136,13 @@ func (m *Service) List(ctx context.Context) ([]Summary, error) {
 			folderMissing = !exists
 		}
 		out = append(out, Summary{
-			ID:                domain.ProjectID(row.ID),
-			Name:              displayName(row),
-			Path:              row.Path,
-			Kind:              row.Kind.WithDefault(),
-			SessionPrefix:     resolveSessionPrefix(row),
-			OrchestratorAgent: row.Config.Orchestrator.Harness,
-			FolderMissing:     folderMissing,
+			ID:            domain.ProjectID(row.ID),
+			Name:          displayName(row),
+			Path:          row.Path,
+			Kind:          row.Kind.WithDefault(),
+			SessionPrefix: resolveSessionPrefix(row),
+			ManagerAgent:  row.Config.Manager.Harness,
+			FolderMissing: folderMissing,
 		})
 	}
 	return out, nil

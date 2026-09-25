@@ -210,7 +210,7 @@ describe("TaskComposer", () => {
 
 		await waitFor(() =>
 			expect(h.post).toHaveBeenCalledWith(
-				"/api/v1/orchestrators/delegate",
+				"/api/v1/managers/delegate",
 				expect.objectContaining({ body: expect.objectContaining({ projectId: "proj-1", brief: "" }) }),
 			),
 		);
@@ -291,13 +291,13 @@ describe("TaskComposer", () => {
 
 		await waitFor(() => expect(onSubmittingChange).toHaveBeenLastCalledWith(true));
 		expect(h.post).toHaveBeenCalledWith(
-			"/api/v1/orchestrators/delegate",
+			"/api/v1/managers/delegate",
 			expect.objectContaining({
 				body: expect.not.objectContaining({ attachments: expect.anything() }),
 			}),
 		);
 		expect(h.post).toHaveBeenCalledWith(
-			"/api/v1/orchestrators/delegate",
+			"/api/v1/managers/delegate",
 			expect.objectContaining({
 				body: expect.objectContaining({ projectId: "proj-1", brief: "Do the thing" }),
 			}),
@@ -598,7 +598,7 @@ describe("TaskComposer", () => {
 		fireEvent.click(fallback);
 		await waitFor(() => expect(onCreated).toHaveBeenCalledWith("sess-tui"));
 		expect(h.post).toHaveBeenLastCalledWith(
-			"/api/v1/orchestrators/delegate",
+			"/api/v1/managers/delegate",
 			expect.objectContaining({ body: expect.objectContaining({ mode: "tui" }) }),
 		);
 	});
@@ -637,7 +637,7 @@ describe("TaskComposer", () => {
 		fireEvent.click(fallback);
 		await waitFor(() => expect(onCreated).toHaveBeenCalledWith("sess-pi"));
 		expect(h.post).toHaveBeenLastCalledWith(
-			"/api/v1/orchestrators/delegate",
+			"/api/v1/managers/delegate",
 			expect.objectContaining({
 				body: expect.objectContaining({ approvalMode: "bypass-permissions" }),
 			}),
@@ -682,7 +682,7 @@ describe("TaskComposer", () => {
 
 		await waitFor(() =>
 			expect(h.post).toHaveBeenCalledWith(
-				"/api/v1/orchestrators/delegate",
+				"/api/v1/managers/delegate",
 				expect.objectContaining({ body: expect.objectContaining({ agent: "codex" }) }),
 			),
 		);
@@ -929,7 +929,7 @@ describe("TaskComposer", () => {
 
 		await waitFor(() =>
 			expect(h.post).toHaveBeenCalledWith(
-				"/api/v1/orchestrators/delegate",
+				"/api/v1/managers/delegate",
 				expect.objectContaining({
 					body: expect.objectContaining({ model: "gpt-5.1" }),
 				}),

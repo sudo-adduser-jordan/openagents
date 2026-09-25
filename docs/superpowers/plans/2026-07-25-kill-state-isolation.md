@@ -69,12 +69,12 @@ Update the existing render site:
 <TopbarKillButton
 	key={session.id}
 	session={session}
-	orchestratorId={orchestrator?.id}
-	onKilled={(workspaceId, orchestratorId) => {
-		if (orchestratorId) {
+	managerId={manager?.id}
+	onKilled={(workspaceId, managerId) => {
+		if (managerId) {
 			void navigate({
 				to: "/projects/$projectId/sessions/$sessionId",
-				params: { projectId: workspaceId, sessionId: orchestratorId },
+				params: { projectId: workspaceId, sessionId: managerId },
 			});
 			return;
 		}

@@ -453,11 +453,11 @@ func TestReconcileLive_ChatFailureAfterGenerationClaimLeavesSessionExited(t *tes
 	}
 }
 
-func TestRestoreTerminatedChatOrchestratorAfterCompatibilityRecoveryKeepsIdentity(t *testing.T) {
+func TestRestoreTerminatedChatManagerAfterCompatibilityRecoveryKeepsIdentity(t *testing.T) {
 	launcher := &recordingLauncher{startErr: fmt.Errorf("read Codex version: exit status 127: %w", ports.ErrChatDriverIncompatible)}
 	m, st, rt := newChatManager(t, launcher)
 	rec := domain.SessionRecord{
-		ID: "mer-176", ProjectID: chatTestProject, Kind: domain.KindOrchestrator,
+		ID: "mer-176", ProjectID: chatTestProject, Kind: domain.KindManager,
 		Harness: domain.HarnessOpenCode, Mode: domain.SessionModeChat,
 		IsTerminated: true, Activity: domain.Activity{State: domain.ActivityExited},
 		Metadata: domain.SessionMetadata{
@@ -473,7 +473,7 @@ func TestRestoreTerminatedChatOrchestratorAfterCompatibilityRecoveryKeepsIdentit
 	afterFailure := st.sessions[rec.ID]
 	if !afterFailure.IsTerminated || afterFailure.Metadata.ProviderConversationID != rec.Metadata.ProviderConversationID ||
 		afterFailure.Metadata.WorkspacePath != rec.Metadata.WorkspacePath {
-		t.Fatalf("failed restore changed recoverable orchestrator: %+v", afterFailure)
+		t.Fatalf("failed restore changed recoverable manager: %+v", afterFailure)
 	}
 
 	launcher.startErr = nil
@@ -482,7 +482,7 @@ func TestRestoreTerminatedChatOrchestratorAfterCompatibilityRecoveryKeepsIdentit
 		t.Fatalf("RestoreWithMode after dependency recovery: %v", err)
 	}
 	if result.Session.ID != rec.ID || result.Session.IsTerminated || result.Mode != RestoreModeNative {
-		t.Fatalf("restored orchestrator = %+v mode=%q, want original live session with native resume", result.Session, result.Mode)
+		t.Fatalf("restored manager = %+v mode=%q, want original live session with native resume", result.Session, result.Mode)
 	}
 	resumed := launcher.started[len(launcher.started)-1]
 	if resumed.ProviderConversationID != rec.Metadata.ProviderConversationID || rt.created != 0 {
@@ -511,7 +511,7 @@ func TestHistoricalChatHandoffRequiresLatestCompletedMatchingTransition(t *testi
 		}
 	}
 	record := domain.SessionRecord{
-		ID: sessionID, ProjectID: chatTestProject, Kind: domain.KindOrchestrator,
+		ID: sessionID, ProjectID: chatTestProject, Kind: domain.KindManager,
 		Harness: domain.HarnessOpenCode, Mode: domain.SessionModeChat, IsTerminated: true,
 		Metadata: domain.SessionMetadata{ProviderConversationID: provider},
 	}
@@ -595,7 +595,7 @@ func TestHistoricalChatHandoffRequiresLatestCompletedMatchingTransition(t *testi
 	})
 }
 
-func TestRestoreTerminatedChatOrchestratorPassesProvenProviderBoundary(t *testing.T) {
+func TestRestoreTerminatedChatManagerPassesProvenProviderBoundary(t *testing.T) {
 	const sessionID = domain.SessionID("mer-248")
 	st := &historicalChatRestoreStore{
 		transitionStore: newTransitionStore(),
@@ -610,11 +610,11 @@ func TestRestoreTerminatedChatOrchestratorPassesProvenProviderBoundary(t *testin
 	}
 	st.projects["mer"] = domain.ProjectRecord{ID: "mer", Config: testRoleAgents()}
 	rec := domain.SessionRecord{
-		ID: sessionID, ProjectID: chatTestProject, Kind: domain.KindOrchestrator,
+		ID: sessionID, ProjectID: chatTestProject, Kind: domain.KindManager,
 		Harness: domain.HarnessOpenCode, Mode: domain.SessionModeChat, IsTerminated: true,
 		Activity: domain.Activity{State: domain.ActivityExited},
 		Metadata: domain.SessionMetadata{
-			Branch: "open-agents/orchestrator", WorkspacePath: "/ws/mer-248",
+			Branch: "open-agents/manager", WorkspacePath: "/ws/mer-248",
 			ProviderConversationID: "native-248",
 		},
 	}
@@ -1021,7 +1021,7 @@ func TestChatSpawnStartsControllerAndNoRuntime(t *testing.T) {
 
 	rec, _, _, err := mgr.Spawn(context.Background(), ports.SpawnConfig{
 		ProjectID:     chatTestProject,
-		Kind:          domain.KindOrchestrator,
+		Kind:          domain.KindManager,
 		Harness:       domain.HarnessOpenCode,
 		Prompt:        "coordinate the work",
 		RequestedMode: domain.SessionModeChat,
@@ -1049,7 +1049,7 @@ func TestChatSpawnStartsControllerAndNoRuntime(t *testing.T) {
 	}
 	// The controller must receive the session env, which is what carries the
 	// HookPATH pin in production and is how the agent's own shell commands find
-	// `open-agents` — the mechanism an orchestrator delegates through.
+	// `open-agents` — the mechanism a manager delegates through.
 	//
 	// The PATH value itself is not asserted here: HookPATH deliberately declines
 	// to pin when the running binary is not named "open-agents", which is always the case
@@ -1177,7 +1177,7 @@ func TestChatSpawnCommitsReservedProviderBoundaryWithLifecycleOwner(t *testing.T
 	lcm := mgr.lcm.(*fakeLCM)
 
 	if _, _, _, err := mgr.Spawn(context.Background(), ports.SpawnConfig{
-		ProjectID: chatTestProject, Kind: domain.KindOrchestrator, Harness: domain.HarnessOpenCode,
+		ProjectID: chatTestProject, Kind: domain.KindManager, Harness: domain.HarnessOpenCode,
 		RequestedMode: domain.SessionModeChat,
 	}); err != nil {
 		t.Fatalf("Spawn: %v", err)
@@ -1328,7 +1328,7 @@ func TestRestoreResumesChatRatherThanRelaunchingATerminal(t *testing.T) {
 	}
 }
 
-// `open-agents send` and orchestrator-to-worker relay both go through Manager.Send. A chat
+// `open-agents send` and manager-to-worker relay both go through Manager.Send. A chat
 // session has no pane to type into, so without a mode branch the send reached the
 // runtime guard and was refused as "missing runtime handles" — which is true of
 // the handles and wrong about the session, and left chat workers unreachable by
@@ -1349,10 +1349,10 @@ func TestSendRoutesIntoTheChatConversation(t *testing.T) {
 		t.Fatalf("Spawn: %v", err)
 	}
 
-	if err := mgr.Send(ctx, rec.ID, "relayed from an orchestrator", nil); err != nil {
+	if err := mgr.Send(ctx, rec.ID, "relayed from a manager", nil); err != nil {
 		t.Fatalf("Send: %v", err)
 	}
-	if len(launcher.relayed) != 1 || launcher.relayed[0] != "relayed from an orchestrator" {
+	if len(launcher.relayed) != 1 || launcher.relayed[0] != "relayed from a manager" {
 		t.Fatalf("relayed = %v, want the message routed to the conversation", launcher.relayed)
 	}
 	// The initial prompt is a different thing and must not be conflated with it.

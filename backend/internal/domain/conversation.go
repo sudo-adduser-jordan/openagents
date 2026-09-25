@@ -25,7 +25,7 @@ import (
 // maintains a second independently writable model transcript.
 
 // ConversationScope says whether a conversation belongs to a project (the
-// orchestrator narrative, which outlives any single orchestrator session) or to
+// manager narrative, which outlives any single manager session) or to
 // one session (a worker).
 type ConversationScope string
 
@@ -36,7 +36,7 @@ const (
 )
 
 // ConversationContextResetProviderItemID returns the durable identity of the
-// hidden activity that separates a fresh project orchestrator context from the
+// hidden activity that separates a fresh project manager context from the
 // project conversation history that came before it.
 func ConversationContextResetProviderItemID(session SessionID) string {
 	return "open-agents-context-reset:" + string(session)
@@ -150,7 +150,7 @@ type ConversationRecord struct {
 	ID    string            `json:"id"`
 	Scope ConversationScope `json:"scope"`
 	// ProjectID is set for both scopes. SessionID is the session currently
-	// controlling the conversation; for project-scoped orchestrators it changes
+	// controlling the conversation; for project-scoped managers it changes
 	// on clean replacement while the conversation identity remains stable.
 	ProjectID ProjectID `json:"projectId"`
 	SessionID SessionID `json:"sessionId,omitempty"`
@@ -484,7 +484,7 @@ type ConversationTurn struct {
 	// inside the provider ownership epoch that created them.
 	BranchID string `json:"-"`
 	// HandledBySessionID is the Open Agents session whose controller ran the turn. For a
-	// project-scoped conversation this changes when the orchestrator is
+	// project-scoped conversation this changes when the manager is
 	// replaced; the conversation identity does not.
 	HandledBySessionID SessionID `json:"handledBySessionId"`
 	// ProviderTurnID correlates back to the provider's own turn. Opaque.

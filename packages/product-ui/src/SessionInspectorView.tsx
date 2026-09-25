@@ -247,8 +247,8 @@ export function SessionInspectorSummaryView({
 	reviews?: ReactNode;
 	usage?: ReactNode;
 	/**
-	 * The sessions this orchestrator spawned. Rendered first: for an
-	 * orchestrator, its workers are the summary's primary content.
+	 * The sessions this manager spawned. Rendered first: for an
+	 * manager, its workers are the summary's primary content.
 	 */
 	workers?: ReactNode;
 }) {

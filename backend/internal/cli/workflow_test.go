@@ -70,6 +70,27 @@ func TestPlan_Success(t *testing.T) {
 	}
 }
 
+func TestManage_Success(t *testing.T) {
+	cfg := setConfigEnv(t)
+	srv, capture := workflowModeServer(t, func(w http.ResponseWriter, _ *http.Request) {
+		_, _ = io.WriteString(w, `{"ok":true,"sessionId":"demo-1","workflowMode":"manager","session":{"id":"demo-1","projectId":"demo","kind":"manager"}}`)
+	})
+	writeRunFileFor(t, cfg, srv)
+
+	out, errOut, err := executeCLI(t, Deps{
+		ProcessAlive: func(int) bool { return true },
+	}, "manage", "demo-1")
+	if err != nil {
+		t.Fatalf("open-agents manage failed: %v\nstderr=%s", err, errOut)
+	}
+	if capture.body["workflowMode"] != "manager" {
+		t.Fatalf("request body = %#v, want workflowMode manager", capture.body)
+	}
+	if !strings.Contains(out, "session demo-1 set to manager") {
+		t.Fatalf("unexpected manage output:\n%s", out)
+	}
+}
+
 func TestBuild_Success(t *testing.T) {
 	cfg := setConfigEnv(t)
 	srv, capture := workflowModeServer(t, func(w http.ResponseWriter, _ *http.Request) {

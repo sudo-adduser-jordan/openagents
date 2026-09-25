@@ -48,7 +48,7 @@ followed by a space:
 - `open-agents hooks`
 - `open-agents session ls`
 - `open-agents session get`
-- `open-agents orchestrator ls`
+- `open-agents manager ls`
 - `open-agents status`
 - `open-agents project ls`
 - `open-agents project get`
@@ -111,7 +111,7 @@ internal/read-only commands such as:
 - `open-agents session get`
 - `open-agents project ls`
 - `open-agents project get`
-- `open-agents orchestrator ls`
+- `open-agents manager ls`
 - `open-agents hooks`
 - `open-agents pty-host`
 
@@ -279,7 +279,7 @@ WHERE NOT (
             'open-agents hooks',
             'open-agents session ls',
             'open-agents session get',
-            'open-agents orchestrator ls',
+            'open-agents manager ls',
             'open-agents status',
             'open-agents project ls',
             'open-agents project get',
@@ -288,7 +288,7 @@ WHERE NOT (
         OR startsWith(normalized_command_path, 'open-agents hooks ')
         OR startsWith(normalized_command_path, 'open-agents session ls ')
         OR startsWith(normalized_command_path, 'open-agents session get ')
-        OR startsWith(normalized_command_path, 'open-agents orchestrator ls ')
+        OR startsWith(normalized_command_path, 'open-agents manager ls ')
         OR startsWith(normalized_command_path, 'open-agents status ')
         OR startsWith(normalized_command_path, 'open-agents project ls ')
         OR startsWith(normalized_command_path, 'open-agents project get ')

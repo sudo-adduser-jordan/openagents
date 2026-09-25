@@ -159,8 +159,8 @@ func (w *Workspace) managedPath(cfg ports.WorkspaceConfig) (string, error) {
 		return "", err
 	}
 	roleDir := "workers"
-	if cfg.Kind == domain.KindOrchestrator {
-		roleDir = "orchestrators"
+	if cfg.Kind == domain.KindManager {
+		roleDir = "managers"
 	}
 	return w.validateManagedPath(filepath.Join(w.managedRoot, string(cfg.ProjectID), roleDir, string(cfg.SessionID)))
 }

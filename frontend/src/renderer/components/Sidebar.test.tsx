@@ -93,7 +93,7 @@ vi.mock("@dnd-kit/core", async (importOriginal) => {
 });
 
 vi.mock("../lib/rename-session", () => ({ renameSession: renameSessionMock }));
-vi.mock("../lib/spawn-orchestrator", () => ({ spawnOrchestrator: spawnMock }));
+vi.mock("../lib/spawn-manager", () => ({ spawnManager: spawnMock }));
 vi.mock("../hooks/useCommandPaletteEnabled", () => ({
 	useCommandPaletteEnabled: () => commandPaletteEnabled.current,
 }));
@@ -145,7 +145,7 @@ const workspace: WorkspaceSummary = {
 	id: "proj-1",
 	name: "Project One",
 	path: "/repo/project-one",
-	orchestratorAgent: "opencode",
+	managerAgent: "opencode",
 	sessions: [],
 };
 
@@ -179,7 +179,7 @@ function sidebarPR(overrides: Partial<WorkspaceSession["prs"][number]> = {}): Wo
 type CreateProjectInput = {
 	path: string;
 	workerAgent: string;
-	orchestratorAgent: string;
+	managerAgent: string;
 	trackerIntake?: unknown;
 	asWorkspace?: boolean;
 };
@@ -188,7 +188,7 @@ type CloneProjectHandler = (input: {
 	remoteUrl: string;
 	destinationParent: string;
 	workerAgent: string;
-	orchestratorAgent: string;
+	managerAgent: string;
 	trackerIntake?: unknown;
 	signal?: AbortSignal;
 }) => Promise<void>;
@@ -320,7 +320,7 @@ async function openCreateProjectDialog(
 	await user.click(screen.getByRole("button", { name: /^Import an existing project$/i }));
 	await screen.findByRole("dialog", { name: "Set up project" });
 	await chooseOption(screen.getByRole("combobox", { name: "Worker agent" }), "OpenCode");
-	await chooseOption(screen.getByRole("combobox", { name: "Orchestrator agent" }), "OpenCode");
+	await chooseOption(screen.getByRole("combobox", { name: "Manager agent" }), "OpenCode");
 	return user;
 }
 
@@ -479,24 +479,24 @@ describe("Sidebar", () => {
 		expect(content).not.toContainElement(screen.getByText("Projects"));
 	});
 
-	it("opens project settings instead of spawning when no orchestrator agent is configured", async () => {
+	it("opens project settings instead of spawning when no manager agent is configured", async () => {
 		const user = userEvent.setup();
-		renderSidebar({ workspaces: [{ ...workspace, orchestratorAgent: undefined }] });
+		renderSidebar({ workspaces: [{ ...workspace, managerAgent: undefined }] });
 
-		await user.click(screen.getByRole("button", { name: "Spawn Project One orchestrator" }));
+		await user.click(screen.getByRole("button", { name: "Spawn Project One manager" }));
 
 		expect(useUiStore.getState().settingsModal).toEqual({ scope: "project", projectId: "proj-1" });
 		expect(navigateMock).not.toHaveBeenCalled();
 		expect(spawnMock).not.toHaveBeenCalled();
 	});
 
-	it("does not spawn from the sidebar while the orchestrator is provisioning", async () => {
+	it("does not spawn from the sidebar while the manager is provisioning", async () => {
 		const user = userEvent.setup();
 		useUiStore.getState().setProjectProvisioning("proj-1", true);
 		try {
 			renderSidebar();
 
-			const spawnButton = screen.getByRole("button", { name: "Spawn Project One orchestrator" });
+			const spawnButton = screen.getByRole("button", { name: "Spawn Project One manager" });
 			expect(spawnButton).toBeDisabled();
 			await user.click(spawnButton);
 
@@ -648,11 +648,11 @@ describe("Sidebar", () => {
 		expect(await screen.findByRole("dialog", { name: "Add a project" })).toBeInTheDocument();
 	});
 
-	it("reveals orchestrator and kebab buttons on the project row (no dashboard button)", () => {
+	it("reveals manager and kebab buttons on the project row (no dashboard button)", () => {
 		renderSidebar();
 
 		expect(screen.queryByLabelText("Open Project One dashboard")).not.toBeInTheDocument();
-		expect(screen.getByLabelText("Spawn Project One orchestrator")).toBeInTheDocument();
+		expect(screen.getByLabelText("Spawn Project One manager")).toBeInTheDocument();
 		expect(screen.getByLabelText("Project actions for Project One")).toBeInTheDocument();
 	});
 
@@ -662,7 +662,7 @@ describe("Sidebar", () => {
 		const disclosure = screen.getByRole("button", { name: "Toggle Project One sessions" });
 		expect(disclosure.tagName).toBe("BUTTON");
 		expect(disclosure).toHaveProperty("tabIndex", 0);
-		expect(screen.getByLabelText("Spawn Project One orchestrator")).toHaveProperty("tabIndex", 0);
+		expect(screen.getByLabelText("Spawn Project One manager")).toHaveProperty("tabIndex", 0);
 		expect(screen.getByLabelText("Project actions for Project One")).toHaveProperty("tabIndex", 0);
 		expect(screen.getByLabelText("Pin session")).toHaveProperty("tabIndex", 0);
 		expect(screen.queryByRole("button", { name: "Rename fix login" })).not.toBeInTheDocument();
@@ -735,7 +735,7 @@ describe("Sidebar", () => {
 			id: "proj-2",
 			name: "Project Two",
 			path: "/repo/project-two",
-			orchestratorAgent: "opencode",
+			managerAgent: "opencode",
 			sessions: [{ ...session, id: "proj-2-1", workspaceId: "proj-2", workspaceName: "Project Two", title: "other task" }],
 		};
 		renderSidebar({
@@ -816,18 +816,18 @@ describe("Sidebar", () => {
 		expect(navigateMock).toHaveBeenCalledWith({ to: "/projects/$projectId", params: { projectId: "proj-1" } });
 	});
 
-	it("returns to the project board from an orchestrator session without collapsing", async () => {
+	it("returns to the project board from a manager session without collapsing", async () => {
 		const user = userEvent.setup();
-		const orchestrator: WorkspaceSession = {
+		const manager: WorkspaceSession = {
 			...session,
 			id: "proj-1-orc",
-			title: "Orchestrator",
-			kind: "orchestrator",
+			title: "Manager",
+			kind: "manager",
 		};
 		mockParams.projectId = "proj-1";
 		mockParams.sessionId = "proj-1-orc";
 		renderSidebar({
-			workspaces: [{ ...workspace, sessions: [orchestrator, session] }],
+			workspaces: [{ ...workspace, sessions: [manager, session] }],
 		});
 
 		expect(screen.getByLabelText("Open fix login")).toBeInTheDocument();
@@ -856,23 +856,23 @@ describe("Sidebar", () => {
 		expect(screen.getByText("Project One").closest("button")).toHaveAttribute("aria-expanded", "false");
 	});
 
-	it("expands a collapsed project when opening its orchestrator", async () => {
+	it("expands a collapsed project when opening its manager", async () => {
 		const user = userEvent.setup();
-		const orchestrator: WorkspaceSession = {
+		const manager: WorkspaceSession = {
 			...session,
 			id: "proj-1-orc",
-			title: "Orchestrator",
-			kind: "orchestrator",
+			title: "Manager",
+			kind: "manager",
 		};
 		renderSidebar({
-			workspaces: [{ ...workspace, sessions: [orchestrator, session] }],
+			workspaces: [{ ...workspace, sessions: [manager, session] }],
 		});
 
 		await user.click(screen.getByRole("button", { name: "Toggle Project One sessions" }));
 		expect(screen.queryByLabelText("Open fix login")).not.toBeInTheDocument();
 		expect(screen.getByText("Project One").closest("button")).toHaveAttribute("aria-expanded", "false");
 
-		await user.click(screen.getByRole("button", { name: "Open Project One orchestrator" }));
+		await user.click(screen.getByRole("button", { name: "Open Project One manager" }));
 
 		expect(navigateMock).toHaveBeenCalledWith({
 			to: "/projects/$projectId/sessions/$sessionId",
@@ -882,7 +882,7 @@ describe("Sidebar", () => {
 		expect(screen.getByText("Project One").closest("button")).toHaveAttribute("aria-expanded", "true");
 	});
 
-	it("defaults worker and orchestrator agents when creating a project", async () => {
+	it("defaults worker and manager agents when creating a project", async () => {
 		const user = userEvent.setup();
 		const onCreateProject = vi.fn().mockResolvedValue(undefined) as CreateProjectHandler;
 		window.openAgents!.app.chooseDirectory = vi.fn().mockResolvedValue("/repo/new-project");
@@ -904,7 +904,7 @@ describe("Sidebar", () => {
 				expect.objectContaining({
 					path: "/repo/new-project",
 					workerAgent: "opencode",
-					orchestratorAgent: "opencode",
+					managerAgent: "opencode",
 				}),
 			),
 		);
@@ -958,7 +958,7 @@ describe("Sidebar", () => {
 			path: "/repo/web-app",
 			clonePreparationId: "prep-web-app",
 			workerAgent: "opencode",
-			orchestratorAgent: "opencode",
+			managerAgent: "opencode",
 		})));
 		expect(onCloneProject).not.toHaveBeenCalled();
 	});
@@ -1009,7 +1009,7 @@ describe("Sidebar", () => {
 				expect.objectContaining({
 					path: "/repo/local-project",
 					workerAgent: "opencode",
-					orchestratorAgent: "opencode",
+					managerAgent: "opencode",
 				}),
 			),
 		);
@@ -1037,7 +1037,7 @@ describe("Sidebar", () => {
 		await user.click(screen.getByRole("button", { name: /^Import an existing project$/i }));
 		expect(await screen.findByRole("dialog", { name: "Set up project" })).toBeInTheDocument();
 		expect(screen.getByRole("combobox", { name: "Worker agent" })).toHaveTextContent(/opencode/i);
-		expect(screen.getByRole("combobox", { name: "Orchestrator agent" })).toHaveTextContent(/opencode/i);
+		expect(screen.getByRole("combobox", { name: "Manager agent" })).toHaveTextContent(/opencode/i);
 
 		await user.click(screen.getByRole("combobox", { name: "Worker agent" }));
 		expect((await screen.findAllByRole("option")).map((option) => option.textContent)).toEqual([
@@ -1052,7 +1052,7 @@ describe("Sidebar", () => {
 			expect(onCreateProject).toHaveBeenCalledWith(
 				expect.objectContaining({
 					workerAgent: "opencode",
-					orchestratorAgent: "opencode",
+					managerAgent: "opencode",
 				}),
 			),
 		);
@@ -1155,14 +1155,14 @@ describe("Sidebar", () => {
 		await screen.findByRole("dialog", { name: "Import workspace" });
 		await user.click(screen.getByRole("button", { name: "Continue" }));
 		await chooseOption(screen.getByRole("combobox", { name: "Worker agent" }), "OpenCode");
-		await chooseOption(screen.getByRole("combobox", { name: "Orchestrator agent" }), "OpenCode");
+		await chooseOption(screen.getByRole("combobox", { name: "Manager agent" }), "OpenCode");
 		await user.click(screen.getByRole("button", { name: "Create workspace and start" }));
 
 		await waitFor(() =>
 			expect(onCreateProject).toHaveBeenCalledWith({
 				path: "/repo/workspace",
 				workerAgent: "opencode",
-				orchestratorAgent: "opencode",
+				managerAgent: "opencode",
 				asWorkspace: true,
 			}),
 		);
@@ -1184,7 +1184,7 @@ describe("Sidebar", () => {
 		await user.click(screen.getByRole("button", { name: /^Import a workspace folder$/i }));
 		await screen.findByRole("dialog", { name: "Import workspace" });
 		await user.click(screen.getByRole("button", { name: "Continue" }));
-		await chooseOption(screen.getByRole("combobox", { name: "Orchestrator agent" }), "OpenCode");
+		await chooseOption(screen.getByRole("combobox", { name: "Manager agent" }), "OpenCode");
 		await user.click(screen.getByRole("button", { name: "Create workspace and start" }));
 
 		await waitFor(() => expect(onCreateProject).toHaveBeenCalledTimes(1));
@@ -1244,7 +1244,7 @@ describe("Sidebar", () => {
 		await user.click(screen.getByRole("button", { name: /^Import a workspace folder$/i }));
 		await screen.findByRole("dialog", { name: "Import workspace" });
 		await user.click(screen.getByRole("button", { name: "Continue" }));
-		await chooseOption(screen.getByRole("combobox", { name: "Orchestrator agent" }), "OpenCode");
+		await chooseOption(screen.getByRole("combobox", { name: "Manager agent" }), "OpenCode");
 		await user.click(screen.getByRole("button", { name: "Create workspace and start" }));
 
 		await waitFor(() => expect(useUiStore.getState().globalToast?.body).toBe("workspace not registered"));
@@ -1402,7 +1402,7 @@ describe("Sidebar", () => {
 		await user.click(screen.getByRole("button", { name: /^Import a workspace folder$/i }));
 		await screen.findByRole("dialog", { name: "Import workspace" });
 		await user.click(screen.getByRole("button", { name: "Continue" }));
-		await chooseOption(screen.getByRole("combobox", { name: "Orchestrator agent" }), "OpenCode");
+		await chooseOption(screen.getByRole("combobox", { name: "Manager agent" }), "OpenCode");
 		await user.click(screen.getByRole("button", { name: "Create workspace and start" }));
 
 		await waitFor(() => expect(useUiStore.getState().globalToast).toMatchObject({
@@ -1445,7 +1445,7 @@ describe("Sidebar", () => {
 				"If this folder needs Git setup, Open Agents will initialize it and create the first commit before starting.",
 			),
 		).toBeInTheDocument();
-		await chooseOption(screen.getByRole("combobox", { name: "Orchestrator agent" }), "OpenCode");
+		await chooseOption(screen.getByRole("combobox", { name: "Manager agent" }), "OpenCode");
 		await user.click(screen.getByRole("button", { name: "Create workspace and start" }));
 
 		await waitFor(() => expect(onCreateProject).toHaveBeenCalledTimes(1));
@@ -1481,7 +1481,7 @@ describe("Sidebar", () => {
 		await user.click(screen.getByRole("button", { name: /^Import an existing project$/i }));
 		expect(await screen.findByRole("dialog", { name: "Set up project" })).toBeInTheDocument();
 
-		await user.click(screen.getByRole("combobox", { name: "Orchestrator agent" }));
+		await user.click(screen.getByRole("combobox", { name: "Manager agent" }));
 		const options = await screen.findAllByRole("option");
 		expect(options.map((option) => option.textContent)).toEqual(["OpenCode"]);
 		expect(options[0]).not.toHaveAttribute("aria-disabled", "true");
@@ -1490,7 +1490,7 @@ describe("Sidebar", () => {
 		await user.click(screen.getByRole("button", { name: "Create and start" }));
 
 		await waitFor(() =>
-			expect(onCreateProject).toHaveBeenCalledWith(expect.objectContaining({ orchestratorAgent: "opencode" })),
+			expect(onCreateProject).toHaveBeenCalledWith(expect.objectContaining({ managerAgent: "opencode" })),
 		);
 	});
 
@@ -1521,14 +1521,14 @@ describe("Sidebar", () => {
 			error: undefined,
 		});
 
-		await chooseOption(screen.getByRole("combobox", { name: "Orchestrator agent" }), "OpenCode");
+		await chooseOption(screen.getByRole("combobox", { name: "Manager agent" }), "OpenCode");
 		await user.click(screen.getByRole("button", { name: "Create and start" }));
 
 		await waitFor(() =>
 			expect(onCreateProject).toHaveBeenCalledWith({
 				path: "/repo/new-project",
 				workerAgent: "opencode",
-				orchestratorAgent: "opencode",
+				managerAgent: "opencode",
 				trackerIntake: undefined,
 				asWorkspace: false,
 			}),

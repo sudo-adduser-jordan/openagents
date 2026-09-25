@@ -33,7 +33,7 @@ export const metadata: Metadata = {
   description: siteDescription,
   keywords: [
     "coding agents",
-    "agent orchestration",
+    "agent management",
     "parallel execution",
     "developer tools",
     "AI coding",

@@ -2785,7 +2785,7 @@ func TestProviderBoundaryRejectsSourceProviderBranchAndEdit(t *testing.T) {
 	t.Cleanup(func() { _ = svc.Stop(context.Background(), testSession) })
 
 	_, err = svc.Start(ctx, chatsvc.StartConfig{
-		SessionID: testSession, ProjectID: testProject, Kind: domain.KindOrchestrator,
+		SessionID: testSession, ProjectID: testProject, Kind: domain.KindManager,
 		Harness: domain.HarnessOpenCode, WorkspacePath: t.TempDir(),
 		ProviderScopeID: "target-provider-boundary", ControllerGeneration: "target-generation",
 		ControllerReady: func(started chatsvc.StartResult) (chatsvc.ControllerCommit, error) {

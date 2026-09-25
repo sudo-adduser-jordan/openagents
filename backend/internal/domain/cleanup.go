@@ -24,7 +24,7 @@ const (
 	// clears it. Distinct from DispositionPending, which is still auto-retrying.
 	DispositionFailed WorkspaceDisposition = "failed"
 	// DispositionNotApplicable means the session never had a workspace to release
-	// (no-worktree / spawn-failed / orchestrator terminal sessions).
+	// (no-worktree / spawn-failed / manager terminal sessions).
 	DispositionNotApplicable WorkspaceDisposition = "not_applicable"
 )
 

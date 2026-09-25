@@ -39,7 +39,7 @@ func (m *Manager) prepareLiveChatProviderHandoff(ctx context.Context, rec domain
 		return nil, errors.New("native handoff requires conversation ownership storage")
 	}
 	conversation, err := store.ConversationForSession(ctx, rec.ID)
-	if errors.Is(err, domain.ErrNoConversation) && rec.Kind == domain.KindOrchestrator {
+	if errors.Is(err, domain.ErrNoConversation) && rec.Kind == domain.KindManager {
 		if projects, ok := m.store.(interface {
 			ProjectConversation(context.Context, domain.ProjectID) (domain.ConversationRecord, error)
 		}); ok {
@@ -49,7 +49,7 @@ func (m *Manager) prepareLiveChatProviderHandoff(ctx context.Context, rec domain
 			}
 		}
 	}
-	if errors.Is(err, domain.ErrNoConversation) && rec.Kind != domain.KindOrchestrator {
+	if errors.Is(err, domain.ErrNoConversation) && rec.Kind != domain.KindManager {
 		return nil, nil // first Chat use for a worker
 	}
 	if err != nil {
@@ -64,12 +64,12 @@ func (m *Manager) prepareLiveChatProviderHandoff(ctx context.Context, rec domain
 			previous.ProjectID != rec.ProjectID || !rec.CreatedAt.After(previous.CreatedAt) {
 			return nil, fmt.Errorf("project conversation %s is owned by another session", conversation.ID)
 		}
-		current, found, err := m.activeOrchestratorSessionID(ctx, rec.ProjectID)
+		current, found, err := m.activeManagerSessionID(ctx, rec.ProjectID)
 		if err != nil {
 			return nil, err
 		}
 		if !found || current != rec.ID {
-			return nil, errors.New("only the current orchestrator may adopt project history")
+			return nil, errors.New("only the current manager may adopt project history")
 		}
 	}
 	return reserveChatProviderHandoff(ctx, store, rec, *transition, conversation)

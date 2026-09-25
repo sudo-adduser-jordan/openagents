@@ -32,7 +32,7 @@ const (
 )
 
 // Sentinel errors. Adapter-level callers should match on these via
-// errors.Is; the orchestrator's lifecycle code is intentionally insulated
+// errors.Is; the manager's lifecycle code is intentionally insulated
 // from raw HTTP status codes.
 var (
 	ErrNotFound       = errors.New("gitlab tracker: issue not found")

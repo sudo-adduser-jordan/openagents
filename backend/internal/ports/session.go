@@ -18,7 +18,7 @@ var ErrActivityProjectionContention = errors.New("activity projection contention
 type SpawnConfig struct {
 	ProjectID domain.ProjectID
 	IssueID   domain.IssueID
-	// ParentSessionID identifies the Open Agents orchestrator that requested this worker
+	// ParentSessionID identifies the Open Agents manager that requested this worker
 	// through `open-agents spawn`. The daemon validates this reference and derives any
 	// inherited settings itself; callers never supply an inherited policy.
 	ParentSessionID domain.SessionID
@@ -33,8 +33,11 @@ type SpawnConfig struct {
 	IssueContext string
 	Kind         domain.SessionKind
 	Harness      domain.AgentHarness
-	Branch       string
-	Prompt       string
+	// RequestedWorkflowMode optionally pins the new session's delivery posture.
+	// Empty applies the role default: planning for workers and manager for managers.
+	RequestedWorkflowMode domain.WorkflowMode
+	Branch                string
+	Prompt                string
 	// AgentConfig overrides the resolved project/role agent config for this
 	// single spawn. Empty fields keep the project defaults.
 	AgentConfig AgentConfig
@@ -53,7 +56,7 @@ type SpawnConfig struct {
 	RequestedMode domain.SessionMode
 
 	// DisplayName is the user-facing sidebar label. Empty falls back to the
-	// session id in the read model (e.g. orchestrator sessions).
+	// session id in the read model (e.g. manager sessions).
 	DisplayName string
 	// Attachments are files pasted or dropped into the task brief. They are
 	// written into the session worktree and referenced by path in the prompt so

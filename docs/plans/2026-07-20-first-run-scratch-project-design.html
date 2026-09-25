@@ -292,7 +292,7 @@
 							<h3>Goals</h3>
 							<ul>
 								<li>Fresh Open Agents installs show a usable Scratch project immediately.</li>
-								<li>Users can spawn orchestrator and worker agents without running <code>git init</code>.</li>
+								<li>Users can spawn manager and worker agents without running <code>git init</code>.</li>
 								<li>Each scratch session gets an isolated plain directory.</li>
 								<li>Scratch state stays inside Open Agents-managed data paths.</li>
 								<li><code>open-agents spawn</code> can fall back to scratch when it is the only active project.</li>
@@ -397,7 +397,7 @@
 							Restore scratch sessions with workspace path only; branch is required only for non-scratch projects.
 						</li>
 						<li>
-							Never stash or force-delete scratch workspaces during shutdown, reconcile, kill, cleanup, or orchestrator
+							Never stash or force-delete scratch workspaces during shutdown, reconcile, kill, cleanup, or manager
 							replacement.
 						</li>
 						<li>Preserve non-empty scratch directories and remove only empty directories during normal cleanup.</li>
@@ -447,7 +447,7 @@
 						<li>Daemon boot seeds Scratch under the configured data dir.</li>
 						<li>Scratch workspace adapter and router cover spawn, destroy, dirty preservation, and git delegation.</li>
 						<li>
-							Session manager covers branchless spawn/restore, shutdown, reconcile, cleanup, and orchestrator
+							Session manager covers branchless spawn/restore, shutdown, reconcile, cleanup, and manager
 							replacement.
 						</li>
 						<li>Workspace file service covers scratch listing/detail, traversal rejection, and symlink escapes.</li>
@@ -505,7 +505,7 @@ cd frontend && npm run test -- scratch-related files</code></pre>
 					<ol>
 						<li>A fresh database contains exactly one built-in Scratch project.</li>
 						<li>Open Agents opens to the Scratch board when Scratch is the only active project.</li>
-						<li>Users can spawn orchestrator and worker sessions without a git repo.</li>
+						<li>Users can spawn manager and worker sessions without a git repo.</li>
 						<li>Scratch sessions are isolated per session and branchless in API/UI metadata.</li>
 						<li>Scratch file inspection works without git and rejects path escapes.</li>
 						<li>Scratch shutdown, reconcile, cleanup, and replacement preserve user output.</li>

@@ -14,6 +14,7 @@ import { chatDraftScopeKey } from "../lib/chat-drafts";
 import { useFileAttachments, type FileAttachment } from "../hooks/useFileAttachments";
 
 const navigateMock = vi.hoisted(() => vi.fn());
+const setWorkflowModeMock = vi.hoisted(() => vi.fn());
 const openShellTerminalMock = vi.hoisted(() => vi.fn());
 const closeShellTerminalMock = vi.hoisted(() => vi.fn());
 const nativeFullScreenMock = vi.hoisted(() => vi.fn(() => false));
@@ -119,11 +120,11 @@ const { workspaces, workspaceQueryState, shellTerminalsState } = vi.hoisted(() =
 		title: "do the other thing",
 		branch: "open-agents/sess-2",
 	} satisfies WorkspaceSession;
-	const orchestrator = {
+	const manager = {
 		...worker,
-		id: "sess-orch",
-		kind: "orchestrator",
-		title: "orchestrate",
+		id: "sess-mgr",
+		kind: "manager",
+		title: "Manager session",
 	} satisfies WorkspaceSession;
 	const crossProjectWorker = {
 		...worker,
@@ -134,7 +135,7 @@ const { workspaces, workspaceQueryState, shellTerminalsState } = vi.hoisted(() =
 		branch: "open-agents/cross-project",
 	} satisfies WorkspaceSession;
 	const workspaces: WorkspaceSummary[] = [
-		{ id: "proj-1", name: "my-app", path: "/p", type: "main", sessions: [worker, secondWorker, orchestrator] },
+		{ id: "proj-1", name: "my-app", path: "/p", type: "main", sessions: [worker, secondWorker, manager] },
 		{ id: "proj-2", name: "other-app", path: "/q", type: "main", sessions: [crossProjectWorker] },
 	];
 	const workspaceQueryState: { data: WorkspaceSummary[] | undefined; isLoading: boolean } = {
@@ -573,6 +574,9 @@ vi.mock("../hooks/useWorkspaceQuery", () => ({
 		isLoading: workspaceQueryState.isLoading,
 	}),
 }));
+vi.mock("../hooks/useSetWorkflowMode", () => ({
+	useSetWorkflowMode: () => ({ mutate: setWorkflowModeMock }),
+}));
 // Standalone shell terminals are orthogonal to the split under test, and their
 // real hooks would need a QueryClientProvider this suite deliberately omits.
 vi.mock("../hooks/useShellTerminals", () => ({
@@ -659,8 +663,31 @@ describe("SessionView", () => {
 		return screen.getByTestId("panel-inspector").style.getPropertyValue("--open-agents-inspector-w");
 	}
 
+	it("toggles a manager between planning and manager, never worker building", () => {
+		const manager = workerSession("sess-mgr");
+		manager.workflowMode = "manager";
+		const view = render(<SessionView sessionId={manager.id} />);
+
+		fireEvent.keyDown(window, { key: "p", ctrlKey: true, shiftKey: true });
+		expect(setWorkflowModeMock).toHaveBeenLastCalledWith({
+			sessionId: "sess-mgr",
+			workflowMode: "planning",
+		});
+
+		manager.workflowMode = "planning";
+		view.rerender(<SessionView sessionId={manager.id} />);
+		fireEvent.keyDown(window, { key: "p", ctrlKey: true, shiftKey: true });
+		expect(setWorkflowModeMock).toHaveBeenLastCalledWith({
+			sessionId: "sess-mgr",
+			workflowMode: "manager",
+		});
+		expect(setWorkflowModeMock).not.toHaveBeenCalledWith(
+			expect.objectContaining({ workflowMode: "building" }),
+		);
+	});
+
 	beforeEach(() => {
-		for (const sessionId of ["sess-1", "sess-2", "sess-orch", "sess-cross-project"]) {
+		for (const sessionId of ["sess-1", "sess-2", "sess-mgr", "sess-cross-project"]) {
 			setChatDraftBoundary(sessionId, "composer", undefined);
 			setChatDraftBoundary(sessionId, "inline-edit", undefined);
 		}
@@ -677,6 +704,7 @@ describe("SessionView", () => {
 			session.status = "working";
 			session.provider = "opencode";
 			delete session.mode;
+			delete session.workflowMode;
 			session.prs = [];
 		}
 		workspaceQueryState.data = workspaces;
@@ -693,6 +721,7 @@ describe("SessionView", () => {
 		browserViewState.agentBrowserActive = false;
 		shellTerminalsState.data = [];
 		navigateMock.mockReset();
+		setWorkflowModeMock.mockReset();
 		openShellTerminalMock.mockReset();
 		openShellTerminalMock.mockImplementation((input: { projectId?: string; sessionId?: string }) => ({
 			handleId: "pending-shell:test",
@@ -884,8 +913,8 @@ describe("SessionView", () => {
 		expect(screen.getByTestId("terminal-target")).toHaveTextContent("sh-after-file");
 	});
 
-	it("does not offer a new terminal for orchestrator sessions", () => {
-		render(<SessionView sessionId="sess-orch" />);
+	it("does not offer a new terminal for manager sessions", () => {
+		render(<SessionView sessionId="sess-mgr" />);
 
 		expect(screen.queryByRole("button", { name: "New terminal" })).not.toBeInTheDocument();
 	});
@@ -897,7 +926,7 @@ describe("SessionView", () => {
 	it.each([
 		["a terminal worker", "sess-1", "tui", true],
 		["a chat worker", "sess-1", "chat", true],
-		["an orchestrator", "sess-orch", "tui", false],
+		["a manager", "sess-mgr", "tui", false],
 	] as const)("keeps the git branch out of %s session's top bar", (_label, sessionId, mode, offersNewTerminal) => {
 		workerSession(sessionId).mode = mode;
 
@@ -1090,7 +1119,7 @@ describe("SessionView", () => {
 
 	it.each([
 		["Terminal UI worker", "sess-1", "tui", "chat", "Switch to chat UI"],
-		["Terminal UI orchestrator", "sess-orch", "tui", "chat", "Switch to chat UI"],
+		["Terminal UI manager", "sess-mgr", "tui", "chat", "Switch to chat UI"],
 	] as const)("switches an idle %s directly with drain", async (_label, sessionId, mode, targetMode, buttonName) => {
 		interfaceTransitionState.status = { supported: true, targetMode };
 		const session = workerSession(sessionId);
@@ -1108,7 +1137,7 @@ describe("SessionView", () => {
 
 	it.each([
 		["worker", "sess-1"],
-		["orchestrator", "sess-orch"],
+		["manager", "sess-mgr"],
 	] as const)("switches an idle Chat %s directly to Terminal UI with drain", async (_label, sessionId) => {
 		interfaceTransitionState.status = { supported: true, targetMode: "tui" };
 		const session = workerSession(sessionId);
@@ -1195,7 +1224,7 @@ describe("SessionView", () => {
 
 	it.each([
 		["working status", "sess-1", "tui", "chat", "Switch to chat UI", "working", "idle"],
-		["needs-input status", "sess-orch", "tui", "chat", "Switch to chat UI", "needs_input", "idle"],
+		["needs-input status", "sess-mgr", "tui", "chat", "Switch to chat UI", "needs_input", "idle"],
 		["blocked activity", "sess-1", "tui", "chat", "Switch to chat UI", "idle", "blocked"],
 	] as const)("opens the switch policy dialog for %s", async (_label, sessionId, mode, targetMode, buttonName, status, activityState) => {
 		interfaceTransitionState.status = { supported: true, targetMode };
@@ -1228,9 +1257,9 @@ describe("SessionView", () => {
 
 	it.each([
 		["working status", "sess-1", "working", "idle"],
-		["needs-input status", "sess-orch", "needs_input", "idle"],
+		["needs-input status", "sess-mgr", "needs_input", "idle"],
 		["active activity", "sess-1", "idle", "active"],
-		["waiting-input activity", "sess-orch", "idle", "waiting_input"],
+		["waiting-input activity", "sess-mgr", "idle", "waiting_input"],
 		["blocked activity", "sess-1", "idle", "blocked"],
 	] as const)("asks for policy before a busy Chat session switches for %s", async (_label, sessionId, status, activityState) => {
 		interfaceTransitionState.status = { supported: true, targetMode: "tui" };
@@ -2342,7 +2371,7 @@ describe("SessionView", () => {
 
 	it.each([
 		["worker", "sess-1"],
-		["orchestrator", "sess-orch"],
+		["manager", "sess-mgr"],
 	] as const)("hides the interface switch button for %s sessions when Chat UI is unsupported", async (_label, sessionId) => {
 		interfaceTransitionState.status = { supported: false, targetMode: "chat", reasonCode: "CHAT_UNSUPPORTED" };
 		const session = workerSession(sessionId);
@@ -2900,9 +2929,9 @@ describe("SessionView", () => {
 		await waitFor(() => expect(useUiStore.getState().isSidebarOpen).toBe(true));
 	});
 
-	it("mounts the inspector in sync when navigating from an orchestrator session", () => {
-		const { rerender } = render(<SessionView sessionId="sess-orch" />);
-		expect(inspectorOpen("sess-orch")).toBe(false);
+	it("mounts the inspector in sync when navigating from a manager session", () => {
+		const { rerender } = render(<SessionView sessionId="sess-mgr" />);
+		expect(inspectorOpen("sess-mgr")).toBe(false);
 
 		act(() => useUiStore.getState().setInspectorOpen("sess-1", true));
 		rerender(<SessionView sessionId="sess-1" />);
@@ -2916,8 +2945,8 @@ describe("SessionView", () => {
 		const { rerender } = render(<SessionView sessionId="sess-1" />);
 
 		act(() => useUiStore.getState().setInspectorOpen("sess-2", false));
-		rerender(<SessionView sessionId="sess-orch" />);
-		expect(inspectorOpen("sess-orch")).toBe(false);
+		rerender(<SessionView sessionId="sess-mgr" />);
+		expect(inspectorOpen("sess-mgr")).toBe(false);
 
 		act(() => useUiStore.getState().setInspectorOpen("sess-2", false));
 		rerender(<SessionView sessionId="sess-2" />);
@@ -2929,57 +2958,57 @@ describe("SessionView", () => {
 		expect(screen.getByTestId("panel-inspector")).toHaveAttribute("data-state", "expanded");
 	});
 
-	it("starts the orchestrator Browser closed and opens it with the inspector shortcut", () => {
-		render(<SessionView sessionId="sess-orch" />);
-		expect(inspectorOpen("sess-orch")).toBe(false);
+	it("starts the manager Browser closed and opens it with the inspector shortcut", () => {
+		render(<SessionView sessionId="sess-mgr" />);
+		expect(inspectorOpen("sess-mgr")).toBe(false);
 		expect(screen.queryByTestId("inspector-collapsed-rail")).not.toBeInTheDocument();
 		expect(screen.getByRole("button", { name: "Open Browser" })).toHaveAttribute("aria-pressed", "false");
 		fireEvent.keyDown(window, { key: "B", ctrlKey: true, shiftKey: true });
-		expect(inspectorOpen("sess-orch")).toBe(true);
+		expect(inspectorOpen("sess-mgr")).toBe(true);
 		expect(screen.getByRole("button", { name: "Close Browser" })).toHaveAttribute("aria-pressed", "true");
-		expect(useUiStore.getState().inspectorSessions["sess-orch"]?.view).toBe("browser");
+		expect(useUiStore.getState().inspectorSessions["sess-mgr"]?.view).toBe("browser");
 	});
 
-	it("opens orchestrator chat files in the center without revealing Browser", async () => {
-		workerSession("sess-orch").mode = "chat";
-		render(<SessionView sessionId="sess-orch" />);
+	it("opens manager chat files in the center without revealing Browser", async () => {
+		workerSession("sess-mgr").mode = "chat";
+		render(<SessionView sessionId="sess-mgr" />);
 		fireEvent.click(screen.getByRole("button", { name: "open chat basename" }));
 		await waitFor(() => expect(screen.getByTestId("session-file-workspace")).toBeInTheDocument());
-		expect(inspectorOpen("sess-orch")).toBe(false);
-		expect(useUiStore.getState().inspectorSessions["sess-orch"]?.view).toBe("browser");
+		expect(inspectorOpen("sess-mgr")).toBe(false);
+		expect(useUiStore.getState().inspectorSessions["sess-mgr"]?.view).toBe("browser");
 	});
 
-	it("reveals the orchestrator Browser on new preview work and respects closing it", () => {
-		const orchestrator = workerSession("sess-orch");
-		const { rerender } = render(<SessionView sessionId="sess-orch" />);
-		orchestrator.previewUrl = "https://example.com";
-		orchestrator.previewRevision = 1;
-		rerender(<SessionView sessionId="sess-orch" />);
-		expect(inspectorOpen("sess-orch")).toBe(true);
+	it("reveals the manager Browser on new preview work and respects closing it", () => {
+		const manager = workerSession("sess-mgr");
+		const { rerender } = render(<SessionView sessionId="sess-mgr" />);
+		manager.previewUrl = "https://example.com";
+		manager.previewRevision = 1;
+		rerender(<SessionView sessionId="sess-mgr" />);
+		expect(inspectorOpen("sess-mgr")).toBe(true);
 		fireEvent.click(screen.getByRole("button", { name: "Close Browser" }));
-		orchestrator.previewRevision = 2;
+		manager.previewRevision = 2;
 		browserViewState.agentBrowserActive = true;
-		rerender(<SessionView sessionId="sess-orch" />);
-		expect(inspectorOpen("sess-orch")).toBe(false);
-		const indicator = screen.getByTestId("orchestrator-browser-unseen-indicator");
+		rerender(<SessionView sessionId="sess-mgr" />);
+		expect(inspectorOpen("sess-mgr")).toBe(false);
+		const indicator = screen.getByTestId("manager-browser-unseen-indicator");
 		expect(indicator).not.toHaveClass("animate-ping");
 		browserViewState.agentBrowserActive = false;
-		rerender(<SessionView sessionId="sess-orch" />);
-		expect(screen.getByTestId("orchestrator-browser-unseen-indicator")).toBe(indicator);
+		rerender(<SessionView sessionId="sess-mgr" />);
+		expect(screen.getByTestId("manager-browser-unseen-indicator")).toBe(indicator);
 		rerender(<SessionView sessionId="sess-1" />);
-		rerender(<SessionView sessionId="sess-orch" />);
-		expect(inspectorOpen("sess-orch")).toBe(false);
-		expect(screen.getByTestId("orchestrator-browser-unseen-indicator")).toBeInTheDocument();
+		rerender(<SessionView sessionId="sess-mgr" />);
+		expect(inspectorOpen("sess-mgr")).toBe(false);
+		expect(screen.getByTestId("manager-browser-unseen-indicator")).toBeInTheDocument();
 		fireEvent.click(screen.getByRole("button", { name: "Open Browser" }));
-		expect(screen.queryByTestId("orchestrator-browser-unseen-indicator")).not.toBeInTheDocument();
-		expect(browserUnseen("sess-orch")).toBe(false);
+		expect(screen.queryByTestId("manager-browser-unseen-indicator")).not.toBeInTheDocument();
+		expect(browserUnseen("sess-mgr")).toBe(false);
 	});
 
-	it("reveals the orchestrator Browser when the agent first uses it", () => {
-		const { rerender } = render(<SessionView sessionId="sess-orch" />);
+	it("reveals the manager Browser when the agent first uses it", () => {
+		const { rerender } = render(<SessionView sessionId="sess-mgr" />);
 		browserViewState.agentBrowserActive = true;
-		rerender(<SessionView sessionId="sess-orch" />);
-		expect(inspectorOpen("sess-orch")).toBe(true);
+		rerender(<SessionView sessionId="sess-mgr" />);
+		expect(inspectorOpen("sess-mgr")).toBe(true);
 	});
 
 	it("switches the browser between its dock and the whole app window immediately", () => {

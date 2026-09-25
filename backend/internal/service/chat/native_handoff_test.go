@@ -24,7 +24,7 @@ func TestNativeChatHandoffAtomicPublication(t *testing.T) {
 		"wrong_provider": "does not match requested handle", "history_failure": "transcript unavailable",
 		"projection_failure": "CHECK constraint failed", "controller_changed": "controller ownership changed",
 		"history_changed": "handoff history changed", "owner_changed": "no longer owned by session",
-		"predecessor_revived": "not a retired predecessor", "competing_orchestrator": "competing live orchestrator",
+		"predecessor_revived": "not a retired predecessor", "competing_manager": "competing live manager",
 		"missing_boundary": "incomplete native Chat handoff reservation", "missing_provider": "incomplete native Chat handoff reservation",
 		"missing_callback": "incomplete native Chat handoff reservation", "skip_history": "incomplete native Chat handoff reservation",
 		"wrong_scope": "incomplete native Chat handoff reservation", "stale_head_before_io": "handoff conversation changed",
@@ -124,7 +124,7 @@ func TestNativeChatHandoffAtomicPublication(t *testing.T) {
 					if err := f.store.UpdateSession(ctx, rec); err != nil {
 						t.Fatal(err)
 					}
-				case "competing_orchestrator":
+				case "competing_manager":
 					rec := f.target
 					rec.CreatedAt = time.Now()
 					if _, err := f.store.CreateSession(ctx, rec); err != nil {
@@ -137,7 +137,7 @@ func TestNativeChatHandoffAtomicPublication(t *testing.T) {
 			svc := chatsvc.New(chatsvc.Options{Store: f.store, Sessions: f.store, Reader: snapshotReader(f.store), Drivers: fakeRegistry{driver: driver}, NewID: uuid.NewString})
 			t.Cleanup(func() { svc.StopAll(ctx) })
 			cfg := chatsvc.StartConfig{
-				SessionID: f.target.ID, ProjectID: testProject, Kind: domain.KindOrchestrator, Harness: domain.HarnessOpenCode,
+				SessionID: f.target.ID, ProjectID: testProject, Kind: domain.KindManager, Harness: domain.HarnessOpenCode,
 				ProviderConversationID: historicalTargetThread, ProviderHandoff: handoff,
 				ExpectedControllerOwner: f.target.ControllerOwner(),
 				ControllerReady: func(started chatsvc.StartResult) (chatsvc.ControllerCommit, error) {
@@ -239,7 +239,7 @@ func TestOrdinaryNativeResumeCannotRebindAnotherProjectOwner(t *testing.T) {
 	})
 	t.Cleanup(func() { svc.StopAll(ctx) })
 	_, err := svc.Start(ctx, chatsvc.StartConfig{
-		SessionID: f.source.ID, ProjectID: testProject, Kind: domain.KindOrchestrator,
+		SessionID: f.source.ID, ProjectID: testProject, Kind: domain.KindManager,
 		Harness: f.source.Harness, ProviderConversationID: f.source.Metadata.ProviderConversationID,
 	})
 	if err == nil || called {

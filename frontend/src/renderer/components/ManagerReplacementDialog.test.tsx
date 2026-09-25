@@ -2,15 +2,15 @@ import { act, fireEvent, render, screen } from "@testing-library/react";
 import { QueryClient } from "@tanstack/react-query";
 import { useState } from "react";
 import { describe, expect, it, vi } from "vitest";
-import type { OrchestratorReplacementFailure } from "../stores/ui-store";
-import { restartProjectOrchestrator } from "../lib/restart-orchestrator";
-import { OrchestratorReplacementDialog } from "./OrchestratorReplacementDialog";
+import type { ManagerReplacementFailure } from "../stores/ui-store";
+import { restartProjectManager } from "../lib/restart-manager";
+import { ManagerReplacementDialog } from "./ManagerReplacementDialog";
 
 const { spawnMock } = vi.hoisted(() => ({ spawnMock: vi.fn() }));
 vi.mock("@tanstack/react-router", () => ({ useNavigate: () => vi.fn() }));
-vi.mock("../lib/spawn-orchestrator", () => ({
-	spawnOrchestrator: spawnMock,
-	OrchestratorSpawnError: class extends Error {},
+vi.mock("../lib/spawn-manager", () => ({
+	spawnManager: spawnMock,
+	ManagerSpawnError: class extends Error {},
 	isChatPreflightCode: () => false,
 }));
 
@@ -23,13 +23,13 @@ describe("replacement retry focus", () => {
 		vi.spyOn(queryClient, "invalidateQueries").mockResolvedValue();
 		const navigate = vi.fn();
 		function Harness() {
-			const [error, setError] = useState<OrchestratorReplacementFailure | undefined>({ message: "Restart failed" });
+			const [error, setError] = useState<ManagerReplacementFailure | undefined>({ message: "Restart failed" });
 			const [pending, setPending] = useState(false);
-			return <OrchestratorReplacementDialog projectId="proj-1" error={error} pending={pending} workspaces={[]}
+			return <ManagerReplacementDialog projectId="proj-1" error={error} pending={pending} workspaces={[]}
 				onOpenChange={() => setError(undefined)} onRetryAsTui={vi.fn()}
-				onRetry={() => void restartProjectOrchestrator({ projectId: "proj-1", queryClient, navigate,
+				onRetry={() => void restartProjectManager({ projectId: "proj-1", queryClient, navigate,
 					setProjectRestarting: (_, value) => setPending(value),
-					setOrchestratorReplacementError: (_, value) => setError(value ?? undefined),
+					setManagerReplacementError: (_, value) => setError(value ?? undefined),
 				})} />;
 		}
 		render(<Harness />);

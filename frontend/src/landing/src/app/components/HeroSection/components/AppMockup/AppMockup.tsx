@@ -9,7 +9,7 @@ type BoardColumnId = "working" | "action" | "pending" | "merge";
 type CardTone = "default" | "review" | "blocked" | "ready";
 type ActivityState = "running" | "passed" | "failed" | "reviewing" | "waiting";
 type TrackId = "landing" | "deploy" | "stars" | "icons" | "footer";
-type ViewMode = "board" | "orchestrator";
+type ViewMode = "board" | "manager";
 
 interface PreviewCard {
 	activity: string;
@@ -1048,8 +1048,8 @@ function LayoutGridIcon({ className = "" }: { className?: string }) {
 	);
 }
 
-/** Matches frontend/src/renderer/components/icons.tsx OrchestratorIcon. */
-function OrchestratorIcon({ className = "" }: { className?: string }) {
+/** Matches frontend/src/renderer/components/icons.tsx ManagerIcon. */
+function ManagerIcon({ className = "" }: { className?: string }) {
 	return (
 		<svg className={className} viewBox="0 0 24 24" fill="none" aria-hidden="true">
 			<circle cx="12" cy="4" r="2" stroke="currentColor" strokeWidth="2" />
@@ -1405,7 +1405,7 @@ function Sidebar({ cards }: { cards: PreviewCard[] }) {
 							<LayoutGridIcon className="h-4 w-4" />
 						</ProjectActionIcon>
 						<ProjectActionIcon>
-							<OrchestratorIcon className="h-4 w-4" />
+							<ManagerIcon className="h-4 w-4" />
 						</ProjectActionIcon>
 						<ProjectActionIcon>
 							<MoreVerticalIcon className="h-4 w-4" />
@@ -1465,7 +1465,7 @@ function BoardChrome({ viewMode }: { viewMode: ViewMode }) {
 	return (
 		<div className="flex h-10 shrink-0 items-center gap-2 border-b border-[var(--preview-border-strong)] px-4">
 			<div className="min-w-0 truncate text-[16px] font-semibold tracking-tight leading-none text-[var(--preview-foreground)]">
-				{viewMode === "orchestrator" ? "Orchestrator" : "open-agents"}
+				{viewMode === "manager" ? "Manager" : "open-agents"}
 			</div>
 			<div className="min-w-0 flex-1" />
 				<span
@@ -1479,8 +1479,8 @@ function BoardChrome({ viewMode }: { viewMode: ViewMode }) {
 				aria-hidden="true"
 				className="inline-flex h-[32px] items-center gap-1.5 rounded-md bg-[var(--preview-primary)] px-3 text-[12px] font-semibold leading-none text-[var(--preview-primary-foreground)]"
 			>
-				<OrchestratorIcon className="h-3.5 w-3.5" />
-				Orchestrator
+				<ManagerIcon className="h-3.5 w-3.5" />
+				Manager
 			</span>
 			<span
 				aria-hidden="true"
@@ -1786,7 +1786,7 @@ function BoardColumn({
 	);
 }
 
-function OrchestratorView({
+function ManagerView({
 	cards,
 	selectedTrack,
 }: {
@@ -1841,7 +1841,7 @@ function OrchestratorView({
 				</div>
 
 				<div className="mt-4 min-h-0 flex-1 rounded-[10px] border border-[var(--preview-border)] bg-[var(--preview-card)] p-4 font-mono text-[11px] leading-5 text-[var(--preview-muted-foreground)]">
-					<div className="text-[var(--preview-muted-foreground)]">open-agents orchestrator</div>
+					<div className="text-[var(--preview-muted-foreground)]">open-agents manager</div>
 					<div className="mt-3 text-[var(--preview-foreground)]">
 						<span className="text-[#60a5fa]">track</span> {selectedTrack.id}
 					</div>

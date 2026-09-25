@@ -17,7 +17,7 @@ export const TESTIMONIALS: Testimonial[] = [
     author: "Akash Parashar",
     handle: "@itsakaashhh",
     content:
-      "I came across Open Agents while using it during a hackathon. It was simple enough for me to get used to it within a couple hours. And I am glad I did. I had never handled more than one agent before. It handled context across workers it spawned and it could even communicate with other orchestrators in the workspace.\n\nThinking of the agents' work as separate git worktrees also kept my mind at peace, because at the end, the decision is with me, whether I want to merge the branch or not.",
+      "I came across Open Agents while using it during a hackathon. It was simple enough for me to get used to it within a couple hours. And I am glad I did. I had never handled more than one agent before. It handled context across workers it spawned and it could even communicate with other managers in the workspace.\n\nThinking of the agents' work as separate git worktrees also kept my mind at peace, because at the end, the decision is with me, whether I want to merge the branch or not.",
     avatar: "/testimonials/akash-parashar.webp",
     url: "https://x.com/itsakaashhh/status/2087531052797657135?s=20",
   },
@@ -44,7 +44,7 @@ export const TESTIMONIALS: Testimonial[] = [
     id: "aditya-purohit",
     author: "Aditya Purohit",
     content:
-      "Open Agents automatically gets the right agent to address CI failures and review comments. My agents are much more autonomous now, and with the orchestrator + kanban, I’m able to manage more and more of them.",
+      "Open Agents automatically gets the right agent to address CI failures and review comments. My agents are much more autonomous now, and with the manager + kanban, I’m able to manage more and more of them.",
     avatar: "/testimonials/aditya-purohit.webp",
     role: "CTO @ Osvi.ai",
     url: "/testimonials/",
@@ -53,7 +53,7 @@ export const TESTIMONIALS: Testimonial[] = [
     id: "aditi-chauhan",
     author: "Aditi Chauhan",
     content:
-      "Open Agents really changes the way you develop. The orchestrator and kanban have been a game changer. I’m no longer confused about what agent is doing what; scoping tasks and spawning them off has been a breeze.",
+      "Open Agents really changes the way you develop. The manager and kanban have been a game changer. I’m no longer confused about what agent is doing what; scoping tasks and spawning them off has been a breeze.",
     role: "Software Engineer, Docusign",
     url: "/testimonials/",
   },

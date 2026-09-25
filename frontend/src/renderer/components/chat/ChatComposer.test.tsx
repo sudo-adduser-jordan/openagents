@@ -2165,10 +2165,23 @@ describe("composer workflow tone", () => {
 		expect(document.querySelector(".cursor-chat-composer")).toHaveAttribute("data-workflow", "building");
 	});
 
-	// Orchestrators are not special-cased: they carry the same delivery stage as
-	// any other session, so the composer only knows planning vs building.
-	it("tints a session with its building stage", () => {
+	it("tints a worker with its building stage", () => {
 		renderComposer({ workflowMode: "building" });
+		expect(document.querySelector(".cursor-chat-composer")).toHaveAttribute("data-workflow", "building");
+	});
+
+	it("defaults a manager composer to the explicit Manager stage", () => {
+		renderComposer({ sessionRole: "manager" });
+		expect(document.querySelector(".cursor-chat-composer")).toHaveAttribute("data-workflow", "manager");
+	});
+
+	it("keeps an explicitly planning manager in Planning", () => {
+		renderComposer({ sessionRole: "manager", workflowMode: "planning" });
+		expect(document.querySelector(".cursor-chat-composer")).toHaveAttribute("data-workflow", "planning");
+	});
+
+	it("never leaks Manager mode into a worker composer", () => {
+		renderComposer({ sessionRole: "worker", workflowMode: "manager" });
 		expect(document.querySelector(".cursor-chat-composer")).toHaveAttribute("data-workflow", "building");
 	});
 });

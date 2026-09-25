@@ -56,7 +56,7 @@ func TestEvaluateSessionEligibility(t *testing.T) {
 	}{
 		{name: "eligible", want: true},
 		{name: "disabled", mutate: func(f *fakeStore) { f.session.AutoReviewEnabled = false }},
-		{name: "non-worker", mutate: func(f *fakeStore) { f.session.Kind = domain.KindOrchestrator }},
+		{name: "non-worker", mutate: func(f *fakeStore) { f.session.Kind = domain.KindManager }},
 		{name: "active", mutate: func(f *fakeStore) { f.session.Activity.State = domain.ActivityActive }},
 		{name: "idle less than threshold", mutate: func(f *fakeStore) { f.session.Activity.LastActivityAt = now.Add(-59 * time.Second) }},
 		{name: "waiting input", mutate: func(f *fakeStore) { f.session.Activity.State = domain.ActivityWaitingInput }},

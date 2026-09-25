@@ -28,7 +28,7 @@ open-agents project add [flags]
 | `--as-workspace` | Register a parent folder as a workspace project (root-as-repo plus direct child repos) | - |
 | `--id string` | Project id | Derived by the daemon from the path |
 | `--name string` | Display name | - |
-| `--orchestrator-agent string` | Default orchestrator session agent | - |
+| `--manager-agent string` | Default manager session agent | - |
 | `--path string` | Absolute path to the local git repo | Required |
 | `--worker-agent string` | Default worker session agent | - |
 
@@ -126,7 +126,7 @@ open-agents project rm open-agents -y
 
 ### open-agents project set-config
 
-Replace a project's per-project config (branch, session prefix, env, symlinks, post-create, agent model/permissions, role overrides, worker rules, and orchestrator rules). The config is resolved when a session spawns. Set fields via flags, pass the whole object with `--config-json`, or `--clear` to remove all config.
+Replace a project's per-project config (branch, session prefix, env, symlinks, post-create, agent model/permissions, role overrides, worker rules, and manager rules). The config is resolved when a session spawns. Set fields via flags, pass the whole object with `--config-json`, or `--clear` to remove all config.
 
 **Syntax:**
 ```
@@ -145,8 +145,8 @@ open-agents project set-config <id> [flags]
 | `--env stringArray` | Env var `KEY=VALUE` forwarded into sessions (repeatable) | - |
 | `--json` | Output the updated project as JSON | - |
 | `--model string` | Agent model override (e.g. `codex-mini-latest`) | - |
-| `--orchestrator-agent string` | Harness override for orchestrator sessions | - |
-| `--orchestrator-rules string` | Project-specific standing instructions appended to orchestrator session prompts | - |
+| `--manager-agent string` | Harness override for manager sessions | - |
+| `--manager-rules string` | Project-specific standing instructions appended to manager session prompts | - |
 | `--permission string` | Permission mode: `default`, `accept-edits`, `auto`, `bypass-permissions` | - |
 | `--post-create stringArray` | Command to run after workspace creation (repeatable) | - |
 | `--session-prefix string` | Displayed session-id prefix | - |
@@ -166,8 +166,8 @@ open-agents project set-config open-agents --env "NODE_ENV=development" --post-c
 ```
 
 ```bash
-# Set worker and orchestrator standing rules
-open-agents project set-config open-agents --agent-rules "Run focused tests before reporting done." --orchestrator-rules "Delegate implementation work to worker sessions."
+# Set worker and manager standing rules
+open-agents project set-config open-agents --agent-rules "Run focused tests before reporting done." --manager-rules "Delegate implementation work to worker sessions."
 ```
 
 ```bash

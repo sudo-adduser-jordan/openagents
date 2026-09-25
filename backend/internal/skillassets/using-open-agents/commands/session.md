@@ -25,7 +25,7 @@ open-agents session ls [flags]
 
 | Flag | Meaning | Default / Required |
 |---|---|---|
-| `-a, --all` | Include orchestrator sessions | - |
+| `-a, --all` | Include manager sessions | - |
 | `--include-terminated` | Include terminated sessions | - |
 | `--json` | Output as JSON | - |
 | `-p, --project string` | Filter by project ID | - |
@@ -186,7 +186,7 @@ open-agents session claim-pr <pr-ref> [flags]
 open-agents session claim-pr <session-id> <pr-ref> [flags]
 ```
 
-With one positional argument, `OPEN_AGENTS_SESSION_ID` supplies the session. This is the preferred form inside a worker. Pass both arguments from an orchestrator or external shell when targeting another session.
+With one positional argument, `OPEN_AGENTS_SESSION_ID` supplies the session. This is the preferred form inside a worker. Pass both arguments from a manager or external shell when targeting another session.
 
 **Flags:**
 

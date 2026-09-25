@@ -14,17 +14,17 @@ vi.mock("../hooks/useWorkspaceQuery", () => ({
 	useWorkspaceScope: () => workspaceQueryMock(),
 }));
 
-vi.mock("../lib/spawn-orchestrator", () => ({
-	spawnOrchestrator: spawnMock,
+vi.mock("../lib/spawn-manager", () => ({
+	spawnManager: spawnMock,
 }));
 
 const session: WorkspaceSession = {
-	id: "orch-old",
+	id: "mgr-old",
 	workspaceId: "proj-1",
 	workspaceName: "Project One",
-	title: "orchestrator",
+	title: "manager",
 	provider: "opencode",
-	kind: "orchestrator",
+	kind: "manager",
 	status: "terminated",
 	updatedAt: "2026-07-26T00:00:00Z",
 	prs: [],
@@ -34,7 +34,7 @@ const workspace: WorkspaceSummary = {
 	id: "proj-1",
 	name: "Project One",
 	path: "/repo/project-one",
-	orchestratorAgent: "opencode",
+	managerAgent: "opencode",
 	sessions: [session],
 };
 
@@ -45,11 +45,11 @@ beforeEach(() => {
 });
 
 describe("RestoreUnavailableDialog", () => {
-	it("opens project settings instead of recreating when no orchestrator agent is configured", async () => {
+	it("opens project settings instead of recreating when no manager agent is configured", async () => {
 		const onOpenChange = vi.fn();
 		const onRecreated = vi.fn();
 		workspaceQueryMock.mockReturnValue({
-		data: { project: { ...workspace, orchestratorAgent: undefined } },
+		data: { project: { ...workspace, managerAgent: undefined } },
 			isLoading: false,
 		});
 		render(
@@ -61,7 +61,7 @@ describe("RestoreUnavailableDialog", () => {
 			/>,
 		);
 
-		await userEvent.click(screen.getByRole("button", { name: "Configure orchestrator agent" }));
+		await userEvent.click(screen.getByRole("button", { name: "Configure manager agent" }));
 
 		expect(onOpenChange).toHaveBeenCalledWith(false);
 		expect(useUiStore.getState().settingsModal).toEqual({ scope: "project", projectId: "proj-1" });
@@ -69,10 +69,10 @@ describe("RestoreUnavailableDialog", () => {
 		expect(onRecreated).not.toHaveBeenCalled();
 	});
 
-	it("preserves clean recreation when an orchestrator agent is configured", async () => {
+	it("preserves clean recreation when a manager agent is configured", async () => {
 		const onOpenChange = vi.fn();
 		const onRecreated = vi.fn();
-		spawnMock.mockResolvedValue("orch-new");
+		spawnMock.mockResolvedValue("mgr-new");
 		render(
 			<RestoreUnavailableDialog
 				open
@@ -82,9 +82,9 @@ describe("RestoreUnavailableDialog", () => {
 			/>,
 		);
 
-		await userEvent.click(screen.getByRole("button", { name: "Create new orchestrator" }));
+		await userEvent.click(screen.getByRole("button", { name: "Create new manager" }));
 
-		await waitFor(() => expect(onRecreated).toHaveBeenCalledWith("orch-new"));
+		await waitFor(() => expect(onRecreated).toHaveBeenCalledWith("mgr-new"));
 		expect(spawnMock).toHaveBeenCalledWith("proj-1", "restore_dialog", true);
 		expect(onOpenChange).toHaveBeenCalledWith(false);
 	});

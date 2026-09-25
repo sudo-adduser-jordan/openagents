@@ -821,7 +821,7 @@ func TestOpenShellTerminalStartsInSessionWorkspaceOverProjectRoot(t *testing.T) 
 	}
 }
 
-// A session that has no workspace of its own yet (or an orchestrator that
+// A session that has no workspace of its own yet (or a manager that
 // simply runs at the project root) falls back to the project root rather than
 // failing the open.
 func TestOpenShellTerminalFallsBackToProjectRootWhenSessionHasNoWorkspace(t *testing.T) {

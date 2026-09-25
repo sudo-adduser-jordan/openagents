@@ -296,9 +296,9 @@ var schemaNames = map[string]string{ //nolint:gosec // Public OpenAPI type names
 	"ControllersSetActivityResponse":                      "SetActivityResponse",
 	"ControllersSetReviewActivityRequest":                 "SetReviewActivityRequest",
 	"ControllersSetReviewActivityResponse":                "SetReviewActivityResponse",
-	"ControllersSpawnOrchestratorRequest":                 "SpawnOrchestratorRequest",
-	"ControllersSpawnOrchestratorResponse":                "SpawnOrchestratorResponse",
-	"ControllersOrchestratorResponse":                     "OrchestratorResponse",
+	"ControllersSpawnManagerRequest":                      "SpawnManagerRequest",
+	"ControllersSpawnManagerResponse":                     "SpawnManagerResponse",
+	"ControllersManagerResponse":                          "ManagerResponse",
 	"AgentInventory":                                      "ListAgentsResponse",
 	"AgentInfo":                                           "AgentInfo",
 	"AgentProbeResult":                                    "ProbeAgentResponse",
@@ -1852,7 +1852,7 @@ func sessionOperations() []operation {
 		},
 		{
 			method: http.MethodPatch, path: "/api/v1/sessions/{sessionId}/workflow-mode", id: "setSessionWorkflowMode", tag: "sessions",
-			summary:    "Move a session between planning and building",
+			summary:    "Set a session's planning, manager, or building workflow mode",
 			pathParams: []any{controllers.SessionIDParam{}},
 			reqBody:    controllers.SetSessionWorkflowModeRequest{},
 			resps: []respUnit{
@@ -2075,8 +2075,8 @@ func sessionOperations() []operation {
 			},
 		},
 		{
-			method: http.MethodGet, path: "/api/v1/orchestrators", id: "listOrchestrators", tag: "sessions",
-			summary: "List orchestrator sessions across projects",
+			method: http.MethodGet, path: "/api/v1/managers", id: "listManagers", tag: "sessions",
+			summary: "List manager sessions across projects",
 			resps: []respUnit{
 				{http.StatusOK, controllers.ListSessionsResponse{}},
 				{http.StatusInternalServerError, envelope.APIError{}},
@@ -2084,11 +2084,11 @@ func sessionOperations() []operation {
 			},
 		},
 		{
-			method: http.MethodPost, path: "/api/v1/orchestrators", id: "spawnOrchestrator", tag: "sessions",
-			summary: "Spawn an orchestrator session",
-			reqBody: controllers.SpawnOrchestratorRequest{},
+			method: http.MethodPost, path: "/api/v1/managers", id: "spawnManager", tag: "sessions",
+			summary: "Spawn a manager session",
+			reqBody: controllers.SpawnManagerRequest{},
 			resps: []respUnit{
-				{http.StatusCreated, controllers.SpawnOrchestratorResponse{}},
+				{http.StatusCreated, controllers.SpawnManagerResponse{}},
 				{http.StatusBadRequest, envelope.APIError{}},
 				{http.StatusNotFound, envelope.APIError{}},
 				{http.StatusInternalServerError, envelope.APIError{}},
@@ -2096,8 +2096,8 @@ func sessionOperations() []operation {
 			},
 		},
 		{
-			method: http.MethodPost, path: "/api/v1/orchestrators/delegate", id: "delegateTask", tag: "sessions",
-			summary: "Start a worker task and ask the orchestrator to title it",
+			method: http.MethodPost, path: "/api/v1/managers/delegate", id: "delegateTask", tag: "sessions",
+			summary: "Start a worker task and ask the manager to title it",
 			reqBody: controllers.DelegateTaskRequest{},
 			resps: []respUnit{
 				{http.StatusAccepted, controllers.DelegateTaskResponse{}},
@@ -2109,9 +2109,9 @@ func sessionOperations() []operation {
 			},
 		},
 		{
-			method: http.MethodGet, path: "/api/v1/orchestrators/{id}", id: "getOrchestrator", tag: "sessions",
-			summary:    "Fetch one orchestrator session",
-			pathParams: []any{controllers.OrchestratorIDParam{}},
+			method: http.MethodGet, path: "/api/v1/managers/{id}", id: "getManager", tag: "sessions",
+			summary:    "Fetch one manager session",
+			pathParams: []any{controllers.ManagerIDParam{}},
 			resps: []respUnit{
 				{http.StatusOK, controllers.SessionResponse{}},
 				{http.StatusNotFound, envelope.APIError{}},

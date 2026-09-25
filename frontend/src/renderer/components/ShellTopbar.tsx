@@ -6,9 +6,9 @@ import { animate, LayoutGroup, motion, useMotionValue, useReducedMotion } from "
 import { NotificationCenter } from "./NotificationCenter";
 import { ProjectBoardActions } from "./ProjectBoardActions";
 import { useBoardPresentation } from "../hooks/useBoardPresentation";
-import { useProjectOrchestratorAction } from "../hooks/useProjectOrchestratorAction";
+import { useProjectManagerAction } from "../hooks/useProjectManagerAction";
 import {
-	isOrchestratorSession,
+	isManagerSession,
 	sessionIsActive,
 	STANDALONE_PROJECT_KIND,
 	STANDALONE_WORKSPACE_ID,
@@ -22,7 +22,7 @@ import {
 	useTerminateSessionState,
 } from "../hooks/useTerminateSession";
 import { sidebarOccupiesLayout, useUiStore } from "../stores/ui-store";
-import { OrchestratorIcon } from "./icons";
+import { ManagerIcon } from "./icons";
 import { getAgentActivityView } from "../lib/session-presentation";
 import { isLinuxPlatform, isMacPlatform, usesBoardActionsInPanel } from "../lib/platform";
 import { cn } from "../lib/utils";
@@ -40,13 +40,13 @@ const noDragStyle = isMac ? ({ WebkitAppRegion: "no-drag" } as React.CSSProperti
 
 // The one app topbar (.dashboard-app-header). On Win/Linux the shell mounts it
 // inside the framed center panel; when the platform hides the shell topbar
-// (macOS), SessionView mounts the same component in-panel so Kill / Orchestrator
+// (macOS), SessionView mounts the same component in-panel so Kill / Manager
 // / inspector stay available. The variant is derived from the route, not props:
-// a sessionId in the URL swaps the lead to the session identity (orchestrator
+// a sessionId in the URL swaps the lead to the session identity (manager
 // crumb + mode badge, or worker branch + status pill) and the actions to
-// board/orchestrator + inspector controls (orchestrators open the Kanban board;
-// workers open their orchestrator); otherwise it's the dashboard crumb plus the
-// Orchestrator launcher when a project is in scope. Embedded mode contributes
+// board/manager + inspector controls (managers open the Kanban board;
+// workers open their manager); otherwise it's the dashboard crumb plus the
+// Manager launcher when a project is in scope. Embedded mode contributes
 // only session actions to the terminal bar; other routes retain this full bar.
 // Pixel equivalents of the CSS custom properties used for titlebar clearance.
 // --size-titlebar-cluster-left (72) + --size-titlebar-cluster-width (3×28+2×4=92)
@@ -102,9 +102,9 @@ export function ShellTopbar({
 	const workspaceScope = workspaceQuery.data;
 	const session = workspaceScope?.session;
 	const isSessionRoute = Boolean(params.sessionId);
-	const isOrchestrator = session ? isOrchestratorSession(session) : false;
+	const isManager = session ? isManagerSession(session) : false;
 	const isInspectorOpen = useUiStore((state) =>
-		currentSessionId ? (state.inspectorSessions[currentSessionId]?.isOpen ?? !isOrchestrator) : false,
+		currentSessionId ? (state.inspectorSessions[currentSessionId]?.isOpen ?? !isManager) : false,
 	);
 	// Project in scope: the session's workspace wins over the route param so the
 	// cross-project /sessions/$sessionId route still resolves a crumb. A
@@ -116,16 +116,16 @@ export function ShellTopbar({
 	const isRootBoardRoute = !isSessionRoute && !isProjectBoardRoute;
 	const project = workspaceScope?.project;
 	const projectLabel = project?.name ?? session?.workspaceName ?? (projectId ? "" : "Board");
-	const orchestrator = workspaceScope?.orchestrator;
+	const manager = workspaceScope?.manager;
 	const supportsProjectActions = project?.kind !== STANDALONE_PROJECT_KIND && projectId !== STANDALONE_WORKSPACE_ID;
-	const projectActions = useProjectOrchestratorAction({
+	const projectActions = useProjectManagerAction({
 		projectId: supportsProjectActions ? projectId : undefined,
 		project: supportsProjectActions ? project : undefined,
-		orchestrator: supportsProjectActions ? orchestrator : undefined,
+		manager: supportsProjectActions ? manager : undefined,
 		source: "topbar",
 		sessionId: currentSessionId,
 	});
-	const { isSpawning, isProjectRestarting, isProvisioning, openNewTask, openOrchestrator } = projectActions;
+	const { isSpawning, isProjectRestarting, isProvisioning, openNewTask, openManager } = projectActions;
 	const { showProjectEmpty } = useBoardPresentation({
 		projectId,
 		isSuccess: workspaceQuery.isSuccess,
@@ -133,8 +133,8 @@ export function ShellTopbar({
 		hasProjects: Boolean(project),
 		hasWorkerSessions: workspaceScope?.hasWorkerSessions ?? false,
 	});
-	const orchestratorTooltip = isProjectRestarting ? "Restarting…" : isSpawning
-		? "Spawning…" : orchestrator ? "Open orchestrator" : "Spawn Orchestrator";
+	const managerTooltip = isProjectRestarting ? "Restarting…" : isSpawning
+		? "Spawning…" : manager ? "Open manager" : "Spawn Manager";
 
 	const openBoard = () =>
 		projectId ? void navigate({ to: "/projects/$projectId", params: { projectId } }) : void navigate({ to: "/" });
@@ -151,7 +151,7 @@ export function ShellTopbar({
 				<div className="flex min-w-0 items-center gap-3">
 				{isSessionRoute && session ? (
 					<div className="flex min-w-0 items-center gap-2.5" data-testid="session-topbar-identity">
-						{isOrchestrator ? (
+						{isManager ? (
 							<span className={cn(topbarProjectLabelClass, "inline-flex min-w-0 items-center gap-1.5")}>
 								<Folder aria-hidden="true" className="size-icon-md shrink-0 text-muted-foreground" />
 								<span className="max-w-content-max truncate">{projectLabel}</span>
@@ -191,7 +191,7 @@ export function ShellTopbar({
 				) : null}
 				{isSessionRoute ? (
 					<>
-						{isOrchestrator ? (
+						{isManager ? (
 							<>
 								<ProjectTerminationFeedback projectId={projectId} />
 								{sessionAction ? (
@@ -255,7 +255,7 @@ export function ShellTopbar({
 						) : null}
 						{/* Local worker actions share one tight control group. Navigation
 						    remains a separate visual target in the outer top-bar row. */}
-						{!isOrchestrator && session && (sessionAction || sessionIsActive(session)) ? (
+						{!isManager && session && (sessionAction || sessionIsActive(session)) ? (
 							<div
 								className="inline-flex shrink-0 items-center gap-1"
 								data-testid="session-local-actions"
@@ -266,12 +266,12 @@ export function ShellTopbar({
 									<TopbarKillButton
 										key={session.id}
 										session={session}
-										orchestratorId={orchestrator?.id}
-										onKilled={(workspaceId, orchestratorId) => {
-											if (orchestratorId) {
+										managerId={manager?.id}
+										onKilled={(workspaceId, managerId) => {
+											if (managerId) {
 												void navigate({
 													to: "/projects/$projectId/sessions/$sessionId",
-													params: { projectId: workspaceId, sessionId: orchestratorId },
+													params: { projectId: workspaceId, sessionId: managerId },
 												});
 												return;
 											}
@@ -285,24 +285,24 @@ export function ShellTopbar({
 								) : null}
 							</div>
 						) : null}
-						{!isOrchestrator && supportsProjectActions ? (
+						{!isManager && supportsProjectActions ? (
 							<Tooltip>
 								<TooltipTrigger asChild>
 									<span className="inline-flex" style={noDragStyle}>
 										<TopbarButton
-											aria-label="Open orchestrator"
+											aria-label="Open manager"
 											className="topbar-control--labeled -mr-1"
 											data-priority="secondary"
 											disabled={isSpawning || isProjectRestarting || isProvisioning}
-											onClick={() => void openOrchestrator()}
+											onClick={() => void openManager()}
 											variant="primary"
 										>
-											<OrchestratorIcon className="size-icon-md" aria-hidden="true" />
-											<span data-compact-label>{"Orchestrator"}</span>
+											<ManagerIcon className="size-icon-md" aria-hidden="true" />
+											<span data-compact-label>{"Manager"}</span>
 										</TopbarButton>
 									</span>
 								</TooltipTrigger>
-								<TooltipContent side="bottom">{orchestratorTooltip}</TooltipContent>
+								<TooltipContent side="bottom">{managerTooltip}</TooltipContent>
 							</Tooltip>
 						) : null}
 					</>
@@ -326,17 +326,17 @@ export function ShellTopbar({
 }
 
 // Confirmation is modal, but teardown progress is not: confirming closes the
-// dialog and returns to the project's orchestrator while the daemon finishes.
+// dialog and returns to the project's manager while the daemon finishes.
 // Mutation-cache state is filtered by worker ID so rapid route switches never
 // carry another worker's Killing/error state into the current topbar.
 export function TopbarKillButton({
 	session,
-	orchestratorId,
+	managerId,
 	onKilled,
 }: {
 	session: WorkspaceSession;
-	orchestratorId?: string;
-	onKilled: (workspaceId: string, orchestratorId?: string) => void;
+	managerId?: string;
+	onKilled: (workspaceId: string, managerId?: string) => void;
 }) {
 	const [confirmOpen, setConfirmOpen] = useState(false);
 	const queryClient = useQueryClient();
@@ -346,7 +346,7 @@ export function TopbarKillButton({
 	const confirmKill = () => {
 		setConfirmOpen(false);
 		kill.mutate(session);
-		onKilled(session.workspaceId, orchestratorId);
+		onKilled(session.workspaceId, managerId);
 	};
 
 	return (

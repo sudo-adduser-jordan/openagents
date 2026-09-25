@@ -66,7 +66,7 @@ type fakeSessionService struct {
 	workspacePaths             []string
 	spawnErr                   error
 	lastSpawn                  ports.SpawnConfig
-	orchestratorMode           domain.SessionMode
+	managerMode                domain.SessionMode
 	claimErr                   error
 	listPRErr                  error
 	workspaceErr               error
@@ -200,7 +200,7 @@ func (f *fakeSessionService) List(_ context.Context, filter sessionsvc.ListFilte
 		if filter.Active != nil && s.IsTerminated == *filter.Active {
 			continue
 		}
-		if filter.OrchestratorOnly && s.Kind != domain.KindOrchestrator {
+		if filter.ManagerOnly && s.Kind != domain.KindManager {
 			continue
 		}
 		out = append(out, s)
@@ -214,16 +214,20 @@ func (f *fakeSessionService) Spawn(_ context.Context, cfg ports.SpawnConfig) (do
 		return domain.Session{}, 0, 0, f.spawnErr
 	}
 	now := time.Now().UTC()
-	s := domain.Session{SessionRecord: domain.SessionRecord{ID: domain.SessionID(string(cfg.ProjectID) + "-2"), ProjectID: cfg.ProjectID, IssueID: cfg.IssueID, Kind: cfg.Kind, Harness: cfg.Harness, DisplayName: cfg.DisplayName, Activity: domain.Activity{State: domain.ActivityIdle, LastActivityAt: now}, AutoInjectReview: true, AutoInjectCI: true, CreatedAt: now, UpdatedAt: now}, Status: domain.StatusIdle}
+	workflowMode := domain.DefaultWorkflowModeForKind(cfg.Kind)
+	if cfg.RequestedWorkflowMode.Valid() {
+		workflowMode = cfg.RequestedWorkflowMode
+	}
+	s := domain.Session{SessionRecord: domain.SessionRecord{ID: domain.SessionID(string(cfg.ProjectID) + "-2"), ProjectID: cfg.ProjectID, IssueID: cfg.IssueID, Kind: cfg.Kind, Harness: cfg.Harness, DisplayName: cfg.DisplayName, Activity: domain.Activity{State: domain.ActivityIdle, LastActivityAt: now}, AutoInjectReview: true, AutoInjectCI: true, WorkflowMode: workflowMode, CreatedAt: now, UpdatedAt: now}, Status: domain.StatusIdle}
 	f.sessions[s.ID] = s
 	return s, len(cfg.Prompt), 0, nil
 }
 
-func (f *fakeSessionService) SpawnOrchestrator(ctx context.Context, projectID domain.ProjectID, clean bool, requestedMode domain.SessionMode) (domain.Session, error) {
-	f.orchestratorMode = requestedMode
+func (f *fakeSessionService) SpawnManager(ctx context.Context, projectID domain.ProjectID, clean bool, requestedMode domain.SessionMode) (domain.Session, error) {
+	f.managerMode = requestedMode
 	if clean {
 		active := true
-		existing, err := f.List(ctx, sessionsvc.ListFilter{ProjectID: projectID, Active: &active, OrchestratorOnly: true})
+		existing, err := f.List(ctx, sessionsvc.ListFilter{ProjectID: projectID, Active: &active, ManagerOnly: true})
 		if err != nil {
 			return domain.Session{}, err
 		}
@@ -233,7 +237,7 @@ func (f *fakeSessionService) SpawnOrchestrator(ctx context.Context, projectID do
 			}
 		}
 	}
-	s, _, _, err := f.Spawn(ctx, ports.SpawnConfig{ProjectID: projectID, Kind: domain.KindOrchestrator, RequestedMode: requestedMode})
+	s, _, _, err := f.Spawn(ctx, ports.SpawnConfig{ProjectID: projectID, Kind: domain.KindManager, RequestedWorkflowMode: domain.WorkflowModeManager, RequestedMode: requestedMode})
 	return s, err
 }
 
@@ -414,7 +418,7 @@ func (f *fakeSessionService) DelegateTask(_ context.Context, in sessionsvc.Deleg
 	if f.delegationErr != nil {
 		return sessionsvc.DelegateTaskOutcome{}, f.delegationErr
 	}
-	return sessionsvc.DelegateTaskOutcome{WorkerID: "open-agents-worker", OrchestratorID: "open-agents-orch"}, nil
+	return sessionsvc.DelegateTaskOutcome{WorkerID: "open-agents-worker", ManagerID: "open-agents-orch"}, nil
 }
 
 func (f *fakeSessionService) ListPRs(_ context.Context, id domain.SessionID) ([]domain.PRFacts, error) {
@@ -1137,9 +1141,9 @@ func TestSessionsAPI_ListSpawnGetAndActions(t *testing.T) {
 		t.Fatalf("unpin unknown = %d, want 404", status)
 	}
 
-	body, status, _ = doRequest(t, srv, "POST", "/api/v1/orchestrators", `{"projectId":"open-agents"}`)
+	body, status, _ = doRequest(t, srv, "POST", "/api/v1/managers", `{"projectId":"open-agents"}`)
 	if status != http.StatusCreated {
-		t.Fatalf("orchestrator = %d, want 201; body=%s", status, body)
+		t.Fatalf("manager = %d, want 201; body=%s", status, body)
 	}
 }
 
@@ -1263,25 +1267,41 @@ func TestSessionsAPI_SpawnPassesParentSessionToService(t *testing.T) {
 	}
 }
 
-func TestSessionsAPI_OrchestratorAcceptsExplicitChatMode(t *testing.T) {
+func TestSessionsAPI_ManagerDefaultsToManagerWorkflowMode(t *testing.T) {
 	svc := newFakeSessionService()
 	srv := newSessionTestServer(t, svc)
 
-	body, status, _ := doRequest(t, srv, "POST", "/api/v1/orchestrators",
+	body, status, _ := doRequest(t, srv, "POST", "/api/v1/managers", `{"projectId":"open-agents"}`)
+	if status != http.StatusCreated {
+		t.Fatalf("status = %d, want 201; body=%s", status, body)
+	}
+	if svc.lastSpawn.RequestedWorkflowMode != domain.WorkflowModeManager {
+		t.Fatalf("workflow mode = %q, want manager", svc.lastSpawn.RequestedWorkflowMode)
+	}
+	if got := svc.sessions["open-agents-2"].WorkflowMode; got != domain.WorkflowModeManager {
+		t.Fatalf("persisted manager workflow mode = %q, want manager", got)
+	}
+}
+
+func TestSessionsAPI_ManagerAcceptsExplicitChatMode(t *testing.T) {
+	svc := newFakeSessionService()
+	srv := newSessionTestServer(t, svc)
+
+	body, status, _ := doRequest(t, srv, "POST", "/api/v1/managers",
 		`{"projectId":"open-agents","mode":"chat"}`)
 	if status != http.StatusCreated {
 		t.Fatalf("status = %d, want 201; body=%s", status, body)
 	}
-	if svc.orchestratorMode != domain.SessionModeChat {
-		t.Fatalf("requested mode = %q, want chat", svc.orchestratorMode)
+	if svc.managerMode != domain.SessionModeChat {
+		t.Fatalf("requested mode = %q, want chat", svc.managerMode)
 	}
 }
 
-func TestSessionsAPI_OrchestratorRejectsUnknownExplicitMode(t *testing.T) {
+func TestSessionsAPI_ManagerRejectsUnknownExplicitMode(t *testing.T) {
 	svc := newFakeSessionService()
 	srv := newSessionTestServer(t, svc)
 
-	body, status, _ := doRequest(t, srv, "POST", "/api/v1/orchestrators",
+	body, status, _ := doRequest(t, srv, "POST", "/api/v1/managers",
 		`{"projectId":"open-agents","mode":"chatt"}`)
 	assertErrorCode(t, body, status, http.StatusBadRequest, "SESSION_MODE_INVALID")
 }
@@ -2590,14 +2610,14 @@ func TestSessionsAPI_RenameValidation(t *testing.T) {
 	assertErrorCode(t, body, status, http.StatusBadRequest, "INVALID_JSON")
 }
 
-func TestSessionsAPI_ListOrchestratorsOnly(t *testing.T) {
+func TestSessionsAPI_ListManagersOnly(t *testing.T) {
 	svc := newFakeSessionService()
 	now := time.Now().UTC()
 	svc.sessions["open-agents-orch"] = domain.Session{
 		SessionRecord: domain.SessionRecord{
 			ID:        "open-agents-orch",
 			ProjectID: "open-agents",
-			Kind:      domain.KindOrchestrator,
+			Kind:      domain.KindManager,
 			Activity:  domain.Activity{State: domain.ActivityIdle, LastActivityAt: now},
 			CreatedAt: now,
 			UpdatedAt: now,
@@ -2608,7 +2628,7 @@ func TestSessionsAPI_ListOrchestratorsOnly(t *testing.T) {
 		SessionRecord: domain.SessionRecord{
 			ID:        "other-orch",
 			ProjectID: "other",
-			Kind:      domain.KindOrchestrator,
+			Kind:      domain.KindManager,
 			Activity:  domain.Activity{State: domain.ActivityIdle, LastActivityAt: now},
 			CreatedAt: now,
 			UpdatedAt: now,
@@ -2617,26 +2637,26 @@ func TestSessionsAPI_ListOrchestratorsOnly(t *testing.T) {
 	}
 	srv := newSessionTestServer(t, svc)
 
-	body, status, _ := doRequest(t, srv, "GET", "/api/v1/orchestrators", "")
+	body, status, _ := doRequest(t, srv, "GET", "/api/v1/managers", "")
 	if status != http.StatusOK {
-		t.Fatalf("GET orchestrators = %d, want 200; body=%s", status, body)
+		t.Fatalf("GET managers = %d, want 200; body=%s", status, body)
 	}
 	var list struct {
 		Sessions []sessionBody `json:"sessions"`
 	}
 	mustJSON(t, body, &list)
 	if len(list.Sessions) != 2 {
-		t.Fatalf("len(orchestrators) = %d, want 2; body=%s", len(list.Sessions), body)
+		t.Fatalf("len(managers) = %d, want 2; body=%s", len(list.Sessions), body)
 	}
 	got := map[string]string{}
 	for _, sess := range list.Sessions {
 		got[sess.ID] = sess.Kind
 	}
-	if got["open-agents-orch"] != string(domain.KindOrchestrator) || got["other-orch"] != string(domain.KindOrchestrator) {
-		t.Fatalf("missing orchestrators: %#v", got)
+	if got["open-agents-orch"] != string(domain.KindManager) || got["other-orch"] != string(domain.KindManager) {
+		t.Fatalf("missing managers: %#v", got)
 	}
 	if _, ok := got["open-agents-1"]; ok {
-		t.Fatalf("worker session leaked into orchestrator list: %#v", got)
+		t.Fatalf("worker session leaked into manager list: %#v", got)
 	}
 }
 
@@ -2651,17 +2671,17 @@ func TestSessionsAPI_DelegateTask(t *testing.T) {
 	svc := newFakeSessionService()
 	srv := newSessionTestServer(t, svc)
 
-	body, status, _ := doRequest(t, srv, "POST", "/api/v1/orchestrators/delegate", `{"projectId":"open-agents","brief":"Fix\u0000 it","agent":"opencode","model":" sonnet-custom ","effort":" high ","mode":"chat","approvalMode":"bypass-permissions","attachments":[{"mimeType":"image/png","data":"AQID"}]}`)
+	body, status, _ := doRequest(t, srv, "POST", "/api/v1/managers/delegate", `{"projectId":"open-agents","brief":"Fix\u0000 it","agent":"opencode","model":" sonnet-custom ","effort":" high ","mode":"chat","approvalMode":"bypass-permissions","attachments":[{"mimeType":"image/png","data":"AQID"}]}`)
 	if status != http.StatusAccepted {
 		t.Fatalf("delegate = %d, want 202; body=%s", status, body)
 	}
 	var got struct {
-		OK             bool   `json:"ok"`
-		WorkerID       string `json:"workerId"`
-		OrchestratorID string `json:"orchestratorId"`
+		OK        bool   `json:"ok"`
+		WorkerID  string `json:"workerId"`
+		ManagerID string `json:"managerId"`
 	}
 	mustJSON(t, body, &got)
-	if !got.OK || got.WorkerID != "open-agents-worker" || got.OrchestratorID != "open-agents-orch" {
+	if !got.OK || got.WorkerID != "open-agents-worker" || got.ManagerID != "open-agents-orch" {
 		t.Fatalf("response = %#v", got)
 	}
 	if svc.delegationInput.ProjectID != "open-agents" || svc.delegationInput.Brief != "Fix it" || svc.delegationInput.RequestedAgent != domain.HarnessOpenCode || svc.delegationInput.Model != "sonnet-custom" || svc.delegationInput.Effort == nil || *svc.delegationInput.Effort != "high" || svc.delegationInput.RequestedMode != domain.SessionModeChat || svc.delegationInput.ApprovalMode != domain.PermissionModeBypassPermissions {
@@ -2687,7 +2707,7 @@ func TestSessionsAPI_DelegateTaskAcceptsLongBrief(t *testing.T) {
 		t.Fatalf("marshal request: %v", err)
 	}
 
-	body, status, _ := doRequest(t, srv, http.MethodPost, "/api/v1/orchestrators/delegate", string(payload))
+	body, status, _ := doRequest(t, srv, http.MethodPost, "/api/v1/managers/delegate", string(payload))
 	if status != http.StatusAccepted {
 		t.Fatalf("delegate long brief = %d, want 202; body=%s", status, body)
 	}
@@ -2708,7 +2728,7 @@ func TestSessionsAPI_DelegateTaskRejectsBriefPastLaunchSafeLimit(t *testing.T) {
 		t.Fatalf("marshal request: %v", err)
 	}
 
-	body, status, _ := doRequest(t, srv, http.MethodPost, "/api/v1/orchestrators/delegate", string(payload))
+	body, status, _ := doRequest(t, srv, http.MethodPost, "/api/v1/managers/delegate", string(payload))
 	assertErrorCode(t, body, status, http.StatusBadRequest, "TASK_TOO_LONG")
 	var got struct {
 		Message string `json:"message"`
@@ -2726,7 +2746,7 @@ func TestSessionsAPI_DelegatesChat(t *testing.T) {
 	svc := newFakeSessionService()
 	srv := newSessionTestServer(t, svc)
 
-	body, status, _ := doRequest(t, srv, http.MethodPost, "/api/v1/orchestrators/delegate",
+	body, status, _ := doRequest(t, srv, http.MethodPost, "/api/v1/managers/delegate",
 		`{"projectId":"open-agents","brief":"Fix it","agent":"opencode","mode":"chat"}`)
 	if status != http.StatusAccepted {
 		t.Fatalf("delegate opencode Chat = %d, want 202; body=%s", status, body)
@@ -2740,7 +2760,7 @@ func TestSessionsAPI_DelegateTaskValidationAndServiceError(t *testing.T) {
 	svc := newFakeSessionService()
 	srv := newSessionTestServer(t, svc)
 
-	body, status, _ := doRequest(t, srv, "POST", "/api/v1/orchestrators/delegate", `{"projectId":"open-agents","brief":""}`)
+	body, status, _ := doRequest(t, srv, "POST", "/api/v1/managers/delegate", `{"projectId":"open-agents","brief":""}`)
 	if status != http.StatusAccepted {
 		t.Fatalf("promptless delegate = %d, want 202; body=%s", status, body)
 	}
@@ -2749,14 +2769,14 @@ func TestSessionsAPI_DelegateTaskValidationAndServiceError(t *testing.T) {
 	}
 
 	svc.delegationErr = apierr.Invalid("UNKNOWN_HARNESS", "Unknown requested agent", nil)
-	body, status, _ = doRequest(t, srv, "POST", "/api/v1/orchestrators/delegate", `{"projectId":"open-agents","brief":"Fix it"}`)
+	body, status, _ = doRequest(t, srv, "POST", "/api/v1/managers/delegate", `{"projectId":"open-agents","brief":"Fix it"}`)
 	assertErrorCode(t, body, status, http.StatusBadRequest, "UNKNOWN_HARNESS")
 
 	svc.delegationErr = nil
-	body, status, _ = doRequest(t, srv, "POST", "/api/v1/orchestrators/delegate", `{"projectId":"open-agents","brief":"Fix it","mode":"tuii"}`)
+	body, status, _ = doRequest(t, srv, "POST", "/api/v1/managers/delegate", `{"projectId":"open-agents","brief":"Fix it","mode":"tuii"}`)
 	assertErrorCode(t, body, status, http.StatusBadRequest, "INVALID_SESSION_MODE")
 
-	body, status, _ = doRequest(t, srv, "POST", "/api/v1/orchestrators/delegate", `{"projectId":"open-agents","brief":"Fix it","approvalMode":"sometimes"}`)
+	body, status, _ = doRequest(t, srv, "POST", "/api/v1/managers/delegate", `{"projectId":"open-agents","brief":"Fix it","approvalMode":"sometimes"}`)
 	assertErrorCode(t, body, status, http.StatusBadRequest, "INVALID_APPROVAL_MODE")
 	var approvalError struct {
 		Error   string `json:"error"`
@@ -2801,7 +2821,7 @@ func TestSessionsAPI_DelegateTaskRejectsInvalidAttachments(t *testing.T) {
 		t.Run(tc.name, func(t *testing.T) {
 			svc := newFakeSessionService()
 			srv := newSessionTestServer(t, svc)
-			body, status, _ := doRequest(t, srv, "POST", "/api/v1/orchestrators/delegate", tc.body)
+			body, status, _ := doRequest(t, srv, "POST", "/api/v1/managers/delegate", tc.body)
 			assertErrorCode(t, body, status, http.StatusBadRequest, tc.code)
 		})
 	}
@@ -2816,7 +2836,7 @@ func TestSessionsAPI_DelegateTaskRejectsOversizedBody(t *testing.T) {
 	// materializing the whole body.
 	oversized := `{"projectId":"open-agents","brief":"Fix it","attachments":[{"mimeType":"image/png","data":"` +
 		strings.Repeat("A", 40<<20) + `"}]}`
-	body, status, _ := doRequest(t, srv, "POST", "/api/v1/orchestrators/delegate", oversized)
+	body, status, _ := doRequest(t, srv, "POST", "/api/v1/managers/delegate", oversized)
 	assertErrorCode(t, body, status, http.StatusBadRequest, "INVALID_JSON")
 	if svc.delegationInput.ProjectID != "" {
 		t.Fatalf("delegate service called with oversized body: %#v", svc.delegationInput)

@@ -711,7 +711,7 @@ export function TerminalPane({
 }
 
 function workerPreviewLines(session: WorkspaceSession | undefined, provider: string): string[] {
-	if (session?.id === "open-agents-demo-orchestrator") {
+	if (session?.id === "open-agents-demo-manager") {
 		return [
 			"> Go through my Linear backlog and let's plan which tasks to spawn off",
 			"",
@@ -1019,8 +1019,8 @@ function AttachedTerminal({
 	const showEndedState = state === "exited" || canRestoreSession;
 	const emptyStateTitle = session ? "Starting session" : "Open Agents";
 	const emptyStateMessage = session
-		? session.kind === "orchestrator"
-			? "Preparing the orchestrator terminal. This can take a moment while Open Agents creates the workspace and starts the agent."
+		? session.kind === "manager"
+			? "Preparing the manager terminal. This can take a moment while Open Agents creates the workspace and starts the agent."
 			: "Preparing the worker terminal. This can take a moment while Open Agents creates the workspace and starts the agent."
 		: "No session selected. Pick a worker to attach its terminal.";
 

@@ -13,7 +13,8 @@ trigger: "Using the open-agents CLI in an Open Agents workspace: spawning worker
 | `spawn` | Spawn a project worker or projectless standalone worker | Starting a new task or issue | [commands/spawn.md](commands/spawn.md) |
 | `session` | Manage agent sessions (list, kill, rename, restore, etc.) | Inspecting or controlling running/terminated sessions | [commands/session.md](commands/session.md) |
 | `project` | Register, inspect, configure, or remove projects | Setting up or managing repos Open Agents knows about | [commands/project.md](commands/project.md) |
-| `orchestrator` | List orchestrator sessions | Viewing which sessions are orchestrators | [commands/orchestrator.md](commands/orchestrator.md) |
+| `manager` | List manager sessions | Viewing which sessions are managers | [commands/manager.md](commands/manager.md) |
+| `manage` | Put a manager into delegating manager mode | Re-enabling delegation after planning | [commands/manage.md](commands/manage.md) |
 | `review` | Submit a reviewer result for a worker's PR | Completing a code review loop | [commands/review.md](commands/review.md) |
 | `send` | Send a message to a running agent session | Correcting or directing a live agent | [commands/send.md](commands/send.md) |
 | `preview` | Start a session-owned app or open an exact URL/file | Running and showing the worker's relevant app, Markdown, HTML, PDF, or image | [commands/preview.md](commands/preview.md) |

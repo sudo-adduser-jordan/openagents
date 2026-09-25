@@ -222,7 +222,7 @@ describe("SessionsBoard", () => {
 	it.each([
 		["active", "Working", "bg-status-working", true],
 		["idle", "Idle", "bg-status-idle", false],
-	] as const)("shows %s orchestrator activity in the in-panel board toolbar", (state, label, tone, pulses) => {
+	] as const)("shows %s manager activity in the in-panel board toolbar", (state, label, tone, pulses) => {
 		boardActionsInPanelMock.mockReturnValue(true);
 		workspaceQueryMock.mockReturnValue({
 			data: [
@@ -232,12 +232,12 @@ describe("SessionsBoard", () => {
 					path: "/tmp/solkit-ui",
 					sessions: [
 						{
-							id: "orch-1",
+							id: "mgr-1",
 							workspaceId: "p1",
 							workspaceName: "solkit-ui",
-							title: "orchestrator",
+							title: "manager",
 							provider: "opencode",
-							kind: "orchestrator",
+							kind: "manager",
 							branch: "main",
 							status: "working",
 							activity: { state, lastActivityAt: "2026-01-01T00:00:00Z" },
@@ -253,9 +253,9 @@ describe("SessionsBoard", () => {
 
 		renderBoard("p1");
 
-		const button = screen.getByRole("button", { name: `Orchestrator, ${label}` });
+		const button = screen.getByRole("button", { name: `Manager, ${label}` });
 		const indicator = button.querySelector("span.size-dot-sm") as HTMLElement;
-		expect(within(button).getByText("Orchestrator").hasAttribute("data-compact-label")).toBe(true);
+		expect(within(button).getByText("Manager").hasAttribute("data-compact-label")).toBe(true);
 		expect(indicator).toHaveAttribute("aria-hidden", "true");
 		expect(indicator).toHaveClass(tone);
 		expect(indicator).toHaveClass(pulses ? "animate-status-pulse" : "size-dot-sm");

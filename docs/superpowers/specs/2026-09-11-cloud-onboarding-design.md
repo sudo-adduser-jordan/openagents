@@ -71,7 +71,7 @@ match the real DTOs and error codes.
 `CloudProjectCard`, unchanged local flow):
 - Repository step (unchanged fields) → **Next** advances to a new agent step instead
   of creating immediately.
-- Agent step (`CloudAgentSetupStep`) — Worker + Orchestrator, using
+- Agent step (`CloudAgentSetupStep`) — Worker + Manager, using
   `RequiredAgentField` **exported from and shared with local's own agent sheet**
   (`CreateProjectAgentSheet.tsx`), fed cloud provider-connection state mapped into the
   same `AgentInfo` shape local readiness uses (`cloudAgentInfos()`). A provider with
@@ -84,9 +84,9 @@ match the real DTOs and error codes.
   revealed; saving the token (`client.putGitHubPAT`, real call/real validation, §2.2)
   automatically retries the same create with the agents already chosen — "Save and
   retry" actually retries, not just navigates back.
-- `config: { workerAgent, orchestratorAgent }` rides in `CreateProjectInput.config`
+- `config: { workerAgent, managerAgent }` rides in `CreateProjectInput.config`
   (already free-form JSON, no DTO/schema change) — the smallest-footprint way to
-  carry this until a real `workerAgent`/`orchestratorAgent` field is promoted onto the
+  carry this until a real `workerAgent`/`managerAgent` field is promoted onto the
   DTO, matching the "config can probably carry this without a schema change" note in
   the original §2.5 sketch.
 
@@ -122,7 +122,7 @@ namespace switcher, no org-approval-pending screen** in this pass — those are 
 - D. Flip PAT precedence to true fallback (finding 4)
 - E. Surface the agent-key requirement in the create flow, reusing
   `CreateProjectAgentSheet` (finding 6)
-- F. Orchestrator-button "add a coding agent" state (second net for E)
+- F. Manager-button "add a coding agent" state (second net for E)
 - G. Name the GitHub token scope + link to token creation in the credential UI
 
 **Explicitly out of scope for this pass:**
@@ -215,7 +215,7 @@ unselectable regardless of other providers' state.
 
 **Files:**
 - `cloud/internal/httpd/controllers/dto.go` (or the cloud-specific DTO file) — add
-  optional `workerAgent`/`orchestratorAgent` to `CreateProjectInput`. Check whether
+  optional `workerAgent`/`managerAgent` to `CreateProjectInput`. Check whether
   `config` (already free-form JSON) can carry this without a schema change, or whether
   it needs promoting to real fields — real fields are cleaner for the sheet to bind to
   and for validation, so prefer that unless it's a much bigger migration than expected.
@@ -246,11 +246,11 @@ doesn't need to be expanded (still show it collapsed with the default, per the m
 enabled; one connection → that harness auto-selected; multiple → ranked by
 `agentUsageCompare`, unselectable ones dimmed and non-clickable-to-submit.
 
-### 2.6 — Orchestrator button "add a coding agent" state (finding 6, second net)
+### 2.6 — Manager button "add a coding agent" state (finding 6, second net)
 
-**File:** wherever the cloud session/orchestrator start button lives in the renderer
+**File:** wherever the cloud session/manager start button lives in the renderer
 (project detail view — locate via `useCloudProjectsQuery`/`useCloudOrg` usage sites,
-likely near `TaskComposer.tsx`'s cloud branch or a sibling "start orchestrator" control).
+likely near `TaskComposer.tsx`'s cloud branch or a sibling "start manager" control).
 
 **Change:** before rendering the start control, check provider-connection state for the
 project's configured harness(es) the same way §2.5 does. If none are ready, render "Add

@@ -2,9 +2,9 @@ import * as Dialog from "@radix-ui/react-dialog";
 import { Loader2, X } from "lucide-react";
 import { useState } from "react";
 import { useWorkspaceScope } from "../hooks/useWorkspaceQuery";
-import { spawnOrchestrator } from "../lib/spawn-orchestrator";
+import { spawnManager } from "../lib/spawn-manager";
 import { useUiStore } from "../stores/ui-store";
-import { hasConfiguredOrchestratorAgent, isOrchestratorSession } from "../types/workspace";
+import { hasConfiguredManagerAgent, isManagerSession } from "../types/workspace";
 import type { WorkspaceSession } from "../types/workspace";
 import { Button } from "./ui/button";
 import {
@@ -18,21 +18,21 @@ type RestoreUnavailableDialogProps = {
 	open: boolean;
 	session: WorkspaceSession;
 	onOpenChange: (open: boolean) => void;
-	onRecreated: (newOrchestratorId: string) => void;
+	onRecreated: (newManagerId: string) => void;
 };
 
 export function RestoreUnavailableDialog({ open, session, onOpenChange, onRecreated }: RestoreUnavailableDialogProps) {
 	const workspaceQuery = useWorkspaceScope(session.workspaceId);
 	const [busy, setBusy] = useState(false);
 	const [error, setError] = useState<string | undefined>();
-	const orchestrator = isOrchestratorSession(session);
+	const manager = isManagerSession(session);
 	const workspace = workspaceQuery.data?.project;
-	const hasOrchestratorAgent = hasConfiguredOrchestratorAgent(workspace);
+	const hasManagerAgent = hasConfiguredManagerAgent(workspace);
 	const checkingProject = workspaceQuery.isLoading && workspaceQuery.data === undefined;
 
 	const recreate = async () => {
 		if (checkingProject) return;
-		if (!hasOrchestratorAgent) {
+		if (!hasManagerAgent) {
 			onOpenChange(false);
 			useUiStore.getState().openProjectSettings(session.workspaceId);
 			return;
@@ -40,11 +40,11 @@ export function RestoreUnavailableDialog({ open, session, onOpenChange, onRecrea
 		setBusy(true);
 		setError(undefined);
 		try {
-			const id = await spawnOrchestrator(session.workspaceId, "restore_dialog", true);
+			const id = await spawnManager(session.workspaceId, "restore_dialog", true);
 			onOpenChange(false);
 			onRecreated(id);
 		} catch (err) {
-			setError(err instanceof Error ? err.message : "Failed to create orchestrator");
+			setError(err instanceof Error ? err.message : "Failed to create manager");
 		} finally {
 			setBusy(false);
 		}
@@ -69,7 +69,7 @@ export function RestoreUnavailableDialog({ open, session, onOpenChange, onRecrea
 					<div className={settingsDialogHeaderClass}>
 						<Dialog.Title className="settings-dialog-title">{"Session can no longer be restored"}</Dialog.Title>
 						<Dialog.Description className="text-control text-settings-muted">
-							{orchestrator ? "This orchestrator has no saved agent session to resume. You can create a new orchestrator while Open Agents preserves any workspace data it cannot safely clean." : "This session has no saved agent session or prompt to resume from."}
+							{manager ? "This manager has no saved agent session to resume. You can create a new manager while Open Agents preserves any workspace data it cannot safely clean." : "This session has no saved agent session or prompt to resume from."}
 						</Dialog.Description>
 					</div>
 					{error ? (
@@ -79,9 +79,9 @@ export function RestoreUnavailableDialog({ open, session, onOpenChange, onRecrea
 					) : null}
 					<div className={settingsDialogFooterClass}>
 						<Button type="button" variant="footer" onClick={() => onOpenChange(false)} disabled={busy}>
-							{orchestrator ? "Cancel" : "Close"}
+							{manager ? "Cancel" : "Close"}
 						</Button>
-						{orchestrator ? (
+						{manager ? (
 							<Button
 								type="button"
 								variant="footer-primary"
@@ -91,9 +91,9 @@ export function RestoreUnavailableDialog({ open, session, onOpenChange, onRecrea
 								{busy ? <Loader2 className="size-icon-base animate-spin" aria-hidden="true" /> : null}
 								{checkingProject
 									? "Checking project…"
-									: hasOrchestratorAgent
-										? "Create new orchestrator"
-										: "Configure orchestrator agent"}
+									: hasManagerAgent
+										? "Create new manager"
+										: "Configure manager agent"}
 							</Button>
 						) : null}
 					</div>

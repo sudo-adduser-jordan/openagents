@@ -50,8 +50,8 @@ type conversationCreateOptions struct {
 }
 
 // CreateConversation opens a worker's session-scoped conversation or rebinds an
-// orchestrator's project-scoped narrative to its current session. Returning the
-// existing row makes controller restart and clean orchestrator replacement
+// manager's project-scoped narrative to its current session. Returning the
+// existing row makes controller restart and clean manager replacement
 // idempotent without splitting the project history.
 func (s *Store) CreateConversation(
 	ctx context.Context,
@@ -83,7 +83,7 @@ func (s *Store) OpenNativeConversation(ctx context.Context, id string, scope dom
 // CreateProjectConversationWithContextReset rebinds an existing project
 // conversation and records the fresh-context boundary in the same transaction.
 // The boundary is written before provider startup so paged readers never expose
-// the previous orchestrator's rows under the replacement session.
+// the previous manager's rows under the replacement session.
 func (s *Store) CreateProjectConversationWithContextReset(
 	ctx context.Context,
 	id string,
@@ -464,8 +464,8 @@ func (s *Store) commitChatSpawn(
 				return err
 			}
 			for _, session := range sessions {
-				if session.Kind == domain.KindOrchestrator && session.ID != rec.ID && !session.IsTerminated {
-					return errors.New("native Chat handoff has a competing live orchestrator")
+				if session.Kind == domain.KindManager && session.ID != rec.ID && !session.IsTerminated {
+					return errors.New("native Chat handoff has a competing live manager")
 				}
 			}
 			if err := q.BindProjectConversationSession(ctx, gen.BindProjectConversationSessionParams{
@@ -610,7 +610,7 @@ func (s *Store) UpdateConversationBranchReplacement(
 // A non-empty returned branch means a repair was applied. restoredProviderOwner
 // is true only when the abandoned child belongs to the same Open Agents session, so
 // startup may replace that session's stale child provider handle. A project
-// conversation can be rebound to a new orchestrator session; that new owner must
+// conversation can be rebound to a new manager session; that new owner must
 // start its own provider boundary rather than inherit the prior agent's handle.
 func (s *Store) RepairIncompleteConversationEdit(
 	ctx context.Context,
@@ -692,7 +692,7 @@ func (s *Store) RepairIncompleteConversationEdit(
 		repaired = parent
 		if active.SessionID != sessionID {
 			// CreateConversation may have just rebound a project narrative to a new
-			// orchestrator. Repair the lineage, but never copy the prior agent's
+			// manager. Repair the lineage, but never copy the prior agent's
 			// opaque provider handle into this new session.
 			return nil
 		}

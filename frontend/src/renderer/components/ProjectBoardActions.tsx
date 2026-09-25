@@ -1,42 +1,42 @@
 import { type CSSProperties } from "react";
 import { Plus } from "lucide-react";
-import type { ProjectOrchestratorAction } from "../hooks/useProjectOrchestratorAction";
+import type { ProjectManagerAction } from "../hooks/useProjectManagerAction";
 import { getAgentActivityView } from "../lib/session-presentation";
 import { TopbarActionError, TopbarButton } from "./TopbarButton";
-import { OrchestratorActivityIndicator } from "./OrchestratorActivityIndicator";
-import { OrchestratorIcon } from "./icons";
+import { ManagerActivityIndicator } from "./ManagerActivityIndicator";
+import { ManagerIcon } from "./icons";
 import { Tooltip, TooltipContent, TooltipTrigger } from "./ui/tooltip";
 
 export function ProjectBoardActions({ actions, placement, quiet = false, style }: {
-	actions: ProjectOrchestratorAction;
+	actions: ProjectManagerAction;
 	placement: "header" | "empty";
 	quiet?: boolean;
 	style?: CSSProperties;
 }) {
-	const { orchestrator, isSpawning, isProjectRestarting, isProvisioning, spawnError, canCreateAsTui,
-		openNewTask, openOrchestrator } = actions;
+	const { manager, isSpawning, isProjectRestarting, isProvisioning, spawnError, canCreateAsTui,
+		openNewTask, openManager } = actions;
 	const header = placement === "header";
 	const busy = isSpawning || isProjectRestarting || isProvisioning;
-	const activity = orchestrator ? getAgentActivityView(orchestrator.activity).label : undefined;
-	const actionLabel = orchestrator ? "Open orchestrator" : "Spawn Orchestrator";
+	const activity = manager ? getAgentActivityView(manager.activity).label : undefined;
+	const actionLabel = manager ? "Open manager" : "Spawn Manager";
 	const busyLabel = isProjectRestarting ? "Restarting..." : isProvisioning
 		? "Setting up..." : isSpawning ? "Spawning..." : undefined;
-	const orchestratorButton = (
+	const managerButton = (
 		<Tooltip>
 			<TooltipTrigger asChild>
 				<span className="inline-flex" style={style}>
 					<TopbarButton
-						aria-label={activity ? `Orchestrator, ${activity}` : actionLabel}
+						aria-label={activity ? `Manager, ${activity}` : actionLabel}
 						aria-busy={busy}
 						className={header ? "topbar-control--labeled" : undefined}
 						data-priority={header ? "secondary" : undefined}
 						disabled={busy}
-						onClick={() => openOrchestrator()}
+						onClick={() => openManager()}
 						variant={quiet ? "secondary" : "primary"}
 					>
-						<OrchestratorIcon className="size-icon-md" aria-hidden="true" />
-						<span data-compact-label={header ? "" : undefined}>{busyLabel ?? "Orchestrator"}</span>
-						{orchestrator ? <OrchestratorActivityIndicator session={orchestrator} /> : null}
+						<ManagerIcon className="size-icon-md" aria-hidden="true" />
+						<span data-compact-label={header ? "" : undefined}>{busyLabel ?? "Manager"}</span>
+						{manager ? <ManagerActivityIndicator session={manager} /> : null}
 					</TopbarButton>
 				</span>
 			</TooltipTrigger>
@@ -68,11 +68,11 @@ export function ProjectBoardActions({ actions, placement, quiet = false, style }
 			<TopbarActionError role={header ? "alert" : "status"} className={header ? "max-w-content-max truncate" : "text-caption leading-body"} title={spawnError}>
 				{spawnError}
 			</TopbarActionError>
-			{canCreateAsTui ? <TopbarButton disabled={busy} onClick={() => openOrchestrator("tui")} style={style}>{"Create as Terminal UI"}</TopbarButton> : null}
+			{canCreateAsTui ? <TopbarButton disabled={busy} onClick={() => openManager("tui")} style={style}>{"Create as Terminal UI"}</TopbarButton> : null}
 		</div>
 	) : null;
-	return header ? <>{feedback}{newTaskButton}{orchestratorButton}</> : <>
-		<div className="mt-5 flex items-center gap-2">{orchestratorButton}{newTaskButton}</div>
+	return header ? <>{feedback}{newTaskButton}{managerButton}</> : <>
+		<div className="mt-5 flex items-center gap-2">{managerButton}{newTaskButton}</div>
 		{feedback}
 	</>;
 }

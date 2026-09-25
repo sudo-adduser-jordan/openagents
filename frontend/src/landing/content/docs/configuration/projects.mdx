@@ -1,6 +1,6 @@
 ---
 title: Projects
-description: Configure a registered project, its worker and orchestrator agents, setup, rules, reviews, and intake.
+description: Configure a registered project, its worker and manager agents, setup, rules, reviews, and intake.
 ---
 
 A project is a repository, a multi-repository workspace, or an Open Agents-managed Scratch directory. Open Agents stores project identity and typed configuration in its database; there is no current `open-agents.yaml` lookup or global YAML registry.
@@ -36,10 +36,10 @@ Project settings expose the fields that Open Agents consumes at spawn time:
 | `postCreate` | Shell commands run after workspace creation |
 | `agentConfig` | Default model and permission settings |
 | `worker` | Worker harness and agent-config override |
-| `orchestrator` | Orchestrator harness and agent-config override |
+| `manager` | Manager harness and agent-config override |
 | `agentRules` | Inline standing instructions for workers |
 | `agentRulesFile` | Repo-relative rules file appended to worker instructions |
-| `orchestratorRules` | Standing instructions for orchestrator sessions |
+| `managerRules` | Standing instructions for manager sessions |
 | `reviewers` | Reviewer harnesses used for Open Agents review runs |
 | `trackerIntake` | Opt-in, read-only issue intake that can spawn workers |
 | `containerReap` | Project-wide opt-out from Open Agents's session-container cleanup |
@@ -50,9 +50,9 @@ Project settings expose the fields that Open Agents consumes at spawn time:
 
 Open Agents never treats the currently checked-out branch, `main`, or `master` as an inferred default. If a repository has no authoritative remote default (or has ambiguous remotes), spawn returns `DEFAULT_BRANCH_UNRESOLVED`. For a single repository or workspace root, set `defaultBranch` explicitly. For a workspace child, configure its primary remote with `checkout.defaultRemote` when needed and set its cached remote `HEAD` with `git remote set-head`. Repositories initialized by Open Agents are the exception because Open Agents records its branch choice when it creates them; older Open Agents-created repositories are recognized and backfilled on first resolution.
 
-## Worker and orchestrator roles
+## Worker and manager roles
 
-Workers implement tasks and own code changes. Orchestrators supervise a project and coordinate workers. Configure their harnesses independently:
+Workers implement tasks and own code changes. Managers supervise a project and coordinate workers. Configure their harnesses independently:
 
 ```json
 {
@@ -60,7 +60,7 @@ Workers implement tasks and own code changes. Orchestrators supervise a project 
     "agent": "codex",
     "agentConfig": { "model": "gpt-5.4", "permissions": "bypass-permissions" }
   },
-  "orchestrator": {
+  "manager": {
     "agent": "opencode",
     "agentConfig": { "model": "gpt-5" }
   }
@@ -83,7 +83,7 @@ Choose the default interface in desktop project settings. Override it for a sing
 
 Use `env`, `symlinks`, and `postCreate` for repeatable workspace setup. A failing `postCreate` command prevents the agent from starting, so keep setup deterministic.
 
-Use `agentRules` or `agentRulesFile` for worker instructions and `orchestratorRules` for supervision-specific guidance. Open Agents combines inline and file-based worker rules when both are present.
+Use `agentRules` or `agentRulesFile` for worker instructions and `managerRules` for supervision-specific guidance. Open Agents combines inline and file-based worker rules when both are present.
 
 ## Reviewer agents
 
@@ -170,20 +170,20 @@ agentRulesFile: AGENTS.md
 
 If both are set, Open Agents includes both.
 
-Use `orchestratorRules` for instructions that only apply to the orchestrator session:
+Use `managerRules` for instructions that only apply to the manager session:
 
 ```yaml
-orchestratorRules: |
+managerRules: |
   Split large issues into small worker tasks.
   Review worker output before asking for a merge.
 ```
 
-## Split Orchestrator And Worker Roles
+## Split Manager And Worker Roles
 
-You can run one agent/model for orchestration and another for implementation:
+You can run one agent/model for management and another for implementation:
 
 ```yaml
-orchestrator:
+manager:
   agent: opencode
   agentConfig:
     model: gpt-5
@@ -199,7 +199,7 @@ Use this when planning/review needs a stronger model but routine implementation 
 
 ## Choose A Reviewer
 
-Reviewer agents are configured independently from worker and orchestrator agents:
+Reviewer agents are configured independently from worker and manager agents:
 
 ```yaml
 reviewers:
@@ -286,15 +286,15 @@ See [Reactions](/docs/configuration/reactions) for the event list and action beh
 Use these only when you need explicit recovery behavior.
 
 ```yaml
-orchestratorSessionStrategy: reuse
+managerSessionStrategy: reuse
 opencodeIssueSessionStrategy: reuse
 ```
 
-`orchestratorSessionStrategy` accepts:
+`managerSessionStrategy` accepts:
 
 | Value           | Behavior                                              |
 | --------------- | ----------------------------------------------------- |
-| `reuse`         | Attach to the existing orchestrator session           |
+| `reuse`         | Attach to the existing manager session           |
 | `delete`        | Delete the old session and start a new one            |
 | `ignore`        | Leave the old session and start another               |
 | `delete-new`    | Delete any newly detected duplicate                   |
@@ -319,13 +319,13 @@ These fields are valid in a local project config:
 | `symlinks`                     | `string[]` | Files/directories linked into each workspace |
 | `postCreate`                   | `string[]` | Commands run after workspace creation        |
 | `agentConfig`                  | `object`   | Agent permissions/model/options              |
-| `orchestrator`                 | `object`   | Orchestrator role override                   |
+| `manager`                 | `object`   | Manager role override                   |
 | `worker`                       | `object`   | Worker role override                         |
 | `reactions`                    | `object`   | Per-project automation overrides             |
 | `agentRules`                   | `string`   | Inline worker instructions                   |
 | `agentRulesFile`               | `string`   | Path to a rules file                         |
-| `orchestratorRules`            | `string`   | Orchestrator-only instructions               |
-| `orchestratorSessionStrategy`  | `string`   | Duplicate orchestrator recovery behavior     |
+| `managerRules`            | `string`   | Manager-only instructions               |
+| `managerSessionStrategy`  | `string`   | Duplicate manager recovery behavior     |
 | `opencodeIssueSessionStrategy` | `string`   | Duplicate OpenCode issue-session behavior    |
 | `decomposer`                   | `object`   | Advanced decomposition settings              |
 
@@ -351,6 +351,6 @@ Make sure the corresponding CLI or token is authenticated for the plugin you use
 ## Next Steps
 
 <Cards>
-	<Card title="Per-role agents" href="/docs/guides/per-role-agents" description="Choose worker and orchestrator harnesses." />
+	<Card title="Per-role agents" href="/docs/guides/per-role-agents" description="Choose worker and manager harnesses." />
 	<Card title="Parallel work" href="/docs/guides/parallel-issues" description="Start isolated sessions across projects." />
 </Cards>

@@ -530,9 +530,9 @@ func TestBeginEditProviderWorkUsesCurrentConversationOwner(t *testing.T) {
 		wantErr    bool
 	}{
 		{name: "worker", scope: domain.ConversationScopeSession, mode: domain.SessionModeChat},
-		{name: "orchestrator", scope: domain.ConversationScopeProject, mode: domain.SessionModeChat},
-		{name: "rebound orchestrator", scope: domain.ConversationScopeProject, rebind: true, mode: domain.SessionModeChat},
-		{name: "previous orchestrator", scope: domain.ConversationScopeProject, rebind: true, stale: true, mode: domain.SessionModeChat, wantErr: true},
+		{name: "manager", scope: domain.ConversationScopeProject, mode: domain.SessionModeChat},
+		{name: "rebound manager", scope: domain.ConversationScopeProject, rebind: true, mode: domain.SessionModeChat},
+		{name: "previous manager", scope: domain.ConversationScopeProject, rebind: true, stale: true, mode: domain.SessionModeChat, wantErr: true},
 		{name: "stale generation", scope: domain.ConversationScopeSession, stale: true, mode: domain.SessionModeChat, wantErr: true},
 		{name: "terminal owner", scope: domain.ConversationScopeProject, mode: domain.SessionModeTUI, wantErr: true},
 		{name: "terminated owner", scope: domain.ConversationScopeProject, mode: domain.SessionModeChat, terminated: true, wantErr: true},
@@ -1172,7 +1172,7 @@ func TestRepairIncompleteProjectEditDoesNotTransferProviderOwnerToReboundSession
 
 	sourceRecord := sampleRecord("edit-rebind")
 	sourceRecord.Mode = domain.SessionModeChat
-	sourceRecord.Kind = domain.KindOrchestrator
+	sourceRecord.Kind = domain.KindManager
 	sourceRecord.Harness = domain.HarnessOpenCode
 	sourceRecord.Metadata.ProviderConversationID = "claude-source-thread"
 	sourceRecord.Metadata.ControllerGeneration = "claude-source-generation"
@@ -1200,7 +1200,7 @@ func TestRepairIncompleteProjectEditDoesNotTransferProviderOwnerToReboundSession
 
 	targetRecord := sampleRecord("edit-rebind")
 	targetRecord.Mode = domain.SessionModeChat
-	targetRecord.Kind = domain.KindOrchestrator
+	targetRecord.Kind = domain.KindManager
 	targetRecord.Harness = domain.HarnessOpenCode
 	target, err := s.CreateSession(ctx, targetRecord)
 	if err != nil {

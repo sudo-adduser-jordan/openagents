@@ -267,7 +267,7 @@ func TestE2E_SpawnAndProjectAddDTORoundTrip(t *testing.T) {
 			"--id", "demo",
 			"--name", "Demo",
 			"--worker-agent", "opencode",
-			"--orchestrator-agent", "opencode",
+			"--manager-agent", "opencode",
 			"--as-workspace",
 		})
 		if err := root.Execute(); err != nil {
@@ -290,8 +290,8 @@ func TestE2E_SpawnAndProjectAddDTORoundTrip(t *testing.T) {
 		if got.Config.Worker.Harness != domain.HarnessOpenCode {
 			t.Errorf("Config.Worker.Harness = %q, want opencode", got.Config.Worker.Harness)
 		}
-		if got.Config.Orchestrator.Harness != domain.HarnessOpenCode {
-			t.Errorf("Config.Orchestrator.Harness = %q, want opencode", got.Config.Orchestrator.Harness)
+		if got.Config.Manager.Harness != domain.HarnessOpenCode {
+			t.Errorf("Config.Manager.Harness = %q, want opencode", got.Config.Manager.Harness)
 		}
 		if !got.AsWorkspace {
 			t.Errorf("AsWorkspace = false, want true (CLI json:\"asWorkspace\" vs AddInput)")

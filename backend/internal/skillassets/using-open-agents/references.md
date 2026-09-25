@@ -32,7 +32,8 @@ Natural-language-to-command mappings for common Open Agents tasks.
 | Check the daemon is up | `open-agents status` |
 | Run health checks | `open-agents doctor` |
 | Clear the preview panel | `open-agents preview clear` |
-| List orchestrator sessions | `open-agents orchestrator ls` |
+| List manager sessions | `open-agents manager ls` |
+| Let a planning manager delegate work | `open-agents manage <manager-id>` |
 | Claim an existing PR for the current session | `open-agents session claim-pr <pr-ref>` (`OPEN_AGENTS_SESSION_ID`) |
 | Claim an existing PR for another session | `open-agents session claim-pr <id> <pr-ref>` |
 | Submit a code review verdict | `open-agents review submit <session-id> --run <run-id> --verdict approved` |

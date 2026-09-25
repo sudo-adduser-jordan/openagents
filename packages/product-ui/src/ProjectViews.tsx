@@ -309,7 +309,7 @@ export function ProjectSetupFormView({
 	submitClassName,
 	cancelLabel,
 }: {
-	agentControls: { worker: ReactNode; orchestrator: ReactNode };
+	agentControls: { worker: ReactNode; manager: ReactNode };
 	agents: {
 		cacheMessage?: string;
 		error?: string | null;
@@ -338,7 +338,7 @@ export function ProjectSetupFormView({
 		<form className="space-y-5 p-4" onSubmit={submit}>
 			<div className="grid gap-4 sm:grid-cols-2">
 				{agentControls.worker}
-				{agentControls.orchestrator}
+				{agentControls.manager}
 			</div>
 
 			{agents.loading && (
@@ -661,19 +661,19 @@ export function ProjectGeneralSettingsView({
 
 export function ProjectAgentsSettingsView({
 	missingRequiredMessage,
-	orchestratorArea,
-	orchestratorModelArea,
+	managerArea,
+	managerModelArea,
 	permissions,
-	orchestratorPermissions,
+	managerPermissions,
 	title,
 	workerArea,
 	workerModelArea,
 }: {
 	missingRequiredMessage?: string | null;
-	orchestratorArea: ReactNode;
-	orchestratorModelArea: ReactNode;
+	managerArea: ReactNode;
+	managerModelArea: ReactNode;
 	permissions: { control: ReactNode; icon?: ReactNode; label: string };
-	orchestratorPermissions?: { control: ReactNode; icon?: ReactNode; label: string };
+	managerPermissions?: { control: ReactNode; icon?: ReactNode; label: string };
 	title: string;
 	workerArea: ReactNode;
 	workerModelArea: ReactNode;
@@ -682,14 +682,14 @@ export function ProjectAgentsSettingsView({
 		<ProjectSettingsSection title={title} titleHidden grouped>
 			{workerArea}
 			{workerModelArea}
-			{orchestratorArea}
-			{orchestratorModelArea}
+			{managerArea}
+			{managerModelArea}
 			<ProjectSettingsRow icon={permissions.icon} label={permissions.label}>
 				{permissions.control}
 			</ProjectSettingsRow>
-			{orchestratorPermissions ? (
-				<ProjectSettingsRow icon={orchestratorPermissions.icon} label={orchestratorPermissions.label}>
-					{orchestratorPermissions.control}
+			{managerPermissions ? (
+				<ProjectSettingsRow icon={managerPermissions.icon} label={managerPermissions.label}>
+					{managerPermissions.control}
 				</ProjectSettingsRow>
 			) : null}
 			{missingRequiredMessage && (

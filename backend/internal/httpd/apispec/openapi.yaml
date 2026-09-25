@@ -822,6 +822,161 @@ paths:
       summary: Validate a selected folder for project import onboarding
       tags:
       - import
+  /api/v1/managers:
+    get:
+      operationId: listManagers
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ListSessionsResponse'
+          description: OK
+        "500":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/APIError'
+          description: Internal Server Error
+        "501":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/APIError'
+          description: Not Implemented
+      summary: List manager sessions across projects
+      tags:
+      - sessions
+    post:
+      operationId: spawnManager
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/SpawnManagerRequest'
+        required: true
+      responses:
+        "201":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SpawnManagerResponse'
+          description: Created
+        "400":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/APIError'
+          description: Bad Request
+        "404":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/APIError'
+          description: Not Found
+        "500":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/APIError'
+          description: Internal Server Error
+        "501":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/APIError'
+          description: Not Implemented
+      summary: Spawn a manager session
+      tags:
+      - sessions
+  /api/v1/managers/{id}:
+    get:
+      operationId: getManager
+      parameters:
+      - description: Manager session identifier, e.g. project-manager.
+        in: path
+        name: id
+        required: true
+        schema:
+          description: Manager session identifier, e.g. project-manager.
+          type: string
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SessionResponse'
+          description: OK
+        "404":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/APIError'
+          description: Not Found
+        "500":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/APIError'
+          description: Internal Server Error
+        "501":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/APIError'
+          description: Not Implemented
+      summary: Fetch one manager session
+      tags:
+      - sessions
+  /api/v1/managers/delegate:
+    post:
+      operationId: delegateTask
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/DelegateTaskRequest'
+        required: true
+      responses:
+        "202":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/DelegateTaskResponse'
+          description: Accepted
+        "400":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/APIError'
+          description: Bad Request
+        "404":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/APIError'
+          description: Not Found
+        "409":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/APIError'
+          description: Conflict
+        "500":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/APIError'
+          description: Internal Server Error
+        "501":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/APIError'
+          description: Not Implemented
+      summary: Start a worker task and ask the manager to title it
+      tags:
+      - sessions
   /api/v1/notifications:
     get:
       operationId: listNotifications
@@ -1002,161 +1157,6 @@ paths:
       summary: Stream created notifications
       tags:
       - notifications
-  /api/v1/orchestrators:
-    get:
-      operationId: listOrchestrators
-      responses:
-        "200":
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/ListSessionsResponse'
-          description: OK
-        "500":
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/APIError'
-          description: Internal Server Error
-        "501":
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/APIError'
-          description: Not Implemented
-      summary: List orchestrator sessions across projects
-      tags:
-      - sessions
-    post:
-      operationId: spawnOrchestrator
-      requestBody:
-        content:
-          application/json:
-            schema:
-              $ref: '#/components/schemas/SpawnOrchestratorRequest'
-        required: true
-      responses:
-        "201":
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/SpawnOrchestratorResponse'
-          description: Created
-        "400":
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/APIError'
-          description: Bad Request
-        "404":
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/APIError'
-          description: Not Found
-        "500":
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/APIError'
-          description: Internal Server Error
-        "501":
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/APIError'
-          description: Not Implemented
-      summary: Spawn an orchestrator session
-      tags:
-      - sessions
-  /api/v1/orchestrators/{id}:
-    get:
-      operationId: getOrchestrator
-      parameters:
-      - description: Orchestrator session identifier, e.g. project-orchestrator.
-        in: path
-        name: id
-        required: true
-        schema:
-          description: Orchestrator session identifier, e.g. project-orchestrator.
-          type: string
-      responses:
-        "200":
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/SessionResponse'
-          description: OK
-        "404":
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/APIError'
-          description: Not Found
-        "500":
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/APIError'
-          description: Internal Server Error
-        "501":
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/APIError'
-          description: Not Implemented
-      summary: Fetch one orchestrator session
-      tags:
-      - sessions
-  /api/v1/orchestrators/delegate:
-    post:
-      operationId: delegateTask
-      requestBody:
-        content:
-          application/json:
-            schema:
-              $ref: '#/components/schemas/DelegateTaskRequest'
-        required: true
-      responses:
-        "202":
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/DelegateTaskResponse'
-          description: Accepted
-        "400":
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/APIError'
-          description: Bad Request
-        "404":
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/APIError'
-          description: Not Found
-        "409":
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/APIError'
-          description: Conflict
-        "500":
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/APIError'
-          description: Internal Server Error
-        "501":
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/APIError'
-          description: Not Implemented
-      summary: Start a worker task and ask the orchestrator to title it
-      tags:
-      - sessions
   /api/v1/projects:
     get:
       operationId: listProjects
@@ -1724,11 +1724,11 @@ paths:
           type:
           - "null"
           - boolean
-      - description: When true, return only orchestrator sessions.
+      - description: When true, return only manager sessions.
         in: query
-        name: orchestratorOnly
+        name: managerOnly
         schema:
-          description: When true, return only orchestrator sessions.
+          description: When true, return only manager sessions.
           type:
           - "null"
           - boolean
@@ -4961,7 +4961,7 @@ paths:
               schema:
                 $ref: '#/components/schemas/APIError'
           description: Not Implemented
-      summary: Move a session between planning and building
+      summary: Set a session's planning, manager, or building workflow mode
       tags:
       - sessions
   /api/v1/sessions/{sessionId}/workspace/diffs:
@@ -6793,6 +6793,7 @@ components:
         workflowMode:
           enum:
           - planning
+          - manager
           - building
           type: string
       required:
@@ -7525,10 +7526,10 @@ components:
       type: object
     DelegateTaskResponse:
       properties:
+        managerId:
+          type: string
         ok:
           type: boolean
-        orchestratorId:
-          type: string
         workerId:
           type: string
       required:
@@ -8150,6 +8151,18 @@ components:
       - entries
       - truncated
       type: object
+    ManagerResponse:
+      properties:
+        id:
+          type: string
+        projectId:
+          type: string
+        projectName:
+          type: string
+      required:
+      - id
+      - projectId
+      type: object
     MarkAllNotificationsReadRequest:
       properties:
         ids:
@@ -8297,18 +8310,6 @@ components:
           description: 'Windows shell selector: auto, git-bash, pwsh, powershell,
             cmd, or a custom executable path. Ignored on macOS and Linux.'
           type: string
-      type: object
-    OrchestratorResponse:
-      properties:
-        id:
-          type: string
-        projectId:
-          type: string
-        projectName:
-          type: string
-      required:
-      - id
-      - projectId
       type: object
     PRReviewState:
       properties:
@@ -8458,9 +8459,9 @@ components:
           additionalProperties:
             type: string
           type: object
-        orchestrator:
+        manager:
           $ref: '#/components/schemas/RoleOverride'
-        orchestratorRules:
+        managerRules:
           type: string
         postCreate:
           items:
@@ -8518,9 +8519,9 @@ components:
           - workspace
           - scratch
           type: string
-        name:
+        managerAgent:
           type: string
-        orchestratorAgent:
+        name:
           type: string
         path:
           type: string
@@ -9568,6 +9569,7 @@ components:
         workflowMode:
           enum:
           - planning
+          - manager
           - building
           type: string
       required:
@@ -9584,6 +9586,7 @@ components:
         workflowMode:
           enum:
           - planning
+          - manager
           - building
           type: string
       required:
@@ -9635,7 +9638,7 @@ components:
       - title
       - createdAt
       type: object
-    SpawnOrchestratorRequest:
+    SpawnManagerRequest:
       properties:
         clean:
           type: boolean
@@ -9649,12 +9652,12 @@ components:
       required:
       - projectId
       type: object
-    SpawnOrchestratorResponse:
+    SpawnManagerResponse:
       properties:
-        orchestrator:
-          $ref: '#/components/schemas/OrchestratorResponse'
+        manager:
+          $ref: '#/components/schemas/ManagerResponse'
       required:
-      - orchestrator
+      - manager
       type: object
     SpawnSessionRequest:
       properties:
@@ -9676,7 +9679,7 @@ components:
         kind:
           enum:
           - worker
-          - orchestrator
+          - manager
           type: string
         mode:
           enum:

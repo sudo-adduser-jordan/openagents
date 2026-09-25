@@ -53,10 +53,10 @@ test(`renderer: workspace import preserves the root branch and explains unresolv
 	});
 	await page.goto("/#/");
 	await page.evaluate(() => {
-		// The default fixture has a running orchestrator. This test represents a
+		// The default fixture has a running manager. This test represents a
 		// failed first spawn, so every later CDC/query refresh must also have none.
 		// Otherwise SessionsBoard correctly clears the startup error on refresh.
-		window.__openAgentsFakeAgent!.removeWorker("local-root-orchestrator");
+		window.__openAgentsFakeAgent!.removeWorker("local-root-manager");
 		const bridge = (window as unknown as { openAgents: OpenAgentsBridge }).openAgents;
 		bridge.app.chooseDirectory = async () => "/repos/local-root";
 		bridge.app.checkAncestorRepo = async () => undefined;

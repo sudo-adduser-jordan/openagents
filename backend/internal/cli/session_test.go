@@ -61,10 +61,10 @@ func sessionCommandServer(t *testing.T) (*httptest.Server, *sessionRequestLog) {
 			case "false":
 				_, _ = io.WriteString(w, `{"sessions":[`+
 					sessionJSON("demo-old", "demo", "worker", "terminated", true)+`,`+
-					sessionJSON("demo-orch", "demo", "orchestrator", "terminated", true)+`]}`)
+					sessionJSON("demo-orch", "demo", "manager", "terminated", true)+`]}`)
 			default:
 				_, _ = io.WriteString(w, `{"sessions":[`+
-					sessionJSON("demo-2", "demo", "orchestrator", "idle", false)+`,`+
+					sessionJSON("demo-2", "demo", "manager", "idle", false)+`,`+
 					sessionJSON("demo-1", "demo", "worker", "working", false)+`]}`)
 			}
 		case r.Method == http.MethodGet && r.URL.Path == "/api/v1/sessions/demo-1":
@@ -144,13 +144,13 @@ func TestSessionList_ProjectFilterAndDefaultFiltering(t *testing.T) {
 		t.Fatalf("output missing worker session:\n%s", out)
 	}
 	if strings.Contains(out, "demo-2") {
-		t.Fatalf("orchestrator session should be hidden without --all:\n%s", out)
+		t.Fatalf("manager session should be hidden without --all:\n%s", out)
 	}
 	if !strings.Contains(out, "1 terminated session hidden") {
 		t.Fatalf("hidden terminated hint missing:\n%s", out)
 	}
-	if !strings.Contains(out, "2 orchestrator sessions hidden. Use --all or `open-agents orchestrator ls` to show.") {
-		t.Fatalf("hidden orchestrator hint missing:\n%s", out)
+	if !strings.Contains(out, "2 manager sessions hidden. Use --all or `open-agents manager ls` to show.") {
+		t.Fatalf("hidden manager hint missing:\n%s", out)
 	}
 	want := []string{
 		"GET /api/v1/sessions?active=true&project=demo",
@@ -161,7 +161,7 @@ func TestSessionList_ProjectFilterAndDefaultFiltering(t *testing.T) {
 	}
 }
 
-func TestSessionList_HintsWhenOnlyTerminatedOrchestratorIsHidden(t *testing.T) {
+func TestSessionList_HintsWhenOnlyTerminatedManagerIsHidden(t *testing.T) {
 	cfg := setConfigEnv(t)
 	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		w.Header().Set("Content-Type", "application/json")
@@ -170,7 +170,7 @@ func TestSessionList_HintsWhenOnlyTerminatedOrchestratorIsHidden(t *testing.T) {
 			return
 		}
 		if r.URL.Query().Get("active") == "false" {
-			_, _ = io.WriteString(w, `{"sessions":[`+sessionJSON("demo-orch-old", "demo", "orchestrator", "terminated", true)+`]}`)
+			_, _ = io.WriteString(w, `{"sessions":[`+sessionJSON("demo-orch-old", "demo", "manager", "terminated", true)+`]}`)
 			return
 		}
 		_, _ = io.WriteString(w, `{"sessions":[]}`)
@@ -184,11 +184,11 @@ func TestSessionList_HintsWhenOnlyTerminatedOrchestratorIsHidden(t *testing.T) {
 	if err != nil {
 		t.Fatalf("session ls failed: %v\nstderr=%s", err, errOut)
 	}
-	if !strings.Contains(out, "1 orchestrator session hidden. Use --all or `open-agents orchestrator ls` to show.") {
-		t.Fatalf("terminated orchestrator hint missing:\n%s", out)
+	if !strings.Contains(out, "1 manager session hidden. Use --all or `open-agents manager ls` to show.") {
+		t.Fatalf("terminated manager hint missing:\n%s", out)
 	}
 	if strings.Contains(out, "terminated session hidden") {
-		t.Fatalf("terminated orchestrator should not be reported as visible via --include-terminated alone:\n%s", out)
+		t.Fatalf("terminated manager should not be reported as visible via --include-terminated alone:\n%s", out)
 	}
 }
 
@@ -210,8 +210,8 @@ func TestSessionList_JSONOutputDecodes(t *testing.T) {
 	if got.Meta.HiddenTerminatedCount != 1 {
 		t.Fatalf("hiddenTerminatedCount = %d, want 1", got.Meta.HiddenTerminatedCount)
 	}
-	if got.Meta.HiddenOrchestratorCount != 2 {
-		t.Fatalf("hiddenOrchestratorCount = %d, want 2", got.Meta.HiddenOrchestratorCount)
+	if got.Meta.HiddenManagerCount != 2 {
+		t.Fatalf("hiddenManagerCount = %d, want 2", got.Meta.HiddenManagerCount)
 	}
 	if len(got.Data) != 1 {
 		t.Fatalf("len(data) = %d, want 1; data=%#v", len(got.Data), got.Data)
@@ -359,7 +359,7 @@ func TestSessionList_ThreadCountUnknownVersusObservedZero(t *testing.T) {
 	}
 }
 
-func TestSessionList_AllIncludesOrchestratorsWithoutHiddenHint(t *testing.T) {
+func TestSessionList_AllIncludesManagersWithoutHiddenHint(t *testing.T) {
 	cfg := setConfigEnv(t)
 	srv, _ := sessionCommandServer(t)
 	writeRunFileFor(t, cfg, srv)
@@ -371,10 +371,10 @@ func TestSessionList_AllIncludesOrchestratorsWithoutHiddenHint(t *testing.T) {
 		t.Fatalf("session ls --all failed: %v\nstderr=%s", err, errOut)
 	}
 	if !strings.Contains(out, "demo-1") || !strings.Contains(out, "demo-2") {
-		t.Fatalf("output missing worker or orchestrator session:\n%s", out)
+		t.Fatalf("output missing worker or manager session:\n%s", out)
 	}
-	if strings.Contains(out, "orchestrator session hidden") {
-		t.Fatalf("output reports hidden orchestrators with --all:\n%s", out)
+	if strings.Contains(out, "manager session hidden") {
+		t.Fatalf("output reports hidden managers with --all:\n%s", out)
 	}
 }
 
@@ -559,7 +559,7 @@ func TestSessionCleanup_ReportsAlreadyGoneWorkspacesSeparately(t *testing.T) {
 		case r.Method == http.MethodGet && r.URL.Path == "/api/v1/sessions":
 			_, _ = io.WriteString(w, `{"sessions":[`+
 				sessionJSON("demo-old", "demo", "worker", "terminated", true)+`,`+
-				sessionJSON("demo-orch", "demo", "orchestrator", "terminated", true)+`]}`)
+				sessionJSON("demo-orch", "demo", "manager", "terminated", true)+`]}`)
 		case r.Method == http.MethodPost && r.URL.Path == "/api/v1/sessions/cleanup":
 			_, _ = io.WriteString(w, `{"ok":true,"cleaned":["demo-old"],"alreadyGone":["demo-orch"],"skipped":[]}`)
 		default:
@@ -635,7 +635,7 @@ func TestSessionCleanup_ReportsSkippedWorkspaces(t *testing.T) {
 		case r.Method == http.MethodGet && r.URL.Path == "/api/v1/sessions":
 			_, _ = io.WriteString(w, `{"sessions":[`+
 				sessionJSON("demo-old", "demo", "worker", "terminated", true)+`,`+
-				sessionJSON("demo-orch", "demo", "orchestrator", "terminated", true)+`]}`)
+				sessionJSON("demo-orch", "demo", "manager", "terminated", true)+`]}`)
 		case r.Method == http.MethodPost && r.URL.Path == "/api/v1/sessions/cleanup":
 			_, _ = io.WriteString(w, `{"ok":true,"cleaned":["demo-old"],"skipped":[{"sessionId":"demo-orch","reason":"workspace has uncommitted changes"}]}`)
 		default:

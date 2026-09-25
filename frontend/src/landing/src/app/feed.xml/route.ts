@@ -21,7 +21,7 @@ export async function GET() {
   <channel>
     <title>Open Agents Blog</title>
     <link>${baseUrl}/blog</link>
-    <description>News, updates, and insights from the Open Agents team about coding agent orchestration and developer productivity.</description>
+    <description>News, updates, and insights from the Open Agents team about coding agent management and developer productivity.</description>
     <language>en-us</language>
     <lastBuildDate>${new Date().toUTCString()}</lastBuildDate>
     <atom:link href="${baseUrl}/feed.xml" rel="self" type="application/rss+xml"/>

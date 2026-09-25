@@ -252,9 +252,9 @@ func TestHookPATH(t *testing.T) {
 
 func TestEffectiveHarnessAndAgentConfig(t *testing.T) {
 	cfg := domain.ProjectConfig{
-		AgentConfig:  domain.AgentConfig{Model: "base", Effort: "medium", Mode: "low", Permissions: domain.PermissionModeAuto},
-		Worker:       domain.RoleOverride{Harness: domain.HarnessOpenCode, AgentConfig: domain.AgentConfig{Model: "worker", Effort: "high", Mode: "high"}},
-		Orchestrator: domain.RoleOverride{Harness: domain.HarnessOpenCode},
+		AgentConfig: domain.AgentConfig{Model: "base", Effort: "medium", Mode: "low", Permissions: domain.PermissionModeAuto},
+		Worker:      domain.RoleOverride{Harness: domain.HarnessOpenCode, AgentConfig: domain.AgentConfig{Model: "worker", Effort: "high", Mode: "high"}},
+		Manager:     domain.RoleOverride{Harness: domain.HarnessOpenCode},
 	}
 
 	// Explicit harness always wins.
@@ -265,8 +265,8 @@ func TestEffectiveHarnessAndAgentConfig(t *testing.T) {
 	if h := effectiveHarness("", domain.KindWorker, cfg); h != domain.HarnessOpenCode {
 		t.Fatalf("worker harness = %q, want opencode", h)
 	}
-	if h := effectiveHarness("", domain.KindOrchestrator, cfg); h != domain.HarnessOpenCode {
-		t.Fatalf("orchestrator harness = %q, want opencode", h)
+	if h := effectiveHarness("", domain.KindManager, cfg); h != domain.HarnessOpenCode {
+		t.Fatalf("manager harness = %q, want opencode", h)
 	}
 
 	// Role override merges over the base agent config (set fields win; unset keep base).
@@ -274,9 +274,9 @@ func TestEffectiveHarnessAndAgentConfig(t *testing.T) {
 	if got.Model != "worker" || got.Effort != "high" || got.Mode != "high" || got.Permissions != domain.PermissionModeAuto {
 		t.Fatalf("merged worker config = %#v, want model=worker mode=high permissions=auto", got)
 	}
-	// Orchestrator has no agent-config override, so the base config is used as-is.
-	if got := effectiveAgentConfig(domain.HarnessOpenCode, domain.KindOrchestrator, cfg); got.Model != "base" {
-		t.Fatalf("orchestrator config = %#v, want base", got)
+	// Manager has no agent-config override, so the base config is used as-is.
+	if got := effectiveAgentConfig(domain.HarnessOpenCode, domain.KindManager, cfg); got.Model != "base" {
+		t.Fatalf("manager config = %#v, want base", got)
 	}
 	// A launch harness that differs from the role's configured harness drops the
 	// role's model/mode — they were tuned for the other agent — but keeps the
@@ -379,7 +379,7 @@ func TestRunPostCreate(t *testing.T) {
 }
 
 func TestSpawnPermissionPrecedence(t *testing.T) {
-	for _, kind := range []domain.SessionKind{domain.KindWorker, domain.KindOrchestrator} {
+	for _, kind := range []domain.SessionKind{domain.KindWorker, domain.KindManager} {
 		for _, tc := range []struct {
 			name                    string
 			base, role, spawn, want domain.PermissionMode
@@ -390,7 +390,7 @@ func TestSpawnPermissionPrecedence(t *testing.T) {
 			{"spawn", domain.PermissionModeAuto, domain.PermissionModeAcceptEdits, domain.PermissionModeDefault, domain.PermissionModeDefault},
 		} {
 			t.Run(string(kind)+"/"+tc.name, func(t *testing.T) {
-				cfg := domain.ProjectConfig{AgentConfig: domain.AgentConfig{Permissions: tc.base}, Worker: domain.RoleOverride{AgentConfig: domain.AgentConfig{Permissions: tc.role}}, Orchestrator: domain.RoleOverride{AgentConfig: domain.AgentConfig{Permissions: tc.role}}}
+				cfg := domain.ProjectConfig{AgentConfig: domain.AgentConfig{Permissions: tc.base}, Worker: domain.RoleOverride{AgentConfig: domain.AgentConfig{Permissions: tc.role}}, Manager: domain.RoleOverride{AgentConfig: domain.AgentConfig{Permissions: tc.role}}}
 				got := applySpawnAgentConfig(effectiveAgentConfig(domain.HarnessOpenCode, kind, cfg), domain.AgentConfig{Permissions: tc.spawn})
 				if got.Permissions != tc.want {
 					t.Fatalf("got %q want %q", got.Permissions, tc.want)

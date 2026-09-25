@@ -43,9 +43,9 @@ vi.mock("../hooks/useWorkspaceQuery", () => ({
 			...query,
 			data: {
 				project,
-				hasWorkerSessions: project?.sessions.some((candidate: WorkspaceSession) => candidate.kind !== "orchestrator") ?? false,
+				hasWorkerSessions: project?.sessions.some((candidate: WorkspaceSession) => candidate.kind !== "manager") ?? false,
 				session,
-				orchestrator: project?.sessions.find((candidate: WorkspaceSession) => candidate.kind === "orchestrator"),
+				manager: project?.sessions.find((candidate: WorkspaceSession) => candidate.kind === "manager"),
 			},
 		};
 	},
@@ -65,9 +65,9 @@ vi.mock("../lib/api-client", () => ({
 	},
 }));
 
-vi.mock("../lib/spawn-orchestrator", async (importOriginal) => ({
-	...await importOriginal<typeof import("../lib/spawn-orchestrator")>(),
-	spawnOrchestrator: spawnMock,
+vi.mock("../lib/spawn-manager", async (importOriginal) => ({
+	...await importOriginal<typeof import("../lib/spawn-manager")>(),
+	spawnManager: spawnMock,
 }));
 vi.mock("./NewTaskDialog", () => ({ NewTaskDialog: () => null }));
 vi.mock("./NotificationCenter", () => ({
@@ -94,13 +94,13 @@ const secondWorker: WorkspaceSession = {
 	branch: "open-agents/sess-2",
 };
 
-const orchestrator: WorkspaceSession = {
-	id: "orch-1",
+const manager: WorkspaceSession = {
+	id: "mgr-1",
 	workspaceId: "proj-1",
 	workspaceName: "my-app",
-	title: "orchestrator",
+	title: "manager",
 	provider: "opencode",
-	kind: "orchestrator",
+	kind: "manager",
 	branch: "main",
 	status: "working",
 	updatedAt: "2026-06-10T00:00:00Z",
@@ -131,7 +131,7 @@ function renderTopbarSessions(
 			id: sessions[0].workspaceId,
 			name: sessions[0].workspaceName,
 			path: "/repo/my-app",
-			orchestratorAgent: "opencode",
+			managerAgent: "opencode",
 			kind: projectKind,
 			sessions,
 		},
@@ -151,30 +151,30 @@ function renderTopbarSessions(
 	return { ...result, queryClient, rerenderTopbar: () => result.rerender(topbar()) };
 }
 
-function renderKill(session: WorkspaceSession = worker, orchestratorId?: string) {
+function renderKill(session: WorkspaceSession = worker, managerId?: string) {
 	const queryClient = new QueryClient({
 		defaultOptions: {
 			queries: { retry: false },
 			mutations: { retry: false },
 		},
 	});
-	const killButton = (currentSession: WorkspaceSession, currentOrchestratorId?: string) => (
+	const killButton = (currentSession: WorkspaceSession, currentManagerId?: string) => (
 		<QueryClientProvider client={queryClient}>
 			<TooltipProvider>
 				<TopbarKillButton
 					session={currentSession}
-					orchestratorId={currentOrchestratorId}
+					managerId={currentManagerId}
 					onKilled={onKilledMock}
 				/>
 			</TooltipProvider>
 		</QueryClientProvider>
 	);
-	const result = render(killButton(session, orchestratorId));
+	const result = render(killButton(session, managerId));
 	return {
 		...result,
 		queryClient,
-		rerenderKill: (nextSession: WorkspaceSession, nextOrchestratorId?: string) =>
-			result.rerender(killButton(nextSession, nextOrchestratorId)),
+		rerenderKill: (nextSession: WorkspaceSession, nextManagerId?: string) =>
+			result.rerender(killButton(nextSession, nextManagerId)),
 	};
 }
 
@@ -214,10 +214,10 @@ describe("ShellTopbar status pill", () => {
 		expect(identity.querySelector(".workspace-topbar__identity-separator")).not.toBeNull();
 	});
 
-	it("shows project identity and activity without redundant Orchestrator text", () => {
+	it("shows project identity and activity without redundant Manager text", () => {
 		renderTopbar(
 			sessionWith({
-				...orchestrator,
+				...manager,
 				activity: { state: "idle", lastActivityAt: "2026-06-10T00:00:00Z" },
 			}),
 		);
@@ -225,20 +225,20 @@ describe("ShellTopbar status pill", () => {
 		const identity = screen.getByTestId("session-topbar-identity");
 		expect(identity.textContent).toContain("my-app");
 		expect(identity.textContent).toContain("Idle");
-		expect(identity.textContent).not.toContain("Orchestrator");
+		expect(identity.textContent).not.toContain("Manager");
 		expect(identity.querySelector(".lucide-folder")).not.toBeNull();
 	});
 
-	// The branch belongs to detail surfaces, not the top bar: an orchestrator's
+	// The branch belongs to detail surfaces, not the top bar: a manager's
 	// identity stays the project crumb plus its activity, with its own controls
 	// intact (#3874, regressed by the badge #4252 added beside these actions).
-	it("keeps the worktree branch out of the orchestrator identity and actions", () => {
-		renderTopbar(sessionWith({ ...orchestrator, branch: "open-agents/orch-root" }));
+	it("keeps the worktree branch out of the manager identity and actions", () => {
+		renderTopbar(sessionWith({ ...manager, branch: "open-agents/manager-root" }));
 
 		const identity = screen.getByTestId("session-topbar-identity");
 		expect(identity.textContent).toContain("my-app");
 		expect(identity.textContent).toContain("Working");
-		expect(screen.queryByText("open-agents/orch-root")).toBeNull();
+		expect(screen.queryByText("open-agents/manager-root")).toBeNull();
 		expect(screen.getByRole("button", { name: "Open Kanban" })).toBeInTheDocument();
 		expect(screen.getByRole("button", { name: "New task" })).toBeInTheDocument();
 	});
@@ -263,7 +263,7 @@ describe("ShellTopbar status pill", () => {
 		expect(localActions.contains(screen.getByRole("button", { name: "Switch agent" }))).toBe(true);
 		expect(localActions.contains(screen.getByRole("button", { name: "Switch to chat UI" }))).toBe(true);
 		expect(localActions.contains(screen.getByRole("button", { name: "Kill session" }))).toBe(true);
-		expect(localActions.contains(screen.getByRole("button", { name: "Open orchestrator" }))).toBe(false);
+		expect(localActions.contains(screen.getByRole("button", { name: "Open manager" }))).toBe(false);
 	});
 
 	it("marks embedded session actions compact when requested", () => {
@@ -323,9 +323,9 @@ describe("ShellTopbar status pill", () => {
 	});
 });
 
-describe("ShellTopbar orchestrator actions", () => {
+describe("ShellTopbar manager actions", () => {
 	it("owns the responsive action container on the full board topbar", () => {
-		renderTopbarSessions([orchestrator], "");
+		renderTopbarSessions([manager], "");
 
 		const actions = screen.getByTestId("workspace-topbar-actions");
 		expect(actions.closest("header")).toHaveClass("workspace-topbar-container");
@@ -334,18 +334,18 @@ describe("ShellTopbar orchestrator actions", () => {
 	it.each([
 		["active", "Working", "bg-status-working", true],
 		["waiting_input", "Input Needed", "bg-status-needs-you", false],
-	] as const)("shows %s orchestrator activity on the project board", (state, label, tone, pulses) => {
+	] as const)("shows %s manager activity on the project board", (state, label, tone, pulses) => {
 		renderTopbarSessions(
 			[
 				{
-					...orchestrator,
+					...manager,
 					activity: { state, lastActivityAt: "2026-06-10T00:00:00Z" },
 				},
 			],
 			"",
 		);
 
-		const button = screen.getByRole("button", { name: `Orchestrator, ${label}` });
+		const button = screen.getByRole("button", { name: `Manager, ${label}` });
 		const indicator = button.querySelector("span.size-dot-sm") as HTMLElement;
 		expect(indicator).toHaveAttribute("aria-hidden", "true");
 		expect(indicator).toHaveClass(tone);
@@ -353,8 +353,8 @@ describe("ShellTopbar orchestrator actions", () => {
 		if (!pulses) expect(indicator).not.toHaveClass("animate-status-pulse");
 	});
 
-	it("shows a clear Kanban button on embedded orchestrator sessions", async () => {
-		renderTopbar(orchestrator, true);
+	it("shows a clear Kanban button on embedded manager sessions", async () => {
+		renderTopbar(manager, true);
 
 		const kanbanButton = screen.getByRole("button", { name: "Open Kanban" });
 		expect(kanbanButton).toHaveTextContent("Open Kanban");
@@ -367,8 +367,8 @@ describe("ShellTopbar orchestrator actions", () => {
 		});
 	});
 
-	it("opens the board from the Kanban button on the full orchestrator topbar", async () => {
-		renderTopbar(orchestrator);
+	it("opens the board from the Kanban button on the full manager topbar", async () => {
+		renderTopbar(manager);
 
 		const kanbanButton = screen.getByRole("button", { name: "Open Kanban" });
 		expect(kanbanButton).toHaveTextContent("Open Kanban");
@@ -381,7 +381,7 @@ describe("ShellTopbar orchestrator actions", () => {
 		});
 	});
 
-	it("opens project settings instead of spawning when no orchestrator agent is configured", async () => {
+	it("opens project settings instead of spawning when no manager agent is configured", async () => {
 		useWorkspaceQueryMock.mockReturnValue({
 			data: [
 				{
@@ -404,14 +404,14 @@ describe("ShellTopbar orchestrator actions", () => {
 			</QueryClientProvider>,
 		);
 
-		await userEvent.click(screen.getByRole("button", { name: "Open orchestrator" }));
+		await userEvent.click(screen.getByRole("button", { name: "Open manager" }));
 
 		expect(useUiStore.getState().settingsModal).toEqual({ scope: "project", projectId: "proj-1" });
 		expect(navigateMock).not.toHaveBeenCalled();
 		expect(spawnMock).not.toHaveBeenCalled();
 	});
 
-	it("hides project-only orchestrator actions for ad hoc sessions", () => {
+	it("hides project-only manager actions for ad hoc sessions", () => {
 		renderTopbarSessions(
 			[
 				sessionWith({
@@ -426,30 +426,30 @@ describe("ShellTopbar orchestrator actions", () => {
 			STANDALONE_PROJECT_KIND,
 		);
 
-		expect(screen.queryByRole("button", { name: "Open orchestrator" })).not.toBeInTheDocument();
+		expect(screen.queryByRole("button", { name: "Open manager" })).not.toBeInTheDocument();
 	});
 
-	it("switches from a worker to its orchestrator as soon as termination is confirmed", async () => {
+	it("switches from a worker to its manager as soon as termination is confirmed", async () => {
 		postMock.mockReturnValue(new Promise(() => {}));
-		renderTopbarSessions([worker, orchestrator], worker.id);
+		renderTopbarSessions([worker, manager], worker.id);
 
 		await userEvent.click(screen.getByRole("button", { name: "Kill session" }));
 		await clickKillDialogConfirm();
 
 		expect(navigateMock).toHaveBeenCalledWith({
 			to: "/projects/$projectId/sessions/$sessionId",
-			params: { projectId: "proj-1", sessionId: "orch-1" },
+			params: { projectId: "proj-1", sessionId: "mgr-1" },
 		});
 	});
 });
 
 describe("ShellTopbar inspector state", () => {
-	it("reserves space for orchestrator controls without duplicating notifications", () => {
-		const view = renderTopbarSessions([orchestrator], orchestrator.id);
+	it("reserves space for manager controls without duplicating notifications", () => {
+		const view = renderTopbarSessions([manager], manager.id);
 		const reserve = screen.getByTestId("session-pinned-actions-reserve");
 		expect(reserve).toHaveAttribute("data-state", "expanded");
 		expect(screen.queryByRole("button", { name: "Notifications" })).not.toBeInTheDocument();
-		useUiStore.setState({ inspectorSessions: { [orchestrator.id]: { isOpen: true, view: "browser" } } });
+		useUiStore.setState({ inspectorSessions: { [manager.id]: { isOpen: true, view: "browser" } } });
 		view.rerenderTopbar();
 		expect(reserve).toHaveAttribute("data-state", "collapsed");
 		expect(screen.queryByRole("button", { name: "Notifications" })).not.toBeInTheDocument();
@@ -562,24 +562,24 @@ describe("TopbarKillButton", () => {
 		await waitFor(() => expect(screen.queryByText("session not found")).not.toBeInTheDocument());
 	});
 
-	it("returns to the project orchestrator immediately after confirming", async () => {
+	it("returns to the project manager immediately after confirming", async () => {
 		let resolveKill!: (value: { data: { ok: boolean; sessionId: string }; error: undefined }) => void;
 		postMock.mockReturnValue(
 			new Promise((resolve) => {
 				resolveKill = resolve;
 			}),
 		);
-		renderKill(worker, orchestrator.id);
+		renderKill(worker, manager.id);
 
 		await userEvent.click(screen.getByRole("button", { name: "Kill session" }));
 		await clickKillDialogConfirm();
 
-		expect(onKilledMock).toHaveBeenCalledWith("proj-1", "orch-1");
+		expect(onKilledMock).toHaveBeenCalledWith("proj-1", "mgr-1");
 		expect(screen.queryByRole("dialog")).not.toBeInTheDocument();
 		resolveKill({ data: { ok: true, sessionId: "sess-1" }, error: undefined });
 	});
 
-	it("shows pending and failure feedback after navigating to the orchestrator", async () => {
+	it("shows pending and failure feedback after navigating to the manager", async () => {
 		let finishKill!: (value: {
 			data: undefined;
 			error: { message: string };
@@ -590,11 +590,11 @@ describe("TopbarKillButton", () => {
 				finishKill = resolve;
 			}),
 		);
-		const view = renderTopbarSessions([worker, orchestrator], worker.id);
+		const view = renderTopbarSessions([worker, manager], worker.id);
 
 		await userEvent.click(screen.getByRole("button", { name: "Kill session" }));
 		await clickKillDialogConfirm();
-		paramsMock.sessionId = orchestrator.id;
+		paramsMock.sessionId = manager.id;
 		view.rerenderTopbar();
 
 		expect(screen.getByRole("status")).toHaveTextContent("Killing do the thing");
@@ -607,7 +607,7 @@ describe("TopbarKillButton", () => {
 		expect(await screen.findByRole("alert")).toHaveTextContent("do the thing: runtime teardown failed");
 	});
 
-	it("falls back to the project board when no orchestrator is available", async () => {
+	it("falls back to the project board when no manager is available", async () => {
 		renderKill();
 
 		await userEvent.click(screen.getByRole("button", { name: "Kill session" }));

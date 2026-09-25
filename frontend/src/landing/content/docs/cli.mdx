@@ -15,10 +15,11 @@ open-agents
 ├── doctor                        Check the local Open Agents environment
 ├── agent ls                      List built-in agent adapters and readiness
 ├── project                       add, ls, get, set-config, rm
-├── spawn                         Create a worker or orchestrator session
+├── spawn                         Create a worker or manager session
 ├── session                       ls, get, kill, restore, rename, cleanup, claim-pr,
 │                                 switch-agent, agent-switch
-├── orchestrator ls               List orchestrator sessions
+├── manage <id>                    Move a manager into Manager mode
+├── manager ls                     List manager sessions
 ├── send                           Send a message to a session
 ├── pr                             merge, resolve-comments
 ├── review                         ls, trigger, cancel, submit
@@ -111,7 +112,7 @@ Important flags include:
 | `--name <name>` | Required sidebar name, at most 20 characters. |
 | `--project <id>` | Project to use. Otherwise Open Agents resolves environment and current directory context. |
 | `--agent`, `--harness <name>` | Override the project's agent. The two names are aliases. |
-| `--kind worker\|orchestrator` | Select the session role. |
+| `--kind worker\|manager` | Select the session role. |
 | `--mode chat\|tui` | Select structured Chat or the agent's native terminal UI. |
 | `--branch <name>` | Branch for Git projects. Scratch projects do not support it. |
 | `--prompt <text>` | Initial prompt. |
@@ -126,7 +127,7 @@ Project resolution order is explicit `--project`, `OPEN_AGENTS_PROJECT_ID`, the 
 
 | Command | Purpose |
 | --- | --- |
-| `open-agents session ls` | List active worker sessions. Use `--all` for orchestrators and `--include-terminated` for history. |
+| `open-agents session ls` | List active worker sessions. Use `--all` for managers and `--include-terminated` for history. |
 | `open-agents session get <id>` | Show one session. |
 | `open-agents session kill <id>` | Terminate a session. Dirty workspaces are preserved. |
 | `open-agents session restore <id>` | Relaunch a terminated session. |
@@ -148,9 +149,15 @@ open-agents send --session open-agents-123 --message "Please address the failing
 
 Both flags are required. When called from a session with `OPEN_AGENTS_SESSION_ID`, Open Agents prefixes the sender identity.
 
-### `open-agents orchestrator ls`
+### `open-agents manage <id>`
 
-Lists orchestrator sessions. Add `--json` for structured output.
+Moves a manager into Manager mode. Managers start in Manager mode and may
+ delegate workers from that mode. A manager in Planning mode can plan but cannot
+delegate; workers it delegates start in Planning.
+
+### `open-agents manager ls`
+
+Lists manager sessions. Add `--json` for structured output.
 
 ## Pull requests and reviews
 

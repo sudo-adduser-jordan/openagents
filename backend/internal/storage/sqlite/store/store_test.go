@@ -475,15 +475,15 @@ func TestProjectConfigRoundTrips(t *testing.T) {
 	// A config with mixed field kinds (scalar, map, list, nested) survives the
 	// JSON round trip.
 	cfg := domain.ProjectConfig{
-		DefaultBranch:     "develop",
-		Env:               map[string]string{"FOO": "bar"},
-		Symlinks:          []string{".env"},
-		PostCreate:        []string{"echo hi"},
-		AgentRules:        "Run focused tests.",
-		AgentRulesFile:    "docs/agent-rules.md",
-		OrchestratorRules: "Keep workers unblocked.",
-		AgentConfig:       domain.AgentConfig{Model: "gpt-5.6", Permissions: domain.PermissionModeAcceptEdits},
-		Worker:            domain.RoleOverride{Harness: domain.HarnessOpenCode},
+		DefaultBranch:  "develop",
+		Env:            map[string]string{"FOO": "bar"},
+		Symlinks:       []string{".env"},
+		PostCreate:     []string{"echo hi"},
+		AgentRules:     "Run focused tests.",
+		AgentRulesFile: "docs/agent-rules.md",
+		ManagerRules:   "Keep workers unblocked.",
+		AgentConfig:    domain.AgentConfig{Model: "gpt-5.6", Permissions: domain.PermissionModeAcceptEdits},
+		Worker:         domain.RoleOverride{Harness: domain.HarnessOpenCode},
 	}
 	if err := s.UpsertProject(ctx, domain.ProjectRecord{
 		ID: "cfg", Path: "/tmp/cfg", RegisteredAt: now, Config: cfg,
@@ -1930,7 +1930,7 @@ func TestRememberProjectPermissionsPinsExistingSessions(t *testing.T) {
 		kind  domain.SessionKind
 		saved domain.PermissionMode
 		want  domain.PermissionMode
-	}{{domain.KindWorker, "", domain.PermissionModeAcceptEdits}, {domain.KindOrchestrator, "", domain.PermissionModeDefault}, {domain.KindWorker, domain.PermissionModeAuto, domain.PermissionModeAuto}} {
+	}{{domain.KindWorker, "", domain.PermissionModeAcceptEdits}, {domain.KindManager, "", domain.PermissionModeDefault}, {domain.KindWorker, domain.PermissionModeAuto, domain.PermissionModeAuto}} {
 		rec := sampleRecord("permissions")
 		rec.Kind = tc.kind
 		rec.Metadata.Permissions = tc.saved
@@ -1939,7 +1939,7 @@ func TestRememberProjectPermissionsPinsExistingSessions(t *testing.T) {
 			t.Fatal(err)
 		}
 		row.Mode = domain.NormalizeSessionMode(row.Mode)
-		row.WorkflowMode = domain.NormalizeWorkflowMode(row.WorkflowMode)
+		row.WorkflowMode = domain.NormalizeWorkflowModeForKind(row.Kind, row.WorkflowMode)
 		row.Metadata.ConversationCheckpointState = domain.ConversationCheckpointEmpty
 		row.Metadata.Permissions = tc.want
 		if tc.saved == "" {

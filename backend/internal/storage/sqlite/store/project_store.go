@@ -320,17 +320,17 @@ func (s *Store) SetProjectPermissions(ctx context.Context, id string, permission
 		if row.Config.Worker.AgentConfig.Permissions != "" {
 			worker = row.Config.Worker.AgentConfig.Permissions
 		}
-		orchestrator := row.Config.AgentConfig.Permissions
-		if row.Config.Orchestrator.AgentConfig.Permissions != "" {
-			orchestrator = row.Config.Orchestrator.AgentConfig.Permissions
+		manager := row.Config.AgentConfig.Permissions
+		if row.Config.Manager.AgentConfig.Permissions != "" {
+			manager = row.Config.Manager.AgentConfig.Permissions
 		}
 		if worker == "" {
 			worker = domain.PermissionModeDefault
 		}
-		if orchestrator == "" {
-			orchestrator = domain.PermissionModeDefault
+		if manager == "" {
+			manager = domain.PermissionModeDefault
 		}
-		for kind, mode := range map[domain.SessionKind]domain.PermissionMode{domain.KindWorker: worker, domain.KindOrchestrator: orchestrator} {
+		for kind, mode := range map[domain.SessionKind]domain.PermissionMode{domain.KindWorker: worker, domain.KindManager: manager} {
 			if err := q.PinProjectSessionPermissions(ctx, gen.PinProjectSessionPermissionsParams{ProjectID: optionalProjectID(domain.ProjectID(id)), Kind: kind, Permissions: string(mode)}); err != nil {
 				return err
 			}
@@ -338,7 +338,7 @@ func (s *Store) SetProjectPermissions(ctx context.Context, id string, permission
 
 		row.Config.AgentConfig.Permissions = permissions
 		row.Config.Worker.AgentConfig.Permissions = ""
-		row.Config.Orchestrator.AgentConfig.Permissions = ""
+		row.Config.Manager.AgentConfig.Permissions = ""
 		config, err := marshalProjectConfig(row.Config)
 		if err != nil {
 			return err

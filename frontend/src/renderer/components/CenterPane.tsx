@@ -26,7 +26,7 @@ import { cn } from "../lib/utils";
 import { sidebarOccupiesLayout, useUiStore, type Theme } from "../stores/ui-store";
 import type { TerminalTarget } from "../types/terminal";
 import {
-	isOrchestratorSession,
+	isManagerSession,
 	type WorkspaceSession,
 } from "../types/workspace";
 import { AgentAvatar } from "./AgentAvatar";
@@ -204,8 +204,8 @@ export function CenterPane({
 	const workerInputDisabled =
 		target.kind === "worker" && (agentInputDisabled || handoffDialogOpen);
 	const sessionTabLabel = session
-		? isOrchestratorSession(session)
-			? "Orchestrator"
+		? isManagerSession(session)
+			? "Manager"
 			: session.title
 		: "No session";
 	const activeTerminalLabel =
