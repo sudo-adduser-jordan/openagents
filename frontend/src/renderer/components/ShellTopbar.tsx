@@ -220,7 +220,7 @@ export function ShellTopbar({
 								<Tooltip>
 									<TooltipTrigger asChild>
 										<TopbarButton
-											aria-label="Open Kanban"
+											aria-label="Open"
 											className="topbar-control--labeled"
 											data-priority="secondary"
 											onClick={openBoard}
@@ -228,10 +228,10 @@ export function ShellTopbar({
 											variant="feature"
 										>
 											<LayoutDashboard className="size-icon-md" aria-hidden="true" />
-											<span data-compact-label>{"Open Kanban"}</span>
+											<span data-compact-label>{"Open"}</span>
 										</TopbarButton>
 									</TooltipTrigger>
-									<TooltipContent side="bottom">{"Open Kanban"}</TooltipContent>
+									<TooltipContent side="bottom">{"Open"}</TooltipContent>
 								</Tooltip>
 							</>
 						) : null}

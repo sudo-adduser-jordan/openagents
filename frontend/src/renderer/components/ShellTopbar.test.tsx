@@ -239,7 +239,7 @@ describe("ShellTopbar status pill", () => {
 		expect(identity.textContent).toContain("my-app");
 		expect(identity.textContent).toContain("Working");
 		expect(screen.queryByText("open-agents/manager-root")).toBeNull();
-		expect(screen.getByRole("button", { name: "Open Kanban" })).toBeInTheDocument();
+		expect(screen.getByRole("button", { name: "Open" })).toBeInTheDocument();
 		expect(screen.getByRole("button", { name: "New task" })).toBeInTheDocument();
 	});
 
@@ -356,8 +356,8 @@ describe("ShellTopbar manager actions", () => {
 	it("shows a clear Kanban button on embedded manager sessions", async () => {
 		renderTopbar(manager, true);
 
-		const kanbanButton = screen.getByRole("button", { name: "Open Kanban" });
-		expect(kanbanButton).toHaveTextContent("Open Kanban");
+		const kanbanButton = screen.getByRole("button", { name: "Open" });
+		expect(kanbanButton).toHaveTextContent("Open");
 		expect(kanbanButton).toHaveClass("topbar-control--feature");
 		expect(screen.queryByText("my-app")).not.toBeInTheDocument();
 		await userEvent.click(kanbanButton);
@@ -370,8 +370,8 @@ describe("ShellTopbar manager actions", () => {
 	it("opens the board from the Kanban button on the full manager topbar", async () => {
 		renderTopbar(manager);
 
-		const kanbanButton = screen.getByRole("button", { name: "Open Kanban" });
-		expect(kanbanButton).toHaveTextContent("Open Kanban");
+		const kanbanButton = screen.getByRole("button", { name: "Open" });
+		expect(kanbanButton).toHaveTextContent("Open");
 		expect(kanbanButton).toHaveClass("topbar-control--feature");
 		expect(screen.getByRole("button", { name: "New task" })).toHaveClass("bg-raised");
 		await userEvent.click(kanbanButton);
