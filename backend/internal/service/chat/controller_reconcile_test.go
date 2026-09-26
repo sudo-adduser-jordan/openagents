@@ -8,6 +8,7 @@ import (
 )
 
 func TestReconcileNativeHistoryUsesLegacyProviderItemAlias(t *testing.T) {
+	t.Parallel()
 	events := []ports.ChatEvent{
 		{Kind: ports.ChatEventTurnStarted, ProviderTurnID: "new-scoped-turn"},
 		{
@@ -51,6 +52,7 @@ func TestReconcileNativeHistoryUsesLegacyProviderItemAlias(t *testing.T) {
 }
 
 func TestReconcileNativeHistoryUsesLegacyAliasForAttachmentOnlyUserTurn(t *testing.T) {
+	t.Parallel()
 	events := []ports.ChatEvent{
 		{Kind: ports.ChatEventTurnStarted, ProviderTurnID: "new-scoped-turn"},
 		{

@@ -30,6 +30,7 @@ func (h *shutdownRefusingHost) Terminate() error {
 }
 
 func TestFailedBranchShutdownPreservesSurvivingHostCredentials(t *testing.T) {
+	t.Parallel()
 	ctx := context.Background()
 	st := openStore(t)
 	source := &shutdownRefusingHost{historyRecorder: newHistoryRecorder()}

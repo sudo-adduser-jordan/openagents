@@ -16,6 +16,7 @@ import (
 )
 
 func TestOriginalBranchTUIRoundtripDoesNotInheritEditedBranchCheckpoint(t *testing.T) {
+	t.Parallel()
 	ctx := context.Background()
 	h, _, editedDriver := newEditHarness(t, true)
 	original := completeTurn(t, h, "original", "provider-turn-1")

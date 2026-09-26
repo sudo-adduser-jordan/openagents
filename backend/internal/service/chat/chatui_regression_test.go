@@ -20,6 +20,7 @@ import (
 // package contracts for both duplicate prevention and eventual recovery across
 // controller restart. The opt-in runner invokes this stable name alongside MQA-04.
 func TestChatUIRegressionDraftDeliveryRecoveryIsAtMostOnce(t *testing.T) {
+	t.Parallel()
 	t.Run("steer", TestReservedSteerStaysUncertainAcrossRetryAndRestart)
 	t.Run("inline edit", TestEditCompletionGapStaysUncertainAcrossRetryAndControllerRestart)
 	t.Run("reserved edit resumes", TestReservedEditRecoversAfterControllerStopAndResume)
@@ -30,6 +31,7 @@ func TestChatUIRegressionDraftDeliveryRecoveryIsAtMostOnce(t *testing.T) {
 // a later controller restart. MQA-06 requires stable event identities to remain
 // exactly-once in Open Agents and guarantees that replay never writes to the worktree.
 func TestChatUIRegressionProviderHistoryRecoveryDeduplicatesReplayWithoutWorktreeMutation(t *testing.T) {
+	t.Parallel()
 	ctx := context.Background()
 	st := openStore(t)
 	rec, found, err := st.GetSession(ctx, testSession)

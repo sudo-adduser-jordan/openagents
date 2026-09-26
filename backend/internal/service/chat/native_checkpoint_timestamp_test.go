@@ -16,6 +16,7 @@ import (
 )
 
 func TestNativeReplaySettlesMatchingHooksAndRejectsConflictingOnes(t *testing.T) {
+	t.Parallel()
 	repeatedPrompt := ports.ActivitySignal{Event: "user-prompt-submit", LatestUserPrompt: "continue"}
 	repeatedAnswer := ports.ActivitySignal{Event: "stop", LatestAssistantUpdate: "yes"}
 	repeatedLatest := ports.ActivitySignal{Event: "user-prompt-submit", LatestUserPrompt: "different task", LatestAssistantUpdate: "new answer"}

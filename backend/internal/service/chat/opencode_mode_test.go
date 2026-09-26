@@ -36,6 +36,7 @@ func (c *modeConversation) SetConfigOption(ctx context.Context, _ string, value 
 }
 
 func TestOpenCodeModeSurvivesControllerRestart(t *testing.T) {
+	t.Parallel()
 	for _, mode := range []string{"plan", "build", "open-agents-plan-project-1"} {
 		t.Run(mode, func(t *testing.T) {
 			ctx := context.Background()
@@ -87,6 +88,7 @@ func TestOpenCodeModeSurvivesControllerRestart(t *testing.T) {
 }
 
 func TestOpenCodeModeRestoreFailureDoesNotPublishController(t *testing.T) {
+	t.Parallel()
 	for _, silent := range []bool{false, true} {
 		t.Run(map[bool]string{false: "rejected", true: "not confirmed"}[silent], func(t *testing.T) {
 			ctx := context.Background()

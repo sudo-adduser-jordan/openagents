@@ -39,6 +39,7 @@ func (c *persistentBranchConversation) Terminate() error {
 }
 
 func TestBranchHandoffTerminatesPersistentProvider(t *testing.T) {
+	t.Parallel()
 	stopped := make(chan struct{})
 	provider := &persistentBranchConversation{stopped: stopped}
 	controller := &Controller{conv: provider, stopped: stopped}

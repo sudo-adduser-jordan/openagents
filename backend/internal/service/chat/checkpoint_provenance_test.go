@@ -60,6 +60,7 @@ func poisonedRows(state domain.TurnState) ([]domain.ConversationTurn, []domain.C
 const testCheckpointSession = domain.SessionID("checkpoint-session")
 
 func TestCheckpointKeepsReorderedQueueExecutionOrder(t *testing.T) {
+	t.Parallel()
 	turns, messages := poisonedRows(domain.TurnStateCompleted)
 	// A was enqueued before B, then reordered to run after B. Reordering updates
 	// RequestedAt but leaves the already-allocated user-message sequence intact.
@@ -77,6 +78,7 @@ func TestCheckpointKeepsReorderedQueueExecutionOrder(t *testing.T) {
 }
 
 func TestCheckpointTiedQueueUsesSettledEvidence(t *testing.T) {
+	t.Parallel()
 	turns, messages := poisonedRows(domain.TurnStateCompleted)
 	turns[1].RequestedAt = turns[0].RequestedAt
 	turns[1].ProviderTurnID = "native-turn-2"
@@ -92,6 +94,7 @@ func TestCheckpointTiedQueueUsesSettledEvidence(t *testing.T) {
 }
 
 func TestCheckpointExcludesRolledBackHistory(t *testing.T) {
+	t.Parallel()
 	for _, coordination := range []bool{false, true} {
 		t.Run(fmt.Sprint(coordination), func(t *testing.T) {
 			turns, messages := poisonedRows(domain.TurnStateCompleted)
@@ -111,6 +114,7 @@ func TestCheckpointExcludesRolledBackHistory(t *testing.T) {
 }
 
 func TestCheckpointProviderBoundaryIgnoresOldThreadClock(t *testing.T) {
+	t.Parallel()
 	turns, messages := poisonedRows(domain.TurnStateCompleted)
 	turns[0].RequestedAt = turns[1].RequestedAt.Add(time.Hour)
 	turns[1].ProviderTurnID = "coordination"
@@ -123,6 +127,7 @@ func TestCheckpointProviderBoundaryIgnoresOldThreadClock(t *testing.T) {
 }
 
 func TestCheckpointItemlessTiesRequireBothBoundaries(t *testing.T) {
+	t.Parallel()
 	for _, ids := range [][]string{{"A", "B"}, {"B", "A"}} {
 		turns := []domain.ConversationTurn{
 			{ID: ids[0], ProviderTurnID: ids[0], HandledBySessionID: testCheckpointSession, State: domain.TurnStateCompleted},
@@ -142,6 +147,7 @@ func TestCheckpointItemlessTiesRequireBothBoundaries(t *testing.T) {
 }
 
 func TestCheckpointProviderBoundaryExcludesOldTurnsWithoutUserMessages(t *testing.T) {
+	t.Parallel()
 	for _, itemless := range []bool{false, true} {
 		t.Run(fmt.Sprint(itemless), func(t *testing.T) {
 			turns, messages := poisonedRows(domain.TurnStateCompleted)
@@ -168,6 +174,7 @@ func TestCheckpointProviderBoundaryExcludesOldTurnsWithoutUserMessages(t *testin
 }
 
 func TestCheckpointTiedTurnsRequireEachAnswer(t *testing.T) {
+	t.Parallel()
 	turns, messages := poisonedRows(domain.TurnStateCompleted)
 	turns[1].RequestedAt = turns[0].RequestedAt
 	turns[1].ProviderTurnID = "native-turn-2"
@@ -198,6 +205,7 @@ func TestCheckpointTiedTurnsRequireEachAnswer(t *testing.T) {
 }
 
 func TestNativeHistoryIndexDoesNotConsumeMatchesAcrossRefreshes(t *testing.T) {
+	t.Parallel()
 	turns, messages := poisonedRows(domain.TurnStateCompleted)
 	turns[1].ProviderTurnID = "native-turn-2"
 	messages[2].Text = "Say hi"
@@ -244,6 +252,7 @@ func BenchmarkCheckpointSettleWindow(b *testing.B) {
 }
 
 func TestCheckpointCompletedCoordinationStillAnchorsNewProvider(t *testing.T) {
+	t.Parallel()
 	turns, messages := poisonedRows(domain.TurnStateCompleted)
 	turns[0].RequestedAt = turns[1].RequestedAt // Wall-clock timestamps need not be unique.
 	turns[1].ProviderTurnID = "coordination"
@@ -266,6 +275,7 @@ func TestCheckpointCompletedCoordinationStillAnchorsNewProvider(t *testing.T) {
 }
 
 func TestCheckpointRepeatedPairDoesNotAdmitOlderPrefix(t *testing.T) {
+	t.Parallel()
 	checkpoint := nativeHistoryCheckpoint{
 		latestUserPrompt: "continue", latestAssistantUpdate: "Done", completedUserPrompt: true,
 		userMismatch: ports.ChatHistoryMismatchTrustedUserText, assistantMismatch: ports.ChatHistoryMismatchTrustedAssistantText,
@@ -289,6 +299,7 @@ func TestCheckpointRepeatedPairDoesNotAdmitOlderPrefix(t *testing.T) {
 // never be satisfied: the settle loop burns its full budget and the interface
 // transition rolls back to Terminal for good. See #4424.
 func TestCheckpointIgnoresPromptFromUnsettledTurn(t *testing.T) {
+	t.Parallel()
 	for _, state := range []domain.TurnState{
 		domain.TurnStateCancelled,
 		domain.TurnStateInterrupted,
@@ -312,6 +323,7 @@ func TestCheckpointIgnoresPromptFromUnsettledTurn(t *testing.T) {
 // The guard must stay narrow: a prompt from a completed turn is still a hard
 // gate, so a replay that has not caught up with settled work is rejected.
 func TestCheckpointStillGatesOnCompletedPrompt(t *testing.T) {
+	t.Parallel()
 	base := time.Date(2026, 9, 7, 14, 33, 20, 0, time.UTC)
 	turns := []domain.ConversationTurn{{
 		ID: "completed-turn", HandledBySessionID: testCheckpointSession,
@@ -333,6 +345,7 @@ func TestCheckpointStillGatesOnCompletedPrompt(t *testing.T) {
 }
 
 func TestCheckpointKeepsTrustedTextMatchingAnUnsettledChatTurn(t *testing.T) {
+	t.Parallel()
 	for _, role := range []domain.MessageRole{domain.MessageRoleUser, domain.MessageRoleAssistant} {
 		for _, state := range []domain.TurnState{
 			domain.TurnStateCancelled, domain.TurnStateInterrupted, domain.TurnStateFailed,

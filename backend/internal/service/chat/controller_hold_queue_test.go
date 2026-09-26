@@ -30,6 +30,7 @@ func assertTurnStaysQueued(t *testing.T, h *harness, text string) {
 // A failed primary turn must not release queued work into the same outage; only a
 // completed turn may. Regression for issue #4861.
 func TestFailedPrimaryTurnHoldsQueuedWork(t *testing.T) {
+	t.Parallel()
 	h := newHarness(t)
 	ctx := context.Background()
 
@@ -66,6 +67,7 @@ func TestFailedPrimaryTurnHoldsQueuedWork(t *testing.T) {
 // A recovered turn is terminal but carries no portable outcome, so it is no proof
 // the next turn will succeed. It holds the queue like a failed turn.
 func TestRecoveredPrimaryTurnHoldsQueuedWork(t *testing.T) {
+	t.Parallel()
 	h := newHarness(t)
 	ctx := context.Background()
 

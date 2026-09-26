@@ -63,6 +63,7 @@ func (s *flakyReceiptStore) ProjectProviderEvent(
 }
 
 func TestPersistentProjectionNeverAcknowledgesPastFailedOutput(t *testing.T) {
+	t.Parallel()
 	for _, failures := range []int32{1, -1} {
 		name := "transient failure retries in order"
 		if failures < 0 {
@@ -99,6 +100,14 @@ func TestPersistentProjectionNeverAcknowledgesPastFailedOutput(t *testing.T) {
 						t.Fatalf("missing ack %s", want)
 					}
 				}
+				// Deliberately waits on the turn only. This case asserts that an
+				// acknowledgement cannot arrive without its output, so folding
+				// the message count into the wait condition would turn the
+				// failure it exists to catch into awaitSnapshot's 5s timeout.
+				// The trade is that turn completion can be observed before the
+				// final message is projected, so under heavy parallel load this
+				// can still report a spurious exactly-once failure. Kept as-is
+				// because a fast, legible failure beats a slow, generic one.
 				snapshot := h.awaitSnapshot(t, func(s store.ConversationSnapshot) bool {
 					return len(s.Turns) == 1 && s.Turns[0].State == domain.TurnStateCompleted
 				})
@@ -134,6 +143,7 @@ func TestPersistentProjectionNeverAcknowledgesPastFailedOutput(t *testing.T) {
 }
 
 func TestPersistentCompletionIsAcknowledgedBeforeQueuedTurnDispatch(t *testing.T) {
+	t.Parallel()
 	for _, ackFails := range []bool{false, true} {
 		name := "acknowledged"
 		if ackFails {
@@ -197,6 +207,7 @@ func TestPersistentCompletionIsAcknowledgedBeforeQueuedTurnDispatch(t *testing.T
 }
 
 func TestProviderPreservationReportRequiresLiveController(t *testing.T) {
+	t.Parallel()
 	provider := &terminatingConversation{fakeConversation: newFakeConversation()}
 	h := newHarnessWithConversation(t, provider)
 	if !h.svc.PreservesProviderOnRestart(testSession) || h.svc.PreservesProviderOnRestart("missing") {

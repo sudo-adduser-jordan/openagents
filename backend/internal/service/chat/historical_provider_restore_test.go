@@ -186,6 +186,7 @@ func historicalNativeHistory() []ports.ChatEvent {
 }
 
 func TestHistoricalProjectProviderRestoreAppendsOwnershipEpochAtomically(t *testing.T) {
+	t.Parallel()
 	fixture := seedHistoricalProviderFixture(t)
 	ctx := context.Background()
 	var scopes []string
@@ -344,6 +345,7 @@ func TestHistoricalProjectProviderRestoreAppendsOwnershipEpochAtomically(t *test
 }
 
 func TestHistoricalProjectProviderRestoreFailureNeverPublishesEpoch(t *testing.T) {
+	t.Parallel()
 	tests := []struct {
 		name   string
 		driver func() ports.ChatDriver
@@ -392,6 +394,7 @@ func TestHistoricalProjectProviderRestoreFailureNeverPublishesEpoch(t *testing.T
 }
 
 func TestHistoricalProjectProviderRestoreRejectsWrongReturnedHandle(t *testing.T) {
+	t.Parallel()
 	fixture := seedHistoricalProviderFixture(t)
 	conversation := &nativeHistoryConversation{
 		fakeConversation: newFakeConversation(), events: historicalNativeHistory(),
@@ -446,6 +449,7 @@ func (s *rollbackChatSpawnStore) CommitChatSpawnPrepared(
 }
 
 func TestHistoricalProjectProviderRestoreCommitFailureRollsBack(t *testing.T) {
+	t.Parallel()
 	fixture := seedHistoricalProviderFixture(t)
 	wrapped := &rollbackChatSpawnStore{Store: fixture.store}
 	conversation := &nativeHistoryConversation{
@@ -473,6 +477,7 @@ func TestHistoricalProjectProviderRestoreCommitFailureRollsBack(t *testing.T) {
 }
 
 func TestHistoricalProjectProviderRestoreRejectsUnprovedMismatch(t *testing.T) {
+	t.Parallel()
 	fixture := seedHistoricalProviderFixture(t)
 	resumeCalls := 0
 	svc := chatsvc.New(chatsvc.Options{
@@ -500,6 +505,7 @@ func TestHistoricalProjectProviderRestoreRejectsUnprovedMismatch(t *testing.T) {
 }
 
 func TestHistoricalProjectProviderRestoreRejectsStaleOwnerAndHead(t *testing.T) {
+	t.Parallel()
 	t.Run("owner changed before provider open", func(t *testing.T) {
 		fixture := seedHistoricalProviderFixture(t)
 		other, err := fixture.store.CreateSession(context.Background(), domain.SessionRecord{

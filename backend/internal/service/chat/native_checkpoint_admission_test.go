@@ -25,6 +25,7 @@ func (d nativeCheckpointDriver) VerifyNativeCheckpoint(ctx context.Context, requ
 }
 
 func TestStartNativeCheckpointAdmission(t *testing.T) {
+	t.Parallel()
 	sentinel := errors.New("native read failed")
 	for _, test := range []struct {
 		name                                  string

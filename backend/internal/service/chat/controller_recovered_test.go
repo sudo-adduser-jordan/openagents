@@ -8,6 +8,7 @@ import (
 )
 
 func TestReconcileNativeHistoryUpgradesRecoveredWithKnownProviderOutcome(t *testing.T) {
+	t.Parallel()
 	events := []ports.ChatEvent{{
 		Kind: ports.ChatEventTurnCompleted, ProviderTurnID: "provider-turn",
 		TurnState: domain.TurnStateCompleted,
@@ -23,6 +24,7 @@ func TestReconcileNativeHistoryUpgradesRecoveredWithKnownProviderOutcome(t *test
 }
 
 func TestReconcileNativeHistoryPreservesKnownOutcomeOverRecoveredReplay(t *testing.T) {
+	t.Parallel()
 	events := []ports.ChatEvent{{
 		Kind: ports.ChatEventTurnCompleted, ProviderTurnID: "provider-turn",
 		TurnState: domain.TurnStateRecovered,

@@ -13,6 +13,7 @@ import (
 )
 
 func TestQueuedEditAttachmentChanges(t *testing.T) {
+	t.Parallel()
 	zero := int64(0)
 	one := int64(1)
 	tenMiB := ports.ChatContent{Type: "image", MIMEType: "image/png", Data: base64.StdEncoding.EncodeToString(make([]byte, 10<<20))}
@@ -95,6 +96,7 @@ func TestQueuedEditAttachmentChanges(t *testing.T) {
 }
 
 func TestQueuedEditRetryAfterCommittedResponseIsLost(t *testing.T) {
+	t.Parallel()
 	h, provider := steerHarness(t)
 	ctx := context.Background()
 	turn, err := h.svc.Send(ctx, testSession, ports.ChatUserMessage{

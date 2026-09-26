@@ -212,6 +212,7 @@ func steerMarkers(s store.ConversationSnapshot) []struct {
 
 // The whole feature: guidance reaches the running turn and the timeline says so.
 func TestSteerReachesTheRunningTurnAndLandsOnTheTimeline(t *testing.T) {
+	t.Parallel()
 	h, provider := steerHarness(t)
 	ctx := context.Background()
 
@@ -287,6 +288,7 @@ func TestSteerReachesTheRunningTurnAndLandsOnTheTimeline(t *testing.T) {
 }
 
 func TestSteerOrSendSteersAndRecoversOneAtomicOutcome(t *testing.T) {
+	t.Parallel()
 	h, provider := steerHarness(t)
 	msg := ports.ChatUserMessage{
 		Text: "correct the active work", ClientMessageID: "atomic-steer-1",
@@ -314,6 +316,7 @@ func TestSteerOrSendSteersAndRecoversOneAtomicOutcome(t *testing.T) {
 }
 
 func TestSteerOrSendSendsWhenIdleAndRecoversWithoutRedispatch(t *testing.T) {
+	t.Parallel()
 	provider := newSteerRecorder()
 	h := newHarnessWithConversation(t, provider)
 	msg := ports.ChatUserMessage{
@@ -345,6 +348,7 @@ func TestSteerOrSendSendsWhenIdleAndRecoversWithoutRedispatch(t *testing.T) {
 }
 
 func TestSteerOrSendFallsBackWithoutLeavingAQueuedTurn(t *testing.T) {
+	t.Parallel()
 	h, provider := steerHarness(t)
 	provider.failWith(ports.ErrChatNoSteerableTurn)
 	msg := ports.ChatUserMessage{
@@ -374,6 +378,7 @@ func TestSteerOrSendFallsBackWithoutLeavingAQueuedTurn(t *testing.T) {
 
 // A retry with the same handle is the same guidance, not a second piece of it.
 func TestSteerIsIdempotentOnTheClientHandle(t *testing.T) {
+	t.Parallel()
 	h, provider := steerHarness(t)
 	ctx := context.Background()
 
@@ -402,6 +407,7 @@ func TestSteerIsIdempotentOnTheClientHandle(t *testing.T) {
 }
 
 func TestAcceptedSteerReplaysAfterControllerRestartWithoutProviderRedispatch(t *testing.T) {
+	t.Parallel()
 	h, provider := steerHarness(t)
 	msg := ports.ChatUserMessage{Text: "narrow the search", ClientMessageID: "steer-restart"}
 
@@ -428,6 +434,7 @@ func TestAcceptedSteerReplaysAfterControllerRestartWithoutProviderRedispatch(t *
 }
 
 func TestReservedSteerStaysUncertainAcrossRetryAndRestart(t *testing.T) {
+	t.Parallel()
 	var flaky *failSteerCompletionStore
 	h, provider := steerHarnessWithStore(t, func(st *store.Store) chatsvc.Store {
 		flaky = &failSteerCompletionStore{Store: st}
@@ -459,6 +466,7 @@ func TestReservedSteerStaysUncertainAcrossRetryAndRestart(t *testing.T) {
 }
 
 func TestSteerClientHandleCannotBeReusedForDifferentGuidance(t *testing.T) {
+	t.Parallel()
 	h, provider := steerHarness(t)
 	if _, err := h.svc.Steer(context.Background(), testSession, ports.ChatUserMessage{
 		Text: "narrow the search", ClientMessageID: "steer-collision",
@@ -480,6 +488,7 @@ func TestSteerClientHandleCannotBeReusedForDifferentGuidance(t *testing.T) {
 // is lost, retrying after the source controller reopens or a new controller starts
 // must replay that refusal rather than steering whichever turn happens to be live.
 func TestSteerDuringInterfaceTransitionDurablyReplaysWithoutProviderDispatch(t *testing.T) {
+	t.Parallel()
 	h, provider := steerHarness(t)
 	msg := ports.ChatUserMessage{
 		Text: "guidance typed during the switch", ClientMessageID: "steer-handoff",
@@ -523,6 +532,7 @@ func TestSteerDuringInterfaceTransitionDurablyReplaysWithoutProviderDispatch(t *
 // Nothing in flight is an ordinary outcome — the turn finished while the user was
 // typing — and the provider must not be asked.
 func TestSteerWithNothingInFlightIsTypedAndNeverReachesTheProvider(t *testing.T) {
+	t.Parallel()
 	provider := newSteerRecorder()
 	h := newHarnessWithConversation(t, provider)
 	msg := ports.ChatUserMessage{Text: "too late", ClientMessageID: "steer-no-active"}
@@ -557,6 +567,7 @@ func TestSteerWithNothingInFlightIsTypedAndNeverReachesTheProvider(t *testing.T)
 // The provider is the authority on whether its turn is still steerable, and losing
 // that race must read as "nothing to steer", not as a failure.
 func TestSteerRaceLostToTheProviderIsReportedAsNoActiveTurn(t *testing.T) {
+	t.Parallel()
 	h, provider := steerHarness(t)
 	provider.failWith(ports.ErrChatNoSteerableTurn)
 	msg := ports.ChatUserMessage{Text: "guidance", ClientMessageID: "steer-refused"}
@@ -597,6 +608,7 @@ func TestSteerRaceLostToTheProviderIsReportedAsNoActiveTurn(t *testing.T) {
 // A turn that is running but cannot take guidance (a compaction, a review) is a
 // different answer: retryable once it ends, so it keeps its own sentinel.
 func TestSteerOfAnUnsteerableTurnKeepsItsOwnOutcome(t *testing.T) {
+	t.Parallel()
 	h, provider := steerHarness(t)
 	provider.failWith(ports.ErrChatTurnNotSteerable)
 
@@ -613,6 +625,7 @@ func TestSteerOfAnUnsteerableTurnKeepsItsOwnOutcome(t *testing.T) {
 // A provider with no steering at all: a permanent answer, so a client hides the
 // control instead of retrying.
 func TestSteerIsRefusedWhenTheDriverCannotDoIt(t *testing.T) {
+	t.Parallel()
 	h := newHarness(t)
 	ctx := context.Background()
 	msg := ports.ChatUserMessage{Text: "guidance", ClientMessageID: "steer-unsupported"}
@@ -641,6 +654,7 @@ func TestSteerIsRefusedWhenTheDriverCannotDoIt(t *testing.T) {
 }
 
 func TestSteerRejectsEmptyText(t *testing.T) {
+	t.Parallel()
 	h, provider := steerHarness(t)
 
 	_, err := h.svc.Steer(context.Background(), testSession,
@@ -658,6 +672,7 @@ func TestSteerRejectsEmptyText(t *testing.T) {
 // window. So a steer that arrives between dispatch and acknowledgement must WAIT for
 // the acknowledgement rather than being refused or fired early.
 func TestSteerWaitsForTheProviderToAcknowledgeTheTurn(t *testing.T) {
+	t.Parallel()
 	provider := newSteerRecorder()
 	h := newHarnessWithConversation(t, provider)
 	ctx := context.Background()
@@ -703,6 +718,7 @@ func TestSteerWaitsForTheProviderToAcknowledgeTheTurn(t *testing.T) {
 // that turn rather than to the one it asked about. Same id in practice; asserted so
 // a provider that answered differently could not be silently misfiled.
 func TestSteerRecordsTheTurnTheProviderNames(t *testing.T) {
+	t.Parallel()
 	h, provider := steerHarness(t)
 	provider.mu.Lock()
 	provider.landed = "provider-turn-1"
@@ -723,6 +739,7 @@ func TestSteerRecordsTheTurnTheProviderNames(t *testing.T) {
 // queue. If this regresses to queue-head-only behavior, the second message below
 // is never the one the provider receives.
 func TestPromoteSelectedQueuedTurnIntoTheRunningTurn(t *testing.T) {
+	t.Parallel()
 	h, provider := steerHarness(t)
 	ctx := context.Background()
 
@@ -778,6 +795,7 @@ func TestPromoteSelectedQueuedTurnIntoTheRunningTurn(t *testing.T) {
 // A provider refusal has not delivered anything, so the exact selected message
 // must return to its original queue position instead of being lost or failed.
 func TestPromoteQueuedTurnRefusalRestoresItsQueuePosition(t *testing.T) {
+	t.Parallel()
 	h, provider := steerHarness(t)
 	ctx := context.Background()
 	queued, err := h.svc.Send(ctx, testSession, ports.ChatUserMessage{
@@ -802,6 +820,7 @@ func TestPromoteQueuedTurnRefusalRestoresItsQueuePosition(t *testing.T) {
 // service must enforce that boundary even when a caller bypasses the frontend,
 // without consuming or reordering the automation item.
 func TestPromoteQueuedTurnRejectsNonHumanSourceWithoutContactingProvider(t *testing.T) {
+	t.Parallel()
 	h, provider := steerHarness(t)
 	ctx := context.Background()
 	queued, err := h.svc.Send(ctx, testSession, ports.ChatUserMessage{
@@ -831,6 +850,7 @@ func TestPromoteQueuedTurnRejectsNonHumanSourceWithoutContactingProvider(t *test
 // source to the queue would let drain send guidance the provider may already have
 // accepted, so it must settle failed and require an explicit user decision.
 func TestPromoteQueuedTurnAmbiguousProviderFailureSettlesUncertainWithoutRedelivery(t *testing.T) {
+	t.Parallel()
 	requestCtx, cancelRequest := context.WithCancel(context.Background())
 	t.Cleanup(cancelRequest)
 	provider := &cancelAfterSteerRecorder{steerRecorder: newSteerRecorder(), cancel: cancelRequest}
@@ -890,6 +910,7 @@ func TestPromoteQueuedTurnAmbiguousProviderFailureSettlesUncertainWithoutRedeliv
 }
 
 func TestRecoverImageSteerWithoutControllerNeverRedispatches(t *testing.T) {
+	t.Parallel()
 	for _, tc := range []struct {
 		name          string
 		providerError error

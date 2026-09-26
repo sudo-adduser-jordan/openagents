@@ -27,6 +27,7 @@ import (
 // provider's settled summary. Replacing rather than appending is what makes a
 // dropped delta cosmetic.
 func TestReasoningStreamsThenSettles(t *testing.T) {
+	t.Parallel()
 	h := newHarness(t)
 
 	h.conv.emit(
@@ -76,6 +77,7 @@ func TestReasoningStreamsThenSettles(t *testing.T) {
 // no summaries, and erasing the accumulation on it would delete reasoning the user
 // watched arrive.
 func TestEmptySettleKeepsStreamedReasoning(t *testing.T) {
+	t.Parallel()
 	h := newHarness(t)
 
 	h.conv.emit(
@@ -106,6 +108,7 @@ func TestEmptySettleKeepsStreamedReasoning(t *testing.T) {
 // output. The PTY echoes what is typed, so one shared stream would show every
 // typed line twice.
 func TestTerminalInputStaysOutOfCommandOutput(t *testing.T) {
+	t.Parallel()
 	h := newHarness(t)
 
 	h.conv.emit(
@@ -137,6 +140,7 @@ func TestTerminalInputStaysOutOfCommandOutput(t *testing.T) {
 // column answers "what is the plan now" without walking the timeline; the row
 // answers "where in the conversation did the agent plan", which the column cannot.
 func TestPlanUpdatesOverwriteTurnStateAndOneRow(t *testing.T) {
+	t.Parallel()
 	h := newHarness(t)
 
 	if _, err := h.svc.Send(context.Background(), testSession, ports.ChatUserMessage{
@@ -207,6 +211,7 @@ func TestPlanUpdatesOverwriteTurnStateAndOneRow(t *testing.T) {
 // A plan with work left is not a completed thing. Reporting it as one would tick
 // off steps the agent is still on.
 func TestPlanInProgressStaysRunning(t *testing.T) {
+	t.Parallel()
 	h := newHarness(t)
 	plan := domain.ConversationPlan{Steps: []domain.ConversationPlanStep{
 		{Text: "one", Status: domain.PlanStepCompleted},
@@ -229,6 +234,7 @@ func TestPlanInProgressStaysRunning(t *testing.T) {
 // both copies of the plan must settle with the turn instead of leaving a
 // completed answer beside a permanent "0 / N" plan.
 func TestSuccessfulCompletionFinalizesPlanWhenProviderOmitsTerminalPlan(t *testing.T) {
+	t.Parallel()
 	h := newHarness(t)
 
 	if _, err := h.svc.Send(context.Background(), testSession, ports.ChatUserMessage{
@@ -289,6 +295,7 @@ func TestSuccessfulCompletionFinalizesPlanWhenProviderOmitsTerminalPlan(t *testi
 // A reroute becomes conversation state AND a timeline row. The state says what is
 // answering now; the row says where the line falls, which state alone cannot.
 func TestModelRerouteIsRecordedAndPlacedInTheTimeline(t *testing.T) {
+	t.Parallel()
 	h := newHarness(t)
 
 	h.conv.emit(
@@ -335,6 +342,7 @@ func TestModelRerouteIsRecordedAndPlacedInTheTimeline(t *testing.T) {
 // would mean a session whose tokens expired lost its plan label, and one that
 // changed plan looked like its credentials were fine again.
 func TestAccountReportsMergeRatherThanReplace(t *testing.T) {
+	t.Parallel()
 	h := newHarness(t)
 
 	h.conv.emit(ports.ChatEvent{
@@ -393,6 +401,7 @@ func TestAccountReportsMergeRatherThanReplace(t *testing.T) {
 // Each report updates only what it spoke about. An ordinary idle report must not
 // un-archive a thread, and an archive report must not blank the status.
 func TestThreadStateReportsAreTriState(t *testing.T) {
+	t.Parallel()
 	h := newHarness(t)
 
 	archived := true
@@ -437,6 +446,7 @@ func TestThreadStateReportsAreTriState(t *testing.T) {
 // notification no probe has ever seen would turn a provider quirk into a lost
 // session.
 func TestClosedThreadDoesNotStopTheController(t *testing.T) {
+	t.Parallel()
 	h := newHarness(t)
 
 	h.conv.emit(ports.ChatEvent{Kind: ports.ChatEventThreadState,
@@ -459,6 +469,7 @@ func TestClosedThreadDoesNotStopTheController(t *testing.T) {
 // merge by name and keep first-seen order. A list that reshuffles between polls is
 // unreadable.
 func TestMCPServerReportsMergeByName(t *testing.T) {
+	t.Parallel()
 	h := newHarness(t)
 
 	h.conv.emit(
@@ -491,6 +502,7 @@ func TestMCPServerReportsMergeByName(t *testing.T) {
 // A driver whose provider cannot reload gets a permanent answer, so a client stops
 // offering the control rather than retrying something that will never work.
 func TestReloadMCPServersUnsupportedIsPermanent(t *testing.T) {
+	t.Parallel()
 	h := newHarness(t)
 	_, err := h.svc.ReloadMCPServers(context.Background(), testSession)
 	if !errors.Is(err, chatsvc.ErrMCPReloadUnsupported) {
@@ -501,6 +513,7 @@ func TestReloadMCPServersUnsupportedIsPermanent(t *testing.T) {
 // A reload tears down and re-establishes every tool the agent has, so it is
 // refused mid-turn rather than pulling tools out from under work in flight.
 func TestReloadMCPServersRefusedWhileBusy(t *testing.T) {
+	t.Parallel()
 	reloader := &mcpReloadRecorder{fakeConversation: newFakeConversation()}
 	h := newHarnessWithConversation(t, reloader)
 
@@ -521,6 +534,7 @@ func TestReloadMCPServersRefusedWhileBusy(t *testing.T) {
 // The servers a reload reports are merged into conversation state, so the outcome
 // is durable rather than only being returned to whoever asked.
 func TestReloadMCPServersRecordsWhatCameBack(t *testing.T) {
+	t.Parallel()
 	reloader := &mcpReloadRecorder{
 		fakeConversation: newFakeConversation(),
 		servers:          []ports.ChatMCPServer{{Name: "probe", Status: "ready"}},
@@ -547,6 +561,7 @@ func TestReloadMCPServersRecordsWhatCameBack(t *testing.T) {
 // waiting on a person; this is a decision already made for them, and the two must
 // not render as the same thing.
 func TestAutoReviewIsItsOwnActivityKind(t *testing.T) {
+	t.Parallel()
 	h := newHarness(t)
 
 	h.conv.emit(

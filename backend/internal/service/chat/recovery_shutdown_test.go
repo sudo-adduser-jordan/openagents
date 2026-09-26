@@ -24,6 +24,7 @@ func (c *historyShutdownRefusingConversation) Terminate() error {
 }
 
 func TestRequiredHistoryCannotAdoptTargetWhoseShutdownFailed(t *testing.T) {
+	t.Parallel()
 	ctx := context.Background()
 	st := openStore(t)
 	shutdownErr := errors.New("provider shutdown acknowledgement was lost")

@@ -8,6 +8,7 @@ import (
 )
 
 func TestSettingsFromConfigOptionsKeepsAgentModelAndEffortAcrossRestart(t *testing.T) {
+	t.Parallel()
 	settings, changed := settingsFromConfigOptions(domain.ConversationSettings{
 		ApprovalMode: domain.PermissionModeBypassPermissions,
 	}, []ports.ChatConfigOption{
@@ -23,6 +24,7 @@ func TestSettingsFromConfigOptionsKeepsAgentModelAndEffortAcrossRestart(t *testi
 }
 
 func TestPermissionConfigOptionsLeaveProviderCatalogUntouched(t *testing.T) {
+	t.Parallel()
 	input := []ports.ChatConfigOption{{
 		ID:      "mode",
 		Current: ports.ChatConfigOptionValue{Select: "manual"},

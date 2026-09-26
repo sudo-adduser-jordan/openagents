@@ -7,6 +7,7 @@ import (
 )
 
 func TestNativeCheckpointRequiresExactUserBoundaryAndAnswer(t *testing.T) {
+	t.Parallel()
 	checkpoint := nativeHistoryCheckpoint{nativeBoundary: &ports.NativeCheckpointBoundary{
 		UserMessageID: "native-B", UserText: "continue", AssistantText: "Done",
 	}}

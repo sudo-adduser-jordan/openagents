@@ -52,6 +52,7 @@ func findActivity(t *testing.T, s store.ConversationSnapshot, item string) domai
 // Deltas accumulate onto the command's own row. The alternative -- a timeline
 // entry per delta -- would bury the conversation under one chatty command.
 func TestCommandOutputDeltasAccumulateOntoOneActivity(t *testing.T) {
+	t.Parallel()
 	h := newHarness(t)
 	ctx := context.Background()
 
@@ -103,6 +104,7 @@ func TestCommandOutputDeltasAccumulateOntoOneActivity(t *testing.T) {
 // command's item/completed notification. The turn is the authoritative terminal
 // boundary, so its command must stop spinning even when that item event is lost.
 func TestInterruptedTurnCancelsItsStillRunningActivities(t *testing.T) {
+	t.Parallel()
 	h := newHarness(t)
 	ctx := context.Background()
 
@@ -161,6 +163,7 @@ func TestInterruptedTurnCancelsItsStillRunningActivities(t *testing.T) {
 // Output is capped, and the cap is stated rather than applied silently. A build
 // that prints for an hour must not put megabytes into a row every snapshot reads.
 func TestCommandOutputIsCappedAndSaysSo(t *testing.T) {
+	t.Parallel()
 	h := newHarness(t)
 	ctx := context.Background()
 
@@ -205,6 +208,7 @@ func TestCommandOutputIsCappedAndSaysSo(t *testing.T) {
 // own. The provider can emit output before the item/started that names the command,
 // and an activity invented from a delta would have no command on it.
 func TestOutputDeltaForUnknownActivityIsDropped(t *testing.T) {
+	t.Parallel()
 	h := newHarness(t)
 	ctx := context.Background()
 
@@ -237,6 +241,7 @@ func TestOutputDeltaForUnknownActivityIsDropped(t *testing.T) {
 // The turn diff is per-turn state. The provider re-sends it whole on every update,
 // so repeats overwrite and never stack up as timeline entries.
 func TestTurnDiffOverwritesAndAddsNoTimelineRows(t *testing.T) {
+	t.Parallel()
 	h := newHarness(t)
 	ctx := context.Background()
 
@@ -297,6 +302,7 @@ func TestTurnDiffOverwritesAndAddsNoTimelineRows(t *testing.T) {
 // A driver that had to cut the file list says so, and the flag survives the round
 // trip through storage: a partial list presented as whole understates the change.
 func TestTruncatedTurnDiffKeepsItsFlag(t *testing.T) {
+	t.Parallel()
 	h := newHarness(t)
 	ctx := context.Background()
 
@@ -329,6 +335,7 @@ func TestTruncatedTurnDiffKeepsItsFlag(t *testing.T) {
 // An empty diff clears a stale file list. A turn that reverted its own edits has
 // changed nothing, and the previous answer must not linger.
 func TestEmptyTurnDiffClearsThePreviousOne(t *testing.T) {
+	t.Parallel()
 	h := newHarness(t)
 	ctx := context.Background()
 
@@ -368,6 +375,7 @@ func TestEmptyTurnDiffClearsThePreviousOne(t *testing.T) {
 // whichever turn happened to be nearby. This is the post-restart case, where a
 // controller reattaches to a provider turn that predates it.
 func TestTurnDiffForUnknownTurnIsDropped(t *testing.T) {
+	t.Parallel()
 	h := newHarness(t)
 	ctx := context.Background()
 
@@ -392,8 +400,11 @@ func TestTurnDiffForUnknownTurnIsDropped(t *testing.T) {
 		},
 	)
 
+	// Wait for the turn too. Turn creation and message projection are separate
+	// async paths, so the ordered message arriving first does not prove the turn
+	// row has been written; this raced the assertion below.
 	snapshot := h.awaitSnapshot(t, func(s store.ConversationSnapshot) bool {
-		return len(s.Messages) == 2
+		return len(s.Messages) == 2 && len(s.Turns) == 1
 	})
 	if len(snapshot.Turns) != 1 {
 		t.Fatalf("turns = %d, want 1", len(snapshot.Turns))

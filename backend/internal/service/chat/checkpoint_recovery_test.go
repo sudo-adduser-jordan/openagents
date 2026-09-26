@@ -17,6 +17,7 @@ import (
 )
 
 func TestInterfaceHandoffRecoversLegacyCheckpointFromUnsettledChatTurn(t *testing.T) {
+	t.Parallel()
 	for _, state := range []domain.TurnState{
 		domain.TurnStateCancelled, domain.TurnStateInterrupted, domain.TurnStateFailed,
 	} {
@@ -115,6 +116,7 @@ func TestInterfaceHandoffRecoversLegacyCheckpointFromUnsettledChatTurn(t *testin
 }
 
 func TestInterfaceHandoffNewTrustedTUIPromptCannotBorrowOldFailedChatOutcome(t *testing.T) {
+	t.Parallel()
 	ctx := context.Background()
 	st := openStore(t)
 	_, oldPromptAt := seedRecoveryCheckpointHistory(t, st, domain.TurnStateFailed)

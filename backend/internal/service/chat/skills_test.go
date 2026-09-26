@@ -25,6 +25,7 @@ func (c *skillfulConversation) ListSkills(context.Context) ([]ports.ChatSkill, e
 }
 
 func TestSkillsComeFromTheLiveConversation(t *testing.T) {
+	t.Parallel()
 	conv := &skillfulConversation{
 		fakeConversation: newFakeConversation(),
 		skills: []ports.ChatSkill{
@@ -48,6 +49,7 @@ func TestSkillsComeFromTheLiveConversation(t *testing.T) {
 // A driver that cannot enumerate skills has to be distinguishable from one that
 // reported none, because only the first is permanent.
 func TestSkillsReportsUnsupportedForADriverThatCannotList(t *testing.T) {
+	t.Parallel()
 	h := newHarness(t)
 
 	_, err := h.svc.Skills(context.Background(), testSession)
@@ -59,6 +61,7 @@ func TestSkillsReportsUnsupportedForADriverThatCannotList(t *testing.T) {
 // Without a controller there is no provider to ask. Reporting that plainly is what
 // lets a client explain the state instead of showing an empty menu.
 func TestSkillsRequiresALiveController(t *testing.T) {
+	t.Parallel()
 	h := newHarness(t)
 	if err := h.svc.Stop(context.Background(), testSession); err != nil {
 		t.Fatalf("Stop: %v", err)

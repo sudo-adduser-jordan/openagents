@@ -19,6 +19,7 @@ import (
 // narrative and target controller afterwards. These cases exercise the real
 // Service -> Lifecycle -> SQLite transaction, not just a mocked commit callback.
 func TestNativeChatHandoffAtomicPublication(t *testing.T) {
+	t.Parallel()
 	for scenario, wantError := range map[string]string{
 		"success": "", "provider_failure": "provider unavailable",
 		"wrong_provider": "does not match requested handle", "history_failure": "transcript unavailable",
@@ -233,6 +234,7 @@ func TestNativeChatHandoffAtomicPublication(t *testing.T) {
 }
 
 func TestOrdinaryNativeResumeCannotRebindAnotherProjectOwner(t *testing.T) {
+	t.Parallel()
 	f := seedHistoricalProviderFixture(t)
 	ctx := context.Background()
 	called := false

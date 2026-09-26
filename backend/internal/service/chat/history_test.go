@@ -179,6 +179,7 @@ func requireBranchPoint(
 // The end-to-end shape of an undo: the provider is asked to forget, and Open Agents's timeline
 // stops showing what it forgot.
 func TestRollbackDiscardsTheTurnAndEverythingAfterIt(t *testing.T) {
+	t.Parallel()
 	recorder := newHistoryRecorder()
 	h := newHarnessWithConversation(t, recorder)
 	ctx := context.Background()
@@ -217,6 +218,7 @@ func TestRollbackDiscardsTheTurnAndEverythingAfterIt(t *testing.T) {
 }
 
 func TestRollbackRemovesLaterLegacyCompactionState(t *testing.T) {
+	t.Parallel()
 	recorder := newHistoryRecorder()
 	h := newHarnessWithConversation(t, recorder)
 	ctx := context.Background()
@@ -261,6 +263,7 @@ func TestRollbackRemovesLaterLegacyCompactionState(t *testing.T) {
 // rows the agent is still writing into, so the check happens before the provider is
 // asked at all.
 func TestRollbackIsRefusedWhileATurnIsRunning(t *testing.T) {
+	t.Parallel()
 	recorder := newHistoryRecorder()
 	h := newHarnessWithConversation(t, recorder)
 	ctx := context.Background()
@@ -298,6 +301,7 @@ func TestRollbackIsRefusedWhileATurnIsRunning(t *testing.T) {
 // A provider without the capability gets a typed answer the client can render as an
 // absent affordance, following the Models precedent.
 func TestRollbackReportsAnUnsupportedDriver(t *testing.T) {
+	t.Parallel()
 	h := newHarness(t)
 	ctx := context.Background()
 	turnID := completeTurn(t, h, "first", "provider-turn-1")
@@ -313,6 +317,7 @@ func TestRollbackReportsAnUnsupportedDriver(t *testing.T) {
 // it would leave the agent remembering more than the timeline shows, which is the
 // exact disagreement rollback exists to prevent.
 func TestRollbackRefusesATurnTheProviderNeverAccepted(t *testing.T) {
+	t.Parallel()
 	recorder := newHistoryRecorder()
 	h := newHarnessWithConversation(t, recorder)
 	ctx := context.Background()
@@ -346,6 +351,7 @@ func TestRollbackRefusesATurnTheProviderNeverAccepted(t *testing.T) {
 
 // A turn id from nowhere is a 404-shaped answer, not a conflict.
 func TestRollbackReportsAnUnknownTurn(t *testing.T) {
+	t.Parallel()
 	recorder := newHistoryRecorder()
 	h := newHarnessWithConversation(t, recorder)
 
@@ -358,6 +364,7 @@ func TestRollbackReportsAnUnknownTurn(t *testing.T) {
 // A worker session has a task-scoped conversation with nothing worth trimming:
 // the prefix delete is a manager control, refused outright.
 func TestDeleteHistoryBeforeRefusesAWorkerSession(t *testing.T) {
+	t.Parallel()
 	recorder := newHistoryRecorder()
 	h := newHarnessWithConversation(t, recorder)
 	ctx := context.Background()
@@ -392,6 +399,7 @@ func setHarnessSessionKind(t *testing.T, h *harness, kind domain.SessionKind) {
 // anchor and everything after it survive, and the provider is never asked to
 // forget anything.
 func TestDeleteHistoryBeforeTrimsThePrefixForAManager(t *testing.T) {
+	t.Parallel()
 	recorder := newHistoryRecorder()
 	h := newHarnessWithConversation(t, recorder)
 	ctx := context.Background()
@@ -431,6 +439,7 @@ func TestDeleteHistoryBeforeTrimsThePrefixForAManager(t *testing.T) {
 // Refused, not raced: same guard as rollback. Deleting history out from under
 // a streaming turn would leave rows arriving into a range that no longer exists.
 func TestDeleteHistoryBeforeIsRefusedWhileATurnIsRunning(t *testing.T) {
+	t.Parallel()
 	recorder := newHistoryRecorder()
 	h := newHarnessWithConversation(t, recorder)
 	ctx := context.Background()
@@ -461,6 +470,7 @@ func TestDeleteHistoryBeforeIsRefusedWhileATurnIsRunning(t *testing.T) {
 
 // A turn id from nowhere is a 404-shaped answer, not a conflict.
 func TestDeleteHistoryBeforeReportsAnUnknownTurn(t *testing.T) {
+	t.Parallel()
 	h := newHarness(t)
 
 	_, err := h.svc.DeleteHistoryBefore(context.Background(), testSession, "turn-that-never-was")
@@ -472,6 +482,7 @@ func TestDeleteHistoryBeforeReportsAnUnknownTurn(t *testing.T) {
 // The provider's own refusal must arrive as a conflict carrying its explanation. A
 // generic failure would tell the user nothing they could act on.
 func TestRollbackClassifiesAProviderRefusal(t *testing.T) {
+	t.Parallel()
 	recorder := newHistoryRecorder()
 	recorder.rollbackErr = refusedError{msg: "Cannot rollback while a turn is in progress."}
 	h := newHarnessWithConversation(t, recorder)
@@ -502,6 +513,7 @@ func TestRollbackClassifiesAProviderRefusal(t *testing.T) {
 // The title round trip: Open Agents asks, the provider confirms on its own event, and only
 // then does the session label move. Nothing is written optimistically.
 func TestSetTitleFlowsThroughTheProviderIntoTheSessionName(t *testing.T) {
+	t.Parallel()
 	recorder := newHistoryRecorder()
 	h := newHarnessWithConversation(t, recorder)
 	ctx := context.Background()
@@ -533,6 +545,7 @@ func TestSetTitleFlowsThroughTheProviderIntoTheSessionName(t *testing.T) {
 // A title Open Agents never asked for still lands: another client naming the thread is how a
 // provider-derived title arrives at all.
 func TestAProviderRenameFromElsewhereNamesTheSession(t *testing.T) {
+	t.Parallel()
 	recorder := newHistoryRecorder()
 	h := newHarnessWithConversation(t, recorder)
 
@@ -545,6 +558,7 @@ func TestAProviderRenameFromElsewhereNamesTheSession(t *testing.T) {
 
 // The rule the user cares about: their own name is never taken away by a model.
 func TestAProviderTitleDoesNotOverwriteAUserRename(t *testing.T) {
+	t.Parallel()
 	recorder := newHistoryRecorder()
 	h := newHarnessWithConversation(t, recorder)
 	ctx := context.Background()
@@ -572,6 +586,7 @@ func TestAProviderTitleDoesNotOverwriteAUserRename(t *testing.T) {
 
 // Clearing the thread name is not a reason to strip Open Agents's label.
 func TestAClearedProviderTitleLeavesTheSessionNameAlone(t *testing.T) {
+	t.Parallel()
 	recorder := newHistoryRecorder()
 	h := newHarnessWithConversation(t, recorder)
 	ctx := context.Background()
@@ -595,6 +610,7 @@ func TestAClearedProviderTitleLeavesTheSessionNameAlone(t *testing.T) {
 }
 
 func TestSetTitleRefusesABlankTitle(t *testing.T) {
+	t.Parallel()
 	recorder := newHistoryRecorder()
 	h := newHarnessWithConversation(t, recorder)
 
@@ -607,6 +623,7 @@ func TestSetTitleRefusesABlankTitle(t *testing.T) {
 }
 
 func TestSetTitleReportsAnUnsupportedDriver(t *testing.T) {
+	t.Parallel()
 	h := newHarness(t)
 	if _, err := h.svc.SetTitle(context.Background(), testSession, "A Name"); !errors.Is(err, chatsvc.ErrRenameUnsupported) {
 		t.Fatalf("err = %v, want ErrRenameUnsupported", err)
@@ -614,6 +631,7 @@ func TestSetTitleReportsAnUnsupportedDriver(t *testing.T) {
 }
 
 func TestForkReturnsTheNewProviderConversationID(t *testing.T) {
+	t.Parallel()
 	recorder := newHistoryRecorder()
 	h := newHarnessWithConversation(t, recorder)
 
@@ -627,6 +645,7 @@ func TestForkReturnsTheNewProviderConversationID(t *testing.T) {
 }
 
 func TestForkReportsAnUnsupportedDriver(t *testing.T) {
+	t.Parallel()
 	h := newHarness(t)
 	if _, err := h.svc.ForkConversation(context.Background(), testSession); !errors.Is(err, chatsvc.ErrForkUnsupported) {
 		t.Fatalf("err = %v, want ErrForkUnsupported", err)
@@ -634,6 +653,7 @@ func TestForkReportsAnUnsupportedDriver(t *testing.T) {
 }
 
 func TestForkClassifiesAProviderRefusal(t *testing.T) {
+	t.Parallel()
 	recorder := newHistoryRecorder()
 	recorder.forkErr = refusedError{msg: "lastTurnId identifies an in-progress turn"}
 	h := newHarnessWithConversation(t, recorder)
@@ -834,6 +854,7 @@ func newEditHarnessWithOptions(
 }
 
 func TestEditAndBranchActivationRotateControllerCredentialsAfterStoppingSource(t *testing.T) {
+	t.Parallel()
 	var mu sync.Mutex
 	prepareCalls := 0
 	var expectedStopped *chatsvc.Controller
@@ -906,6 +927,7 @@ func TestEditAndBranchActivationRotateControllerCredentialsAfterStoppingSource(t
 }
 
 func TestEditMessageReplaysDurableContextWhenNativeForkIsUnavailable(t *testing.T) {
+	t.Parallel()
 	h, _, driver := newEditHarness(t, true)
 	ctx := context.Background()
 	completeTurn(t, h, "A", "provider-turn-1")
@@ -946,6 +968,7 @@ func TestEditMessageReplaysDurableContextWhenNativeForkIsUnavailable(t *testing.
 }
 
 func TestEditMessageRejectsReplayWhenFreshProviderNegotiatesFewerCapabilities(t *testing.T) {
+	t.Parallel()
 	h, _, driver := newEditHarness(t, true)
 	ctx := context.Background()
 	completeTurn(t, h, "A", "provider-turn-1")
@@ -1022,6 +1045,7 @@ func TestEditMessageRejectsReplayWhenFreshProviderNegotiatesFewerCapabilities(t 
 }
 
 func TestEditMessageReportsUndispatchedReplayPreparationFailureAsRejected(t *testing.T) {
+	t.Parallel()
 	var failReplay atomic.Bool
 	h, _, driver := newEditHarnessWithStoreAndReader(
 		t,
@@ -1066,6 +1090,7 @@ func TestEditMessageReportsUndispatchedReplayPreparationFailureAsRejected(t *tes
 }
 
 func TestEditMessageKeepsReplacementPrivateUntilEditedPromptIsRecorded(t *testing.T) {
+	t.Parallel()
 	h, _, driver := newEditHarness(t, true)
 	ctx := context.Background()
 	completeTurn(t, h, "A", "provider-turn-1")
@@ -1174,6 +1199,7 @@ func TestEditMessageKeepsReplacementPrivateUntilEditedPromptIsRecorded(t *testin
 }
 
 func TestStartRestoresSourceAfterCrashBeforeEditedPromptWasRecorded(t *testing.T) {
+	t.Parallel()
 	h, _, _ := newEditHarness(t, true)
 	ctx := context.Background()
 	completeTurn(t, h, "A", "provider-turn-1")
@@ -1240,6 +1266,7 @@ func TestStartRestoresSourceAfterCrashBeforeEditedPromptWasRecorded(t *testing.T
 }
 
 func TestStartLinksDurableEditedPromptAfterCrashBeforeBranchLink(t *testing.T) {
+	t.Parallel()
 	h, _, _ := newEditHarness(t, true)
 	ctx := context.Background()
 	completeTurn(t, h, "A", "provider-turn-1")
@@ -1339,6 +1366,7 @@ func newRestartedEditService(
 }
 
 func TestEditMessageAmbiguousApproximateFailureRemainsNavigableAcrossRestart(t *testing.T) {
+	t.Parallel()
 	h, _, driver := newEditHarness(t, true)
 	ctx := context.Background()
 	completeTurn(t, h, "A", "provider-turn-1")
@@ -1428,6 +1456,7 @@ func (s *loseEditReservationReplyStore) ReserveEditDelivery(ctx context.Context,
 }
 
 func TestReservedEditRecoversAfterControllerStopAndResume(t *testing.T) {
+	t.Parallel()
 	h, _, driver := newEditHarnessWithStore(t, false, func(st *store.Store) chatsvc.Store {
 		return &loseEditReservationReplyStore{Store: st}
 	})
@@ -1618,6 +1647,7 @@ func requireUncertainEditReplayAfterRestart(
 }
 
 func TestEditMessageClosesSourceWriterBeforeResumingNativeFork(t *testing.T) {
+	t.Parallel()
 	h, source, driver := newEditHarness(t, false)
 	ctx := context.Background()
 	completeTurn(t, h, "A", "provider-turn-1")
@@ -1647,6 +1677,7 @@ func TestEditMessageClosesSourceWriterBeforeResumingNativeFork(t *testing.T) {
 }
 
 func TestEditMessageNativeForkDoesNotPublishSourceExitBeforeReplacementTurn(t *testing.T) {
+	t.Parallel()
 	h, _, _ := newEditHarness(t, false)
 	ctx := context.Background()
 	completeTurn(t, h, "A", "provider-turn-1")
@@ -1668,6 +1699,7 @@ func TestEditMessageNativeForkDoesNotPublishSourceExitBeforeReplacementTurn(t *t
 }
 
 func TestActivateBranchKeepsCapturedSourceIntakeFencedUntilClose(t *testing.T) {
+	t.Parallel()
 	h, _, driver := newEditHarness(t, false)
 	ctx := context.Background()
 	completeTurn(t, h, "A", "provider-turn-1")
@@ -1737,6 +1769,7 @@ func TestActivateBranchKeepsCapturedSourceIntakeFencedUntilClose(t *testing.T) {
 }
 
 func TestEditMessageRestoresSourceAfterRequestCancellationDuringClose(t *testing.T) {
+	t.Parallel()
 	h, source, driver := newEditHarness(t, false)
 	ctx, cancel := context.WithCancel(context.Background())
 	defer cancel()
@@ -1795,6 +1828,7 @@ func TestEditMessageRestoresSourceAfterRequestCancellationDuringClose(t *testing
 }
 
 func TestEditMessageReportsExitWhenReplacementAndRecoveryBothFail(t *testing.T) {
+	t.Parallel()
 	h, _, driver := newEditHarness(t, false)
 	ctx := context.Background()
 	completeTurn(t, h, "A", "provider-turn-1")
@@ -1822,6 +1856,7 @@ func TestEditMessageReportsExitWhenReplacementAndRecoveryBothFail(t *testing.T) 
 }
 
 func TestEditMessageForksBeforeMiddlePromptAndReusesStoredContent(t *testing.T) {
+	t.Parallel()
 	h, source, driver := newEditHarness(t, false)
 	ctx := context.Background()
 	first := completeTurn(t, h, "A", "provider-turn-1")
@@ -1885,6 +1920,7 @@ func TestEditMessageForksBeforeMiddlePromptAndReusesStoredContent(t *testing.T) 
 }
 
 func TestEditMessageFirstPromptStartsFreshConversation(t *testing.T) {
+	t.Parallel()
 	h, source, driver := newEditHarness(t, false)
 	first := completeTurn(t, h, "A", "provider-turn-1")
 	h.awaitSnapshot(t, func(s store.ConversationSnapshot) bool { return len(s.Messages) == 2 })
@@ -1916,6 +1952,7 @@ func TestEditMessageFirstPromptStartsFreshConversation(t *testing.T) {
 }
 
 func TestEditOfEditedFirstPromptDoesNotReplayExcludedSiblingHistory(t *testing.T) {
+	t.Parallel()
 	h, _, driver := newEditHarness(t, false)
 	ctx := context.Background()
 	first := completeTurn(t, h, "A", "provider-turn-1")
@@ -1961,6 +1998,7 @@ func TestEditOfEditedFirstPromptDoesNotReplayExcludedSiblingHistory(t *testing.T
 }
 
 func TestEditMessageRefusesBusyControllerAndLeavesSourceActive(t *testing.T) {
+	t.Parallel()
 	h, source, driver := newEditHarness(t, false)
 	turn, err := h.svc.Send(context.Background(), testSession, ports.ChatUserMessage{
 		Text: "running", Origin: domain.MessageOriginHuman,
@@ -1992,6 +2030,7 @@ func TestEditMessageRefusesBusyControllerAndLeavesSourceActive(t *testing.T) {
 }
 
 func TestEditMessageForkFailureReopensSource(t *testing.T) {
+	t.Parallel()
 	h, source, _ := newEditHarness(t, false)
 	first := completeTurn(t, h, "A", "provider-turn-1")
 	_ = first
@@ -2019,6 +2058,7 @@ func TestEditMessageForkFailureReopensSource(t *testing.T) {
 }
 
 func TestEditMessageExplicitRefusalRestoresSourceBranch(t *testing.T) {
+	t.Parallel()
 	h, _, driver := newEditHarness(t, false)
 	ctx := context.Background()
 	completeTurn(t, h, "A", "provider-turn-1")
@@ -2060,6 +2100,7 @@ func TestEditMessageExplicitRefusalRestoresSourceBranch(t *testing.T) {
 }
 
 func TestEditMessageUndispatchedAttemptRestoresSourceBranch(t *testing.T) {
+	t.Parallel()
 	h, _, _ := newEditHarness(t, false)
 	ctx := context.Background()
 	completeTurn(t, h, "A", "provider-turn-1")
@@ -2100,6 +2141,7 @@ func TestEditMessageUndispatchedAttemptRestoresSourceBranch(t *testing.T) {
 }
 
 func TestAcceptedEditReplaysBeforeAnchorLookupAndRejectsChangedPayload(t *testing.T) {
+	t.Parallel()
 	h, _, driver := newEditHarness(t, false)
 	ctx := context.Background()
 	first := completeTurn(t, h, "A", "provider-turn-1")
@@ -2139,6 +2181,7 @@ func TestAcceptedEditReplaysBeforeAnchorLookupAndRejectsChangedPayload(t *testin
 }
 
 func TestAmbiguousEditSendFailureStaysUncertainWithoutProviderRedispatch(t *testing.T) {
+	t.Parallel()
 	h, _, driver := newEditHarness(t, false)
 	ctx := context.Background()
 	first := completeTurn(t, h, "A", "provider-turn-1")
@@ -2181,6 +2224,7 @@ func TestAmbiguousEditSendFailureStaysUncertainWithoutProviderRedispatch(t *test
 }
 
 func TestGenericEditBranchStartFailureStaysUncertainWithoutProviderRedispatch(t *testing.T) {
+	t.Parallel()
 	h, _, driver := newEditHarness(t, false)
 	first := completeTurn(t, h, "A", "provider-turn-1")
 	h.awaitSnapshot(t, func(s store.ConversationSnapshot) bool { return len(s.Messages) == 2 })
@@ -2222,6 +2266,7 @@ func TestGenericEditBranchStartFailureStaysUncertainWithoutProviderRedispatch(t 
 }
 
 func TestGenericEditBranchResumeFailureStaysUncertainWithoutProviderRedispatch(t *testing.T) {
+	t.Parallel()
 	h, source, driver := newEditHarness(t, false)
 	completeTurn(t, h, "A", "provider-turn-1")
 	h.awaitSnapshot(t, func(s store.ConversationSnapshot) bool { return len(s.Messages) == 2 })
@@ -2272,6 +2317,7 @@ func TestGenericEditBranchResumeFailureStaysUncertainWithoutProviderRedispatch(t
 }
 
 func TestGenericEditBindFailureStaysUncertainWithoutProviderRedispatch(t *testing.T) {
+	t.Parallel()
 	var faults *failEditOperationStore
 	h, _, driver := newEditHarnessWithStore(t, false, func(st *store.Store) chatsvc.Store {
 		faults = &failEditOperationStore{Store: st}
@@ -2312,6 +2358,7 @@ func TestGenericEditBindFailureStaysUncertainWithoutProviderRedispatch(t *testin
 }
 
 func TestGenericEditBranchInstallationFailureStaysUncertainWithoutProviderRedispatch(t *testing.T) {
+	t.Parallel()
 	var faults *failEditOperationStore
 	h, _, driver := newEditHarnessWithStore(t, false, func(st *store.Store) chatsvc.Store {
 		faults = &failEditOperationStore{Store: st}
@@ -2358,6 +2405,7 @@ func TestGenericEditBranchInstallationFailureStaysUncertainWithoutProviderRedisp
 }
 
 func TestTypedProviderEditRefusalDurablyReplaysWithoutProviderRedispatch(t *testing.T) {
+	t.Parallel()
 	h, _, driver := newEditHarness(t, false)
 	ctx := context.Background()
 	first := completeTurn(t, h, "A", "provider-turn-1")
@@ -2398,6 +2446,7 @@ func TestTypedProviderEditRefusalDurablyReplaysWithoutProviderRedispatch(t *test
 }
 
 func TestAcceptedEditReplaysAfterControllerRestartWithoutProviderRedispatch(t *testing.T) {
+	t.Parallel()
 	h, _, driver := newEditHarness(t, false)
 	first := completeTurn(t, h, "A", "provider-turn-1")
 	h.awaitSnapshot(t, func(s store.ConversationSnapshot) bool { return len(s.Messages) == 2 })
@@ -2426,6 +2475,7 @@ func TestAcceptedEditReplaysAfterControllerRestartWithoutProviderRedispatch(t *t
 }
 
 func TestEditCompletionGapStaysUncertainAcrossRetryAndControllerRestart(t *testing.T) {
+	t.Parallel()
 	var flaky *failEditCompletionStore
 	h, _, driver := newEditHarnessWithStore(t, false, func(st *store.Store) chatsvc.Store {
 		flaky = &failEditCompletionStore{Store: st}
@@ -2460,6 +2510,7 @@ func TestEditCompletionGapStaysUncertainAcrossRetryAndControllerRestart(t *testi
 }
 
 func TestCompletedEditRepairsReceiptAfterControllerRestart(t *testing.T) {
+	t.Parallel()
 	h, _, driver := newEditHarnessWithStore(t, false, func(st *store.Store) chatsvc.Store {
 		return &failEditCompletionStore{Store: st}
 	})
@@ -2491,6 +2542,7 @@ func TestCompletedEditRepairsReceiptAfterControllerRestart(t *testing.T) {
 }
 
 func TestMissingEditTurnReplaysOriginalHTTPStatusAfterRestart(t *testing.T) {
+	t.Parallel()
 	h, _, _ := newEditHarness(t, false)
 	check := func(svc *chatsvc.Service) {
 		t.Helper()
@@ -2516,6 +2568,7 @@ func TestMissingEditTurnReplaysOriginalHTTPStatusAfterRestart(t *testing.T) {
 }
 
 func TestEditMessageRejectsMalformedStoredContentBeforeFork(t *testing.T) {
+	t.Parallel()
 	h, source, driver := newEditHarness(t, false)
 	created, err := h.st.AppendUserMessage(context.Background(), h.ctrl.ConversationID(), testSession,
 		h.ctrl.Generation(), domain.ConversationMessage{
@@ -2559,6 +2612,7 @@ func TestEditMessageRejectsMalformedStoredContentBeforeFork(t *testing.T) {
 }
 
 func TestActivateBranchResumesWithoutSending(t *testing.T) {
+	t.Parallel()
 	h, _, driver := newEditHarness(t, false)
 	first := completeTurn(t, h, "A", "provider-turn-1")
 	h.awaitSnapshot(t, func(s store.ConversationSnapshot) bool { return len(s.Messages) == 2 })
@@ -2599,6 +2653,7 @@ func TestActivateBranchResumesWithoutSending(t *testing.T) {
 }
 
 func TestActivateBranchResumeFailureKeepsCurrentControllerActive(t *testing.T) {
+	t.Parallel()
 	h, _, driver := newEditHarness(t, false)
 	ctx := context.Background()
 	first := completeTurn(t, h, "A", "provider-turn-1")
@@ -2664,6 +2719,7 @@ func TestActivateBranchResumeFailureKeepsCurrentControllerActive(t *testing.T) {
 }
 
 func TestActivateBranchSwitchesBetweenCompatibleApproximateProviderScopes(t *testing.T) {
+	t.Parallel()
 	h, _, driver := newEditHarness(t, true)
 	ctx := context.Background()
 	completeTurn(t, h, "A", "provider-turn-1")
@@ -2742,6 +2798,7 @@ func TestActivateBranchSwitchesBetweenCompatibleApproximateProviderScopes(t *tes
 }
 
 func TestApproximateBranchScopePersistsAcrossServiceRestartAndSwitching(t *testing.T) {
+	t.Parallel()
 	h, _, driver := newEditHarness(t, true)
 	ctx := context.Background()
 	completeTurn(t, h, "A", "provider-turn-1")
@@ -2837,6 +2894,7 @@ func TestApproximateBranchScopePersistsAcrossServiceRestartAndSwitching(t *testi
 }
 
 func TestProviderBoundaryRejectsSourceProviderBranchAndEdit(t *testing.T) {
+	t.Parallel()
 	ctx := context.Background()
 	st := openStore(t)
 	now := time.Date(2026, 8, 18, 14, 0, 0, 0, time.UTC)
@@ -2950,6 +3008,7 @@ func TestProviderBoundaryRejectsSourceProviderBranchAndEdit(t *testing.T) {
 // The contract from the automatic-semantic-task-titles design, applied to whatever
 // the provider says rather than trusted.
 func TestNormalizeTitle(t *testing.T) {
+	t.Parallel()
 	cases := []struct {
 		name string
 		in   string

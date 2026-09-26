@@ -450,6 +450,7 @@ func productionCaps() ports.ChatCapabilities {
 }
 
 func TestSuccessfulChatProbeIsReusedByStart(t *testing.T) {
+	t.Parallel()
 	st := openStore(t)
 	probes := 0
 	nextID := 0
@@ -485,6 +486,7 @@ func TestSuccessfulChatProbeIsReusedByStart(t *testing.T) {
 }
 
 func TestFailedChatProbeCanBeRetriedThenCached(t *testing.T) {
+	t.Parallel()
 	attempts := 0
 	driver := fakeDriver{probe: func() error {
 		attempts++
@@ -510,6 +512,7 @@ func TestFailedChatProbeCanBeRetriedThenCached(t *testing.T) {
 }
 
 func TestCapabilityCacheEvaluatesEveryRequestedPermissionMode(t *testing.T) {
+	t.Parallel()
 	probes := 0
 	driver := fakeDriver{
 		caps: ports.ChatCapabilities{
@@ -539,6 +542,7 @@ func TestCapabilityCacheEvaluatesEveryRequestedPermissionMode(t *testing.T) {
 }
 
 func TestResumeUsesPersistedBypassPermissionForCapabilityAdmission(t *testing.T) {
+	t.Parallel()
 	st := openStore(t)
 	ctx := context.Background()
 	now := time.Date(2026, 8, 23, 12, 0, 0, 0, time.UTC)
@@ -601,6 +605,7 @@ func TestResumeUsesPersistedBypassPermissionForCapabilityAdmission(t *testing.T)
 }
 
 func TestServicePassesRecomputedSystemPromptToResume(t *testing.T) {
+	t.Parallel()
 	st := openStore(t)
 	existing, err := st.CreateConversation(context.Background(), "conversation-resume",
 		domain.ConversationScopeSession, testProject, testSession, time.Now())
@@ -647,6 +652,7 @@ func TestServicePassesRecomputedSystemPromptToResume(t *testing.T) {
 }
 
 func TestServiceResumePreservesExplicitProviderDefaultTuning(t *testing.T) {
+	t.Parallel()
 	st := openStore(t)
 	existing, err := st.CreateConversation(context.Background(), "conversation-provider-defaults",
 		domain.ConversationScopeSession, testProject, testSession, time.Now())
@@ -680,6 +686,7 @@ func TestServiceResumePreservesExplicitProviderDefaultTuning(t *testing.T) {
 }
 
 func TestServicePersistsAndPassesInitialModelTuningBeforeProviderStart(t *testing.T) {
+	t.Parallel()
 	st := openStore(t)
 	conv := newFakeConversation()
 	var started ports.ChatStartConfig
@@ -714,6 +721,7 @@ func TestServicePersistsAndPassesInitialModelTuningBeforeProviderStart(t *testin
 }
 
 func TestPendingAgentSwitchFreshStartUsesReservedProviderScope(t *testing.T) {
+	t.Parallel()
 	st := openStore(t)
 	now := time.Date(2026, 8, 21, 10, 0, 0, 0, time.UTC)
 	record, found, err := st.GetSession(context.Background(), testSession)
@@ -753,6 +761,7 @@ func TestPendingAgentSwitchFreshStartUsesReservedProviderScope(t *testing.T) {
 }
 
 func TestPendingAgentSwitchResumeUsesReservedProviderScope(t *testing.T) {
+	t.Parallel()
 	st := openStore(t)
 	now := time.Date(2026, 8, 21, 11, 0, 0, 0, time.UTC)
 	record, found, err := st.GetSession(context.Background(), testSession)
@@ -797,6 +806,7 @@ func TestPendingAgentSwitchResumeUsesReservedProviderScope(t *testing.T) {
 }
 
 func TestOrdinaryResumeRejectsProviderHandleOutsideActiveBranch(t *testing.T) {
+	t.Parallel()
 	st := openStore(t)
 	now := time.Date(2026, 8, 21, 12, 0, 0, 0, time.UTC)
 	record, found, err := st.GetSession(context.Background(), testSession)
@@ -881,6 +891,7 @@ func seedProjectConversationWithProviderHistory(
 }
 
 func TestFreshProjectStartPersistsNewProviderScopeForSubsequentResume(t *testing.T) {
+	t.Parallel()
 	st := openStore(t)
 	ctx := context.Background()
 	now := time.Date(2026, 8, 21, 13, 0, 0, 0, time.UTC)
@@ -987,6 +998,7 @@ func TestFreshProjectStartPersistsNewProviderScopeForSubsequentResume(t *testing
 }
 
 func TestFreshProjectProviderStartFailurePreservesSourceHeadAndOwner(t *testing.T) {
+	t.Parallel()
 	st := openStore(t)
 	ctx := context.Background()
 	now := time.Date(2026, 8, 21, 14, 0, 0, 0, time.UTC)
@@ -1037,6 +1049,7 @@ func TestFreshProjectProviderStartFailurePreservesSourceHeadAndOwner(t *testing.
 }
 
 func TestFreshProjectControllerReadyFailurePreservesSourceHeadAndOwner(t *testing.T) {
+	t.Parallel()
 	st := openStore(t)
 	ctx := context.Background()
 	now := time.Date(2026, 8, 21, 15, 0, 0, 0, time.UTC)
@@ -1096,6 +1109,7 @@ func TestFreshProjectControllerReadyFailurePreservesSourceHeadAndOwner(t *testin
 }
 
 func TestResumeCanSkipNativeHistoryImportWithoutStartingFresh(t *testing.T) {
+	t.Parallel()
 	st := openStore(t)
 	historyReads := 0
 	conv := &nativeHistoryConversation{
@@ -1146,6 +1160,7 @@ func TestResumeCanSkipNativeHistoryImportWithoutStartingFresh(t *testing.T) {
 }
 
 func TestResumeImportsNativeHistoryBeforeTheChatControllerStarts(t *testing.T) {
+	t.Parallel()
 	st := openStore(t)
 	now := time.Date(2026, 8, 5, 10, 0, 0, 0, time.UTC)
 	existing, err := st.CreateConversation(context.Background(), "existing-conversation",
@@ -1277,6 +1292,7 @@ func TestResumeImportsNativeHistoryBeforeTheChatControllerStarts(t *testing.T) {
 }
 
 func TestInterfaceHandoffRefreshesNativeHistoryUntilSettledBeforeStartingChat(t *testing.T) {
+	t.Parallel()
 	st := openStore(t)
 	rec, found, err := st.GetSession(context.Background(), testSession)
 	if err != nil || !found {
@@ -1346,6 +1362,7 @@ func TestInterfaceHandoffRefreshesNativeHistoryUntilSettledBeforeStartingChat(t 
 }
 
 func TestInterfaceHandoffRefreshesNativeHistoryUntilItReachesTheCheckpoint(t *testing.T) {
+	t.Parallel()
 	st := openStore(t)
 	rec, found, err := st.GetSession(context.Background(), testSession)
 	if err != nil || !found {
@@ -1412,6 +1429,7 @@ func TestInterfaceHandoffRefreshesNativeHistoryUntilItReachesTheCheckpoint(t *te
 }
 
 func TestInterfaceHandoffImportsInterruptedUserOnlyNativeHistory(t *testing.T) {
+	t.Parallel()
 	st := openStore(t)
 	conv := &nativeHistoryConversation{
 		fakeConversation: newFakeConversation(),
@@ -1456,6 +1474,7 @@ func TestInterfaceHandoffImportsInterruptedUserOnlyNativeHistory(t *testing.T) {
 }
 
 func TestInterfaceHandoffImportsOutcomeUnknownNativeHistoryAsRecovered(t *testing.T) {
+	t.Parallel()
 	st := openStore(t)
 	conv := &nativeHistoryConversation{
 		fakeConversation: newFakeConversation(),
@@ -1513,6 +1532,7 @@ func TestInterfaceHandoffImportsOutcomeUnknownNativeHistoryAsRecovered(t *testin
 }
 
 func TestInterfaceHandoffRejectsAProviderWithoutNativeHistoryReplay(t *testing.T) {
+	t.Parallel()
 	st := openStore(t)
 	conv := newFakeConversation()
 	svc := chatsvc.New(chatsvc.Options{
@@ -1535,6 +1555,7 @@ func TestInterfaceHandoffRejectsAProviderWithoutNativeHistoryReplay(t *testing.T
 }
 
 func TestOrdinaryResumeAllowsACPContextWithoutHistoryReplay(t *testing.T) {
+	t.Parallel()
 	st := openStore(t)
 	conv := &nativeHistoryConversation{
 		fakeConversation: newFakeConversation(),
@@ -1557,6 +1578,7 @@ func TestOrdinaryResumeAllowsACPContextWithoutHistoryReplay(t *testing.T) {
 }
 
 func TestInterfaceHandoffReportsUnsettledHistoryWhenContextEndsBeforeRefresh(t *testing.T) {
+	t.Parallel()
 	st := openStore(t)
 	ctx, cancel := context.WithCancel(context.Background())
 	defer cancel()
@@ -1591,6 +1613,7 @@ func TestInterfaceHandoffReportsUnsettledHistoryWhenContextEndsBeforeRefresh(t *
 }
 
 func TestInterfaceHandoffRejectsUnsettledImmutableHistoryWithoutRereading(t *testing.T) {
+	t.Parallel()
 	st := openStore(t)
 	ctx, cancel := context.WithCancel(context.Background())
 	defer cancel()
@@ -1624,6 +1647,7 @@ func TestInterfaceHandoffRejectsUnsettledImmutableHistoryWithoutRereading(t *tes
 }
 
 func TestInterfaceHandoffRejectsSettledReplayBeforeLatestSessionCheckpoint(t *testing.T) {
+	t.Parallel()
 	st := openStore(t)
 	rec, found, err := st.GetSession(context.Background(), testSession)
 	if err != nil || !found {
@@ -1675,6 +1699,7 @@ func TestInterfaceHandoffRejectsSettledReplayBeforeLatestSessionCheckpoint(t *te
 }
 
 func TestInterfaceHandoffCheckpointHistoryPolicy(t *testing.T) {
+	t.Parallel()
 	for _, tc := range []struct {
 		name          string
 		state         domain.ConversationCheckpointState
@@ -1741,6 +1766,7 @@ func TestInterfaceHandoffCheckpointHistoryPolicy(t *testing.T) {
 }
 
 func TestInterfaceHandoffTrustedCheckpointMayPrecedeLaterCompletedTurn(t *testing.T) {
+	t.Parallel()
 	for _, tt := range []struct {
 		name         string
 		state        domain.ConversationCheckpointState
@@ -1832,6 +1858,7 @@ func TestInterfaceHandoffTrustedCheckpointMayPrecedeLaterCompletedTurn(t *testin
 }
 
 func TestInterfaceHandoffPanePromptWithMissedHookCannotAcceptHistoryBeforeObservedStop(t *testing.T) {
+	t.Parallel()
 	st := openStore(t)
 	changed, err := st.CommitSessionControllerEpoch(
 		context.Background(), testSession, domain.SessionModeChat, domain.SessionModeTUI,
@@ -1918,6 +1945,7 @@ func TestInterfaceHandoffPanePromptWithMissedHookCannotAcceptHistoryBeforeObserv
 }
 
 func TestInterfaceHandoffImmutableBoundaryFailsBeforeReadingProviderHistory(t *testing.T) {
+	t.Parallel()
 	st := openStore(t)
 	rec, found, err := st.GetSession(context.Background(), testSession)
 	if err != nil || !found {
@@ -1961,6 +1989,7 @@ func TestInterfaceHandoffImmutableBoundaryFailsBeforeReadingProviderHistory(t *t
 }
 
 func TestInterfaceHandoffAssistantOnlyCheckpointFailsClosedOnRepeatedText(t *testing.T) {
+	t.Parallel()
 	st := openStore(t)
 	rec, found, err := st.GetSession(context.Background(), testSession)
 	if err != nil || !found {
@@ -2005,6 +2034,7 @@ func TestInterfaceHandoffAssistantOnlyCheckpointFailsClosedOnRepeatedText(t *tes
 }
 
 func TestInterfaceHandoffTrustedCheckpointMustMatchOneCompletedTurn(t *testing.T) {
+	t.Parallel()
 	st := openStore(t)
 	rec, found, err := st.GetSession(context.Background(), testSession)
 	if err != nil || !found {
@@ -2052,6 +2082,7 @@ func TestInterfaceHandoffTrustedCheckpointMustMatchOneCompletedTurn(t *testing.T
 }
 
 func TestInterfaceHandoffOpenAgentsHighWaterFallbackMustStayInItsTurn(t *testing.T) {
+	t.Parallel()
 	ctx := context.Background()
 	st := openStore(t)
 	now := time.Date(2026, 8, 26, 2, 0, 0, 0, time.UTC)
@@ -2135,6 +2166,7 @@ func TestInterfaceHandoffOpenAgentsHighWaterFallbackMustStayInItsTurn(t *testing
 }
 
 func TestInterfaceHandoffOpenAgentsHighWaterAcceptsMappedReassignedTurn(t *testing.T) {
+	t.Parallel()
 	ctx := context.Background()
 	st := openStore(t)
 	now := time.Date(2026, 8, 26, 2, 30, 0, 0, time.UTC)
@@ -2212,6 +2244,7 @@ func TestInterfaceHandoffOpenAgentsHighWaterAcceptsMappedReassignedTurn(t *testi
 }
 
 func TestInterfaceHandoffProviderHistoryCannotWaiveTrustedCheckpointNativeIdentityMismatch(t *testing.T) {
+	t.Parallel()
 	tests := []struct {
 		name      string
 		state     domain.ConversationCheckpointState
@@ -2266,6 +2299,7 @@ func TestInterfaceHandoffProviderHistoryCannotWaiveTrustedCheckpointNativeIdenti
 }
 
 func TestInterfaceHandoffRoundTripRetiresTrustedTerminalCheckpointAfterChatTurn(t *testing.T) {
+	t.Parallel()
 	ctx := context.Background()
 	st := openStore(t)
 	now := time.Date(2026, 8, 26, 1, 0, 0, 0, time.UTC)
@@ -2363,6 +2397,7 @@ func TestInterfaceHandoffRoundTripRetiresTrustedTerminalCheckpointAfterChatTurn(
 }
 
 func TestInterfaceHandoffDoesNotAnchorReplayCheckpointOnFailedTurn(t *testing.T) {
+	t.Parallel()
 	st := openStore(t)
 	now := time.Date(2026, 8, 19, 3, 0, 0, 0, time.UTC)
 	existing, err := st.CreateConversation(context.Background(), "failed-anchor-conversation",
@@ -2515,6 +2550,7 @@ func TestInterfaceHandoffDoesNotAnchorReplayCheckpointOnFailedTurn(t *testing.T)
 }
 
 func TestInterfaceHandoffDoesNotAnchorReplayBeforeProviderCoordinationBoundary(t *testing.T) {
+	t.Parallel()
 	st := openStore(t)
 	now := time.Date(2026, 8, 23, 17, 0, 0, 0, time.UTC)
 	existing, err := st.CreateConversation(context.Background(), "provider-boundary-conversation",
@@ -2636,6 +2672,7 @@ func TestInterfaceHandoffDoesNotAnchorReplayBeforeProviderCoordinationBoundary(t
 }
 
 func TestSlowNativeHistoryDoesNotBlockOtherControllerLookups(t *testing.T) {
+	t.Parallel()
 	st := openStore(t)
 	conv := &blockingHistoryConversation{
 		fakeConversation: newFakeConversation(),
@@ -2695,6 +2732,7 @@ func TestSlowNativeHistoryDoesNotBlockOtherControllerLookups(t *testing.T) {
 }
 
 func TestFreshProjectControllerRecordsNativeContextBoundary(t *testing.T) {
+	t.Parallel()
 	st := openStore(t)
 	ctx := context.Background()
 	now := time.Date(2026, 8, 6, 9, 0, 0, 0, time.UTC)
@@ -2820,6 +2858,7 @@ func TestFreshProjectControllerRecordsNativeContextBoundary(t *testing.T) {
 }
 
 func TestFreshProjectControllerStartFailureKeepsPreviousHistoryHidden(t *testing.T) {
+	t.Parallel()
 	st := openStore(t)
 	ctx := context.Background()
 	now := time.Date(2026, 8, 6, 10, 0, 0, 0, time.UTC)
@@ -3028,6 +3067,7 @@ func (h *harness) awaitSnapshot(t *testing.T, pred func(store.ConversationSnapsh
 }
 
 func TestStaleControllerEventsDoNotReachTheTimeline(t *testing.T) {
+	t.Parallel()
 	h := newHarness(t)
 	ctx := context.Background()
 	if err := h.st.ClaimChatControllerGeneration(ctx, testSession, "replacement-generation"); err != nil {
@@ -3058,6 +3098,7 @@ func TestStaleControllerEventsDoNotReachTheTimeline(t *testing.T) {
 /* ---- tests ------------------------------------------------------------- */
 
 func TestProviderPromptFailureSettlesTurnAndRecordsRecoveryOnce(t *testing.T) {
+	t.Parallel()
 	h := newHarness(t)
 	turn, err := h.svc.Send(context.Background(), testSession, ports.ChatUserMessage{
 		Text: "hello", ClientMessageID: "failure-prompt", Origin: domain.MessageOriginHuman,
@@ -3099,6 +3140,7 @@ func TestProviderPromptFailureSettlesTurnAndRecordsRecoveryOnce(t *testing.T) {
 }
 
 func TestStandaloneProviderFailurePreservesOpaqueText(t *testing.T) {
+	t.Parallel()
 	h := newHarness(t)
 	h.conv.emit(ports.ChatEvent{
 		Kind: ports.ChatEventError, ProviderEventID: "provider-error-1",
@@ -3126,6 +3168,7 @@ func TestStandaloneProviderFailurePreservesOpaqueText(t *testing.T) {
 }
 
 func TestTerminalFailureSettlesOnlyActiveRetry(t *testing.T) {
+	t.Parallel()
 	for _, source := range []string{"completion", "notification", "both"} {
 		t.Run(source, func(t *testing.T) {
 			h := newHarness(t)
@@ -3183,6 +3226,7 @@ func TestTerminalFailureSettlesOnlyActiveRetry(t *testing.T) {
 // The whole point: a message goes out, provider events come back, and the durable
 // timeline reflects them in sequence order.
 func TestProjectsAFullTurnIntoDurableRows(t *testing.T) {
+	t.Parallel()
 	h := newHarness(t)
 	ctx := context.Background()
 
@@ -3261,6 +3305,7 @@ func TestProjectsAFullTurnIntoDurableRows(t *testing.T) {
 }
 
 func TestEarlyTurnStartedBindsDispatchingTurn(t *testing.T) {
+	t.Parallel()
 	conv := newFakeConversation()
 	conv.onSend = func(providerTurnID string) {
 		conv.emit(ports.ChatEvent{Kind: ports.ChatEventTurnStarted, ProviderTurnID: providerTurnID})
@@ -3301,6 +3346,7 @@ func TestEarlyTurnStartedBindsDispatchingTurn(t *testing.T) {
 }
 
 func TestControllerCloseHonorsContextWhenProviderStreamStaysOpen(t *testing.T) {
+	t.Parallel()
 	providerErr := errors.New("provider close failed")
 	conv := &stuckConversation{fakeConversation: newFakeConversation(), closeErr: providerErr}
 	h := newHarnessWithConversation(t, conv)
@@ -3318,6 +3364,7 @@ func TestControllerCloseHonorsContextWhenProviderStreamStaysOpen(t *testing.T) {
 
 // A retried send under the same client message id must not create a second turn.
 func TestDuplicateSendDoesNotCreateASecondTurn(t *testing.T) {
+	t.Parallel()
 	h := newHarness(t)
 	ctx := context.Background()
 	msg := ports.ChatUserMessage{Text: "hello", ClientMessageID: "client-dup", Origin: domain.MessageOriginHuman}
@@ -3333,7 +3380,12 @@ func TestDuplicateSendDoesNotCreateASecondTurn(t *testing.T) {
 		t.Errorf("retry reported a new provider turn %q", second.ProviderTurnID)
 	}
 
-	snapshot := h.awaitSnapshot(t, func(s store.ConversationSnapshot) bool { return len(s.Turns) >= 1 })
+	// Wait for the message as well as the turn: they are separate async paths,
+	// so observing the turn does not imply the retried send's message has been
+	// projected yet.
+	snapshot := h.awaitSnapshot(t, func(s store.ConversationSnapshot) bool {
+		return len(s.Turns) >= 1 && len(s.Messages) == 1
+	})
 	if len(snapshot.Turns) != 1 {
 		t.Fatalf("turns = %d, want 1", len(snapshot.Turns))
 	}
@@ -3343,6 +3395,7 @@ func TestDuplicateSendDoesNotCreateASecondTurn(t *testing.T) {
 }
 
 func TestDeferredDriverStartsOnlyAfterProviderTurnIDIsDurable(t *testing.T) {
+	t.Parallel()
 	deferred := &deferredConversation{fakeConversation: newFakeConversation()}
 	h := newHarnessWithConversation(t, deferred)
 	deferred.start = func(providerTurnID string) error {
@@ -3372,6 +3425,7 @@ func TestDeferredDriverStartsOnlyAfterProviderTurnIDIsDurable(t *testing.T) {
 // An approval must be stored pending, carry the provider's own decision list, and
 // only resolve through a typed action.
 func TestApprovalIsStoredPendingWithProviderDecisions(t *testing.T) {
+	t.Parallel()
 	h := newHarness(t)
 	ctx := context.Background()
 
@@ -3467,6 +3521,7 @@ func TestApprovalIsStoredPendingWithProviderDecisions(t *testing.T) {
 }
 
 func TestResolvingOneOfMultipleApprovalsKeepsWaitingInput(t *testing.T) {
+	t.Parallel()
 	h := newHarness(t)
 	ctx := context.Background()
 	if _, err := h.svc.Send(ctx, testSession, ports.ChatUserMessage{Text: "go", ClientMessageID: "c1"}); err != nil {
@@ -3501,6 +3556,7 @@ func TestResolvingOneOfMultipleApprovalsKeepsWaitingInput(t *testing.T) {
 }
 
 func TestProviderResolutionKeepsWaitingInputUntilFinalApproval(t *testing.T) {
+	t.Parallel()
 	h := newHarness(t)
 	ctx := context.Background()
 	if _, err := h.svc.Send(ctx, testSession, ports.ChatUserMessage{Text: "go", ClientMessageID: "c1"}); err != nil {
@@ -3537,6 +3593,7 @@ func TestProviderResolutionKeepsWaitingInputUntilFinalApproval(t *testing.T) {
 // A controller that dies mid-turn must not leave the turn looking like it is still
 // working, and must not leave an approval the user can never answer.
 func TestControllerDeathSettlesInFlightWork(t *testing.T) {
+	t.Parallel()
 	h := newHarness(t)
 	ctx := context.Background()
 
@@ -3582,6 +3639,7 @@ func TestControllerDeathSettlesInFlightWork(t *testing.T) {
 }
 
 func TestControllerStreamClosureReportsSessionExited(t *testing.T) {
+	t.Parallel()
 	h := newHarness(t)
 
 	// A provider can disappear without emitting a final controller-state event.
@@ -3600,6 +3658,7 @@ func TestControllerStreamClosureReportsSessionExited(t *testing.T) {
 }
 
 func TestControllerReadyRunsBeforeStreamProjection(t *testing.T) {
+	t.Parallel()
 	st := openStore(t)
 	conv := newFakeConversation()
 	if err := conv.Close(); err != nil {
@@ -3645,6 +3704,7 @@ func TestControllerReadyRunsBeforeStreamProjection(t *testing.T) {
 }
 
 func TestSwitchControllerReadyLeavesSourceGenerationForAtomicActivation(t *testing.T) {
+	t.Parallel()
 	st := openStore(t)
 	ctx := context.Background()
 	record, found, err := st.GetSession(ctx, testSession)
@@ -3688,6 +3748,7 @@ func TestSwitchControllerReadyLeavesSourceGenerationForAtomicActivation(t *testi
 }
 
 func TestControllerReadyDurableSettingsRefreshBeforeFirstDispatch(t *testing.T) {
+	t.Parallel()
 	st := openStore(t)
 	ctx := context.Background()
 	now := time.Date(2026, 8, 18, 12, 0, 0, 0, time.UTC)
@@ -3767,6 +3828,7 @@ func (s *failConversationReadStore) ConversationForSession(
 }
 
 func TestControllerReadyDoesNotDependOnAFalliblePostCommitRead(t *testing.T) {
+	t.Parallel()
 	st := openStore(t)
 	ctx := context.Background()
 	now := time.Date(2026, 8, 18, 13, 0, 0, 0, time.UTC)
@@ -3830,6 +3892,7 @@ func TestControllerReadyDoesNotDependOnAFalliblePostCommitRead(t *testing.T) {
 // Dispatch reads the persisted mode. A TUI session must be refused even if a
 // controller somehow exists, because the mode is the authority.
 func TestSendRefusedForTUISession(t *testing.T) {
+	t.Parallel()
 	h := newHarness(t)
 	ctx := context.Background()
 
@@ -3858,6 +3921,7 @@ func TestSendRefusedForTUISession(t *testing.T) {
 // Every projected event is also archived, so a wrong projection can be repaired
 // from the raw record instead of being the only surviving account.
 func TestProviderEventsAreArchived(t *testing.T) {
+	t.Parallel()
 	h := newHarness(t)
 	ctx := context.Background()
 
@@ -3908,6 +3972,7 @@ func turnStateByText(t *testing.T, s store.ConversationSnapshot) map[string]doma
 // finishes. That has to be true of the daemon, not just of the placeholder: a
 // second turn/start against a busy provider is not a thing the agent can run.
 func TestSendWhileBusyQueuesUntilTheTurnEnds(t *testing.T) {
+	t.Parallel()
 	h := newHarness(t)
 	ctx := context.Background()
 
@@ -3960,6 +4025,7 @@ func TestSendWhileBusyQueuesUntilTheTurnEnds(t *testing.T) {
 // that point injects it into the still-running root and leaves the Open Agents turn minted
 // for that automation with no matching provider lifecycle.
 func TestNestedTurnCompletionDoesNotDrainQueueWhilePrimaryTurnRuns(t *testing.T) {
+	t.Parallel()
 	h := newHarness(t)
 	ctx := context.Background()
 
@@ -4051,6 +4117,7 @@ func TestNestedTurnCompletionDoesNotDrainQueueWhilePrimaryTurnRuns(t *testing.T)
 // behind it. Nested Codex lifecycle must not make that drain look complete, nor
 // may it release the accepted queue into a root turn that is still running.
 func TestChatHandoffDrainWaitsForRootAfterNestedTurnCompletes(t *testing.T) {
+	t.Parallel()
 	h := newHarness(t)
 	ctx := context.Background()
 
@@ -4140,6 +4207,7 @@ func TestChatHandoffDrainWaitsForRootAfterNestedTurnCompletes(t *testing.T) {
 // Stop is a brake. Releasing the queue when the user presses it would be the
 // opposite of what the button says, so anything waiting is cancelled with the turn.
 func TestInterruptCancelsWhatIsQueuedBehindTheTurn(t *testing.T) {
+	t.Parallel()
 	h := newHarness(t)
 	ctx := context.Background()
 
@@ -4181,6 +4249,7 @@ func TestInterruptCancelsWhatIsQueuedBehindTheTurn(t *testing.T) {
 }
 
 func TestChatHandoffDrainFinishesAcceptedQueueAndClosesNewIntake(t *testing.T) {
+	t.Parallel()
 	h := newHarness(t)
 	ctx := context.Background()
 
@@ -4239,6 +4308,7 @@ func TestChatHandoffDrainFinishesAcceptedQueueAndClosesNewIntake(t *testing.T) {
 }
 
 func TestChatHandoffInterruptArmBlocksCompletionFromPromotingQueue(t *testing.T) {
+	t.Parallel()
 	h := newHarness(t)
 	ctx := context.Background()
 
@@ -4304,6 +4374,7 @@ func TestChatHandoffInterruptArmBlocksCompletionFromPromotingQueue(t *testing.T)
 }
 
 func TestChatHandoffInterruptAbortAfterPreflightFailureResumesFencedQueue(t *testing.T) {
+	t.Parallel()
 	h := newHarness(t)
 	ctx := context.Background()
 
@@ -4363,6 +4434,7 @@ func (c *completionOnInterruptConversation) Interrupt(_ context.Context, turn st
 }
 
 func TestChatHandoffInterruptCompletionDuringProviderCancellationCannotPromoteQueue(t *testing.T) {
+	t.Parallel()
 	provider := &completionOnInterruptConversation{fakeConversation: newFakeConversation()}
 	h := newHarnessWithConversation(t, provider)
 	ctx := context.Background()
@@ -4394,6 +4466,7 @@ func TestChatHandoffInterruptCompletionDuringProviderCancellationCannotPromoteQu
 }
 
 func TestChatHandoffInterruptDoesNotWaitForTurnCompletion(t *testing.T) {
+	t.Parallel()
 	h := newHarness(t)
 	ctx := context.Background()
 
@@ -4482,6 +4555,7 @@ func (s *failFirstQueueCancellationStore) callCount() int {
 }
 
 func TestChatHandoffInterruptDoesNotReachProviderUntilQueueCancellationSucceeds(t *testing.T) {
+	t.Parallel()
 	provider := newInterruptRecorder()
 	var flakyStore *failFirstQueueCancellationStore
 	h := newHarnessWithConversationAndStore(t, provider, func(st *sqlite.Store) chatsvc.Store {
@@ -4543,6 +4617,7 @@ func TestChatHandoffInterruptDoesNotReachProviderUntilQueueCancellationSucceeds(
 }
 
 func TestChatHandoffTreatsMissingControllerAsAlreadyQuiescent(t *testing.T) {
+	t.Parallel()
 	svc := chatsvc.New(chatsvc.Options{})
 	if err := svc.PrepareChatHandoff(
 		context.Background(), "missing-controller", domain.SessionInterfaceTransitionDrain,
@@ -4552,6 +4627,7 @@ func TestChatHandoffTreatsMissingControllerAsAlreadyQuiescent(t *testing.T) {
 }
 
 func TestServiceStopRetainsControllerUntilItsEventStreamActuallyEnds(t *testing.T) {
+	t.Parallel()
 	base := newFakeConversation()
 	h := newHarnessWithConversation(t, &stuckConversation{
 		fakeConversation: base,
@@ -4585,6 +4661,7 @@ func TestServiceStopRetainsControllerUntilItsEventStreamActuallyEnds(t *testing.
 }
 
 func TestServiceStopTerminatesPersistentConversation(t *testing.T) {
+	t.Parallel()
 	provider := &terminatingConversation{fakeConversation: newFakeConversation()}
 	h := newHarnessWithConversation(t, provider)
 	if err := h.svc.Stop(context.Background(), testSession); err != nil {
@@ -4596,6 +4673,7 @@ func TestServiceStopTerminatesPersistentConversation(t *testing.T) {
 }
 
 func TestServiceStopAllRetainsControllerUntilItsEventStreamActuallyEnds(t *testing.T) {
+	t.Parallel()
 	base := newFakeConversation()
 	h := newHarnessWithConversation(t, &stuckConversation{
 		fakeConversation: base,
@@ -4627,6 +4705,7 @@ func TestServiceStopAllRetainsControllerUntilItsEventStreamActuallyEnds(t *testi
 }
 
 func TestServiceStopAllClosesHealthyControllerAfterStuckStreamExhaustsShutdownContext(t *testing.T) {
+	t.Parallel()
 	st := openStore(t)
 	now := time.Date(2026, 9, 14, 15, 0, 0, 0, time.UTC)
 	healthyRecord, err := st.CreateSession(context.Background(), domain.SessionRecord{
@@ -4726,6 +4805,7 @@ func TestServiceStopAllClosesHealthyControllerAfterStuckStreamExhaustsShutdownCo
 }
 
 func TestServiceStopAllReturnsByDeadlineWhenControllerGateIsHeld(t *testing.T) {
+	t.Parallel()
 	st := openStore(t)
 	now := time.Date(2026, 9, 14, 17, 0, 0, 0, time.UTC)
 	healthyRecord, err := st.CreateSession(context.Background(), domain.SessionRecord{
@@ -4841,6 +4921,7 @@ func TestServiceStopAllReturnsByDeadlineWhenControllerGateIsHeld(t *testing.T) {
 }
 
 func TestServiceStopAllOnlyDetachesPersistentConversation(t *testing.T) {
+	t.Parallel()
 	provider := &terminatingConversation{fakeConversation: newFakeConversation()}
 	h := newHarnessWithConversation(t, provider)
 	turn, err := h.ctrl.Send(context.Background(), ports.ChatUserMessage{Text: "keep working"})
@@ -4882,6 +4963,7 @@ func TestServiceStopAllOnlyDetachesPersistentConversation(t *testing.T) {
 }
 
 func TestServiceLiveReconnectSkipsSettledHistoryBarrier(t *testing.T) {
+	t.Parallel()
 	st := openStore(t)
 	native := &nativeHistoryConversation{fakeConversation: newFakeConversation(), err: ports.ErrChatHistoryUnsettled}
 	provider := &liveReconnectedConversation{nativeHistoryConversation: native}
@@ -4913,6 +4995,7 @@ func TestServiceLiveReconnectSkipsSettledHistoryBarrier(t *testing.T) {
 }
 
 func TestServiceLiveReconnectKeepsDurableRunningTurnBusy(t *testing.T) {
+	t.Parallel()
 	st := openStore(t)
 	reader := fullSnapshotReader(st)
 	var ids atomic.Int32
@@ -5011,6 +5094,7 @@ func TestServiceLiveReconnectKeepsDurableRunningTurnBusy(t *testing.T) {
 // rows, so the replacement has to claim them itself or the user watches messages
 // they can see sitting queued forever.
 func TestLiveReconnectDeliversAQueueLeftByTheDeadController(t *testing.T) {
+	t.Parallel()
 	st := openStore(t)
 	ctx := context.Background()
 	now := time.Date(2026, 8, 2, 10, 0, 0, 0, time.UTC)
@@ -5073,6 +5157,7 @@ func TestLiveReconnectDeliversAQueueLeftByTheDeadController(t *testing.T) {
 }
 
 func TestStartWaitsForStoppedControllerCleanupBeforeRelaunch(t *testing.T) {
+	t.Parallel()
 	st := openStore(t)
 	first := newFakeConversation()
 	second := newFakeConversation()
@@ -5142,6 +5227,7 @@ func TestStartWaitsForStoppedControllerCleanupBeforeRelaunch(t *testing.T) {
 }
 
 func TestConcurrentReconcileAndResumeShareOneCredentialedControllerLaunch(t *testing.T) {
+	t.Parallel()
 	st := openStore(t)
 	conversation := newFakeConversation()
 	providerStarted := make(chan struct{})
@@ -5217,6 +5303,7 @@ func TestConcurrentReconcileAndResumeShareOneCredentialedControllerLaunch(t *tes
 // The cancellation belongs to the moment stop was pressed. A message typed after
 // that is the user asking for new work, and must not be swept up by it.
 func TestMessageTypedAfterStopIsStillDelivered(t *testing.T) {
+	t.Parallel()
 	h := newHarness(t)
 	ctx := context.Background()
 
@@ -5281,6 +5368,7 @@ func errorsIs(err, target error) bool {
 // rather than as a system notice. Origin records who authored a message, not who
 // delivered it to the provider.
 func TestInitialPromptIsAttributedToTheUser(t *testing.T) {
+	t.Parallel()
 	h := newHarness(t)
 	ctx := context.Background()
 
@@ -5306,6 +5394,7 @@ func TestInitialPromptIsAttributedToTheUser(t *testing.T) {
 // passed off as something the user typed here — the timeline distinguishes the
 // two structurally, and a reader should never have to infer it from a prefix.
 func TestRelayedMessageIsAttributedToAutomation(t *testing.T) {
+	t.Parallel()
 	h := newHarness(t)
 	ctx := context.Background()
 
@@ -5477,6 +5566,7 @@ func (r *interruptRecorder) attemptCount() int {
 // does not yet consider active. Interrupt waits out that gap rather than handing
 // back a failure in the exact moment someone realizes they sent the wrong thing.
 func TestInterruptWaitsForTheProviderToAcknowledgeTheTurn(t *testing.T) {
+	t.Parallel()
 	conv := newInterruptRecorder()
 	h := newHarnessWithConversation(t, conv)
 	ctx := context.Background()
@@ -5504,6 +5594,7 @@ func TestInterruptWaitsForTheProviderToAcknowledgeTheTurn(t *testing.T) {
 // finishes, Stop must still wait for turn-started rather than treating the
 // provider's early refusal as proof that the new turn is stale.
 func TestInterruptWaitsForAcknowledgementAfterRacingDispatch(t *testing.T) {
+	t.Parallel()
 	conv := newBlockingDispatchConversation()
 	h := newHarnessWithConversation(t, conv)
 	ctx := context.Background()
@@ -5545,6 +5636,7 @@ func TestInterruptWaitsForAcknowledgementAfterRacingDispatch(t *testing.T) {
 // Interrupt reconciles it as interrupted instead of answering "nothing to stop"
 // while the Working bar stays up.
 func TestProviderRefusalReconcilesTheDurableTurnAsInterrupted(t *testing.T) {
+	t.Parallel()
 	conv := newInterruptRecorder() // never marks anything active
 	h := newHarnessWithConversation(t, conv)
 	ctx := context.Background()
@@ -5575,6 +5667,7 @@ func TestProviderRefusalReconcilesTheDurableTurnAsInterrupted(t *testing.T) {
 // remains available while provider cancellation is pending, and a later prompt
 // is new user intent rather than part of the queue that Stop was asked to clear.
 func TestProviderRefusalPreservesMessageQueuedAfterStop(t *testing.T) {
+	t.Parallel()
 	conv := newBlockingInterruptRefusalConversation()
 	t.Cleanup(conv.unblock)
 	h := newHarnessWithConversation(t, conv)
@@ -5632,6 +5725,7 @@ func TestProviderRefusalPreservesMessageQueuedAfterStop(t *testing.T) {
 // no active turn remains. If that completion commits first, reconciliation must
 // not overwrite it or the queue transition it already performed.
 func TestProviderRefusalDoesNotOverwriteCommittedCompletion(t *testing.T) {
+	t.Parallel()
 	conv := newCompletionBeforeRefusalConversation()
 	t.Cleanup(conv.unblock)
 	h := newHarnessWithConversation(t, conv)
@@ -5701,6 +5795,7 @@ func countActivitySignals(signals []ports.ActivitySignal, state domain.ActivityS
 // mid-turn). The UI reads disk and shows "Working"; Stop must act on what the
 // user sees rather than refuse with CHAT_NO_ACTIVE_TURN.
 func TestInterruptReconcilesStaleRunningTurnOnDisk(t *testing.T) {
+	t.Parallel()
 	h := newHarness(t)
 	ctx := context.Background()
 
@@ -5732,6 +5827,7 @@ func TestInterruptReconcilesStaleRunningTurnOnDisk(t *testing.T) {
 // provider -- would merely reveal a second Working bar. Recovery cancels and
 // settles the full visible running set.
 func TestInterruptReconcilesAllVisibleRunningTurns(t *testing.T) {
+	t.Parallel()
 	conv := newInterruptRecorder()
 	h := newHarnessWithConversation(t, conv)
 	ctx := context.Background()
@@ -5776,6 +5872,7 @@ func TestInterruptReconcilesAllVisibleRunningTurns(t *testing.T) {
 // A prompt submitted after Stop therefore waits for stale settlement and then
 // starts as new work instead of replacing the recovery target.
 func TestInterruptDurableFallbackPreservesPostStopSend(t *testing.T) {
+	t.Parallel()
 	conv := newBlockingInterruptRefusalConversation()
 	t.Cleanup(conv.unblock)
 	h := newHarnessWithConversation(t, conv)
@@ -5833,6 +5930,7 @@ func TestInterruptDurableFallbackPreservesPostStopSend(t *testing.T) {
 // When memory and disk agree there is nothing running, Interrupt must still
 // answer ErrNoActiveTurn — the disk fallback must not invent work to stop.
 func TestInterruptReturnsNoActiveTurnWhenNoRunningTurnAnywhere(t *testing.T) {
+	t.Parallel()
 	h := newHarness(t)
 
 	err := h.svc.Interrupt(context.Background(), testSession)
@@ -5844,6 +5942,7 @@ func TestInterruptReturnsNoActiveTurnWhenNoRunningTurnAnywhere(t *testing.T) {
 // Reconciliation is still the user's brake: anything queued behind the stale
 // turn is cancelled, not released into the provider.
 func TestInterruptReconciliationCancelsQueuedTurns(t *testing.T) {
+	t.Parallel()
 	conv := newInterruptRecorder() // never marks anything active
 	h := newHarnessWithConversation(t, conv)
 	ctx := context.Background()
@@ -5892,6 +5991,7 @@ func (undrainableQueueStore) NextQueuedTurn(context.Context, string, domain.Sess
 }
 
 func TestInterruptCancelsAStrandedQueueWithNothingRunning(t *testing.T) {
+	t.Parallel()
 	h := newHarnessWithConversationAndStore(t, nil, func(st *sqlite.Store) chatsvc.Store {
 		return undrainableQueueStore{Store: st}
 	})
@@ -5937,6 +6037,7 @@ func TestInterruptCancelsAStrandedQueueWithNothingRunning(t *testing.T) {
 // that was only accepted is handed to the replacement, because the user did ask
 // for it and the queue is durable rows rather than controller memory.
 func TestStartSettlesWorkLeftByAKilledController(t *testing.T) {
+	t.Parallel()
 	h := newHarness(t)
 	ctx := context.Background()
 
@@ -6013,6 +6114,7 @@ func TestStartSettlesWorkLeftByAKilledController(t *testing.T) {
 // call, so the projection must overwrite: a row per report is what buried the
 // conversation, and the conversation is only ever one amount full.
 func TestUsageProjectionKeepsOnlyTheLatest(t *testing.T) {
+	t.Parallel()
 	h := newHarness(t)
 
 	h.conv.emit(
@@ -6054,6 +6156,7 @@ func TestUsageProjectionKeepsOnlyTheLatest(t *testing.T) {
 // ACP reports context fullness and cumulative token totals in separate messages.
 // A later totals update must not erase the context window received just before it.
 func TestUsageProjectionMergesIndependentProviderUpdates(t *testing.T) {
+	t.Parallel()
 	h := newHarness(t)
 
 	h.conv.emit(
@@ -6082,6 +6185,7 @@ func TestUsageProjectionMergesIndependentProviderUpdates(t *testing.T) {
 // has to say "unknown" rather than draw an empty bar for a conversation that may
 // be nearly full.
 func TestUsageProjectionWithoutContextWindow(t *testing.T) {
+	t.Parallel()
 	h := newHarness(t)
 
 	h.conv.emit(ports.ChatEvent{Kind: ports.ChatEventUsage, Usage: &ports.ChatUsage{
@@ -6099,6 +6203,7 @@ func TestUsageProjectionWithoutContextWindow(t *testing.T) {
 // Rate limits are current state too, and an unreported window must survive a round
 // trip through the database as unreported rather than as a reassuring zero.
 func TestRateLimitProjectionKeepsOnlyTheLatest(t *testing.T) {
+	t.Parallel()
 	h := newHarnessForHarness(t, domain.HarnessOpenCode)
 
 	h.conv.emit(
@@ -6135,6 +6240,7 @@ func TestRateLimitProjectionKeepsOnlyTheLatest(t *testing.T) {
 // Nothing reported yet is distinct from a conversation using nothing: the snapshot
 // leaves both nil so a client can withhold the meter rather than draw an empty one.
 func TestSnapshotOmitsUsageUntilTheProviderReports(t *testing.T) {
+	t.Parallel()
 	h := newHarness(t)
 
 	snapshot, err := h.st.LoadConversationSnapshot(context.Background(), h.ctrl.ConversationID())
@@ -6188,6 +6294,7 @@ func (c *compactingConversation) compactCalls() int {
 // one, a conversation that quietly lost half its history has nothing in the
 // timeline to explain the gap, and reads as if the agent simply forgot.
 func TestCompactionIsProjectedAsATimelineFact(t *testing.T) {
+	t.Parallel()
 	conv := newCompactingConversation()
 	h := newHarnessWithConversation(t, conv)
 
@@ -6242,6 +6349,7 @@ func TestCompactionIsProjectedAsATimelineFact(t *testing.T) {
 // entries for one compaction would read as two, and the reclaim would look twice
 // as large as it was.
 func TestCompactionReplayDoesNotDuplicateTheRow(t *testing.T) {
+	t.Parallel()
 	conv := newCompactingConversation()
 	h := newHarnessWithConversation(t, conv)
 
@@ -6279,6 +6387,7 @@ func TestCompactionReplayDoesNotDuplicateTheRow(t *testing.T) {
 }
 
 func TestCompactReportsWhatIsAboutToBeReclaimed(t *testing.T) {
+	t.Parallel()
 	conv := newCompactingConversation()
 	h := newHarnessWithConversation(t, conv)
 
@@ -6303,6 +6412,7 @@ func TestCompactReportsWhatIsAboutToBeReclaimed(t *testing.T) {
 // stop offering the control instead of surfacing an internal failure the user
 // cannot act on. The plain fake conversation does not implement ChatCompactor.
 func TestCompactOnAProviderThatCannotIsTyped(t *testing.T) {
+	t.Parallel()
 	h := newHarness(t)
 
 	_, err := h.svc.Compact(context.Background(), testSession)
@@ -6314,6 +6424,7 @@ func TestCompactOnAProviderThatCannotIsTyped(t *testing.T) {
 // An agent might implement ChatCompactor statically (e.g. ACP conversation),
 // but if the agent has not advertised the capability, Compact must return ErrCompactionUnsupported.
 func TestCompactRefusesWhenProviderImplementsCompactorWithoutCapability(t *testing.T) {
+	t.Parallel()
 	conv := newCompactingConversation()
 	caps := productionCaps()
 	delete(caps, ports.ChatCapabilityCompaction)
@@ -6331,6 +6442,7 @@ func TestCompactRefusesWhenProviderImplementsCompactorWithoutCapability(t *testi
 // work the user is waiting on as a side effect of housekeeping is not something to
 // discover afterwards from the timeline, so Open Agents refuses and makes them stop it.
 func TestCompactRefusesWhileATurnIsInFlight(t *testing.T) {
+	t.Parallel()
 	conv := newCompactingConversation()
 	h := newHarnessWithConversation(t, conv)
 	ctx := context.Background()
@@ -6367,6 +6479,7 @@ func TestCompactRefusesWhileATurnIsInFlight(t *testing.T) {
 // with an empty turn id and the timeline silently stops grouping them, which reads
 // to a user as the conversation falling apart.
 func TestProviderStartedTurnIsAdoptedSoItsItemsCorrelate(t *testing.T) {
+	t.Parallel()
 	h := newHarness(t)
 
 	// No Send: this turn is entirely the provider's doing.
@@ -6384,8 +6497,12 @@ func TestProviderStartedTurnIsAdoptedSoItsItemsCorrelate(t *testing.T) {
 		},
 	)
 
+	// Wait for the turn as well as the activities. Activities and turn adoption
+	// are separate async paths, so observing 2 activities does not imply the
+	// provider's turn has been adopted yet; waiting on activities alone raced
+	// the assertion below.
 	snapshot := h.awaitSnapshot(t, func(s store.ConversationSnapshot) bool {
-		return len(s.Activities) == 2
+		return len(s.Activities) == 2 && len(s.Turns) == 1
 	})
 
 	if len(snapshot.Turns) != 1 {
@@ -6453,6 +6570,7 @@ func (s *failingProjectStore) ProjectProviderEvent(
 // Interrupt must settle the durable row as interrupted, cancel the queue behind
 // it, and report idle — not answer CHAT_NO_ACTIVE_TURN and strand the user.
 func TestProjectionFailureThenStopStillStopsTheTurn(t *testing.T) {
+	t.Parallel()
 	conv := newInterruptRecorder() // never marks anything active -> always refuses
 	st := openStore(t)
 
@@ -6547,6 +6665,7 @@ func TestProjectionFailureThenStopStillStopsTheTurn(t *testing.T) {
 // volatile controller state. If that transaction rolls back, memory must continue
 // reporting the last committed state rather than claiming the controller stopped.
 func TestControllerStateChangesOnlyAfterProjectionCommits(t *testing.T) {
+	t.Parallel()
 	var failingStore *failingProjectStore
 	h := newHarnessWithConversationAndStore(t, nil, func(st *sqlite.Store) chatsvc.Store {
 		failingStore = &failingProjectStore{
@@ -6570,6 +6689,7 @@ func TestControllerStateChangesOnlyAfterProjectionCommits(t *testing.T) {
 }
 
 func TestControllerStoppedEventUsesGenerationOwnedCleanup(t *testing.T) {
+	t.Parallel()
 	var recordingStore *recordingCleanupStore
 	h := newHarnessWithConversationAndStore(t, nil, func(st *sqlite.Store) chatsvc.Store {
 		recordingStore = &recordingCleanupStore{Store: st, called: make(chan struct{}, 2)}
@@ -6611,6 +6731,7 @@ func awaitStoreSnapshot(t *testing.T, st *sqlite.Store, conversationID string,
 
 // Publishing a reserved provider branch preserves its predecessor's ownership.
 func TestReservedBoundaryAdoptsSuccessorHandleWithoutRewritingHistory(t *testing.T) {
+	t.Parallel()
 	st := openStore(t)
 	ctx := context.Background()
 	now := time.Date(2026, 9, 11, 4, 41, 0, 0, time.UTC)

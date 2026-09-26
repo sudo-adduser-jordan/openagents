@@ -40,6 +40,7 @@ func turnByID(s store.ConversationSnapshot, id string) (domain.ConversationTurn,
 }
 
 func TestRetryTurnDispatchesFailedPromptAsNewTurn(t *testing.T) {
+	t.Parallel()
 	h := newHarness(t)
 	ctx := context.Background()
 	caps := productionCaps()
@@ -155,6 +156,7 @@ func TestRetryTurnDispatchesFailedPromptAsNewTurn(t *testing.T) {
 }
 
 func TestRetryTurnReplaysResourceLinkWithoutEmbeddedContextCapability(t *testing.T) {
+	t.Parallel()
 	h := newHarness(t)
 	ctx := context.Background()
 	caps := productionCaps()
@@ -189,6 +191,7 @@ func TestRetryTurnReplaysResourceLinkWithoutEmbeddedContextCapability(t *testing
 }
 
 func TestRetryTurnRefusesResourceLinkUnsupportedByCurrentProvider(t *testing.T) {
+	t.Parallel()
 	h := newHarness(t)
 	ctx := context.Background()
 	caps := productionCaps()
@@ -222,6 +225,7 @@ func TestRetryTurnRefusesResourceLinkUnsupportedByCurrentProvider(t *testing.T) 
 }
 
 func TestRetryTurnRejectsInvalidDurableContentClearly(t *testing.T) {
+	t.Parallel()
 	cases := []struct {
 		name string
 		raw  string
@@ -259,6 +263,7 @@ func TestRetryTurnRejectsInvalidDurableContentClearly(t *testing.T) {
 }
 
 func TestRetryTurnRefusesContentUnsupportedByCurrentProvider(t *testing.T) {
+	t.Parallel()
 	h := newHarness(t)
 	ctx := context.Background()
 	caps := productionCaps()
@@ -290,6 +295,7 @@ func TestRetryTurnRefusesContentUnsupportedByCurrentProvider(t *testing.T) {
 }
 
 func TestRetryTurnRefusesNonFailedTurn(t *testing.T) {
+	t.Parallel()
 	h := newHarness(t)
 	ctx := context.Background()
 
@@ -322,6 +328,7 @@ func TestRetryTurnRefusesNonFailedTurn(t *testing.T) {
 }
 
 func TestRetryTurnRefusesWhileBusy(t *testing.T) {
+	t.Parallel()
 	h := newHarness(t)
 	ctx := context.Background()
 
@@ -358,6 +365,7 @@ func TestRetryTurnRefusesWhileBusy(t *testing.T) {
 }
 
 func TestRetryTurnRefusesFailedTurnOutsideActiveBranch(t *testing.T) {
+	t.Parallel()
 	h, _, driver := newEditHarness(t, false)
 	ctx := context.Background()
 
@@ -398,6 +406,7 @@ func TestRetryTurnRefusesFailedTurnOutsideActiveBranch(t *testing.T) {
 }
 
 func TestRetrySourceRemainsConsumedWhenAttemptIsEditedOntoAnotherBranch(t *testing.T) {
+	t.Parallel()
 	h, _, _ := newEditHarness(t, false)
 	ctx := context.Background()
 
@@ -452,6 +461,7 @@ func TestRetrySourceRemainsConsumedWhenAttemptIsEditedOntoAnotherBranch(t *testi
 }
 
 func TestRetryTurnRefusesNonHumanPrompt(t *testing.T) {
+	t.Parallel()
 	h := newHarness(t)
 	ctx := context.Background()
 
@@ -477,6 +487,7 @@ func TestRetryTurnRefusesNonHumanPrompt(t *testing.T) {
 }
 
 func TestRetryTurnReplaysReturnExistingAttempt(t *testing.T) {
+	t.Parallel()
 	h := newHarness(t)
 	ctx := context.Background()
 
@@ -539,6 +550,7 @@ func TestRetryTurnReplaysReturnExistingAttempt(t *testing.T) {
 }
 
 func TestRetryTurnIgnoresCallerControlledRetryLikeClientID(t *testing.T) {
+	t.Parallel()
 	h := newHarness(t)
 	ctx := context.Background()
 
@@ -595,6 +607,7 @@ func TestRetryTurnIgnoresCallerControlledRetryLikeClientID(t *testing.T) {
 // which owns its own deterministic key. That builds the chain A -> B -> C from
 // distinct sources instead of ever re-sending A.
 func TestRetryChainThroughFailedAttempt(t *testing.T) {
+	t.Parallel()
 	h := newHarness(t)
 	ctx := context.Background()
 
@@ -652,6 +665,7 @@ func TestRetryChainThroughFailedAttempt(t *testing.T) {
 // re-dispatching it could run the work twice. These turns are refused with a
 // typed uncertain-delivery error rather than retried.
 func TestRetryTurnRefusesUnconfirmedDispatch(t *testing.T) {
+	t.Parallel()
 	h := newHarness(t)
 	ctx := context.Background()
 
