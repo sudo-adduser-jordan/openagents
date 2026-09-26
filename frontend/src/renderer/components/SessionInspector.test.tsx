@@ -73,6 +73,22 @@ vi.mock("../lib/api-client", () => ({
     }
     return fallback;
   },
+  // Faithful to the real helpers, because preserving the daemon's stable code
+  // across the resume boundary is exactly what these tests cover.
+  apiErrorCode: (error: unknown) => {
+    if (typeof error === "object" && error !== null) {
+      const code = (error as { code?: unknown }).code;
+      if (typeof code === "string" && code !== "") return code;
+    }
+    return undefined;
+  },
+  apiErrorDetails: (error: unknown) => {
+    if (typeof error !== "object" || error === null) return undefined;
+    const details = (error as { details?: unknown }).details;
+    return typeof details === "object" && details !== null && !Array.isArray(details)
+      ? (details as Record<string, unknown>)
+      : undefined;
+  },
 }));
 
 const pr = (
@@ -1224,6 +1240,89 @@ describe("SessionInspector Activity section", () => {
     expect(
       await activitySection().findByText("agent restart failed"),
     ).toBeInTheDocument();
+  });
+
+  // A manager whose stored conversation the provider will not give back cannot be
+  // fixed by resuming again -- the thread that just failed is exactly what the
+  // relaunch would try to reattach to. The control has to stop offering that.
+  it("offers start over, not a doomed retry, when a manager lost its conversation", async () => {
+    postMock.mockResolvedValueOnce({
+      error: {
+        error: "conflict",
+        code: "CHAT_RESUME_FAILED",
+        message: "the stored provider conversation could not be resumed",
+        details: { reason: 'ACP session/load: {"code":-32603}' },
+      },
+      response: { status: 409 },
+    });
+    renderWithQuery(
+      <SessionInspector
+        session={session([], {
+          kind: "manager",
+          status: "exited",
+          activity: { state: "exited", lastActivityAt: "2026-06-15T10:00:00Z" },
+        })}
+      />,
+    );
+
+    await userEvent.click(
+      activitySection().getByRole("button", { name: "Resume agent" }),
+    );
+
+    const startOver = await activitySection().findByRole("button", {
+      name: "Start over",
+    });
+    // The provider's own words, so the refusal names a cause.
+    expect(
+      activitySection().getByText(/ACP session\/load/),
+    ).toBeInTheDocument();
+
+    postMock.mockResolvedValue({ data: {}, response: { status: 200 } });
+    // Only the recovery's own calls matter; the failed resume above is history.
+    postMock.mockClear();
+    await userEvent.click(startOver);
+
+    await waitFor(() => {
+      expect(postMock.mock.calls.map((call) => call[0])).toEqual([
+        // Order is the point: the handle is dropped before the relaunch.
+        "/api/v1/sessions/{sessionId}/conversation/clear-history",
+        "/api/v1/sessions/{sessionId}/resume-agent",
+      ]);
+    });
+  });
+
+  // Only a manager can have a conversation cleared, so offering start over on any
+  // other session would be a button the daemon refuses.
+  it("keeps the plain retry for a lost conversation on a non-manager session", async () => {
+    postMock.mockResolvedValueOnce({
+      error: {
+        error: "conflict",
+        code: "CHAT_RESUME_FAILED",
+        message: "the stored provider conversation could not be resumed",
+      },
+      response: { status: 409 },
+    });
+    renderWithQuery(
+      <SessionInspector
+        session={session([], {
+          status: "exited",
+          activity: { state: "exited", lastActivityAt: "2026-06-15T10:00:00Z" },
+        })}
+      />,
+    );
+
+    await userEvent.click(
+      activitySection().getByRole("button", { name: "Resume agent" }),
+    );
+
+    expect(
+      await activitySection().findByText(
+        "the stored provider conversation could not be resumed",
+      ),
+    ).toBeInTheDocument();
+    expect(
+      activitySection().queryByRole("button", { name: "Start over" }),
+    ).not.toBeInTheDocument();
   });
 
   it.each([

@@ -35,7 +35,7 @@ import {
 	X,
 } from "lucide-react";
 import type { components } from "../../api/schema";
-import { apiClient, apiErrorMessage } from "../lib/api-client";
+import { apiClient, apiErrorCode, apiErrorDetails, apiErrorMessage } from "../lib/api-client";
 import { workspaceQueryKey } from "../hooks/useWorkspaceQuery";
 import { formatTimeCompact } from "../lib/format-time";
 import { AgentAvatar } from "./AgentAvatar";
@@ -52,7 +52,7 @@ import { clearTerminateSessionState, useTerminateSession } from "../hooks/useTer
 import { prBrowserUrl, prCanMerge, prCardPresentation, prNounLabel, sessionPRDisplaySummaries } from "../lib/pr-display";
 import { formatTokenCount } from "../lib/format-token-count";
 import type { WorkspaceSession, WorkspaceSummary } from "../types/workspace";
-import { findProjectManager, sortedPRs, STANDALONE_WORKSPACE_ID } from "../types/workspace";
+import { findProjectManager, isManagerSession, sortedPRs, STANDALONE_WORKSPACE_ID } from "../types/workspace";
 import { getAgentActivityView, getSessionTimelinePillView } from "../lib/session-presentation";
 import { openAgentsBridge } from "../lib/bridge";
 import { BrowserPanelView, type BrowserAnnotationQueueModel } from "./BrowserPanel";
@@ -929,10 +929,14 @@ function ResumeAgentControl({ session }: { session: WorkspaceSession }) {
 	const resume = useMutation({
 		mutationFn: async () => {
 			if (usePreviewData) return;
-			const { data, error, response } = await apiClient.POST("/api/v1/sessions/{sessionId}/resume-agent", {
+			// Thrown as-is, not wrapped in an Error: the daemon's stable `code` is
+			// the only thing that distinguishes a lost conversation from a
+			// transient failure, and wrapping it in a bare Error threw that away,
+			// so every refusal rendered as the same sentence.
+			const { data, error } = await apiClient.POST("/api/v1/sessions/{sessionId}/resume-agent", {
 				params: { path: { sessionId: session.id } },
 			});
-			if (error) throw new Error(apiErrorMessage(error, `Failed to resume agent (${response.status})`));
+			if (error) throw error;
 			return data;
 		},
 		onSuccess: async (data) => {
@@ -951,26 +955,65 @@ function ResumeAgentControl({ session }: { session: WorkspaceSession }) {
 		},
 	});
 
+	/**
+	 * Recovery for a conversation the provider will not reattach to.
+	 *
+	 * Resuming again cannot fix it: the stored thread is what the provider
+	 * refused. So the handle is dropped first and the agent is relaunched onto a
+	 * fresh conversation -- in that order, or the relaunch would resume the very
+	 * thread that just failed. The transcript is kept; only the agent's memory of
+	 * it resets. Manager-only, because that is the only place the daemon will
+	 * clear a conversation.
+	 */
+	const startOver = useMutation({
+		mutationFn: async () => {
+			if (usePreviewData) return;
+			const { error } = await apiClient.POST("/api/v1/sessions/{sessionId}/conversation/clear-history", {
+				params: { path: { sessionId: session.id } },
+			});
+			if (error) throw error;
+			return resume.mutateAsync();
+		},
+		onSuccess: () => resume.reset(),
+	});
+
 	if (session.isTerminated === true || session.activity?.state !== "exited") return null;
 
-	const error = resume.error instanceof Error ? resume.error.message : null;
+	const error = resume.error ? apiErrorMessage(resume.error) : null;
+	const reason = apiErrorDetails(resume.error)?.reason;
+	// A refused resume is not a controller that stopped by accident, so the same
+	// button would fail identically every time. Offer the one action that can
+	// work instead of a retry that cannot.
+	const conversationLost = apiErrorCode(resume.error) === "CHAT_RESUME_FAILED";
+	const canStartOver = conversationLost && isManagerSession(session);
 	return (
 		<div className="mt-3 border-t border-(--color-border-settings-input) pt-3">
 			<Button
 				className="w-full"
-				disabled={resume.isPending}
-				onClick={() => resume.mutate()}
+				disabled={resume.isPending || startOver.isPending}
+				onClick={() => (canStartOver ? startOver.mutate() : resume.mutate())}
 				size="sm"
 				type="button"
 				variant="outline"
 			>
 				<Play className="size-icon-sm" aria-hidden="true" />
-				{resume.isPending ? "Resuming agent…" : "Resume agent"}
+				{startOver.isPending
+					? "Starting over…"
+					: resume.isPending
+						? "Resuming agent…"
+						: canStartOver
+							? "Start over"
+							: "Resume agent"}
 			</Button>
 			{error ? (
 				<p className="mt-2 text-2xs leading-normal text-error" role="status">
 					{error}
 				</p>
+			) : null}
+			{/* The provider's own explanation, so the refusal names a cause
+			    rather than restating that it was refused. */}
+			{conversationLost && typeof reason === "string" && reason.trim() !== "" ? (
+				<p className="mt-1 text-2xs leading-normal text-muted-foreground">{reason}</p>
 			) : null}
 		</div>
 	);

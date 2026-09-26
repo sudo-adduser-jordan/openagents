@@ -1034,6 +1034,12 @@ func toAPIError(err error) error {
 }
 
 func mapSessionError(err error) error {
+	// The Chat-driver table first: a session route can be handed the very same
+	// driver failure a conversation route gets, and these must not answer
+	// differently. See MapChatDriverError.
+	if mapped := MapChatDriverError(err); mapped != nil {
+		return mapped
+	}
 	switch {
 	case err == nil:
 		return nil
@@ -1120,29 +1126,6 @@ func mapSessionError(err error) error {
 	case errors.Is(err, ports.ErrRuntimeCommandLineTooLong):
 		return apierr.Invalid("WINDOWS_COMMAND_LINE_TOO_LONG",
 			"The agent launch command exceeds the Windows size limit. Shorten the task or project instructions.", nil)
-	case errors.Is(err, ports.ErrChatUnsupported):
-		var capabilityErr *ports.ChatCapabilityError
-		if errors.As(err, &capabilityErr) {
-			missing := make([]string, 0, len(capabilityErr.Missing))
-			for _, capability := range capabilityErr.Missing {
-				missing = append(missing, string(capability))
-			}
-			allowed := make([]string, 0, len(capabilityErr.AllowedPermissionModes))
-			for _, mode := range capabilityErr.AllowedPermissionModes {
-				allowed = append(allowed, string(mode))
-			}
-			return apierr.Conflict("SESSION_MODE_UNSUPPORTED", err.Error(), map[string]any{
-				"missingCapabilities":  missing,
-				"allowedApprovalModes": allowed,
-			})
-		}
-		return apierr.Conflict("SESSION_MODE_UNSUPPORTED", err.Error(), nil)
-	case errors.Is(err, ports.ErrChatDriverUnavailable):
-		return apierr.Conflict("CHAT_DRIVER_UNAVAILABLE", err.Error(), nil)
-	case errors.Is(err, ports.ErrChatDriverIncompatible):
-		return apierr.Conflict("CHAT_DRIVER_INCOMPATIBLE", err.Error(), nil)
-	case errors.Is(err, ports.ErrChatAuthRequired):
-		return apierr.Conflict("CHAT_AUTH_REQUIRED", "The agent is installed but not authenticated", nil)
 	case errors.Is(err, ports.ErrUnsupportedEffort):
 		return apierr.Invalid("UNSUPPORTED_EFFORT", err.Error(), nil)
 	case errors.Is(err, ports.ErrModelCapabilitiesUnavailable):

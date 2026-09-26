@@ -318,6 +318,13 @@ export interface ChatWorkspaceProps {
 	onResumeAgent?: () => void;
 	resumingAgent?: boolean;
 	resumeError?: string;
+	/** Stable code behind a failed resume; CHAT_RESUME_FAILED changes the recovery. */
+	resumeErrorCode?: string;
+	/** The provider's own explanation for a failed resume, when it offered one. */
+	resumeErrorReason?: string;
+	/** Drop the unrecoverable conversation and relaunch onto a fresh one. */
+	onStartOver?: () => void;
+	startingOver?: boolean;
 	onOpenShell?: () => void;
 	openingShell?: boolean;
 	shellError?: string;
@@ -574,6 +581,10 @@ function ChatWorkspaceContent({
 	onResumeAgent,
 	resumingAgent,
 	resumeError,
+	resumeErrorCode,
+	resumeErrorReason,
+	onStartOver,
+	startingOver,
 	onOpenShell,
 	openingShell,
 	shellError,
@@ -1505,12 +1516,22 @@ function ChatWorkspaceContent({
 					{snapshot.account ? (
 						<ReauthBanner account={snapshot.account} harness={snapshot.harness} reasonInTimeline={reauthErrorInChat} />
 					) : null}
+					{/* Start over is manager-only, like onClearHistory: a worker
+					    conversation is scoped to a single task, so it has no
+					    cross-task narrative to shed and should not be handed a
+					    destructive control. */}
 					<ControllerBanner
 						controller={snapshot.controller}
 						transitioning={controllerTransitioning}
 						onResume={newWorkDisabled ? undefined : onResumeAgent}
 						resuming={resumingAgent}
 						resumeError={resumeError}
+						resumeErrorCode={resumeErrorCode}
+						resumeErrorReason={resumeErrorReason}
+						onStartOver={
+							effectiveSessionRole === "manager" && !newWorkDisabled ? onStartOver : undefined
+						}
+						startingOver={startingOver}
 						onOpenShell={onOpenShell}
 						openingShell={openingShell}
 						shellError={shellError}
@@ -2010,6 +2031,10 @@ function ControllerBanner({
 	onResume,
 	resuming,
 	resumeError,
+	resumeErrorCode,
+	resumeErrorReason,
+	onStartOver,
+	startingOver,
 	onOpenShell,
 	openingShell,
 	shellError,
@@ -2019,6 +2044,10 @@ function ControllerBanner({
 	onResume?: () => void;
 	resuming?: boolean;
 	resumeError?: string;
+	resumeErrorCode?: string;
+	resumeErrorReason?: string;
+	onStartOver?: () => void;
+	startingOver?: boolean;
 	onOpenShell?: () => void;
 	openingShell?: boolean;
 	shellError?: string;
@@ -2028,6 +2057,16 @@ function ControllerBanner({
 	// presenting its intermediate snapshot as a crash produces a red false alarm.
 	if (transitioning && controller.state === "stopped") return null;
 	if (controller.state === "ready" || controller.state === "busy") return null;
+
+	// A resume the provider refused is not a controller that stopped by accident:
+	// the stored conversation is the problem, so the same button would fail again
+	// and the only real recovery is a new conversation. Keyed off the daemon's
+	// stable code, which is why that code has to survive to the client.
+	//
+	// Requiring onStartOver as well matters: it is offered only where clearing a
+	// conversation is sanctioned, and without that check a session which cannot
+	// start over would be left with no recovery control at all.
+	const startOverAvailable = resumeErrorCode === "CHAT_RESUME_FAILED" && Boolean(onStartOver);
 
 	const copy: Partial<Record<ControllerState, { title: string; tone: string }>> = {
 		connecting: {
@@ -2068,15 +2107,43 @@ function ControllerBanner({
 				{controller.state === "stopped" ? (
 					<>
 						<span className="text-[11px] leading-snug text-muted-foreground">
-							History is kept. Resume the agent or open a shell in the same worktree.
+							{startOverAvailable ? (
+								// Retrying cannot help: the provider will not give this
+								// conversation back, so offering Resume again would only
+								// repeat the same refusal.
+								<>
+									The agent lost this conversation and cannot reattach to it. The
+									transcript above is kept; starting over gives the agent a fresh
+									conversation to work in.
+								</>
+							) : (
+								"History is kept. Resume the agent or open a shell in the same worktree."
+							)}
 						</span>
 						{resumeError || shellError ? (
 							<span className="text-[11px] leading-snug text-destructive">
 								{resumeError ?? shellError}
 							</span>
 						) : null}
+						{/* The provider's own words, so the failure names a cause rather
+					    than restating that it failed. */}
+						{resumeErrorCode === "CHAT_RESUME_FAILED" && resumeErrorReason ? (
+							<span className="text-[11px] leading-snug text-muted-foreground">
+								{resumeErrorReason}
+							</span>
+						) : null}
 						<div className="mt-1.5 flex flex-wrap gap-2">
-							{onResume ? (
+							{startOverAvailable ? (
+								<Button
+									type="button"
+									size="sm"
+									variant="outline"
+									onClick={onStartOver}
+									disabled={startingOver}
+								>
+									{startingOver ? "Starting over…" : "Start over"}
+								</Button>
+							) : onResume ? (
 								<Button
 									type="button"
 									size="sm"

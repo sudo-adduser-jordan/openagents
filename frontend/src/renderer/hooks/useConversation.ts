@@ -19,7 +19,7 @@ import {
 } from "@tanstack/react-query";
 import { useCallback, useEffect, useState } from "react";
 import type { components } from "../../api/schema";
-import { apiClient, apiErrorCode, apiErrorMessage } from "../lib/api-client";
+import { apiClient, apiErrorCode, apiErrorDetails, apiErrorMessage } from "../lib/api-client";
 import { subscribeWorkspaceFileChanges } from "../lib/workspace-file-events";
 import { workspaceQueryKey } from "./useWorkspaceQuery";
 import type {
@@ -572,16 +572,24 @@ export function useConversationCommands(sessionId: string | undefined) {
 		onError: (_error, variables) => refreshSessionInBackground(variables.targetSessionId),
 	});
 
+	/**
+	 * Relaunch an exited agent.
+	 *
+	 * The daemon's error body is thrown as-is rather than wrapped in an Error:
+	 * the stable `code` is what lets the banner tell a recoverable conflict
+	 * (CHAT_RESUME_FAILED) from anything else, and wrapping it in a bare Error
+	 * threw that code away, leaving every failure looking like the same dead
+	 * controller. apiErrorMessage still reads a plain error body.
+	 */
 	const resume = useMutation({
 		mutationFn: async () => {
-			const { data, error, response } = await apiClient.POST(
+			const { data, error } = await apiClient.POST(
 				"/api/v1/sessions/{sessionId}/resume-agent",
 				{
 					params: { path: { sessionId: sessionId as string } },
 				},
 			);
-			if (error)
-				throw new Error(apiErrorMessage(error, `Failed to resume agent (${response.status})`));
+			if (error) throw error;
 			return data;
 		},
 		onSuccess: () => {
@@ -635,6 +643,30 @@ export function useConversationCommands(sessionId: string | undefined) {
 			if (error) throw error;
 		},
 		onSuccess: invalidate,
+	});
+
+	/**
+	 * Recovery for a conversation the provider will not reattach to.
+	 *
+	 * When a resume fails the stored thread may be unrecoverable -- the agent
+	 * dropped it, or the provider rejects loading it. Resuming again cannot fix
+	 * that, so the only way forward is to stop resuming that thread: clear the
+	 * provider handle, then relaunch onto a fresh one.
+	 *
+	 * The agent loses its memory of the earlier conversation. The transcript is
+	 * untouched, so this is offered explicitly rather than folded into a retry,
+	 * and the order matters -- the handle has to be dropped before the relaunch,
+	 * or the relaunch would resume the thread that just failed.
+	 */
+	const startOver = useMutation({
+		mutationFn: async () => {
+			await clearHistory.mutateAsync();
+			return resume.mutateAsync();
+		},
+		onSuccess: () => {
+			invalidate();
+			void queryClient.invalidateQueries({ queryKey: workspaceQueryKey });
+		},
 	});
 
 	const chooseSettings = useMutation({
@@ -985,6 +1017,17 @@ export function useConversationCommands(sessionId: string | undefined) {
 		resumeAgent: () => resume.mutateAsync(),
 		resumingAgent: resume.isPending,
 		resumeError: resume.error ? apiErrorMessage(resume.error) : undefined,
+		/**
+		 * The stable code behind a failed resume. CHAT_RESUME_FAILED is the one
+		 * that changes what the user can do about it: the stored conversation is
+		 * gone as far as the provider is concerned, so retrying is pointless and
+		 * starting over is the real recovery.
+		 */
+		resumeErrorCode: apiErrorCode(resume.error),
+		/** The provider's own explanation, when the daemon offered one. */
+		resumeErrorReason: resumeErrorReason(resume.error),
+		startOver: () => startOver.mutateAsync(),
+		startingOver: startOver.isPending,
 		compact: () => compact.mutateAsync(),
 		clearHistory: () => clearHistory.mutateAsync(),
 		clearingHistory: clearHistory.isPending,
@@ -1142,6 +1185,17 @@ export function useConversationCommands(sessionId: string | undefined) {
  * which kind of turn refused — a compaction and a review read differently, and
  * "cannot be steered" alone leaves the user with nothing to do next.
  */
+/**
+ * The provider's own explanation for a failed resume, when the daemon supplied
+ * one. It names the actual cause ("ACP session/load: ...") rather than
+ * restating that the resume failed, which is the difference between a user who
+ * knows what happened and one who is merely told it did.
+ */
+function resumeErrorReason(error: unknown): string | undefined {
+	const reason = apiErrorDetails(error)?.reason;
+	return typeof reason === "string" && reason.trim() !== "" ? reason : undefined;
+}
+
 function steerRefusal(error: unknown): string | undefined {
 	const code = apiErrorCode(error);
 	if (!code) return undefined;

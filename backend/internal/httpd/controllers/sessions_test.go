@@ -7,6 +7,7 @@ import (
 	"encoding/base64"
 	"encoding/json"
 	"errors"
+	"fmt"
 	"io"
 	"log/slog"
 	"net/http"
@@ -35,6 +36,7 @@ import (
 
 type fakeSessionService struct {
 	sessions                   map[domain.SessionID]domain.Session
+	resumeErr                  error
 	sent                       string
 	sentAttachment             *ports.SpawnAttachment
 	delegationInput            sessionsvc.DelegateTaskInput
@@ -365,6 +367,9 @@ func (f *fakeSessionService) ExitAgent(_ context.Context, id domain.SessionID) (
 }
 
 func (f *fakeSessionService) ResumeAgent(_ context.Context, id domain.SessionID) (sessionsvc.ResumeAgentOutcome, error) {
+	if f.resumeErr != nil {
+		return sessionsvc.ResumeAgentOutcome{}, f.resumeErr
+	}
 	s := f.sessions[id]
 	s.Activity.State = domain.ActivityIdle
 	s.Status = domain.StatusIdle
@@ -3116,5 +3121,41 @@ func TestSessionsAPI_ClaimPRErrors(t *testing.T) {
 				t.Fatalf("invalid ref missing workspace guidance: %s", body)
 			}
 		})
+	}
+}
+
+// A manager whose stored provider conversation could not be resumed used to
+// answer 500 INTERNAL_ERROR on this route, because nothing on the session side
+// mapped ports.ErrChatResumeFailed. The client was left with "Internal server
+// error" and no way to tell a recoverable conflict from a broken daemon.
+//
+// The controller must pass the service's mapped envelope through untouched: the
+// code is what lets the UI offer a recovery, and the reason is what tells the
+// user which one.
+func TestSessionsAPI_ResumeAgentReportsAChatResumeFailureAsAConflict(t *testing.T) {
+	svc := newFakeSessionService()
+	svc.resumeErr = sessionsvc.MapChatDriverError(fmt.Errorf(
+		"resume agent open-agents-1: resume chat: %w: ACP session/load: provider rejected the load",
+		ports.ErrChatResumeFailed,
+	))
+	srv := newSessionTestServer(t, svc)
+
+	body, status, _ := doRequest(t, srv, "POST", "/api/v1/sessions/open-agents-1/resume-agent", "")
+	if status != http.StatusConflict {
+		t.Fatalf("resume agent = %d, want 409; body=%s", status, body)
+	}
+
+	var wire struct {
+		Code    string         `json:"code"`
+		Message string         `json:"message"`
+		Details map[string]any `json:"details"`
+	}
+	mustJSON(t, body, &wire)
+	if wire.Code != "CHAT_RESUME_FAILED" {
+		t.Fatalf("code = %q, want CHAT_RESUME_FAILED", wire.Code)
+	}
+	reason, _ := wire.Details["reason"].(string)
+	if !strings.Contains(reason, "ACP session/load") {
+		t.Fatalf("details.reason = %q, want the driver's explanation on the wire", reason)
 	}
 }

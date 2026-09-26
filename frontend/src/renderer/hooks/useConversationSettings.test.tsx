@@ -8,6 +8,7 @@ const { patch } = vi.hoisted(() => ({ patch: vi.fn() }));
 vi.mock("../lib/api-client", () => ({
 	apiClient: { PATCH: patch },
 	apiErrorMessage: () => "Failed", apiErrorCode: () => undefined,
+	apiErrorDetails: () => undefined,
 }));
 import { conversationQueryKey, useConversationCommands } from "./useConversation";
 

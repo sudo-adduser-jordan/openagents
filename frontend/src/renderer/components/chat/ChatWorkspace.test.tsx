@@ -1044,6 +1044,81 @@ describe("ChatWorkspace timeline", () => {
 		expect(onLinkOpen).toHaveBeenCalledWith("http://localhost:5173");
 	});
 
+	// A resume the provider refused is not a controller that stopped by accident.
+	// The same Resume button would fail identically every time, so it is replaced
+	// by the one action that can actually work.
+	it("offers start over, not a doomed retry, when the provider refused the resume", async () => {
+		const user = userEvent.setup();
+		const resume = vi.fn();
+		const startOver = vi.fn();
+		render(
+			<ChatWorkspace
+				snapshot={{
+					...chatFixtureSettled,
+					controller: { state: "stopped" },
+				}}
+				onResumeAgent={resume}
+				onStartOver={startOver}
+				resumeError="the stored provider conversation could not be resumed"
+				resumeErrorCode="CHAT_RESUME_FAILED"
+				resumeErrorReason='ACP session/load: {"code":-32603,"message":"Internal error"}'
+				sessionRole="manager"
+			/>,
+		);
+
+		expect(screen.getByRole("button", { name: "Start over" })).toBeInTheDocument();
+		expect(screen.queryByRole("button", { name: "Resume agent" })).not.toBeInTheDocument();
+		// The provider's own words, so the failure names a cause.
+		expect(screen.getByText(/ACP session\/load/)).toBeInTheDocument();
+
+		await user.click(screen.getByRole("button", { name: "Start over" }));
+		expect(startOver).toHaveBeenCalledOnce();
+		expect(resume).not.toHaveBeenCalled();
+	});
+
+	// Start over discards the agent's memory, so it stays manager-only like the
+	// history control. A worker's conversation is scoped to one task and has no
+	// cross-task narrative to shed.
+	it("does not offer a destructive start over to a worker", () => {
+		render(
+			<ChatWorkspace
+				snapshot={{
+					...chatFixtureSettled,
+					controller: { state: "stopped" },
+				}}
+				onResumeAgent={vi.fn()}
+				onStartOver={vi.fn()}
+				resumeError="the stored provider conversation could not be resumed"
+				resumeErrorCode="CHAT_RESUME_FAILED"
+				sessionRole="worker"
+			/>,
+		);
+
+		expect(screen.queryByRole("button", { name: "Start over" })).not.toBeInTheDocument();
+		expect(screen.getByRole("button", { name: "Resume agent" })).toBeInTheDocument();
+	});
+
+	// Only an unrecoverable conversation changes the recovery. Any other failure
+	// is still worth a plain retry, and silently swapping the button would hide
+	// the cases a retry genuinely fixes.
+	it("keeps the plain retry for a resume failure that is not a lost conversation", () => {
+		render(
+			<ChatWorkspace
+				snapshot={{
+					...chatFixtureSettled,
+					controller: { state: "stopped" },
+				}}
+				onResumeAgent={vi.fn()}
+				onStartOver={vi.fn()}
+				resumeError="The agent is already being resumed"
+				resumeErrorCode="AGENT_RESUME_IN_PROGRESS"
+			/>,
+		);
+
+		expect(screen.getByRole("button", { name: "Resume agent" })).toBeInTheDocument();
+		expect(screen.queryByRole("button", { name: "Start over" })).not.toBeInTheDocument();
+	});
+
 	it("offers real recovery actions when the controller stops", async () => {
 		const user = userEvent.setup();
 		const resume = vi.fn();

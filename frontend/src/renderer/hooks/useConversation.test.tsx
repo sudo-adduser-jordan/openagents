@@ -1173,6 +1173,60 @@ describe("controller recovery", () => {
 		expect(invalidateSpy).toHaveBeenCalledWith({ queryKey: workspaceQueryKey });
 		invalidateSpy.mockRestore();
 	});
+
+	// The code is the only thing that lets the banner tell a lost conversation
+	// from a transient one. Wrapping the daemon's error in a plain Error threw the
+	// code away, which is why every failure rendered as the same dead controller.
+	it("keeps the daemon's error code and reason for a refused resume", async () => {
+		// This file stubs the error helpers, and preserving the code is exactly what
+		// is under test, so the real implementations are used here.
+		const actual = await vi.importActual<typeof import("../lib/api-client")>("../lib/api-client");
+		apiErrorCodeMock.mockImplementation(actual.apiErrorCode);
+		apiErrorMessageMock.mockImplementation(actual.apiErrorMessage);
+		postMock.mockResolvedValue({
+			data: undefined,
+			error: {
+				error: "conflict",
+				code: "CHAT_RESUME_FAILED",
+				message: "the stored provider conversation could not be resumed",
+				details: { reason: 'ACP session/load: {"code":-32603}' },
+			},
+			response: { status: 409 },
+		});
+
+		const { result } = renderHook(() => useConversationCommands("open-agents-1"), { wrapper });
+		await act(async () => {
+			await expect(result.current.resumeAgent()).rejects.toBeTruthy();
+		});
+
+		// The mutation's error only reaches the hook's return value once React
+		// re-renders, so the state assertions wait for it.
+		await waitFor(() => {
+			expect(result.current.resumeErrorCode).toBe("CHAT_RESUME_FAILED");
+		});
+		expect(result.current.resumeErrorReason).toBe('ACP session/load: {"code":-32603}');
+		expect(result.current.resumeError).toBe("the stored provider conversation could not be resumed");
+	});
+
+	// The order is the whole point: the provider handle has to be dropped before
+	// the relaunch, or the relaunch resumes the very thread that just failed.
+	it("drops the unrecoverable conversation before relaunching onto a fresh one", async () => {
+		postMock.mockResolvedValue({ data: {}, error: undefined, response: { status: 200 } });
+		const invalidateSpy = vi.spyOn(QueryClient.prototype, "invalidateQueries");
+
+		const { result } = renderHook(() => useConversationCommands("open-agents-1"), { wrapper });
+		await act(async () => {
+			await result.current.startOver();
+		});
+
+		const paths = postMock.mock.calls.map((call) => call[0]);
+		expect(paths).toEqual([
+			"/api/v1/sessions/{sessionId}/conversation/clear-history",
+			"/api/v1/sessions/{sessionId}/resume-agent",
+		]);
+		expect(invalidateSpy).toHaveBeenCalledWith({ queryKey: workspaceQueryKey });
+		invalidateSpy.mockRestore();
+	});
 });
 
 describe("useConversationSkills polling", () => {

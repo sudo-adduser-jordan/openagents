@@ -19,6 +19,7 @@ import (
 	"github.com/sudo-adduser-jordan/open-agents/backend/internal/httpd/envelope"
 	"github.com/sudo-adduser-jordan/open-agents/backend/internal/ports"
 	chatsvc "github.com/sudo-adduser-jordan/open-agents/backend/internal/service/chat"
+	sessionsvc "github.com/sudo-adduser-jordan/open-agents/backend/internal/service/session"
 )
 
 // maxConversationBody bounds a chat message. Large context belongs in files the
@@ -793,6 +794,12 @@ func decodeConversationBody(w http.ResponseWriter, r *http.Request, into any) bo
 // writeConversationError maps the Chat service's typed failures onto stable
 // codes, so a client can tell a permanent answer from a retryable one.
 func writeConversationError(w http.ResponseWriter, r *http.Request, err error) {
+	// The Chat-driver table is shared with the session routes so a driver failure
+	// cannot answer differently depending on which endpoint surfaced it.
+	if mapped := sessionsvc.MapChatDriverError(err); mapped != nil {
+		envelope.WriteError(w, r, mapped)
+		return
+	}
 	switch {
 	case errors.Is(err, ports.ErrSessionNotFound):
 		envelope.WriteAPIError(w, r, http.StatusNotFound, "not_found",
@@ -904,29 +911,6 @@ func writeConversationError(w http.ResponseWriter, r *http.Request, err error) {
 	case errors.Is(err, ports.ErrChatConfigOptionInvalid):
 		envelope.WriteAPIError(w, r, http.StatusBadRequest, "validation",
 			"CHAT_CONFIG_OPTION_INVALID", err.Error(), nil)
-
-	case errors.Is(err, ports.ErrChatUnsupported):
-		envelope.WriteAPIError(w, r, http.StatusConflict, "conflict",
-			"SESSION_MODE_UNSUPPORTED", err.Error(), nil)
-
-	case errors.Is(err, ports.ErrChatDriverUnavailable):
-		envelope.WriteAPIError(w, r, http.StatusConflict, "conflict",
-			"CHAT_DRIVER_UNAVAILABLE", err.Error(), nil)
-
-	case errors.Is(err, ports.ErrChatDriverIncompatible):
-		envelope.WriteAPIError(w, r, http.StatusConflict, "conflict",
-			"CHAT_DRIVER_INCOMPATIBLE", err.Error(), nil)
-
-	case errors.Is(err, ports.ErrChatAuthRequired):
-		envelope.WriteAPIError(w, r, http.StatusConflict, "conflict",
-			"CHAT_AUTH_REQUIRED", "the agent is installed but not authenticated", nil)
-
-	case errors.Is(err, ports.ErrChatResumeFailed):
-		// Deliberately not a silent recovery: the client must offer the user a
-		// choice rather than have Open Agents invent a fresh conversation.
-		envelope.WriteAPIError(w, r, http.StatusConflict, "conflict",
-			"CHAT_RESUME_FAILED",
-			"the stored provider conversation could not be resumed", nil)
 
 	default:
 		envelope.WriteError(w, r, err)

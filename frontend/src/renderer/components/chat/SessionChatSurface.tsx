@@ -409,6 +409,12 @@ export const SessionChatSurface = memo(function SessionChatSurface({
 				}}
 				resumingAgent={commands.resumingAgent}
 				resumeError={commands.resumeError}
+				resumeErrorCode={commands.resumeErrorCode}
+				resumeErrorReason={commands.resumeErrorReason}
+				onStartOver={() => {
+					void commands.startOver().catch(() => {});
+				}}
+				startingOver={commands.startingOver}
 				onOpenShell={onOpenShell}
 				openingShell={openingShell}
 				shellError={shellError}
