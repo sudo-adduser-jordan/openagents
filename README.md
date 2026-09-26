@@ -30,9 +30,15 @@ Download the latest Open Agents desktop app for your platform. Open Agents check
 
 The desktop app runs the daemon for you, so no CLI is required. See the [installation guide](https://orchestrator.inc/docs/installation) for agent CLI setup and troubleshooting.
 
-## Architecture
+## Screenshots
 
-Five diagrams of how Open Agents is put together. Each is generated from code in `frontend/scripts/diagrams/`, so it can be rebuilt when the architecture moves — see [`docs/assets/diagrams/README.md`](docs/assets/diagrams/README.md). Open any image for a full-size copy, or the `.excalidraw` link to edit it.
+<img src="docs/assets/readme/hero.png" alt="Open Agents Kanban showing worker sessions grouped by live status" width="100%" />
+
+<img src="docs/assets/readme/tui.png" alt="A worker agent's native terminal interface supervised inside Open Agents" width="100%" />
+
+<img src="docs/assets/readme/browser.png" alt="A worker controlling its isolated in-app browser preview" width="100%" />
+
+## Architecture
 
 ### 1. Application overview
 
@@ -76,14 +82,3 @@ The TUI ↔ Chat handoff as a saga: the session row is the single commit point, 
 
 For the reasoning behind these boundaries, start with [docs/architecture.md](docs/architecture.md) and [docs/STATUS.md](docs/STATUS.md).
 
-## Screenshots
-
-<img src="docs/assets/readme/hero.png" alt="Open Agents Kanban showing worker sessions grouped by live status" width="100%" />
-
-<img src="docs/assets/readme/tui.png" alt="A worker agent's native terminal interface supervised inside Open Agents" width="100%" />
-
-<img src="docs/assets/readme/browser.png" alt="A worker controlling its isolated in-app browser preview" width="100%" />
-
-## License
-
-Open Agents is available under the [Apache License 2.0](LICENSE).
