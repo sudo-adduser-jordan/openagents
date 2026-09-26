@@ -11,12 +11,12 @@
 import { Route as rootRouteImport } from './routes/__root'
 import { Route as ShellRouteImport } from './routes/_shell'
 import { Route as ShellIndexRouteImport } from './routes/_shell.index'
-import { Route as ShellTerminalsRouteImport } from './routes/_shell.terminals'
-import { Route as ShellSettingsRouteImport } from './routes/_shell.settings'
 import { Route as ShellSessionsRouteImport } from './routes/_shell.sessions'
+import { Route as ShellSettingsRouteImport } from './routes/_shell.settings'
+import { Route as ShellTerminalsRouteImport } from './routes/_shell.terminals'
+import { Route as ShellProjectsProjectIdRouteImport } from './routes/_shell.projects.$projectId'
 import { Route as ShellSessionsIndexRouteImport } from './routes/_shell.sessions.index'
 import { Route as ShellSessionsSessionIdRouteImport } from './routes/_shell.sessions.$sessionId'
-import { Route as ShellProjectsProjectIdRouteImport } from './routes/_shell.projects.$projectId'
 import { Route as ShellProjectsProjectIdSettingsRouteImport } from './routes/_shell.projects.$projectId_.settings'
 import { Route as ShellProjectsProjectIdSessionsSessionIdRouteImport } from './routes/_shell.projects.$projectId_.sessions.$sessionId'
 
@@ -29,9 +29,9 @@ const ShellIndexRoute = ShellIndexRouteImport.update({
   path: '/',
   getParentRoute: () => ShellRoute,
 } as any)
-const ShellTerminalsRoute = ShellTerminalsRouteImport.update({
-  id: '/terminals',
-  path: '/terminals',
+const ShellSessionsRoute = ShellSessionsRouteImport.update({
+  id: '/sessions',
+  path: '/sessions',
   getParentRoute: () => ShellRoute,
 } as any)
 const ShellSettingsRoute = ShellSettingsRouteImport.update({
@@ -39,9 +39,14 @@ const ShellSettingsRoute = ShellSettingsRouteImport.update({
   path: '/settings',
   getParentRoute: () => ShellRoute,
 } as any)
-const ShellSessionsRoute = ShellSessionsRouteImport.update({
-  id: '/sessions',
-  path: '/sessions',
+const ShellTerminalsRoute = ShellTerminalsRouteImport.update({
+  id: '/terminals',
+  path: '/terminals',
+  getParentRoute: () => ShellRoute,
+} as any)
+const ShellProjectsProjectIdRoute = ShellProjectsProjectIdRouteImport.update({
+  id: '/projects/$projectId',
+  path: '/projects/$projectId',
   getParentRoute: () => ShellRoute,
 } as any)
 const ShellSessionsIndexRoute = ShellSessionsIndexRouteImport.update({
@@ -53,11 +58,6 @@ const ShellSessionsSessionIdRoute = ShellSessionsSessionIdRouteImport.update({
   id: '/$sessionId',
   path: '/$sessionId',
   getParentRoute: () => ShellSessionsRoute,
-} as any)
-const ShellProjectsProjectIdRoute = ShellProjectsProjectIdRouteImport.update({
-  id: '/projects/$projectId',
-  path: '/projects/$projectId',
-  getParentRoute: () => ShellRoute,
 } as any)
 const ShellProjectsProjectIdSettingsRoute =
   ShellProjectsProjectIdSettingsRouteImport.update({
@@ -162,11 +162,11 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof ShellIndexRouteImport
       parentRoute: typeof ShellRoute
     }
-    '/_shell/terminals': {
-      id: '/_shell/terminals'
-      path: '/terminals'
-      fullPath: '/terminals'
-      preLoaderRoute: typeof ShellTerminalsRouteImport
+    '/_shell/sessions': {
+      id: '/_shell/sessions'
+      path: '/sessions'
+      fullPath: '/sessions'
+      preLoaderRoute: typeof ShellSessionsRouteImport
       parentRoute: typeof ShellRoute
     }
     '/_shell/settings': {
@@ -176,11 +176,18 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof ShellSettingsRouteImport
       parentRoute: typeof ShellRoute
     }
-    '/_shell/sessions': {
-      id: '/_shell/sessions'
-      path: '/sessions'
-      fullPath: '/sessions'
-      preLoaderRoute: typeof ShellSessionsRouteImport
+    '/_shell/terminals': {
+      id: '/_shell/terminals'
+      path: '/terminals'
+      fullPath: '/terminals'
+      preLoaderRoute: typeof ShellTerminalsRouteImport
+      parentRoute: typeof ShellRoute
+    }
+    '/_shell/projects/$projectId': {
+      id: '/_shell/projects/$projectId'
+      path: '/projects/$projectId'
+      fullPath: '/projects/$projectId'
+      preLoaderRoute: typeof ShellProjectsProjectIdRouteImport
       parentRoute: typeof ShellRoute
     }
     '/_shell/sessions/': {
@@ -196,13 +203,6 @@ declare module '@tanstack/react-router' {
       fullPath: '/sessions/$sessionId'
       preLoaderRoute: typeof ShellSessionsSessionIdRouteImport
       parentRoute: typeof ShellSessionsRoute
-    }
-    '/_shell/projects/$projectId': {
-      id: '/_shell/projects/$projectId'
-      path: '/projects/$projectId'
-      fullPath: '/projects/$projectId'
-      preLoaderRoute: typeof ShellProjectsProjectIdRouteImport
-      parentRoute: typeof ShellRoute
     }
     '/_shell/projects/$projectId_/settings': {
       id: '/_shell/projects/$projectId_/settings'
