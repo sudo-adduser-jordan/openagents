@@ -108,7 +108,7 @@ For code entry points:
 - Do not store derived/display session status. Status is derived from durable facts (`activity_state`, `is_terminated`, PR/check/comment facts) at service read time.
 - Do not treat failed/unknown runtime probes as proof a session is dead.
 - Do not force-delete dirty registered worktrees.
-- Do not modify already-merged SQLite migrations. Add a new migration instead.
+- Do not modify already-merged SQLite migrations. Add a new migration instead. `migrations/0001_baseline.sql` is the one exception: it is a hand-maintained frozen snapshot of the current schema, so change it only via a new migration like any other. Never renumber a migration, never reuse a version number, and never edit a merged migration to "fix" a schema — append the next version.
 - Do not hand-edit `backend/internal/storage/sqlite/gen/*`; change `backend/internal/storage/sqlite/queries/*` or migrations and run `npm run sqlc`.
 - SQLite change events come from DB triggers into `change_log`; do not add parallel manual CDC emission from store methods unless the architecture changes explicitly.
 - Keep generated OpenAPI/API DTO drift in mind: controller response shapes live in `backend/internal/httpd/controllers/dto.go` and tests may assert CLI/HTTP wire compatibility.

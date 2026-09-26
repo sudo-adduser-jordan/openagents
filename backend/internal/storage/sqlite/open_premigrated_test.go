@@ -43,23 +43,23 @@ func TestOpenPreMigratedRejectsNewEmptyDatabase(t *testing.T) {
 
 // TestOpenPreMigratedRejectsStaleMigrationVersion verifies that
 // OpenPreMigrated rejects a database whose applied migration version is behind
-// the current embedded migration version.
+// the current embedded migration version. The ledger table exists but records
+// nothing applied, which is the state a database is left in when its baseline
+// migration has not run yet.
 func TestOpenPreMigratedRejectsStaleMigrationVersion(t *testing.T) {
 	dataDir := t.TempDir()
 
-	// Create a database and migrate to a version behind the current one.
 	db, err := openRawDB(dataDir)
 	if err != nil {
 		t.Fatalf("open raw db: %v", err)
 	}
 	defer func() { _ = db.Close() }()
 
-	want, err := expectedMigrationVersion()
-	if err != nil {
-		t.Fatalf("expected migration version: %v", err)
+	if _, err := db.Exec(`
+CREATE TABLE goose_db_version (id INTEGER PRIMARY KEY AUTOINCREMENT, version_id INTEGER, is_applied INTEGER);
+`); err != nil {
+		t.Fatalf("seed unapplied ledger: %v", err)
 	}
-	// Migrate one version behind the latest.
-	upTo(t, db, want-1)
 
 	if err := db.Close(); err != nil {
 		t.Fatalf("close stale db: %v", err)
@@ -67,7 +67,7 @@ func TestOpenPreMigratedRejectsStaleMigrationVersion(t *testing.T) {
 
 	_, err = OpenPreMigrated(dataDir)
 	if err == nil {
-		t.Fatal("OpenPreMigrated succeeded on stale database; want error")
+		t.Fatal("OpenPreMigrated succeeded on a database with no applied migration; want error")
 	}
 }
 
