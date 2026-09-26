@@ -11,6 +11,7 @@ import (
 )
 
 func TestStatusReadinessWaitsForRecoveryAndAllowsRetry(t *testing.T) {
+	t.Parallel()
 	m, st, rt, _ := newManager()
 	rec := domain.SessionRecord{ID: "s1", ProjectID: "mer", Harness: domain.HarnessOpenCode,
 		Activity: domain.Activity{State: domain.ActivityActive, LastActivityAt: time.Unix(100, 0)},
@@ -55,6 +56,7 @@ func (r *stubbornAliveRuntime) IsAlive(_ context.Context, handle ports.RuntimeHa
 }
 
 func TestStatusReadinessDoesNotOfferRetryWhileRecoveryOwnsSession(t *testing.T) {
+	t.Parallel()
 	m, st, rt, _ := newManager()
 	rec := domain.SessionRecord{ID: "s1", ProjectID: "mer", Harness: domain.HarnessOpenCode,
 		Activity: domain.Activity{State: domain.ActivityActive},
@@ -94,6 +96,7 @@ func (r *deadlineAwareRuntime) IsAlive(ctx context.Context, _ ports.RuntimeHandl
 }
 
 func TestStatusReadinessDeadlineReleasesSessionForRetry(t *testing.T) {
+	t.Parallel()
 	m, st, rt, _ := newManager()
 	rec := domain.SessionRecord{ID: "s1", ProjectID: "mer", Harness: domain.HarnessOpenCode,
 		Activity: domain.Activity{State: domain.ActivityActive},
@@ -122,6 +125,7 @@ func TestStatusReadinessDeadlineReleasesSessionForRetry(t *testing.T) {
 }
 
 func TestStatusReadinessDiscoveryFailureIsUnavailable(t *testing.T) {
+	t.Parallel()
 	m, st, _, _ := newManager()
 	st.listAllErr = errors.New("storage unavailable")
 	if err := m.ReconcileBackground(context.Background()); err == nil {
@@ -133,6 +137,7 @@ func TestStatusReadinessDiscoveryFailureIsUnavailable(t *testing.T) {
 }
 
 func TestStatusReadinessFreshSpawnAfterDiscoveryFailureIsReady(t *testing.T) {
+	t.Parallel()
 	m, st, _, _ := newManager()
 	st.listAllErr = errors.New("storage unavailable")
 	if err := m.ReconcileBackground(context.Background()); err == nil {
@@ -152,6 +157,7 @@ func TestStatusReadinessFreshSpawnAfterDiscoveryFailureIsReady(t *testing.T) {
 }
 
 func TestStatusReadinessFreshSpawnAfterSuccessfulRecoveryDoesNotChangeRevision(t *testing.T) {
+	t.Parallel()
 	m, _, _, _ := newManager()
 	if err := m.ReconcileBackground(context.Background()); err != nil {
 		t.Fatal(err)

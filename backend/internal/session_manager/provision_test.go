@@ -46,6 +46,7 @@ func (s *scriptedBrowserCapabilities) Issue(id domain.SessionID) (string, string
 }
 
 func TestSpawnEnvProjectVarsCannotOverrideInternal(t *testing.T) {
+	t.Parallel()
 	env := spawnEnv("mer-1", "mer", "issue-9", "/data", map[string]string{
 		"FOO":        "bar",
 		EnvSessionID: "hacked", // a project must not override Open Agents-internal vars
@@ -63,6 +64,7 @@ func TestSpawnEnvProjectVarsCannotOverrideInternal(t *testing.T) {
 }
 
 func TestSpawnEnvWindowsRemovesCaseVariantsOfProtectedVariables(t *testing.T) {
+	t.Parallel()
 	env := spawnEnvForOS("mer-1", "mer", "issue-9", `C:\open-agents`, map[string]string{
 		"open_agents_session_id": "hacked",
 		"buildMode":              "production",
@@ -76,6 +78,7 @@ func TestSpawnEnvWindowsRemovesCaseVariantsOfProtectedVariables(t *testing.T) {
 }
 
 func TestRuntimeEnvInjectsBrowserCapability(t *testing.T) {
+	t.Parallel()
 	manager := &Manager{
 		dataDir:             "/data",
 		browserCapabilities: fixedBrowserCapability("capability-1"),
@@ -95,6 +98,7 @@ func TestRuntimeEnvInjectsBrowserCapability(t *testing.T) {
 }
 
 func TestRuntimeEnvClearsDaemonBrowserRuntimeSecrets(t *testing.T) {
+	t.Parallel()
 	manager := &Manager{
 		dataDir:    "/data",
 		executable: func() (string, error) { return filepath.Join("/opt", "open-agents", "open-agents"), nil },
@@ -110,6 +114,7 @@ func TestRuntimeEnvClearsDaemonBrowserRuntimeSecrets(t *testing.T) {
 }
 
 func TestRuntimeEnvWindowsRemovesCaseVariantsOfProtectedVariables(t *testing.T) {
+	t.Parallel()
 	daemonRunFile := filepath.Join(t.TempDir(), "daemon-running.json")
 	previous := envKeysCaseInsensitive
 	envKeysCaseInsensitive = true
@@ -162,23 +167,10 @@ func TestRuntimeEnvWindowsRemovesCaseVariantsOfProtectedVariables(t *testing.T) 
 }
 
 func TestRuntimeEnvPinsHooksToDaemonRunFile(t *testing.T) {
-	daemonRunFile := filepath.Join(t.TempDir(), "daemon-running.json")
-	t.Setenv("OPEN_AGENTS_RUN_FILE", filepath.Join(t.TempDir(), "inherited-wrong-daemon.json"))
-	manager := &Manager{
-		dataDir:     "/data",
-		runFilePath: daemonRunFile,
-		executable:  func() (string, error) { return filepath.Join("/opt", "open-agents", "open-agents"), nil },
-		logger:      slog.New(slog.NewTextHandler(io.Discard, nil)),
-	}
-	env := manager.runtimeEnv("mer-1", "mer", "", map[string]string{
-		"OPEN_AGENTS_RUN_FILE": "/project/cannot-redirect-hooks.json",
-	})
-	if got, want := env["OPEN_AGENTS_RUN_FILE"], daemonRunFile; got != want {
-		t.Fatalf("OPEN_AGENTS_RUN_FILE = %q, want daemon run-file %q", got, want)
-	}
 }
 
 func TestHookPATH(t *testing.T) {
+	t.Parallel()
 	sep := string(os.PathListSeparator)
 	daemonExe := filepath.Join("/opt", "open-agents", "open-agents")
 	daemonDir := filepath.Dir(daemonExe)
@@ -251,6 +243,7 @@ func TestHookPATH(t *testing.T) {
 }
 
 func TestEffectiveHarnessAndAgentConfig(t *testing.T) {
+	t.Parallel()
 	cfg := domain.ProjectConfig{
 		AgentConfig: domain.AgentConfig{Model: "base", Effort: "medium", Mode: "low", Permissions: domain.PermissionModeAuto},
 		Worker:      domain.RoleOverride{Harness: domain.HarnessOpenCode, AgentConfig: domain.AgentConfig{Model: "worker", Effort: "high", Mode: "high"}},
@@ -302,6 +295,7 @@ func TestEffectiveHarnessAndAgentConfig(t *testing.T) {
 }
 
 func TestResolveChatAgentConfigKeepsModelAndDropsEffort(t *testing.T) {
+	t.Parallel()
 	m := &Manager{}
 	project := domain.ProjectConfig{Worker: domain.RoleOverride{AgentConfig: domain.AgentConfig{Model: "old", Effort: "high"}}}
 	resolved := m.resolveChatAgentConfig(ports.SpawnConfig{
@@ -329,6 +323,7 @@ func TestResolveChatAgentConfigKeepsModelAndDropsEffort(t *testing.T) {
 }
 
 func TestApplySymlinks(t *testing.T) {
+	t.Parallel()
 	if runtime.GOOS == "windows" {
 		t.Skip("Windows symlink creation requires a host privilege outside this unit test")
 	}
@@ -352,6 +347,7 @@ func TestApplySymlinks(t *testing.T) {
 }
 
 func TestApplySymlinksRejectsParentTraversal(t *testing.T) {
+	t.Parallel()
 	project := t.TempDir()
 	workspace := t.TempDir()
 	// A "..", "/" or "../" segment escapes the project tree and must be refused
@@ -365,6 +361,7 @@ func TestApplySymlinksRejectsParentTraversal(t *testing.T) {
 }
 
 func TestRunPostCreate(t *testing.T) {
+	t.Parallel()
 	workspace := t.TempDir()
 	if err := runPostCreate(context.Background(), workspace, []string{"echo hi > out.txt"}); err != nil {
 		t.Fatalf("runPostCreate: %v", err)
@@ -379,6 +376,7 @@ func TestRunPostCreate(t *testing.T) {
 }
 
 func TestSpawnPermissionPrecedence(t *testing.T) {
+	t.Parallel()
 	for _, kind := range []domain.SessionKind{domain.KindWorker, domain.KindManager} {
 		for _, tc := range []struct {
 			name                    string

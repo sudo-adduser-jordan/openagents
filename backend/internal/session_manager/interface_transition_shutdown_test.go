@@ -37,6 +37,7 @@ func (s *cancelDuringRecoveryStore) AdvanceSessionInterfaceTransition(ctx contex
 }
 
 func TestDeferredInterfaceRecoveryReleasesCancelledTransition(t *testing.T) {
+	t.Parallel()
 	ctx := context.Background()
 	m, st, _, _, _ := newTransitionManager(t, domain.SessionModeTUI)
 	_, _, err := st.CreateSessionInterfaceTransition(ctx, domain.SessionInterfaceTransition{
@@ -65,6 +66,7 @@ func (s *failedShutdownMarkerStore) AdvanceSessionInterfaceTransition(ctx contex
 }
 
 func TestStartupReportsUnpersistedShutdownMarker(t *testing.T) {
+	t.Parallel()
 	m, st, _, chat, _ := newTransitionManager(t, domain.SessionModeChat)
 	m.chat = &shutdownGuardTransitionChat{transitionChat: chat, stopErr: errors.New("host remains alive")}
 	want := errors.New("marker write failed")
@@ -86,6 +88,7 @@ func TestStartupReportsUnpersistedShutdownMarker(t *testing.T) {
 }
 
 func TestStartupDefersInterfaceRecoveryBehindExistingSessionOperation(t *testing.T) {
+	t.Parallel()
 	ctx := context.Background()
 	m, st, _, _, _ := newTransitionManager(t, domain.SessionModeChat)
 	_, created, err := st.CreateSessionInterfaceTransition(ctx, domain.SessionInterfaceTransition{
@@ -135,6 +138,7 @@ func TestStartupDefersInterfaceRecoveryBehindExistingSessionOperation(t *testing
 }
 
 func TestDeferredInterfaceRecoveryRespectsWorkerShutdown(t *testing.T) {
+	t.Parallel()
 	m, _, _, _, _ := newTransitionManager(t, domain.SessionModeChat)
 	m.deferredInterfaceRecovery = map[domain.SessionID]string{"session-1": "interrupted"}
 	m.agentOperations["session-1"] = agentOperationKill
@@ -149,6 +153,7 @@ func TestDeferredInterfaceRecoveryRespectsWorkerShutdown(t *testing.T) {
 }
 
 func TestStartupQuarantinesUnconfirmedTargetWithoutBlockingOtherSessions(t *testing.T) {
+	t.Parallel()
 	ctx, cancel := context.WithCancel(context.Background())
 	defer cancel()
 	m, st, _, chat, _ := newTransitionManager(t, domain.SessionModeChat)
@@ -221,6 +226,7 @@ func (c *shutdownGuardTransitionChat) StopChat(ctx context.Context, id domain.Se
 }
 
 func TestInterfaceTransitionConfirmsTargetShutdownBeforeHistoryRetry(t *testing.T) {
+	t.Parallel()
 	m, st, _, chat, log := newTransitionManager(t, domain.SessionModeTUI)
 	useFastInterfaceTransitionTimings(m)
 	m.chat = &shutdownGuardTransitionChat{
@@ -241,6 +247,7 @@ func TestInterfaceTransitionConfirmsTargetShutdownBeforeHistoryRetry(t *testing.
 }
 
 func TestInterfaceTransitionRetainsFenceWhenTargetShutdownIsUnconfirmed(t *testing.T) {
+	t.Parallel()
 	for _, startErr := range []error{ports.ErrChatHistoryUnsettled, errors.New("provider admission failed")} {
 		t.Run(startErr.Error(), func(t *testing.T) {
 			m, st, runtime, chat, log := newTransitionManager(t, domain.SessionModeTUI)
@@ -296,6 +303,7 @@ func TestInterfaceTransitionRetainsFenceWhenTargetShutdownIsUnconfirmed(t *testi
 }
 
 func TestInterfaceTransitionRollsBackInconclusiveHistoryCleanupWithoutRetry(t *testing.T) {
+	t.Parallel()
 	m, st, runtime, chat, log := newTransitionManager(t, domain.SessionModeTUI)
 	useFastInterfaceTransitionTimings(m)
 	m.chat = &shutdownGuardTransitionChat{
@@ -334,6 +342,7 @@ func (s *postTargetLaunchReadFailureStore) GetSession(ctx context.Context, id do
 }
 
 func TestInterfaceTransitionChatToTUIRetainsShutdownFenceAcrossRestart(t *testing.T) {
+	t.Parallel()
 	ctx := context.Background()
 	m, st, runtime, _, log := newTransitionManager(t, domain.SessionModeChat)
 	m.store = &postTargetLaunchReadFailureStore{transitionStore: st, failRead: true}

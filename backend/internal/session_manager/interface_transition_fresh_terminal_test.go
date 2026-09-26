@@ -16,6 +16,7 @@ import (
 )
 
 func TestInterfaceTransitionPromptlessHookCannotAuthorizeFreshConversation(t *testing.T) {
+	t.Parallel()
 	for _, tc := range []struct {
 		name      string
 		events    []string
@@ -75,6 +76,7 @@ func TestInterfaceTransitionPromptlessHookCannotAuthorizeFreshConversation(t *te
 }
 
 func TestInterfaceTransitionInitialSessionStartStillAllowsFreshConversation(t *testing.T) {
+	t.Parallel()
 	ctx := context.Background()
 	manager, store, _, chat, _ := newTransitionManager(t, domain.SessionModeTUI)
 	useFastInterfaceTransitionTimings(manager)
@@ -106,6 +108,7 @@ func TestInterfaceTransitionInitialSessionStartStillAllowsFreshConversation(t *t
 }
 
 func TestInterfaceTransitionReservedTranscriptRequiresUntouchedTerminal(t *testing.T) {
+	t.Parallel()
 	for _, name := range []string{
 		"absent", "existing", "empty", "directory", "relative", "lookup error",
 		"user prompt", "assistant response", "unknown surface", "chat",
@@ -172,6 +175,7 @@ func TestInterfaceTransitionReservedTranscriptRequiresUntouchedTerminal(t *testi
 }
 
 func TestInterfaceTransitionReservedTranscriptRechecksAfterFencing(t *testing.T) {
+	t.Parallel()
 	manager, store, runtime, _, log := newTransitionManager(t, domain.SessionModeTUI)
 	useFastInterfaceTransitionTimings(manager)
 	manager.agents = singleAgent{agent: untouchedEmptyTransitionAgent{}}

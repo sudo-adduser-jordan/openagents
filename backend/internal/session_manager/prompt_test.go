@@ -8,6 +8,7 @@ import (
 )
 
 func TestBuildTaskPrompt_IssueContextStaysInTaskPrompt(t *testing.T) {
+	t.Parallel()
 	got := buildTaskPrompt(taskPromptConfig{
 		Role:         sessionPromptRoleWorker,
 		IssueID:      "2272",
@@ -30,6 +31,7 @@ func TestBuildTaskPrompt_IssueContextStaysInTaskPrompt(t *testing.T) {
 }
 
 func TestBuildSystemPrompt_WorkerIncludesRulesAndManager(t *testing.T) {
+	t.Parallel()
 	got := buildSystemPromptText(systemPromptConfig{
 		Role: sessionPromptRoleWorker,
 		Project: promptProject{
@@ -67,6 +69,7 @@ func TestBuildSystemPrompt_WorkerIncludesRulesAndManager(t *testing.T) {
 }
 
 func TestSystemPromptGuardAllowsHighLevelRoleAndBehaviorSummary(t *testing.T) {
+	t.Parallel()
 	got := systemPromptGuard()
 	for _, want := range []string{
 		"say whether you are operating as an Open Agents manager or implementation worker",
@@ -81,6 +84,7 @@ func TestSystemPromptGuardAllowsHighLevelRoleAndBehaviorSummary(t *testing.T) {
 }
 
 func TestBuildSystemPrompt_ManagerNeverEditsAndOnlyDelegatesToOpenAgents(t *testing.T) {
+	t.Parallel()
 	got := buildSystemPromptText(systemPromptConfig{
 		Role:    sessionPromptRoleManager,
 		Project: promptProject{ID: "mer", Name: "Mercury"},
@@ -113,6 +117,7 @@ func TestBuildSystemPrompt_ManagerNeverEditsAndOnlyDelegatesToOpenAgents(t *test
 // contradicted "never edit files", so the escape hatch and its wording are gone
 // and the prompt must not drift back into offering one.
 func TestBuildSystemPrompt_ManagerHasNoDirectEditEscapeHatch(t *testing.T) {
+	t.Parallel()
 	got := buildSystemPromptText(systemPromptConfig{
 		Role:    sessionPromptRoleManager,
 		Project: promptProject{ID: "mer", Name: "Mercury"},
@@ -132,6 +137,7 @@ func TestBuildSystemPrompt_ManagerHasNoDirectEditEscapeHatch(t *testing.T) {
 // then stop for a human. Each step has to be named or the manager skips the
 // review and carries a plan straight into building.
 func TestBuildSystemPrompt_ManagerStatesThePlanToManualReviewLoop(t *testing.T) {
+	t.Parallel()
 	got := buildSystemPromptText(systemPromptConfig{
 		Role:    sessionPromptRoleManager,
 		Project: promptProject{ID: "mer", Name: "Mercury"},
@@ -158,6 +164,7 @@ func TestBuildSystemPrompt_ManagerStatesThePlanToManualReviewLoop(t *testing.T) 
 }
 
 func TestBuildSystemPrompt_WorkerHandlesTaskSourcesAndProviderPRRules(t *testing.T) {
+	t.Parallel()
 	got := buildSystemPromptText(systemPromptConfig{
 		Role: sessionPromptRoleWorker,
 		Project: promptProject{
@@ -190,6 +197,7 @@ func TestBuildSystemPrompt_WorkerHandlesTaskSourcesAndProviderPRRules(t *testing
 }
 
 func TestBuildSystemPrompt_WorkerWithManagerUsesManagerParallelHandoff(t *testing.T) {
+	t.Parallel()
 	got := buildSystemPromptText(systemPromptConfig{
 		Role:             sessionPromptRoleWorker,
 		Project:          promptProject{ID: "mer", Name: "Mercury", Repo: "https://github.com/acme/mercury"},
@@ -210,6 +218,7 @@ func TestBuildSystemPrompt_WorkerWithManagerUsesManagerParallelHandoff(t *testin
 }
 
 func TestBuildProjectRules_ReadsInlineAndFileRules(t *testing.T) {
+	t.Parallel()
 	dir := t.TempDir()
 	if err := os.WriteFile(filepath.Join(dir, "rules.md"), []byte("File rule.\n"), 0o644); err != nil {
 		t.Fatal(err)
@@ -230,12 +239,14 @@ func TestBuildProjectRules_ReadsInlineAndFileRules(t *testing.T) {
 }
 
 func TestProjectRelativeFileRejectsTraversal(t *testing.T) {
+	t.Parallel()
 	if _, err := projectRelativeFile(t.TempDir(), "../rules.md"); err == nil {
 		t.Fatal("expected traversal path to be rejected")
 	}
 }
 
 func TestBuildSystemPromptPreservesPublishingScope(t *testing.T) {
+	t.Parallel()
 	for _, role := range []sessionPromptRole{sessionPromptRoleWorker, sessionPromptRoleManager} {
 		for _, repo := range []string{"", "https://github.com/acme/repo"} {
 			t.Run(string(role)+"/"+repo, func(t *testing.T) {
@@ -259,6 +270,7 @@ func TestBuildSystemPromptPreservesPublishingScope(t *testing.T) {
 }
 
 func TestBuildTaskPromptPreservesExplicitPublishingScope(t *testing.T) {
+	t.Parallel()
 	for _, prompt := range []string{"Fix the issue, push the branch, and open a PR.", "Fix the issue locally. Do not push or open a PR."} {
 		got := buildTaskPrompt(taskPromptConfig{Role: sessionPromptRoleWorker, Prompt: prompt, IssueID: "42"})
 		if got != prompt {

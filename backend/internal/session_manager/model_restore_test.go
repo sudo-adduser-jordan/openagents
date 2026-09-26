@@ -16,6 +16,7 @@ import (
 // Use the production lifecycle and reopen SQLite: the fake lifecycle copies
 // metadata wholesale and cannot catch fields dropped by the real reducer.
 func TestAgentSessionModelSurvivesRestore(t *testing.T) {
+	t.Parallel()
 	for _, kind := range []domain.SessionKind{domain.KindWorker, domain.KindManager} {
 		for _, selection := range []struct {
 			name         string

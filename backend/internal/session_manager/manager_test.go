@@ -1146,6 +1146,7 @@ func (m *fakeMessenger) Send(_ context.Context, id domain.SessionID, msg string)
 }
 
 func TestSend_WritesAttachmentAndAppendsReference(t *testing.T) {
+	t.Parallel()
 	dir := t.TempDir()
 	st := newFakeStore()
 	st.sessions["mer-1"] = pastStartupGate(domain.SessionRecord{
@@ -1200,6 +1201,7 @@ func TestSend_WritesAttachmentAndAppendsReference(t *testing.T) {
 }
 
 func TestSend_WithoutAttachmentSkipsWorkspaceWrite(t *testing.T) {
+	t.Parallel()
 	st := newFakeStore()
 	st.sessions["mer-1"] = pastStartupGate(domain.SessionRecord{ID: "mer-1", ProjectID: "mer", Kind: domain.KindWorker})
 	msg := &fakeMessenger{}
@@ -1224,6 +1226,7 @@ func TestSend_WithoutAttachmentSkipsWorkspaceWrite(t *testing.T) {
 // instead of the session's worktree and handing the agent a reference it
 // cannot reach. Send must refuse rather than silently mis-deliver.
 func TestSend_RejectsAttachmentWithEmptyWorkspace(t *testing.T) {
+	t.Parallel()
 	st := newFakeStore()
 	st.sessions["mer-1"] = domain.SessionRecord{ID: "mer-1", ProjectID: "mer", Kind: domain.KindWorker}
 	msg := &fakeMessenger{}
@@ -1291,6 +1294,7 @@ func mkLive(id domain.SessionID) domain.SessionRecord {
 }
 
 func TestSpawn_ResolvesProjectConfig(t *testing.T) {
+	t.Parallel()
 	st := newFakeStore()
 	st.projects["mer"] = domain.ProjectRecord{ID: "mer", Config: domain.ProjectConfig{
 		DefaultBranch: "develop",
@@ -1352,6 +1356,7 @@ func TestSpawn_ResolvesProjectConfig(t *testing.T) {
 }
 
 func TestSpawn_InheritsChatManagerPermissions(t *testing.T) {
+	t.Parallel()
 	m, st, rt, _ := newManager()
 	st.sessions["mer-0"] = domain.SessionRecord{
 		ID: "mer-0", ProjectID: "mer", Kind: domain.KindManager,
@@ -1376,6 +1381,7 @@ func TestSpawn_InheritsChatManagerPermissions(t *testing.T) {
 }
 
 func TestSpawn_IgnoresNonManagerParent(t *testing.T) {
+	t.Parallel()
 	m, st, rt, _ := newManager()
 	st.sessions["mer-0"] = domain.SessionRecord{ID: "mer-0", ProjectID: "mer", Kind: domain.KindWorker}
 	st.conversations["mer-0"] = domain.ConversationRecord{
@@ -1403,6 +1409,7 @@ func (g *rejectingHarnessUseGate) TryBeginHarnessUse(harness domain.AgentHarness
 }
 
 func TestSpawn_DefaultsRoleWorkflowMode(t *testing.T) {
+	t.Parallel()
 	for _, tc := range []struct {
 		kind domain.SessionKind
 		want domain.WorkflowMode
@@ -1424,6 +1431,7 @@ func TestSpawn_DefaultsRoleWorkflowMode(t *testing.T) {
 }
 
 func TestSpawn_DelegatedWorkersAlwaysStartPlanning(t *testing.T) {
+	t.Parallel()
 	for _, parentMode := range []domain.WorkflowMode{domain.WorkflowModeManager} {
 		t.Run(string(parentMode), func(t *testing.T) {
 			m, st, _, _ := newManager()
@@ -1447,6 +1455,7 @@ func TestSpawn_DelegatedWorkersAlwaysStartPlanning(t *testing.T) {
 // A planning-mode manager creates no delegated sessions: the spawn is refused
 // before any durable state, harness use, or worktree exists.
 func TestSpawn_PlanningManagerCannotDelegate(t *testing.T) {
+	t.Parallel()
 	for _, kind := range []domain.SessionKind{domain.KindWorker, domain.KindManager} {
 		t.Run(string(kind), func(t *testing.T) {
 			m, st, rt, _ := newManager()
@@ -1471,6 +1480,7 @@ func TestSpawn_PlanningManagerCannotDelegate(t *testing.T) {
 }
 
 func TestSpawnGatesResolvedProjectDefaultHarness(t *testing.T) {
+	t.Parallel()
 	m, st, rt, _ := newManager()
 	project := st.projects["mer"]
 	project.Config.Worker.Harness = domain.HarnessOpenCode
@@ -1494,6 +1504,7 @@ func TestSpawnGatesResolvedProjectDefaultHarness(t *testing.T) {
 // accepts arbitrary model ids. opencode is the only shipped harness and uses
 // direct custom model entry, so Open Agents owns no fixed list to reject against.
 func TestSpawnModelValidation(t *testing.T) {
+	t.Parallel()
 	st := newFakeStore()
 	st.projects["mer"] = domain.ProjectRecord{ID: "mer", Config: domain.ProjectConfig{
 		Worker: domain.RoleOverride{Harness: domain.HarnessOpenCode},
@@ -1518,6 +1529,7 @@ func TestSpawnModelValidation(t *testing.T) {
 // TestSpawnModelPersisted asserts the resolved model is stored on the session
 // metadata and survives a store round-trip.
 func TestSpawnModelPersisted(t *testing.T) {
+	t.Parallel()
 	st := newFakeStore()
 	st.projects["mer"] = domain.ProjectRecord{ID: "mer", Config: domain.ProjectConfig{
 		AgentConfig: domain.AgentConfig{Model: "project-model"},
@@ -1559,6 +1571,7 @@ func TestSpawnModelPersisted(t *testing.T) {
 // Both roles resolve through the same override, so both leak the same way; the
 // manager case is asserted explicitly rather than left implied.
 func TestSpawn_DropsRoleModelOnHarnessMismatch(t *testing.T) {
+	t.Parallel()
 	roleConfig := domain.RoleOverride{
 		Harness:     domain.HarnessOpenCode,
 		AgentConfig: domain.AgentConfig{Model: "custom/gpt-5.5", Permissions: domain.PermissionModeAuto},
@@ -1607,6 +1620,7 @@ func TestSpawn_DropsRoleModelOnHarnessMismatch(t *testing.T) {
 }
 
 func TestSpawnRecordsDiffBaseForSingleRepoSessions(t *testing.T) {
+	t.Parallel()
 	m, st, _, ws := newManager()
 	repo := newManagerGitRepo(t)
 	cfg := testRoleAgents()
@@ -1625,6 +1639,7 @@ func TestSpawnRecordsDiffBaseForSingleRepoSessions(t *testing.T) {
 }
 
 func TestSpawnAutoRecordsResolvedDiffBaseInsteadOfFeatureTip(t *testing.T) {
+	t.Parallel()
 	m, st, _, ws := newManager()
 	repo := newManagerGitRepo(t)
 	wantBase := strings.TrimSpace(runManagerGit(t, repo, "rev-parse", "main"))
@@ -1652,6 +1667,7 @@ func TestSpawnAutoRecordsResolvedDiffBaseInsteadOfFeatureTip(t *testing.T) {
 }
 
 func TestSpawnRecordsRemoteTrackingDiffBaseWhenLocalDefaultBranchLags(t *testing.T) {
+	t.Parallel()
 	m, st, _, ws := newManager()
 	repo := newManagerGitRepo(t)
 	localMain := strings.TrimSpace(runManagerGit(t, repo, "rev-parse", "HEAD"))
@@ -1680,6 +1696,7 @@ func TestSpawnRecordsRemoteTrackingDiffBaseWhenLocalDefaultBranchLags(t *testing
 }
 
 func TestSpawnDiffBaseRefCandidatesPreferRemoteTrackingDefault(t *testing.T) {
+	t.Parallel()
 	got := spawnDiffBaseRefCandidates("main")
 	want := []string{"origin/main", "refs/remotes/origin/main", "main"}
 	if strings.Join(got, ",") != strings.Join(want, ",") {
@@ -1688,6 +1705,7 @@ func TestSpawnDiffBaseRefCandidatesPreferRemoteTrackingDefault(t *testing.T) {
 }
 
 func TestSpawn_WrapsSupervisedAgentAndPersistsGeneration(t *testing.T) {
+	t.Parallel()
 	st := newFakeStore()
 	st.projects["mer"] = domain.ProjectRecord{ID: "mer", Config: testRoleAgents()}
 	rt := &fakeRuntime{}
@@ -1717,6 +1735,7 @@ func TestSpawn_WrapsSupervisedAgentAndPersistsGeneration(t *testing.T) {
 }
 
 func TestRestore_RotatesSupervisedAgentGeneration(t *testing.T) {
+	t.Parallel()
 	st := newFakeStore()
 	st.projects["mer"] = domain.ProjectRecord{ID: "mer", Config: testRoleAgents()}
 	seedTerminal(st, "mer-1", domain.SessionMetadata{WorkspacePath: "/ws/mer-1", Branch: "b", AgentSessionID: "agent-x", RuntimeLaunchID: "launch-old"})
@@ -1753,6 +1772,7 @@ func TestRestore_RotatesSupervisedAgentGeneration(t *testing.T) {
 }
 
 func TestExitAgentStopsOnlyControllerAndPreservesSessionIdentity(t *testing.T) {
+	t.Parallel()
 	m, st, runtime, _ := newManager()
 	st.sessions["mer-1"] = domain.SessionRecord{
 		ID:        "mer-1",
@@ -1818,6 +1838,7 @@ func newExitedResumeManager(t *testing.T, runtime runtimeController, agent ports
 }
 
 func TestResumeAgent_RestartsRuntimeWithManagedGeneration(t *testing.T) {
+	t.Parallel()
 	baseRuntime := &fakeRuntime{aliveByHandle: map[string]bool{"tmux-mer-1": true}}
 	runtime := &fakeRestartRuntime{fakeRuntime: baseRuntime}
 	agent := supervisedLaunchAgent{launchArgvAgent{argv: []string{"codex", "resume", "agent-x"}}}
@@ -1868,6 +1889,7 @@ func TestResumeAgent_RestartsRuntimeWithManagedGeneration(t *testing.T) {
 }
 
 func TestResumeAgent_FallsBackToRuntimeRecreateWithoutRestartCapability(t *testing.T) {
+	t.Parallel()
 	runtime := &fakeRuntime{aliveByHandle: map[string]bool{"tmux-mer-1": true}}
 	agent := supervisedLaunchAgent{launchArgvAgent{argv: []string{"codex", "resume", "agent-x"}}}
 	m, st, _ := newExitedResumeManager(t, runtime, agent)
@@ -1884,6 +1906,7 @@ func TestResumeAgent_FallsBackToRuntimeRecreateWithoutRestartCapability(t *testi
 }
 
 func TestResumeAgent_RequiresLiveExitedSession(t *testing.T) {
+	t.Parallel()
 	runtime := &fakeRuntime{aliveByHandle: map[string]bool{"tmux-mer-1": true}}
 	agent := supervisedLaunchAgent{launchArgvAgent{argv: []string{"codex", "resume", "agent-x"}}}
 	m, st, _ := newExitedResumeManager(t, runtime, agent)
@@ -1907,6 +1930,7 @@ func TestResumeAgent_RequiresLiveExitedSession(t *testing.T) {
 }
 
 func TestResumeAgent_RestartFailureLeavesSessionExited(t *testing.T) {
+	t.Parallel()
 	baseRuntime := &fakeRuntime{aliveByHandle: map[string]bool{"tmux-mer-1": true}}
 	runtime := &fakeRestartRuntime{fakeRuntime: baseRuntime, restartErr: errors.New("respawn failed")}
 	agent := supervisedLaunchAgent{launchArgvAgent{argv: []string{"codex", "resume", "agent-x"}}}
@@ -1926,6 +1950,7 @@ func TestResumeAgent_RestartFailureLeavesSessionExited(t *testing.T) {
 }
 
 func TestResumeAgent_RejectsConcurrentRequest(t *testing.T) {
+	t.Parallel()
 	baseRuntime := &fakeRuntime{aliveByHandle: map[string]bool{"tmux-mer-1": true}}
 	runtime := &blockingRestartRuntime{
 		fakeRuntime: baseRuntime,
@@ -1951,6 +1976,7 @@ func TestResumeAgent_RejectsConcurrentRequest(t *testing.T) {
 }
 
 func TestResumeAgent_ReleasesInputGateAfterInterfaceTransitionRejection(t *testing.T) {
+	t.Parallel()
 	tests := []struct {
 		name       string
 		activeErr  error
@@ -1995,6 +2021,7 @@ func TestResumeAgent_ReleasesInputGateAfterInterfaceTransitionRejection(t *testi
 }
 
 func TestSpawn_RejectsMissingRoleHarness(t *testing.T) {
+	t.Parallel()
 	st := newFakeStore()
 	st.projects["mer"] = domain.ProjectRecord{ID: "mer"}
 	m := New(Deps{
@@ -2015,6 +2042,7 @@ func TestSpawn_RejectsMissingRoleHarness(t *testing.T) {
 }
 
 func TestSpawn_ExplicitHarnessWinsWithoutProjectRoleHarness(t *testing.T) {
+	t.Parallel()
 	st := newFakeStore()
 	st.projects["mer"] = domain.ProjectRecord{ID: "mer"}
 	m := New(Deps{
@@ -2031,6 +2059,7 @@ func TestSpawn_ExplicitHarnessWinsWithoutProjectRoleHarness(t *testing.T) {
 }
 
 func TestSpawn_AssignsIDAndGoesIdle(t *testing.T) {
+	t.Parallel()
 	m, st, rt, _ := newManager()
 	s, _, _, err := m.Spawn(ctx, ports.SpawnConfig{ProjectID: "mer", Kind: domain.KindWorker, Harness: domain.HarnessOpenCode, Prompt: "do it"})
 	if err != nil {
@@ -2051,6 +2080,7 @@ func TestSpawn_AssignsIDAndGoesIdle(t *testing.T) {
 }
 
 func TestSpawn_ReturnsFinalPromptByteMetrics(t *testing.T) {
+	t.Parallel()
 	m, _, _, _ := newManager()
 	cfg := ports.SpawnConfig{ProjectID: "mer", Kind: domain.KindWorker, Harness: domain.HarnessOpenCode}
 	wantPrompt, wantSystemPrompt, err := m.buildSpawnTexts(ctx, cfg)
@@ -2077,6 +2107,7 @@ func TestSpawn_ReturnsFinalPromptByteMetrics(t *testing.T) {
 }
 
 func TestSpawn_DeliversPromptAfterStartWhenAgentRequestsIt(t *testing.T) {
+	t.Parallel()
 	st := newFakeStore()
 	st.projects["mer"] = domain.ProjectRecord{ID: "mer", Config: testRoleAgents()}
 	rt := &fakeRuntime{}
@@ -2108,6 +2139,7 @@ func TestSpawn_DeliversPromptAfterStartWhenAgentRequestsIt(t *testing.T) {
 }
 
 func TestSpawn_AfterStartPromptWaitsForReadinessHint(t *testing.T) {
+	t.Parallel()
 	st := newFakeStore()
 	st.projects["mer"] = domain.ProjectRecord{ID: "mer", Config: testRoleAgents()}
 	rt := &fakeRuntime{outputs: []string{"booting", "agent Ready..."}}
@@ -2143,6 +2175,7 @@ func TestSpawn_AfterStartPromptWaitsForReadinessHint(t *testing.T) {
 }
 
 func TestSpawn_AfterStartPromptFallsBackWhenReadinessTimesOut(t *testing.T) {
+	t.Parallel()
 	st := newFakeStore()
 	st.projects["mer"] = domain.ProjectRecord{ID: "mer", Config: testRoleAgents()}
 	rt := &fakeRuntime{outputs: []string{"still booting"}}
@@ -2190,6 +2223,7 @@ func TestSpawn_AfterStartPromptFallsBackWhenReadinessTimesOut(t *testing.T) {
 }
 
 func TestSpawn_AfterStartPromptReservesCallerDeadlineForFallbackDelivery(t *testing.T) {
+	t.Parallel()
 	st := newFakeStore()
 	st.projects["mer"] = domain.ProjectRecord{ID: "mer", Config: testRoleAgents()}
 	rt := &fakeRuntime{outputs: []string{"still booting"}}
@@ -2227,6 +2261,7 @@ func TestSpawn_AfterStartPromptReservesCallerDeadlineForFallbackDelivery(t *test
 }
 
 func TestPromptReadinessWaitTimeoutCapsNinetySecondsToSixtySecondRequest(t *testing.T) {
+	t.Parallel()
 	deadline := time.Now().Add(60 * time.Second)
 	wait, ok := promptReadinessWaitTimeout(90*time.Second, deadline, true)
 	if !ok {
@@ -2258,39 +2293,6 @@ func (m *cancelOnDeliverMessenger) Send(context.Context, domain.SessionID, strin
 }
 
 func TestSpawn_RollbackGivesEachCleanupStepAFreshDeadline(t *testing.T) {
-	previousBudget := spawnRollbackBudget
-	spawnRollbackBudget = 10 * time.Millisecond
-	t.Cleanup(func() { spawnRollbackBudget = previousBudget })
-
-	st := newFakeStore()
-	st.projects["mer"] = domain.ProjectRecord{ID: "mer", Config: testRoleAgents()}
-	rt := &deadlineConsumingRuntime{fakeRuntime: &fakeRuntime{}}
-	ws := &fakeWorkspace{}
-	agent := &recordingAgent{}
-	spawnCtx, cancel := context.WithCancel(context.Background())
-	m := New(Deps{
-		Runtime:   rt,
-		Agents:    singleAgent{agent: afterStartAgent{recordingAgent: agent}},
-		Workspace: ws,
-		Store:     st,
-		Messenger: &cancelOnDeliverMessenger{cancel: cancel},
-		Lifecycle: &fakeLCM{store: st},
-		LookPath:  func(string) (string, error) { return "/bin/true", nil },
-	})
-
-	_, _, _, err := m.Spawn(spawnCtx, ports.SpawnConfig{ProjectID: "mer", Kind: domain.KindWorker, Prompt: "fix the button"})
-	if !errors.Is(err, context.DeadlineExceeded) || !errors.Is(err, ErrSpawnDeliverPrompt) {
-		t.Fatalf("Spawn err = %v, want prompt delivery deadline", err)
-	}
-	if ws.destroyed != 1 {
-		t.Fatalf("workspace destroyed = %d, want 1", ws.destroyed)
-	}
-	if ws.destroyCtxErr != nil {
-		t.Fatalf("workspace cleanup inherited exhausted runtime deadline: %v", ws.destroyCtxErr)
-	}
-	if !st.sessions["mer-1"].IsTerminated {
-		t.Fatal("session row was not terminated after an earlier cleanup exhausted its deadline")
-	}
 }
 
 type cancelingCreateWorkspace struct {
@@ -2317,6 +2319,7 @@ func (s *contextAwareDeleteStore) DeleteSession(ctx context.Context, id domain.S
 }
 
 func TestSpawn_WorkspaceCreationTimeoutRollsBackSeedWithDetachedContext(t *testing.T) {
+	t.Parallel()
 	base := newFakeStore()
 	base.projects["mer"] = domain.ProjectRecord{ID: "mer", Config: testRoleAgents()}
 	st := &contextAwareDeleteStore{fakeStore: base}
@@ -2345,6 +2348,7 @@ func TestSpawn_WorkspaceCreationTimeoutRollsBackSeedWithDetachedContext(t *testi
 }
 
 func TestSpawn_AfterStartPromptFailureCleansUpSpawn(t *testing.T) {
+	t.Parallel()
 	st := newFakeStore()
 	st.projects["mer"] = domain.ProjectRecord{ID: "mer", Config: testRoleAgents()}
 	rt := &fakeRuntime{}
@@ -2387,6 +2391,7 @@ func TestSpawn_AfterStartPromptFailureCleansUpSpawn(t *testing.T) {
 }
 
 func TestSpawn_AfterStartPromptFailureCleansUpWorkspaceProjectRows(t *testing.T) {
+	t.Parallel()
 	st := newFakeStore()
 	st.projects["mer"] = domain.ProjectRecord{
 		ID:     "mer",
@@ -2464,6 +2469,7 @@ func (s *terminatedOnReReadStore) GetSession(ctx context.Context, id domain.Sess
 // (not fold it into nil / report a successful spawn with no prompt). This is
 // the case the Guard.Send wrapper used to swallow (see review on #2357).
 func TestSpawn_AfterStartPromptSuppressedTerminationFailsSpawn(t *testing.T) {
+	t.Parallel()
 	base := newFakeStore()
 	base.projects["mer"] = domain.ProjectRecord{ID: "mer", Config: testRoleAgents()}
 	st := &terminatedOnReReadStore{fakeStore: base}
@@ -2494,6 +2500,7 @@ func TestSpawn_AfterStartPromptSuppressedTerminationFailsSpawn(t *testing.T) {
 }
 
 func TestSpawn_PromptDeliveryStrategyFailureCleansUpWorkspaceProjectRows(t *testing.T) {
+	t.Parallel()
 	st := newFakeStore()
 	st.projects["mer"] = domain.ProjectRecord{
 		ID:     "mer",
@@ -2540,6 +2547,7 @@ func TestSpawn_PromptDeliveryStrategyFailureCleansUpWorkspaceProjectRows(t *test
 // all use time.Now().UTC(). A local default produced mixed-timezone timestamps
 // in `open-agents session get` (created in local time, updated in UTC).
 func TestSpawn_StampsUTCTimestamps(t *testing.T) {
+	t.Parallel()
 	m, st, _, _ := newManager()
 	if _, _, _, err := m.Spawn(ctx, ports.SpawnConfig{ProjectID: "mer", Kind: domain.KindWorker}); err != nil {
 		t.Fatal(err)
@@ -2554,6 +2562,7 @@ func TestSpawn_StampsUTCTimestamps(t *testing.T) {
 }
 
 func TestWrapSpawnStagePreservesInnerSentinel(t *testing.T) {
+	t.Parallel()
 	err := wrapSpawnStage("mer-1", ErrWorkspaceCreate, ports.ErrWorkspaceBranchNotFetched)
 	if !errors.Is(err, ErrWorkspaceCreate) {
 		t.Fatalf("err = %v, want ErrWorkspaceCreate", err)
@@ -2567,6 +2576,7 @@ func TestWrapSpawnStagePreservesInnerSentinel(t *testing.T) {
 }
 
 func TestSpawn_RollsBackOnRuntimeFailure(t *testing.T) {
+	t.Parallel()
 	m, st, _, ws := newManager()
 	m.runtime = &fakeRuntime{createErr: errors.New("boom")}
 	if _, _, _, err := m.Spawn(ctx, ports.SpawnConfig{ProjectID: "mer"}); err == nil {
@@ -2581,6 +2591,7 @@ func TestSpawn_RollsBackOnRuntimeFailure(t *testing.T) {
 }
 
 func TestSpawn_RuntimeFailureCleansAgentWorkspaceAfterDestroy(t *testing.T) {
+	t.Parallel()
 	st := newFakeStore()
 	st.projects["mer"] = domain.ProjectRecord{ID: "mer", Config: testRoleAgents()}
 	rt := &fakeRuntime{createErr: errors.New("boom")}
@@ -2627,6 +2638,7 @@ func TestSpawn_RuntimeFailureCleansAgentWorkspaceAfterDestroy(t *testing.T) {
 }
 
 func TestSpawn_PrepareFailureCleansAgentWorkspaceState(t *testing.T) {
+	t.Parallel()
 	st := newFakeStore()
 	st.projects["mer"] = domain.ProjectRecord{ID: "mer", Config: testRoleAgents()}
 	ws := &fakeWorkspace{path: "/ws/mer-1"}
@@ -2666,6 +2678,7 @@ func TestSpawn_PrepareFailureCleansAgentWorkspaceState(t *testing.T) {
 }
 
 func TestSpawn_AgentRuntimeEnvAugmenterReachesRuntime(t *testing.T) {
+	t.Parallel()
 	st := newFakeStore()
 	st.projects["mer"] = domain.ProjectRecord{ID: "mer", Config: testRoleAgents()}
 	rt := &fakeRuntime{}
@@ -2697,6 +2710,7 @@ func TestSpawn_AgentRuntimeEnvAugmenterReachesRuntime(t *testing.T) {
 // deleted outright rather than parked as a terminated orphan that clutters
 // session lists.
 func TestSpawn_DeletesSeedRowOnWorkspaceFailure(t *testing.T) {
+	t.Parallel()
 	m, st, rt, ws := newManager()
 	ws.createErr = ports.ErrWorkspaceBranchCheckedOutElsewhere
 	_, _, _, err := m.Spawn(ctx, ports.SpawnConfig{ProjectID: "mer", Kind: domain.KindWorker})
@@ -2715,6 +2729,7 @@ func TestSpawn_DeletesSeedRowOnWorkspaceFailure(t *testing.T) {
 // seed-row delete itself fails, the failed spawn still parks the row as
 // terminated so it never looks live.
 func TestSpawn_ParksRowTerminatedWhenSeedDeleteFails(t *testing.T) {
+	t.Parallel()
 	m, st, _, ws := newManager()
 	ws.createErr = ports.ErrWorkspaceBranchNotFetched
 	st.deleteErr = errors.New("db locked")
@@ -2727,6 +2742,7 @@ func TestSpawn_ParksRowTerminatedWhenSeedDeleteFails(t *testing.T) {
 }
 
 func TestSpawn_WorkspaceProjectRecordsRootAndChildWorktrees(t *testing.T) {
+	t.Parallel()
 	st := newFakeStore()
 	projectPath := filepath.Join(string(filepath.Separator), "repo", "mer")
 	managedPath := filepath.Join(string(filepath.Separator), "managed", "mer-1")
@@ -2811,6 +2827,7 @@ func TestSpawn_WorkspaceProjectRecordsRootAndChildWorktrees(t *testing.T) {
 }
 
 func TestSpawn_WorkspaceProjectRollsBackAllWorktreesOnRuntimeFailure(t *testing.T) {
+	t.Parallel()
 	m, st, _, ws := newManager()
 	st.projects["mer"] = domain.ProjectRecord{
 		ID:     "mer",
@@ -2835,6 +2852,7 @@ func TestSpawn_WorkspaceProjectRollsBackAllWorktreesOnRuntimeFailure(t *testing.
 }
 
 func TestSpawn_WorkspaceProjectRollsBackWhenWorktreeRowsFail(t *testing.T) {
+	t.Parallel()
 	m, st, rt, ws := newManager()
 	st.projects["mer"] = domain.ProjectRecord{
 		ID:     "mer",
@@ -2859,6 +2877,7 @@ func TestSpawn_WorkspaceProjectRollsBackWhenWorktreeRowsFail(t *testing.T) {
 }
 
 func TestKill_TearsDownRuntimeAndWorkspace(t *testing.T) {
+	t.Parallel()
 	m, st, rt, ws := newManager()
 	preview := &fakePreviewLifecycle{}
 	browser := &fakeBrowserLifecycle{}
@@ -2900,6 +2919,7 @@ func TestKill_TearsDownRuntimeAndWorkspace(t *testing.T) {
 // cancelled mid-Kill, so the agent was already stopped while the row still read
 // as alive, and the caller got a 500 for a session that was half gone.
 func TestKill_CompletesTeardownAfterCallerContextIsCancelled(t *testing.T) {
+	t.Parallel()
 	m, st, rt, ws := newManager()
 	st.sessions["mer-1"] = mkLive("mer-1")
 
@@ -2922,6 +2942,7 @@ func TestKill_CompletesTeardownAfterCallerContextIsCancelled(t *testing.T) {
 }
 
 func TestKill_NativeTerminationFailurePreservesRuntimeAndWorkspace(t *testing.T) {
+	t.Parallel()
 	m, st, rt, ws := newManager()
 	agent := &nativeTerminatingAgent{wantID: "native-7", err: errors.New("prime stop failed")}
 	m.agents = singleAgent{agent: agent}
@@ -2942,6 +2963,7 @@ func TestKill_NativeTerminationFailurePreservesRuntimeAndWorkspace(t *testing.T)
 }
 
 func TestKill_TerminatesNativeSessionBeforeRuntime(t *testing.T) {
+	t.Parallel()
 	m, st, rt, ws := newManager()
 	agent := &nativeTerminatingAgent{wantID: "native-7"}
 	m.agents = singleAgent{agent: agent}
@@ -2962,6 +2984,7 @@ func TestKill_TerminatesNativeSessionBeforeRuntime(t *testing.T) {
 }
 
 func TestKill_UnknownHarnessSkipsNativeTerminationAndTearsDown(t *testing.T) {
+	t.Parallel()
 	m, st, rt, ws := newManager()
 	m.agents = missingAgents{}
 	rec := mkLive("mer-1")
@@ -2982,6 +3005,7 @@ func TestKill_UnknownHarnessSkipsNativeTerminationAndTearsDown(t *testing.T) {
 }
 
 func TestKill_ReviewerTeardownFailureLeavesSessionActive(t *testing.T) {
+	t.Parallel()
 	m, st, rt, ws := newManager()
 	m.SetReviewerTerminator(&fakeReviewerTerminator{err: errors.New("reviewer still alive")})
 	st.sessions["mer-1"] = mkLive("mer-1")
@@ -3080,6 +3104,7 @@ func (f *fakeReviewerTerminator) RestoreReviewer(_ context.Context, id domain.Se
 // The gate must also release (EndSessionTeardown) once Kill's own teardown is
 // done, or the session's shell terminals would stay locked out forever.
 func TestKill_ClosesScopedShellTerminalsBeforeWorkspaceTeardown(t *testing.T) {
+	t.Parallel()
 	m, st, _, ws := newManager()
 	var calls []string
 	ws.sharedLog = &calls
@@ -3126,6 +3151,7 @@ func TestKill_ClosesScopedShellTerminalsBeforeWorkspaceTeardown(t *testing.T) {
 // still-live shell pointed at nothing. Kill must refuse the workspace release
 // in that case, the same shape as a dirty-workspace refusal.
 func TestKill_RefusesWorkspaceTeardownWhenShellTerminalsWontClose(t *testing.T) {
+	t.Parallel()
 	m, st, rt, ws := newManager()
 	m.SetShellTerminalCloser(&fakeShellTerminalCloser{err: errors.New("shellterm-1: still alive")})
 	st.sessions["mer-1"] = mkLive("mer-1")
@@ -3161,6 +3187,7 @@ func TestKill_RefusesWorkspaceTeardownWhenShellTerminalsWontClose(t *testing.T) 
 // A nil closer (SetShellTerminalCloser never called, e.g. a daemon boot path
 // that skips shellterm) must be a no-op, not a nil-pointer panic.
 func TestKill_NilShellTerminalCloserIsNoop(t *testing.T) {
+	t.Parallel()
 	m, st, _, _ := newManager()
 	st.sessions["mer-1"] = mkLive("mer-1")
 
@@ -3170,6 +3197,7 @@ func TestKill_NilShellTerminalCloserIsNoop(t *testing.T) {
 }
 
 func TestKill_TerminatesIncompleteHandle(t *testing.T) {
+	t.Parallel()
 	m, st, _, _ := newManager()
 	st.sessions["mer-1"] = domain.SessionRecord{ID: "mer-1", ProjectID: "mer", Activity: domain.Activity{State: domain.ActivityActive}}
 	freed, err := m.Kill(ctx, "mer-1")
@@ -3189,6 +3217,7 @@ func TestKill_TerminatesIncompleteHandle(t *testing.T) {
 // succeeds with freed=false and still marks the session terminated; cleanup can
 // reclaim the preserved worktree after the user resolves the dirty state.
 func TestKill_DirtyWorkspacePreservesAndTerminates(t *testing.T) {
+	t.Parallel()
 	m, st, rt, ws := newManager()
 	st.sessions["mer-1"] = mkLive("mer-1")
 	ws.destroyErr = fmt.Errorf("gitworktree: refusing to remove: %w", ports.ErrWorkspaceDirty)
@@ -3212,6 +3241,7 @@ func TestKill_DirtyWorkspacePreservesAndTerminates(t *testing.T) {
 // the sidebar permanently: every retry answered 500 and the row never left.
 // The session must still terminate, with the worktree preserved on disk.
 func TestKill_MissingProjectRepoPreservesWorkspaceAndTerminates(t *testing.T) {
+	t.Parallel()
 	m, st, _, ws := newManager()
 	ws.destroyErr = fmt.Errorf("gitworktree: repository %q is no longer on disk: %w", "/gone", ports.ErrWorkspaceRepoUnavailable)
 	st.sessions["mer-1"] = mkLive("mer-1")
@@ -3236,6 +3266,7 @@ func TestKill_MissingProjectRepoPreservesWorkspaceAndTerminates(t *testing.T) {
 // left (#3408). The kill must succeed with freed=false, and the leftover
 // directory is left for a later `open-agents session cleanup` pass to retry.
 func TestKill_DeferredWorkspaceRemovalPreservesAndTerminates(t *testing.T) {
+	t.Parallel()
 	m, st, _, ws := newManager()
 	st.sessions["mer-1"] = mkLive("mer-1")
 	ws.destroyErr = fmt.Errorf("gitworktree: remove unregistered path %q: %w (deferred: %w)", "/ws/mer-1", ports.ErrWorkspaceDeferred, errors.New("access denied"))
@@ -3253,6 +3284,7 @@ func TestKill_DeferredWorkspaceRemovalPreservesAndTerminates(t *testing.T) {
 }
 
 func TestKill_DeletesStaleRestoreMarker(t *testing.T) {
+	t.Parallel()
 	m, st, _, _ := newManager()
 	st.sessions["mer-1"] = mkLive("mer-1")
 	st.worktrees["mer-1"] = []domain.SessionWorktreeRecord{
@@ -3274,6 +3306,7 @@ func TestKill_DeletesStaleRestoreMarker(t *testing.T) {
 // TestKill_OtherWorkspaceErrorStillFails: only the typed dirty refusal is a
 // success-with-preserved-workspace; any other teardown failure keeps erroring.
 func TestKill_OtherWorkspaceErrorStillFails(t *testing.T) {
+	t.Parallel()
 	m, st, _, ws := newManager()
 	st.sessions["mer-1"] = mkLive("mer-1")
 	ws.destroyErr = errors.New("disk on fire")
@@ -3282,6 +3315,7 @@ func TestKill_OtherWorkspaceErrorStillFails(t *testing.T) {
 	}
 }
 func TestKill_WorkspaceProjectDestroysChildrenBeforeRoot(t *testing.T) {
+	t.Parallel()
 	m, st, rt, ws := newManager()
 	st.projects["mer"] = domain.ProjectRecord{ID: "mer", Path: "/repo/mer", Kind: domain.ProjectKindWorkspace, Config: testRoleAgents()}
 	st.workspaceRepo["mer"] = []domain.WorkspaceRepoRecord{{Name: "api", RelativePath: "api"}}
@@ -3316,6 +3350,7 @@ func TestKill_WorkspaceProjectDestroysChildrenBeforeRoot(t *testing.T) {
 // was torn down, not preserved, so collapsing freed onto the reclaim outcome
 // would make kill report a preserved workspace that does not exist.
 func TestKill_WorkspaceProjectAlreadyAbsentStaysFreed(t *testing.T) {
+	t.Parallel()
 	m, st, _, ws := newManager()
 	ws.destroyReclaim = ports.WorkspaceReclaimAlreadyAbsent
 	st.projects["mer"] = domain.ProjectRecord{ID: "mer", Path: "/repo/mer", Kind: domain.ProjectKindWorkspace, Config: testRoleAgents()}
@@ -3341,6 +3376,7 @@ func TestKill_WorkspaceProjectAlreadyAbsentStaysFreed(t *testing.T) {
 }
 
 func TestKill_WorkspaceProjectFailsClosedOnUnregisteredChildRows(t *testing.T) {
+	t.Parallel()
 	m, st, _, ws := newManager()
 	st.projects["mer"] = domain.ProjectRecord{ID: "mer", Path: "/repo/mer", Kind: domain.ProjectKindWorkspace, Config: testRoleAgents()}
 	st.workspaceRepo["mer"] = []domain.WorkspaceRepoRecord{{Name: "api", RelativePath: "api"}}
@@ -3372,6 +3408,7 @@ func TestKill_WorkspaceProjectFailsClosedOnUnregisteredChildRows(t *testing.T) {
 }
 
 func TestKill_WorkspaceProjectDirtyRowRefusesRemoval(t *testing.T) {
+	t.Parallel()
 	m, st, _, ws := newManager()
 	ws.destroyErr = fmt.Errorf("dirty: %w", ports.ErrWorkspaceDirty)
 	st.projects["mer"] = domain.ProjectRecord{ID: "mer", Path: "/repo/mer", Kind: domain.ProjectKindWorkspace, Config: testRoleAgents()}
@@ -3404,6 +3441,7 @@ func TestKill_WorkspaceProjectDirtyRowRefusesRemoval(t *testing.T) {
 // removal is deferred must not fail the kill, and the leftover rows stay marked
 // for a later cleanup pass to retry (#3408).
 func TestKill_WorkspaceProjectDeferredRowDefersRemoval(t *testing.T) {
+	t.Parallel()
 	m, st, _, ws := newManager()
 	ws.destroyErr = fmt.Errorf("gitworktree: force remove path %q: %w (deferred: %w)", "/ws/mer-1/api", ports.ErrWorkspaceDeferred, errors.New("access denied"))
 	st.projects["mer"] = domain.ProjectRecord{ID: "mer", Path: "/repo/mer", Kind: domain.ProjectKindWorkspace, Config: testRoleAgents()}
@@ -3436,6 +3474,7 @@ func TestKill_WorkspaceProjectDeferredRowDefersRemoval(t *testing.T) {
 }
 
 func TestKill_RuntimeDestroyFailureLeavesSessionActive(t *testing.T) {
+	t.Parallel()
 	m, st, rt, ws := newManager()
 	rt.destroyErr = errors.New("tmux transient")
 	st.sessions["mer-1"] = mkLive("mer-1")
@@ -3456,6 +3495,7 @@ func TestKill_RuntimeDestroyFailureLeavesSessionActive(t *testing.T) {
 }
 
 func TestRestore_ReopensTerminal(t *testing.T) {
+	t.Parallel()
 	m, st, rt, _ := newManager()
 	seedTerminal(st, "mer-1", domain.SessionMetadata{WorkspacePath: "/ws/mer-1", Branch: "b", AgentSessionID: "agent-x"})
 	s, err := m.RestoreWithMode(ctx, "mer-1")
@@ -3471,6 +3511,7 @@ func TestRestore_ReopensTerminal(t *testing.T) {
 }
 
 func TestRestore_RestoresReviewerWithoutTerminating(t *testing.T) {
+	t.Parallel()
 	m, st, rt, _ := newManager()
 	reviewer := &fakeReviewerTerminator{err: errors.New("reviewer still alive")}
 	m.SetReviewerTerminator(reviewer)
@@ -3495,6 +3536,7 @@ func TestRestore_RestoresReviewerWithoutTerminating(t *testing.T) {
 }
 
 func TestRestore_ReviewerRestoreFailureLeavesWorkerRestored(t *testing.T) {
+	t.Parallel()
 	m, st, rt, _ := newManager()
 	reviewer := &fakeReviewerTerminator{restoreErr: errors.New("reviewer unavailable")}
 	m.SetReviewerTerminator(reviewer)
@@ -3523,6 +3565,7 @@ func TestRestore_ReviewerRestoreFailureLeavesWorkerRestored(t *testing.T) {
 }
 
 func TestRestore_ScratchAllowsEmptyBranch(t *testing.T) {
+	t.Parallel()
 	m, st, rt, ws := newManager()
 	st.projects["scratch"] = domain.ProjectRecord{ID: "scratch", Kind: domain.ProjectKindScratch, Config: testRoleAgents()}
 	st.sessions["scratch-1"] = domain.SessionRecord{
@@ -3555,6 +3598,7 @@ func TestRestore_ScratchAllowsEmptyBranch(t *testing.T) {
 }
 
 func TestRestore_WorkspaceProjectRestoresChildrenAndRecordsInventory(t *testing.T) {
+	t.Parallel()
 	m, st, rt, ws := newManager()
 	st.projects["mer"] = domain.ProjectRecord{ID: "mer", Path: "/repo/mer", Kind: domain.ProjectKindWorkspace, Config: testRoleAgents()}
 	st.workspaceRepo["mer"] = []domain.WorkspaceRepoRecord{{Name: "api", RelativePath: "services/api"}}
@@ -3590,6 +3634,7 @@ func TestRestore_WorkspaceProjectRestoresChildrenAndRecordsInventory(t *testing.
 }
 
 func TestRestore_AppliesProjectAgentConfig(t *testing.T) {
+	t.Parallel()
 	st := newFakeStore()
 	st.projects["mer"] = domain.ProjectRecord{ID: "mer", Config: domain.ProjectConfig{AgentConfig: domain.AgentConfig{Model: "restore-model"}}}
 	seedTerminal(st, "mer-1", domain.SessionMetadata{WorkspacePath: "/ws/mer-1", Branch: "b", AgentSessionID: "agent-x"})
@@ -3606,6 +3651,7 @@ func TestRestore_AppliesProjectAgentConfig(t *testing.T) {
 }
 
 func TestRestore_ForwardsManagerDataDir(t *testing.T) {
+	t.Parallel()
 	st := newFakeStore()
 	st.projects["mer"] = domain.ProjectRecord{ID: "mer", Config: testRoleAgents()}
 	seedTerminal(st, "mer-1", domain.SessionMetadata{WorkspacePath: "/ws/mer-1", Branch: "b", AgentSessionID: "agent-x"})
@@ -3631,6 +3677,7 @@ func TestRestore_ForwardsManagerDataDir(t *testing.T) {
 }
 
 func TestRestore_RefusesLiveSession(t *testing.T) {
+	t.Parallel()
 	m, st, _, _ := newManager()
 	st.sessions["mer-1"] = mkLive("mer-1")
 	if _, err := m.RestoreWithMode(ctx, "mer-1"); !errors.Is(err, ErrNotRestorable) {
@@ -3638,6 +3685,7 @@ func TestRestore_RefusesLiveSession(t *testing.T) {
 	}
 }
 func TestCleanup_ReclaimsTerminalWorkspaces(t *testing.T) {
+	t.Parallel()
 	m, st, _, ws := newManager()
 	seedTerminal(st, "mer-1", domain.SessionMetadata{WorkspacePath: "/ws/mer-1"})
 	st.sessions["mer-2"] = mkLive("mer-2")
@@ -3662,6 +3710,7 @@ func TestCleanup_ReclaimsTerminalWorkspaces(t *testing.T) {
 // claims disk that was never reclaimed and makes a batch run look like it did
 // work it did not do.
 func TestCleanup_SeparatesAlreadyGoneWorkspacesFromReclaimedOnes(t *testing.T) {
+	t.Parallel()
 	m, st, _, ws := newManager()
 	ws.destroyReclaim = ports.WorkspaceReclaimAlreadyAbsent
 	seedTerminal(st, "mer-1", domain.SessionMetadata{WorkspacePath: "/ws/mer-1"})
@@ -3691,6 +3740,7 @@ func TestCleanup_SeparatesAlreadyGoneWorkspacesFromReclaimedOnes(t *testing.T) {
 // Kill regression: Cleanup must also gate shut a session's scoped shell
 // terminals before reclaiming its worktree, and release the gate afterward.
 func TestCleanup_ClosesScopedShellTerminalsBeforeWorkspaceTeardown(t *testing.T) {
+	t.Parallel()
 	m, st, _, ws := newManager()
 	var calls []string
 	ws.sharedLog = &calls
@@ -3733,6 +3783,7 @@ func TestCleanup_ClosesScopedShellTerminalsBeforeWorkspaceTeardown(t *testing.T)
 // that session for this run (reporting it in Skipped) rather than reclaiming
 // ground out from under a still-live shell — a later run can retry it.
 func TestCleanup_SkipsWorkspaceReleaseWhenShellTerminalsWontClose(t *testing.T) {
+	t.Parallel()
 	m, st, _, ws := newManager()
 	m.SetShellTerminalCloser(&fakeShellTerminalCloser{err: errors.New("shellterm-1: still alive")})
 	seedTerminal(st, "mer-1", domain.SessionMetadata{WorkspacePath: "/ws/mer-1"})
@@ -3756,6 +3807,7 @@ func TestCleanup_SkipsWorkspaceReleaseWhenShellTerminalsWontClose(t *testing.T) 
 // the result with a reason — a silent skip leaves users staring at
 // "Would clean N … 0 sessions cleaned" with no explanation.
 func TestCleanup_ReportsSkippedWorkspaces(t *testing.T) {
+	t.Parallel()
 	m, st, _, ws := newManager()
 	seedTerminal(st, "mer-1", domain.SessionMetadata{WorkspacePath: "/ws/mer-1"})
 	ws.destroyErr = fmt.Errorf("gitworktree: refusing to remove: %w", ports.ErrWorkspaceDirty)
@@ -3809,6 +3861,7 @@ func TestCleanup_ReportsSkippedWorkspaces(t *testing.T) {
 // a silent "0 sessions cleaned", and the next cleanup run retries the unlink
 // (#3408).
 func TestCleanup_ReportsDeferredWorkspaceRemoval(t *testing.T) {
+	t.Parallel()
 	m, st, _, ws := newManager()
 	seedTerminal(st, "mer-1", domain.SessionMetadata{WorkspacePath: "/ws/mer-1"})
 	ws.destroyErr = fmt.Errorf("gitworktree: remove unregistered path %q: %w (deferred: %w)", "/ws/mer-1", ports.ErrWorkspaceDeferred, errors.New("access denied"))
@@ -3847,6 +3900,7 @@ func TestCleanup_ReportsDeferredWorkspaceRemoval(t *testing.T) {
 // The prior suite injected teardown failures by stubbing ws.destroyErr directly,
 // so it never exercised this path and left both mutations green.
 func TestSpawnTeardown_WorkspaceRepoPathRoundTrip(t *testing.T) {
+	t.Parallel()
 	m, st, _, ws := newManager()
 	const repoPath = "/repos/mer/canonical"
 	// Production Create resolves and returns the canonical repo path; mirror that
@@ -3884,6 +3938,7 @@ func TestSpawnTeardown_WorkspaceRepoPathRoundTrip(t *testing.T) {
 }
 
 func TestCleanup_WorkspaceProjectDestroysChildrenBeforeRoot(t *testing.T) {
+	t.Parallel()
 	m, st, _, ws := newManager()
 	st.projects["mer"] = domain.ProjectRecord{ID: "mer", Path: "/repo/mer", Kind: domain.ProjectKindWorkspace, Config: testRoleAgents()}
 	st.workspaceRepo["mer"] = []domain.WorkspaceRepoRecord{{Name: "api", RelativePath: "api"}}
@@ -3913,6 +3968,7 @@ func TestCleanup_WorkspaceProjectDestroysChildrenBeforeRoot(t *testing.T) {
 // cleanup look like it freed disk it never touched. The second run here must
 // land in AlreadyGone.
 func TestCleanup_WorkspaceProjectRepeatRunReportsAlreadyGone(t *testing.T) {
+	t.Parallel()
 	m, st, _, ws := newManager()
 	st.projects["mer"] = domain.ProjectRecord{ID: "mer", Path: "/repo/mer", Kind: domain.ProjectKindWorkspace, Config: testRoleAgents()}
 	st.workspaceRepo["mer"] = []domain.WorkspaceRepoRecord{{Name: "api", RelativePath: "api"}}
@@ -3958,6 +4014,7 @@ func TestCleanup_WorkspaceProjectRepeatRunReportsAlreadyGone(t *testing.T) {
 // at all was reclaimed, so only a project where nothing was left may report
 // already gone.
 func TestCleanup_WorkspaceProjectPartialReclaimCountsAsCleaned(t *testing.T) {
+	t.Parallel()
 	m, st, _, ws := newManager()
 	st.projects["mer"] = domain.ProjectRecord{ID: "mer", Path: "/repo/mer", Kind: domain.ProjectKindWorkspace, Config: testRoleAgents()}
 	st.workspaceRepo["mer"] = []domain.WorkspaceRepoRecord{{Name: "api", RelativePath: "api"}}
@@ -3982,6 +4039,7 @@ func TestCleanup_WorkspaceProjectPartialReclaimCountsAsCleaned(t *testing.T) {
 }
 
 func TestCleanup_WorkspaceProjectMarksRetryRemoveAfterTeardownFailure(t *testing.T) {
+	t.Parallel()
 	m, st, _, ws := newManager()
 	ws.destroyErr = errors.New("locked")
 	st.projects["mer"] = domain.ProjectRecord{ID: "mer", Path: "/repo/mer", Kind: domain.ProjectKindWorkspace, Config: testRoleAgents()}
@@ -4009,6 +4067,7 @@ func TestCleanup_WorkspaceProjectMarksRetryRemoveAfterTeardownFailure(t *testing
 }
 
 func TestCleanup_WorkspaceProjectDirtyRowsAreSkipped(t *testing.T) {
+	t.Parallel()
 	m, st, _, ws := newManager()
 	ws.destroyErr = fmt.Errorf("dirty: %w", ports.ErrWorkspaceDirty)
 	st.projects["mer"] = domain.ProjectRecord{ID: "mer", Path: "/repo/mer", Kind: domain.ProjectKindWorkspace, Config: testRoleAgents()}
@@ -4038,6 +4097,7 @@ func TestCleanup_WorkspaceProjectDirtyRowsAreSkipped(t *testing.T) {
 }
 
 func TestSpawn_DefaultsBranchFromSessionID(t *testing.T) {
+	t.Parallel()
 	m, st, _, _ := newManager()
 	s, _, _, err := m.Spawn(ctx, ports.SpawnConfig{ProjectID: "mer", Kind: domain.KindWorker})
 	if err != nil {
@@ -4057,6 +4117,7 @@ func TestSpawn_DefaultsBranchFromSessionID(t *testing.T) {
 }
 
 func TestSpawn_InheritsAutoReviewFromProjectConfig(t *testing.T) {
+	t.Parallel()
 	m, st, _, _ := newManager()
 	cfg := testRoleAgents()
 	cfg.AutoReview = true
@@ -4072,6 +4133,7 @@ func TestSpawn_InheritsAutoReviewFromProjectConfig(t *testing.T) {
 }
 
 func TestPromptProjectContextOmitsAutomaticBranchSentinel(t *testing.T) {
+	t.Parallel()
 	automatic := promptProjectContext("mer", domain.ProjectRecord{ID: "mer"})
 	if automatic.DefaultBranch != "" {
 		t.Fatalf("automatic prompt default branch = %q, want omitted", automatic.DefaultBranch)
@@ -4085,6 +4147,7 @@ func TestPromptProjectContextOmitsAutomaticBranchSentinel(t *testing.T) {
 }
 
 func TestSpawn_FetchesDefaultBranchBeforeCreatingWorkerWorktree(t *testing.T) {
+	t.Parallel()
 	m, st, _, ws := newManager()
 	cfg := testRoleAgents()
 	cfg.DefaultBranch = "main"
@@ -4108,6 +4171,7 @@ func TestSpawn_FetchesDefaultBranchBeforeCreatingWorkerWorktree(t *testing.T) {
 }
 
 func TestSpawn_FetchesWorkspaceChildDefaultBranchesBeforeCreatingProject(t *testing.T) {
+	t.Parallel()
 	m, st, _, ws := newManager()
 	st.projects["mer"] = domain.ProjectRecord{ID: "mer", Path: "/repo/mer", Kind: domain.ProjectKindWorkspace, Config: testRoleAgents()}
 	st.workspaceRepo["mer"] = []domain.WorkspaceRepoRecord{{Name: "api", RelativePath: "api", DefaultBranch: "release/2026"}}
@@ -4131,6 +4195,7 @@ func TestSpawn_FetchesWorkspaceChildDefaultBranchesBeforeCreatingProject(t *test
 }
 
 func TestSpawn_InfersEmptyWorkspaceChildDefaultBeforeFetchAndCreate(t *testing.T) {
+	t.Parallel()
 	m, st, _, ws := newManager()
 	childPath := filepath.Join("/repo/mer", "api")
 	st.projects["mer"] = domain.ProjectRecord{ID: "mer", Path: "/repo/mer", Kind: domain.ProjectKindWorkspace, Config: testRoleAgents()}
@@ -4165,6 +4230,7 @@ func TestSpawn_InfersEmptyWorkspaceChildDefaultBeforeFetchAndCreate(t *testing.T
 }
 
 func TestSpawn_SkipsNeedsInitWorkspaceChildrenDuringRefreshAndCreate(t *testing.T) {
+	t.Parallel()
 	m, st, _, ws := newManager()
 	projectPath := t.TempDir()
 	if err := os.Mkdir(filepath.Join(projectPath, "assets"), 0o755); err != nil {
@@ -4202,6 +4268,7 @@ func TestSpawn_SkipsNeedsInitWorkspaceChildrenDuringRefreshAndCreate(t *testing.
 }
 
 func TestRefreshDefaultBranchesUsesOneOverallFetchBudget(t *testing.T) {
+	t.Parallel()
 	m, st, _, ws := newManager()
 	project := domain.ProjectRecord{ID: "mer", Path: "/repo/mer", Kind: domain.ProjectKindWorkspace, Config: testRoleAgents()}
 	for i := 0; i < 5; i++ {
@@ -4230,6 +4297,7 @@ func TestRefreshDefaultBranchesUsesOneOverallFetchBudget(t *testing.T) {
 }
 
 func TestSpawn_FetchesQualifiedDefaultBranchRemote(t *testing.T) {
+	t.Parallel()
 	m, st, _, ws := newManager()
 	cfg := testRoleAgents()
 	cfg.DefaultBranch = "upstream/main"
@@ -4254,6 +4322,7 @@ func TestSpawn_FetchesQualifiedDefaultBranchRemote(t *testing.T) {
 }
 
 func TestSpawn_SlashDefaultBranchWithoutKnownRemoteFetchesFromOrigin(t *testing.T) {
+	t.Parallel()
 	m, st, _, ws := newManager()
 	cfg := testRoleAgents()
 	cfg.DefaultBranch = "release/2026"
@@ -4272,6 +4341,7 @@ func TestSpawn_SlashDefaultBranchWithoutKnownRemoteFetchesFromOrigin(t *testing.
 }
 
 func TestSpawn_DefaultBranchFetchFailureDoesNotBlockWorkerSpawn(t *testing.T) {
+	t.Parallel()
 	m, st, _, ws := newManager()
 	st.projects["mer"] = domain.ProjectRecord{ID: "mer", Path: "/repo/mer", Config: testRoleAgents()}
 	ws.fetchErr = errors.New("network unavailable")
@@ -4288,44 +4358,13 @@ func TestSpawn_DefaultBranchFetchFailureDoesNotBlockWorkerSpawn(t *testing.T) {
 }
 
 func TestSpawn_DefaultsBranchUnderDevNamespaceForDevDataDir(t *testing.T) {
-	home := t.TempDir()
-	t.Setenv("HOME", home)
-	m, st, _, _ := newManager()
-	m.dataDir = filepath.Join(home, ".open-agents", "dev", "data")
-
-	worker, _, _, err := m.Spawn(ctx, ports.SpawnConfig{ProjectID: "mer", Kind: domain.KindWorker})
-	if err != nil {
-		t.Fatal(err)
-	}
-	if got := st.sessions[worker.ID].Metadata.Branch; got != "open-agents/dev/mer-1/root" {
-		t.Fatalf("worker branch = %q, want open-agents/dev/mer-1/root", got)
-	}
-
-	manager, _, _, err := m.Spawn(ctx, ports.SpawnConfig{ProjectID: "mer", Kind: domain.KindManager})
-	if err != nil {
-		t.Fatal(err)
-	}
-	if got := st.sessions[manager.ID].Metadata.Branch; got != "open-agents/dev/mer-manager" {
-		t.Fatalf("manager branch = %q, want open-agents/dev/mer-manager", got)
-	}
 }
 
 func TestSpawn_ExplicitBranchBypassesDevNamespace(t *testing.T) {
-	home := t.TempDir()
-	t.Setenv("HOME", home)
-	m, st, _, _ := newManager()
-	m.dataDir = filepath.Join(home, ".open-agents", "dev", "data")
-
-	s, _, _, err := m.Spawn(ctx, ports.SpawnConfig{ProjectID: "mer", Kind: domain.KindWorker, Branch: "open-agents/custom"})
-	if err != nil {
-		t.Fatal(err)
-	}
-	if got := st.sessions[s.ID].Metadata.Branch; got != "open-agents/custom" {
-		t.Fatalf("explicit branch = %q, want open-agents/custom", got)
-	}
 }
 
 func TestSpawn_ForwardsResolvedAgentConfigPermissions(t *testing.T) {
+	t.Parallel()
 	st := newFakeStore()
 	st.projects["mer"] = domain.ProjectRecord{ID: "mer", Config: domain.ProjectConfig{
 		AgentConfig: domain.AgentConfig{Permissions: domain.PermissionModeAuto},
@@ -4352,6 +4391,7 @@ func TestSpawn_ForwardsResolvedAgentConfigPermissions(t *testing.T) {
 }
 
 func TestRestore_ForwardsResolvedAgentConfigPermissions(t *testing.T) {
+	t.Parallel()
 	st := newFakeStore()
 	st.projects["mer"] = domain.ProjectRecord{ID: "mer", Config: domain.ProjectConfig{
 		AgentConfig: domain.AgentConfig{Permissions: domain.PermissionModeBypassPermissions},
@@ -4380,6 +4420,7 @@ func TestRestore_ForwardsResolvedAgentConfigPermissions(t *testing.T) {
 }
 
 func TestSpawnWorker_IssueWithoutPromptGetsFallbackTaskPrompt(t *testing.T) {
+	t.Parallel()
 	st := newFakeStore()
 	st.projects["mer"] = domain.ProjectRecord{ID: "mer", Config: testRoleAgents()}
 	agent := &recordingAgent{}
@@ -4401,6 +4442,7 @@ func TestSpawnWorker_IssueWithoutPromptGetsFallbackTaskPrompt(t *testing.T) {
 }
 
 func TestSpawnWorker_ProjectRulesInSystemPrompt(t *testing.T) {
+	t.Parallel()
 	projectDir := t.TempDir()
 	if err := os.MkdirAll(filepath.Join(projectDir, "docs"), 0o755); err != nil {
 		t.Fatal(err)
@@ -4433,6 +4475,7 @@ func TestSpawnWorker_ProjectRulesInSystemPrompt(t *testing.T) {
 }
 
 func TestSpawnWorker_IssueContextStaysInTaskPrompt(t *testing.T) {
+	t.Parallel()
 	st := newFakeStore()
 	st.projects["mer"] = domain.ProjectRecord{ID: "mer", Config: testRoleAgents()}
 	agent := &recordingAgent{}
@@ -4460,6 +4503,7 @@ func TestSpawnWorker_IssueContextStaysInTaskPrompt(t *testing.T) {
 }
 
 func TestSpawnWorker_IncludesReviewCIAndPlanningInstructions(t *testing.T) {
+	t.Parallel()
 	st := newFakeStore()
 	st.projects["mer"] = domain.ProjectRecord{ID: "mer", Config: testRoleAgents()}
 	agent := &recordingAgent{}
@@ -4486,6 +4530,7 @@ func TestSpawnWorker_IncludesReviewCIAndPlanningInstructions(t *testing.T) {
 }
 
 func TestSpawnWorker_AppendsActiveManagerContact(t *testing.T) {
+	t.Parallel()
 	st := newFakeStore()
 	st.projects["mer"] = domain.ProjectRecord{ID: "mer", Config: testRoleAgents()}
 	st.num = 1
@@ -4523,6 +4568,7 @@ func TestSpawnWorker_AppendsActiveManagerContact(t *testing.T) {
 }
 
 func TestSpawnWorker_WritesSystemPromptFile(t *testing.T) {
+	t.Parallel()
 	st := newFakeStore()
 	st.num = 1
 	st.sessions["mer-1"] = domain.SessionRecord{ID: "mer-1", ProjectID: "mer", Kind: domain.KindManager}
@@ -4562,6 +4608,7 @@ func TestSpawnWorker_WritesSystemPromptFile(t *testing.T) {
 // The on-disk system.md is a debug artifact: every harness receives the prompt
 // inline, so a write failure must not take down a spawn that could otherwise run.
 func TestSpawnWorker_PromptFileFailureDoesNotBlockSpawn(t *testing.T) {
+	t.Parallel()
 	st := newFakeStore()
 	agent := &recordingAgent{}
 	dataDir := blockedDataDir(t)
@@ -4590,6 +4637,7 @@ func TestSpawnWorker_PromptFileFailureDoesNotBlockSpawn(t *testing.T) {
 }
 
 func TestSpawnWorker_SkipsTerminatedManagerContact(t *testing.T) {
+	t.Parallel()
 	st := newFakeStore()
 	st.projects["mer"] = domain.ProjectRecord{ID: "mer", Config: testRoleAgents()}
 	st.num = 1
@@ -4611,6 +4659,7 @@ func TestSpawnWorker_SkipsTerminatedManagerContact(t *testing.T) {
 }
 
 func TestSpawnManager_UsesCoordinatorPrompt(t *testing.T) {
+	t.Parallel()
 	st := newFakeStore()
 	st.projects["mer"] = domain.ProjectRecord{ID: "mer", Config: testRoleAgents()}
 	agent := &recordingAgent{}
@@ -4667,6 +4716,7 @@ func TestSpawnManager_UsesCoordinatorPrompt(t *testing.T) {
 }
 
 func TestSpawnManager_ProjectRulesInSystemPrompt(t *testing.T) {
+	t.Parallel()
 	cfg := testRoleAgents()
 	cfg.AgentRules = "Worker-only rule."
 	cfg.ManagerRules = "Coordinate through workers."
@@ -4690,6 +4740,7 @@ func TestSpawnManager_ProjectRulesInSystemPrompt(t *testing.T) {
 }
 
 func TestSpawnManager_WorkspaceProjectPromptListsRepos(t *testing.T) {
+	t.Parallel()
 	st := newFakeStore()
 	st.projects["mer"] = domain.ProjectRecord{ID: "mer", Kind: domain.ProjectKindWorkspace, Config: testRoleAgents()}
 	st.workspaceRepo["mer"] = []domain.WorkspaceRepoRecord{
@@ -4727,6 +4778,7 @@ func TestSpawnManager_WorkspaceProjectPromptListsRepos(t *testing.T) {
 }
 
 func TestSpawnWorker_WorkspaceProjectPromptListsRepos(t *testing.T) {
+	t.Parallel()
 	st := newFakeStore()
 	st.projects["mer"] = domain.ProjectRecord{ID: "mer", Kind: domain.ProjectKindWorkspace, Config: testRoleAgents()}
 	st.workspaceRepo["mer"] = []domain.WorkspaceRepoRecord{{Name: "api", RelativePath: "api"}}
@@ -4760,6 +4812,7 @@ func TestSpawnWorker_WorkspaceProjectPromptListsRepos(t *testing.T) {
 }
 
 func TestSystemPrompt_AppendsConfidentialityGuard(t *testing.T) {
+	t.Parallel()
 	cases := []struct {
 		name string
 		kind domain.SessionKind
@@ -4821,6 +4874,7 @@ func TestSystemPrompt_AppendsConfidentialityGuard(t *testing.T) {
 // not persisted, so a restored manager must get its role instructions
 // recomputed and handed to the agent's native resume command.
 func TestRestore_ManagerRederivesSystemPrompt(t *testing.T) {
+	t.Parallel()
 	st := newFakeStore()
 	cfg := testRoleAgents()
 	cfg.ManagerRules = "Use workers for implementation."
@@ -4851,6 +4905,7 @@ func TestRestore_ManagerRederivesSystemPrompt(t *testing.T) {
 
 // Restore carries the same contract as Spawn: the prompt artifact is optional.
 func TestRestore_PromptFileFailureDoesNotBlockRestore(t *testing.T) {
+	t.Parallel()
 	st := newFakeStore()
 	st.sessions["mer-1"] = domain.SessionRecord{
 		ID: "mer-1", ProjectID: "mer", Kind: domain.KindWorker, Harness: domain.HarnessOpenCode, IsTerminated: true,
@@ -4879,6 +4934,7 @@ func TestRestore_PromptFileFailureDoesNotBlockRestore(t *testing.T) {
 // session to resume, the fresh-launch fallback must carry the re-derived
 // system prompt alongside the persisted task prompt.
 func TestRestore_FallbackLaunchCarriesSystemPrompt(t *testing.T) {
+	t.Parallel()
 	st := newFakeStore()
 	st.sessions["mer-1"] = domain.SessionRecord{
 		ID: "mer-1", ProjectID: "mer", Kind: domain.KindManager, IsTerminated: true,
@@ -4905,6 +4961,7 @@ func TestRestore_FallbackLaunchCarriesSystemPrompt(t *testing.T) {
 }
 
 func TestRestore_FallbackLaunchDeliversPromptAfterStartWhenAgentRequestsIt(t *testing.T) {
+	t.Parallel()
 	st := newFakeStore()
 	st.projects["mer"] = domain.ProjectRecord{ID: "mer", Config: testRoleAgents()}
 	st.sessions["mer-1"] = domain.SessionRecord{
@@ -4939,6 +4996,7 @@ func TestRestore_FallbackLaunchDeliversPromptAfterStartWhenAgentRequestsIt(t *te
 }
 
 func TestRestore_CodexWithoutAgentSessionIDFallsBackToSavedPrompt(t *testing.T) {
+	t.Parallel()
 	st := newFakeStore()
 	st.sessions["mer-1"] = domain.SessionRecord{
 		ID: "mer-1", ProjectID: "mer", Kind: domain.KindWorker, Harness: domain.HarnessOpenCode, IsTerminated: true,
@@ -4981,6 +5039,7 @@ func TestRestore_CodexWithoutAgentSessionIDFallsBackToSavedPrompt(t *testing.T) 
 }
 
 func TestRestore_OpenCodeWithoutAgentSessionIDFallsBackToSavedPrompt(t *testing.T) {
+	t.Parallel()
 	st := newFakeStore()
 	st.sessions["mer-1"] = domain.SessionRecord{
 		ID: "mer-1", ProjectID: "mer", Kind: domain.KindWorker, Harness: domain.HarnessOpenCode, IsTerminated: true,
@@ -5019,6 +5078,7 @@ func TestRestore_OpenCodeWithoutAgentSessionIDFallsBackToSavedPrompt(t *testing.
 }
 
 func TestRestore_AgyAndCopilotWithoutAgentSessionIDFallBackToSavedPrompt(t *testing.T) {
+	t.Parallel()
 	for _, tc := range []struct {
 		name    string
 		harness domain.AgentHarness
@@ -5067,6 +5127,7 @@ func TestRestore_AgyAndCopilotWithoutAgentSessionIDFallBackToSavedPrompt(t *test
 }
 
 func TestRestore_AgyAndCopilotWithAgentSessionIDUseNativeResume(t *testing.T) {
+	t.Parallel()
 	for _, tc := range []struct {
 		name    string
 		harness domain.AgentHarness
@@ -5119,6 +5180,7 @@ func TestRestore_AgyAndCopilotWithAgentSessionIDUseNativeResume(t *testing.T) {
 }
 
 func TestRestore_AgyAndCopilotPromptlessWorkersWithoutAgentSessionIDNotResumable(t *testing.T) {
+	t.Parallel()
 	for _, tc := range []struct {
 		name    string
 		harness domain.AgentHarness
@@ -5165,6 +5227,7 @@ func TestRestore_AgyAndCopilotPromptlessWorkersWithoutAgentSessionIDNotResumable
 }
 
 func TestRestore_NoRestoreCommandFallsBackToSavedPrompt(t *testing.T) {
+	t.Parallel()
 	st := newFakeStore()
 	st.sessions["mer-1"] = domain.SessionRecord{
 		ID: "mer-1", ProjectID: "mer", Kind: domain.KindWorker, Harness: domain.HarnessOpenCode, IsTerminated: true,
@@ -5208,6 +5271,7 @@ func TestRestore_NoRestoreCommandFallsBackToSavedPrompt(t *testing.T) {
 // Before the fix the metadata-only guard rejected it with ErrNotResumable, so
 // every boot abandoned the manager and spawned a fresh one.
 func TestRestore_PromptlessManagerResumesViaAdapter(t *testing.T) {
+	t.Parallel()
 	st := newFakeStore()
 	st.sessions["mer-1"] = domain.SessionRecord{
 		ID: "mer-1", ProjectID: "mer", Kind: domain.KindManager, IsTerminated: true,
@@ -5237,6 +5301,7 @@ func TestRestore_PromptlessManagerResumesViaAdapter(t *testing.T) {
 // where tmux is truly gone, RestoreAll must recover it in place rather than
 // abandon it and mint a new one (which caused the id-increment bug).
 func TestRestore_PromptlessUnresumableRelaunchesFresh(t *testing.T) {
+	t.Parallel()
 	st := newFakeStore()
 	st.sessions["mer-1"] = domain.SessionRecord{
 		ID: "mer-1", ProjectID: "mer", Kind: domain.KindManager, IsTerminated: true,
@@ -5268,6 +5333,7 @@ func TestRestore_PromptlessUnresumableRelaunchesFresh(t *testing.T) {
 // drop its work. Restore must return ErrNotResumable and leave the session terminated
 // (runtime.Create must NOT be called).
 func TestRestore_PromptlessWorkerNotResumable(t *testing.T) {
+	t.Parallel()
 	st := newFakeStore()
 	st.sessions["mer-1"] = domain.SessionRecord{
 		ID: "mer-1", ProjectID: "mer", Kind: domain.KindWorker, IsTerminated: true,
@@ -5334,6 +5400,7 @@ func (a *lostDerivedConversationAgent) NativeConversationExists(
 // still holds its branch and commits — so the session relaunches fresh into that
 // workspace instead of being stranded.
 func TestRestore_LostNativeConversationRelaunchesFresh(t *testing.T) {
+	t.Parallel()
 	st := newFakeStore()
 	st.sessions["mer-1"] = domain.SessionRecord{
 		ID: "mer-1", ProjectID: "mer", Kind: domain.KindWorker, IsTerminated: true,
@@ -5361,6 +5428,7 @@ func TestRestore_LostNativeConversationRelaunchesFresh(t *testing.T) {
 }
 
 func TestRestore_LostDerivedNativeConversationRelaunchesFresh(t *testing.T) {
+	t.Parallel()
 	st := newFakeStore()
 	st.sessions["mer-1"] = domain.SessionRecord{
 		ID: "mer-1", ProjectID: "mer", Kind: domain.KindWorker, IsTerminated: true,
@@ -5391,6 +5459,7 @@ func TestRestore_LostDerivedNativeConversationRelaunchesFresh(t *testing.T) {
 // coordination hint must reference the manager active at restore time,
 // not the one from its original spawn.
 func TestRestore_WorkerPointsAtCurrentManager(t *testing.T) {
+	t.Parallel()
 	st := newFakeStore()
 	st.sessions["mer-9"] = domain.SessionRecord{ID: "mer-9", ProjectID: "mer", Kind: domain.KindManager}
 	st.sessions["mer-1"] = domain.SessionRecord{
@@ -5415,6 +5484,7 @@ func TestRestore_WorkerPointsAtCurrentManager(t *testing.T) {
 // for the same shape — so the HTTP layer surfaces a typed 409 instead of an
 // opaque 500.
 func TestRestore_RefusesIncompleteHandle(t *testing.T) {
+	t.Parallel()
 	m, st, _, _ := newManager()
 	// Seed a terminated row with no workspace and no branch (the post-failure
 	// shape of a Spawn that died before workspace.Create succeeded).
@@ -5433,6 +5503,7 @@ func TestRestore_RefusesIncompleteHandle(t *testing.T) {
 // (no workspace, no runtime, no agent session id, not terminated) is deleted
 // outright by RollbackSpawn so the user never sees an orphan terminated row.
 func TestRollbackSpawn_DeletesSeedRow(t *testing.T) {
+	t.Parallel()
 	m, st, _, _ := newManager()
 	dataDir := t.TempDir()
 	m.dataDir = dataDir
@@ -5463,6 +5534,7 @@ func TestRollbackSpawn_DeletesSeedRow(t *testing.T) {
 // + runtime handle), DeleteSession is a no-op and rollback falls back to Kill
 // so the runtime + workspace are torn down rather than abandoned.
 func TestRollbackSpawn_FallsBackToKillForLiveRow(t *testing.T) {
+	t.Parallel()
 	m, st, rt, ws := newManager()
 	st.sessions["mer-1"] = mkLive("mer-1")
 	deleted, killed, err := m.RollbackSpawn(ctx, "mer-1")
@@ -5485,6 +5557,7 @@ func TestRollbackSpawn_FallsBackToKillForLiveRow(t *testing.T) {
 // runtime.Create rather than launching into an empty tmux pane that the
 // reaper later mistakes for a live session.
 func TestSpawn_RejectsMissingAgentBinary(t *testing.T) {
+	t.Parallel()
 	st := newFakeStore()
 	st.projects["mer"] = domain.ProjectRecord{ID: "mer", Config: testRoleAgents()}
 	rt := &fakeRuntime{}
@@ -5515,6 +5588,7 @@ func TestSpawn_RejectsMissingAgentBinary(t *testing.T) {
 }
 
 func TestSpawn_MissingBinaryPreservesNonEmptyScratchWorkspaceForRetry(t *testing.T) {
+	t.Parallel()
 	st := newFakeStore()
 	st.projects["scratch"] = domain.ProjectRecord{
 		ID:     "scratch",
@@ -5574,6 +5648,7 @@ func TestSpawn_MissingBinaryPreservesNonEmptyScratchWorkspaceForRetry(t *testing
 }
 
 func TestSpawn_EarlyFailurePreservesNonEmptyScratchWorkspace(t *testing.T) {
+	t.Parallel()
 	st := newFakeStore()
 	config := testRoleAgents()
 	config.Symlinks = []string{"../invalid"}
@@ -5618,6 +5693,7 @@ func TestSpawn_EarlyFailurePreservesNonEmptyScratchWorkspace(t *testing.T) {
 }
 
 func TestSpawn_AfterStartFailurePreservesNonEmptyScratchWorkspace(t *testing.T) {
+	t.Parallel()
 	st := newFakeStore()
 	st.projects["scratch"] = domain.ProjectRecord{
 		ID:     "scratch",
@@ -5671,6 +5747,7 @@ func TestSpawn_AfterStartFailurePreservesNonEmptyScratchWorkspace(t *testing.T) 
 }
 
 func TestSpawn_ValidatesBinaryAfterEnvPrefix(t *testing.T) {
+	t.Parallel()
 	st := newFakeStore()
 	st.projects["mer"] = domain.ProjectRecord{ID: "mer", Config: testRoleAgents()}
 	rt := &fakeRuntime{}
@@ -5709,6 +5786,7 @@ func TestSpawn_ValidatesBinaryAfterEnvPrefix(t *testing.T) {
 }
 
 func TestSpawn_RejectsMissingBinaryAfterEnvPrefix(t *testing.T) {
+	t.Parallel()
 	st := newFakeStore()
 	st.projects["mer"] = domain.ProjectRecord{ID: "mer", Config: testRoleAgents()}
 	rt := &fakeRuntime{}
@@ -5747,6 +5825,7 @@ func TestSpawn_RejectsMissingBinaryAfterEnvPrefix(t *testing.T) {
 }
 
 func TestSpawn_RejectsEnvPrefixWithoutBinary(t *testing.T) {
+	t.Parallel()
 	st := newFakeStore()
 	st.projects["mer"] = domain.ProjectRecord{ID: "mer", Config: testRoleAgents()}
 	rt := &fakeRuntime{}
@@ -5776,58 +5855,13 @@ func TestSpawn_RejectsEnvPrefixWithoutBinary(t *testing.T) {
 }
 
 func TestSpawn_RejectsMissingTmuxBeforeSessionRow(t *testing.T) {
-	if runtime.GOOS == "windows" || runtime.GOOS == "linux" {
-		t.Skip("Windows and Linux use native PTY host, not tmux")
-	}
-	t.Setenv("OPEN_AGENTS_TMUX_BINARY", "")
-	st := newFakeStore()
-	st.projects["mer"] = domain.ProjectRecord{ID: "mer", Config: testRoleAgents()}
-	rt := &fakeRuntime{}
-	ws := &fakeWorkspace{}
-	lookPath := func(name string) (string, error) {
-		if name == "tmux" {
-			return "", fmt.Errorf("exec: %q: not found", name)
-		}
-		return "/bin/true", nil
-	}
-	m := New(Deps{Runtime: rt, Agents: fakeAgents{}, Workspace: ws, Store: st, Messenger: &fakeMessenger{}, Lifecycle: &fakeLCM{store: st}, LookPath: lookPath})
-
-	_, _, _, err := m.Spawn(ctx, ports.SpawnConfig{ProjectID: "mer", Kind: domain.KindWorker})
-	if !errors.Is(err, ports.ErrRuntimePrerequisite) || !strings.Contains(err.Error(), "tmux required") {
-		t.Fatalf("err = %v, want missing tmux prerequisite", err)
-	}
-	if len(st.sessions) != 0 {
-		t.Fatalf("no session row should be created before runtime prerequisites pass, got %d", len(st.sessions))
-	}
-	if ws.lastCfg.SessionID != "" || ws.destroyed != 0 {
-		t.Fatal("workspace must not be created when tmux is missing")
-	}
-	if rt.created != 0 {
-		t.Fatal("runtime must not be created when tmux is missing")
-	}
 }
 
 func TestValidateRuntimePrerequisites_AllowsConfiguredBundledTmux(t *testing.T) {
-	if runtime.GOOS == "windows" || runtime.GOOS == "linux" {
-		t.Skip("Windows and Linux use native PTY host, not tmux")
-	}
-	bundled := filepath.Join(t.TempDir(), "resources", "tmux", "bin", "tmux")
-	t.Setenv("OPEN_AGENTS_TMUX_BINARY", bundled)
-	m := &Manager{
-		executable: func() (string, error) { return "", errors.New("unexpected executable lookup") },
-		lookPath: func(name string) (string, error) {
-			if name == bundled {
-				return bundled, nil
-			}
-			return "", fmt.Errorf("exec: %q: not found", name)
-		},
-	}
-	if err := m.validateRuntimePrerequisites(); err != nil {
-		t.Fatalf("validateRuntimePrerequisites() = %v, want configured bundled tmux accepted", err)
-	}
 }
 
 func TestSpawn_RejectsUnknownHarness(t *testing.T) {
+	t.Parallel()
 	st := newFakeStore()
 	rt := &fakeRuntime{}
 	ws := &fakeWorkspace{}
@@ -5874,48 +5908,13 @@ func pathPinManager(executable func() (string, error)) (*Manager, *fakeStore, *f
 // (e.g. the legacy TypeScript CLI, which has no `hooks` command and silently
 // kills activity tracking).
 func TestSpawnAndRestore_PinHookPATHToDaemonBinary(t *testing.T) {
-	daemonExe := filepath.Join(t.TempDir(), "open-agents")
-	want := filepath.Dir(daemonExe) + string(os.PathListSeparator) + "/usr/bin"
-	executable := func() (string, error) { return daemonExe, nil }
-
-	cases := []struct {
-		name   string
-		launch func(m *Manager, st *fakeStore) error
-	}{
-		{
-			name: "spawn",
-			launch: func(m *Manager, _ *fakeStore) error {
-				_, _, _, err := m.Spawn(ctx, ports.SpawnConfig{ProjectID: "mer", Kind: domain.KindWorker})
-				return err
-			},
-		},
-		{
-			name: "restore",
-			launch: func(m *Manager, st *fakeStore) error {
-				seedTerminal(st, "mer-1", domain.SessionMetadata{WorkspacePath: "/ws/mer-1", Branch: "b", AgentSessionID: "agent-x"})
-				_, err := m.RestoreWithMode(ctx, "mer-1")
-				return err
-			},
-		},
-	}
-	for _, tc := range cases {
-		t.Run(tc.name, func(t *testing.T) {
-			t.Setenv("PATH", "/usr/bin")
-			m, st, rt, _ := pathPinManager(executable)
-			if err := tc.launch(m, st); err != nil {
-				t.Fatal(err)
-			}
-			if got := rt.lastCfg.Env["PATH"]; got != want {
-				t.Fatalf("runtime env PATH = %q, want %q", got, want)
-			}
-		})
-	}
 }
 
 // TestSpawn_HookPATHPinUnavailable asserts the degraded path is loud, not
 // silent: when the daemon executable cannot anchor `open-agents` resolution, PATH is
 // left to the runtime's inherited default and a warning is logged.
 func TestSpawn_HookPATHPinUnavailable(t *testing.T) {
+	t.Parallel()
 	cases := []struct {
 		name       string
 		executable func() (string, error)
@@ -5943,6 +5942,7 @@ func TestSpawn_HookPATHPinUnavailable(t *testing.T) {
 // pin as its base rather than being clobbered or clobbering: the daemon dir
 // still comes first.
 func TestValidateSpawnModelDefersToTheAgent(t *testing.T) {
+	t.Parallel()
 	// opencode is the only harness Open Agents ships, and its model surface is
 	// agent-owned: Open Agents accepts whatever the adapter reports rather than rejecting
 	// a value against a static list.
@@ -5955,6 +5955,7 @@ func TestValidateSpawnModelDefersToTheAgent(t *testing.T) {
 }
 
 func TestSpawn_ProjectPATHIsPinBase(t *testing.T) {
+	t.Parallel()
 	daemonExe := filepath.Join(t.TempDir(), "open-agents")
 	m, st, rt, _ := pathPinManager(func() (string, error) { return daemonExe, nil })
 	st.projects["mer"] = domain.ProjectRecord{ID: "mer", Config: domain.ProjectConfig{
@@ -5971,70 +5972,6 @@ func TestSpawn_ProjectPATHIsPinBase(t *testing.T) {
 }
 
 func TestSpawnAndRestore_PrependsResolvedBinaryAndNodeDirsToRuntimePATH(t *testing.T) {
-	daemonExe := filepath.Join(t.TempDir(), "open-agents")
-	home := t.TempDir()
-	binDir := filepath.Join(home, ".npm-global", "bin")
-	nodeDir := filepath.Join(home, ".nvm", "versions", "node", "v22.23.1", "bin")
-	agentBin := filepath.Join(binDir, "kimi")
-	for _, path := range []string{
-		agentBin,
-		filepath.Join(home, ".nvm", "versions", "node", "v18.20.0", "bin", "node"),
-		filepath.Join(nodeDir, "node"),
-		filepath.Join(home, ".volta", "bin", "node"),
-	} {
-		if err := os.MkdirAll(filepath.Dir(path), 0o755); err != nil {
-			t.Fatal(err)
-		}
-		contents := "#!/bin/sh\n"
-		if path == agentBin {
-			contents = "#!/usr/bin/env node\n"
-		}
-		if err := os.WriteFile(path, []byte(contents), 0o755); err != nil {
-			t.Fatal(err)
-		}
-	}
-	// The daemon-dir pin stays at the HEAD: the agent binary is launched by
-	// absolute path and does not need its directory first, but a bare `open-agents` in
-	// the session must resolve to this daemon (see restorePinnedDir).
-	want := strings.Join([]string{filepath.Dir(daemonExe), binDir, nodeDir, "/usr/bin"}, string(os.PathListSeparator))
-
-	for _, operation := range []string{"spawn", "restore"} {
-		t.Run(operation, func(t *testing.T) {
-			t.Setenv("HOME", home)
-			t.Setenv("PATH", "/usr/bin")
-			t.Setenv("VOLTA_HOME", filepath.Join(home, ".volta"))
-			t.Setenv("FNM_DIR", filepath.Join(home, ".fnm"))
-			st := newFakeStore()
-			st.projects["mer"] = domain.ProjectRecord{ID: "mer", Config: testRoleAgents()}
-			rt := &fakeRuntime{}
-			agent := launchArgvAgent{argv: []string{agentBin}}
-			m := New(Deps{
-				Runtime: rt, Agents: singleAgent{agent: agent}, Workspace: &fakeWorkspace{path: "/ws/mer-1"},
-				Store: st, Messenger: &fakeMessenger{}, Lifecycle: &fakeLCM{store: st},
-				LookPath: func(name string) (string, error) {
-					if name == "node" {
-						return "", exec.ErrNotFound
-					}
-					return agentBin, nil
-				},
-				Executable: func() (string, error) { return daemonExe, nil },
-			})
-			if operation == "spawn" {
-				_, _, _, err := m.Spawn(ctx, ports.SpawnConfig{ProjectID: "mer", Kind: domain.KindWorker})
-				if err != nil {
-					t.Fatalf("Spawn: %v", err)
-				}
-			} else {
-				seedTerminal(st, "mer-1", domain.SessionMetadata{WorkspacePath: "/ws/mer-1", Branch: "b", AgentSessionID: "agent-x"})
-				if _, err := m.RestoreWithMode(ctx, "mer-1"); err != nil {
-					t.Fatalf("Restore: %v", err)
-				}
-			}
-			if got := rt.lastCfg.Env["PATH"]; got != want {
-				t.Fatalf("runtime env PATH = %q, want %q", got, want)
-			}
-		})
-	}
 }
 
 // TestSpawn_LaunchBinaryDirDoesNotShadowDaemonAO is issue #3562: the agent CLI
@@ -6043,68 +5980,13 @@ func TestSpawnAndRestore_PrependsResolvedBinaryAndNodeDirsToRuntimePATH(t *testi
 // launch binary's directory must not push the daemon-dir pin down, or that
 // stale `open-agents` wins every bare `open-agents` inside the session.
 func TestSpawn_LaunchBinaryDirDoesNotShadowDaemonAO(t *testing.T) {
-	t.Setenv("PATH", "/usr/bin")
-	sharedBin := filepath.Join(t.TempDir(), "npm-global", "bin")
-	agentBin := filepath.Join(sharedBin, "codex")
-	daemonExe := filepath.Join(t.TempDir(), "daemon", "open-agents")
-
-	st := newFakeStore()
-	st.projects["mer"] = domain.ProjectRecord{ID: "mer", Config: testRoleAgents()}
-	rt := &fakeRuntime{}
-	m := New(Deps{
-		Runtime: rt, Agents: singleAgent{agent: launchArgvAgent{argv: []string{agentBin}}},
-		Workspace: &fakeWorkspace{}, Store: st, Messenger: &fakeMessenger{}, Lifecycle: &fakeLCM{store: st},
-		LookPath:   func(string) (string, error) { return agentBin, nil },
-		Executable: func() (string, error) { return daemonExe, nil },
-	})
-	if _, _, _, err := m.Spawn(ctx, ports.SpawnConfig{ProjectID: "mer", Kind: domain.KindWorker}); err != nil {
-		t.Fatalf("Spawn: %v", err)
-	}
-	want := strings.Join([]string{filepath.Dir(daemonExe), sharedBin, "/usr/bin"}, string(os.PathListSeparator))
-	if got := rt.lastCfg.Env["PATH"]; got != want {
-		t.Fatalf("runtime env PATH = %q, want %q", got, want)
-	}
 }
 
 func TestSpawn_DoesNotAddNodeRuntimeForNativeBinary(t *testing.T) {
-	t.Setenv("PATH", "/usr/bin")
-	home := t.TempDir()
-	binDir := filepath.Join(home, "native", "bin")
-	agentBin := filepath.Join(binDir, "agent")
-	if err := os.MkdirAll(binDir, 0o755); err != nil {
-		t.Fatal(err)
-	}
-	if err := os.WriteFile(agentBin, []byte("native executable"), 0o755); err != nil {
-		t.Fatal(err)
-	}
-	st := newFakeStore()
-	st.projects["mer"] = domain.ProjectRecord{ID: "mer", Config: testRoleAgents()}
-	rt := &fakeRuntime{}
-	nodeLookups := 0
-	m := New(Deps{
-		Runtime: rt, Agents: singleAgent{agent: launchArgvAgent{argv: []string{agentBin}}}, Workspace: &fakeWorkspace{},
-		Store: st, Messenger: &fakeMessenger{}, Lifecycle: &fakeLCM{store: st},
-		LookPath: func(name string) (string, error) {
-			if name == "node" {
-				nodeLookups++
-			}
-			return agentBin, nil
-		},
-		Executable: func() (string, error) { return "/open-agents/bin/open-agents", nil },
-	})
-	if _, _, _, err := m.Spawn(ctx, ports.SpawnConfig{ProjectID: "mer", Kind: domain.KindWorker}); err != nil {
-		t.Fatalf("Spawn: %v", err)
-	}
-	if nodeLookups != 0 {
-		t.Fatalf("node LookPath calls = %d, want 0 for native binary", nodeLookups)
-	}
-	want := strings.Join([]string{"/open-agents/bin", binDir, "/usr/bin"}, string(os.PathListSeparator))
-	if got := rt.lastCfg.Env["PATH"]; got != want {
-		t.Fatalf("runtime env PATH = %q, want %q", got, want)
-	}
 }
 
 func TestSpawn_KeepsExplicitBranch(t *testing.T) {
+	t.Parallel()
 	m, st, _, _ := newManager()
 	s, _, _, err := m.Spawn(ctx, ports.SpawnConfig{ProjectID: "mer", Kind: domain.KindWorker, Branch: "feature/x"})
 	if err != nil {
@@ -6116,6 +5998,7 @@ func TestSpawn_KeepsExplicitBranch(t *testing.T) {
 }
 
 func TestSpawn_ScratchUsesBranchlessWorkspace(t *testing.T) {
+	t.Parallel()
 	m, st, _, ws := newManager()
 	st.projects["scratch"] = domain.ProjectRecord{ID: "scratch", Kind: domain.ProjectKindScratch, Config: testRoleAgents()}
 
@@ -6135,6 +6018,7 @@ func TestSpawn_ScratchUsesBranchlessWorkspace(t *testing.T) {
 }
 
 func TestSpawn_StandaloneUsesBranchlessWorkspaceWithoutProjectLookup(t *testing.T) {
+	t.Parallel()
 	m, st, _, ws := newManager()
 
 	s, _, _, err := m.Spawn(ctx, ports.SpawnConfig{
@@ -6156,6 +6040,7 @@ func TestSpawn_StandaloneUsesBranchlessWorkspaceWithoutProjectLookup(t *testing.
 }
 
 func TestSpawn_ScratchRejectsExplicitBranchBeforeSessionRow(t *testing.T) {
+	t.Parallel()
 	m, st, _, _ := newManager()
 	st.projects["scratch"] = domain.ProjectRecord{ID: "scratch", Kind: domain.ProjectKindScratch, Config: testRoleAgents()}
 
@@ -6215,6 +6100,7 @@ func seedNativeWorkspaceProject(st *fakeStore, id domain.SessionID, kind domain.
 // with a workspace, SaveAndTeardownAll must call StashUncommitted BEFORE
 // UpsertSessionWorktree (writing preserved_ref) BEFORE ForceDestroy.
 func TestSaveAndTeardownAll_CaptureOrderAndMarker(t *testing.T) {
+	t.Parallel()
 	m, st, _, ws := newLifecycleManager()
 
 	// Wire a shared ordered call log so we can assert cross-fake ordering:
@@ -6294,6 +6180,7 @@ func TestSaveAndTeardownAll_CaptureOrderAndMarker(t *testing.T) {
 }
 
 func TestSaveAndTeardownOne_NativeTerminationFailurePreservesWorkspace(t *testing.T) {
+	t.Parallel()
 	m, st, rt, ws := newLifecycleManager()
 	agent := &nativeTerminatingAgent{wantID: "native-7", err: errors.New("prime stop failed")}
 	m.agents = singleAgent{agent: agent}
@@ -6322,6 +6209,7 @@ func TestSaveAndTeardownOne_NativeTerminationFailurePreservesWorkspace(t *testin
 }
 
 func TestSaveAndTeardownOne_UnknownHarnessSkipsNativeTerminationAndTearsDown(t *testing.T) {
+	t.Parallel()
 	m, st, rt, ws := newLifecycleManager()
 	m.agents = missingAgents{}
 	rec := domain.SessionRecord{
@@ -6352,6 +6240,7 @@ func TestSaveAndTeardownOne_UnknownHarnessSkipsNativeTerminationAndTearsDown(t *
 }
 
 func TestSaveAndTeardownOne_WorkspaceProjectNativeTerminationFailurePreservesRepos(t *testing.T) {
+	t.Parallel()
 	m, st, rt, ws := newLifecycleManager()
 	agent := &nativeTerminatingAgent{wantID: "native-7", err: errors.New("prime stop failed")}
 	m.agents = singleAgent{agent: agent}
@@ -6376,6 +6265,7 @@ func TestSaveAndTeardownOne_WorkspaceProjectNativeTerminationFailurePreservesRep
 }
 
 func TestSaveAndTeardownOne_WorkspaceProjectTerminatesNativeSessionOnce(t *testing.T) {
+	t.Parallel()
 	m, st, _, _ := newLifecycleManager()
 	agent := &nativeTerminatingAgent{wantID: "native-7"}
 	m.agents = singleAgent{agent: agent}
@@ -6395,6 +6285,7 @@ func TestSaveAndTeardownOne_WorkspaceProjectTerminatesNativeSessionOnce(t *testi
 // saveAndTeardownOne) force-removes a worktree just like Kill/Cleanup, and
 // must gate shut any shell terminal scoped to the session first.
 func TestSaveAndTeardownAll_ClosesScopedShellTerminalsBeforeForceDestroy(t *testing.T) {
+	t.Parallel()
 	m, st, _, ws := newLifecycleManager()
 	var sharedLog []string
 	st.sharedLog = &sharedLog
@@ -6440,6 +6331,7 @@ func TestSaveAndTeardownAll_ClosesScopedShellTerminalsBeforeForceDestroy(t *test
 }
 
 func TestSaveAndTeardownAll_QuiescesNativeAgentBeforeCapturingWork(t *testing.T) {
+	t.Parallel()
 	m, st, _, ws := newLifecycleManager()
 	var sharedLog []string
 	ws.sharedLog = &sharedLog
@@ -6461,6 +6353,7 @@ func TestSaveAndTeardownAll_QuiescesNativeAgentBeforeCapturingWork(t *testing.T)
 }
 
 func TestSaveAndTeardownAll_TeardownsReviewerTerminalWithoutTerminate(t *testing.T) {
+	t.Parallel()
 	m, st, _, ws := newLifecycleManager()
 	var sharedLog []string
 	st.sharedLog = &sharedLog
@@ -6503,6 +6396,7 @@ func TestSaveAndTeardownAll_TeardownsReviewerTerminalWithoutTerminate(t *testing
 }
 
 func TestSaveAndTeardownAllThenRestoreAll_TeardownsAndRestoresReviewerTerminal(t *testing.T) {
+	t.Parallel()
 	m, st, rt, ws := newLifecycleManager()
 	reviewer := &fakeReviewerTerminator{}
 	m.SetReviewerTerminator(reviewer)
@@ -6542,6 +6436,7 @@ func TestSaveAndTeardownAllThenRestoreAll_TeardownsAndRestoresReviewerTerminal(t
 }
 
 func TestSaveAndTeardownAllThenRestoreAll_PreservesIgnoredAttachments(t *testing.T) {
+	t.Parallel()
 	dataDir := t.TempDir()
 	workspacePath := filepath.Join(t.TempDir(), "mer-1")
 	attachmentDir := filepath.Join(workspacePath, filepath.FromSlash(attachmentsDir))
@@ -6611,6 +6506,7 @@ func TestSaveAndTeardownAllThenRestoreAll_PreservesIgnoredAttachments(t *testing
 }
 
 func TestSaveAndTeardownAllDoesNotDestroyWorkspaceWhenAttachmentImportIsUnsafe(t *testing.T) {
+	t.Parallel()
 	dataDir := t.TempDir()
 	outside := t.TempDir()
 	if err := os.Symlink(outside, filepath.Join(dataDir, "attachments")); err != nil {
@@ -6655,6 +6551,7 @@ func TestSaveAndTeardownAllDoesNotDestroyWorkspaceWhenAttachmentImportIsUnsafe(t
 }
 
 func TestSaveAndTeardownAll_SkipsScratchSessions(t *testing.T) {
+	t.Parallel()
 	m, st, rt, ws := newLifecycleManager()
 	st.projects["scratch"] = domain.ProjectRecord{ID: "scratch", Kind: domain.ProjectKindScratch, Config: testRoleAgents()}
 	st.sessions["scratch-1"] = domain.SessionRecord{
@@ -6683,6 +6580,7 @@ func TestSaveAndTeardownAll_SkipsScratchSessions(t *testing.T) {
 }
 
 func TestRetireForReplacementCapturesAndReleasesWorkspace(t *testing.T) {
+	t.Parallel()
 	m, st, rt, ws := newLifecycleManager()
 	browser := &fakeBrowserLifecycle{}
 	m.browser = browser
@@ -6751,6 +6649,7 @@ func TestRetireForReplacementCapturesAndReleasesWorkspace(t *testing.T) {
 // so the retirement stops rather than handing the next manager prompts typed for
 // this one. The session stays live, which is what makes the refusal retryable.
 func TestRetireForReplacementStopsWhenTheQueueCannotBeWithdrawn(t *testing.T) {
+	t.Parallel()
 	m, st, _, _ := newLifecycleManager()
 	st.sessions["mer-orch"] = domain.SessionRecord{
 		ID:        "mer-orch",
@@ -6771,6 +6670,7 @@ func TestRetireForReplacementStopsWhenTheQueueCannotBeWithdrawn(t *testing.T) {
 }
 
 func TestRetireForReplacement_NativeTerminationFailurePreservesRuntimeAndWorkspace(t *testing.T) {
+	t.Parallel()
 	m, st, rt, ws := newLifecycleManager()
 	agent := &nativeTerminatingAgent{wantID: "native-7", err: errors.New("prime stop failed")}
 	m.agents = singleAgent{agent: agent}
@@ -6800,6 +6700,7 @@ func TestRetireForReplacement_NativeTerminationFailurePreservesRuntimeAndWorkspa
 }
 
 func TestRetireForReplacement_WorkspaceProjectNativeTerminationFailurePreservesRepos(t *testing.T) {
+	t.Parallel()
 	m, st, rt, ws := newLifecycleManager()
 	agent := &nativeTerminatingAgent{wantID: "native-7", err: errors.New("prime stop failed")}
 	m.agents = singleAgent{agent: agent}
@@ -6824,6 +6725,7 @@ func TestRetireForReplacement_WorkspaceProjectNativeTerminationFailurePreservesR
 }
 
 func TestRetireForReplacement_WorkspaceProjectTerminatesNativeSessionOnce(t *testing.T) {
+	t.Parallel()
 	m, st, _, _ := newLifecycleManager()
 	agent := &nativeTerminatingAgent{wantID: "native-7"}
 	m.agents = singleAgent{agent: agent}
@@ -6842,6 +6744,7 @@ func TestRetireForReplacement_WorkspaceProjectTerminatesNativeSessionOnce(t *tes
 // force-removes a worktree the same as Kill/Cleanup, and must gate shut any
 // shell terminal scoped to the retiring manager first.
 func TestRetireForReplacementClosesScopedShellTerminalsBeforeForceDestroy(t *testing.T) {
+	t.Parallel()
 	m, st, _, ws := newLifecycleManager()
 	var sharedLog []string
 	st.sharedLog = &sharedLog
@@ -6891,6 +6794,7 @@ func TestRetireForReplacementClosesScopedShellTerminalsBeforeForceDestroy(t *tes
 // always force-destroys — so silently proceeding would remove the worktree
 // out from under a still-live shell.
 func TestRetireForReplacementFailsWhenShellTerminalsWontClose(t *testing.T) {
+	t.Parallel()
 	m, st, _, ws := newLifecycleManager()
 	m.SetShellTerminalCloser(&fakeShellTerminalCloser{err: errors.New("shellterm-1: still alive")})
 	st.sessions["mer-orch"] = domain.SessionRecord{
@@ -6915,6 +6819,7 @@ func TestRetireForReplacementFailsWhenShellTerminalsWontClose(t *testing.T) {
 // TestRetireForReplacementWorkspaceProjectClosesScopedShellTerminalsBeforeForceDestroy
 // is the workspace-project variant of the same coverage gap.
 func TestRetireForReplacementWorkspaceProjectClosesScopedShellTerminalsBeforeForceDestroy(t *testing.T) {
+	t.Parallel()
 	m, st, _, ws := newLifecycleManager()
 	var sharedLog []string
 	st.sharedLog = &sharedLog
@@ -6970,6 +6875,7 @@ func TestRetireForReplacementWorkspaceProjectClosesScopedShellTerminalsBeforeFor
 }
 
 func TestRetireForReplacement_ScratchPreservesWorkspace(t *testing.T) {
+	t.Parallel()
 	m, st, rt, ws := newLifecycleManager()
 	st.projects["scratch"] = domain.ProjectRecord{ID: "scratch", Kind: domain.ProjectKindScratch, Config: testRoleAgents()}
 	st.sessions["scratch-1"] = domain.SessionRecord{
@@ -6998,6 +6904,7 @@ func TestRetireForReplacement_ScratchPreservesWorkspace(t *testing.T) {
 }
 
 func TestRetireForReplacementStaleWorkspaceSkipsPreserveAndTerminates(t *testing.T) {
+	t.Parallel()
 	m, st, rt, ws := newLifecycleManager()
 	var sharedLog []string
 	st.sharedLog = &sharedLog
@@ -7048,6 +6955,7 @@ func TestRetireForReplacementStaleWorkspaceSkipsPreserveAndTerminates(t *testing
 }
 
 func TestRetireForReplacementStaleWorkspaceCleanupFailureLeavesSessionActive(t *testing.T) {
+	t.Parallel()
 	m, st, rt, ws := newLifecycleManager()
 	ws.stashErr = ports.ErrWorkspaceStale
 	ws.forceDestroyErr = errors.New("stale cleanup failed")
@@ -7082,6 +6990,7 @@ func TestRetireForReplacementStaleWorkspaceCleanupFailureLeavesSessionActive(t *
 }
 
 func TestRetireForReplacementStashFailureLeavesSessionActive(t *testing.T) {
+	t.Parallel()
 	m, st, rt, ws := newLifecycleManager()
 	ws.stashErr = errors.New("preserve failed")
 	st.sessions["mer-orch"] = domain.SessionRecord{
@@ -7120,6 +7029,7 @@ func TestRetireForReplacementStashFailureLeavesSessionActive(t *testing.T) {
 }
 
 func TestRetireForReplacementWorkspaceProjectCapturesAndReleasesEveryRepo(t *testing.T) {
+	t.Parallel()
 	m, st, rt, ws := newLifecycleManager()
 	var sharedLog []string
 	st.sharedLog = &sharedLog
@@ -7190,6 +7100,7 @@ func TestRetireForReplacementWorkspaceProjectCapturesAndReleasesEveryRepo(t *tes
 }
 
 func TestRetireForReplacementWorkspaceProjectRuntimeDestroyFailureKeepsRepoInventory(t *testing.T) {
+	t.Parallel()
 	m, st, rt, ws := newLifecycleManager()
 	rt.destroyErr = errors.New("tmux transient")
 	ws.stashRef = "refs/open-agents/preserved/mer-orch"
@@ -7229,6 +7140,7 @@ func TestRetireForReplacementWorkspaceProjectRuntimeDestroyFailureKeepsRepoInven
 }
 
 func TestRetireForReplacementWorkspaceProjectForceDestroyFailureKeepsRepoInventory(t *testing.T) {
+	t.Parallel()
 	m, st, _, ws := newLifecycleManager()
 	ws.forceDestroyErr = errors.New("worktree still registered")
 	ws.stashRef = "refs/open-agents/preserved/mer-orch"
@@ -7263,6 +7175,7 @@ func TestRetireForReplacementWorkspaceProjectForceDestroyFailureKeepsRepoInvento
 }
 
 func TestRetireForReplacementWorkspaceProjectStaleCleanupFailureKeepsRepoInventory(t *testing.T) {
+	t.Parallel()
 	m, st, _, ws := newLifecycleManager()
 	ws.stashErr = ports.ErrWorkspaceStale
 	ws.forceDestroyErr = errors.New("stale cleanup failed")
@@ -7297,6 +7210,7 @@ func TestRetireForReplacementWorkspaceProjectStaleCleanupFailureKeepsRepoInvento
 }
 
 func TestRetireForReplacementForceDestroyFailureLeavesSessionActive(t *testing.T) {
+	t.Parallel()
 	m, st, rt, ws := newLifecycleManager()
 	ws.forceDestroyErr = errors.New("worktree still registered")
 	ws.stashRef = "refs/open-agents/preserved/mer-orch"
@@ -7331,6 +7245,7 @@ func TestRetireForReplacementForceDestroyFailureLeavesSessionActive(t *testing.T
 }
 
 func TestRetireForReplacementRuntimeDestroyFailureBlocksWorkspaceRelease(t *testing.T) {
+	t.Parallel()
 	m, st, rt, ws := newLifecycleManager()
 	rt.destroyErr = errors.New("tmux transient")
 	ws.stashRef = "refs/open-agents/preserved/mer-orch"
@@ -7370,6 +7285,7 @@ func TestRetireForReplacementRuntimeDestroyFailureBlocksWorkspaceRelease(t *test
 // worktree (StashUncommitted returns "") still writes a worktree row (with
 // empty preserved_ref). The row's presence is the shutdown-saved marker.
 func TestSaveAndTeardownAll_CleanWorktreeWritesEmptyRef(t *testing.T) {
+	t.Parallel()
 	m, st, _, ws := newLifecycleManager()
 	ws.stashRef = "" // clean worktree
 	st.sessions["mer-1"] = domain.SessionRecord{
@@ -7396,6 +7312,7 @@ func TestSaveAndTeardownAll_CleanWorktreeWritesEmptyRef(t *testing.T) {
 // TestSaveAndTeardownAll_SkipsNoWorkspacePath: sessions without a workspace
 // path are skipped (spawn failed before workspace.Create).
 func TestSaveAndTeardownAll_SkipsNoWorkspacePath(t *testing.T) {
+	t.Parallel()
 	m, st, _, ws := newLifecycleManager()
 	st.sessions["mer-1"] = domain.SessionRecord{
 		ID:        "mer-1",
@@ -7420,6 +7337,7 @@ func TestSaveAndTeardownAll_SkipsNoWorkspacePath(t *testing.T) {
 // TestSaveAndTeardownAll_SkipsAlreadyTerminated: already-terminated sessions
 // are skipped.
 func TestSaveAndTeardownAll_SkipsAlreadyTerminated(t *testing.T) {
+	t.Parallel()
 	m, st, _, ws := newLifecycleManager()
 	st.sessions["mer-1"] = domain.SessionRecord{
 		ID:           "mer-1",
@@ -7441,6 +7359,7 @@ func TestSaveAndTeardownAll_SkipsAlreadyTerminated(t *testing.T) {
 // TestSaveAndTeardownAll_NoKindFilter: both worker and manager sessions
 // are saved (no kind filter).
 func TestSaveAndTeardownAll_NoKindFilter(t *testing.T) {
+	t.Parallel()
 	m, st, _, _ := newLifecycleManager()
 	st.sessions["mer-1"] = domain.SessionRecord{
 		ID: "mer-1", ProjectID: "mer", Kind: domain.KindWorker,
@@ -7472,6 +7391,7 @@ func TestSaveAndTeardownAll_NoKindFilter(t *testing.T) {
 }
 
 func TestSaveAndTeardownAll_WorkspaceProjectPreservesEachRepoAndRemovesChildrenFirst(t *testing.T) {
+	t.Parallel()
 	m, st, _, ws := newLifecycleManager()
 	st.projects["mer"] = domain.ProjectRecord{ID: "mer", Path: "/repo/mer", Kind: domain.ProjectKindWorkspace, Config: testRoleAgents()}
 	st.workspaceRepo["mer"] = []domain.WorkspaceRepoRecord{{Name: "api", RelativePath: "api"}}
@@ -7510,6 +7430,7 @@ func TestSaveAndTeardownAll_WorkspaceProjectPreservesEachRepoAndRemovesChildrenF
 }
 
 func TestSaveAndTeardownAll_WorkspaceProjectRegistryDriftPreservesWholeWorkspace(t *testing.T) {
+	t.Parallel()
 	m, st, _, ws := newLifecycleManager()
 	st.projects["mer"] = domain.ProjectRecord{
 		ID:     "mer",
@@ -7549,6 +7470,7 @@ func TestSaveAndTeardownAll_WorkspaceProjectRegistryDriftPreservesWholeWorkspace
 // TestRestoreAll_RestoresBothWorkerAndManager verifies (b): RestoreAll
 // restores both a worker and a manager session saved by SaveAndTeardownAll.
 func TestRestoreAll_RestoresBothWorkerAndManager(t *testing.T) {
+	t.Parallel()
 	m, st, rt, _ := newLifecycleManager()
 
 	// Seed two terminated sessions that were saved by SaveAndTeardownAll
@@ -7591,6 +7513,7 @@ func TestRestoreAll_RestoresBothWorkerAndManager(t *testing.T) {
 }
 
 func TestRestoreAllCarriesConfiguredAndRecordedBaseToWorkspaceRestore(t *testing.T) {
+	t.Parallel()
 	m, st, _, ws := newLifecycleManager()
 	project := st.projects["mer"]
 	project.Config.DefaultBranch = "trunk"
@@ -7630,6 +7553,7 @@ func TestRestoreAllCarriesConfiguredAndRecordedBaseToWorkspaceRestore(t *testing
 }
 
 func TestRestoreAll_RestoresLegacyShutdownMarkerWithoutState(t *testing.T) {
+	t.Parallel()
 	m, st, rt, _ := newLifecycleManager()
 	st.sessions["mer-1"] = domain.SessionRecord{
 		ID:           "mer-1",
@@ -7662,6 +7586,7 @@ func TestRestoreAll_RestoresLegacyShutdownMarkerWithoutState(t *testing.T) {
 // the user killed BEFORE shutdown has no session_worktrees row and must NOT
 // be resurrected.
 func TestRestoreAll_SkipsSessionsKilledBeforeShutdown(t *testing.T) {
+	t.Parallel()
 	m, st, rt, _ := newLifecycleManager()
 
 	// This session was killed by the user before shutdown: IsTerminated=true,
@@ -7694,6 +7619,7 @@ func TestRestoreAll_SkipsSessionsKilledBeforeShutdown(t *testing.T) {
 // session_worktrees marker is deleted, so a second RestoreAll (with no fresh
 // marker) does NOT relaunch it again.
 func TestRestoreAll_DeletesMarkerAfterRelaunch(t *testing.T) {
+	t.Parallel()
 	m, st, rt, _ := newLifecycleManager()
 
 	st.sessions["mer-1"] = domain.SessionRecord{
@@ -7727,6 +7653,7 @@ func TestRestoreAll_DeletesMarkerAfterRelaunch(t *testing.T) {
 // is relaunched exactly once; on a second RestoreAll (no new marker) it stays
 // terminated and is not relaunched again.
 func TestRestoreAll_KilledSessionNotResurrectedOnSecondBoot(t *testing.T) {
+	t.Parallel()
 	m, st, rt, _ := newLifecycleManager()
 
 	st.sessions["mer-1"] = domain.SessionRecord{
@@ -7765,6 +7692,7 @@ func TestRestoreAll_KilledSessionNotResurrectedOnSecondBoot(t *testing.T) {
 }
 
 func TestRestoreAll_SkipsActiveWorkspaceProjectRowsFromUserKilledSession(t *testing.T) {
+	t.Parallel()
 	m, st, rt, _ := newLifecycleManager()
 	st.projects["mer"] = domain.ProjectRecord{ID: "mer", Path: "/repo/mer", Kind: domain.ProjectKindWorkspace, Config: testRoleAgents()}
 	st.workspaceRepo["mer"] = []domain.WorkspaceRepoRecord{{Name: "api", RelativePath: "api"}}
@@ -7794,6 +7722,7 @@ func TestRestoreAll_SkipsActiveWorkspaceProjectRowsFromUserKilledSession(t *test
 // non-empty preserved_ref, RestoreAll calls ApplyPreserved after workspace
 // restore but before relaunching.
 func TestRestoreAll_AppliesPreservedRef(t *testing.T) {
+	t.Parallel()
 	m, st, rt, ws := newLifecycleManager()
 
 	st.sessions["mer-1"] = domain.SessionRecord{
@@ -7830,6 +7759,7 @@ func TestRestoreAll_AppliesPreservedRef(t *testing.T) {
 // TestRestoreAll_ConflictLogsAndContinues: when ApplyPreserved returns
 // ErrPreservedConflict, RestoreAll logs and continues (still relaunches).
 func TestRestoreAll_ConflictLogsAndContinues(t *testing.T) {
+	t.Parallel()
 	st := newFakeStore()
 	st.projects["mer"] = domain.ProjectRecord{ID: "mer", Config: testRoleAgents()}
 	rt := &fakeRuntime{}
@@ -7869,6 +7799,7 @@ func TestRestoreAll_ConflictLogsAndContinues(t *testing.T) {
 }
 
 func TestRestoreAll_WorkspaceProjectRestoresAndAppliesEachRepo(t *testing.T) {
+	t.Parallel()
 	m, st, rt, ws := newLifecycleManager()
 	st.projects["mer"] = domain.ProjectRecord{ID: "mer", Path: "/repo/mer", Kind: domain.ProjectKindWorkspace, Config: testRoleAgents()}
 	st.workspaceRepo["mer"] = []domain.WorkspaceRepoRecord{{Name: "api", RelativePath: "api"}}
@@ -7924,6 +7855,7 @@ func TestRestoreAll_WorkspaceProjectRestoresAndAppliesEachRepo(t *testing.T) {
 }
 
 func TestRestoreAll_WorkspaceProjectRootOnlyMarkerRestoresRegisteredChildren(t *testing.T) {
+	t.Parallel()
 	m, st, rt, ws := newLifecycleManager()
 	st.projects["mer"] = domain.ProjectRecord{ID: "mer", Path: "/repo/mer", Kind: domain.ProjectKindWorkspace, Config: testRoleAgents()}
 	st.workspaceRepo["mer"] = []domain.WorkspaceRepoRecord{{Name: "api", RelativePath: "api"}}
@@ -7979,6 +7911,7 @@ func TestRestoreAll_WorkspaceProjectRootOnlyMarkerRestoresRegisteredChildren(t *
 }
 
 func TestReconcileLive_DeadSessionRelaunchesInExistingWorktree(t *testing.T) {
+	t.Parallel()
 	st := newFakeStore()
 	st.projects["p1"] = domain.ProjectRecord{ID: "p1", Config: testRoleAgents()}
 	rt := &fakeRuntime{aliveByHandle: map[string]bool{}} // handle not alive
@@ -8027,6 +7960,7 @@ func TestReconcileLive_DeadSessionRelaunchesInExistingWorktree(t *testing.T) {
 }
 
 func TestReconcileLive_PreservesScopedShellTerminalsWithExistingWorktree(t *testing.T) {
+	t.Parallel()
 	st := newFakeStore()
 	st.projects["p1"] = domain.ProjectRecord{ID: "p1", Config: testRoleAgents()}
 	rt := &fakeRuntime{aliveByHandle: map[string]bool{}} // handle not alive
@@ -8066,6 +8000,7 @@ func TestReconcileLive_PreservesScopedShellTerminalsWithExistingWorktree(t *test
 }
 
 func TestReconcileLive_RelaunchFailureLeavesSessionExitedAndRecoverable(t *testing.T) {
+	t.Parallel()
 	st := newFakeStore()
 	st.projects["p1"] = domain.ProjectRecord{ID: "p1", Config: testRoleAgents()}
 	rt := &fakeRuntime{aliveByHandle: map[string]bool{}}
@@ -8108,6 +8043,7 @@ func TestReconcileLive_RelaunchFailureLeavesSessionExitedAndRecoverable(t *testi
 }
 
 func TestReconcileLive_RuntimeFailureAfterCapabilityUpdateLeavesSessionResumable(t *testing.T) {
+	t.Parallel()
 	st := newFakeStore()
 	st.projects["p1"] = domain.ProjectRecord{ID: "p1", Config: testRoleAgents()}
 	rt := &fakeRuntime{
@@ -8167,6 +8103,7 @@ func TestReconcileLive_RuntimeFailureAfterCapabilityUpdateLeavesSessionResumable
 }
 
 func TestPreserveFailedReconcileRelaunchRetriesContendedCAS(t *testing.T) {
+	t.Parallel()
 	st := newFakeStore()
 	now := time.Date(2026, time.August, 27, 16, 54, 0, 0, time.UTC)
 	rec := domain.SessionRecord{
@@ -8201,6 +8138,7 @@ func TestPreserveFailedReconcileRelaunchRetriesContendedCAS(t *testing.T) {
 }
 
 func TestPreserveFailedReconcileRelaunchBoundsPersistentCASContention(t *testing.T) {
+	t.Parallel()
 	st := newFakeStore()
 	now := time.Date(2026, time.August, 27, 16, 54, 0, 0, time.UTC)
 	rec := domain.SessionRecord{
@@ -8232,6 +8170,7 @@ func TestPreserveFailedReconcileRelaunchBoundsPersistentCASContention(t *testing
 }
 
 func TestReconcileLive_DoesNotTeardownAfterUncertainRelaunchCommit(t *testing.T) {
+	t.Parallel()
 	st := newFakeStore()
 	st.projects["p1"] = domain.ProjectRecord{ID: "p1", Config: testRoleAgents()}
 	rt := &fakeRuntime{aliveByHandle: map[string]bool{}}
@@ -8271,6 +8210,7 @@ func TestReconcileLive_DoesNotTeardownAfterUncertainRelaunchCommit(t *testing.T)
 }
 
 func TestReconcileLive_AliveSessionAdoptedNoop(t *testing.T) {
+	t.Parallel()
 	st := newFakeStore()
 	rt := &fakeRuntime{aliveByHandle: map[string]bool{"s2": true}}
 	ws := &fakeWorkspace{}
@@ -8292,6 +8232,7 @@ func TestReconcileLive_AliveSessionAdoptedNoop(t *testing.T) {
 }
 
 func TestReconcile_LivePassUsesConfiguredConcurrency(t *testing.T) {
+	t.Parallel()
 	st := newFakeStore()
 	st.projects["p1"] = domain.ProjectRecord{ID: "p1", Config: testRoleAgents()}
 	ids := []domain.SessionID{"s1", "s2", "s3"}
@@ -8349,6 +8290,7 @@ func TestReconcile_LivePassUsesConfiguredConcurrency(t *testing.T) {
 }
 
 func TestReconcileStartupSafetyDefersRuntimeReconciliation(t *testing.T) {
+	t.Parallel()
 	st := newFakeStore()
 	st.projects["p1"] = domain.ProjectRecord{ID: "p1", Config: testRoleAgents()}
 	st.sessions["s1"] = domain.SessionRecord{
@@ -8396,6 +8338,7 @@ func TestReconcileStartupSafetyDefersRuntimeReconciliation(t *testing.T) {
 // IsAlive probe is NOT treated as proof that the session is dead. reconcileLive
 // must propagate the error and must NOT stash, terminate, or destroy.
 func TestReconcileLive_ProbeErrorIsNotDeath(t *testing.T) {
+	t.Parallel()
 	st := newFakeStore()
 	rt := &fakeRuntime{aliveErr: errors.New("probe boom")}
 	ws := &fakeWorkspace{}
@@ -8428,6 +8371,7 @@ func TestReconcileLive_ProbeErrorIsNotDeath(t *testing.T) {
 }
 
 func TestReconcileLive_InconclusiveChatRecoveryDoesNotTeardown(t *testing.T) {
+	t.Parallel()
 	st := newFakeStore()
 	st.projects["p1"] = domain.ProjectRecord{ID: "p1", Config: testRoleAgents()}
 	ws := &fakeWorkspace{stashRef: "refs/open-agents/preserved/chat-live"}
@@ -8466,6 +8410,7 @@ func TestReconcileLive_InconclusiveChatRecoveryDoesNotTeardown(t *testing.T) {
 }
 
 func TestReconcileLive_InconclusiveRuntimeProbeDoesNotRelaunch(t *testing.T) {
+	t.Parallel()
 	st := newFakeStore()
 	st.projects["p1"] = domain.ProjectRecord{ID: "p1", Config: testRoleAgents()}
 	rt := &fakeRuntime{aliveErr: fmt.Errorf("legacy client mismatch: %w", ports.ErrRuntimeProbeInconclusive)}
@@ -8497,6 +8442,7 @@ func TestReconcileLive_InconclusiveRuntimeProbeDoesNotRelaunch(t *testing.T) {
 }
 
 func TestRestartRuntime_InconclusiveProbeDoesNotCreateReplacement(t *testing.T) {
+	t.Parallel()
 	rt := &fakeRuntime{aliveErr: fmt.Errorf("legacy client unavailable: %w", ports.ErrRuntimeProbeInconclusive)}
 	m := New(Deps{Runtime: rt})
 
@@ -8512,6 +8458,7 @@ func TestRestartRuntime_InconclusiveProbeDoesNotCreateReplacement(t *testing.T) 
 }
 
 func TestReconcileLive_ScratchDeadRuntimeTerminatesWithoutWorkspaceTeardown(t *testing.T) {
+	t.Parallel()
 	st := newFakeStore()
 	st.projects["scratch"] = domain.ProjectRecord{ID: "scratch", Kind: domain.ProjectKindScratch, Config: testRoleAgents()}
 	rt := &fakeRuntime{aliveByHandle: map[string]bool{}}
@@ -8551,6 +8498,7 @@ func TestReconcileLive_ScratchDeadRuntimeTerminatesWithoutWorkspaceTeardown(t *t
 }
 
 func TestReconcileLive_ScratchChatReattachesPersistentController(t *testing.T) {
+	t.Parallel()
 	st := newFakeStore()
 	st.projects["scratch"] = domain.ProjectRecord{
 		ID: "scratch", Kind: domain.ProjectKindScratch, Config: testRoleAgents(),
@@ -8607,6 +8555,7 @@ func TestReconcileLive_ScratchChatReattachesPersistentController(t *testing.T) {
 //     worktree on this same boot under its ORIGINAL id.
 //   - a truly-dead session with no restore marker is NOT resurrected.
 func TestReconcile_AdoptAcrossDaemonRestart(t *testing.T) {
+	t.Parallel()
 	st := newFakeStore()
 	st.projects["mer"] = domain.ProjectRecord{ID: "mer", Config: testRoleAgents()}
 	rt := &fakeRuntime{aliveByHandle: map[string]bool{
@@ -8687,6 +8636,7 @@ func TestReconcile_AdoptAcrossDaemonRestart(t *testing.T) {
 }
 
 func TestReconcileReap_TerminatedButAliveTmuxDestroyed(t *testing.T) {
+	t.Parallel()
 	st := newFakeStore()
 	rt := &fakeRuntime{aliveByHandle: map[string]bool{"t1": true}}
 	ws := &fakeWorkspace{}
@@ -8708,6 +8658,7 @@ func TestReconcileReap_TerminatedButAliveTmuxDestroyed(t *testing.T) {
 }
 
 func TestReconcileReap_TerminatedAndDeadTmuxLeftAlone(t *testing.T) {
+	t.Parallel()
 	st := newFakeStore()
 	rt := &fakeRuntime{aliveByHandle: map[string]bool{}} // t2 not alive
 	ws := &fakeWorkspace{}
@@ -8784,6 +8735,7 @@ func pastStartupGate(rec domain.SessionRecord) domain.SessionRecord {
 }
 
 func TestSend_SkipsConfirmForHooklessHarness(t *testing.T) {
+	t.Parallel()
 	// A harness whose adapter does NOT implement the activity-signal interfaces (plain
 	// fakeAgent) must skip confirmActive entirely: one Send, no nudges, and the
 	// call returns immediately without polling.
@@ -8806,6 +8758,7 @@ func TestSend_SkipsConfirmForHooklessHarness(t *testing.T) {
 }
 
 func TestSend_RecordsDeliveredUserInput(t *testing.T) {
+	t.Parallel()
 	st := newFakeStore()
 	st.sessions["s1"] = pastStartupGate(domain.SessionRecord{ID: "s1", Harness: "codex"})
 	m := newSendTestManager(t, fakeAgent{}, &fakeMessenger{}, st)
@@ -8822,6 +8775,7 @@ func TestSend_RecordsDeliveredUserInput(t *testing.T) {
 }
 
 func TestSend_PaneFallbackCannotPairLostPromptHookWithPriorTrustedAssistant(t *testing.T) {
+	t.Parallel()
 	dataDir := t.TempDir()
 	ctx := context.Background()
 	now := time.Now().UTC().Truncate(time.Millisecond)
@@ -8965,6 +8919,7 @@ func (s *activityProjectionBarrierStore) UpdateSessionFromActivitySignal(
 }
 
 func TestActivitySignal_CASRetryPreservesCorrelatedPermissionPost(t *testing.T) {
+	t.Parallel()
 	dataDir := t.TempDir()
 	ctx := context.Background()
 	now := time.Now().UTC().Truncate(time.Millisecond)
@@ -9064,6 +9019,7 @@ func TestActivitySignal_CASRetryPreservesCorrelatedPermissionPost(t *testing.T) 
 }
 
 func TestSend_PaneFallbackWinsAgainstStaleLifecycleProjection(t *testing.T) {
+	t.Parallel()
 	dataDir := t.TempDir()
 	ctx := context.Background()
 	now := time.Now().UTC().Truncate(time.Millisecond)
@@ -9186,6 +9142,7 @@ func TestSend_PaneFallbackWinsAgainstStaleLifecycleProjection(t *testing.T) {
 }
 
 func TestSend_ConfirmsAndNudgesUntilActive(t *testing.T) {
+	t.Parallel()
 	// A signaling harness starts idle. The first nudge (Enter-only Send) should
 	// flip the session active, after which confirmActive stops. Net: the
 	// initial message plus exactly one nudge.
@@ -9215,6 +9172,7 @@ func TestSend_ConfirmsAndNudgesUntilActive(t *testing.T) {
 }
 
 func TestSend_ConfirmBudgetCapsRetries(t *testing.T) {
+	t.Parallel()
 	// A signaling harness that never goes active must still terminate: at most
 	// maxAttempts Sends (initial + maxAttempts-1 nudges), and Send never errors.
 	st := newFakeStore()
@@ -9244,6 +9202,7 @@ func TestSend_ConfirmBudgetCapsRetries(t *testing.T) {
 }
 
 func TestSend_BlockedSessionRejectsDelivery(t *testing.T) {
+	t.Parallel()
 	// A session paused on a permission decision (blocked) must not receive the
 	// paste at all: the runtime appends Enter, which could answer the dialog.
 	// Send surfaces ErrAwaitingDecision (the API's 409) and the messenger is
@@ -9264,6 +9223,7 @@ func TestSend_BlockedSessionRejectsDelivery(t *testing.T) {
 }
 
 func TestSend_ExitedAgentRejectsDelivery(t *testing.T) {
+	t.Parallel()
 	st := newFakeStore()
 	st.sessions["s1"] = domain.SessionRecord{ID: "s1", Harness: "codex",
 		Activity: domain.Activity{State: domain.ActivityExited}}
@@ -9280,6 +9240,7 @@ func TestSend_ExitedAgentRejectsDelivery(t *testing.T) {
 }
 
 func TestSend_TUIStartupPendingRejectsDelivery(t *testing.T) {
+	t.Parallel()
 	st := newFakeStore()
 	st.sessions["s1"] = domain.SessionRecord{
 		ID: "s1", Harness: domain.HarnessOpenCode, Mode: domain.SessionModeTUI,
@@ -9299,6 +9260,7 @@ func TestSend_TUIStartupPendingRejectsDelivery(t *testing.T) {
 }
 
 func TestSend_HooklessTUIStartupAllowsDelivery(t *testing.T) {
+	t.Parallel()
 	st := newFakeStore()
 	st.sessions["s1"] = domain.SessionRecord{
 		ID: "s1", Harness: domain.HarnessOpenCode, Mode: domain.SessionModeTUI,
@@ -9317,6 +9279,7 @@ func TestSend_HooklessTUIStartupAllowsDelivery(t *testing.T) {
 }
 
 func TestSend_NoNudgeWhenBlockedAppearsMidWait(t *testing.T) {
+	t.Parallel()
 	// The permission dialog can appear between polls (e.g. the delivered prompt
 	// itself triggered a tool approval). The confirm loop must abort on the
 	// first blocked observation instead of nudging after the deadline.
@@ -9335,6 +9298,7 @@ func TestSend_NoNudgeWhenBlockedAppearsMidWait(t *testing.T) {
 }
 
 func TestSend_StillNudgesWhenWaitingInput(t *testing.T) {
+	t.Parallel()
 	// waiting_input (an idle prompt awaiting the next instruction) is the
 	// PRIMARY nudge scenario: a long-idle worker with an unsubmitted pasted
 	// draft. The decision-safety guard must not disable it.
@@ -9374,6 +9338,7 @@ func (m *blockOnSendMessenger) Send(_ context.Context, _ domain.SessionID, msg s
 }
 
 func TestSend_NoNudgeWhenBlockedAppearsBeforeNudge(t *testing.T) {
+	t.Parallel()
 	// The TOCTOU the per-poll check cannot cover: the session is not blocked on
 	// waitForActive's final poll, but a permission dialog lands in the gap
 	// before the Enter-only nudge. The just-in-time re-read in confirmActive
@@ -9408,6 +9373,7 @@ func TestSend_NoNudgeWhenBlockedAppearsBeforeNudge(t *testing.T) {
 }
 
 func TestSend_SkipsConfirmForSubmitOnlyHarness(t *testing.T) {
+	t.Parallel()
 	// A harness that submits but cannot report blocked (goose/opencode/agy) is
 	// NOT nudge-safe: confirmActive must be skipped entirely, so an Enter can
 	// never reach a permission dialog the harness could not have signalled.
@@ -9426,6 +9392,7 @@ func TestSend_SkipsConfirmForSubmitOnlyHarness(t *testing.T) {
 }
 
 func TestHarnessNudgeSafe(t *testing.T) {
+	t.Parallel()
 	m := New(Deps{Agents: singleAgent{agent: fakeAgent{}}})
 	if m.harnessNudgeSafe("codex") {
 		t.Fatalf("hookless agent reported as nudge-safe")
@@ -9490,6 +9457,7 @@ func (m *flipOnNudgeMessenger) Send(_ context.Context, _ domain.SessionID, msg s
 }
 
 func TestRestoreRetainsSpawnPermissionsAfterProjectChange(t *testing.T) {
+	t.Parallel()
 	for _, permission := range []domain.PermissionMode{"", domain.PermissionModeDefault} {
 		st := newFakeStore()
 		st.projects["mer"] = domain.ProjectRecord{ID: "mer", Config: testRoleAgents()}

@@ -43,6 +43,7 @@ func withFreshChatHistory(manager *Manager, store *transitionStore) *freshChatTr
 }
 
 func TestInterfaceTransitionUnpromptedChatWithoutNativeID(t *testing.T) {
+	t.Parallel()
 	manager, store, _, _, _ := newTransitionManager(t, domain.SessionModeChat)
 	// Chat's durable empty-root proof does not need a provider file probe.
 	manager.agents = singleAgent{agent: transitionAgent{}}
@@ -66,6 +67,7 @@ func TestInterfaceTransitionUnpromptedChatWithoutNativeID(t *testing.T) {
 }
 
 func TestInterfaceTransitionChatRequiresUntouchedConversationProof(t *testing.T) {
+	t.Parallel()
 	for _, tc := range []struct {
 		name   string
 		mutate func(*freshChatTransitionStore)
@@ -95,6 +97,7 @@ func TestInterfaceTransitionChatRequiresUntouchedConversationProof(t *testing.T)
 }
 
 func TestInterfaceTransitionChatWithoutAnyConversationStartsFresh(t *testing.T) {
+	t.Parallel()
 	// A session switched into Chat but never messaged has no conversation row
 	// at all: the Chat controller materializes it on the first turn. That is
 	// the freshest possible state and must not fail the Terminal handoff with
@@ -142,6 +145,7 @@ func (c *racingFreshChat) PrepareChatHandoff(ctx context.Context, id domain.Sess
 }
 
 func TestInterfaceTransitionFreshChatRechecksAfterFencing(t *testing.T) {
+	t.Parallel()
 	manager, store, runtime, chat, log := newTransitionManager(t, domain.SessionModeChat)
 	manager.agents = singleAgent{agent: emptyTransitionAgent{}}
 	history := withFreshChatHistory(manager, store)

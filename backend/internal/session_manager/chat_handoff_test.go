@@ -9,6 +9,7 @@ import (
 )
 
 func TestChatProviderHandoffRequiresExactCoordinatorProof(t *testing.T) {
+	t.Parallel()
 	for _, scenario := range []string{"verified", "ordinary_resume", "wrong_native_id", "wrong_session", "wrong_direction", "source_still_running", "first_worker_chat", "unowned_history"} {
 		t.Run(scenario, func(t *testing.T) {
 			rec := domain.SessionRecord{

@@ -18,6 +18,7 @@ func newInputLeaseTestManager() *Manager {
 }
 
 func TestAgentOperationDrainHonorsContextAndReopensAdmission(t *testing.T) {
+	t.Parallel()
 	m := newInputLeaseTestManager()
 	release, ok := m.AcquireSessionInput("worker-1")
 	if !ok {
@@ -41,6 +42,7 @@ func TestAgentOperationDrainHonorsContextAndReopensAdmission(t *testing.T) {
 }
 
 func TestAgentOperationAndInputLeaseAreScopedPerSession(t *testing.T) {
+	t.Parallel()
 	m := newInputLeaseTestManager()
 	if err := m.beginAgentOperation(context.Background(), "worker-1", agentOperationKill); err != nil {
 		t.Fatalf("begin worker-1 operation: %v", err)

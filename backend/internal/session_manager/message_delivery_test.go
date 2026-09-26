@@ -53,6 +53,7 @@ type waitingInputComposerReadyAgent struct{ emptyComposerReadyAgent }
 func (waitingInputComposerReadyAgent) EmptyComposerProvesWaitingInputReady() bool { return true }
 
 func TestWaitForMessageDeliveryReadyWaitsForTerminalIdleMarker(t *testing.T) {
+	t.Parallel()
 	st := newFakeStore()
 	st.sessions["orch"] = domain.SessionRecord{
 		ID:        "orch",
@@ -75,6 +76,7 @@ func TestWaitForMessageDeliveryReadyWaitsForTerminalIdleMarker(t *testing.T) {
 }
 
 func TestWaitForMessageDeliveryReadyHonorsContextWhileTerminalStarts(t *testing.T) {
+	t.Parallel()
 	st := newFakeStore()
 	st.sessions["orch"] = domain.SessionRecord{
 		ID:        "orch",
@@ -96,6 +98,7 @@ func TestWaitForMessageDeliveryReadyHonorsContextWhileTerminalStarts(t *testing.
 }
 
 func TestWaitForMessageDeliveryReadyAcceptsProvenEmptyComposer(t *testing.T) {
+	t.Parallel()
 	st := newFakeStore()
 	st.sessions["orch"] = domain.SessionRecord{
 		ID:        "orch",
@@ -115,6 +118,7 @@ func TestWaitForMessageDeliveryReadyAcceptsProvenEmptyComposer(t *testing.T) {
 }
 
 func TestWaitForMessageDeliveryReadyAcceptsProvenEmptyComposerWhileWaitingInput(t *testing.T) {
+	t.Parallel()
 	st := newFakeStore()
 	st.sessions["orch"] = domain.SessionRecord{
 		ID:        "orch",
@@ -136,6 +140,7 @@ func TestWaitForMessageDeliveryReadyAcceptsProvenEmptyComposerWhileWaitingInput(
 }
 
 func TestWaitForMessageDeliveryReadyRejectsWaitingInputWithoutExplicitCapability(t *testing.T) {
+	t.Parallel()
 	st := newFakeStore()
 	st.sessions["orch"] = domain.SessionRecord{
 		ID:        "orch",
@@ -161,6 +166,7 @@ func TestWaitForMessageDeliveryReadyRejectsWaitingInputWithoutExplicitCapability
 }
 
 func TestWaitForMessageDeliveryReadyWaitsForFirstHookSignal(t *testing.T) {
+	t.Parallel()
 	st := &synchronizedSessionStore{fakeStore: newFakeStore()}
 	st.sessions["cursor-1"] = domain.SessionRecord{
 		ID:        "cursor-1",

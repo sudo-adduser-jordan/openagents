@@ -12,6 +12,7 @@ import (
 )
 
 func TestWriteSpawnAttachments(t *testing.T) {
+	t.Parallel()
 	dir := t.TempDir()
 	m := New(Deps{DataDir: t.TempDir()})
 	refs, err := m.writeSpawnAttachments(context.Background(), "open-agents-1", dir, []ports.SpawnAttachment{
@@ -42,6 +43,7 @@ func TestWriteSpawnAttachments(t *testing.T) {
 }
 
 func TestStageAttachmentsUsesNeutralFileNames(t *testing.T) {
+	t.Parallel()
 	dir := t.TempDir()
 	dataDir := t.TempDir()
 	st := newFakeStore()
@@ -72,6 +74,7 @@ func TestStageAttachmentsUsesNeutralFileNames(t *testing.T) {
 }
 
 func TestStageAttachmentsRetriesGeneratedNameCollisionsWithoutOverwritingHistory(t *testing.T) {
+	t.Parallel()
 	workspace := t.TempDir()
 	dataDir := t.TempDir()
 	st := newFakeStore()
@@ -118,6 +121,7 @@ func TestStageAttachmentsRetriesGeneratedNameCollisionsWithoutOverwritingHistory
 }
 
 func TestAppendAttachmentReferences(t *testing.T) {
+	t.Parallel()
 	t.Run("appends after a brief", func(t *testing.T) {
 		got := appendAttachmentReferences("Fix the button", []string{".open-agents/attachments/attachment-1.html"})
 		if !strings.HasPrefix(got, "Fix the button\n\n") {
