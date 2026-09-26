@@ -1035,14 +1035,6 @@ function daemonEnv(forceKeep = keepDaemonAlive(process.env)): NodeJS.ProcessEnv 
 		// it as appImagePath in /healthz|/readyz so the identity check can
 		// recognise its own daemon across a relaunch-to-update.
 		...(process.env.APPIMAGE ? { OPEN_AGENTS_APPIMAGE: process.env.APPIMAGE } : {}),
-		// Chat providers use Open Agents's packaged ACP adapter + Node runtime. The
-		// provider executable itself is resolved by the daemon from the user's PATH
-		// and passed through the runtime environment; it is not part of this resource.
-		OPEN_AGENTS_ACP_RUNTIME_DIR:
-			process.env.OPEN_AGENTS_ACP_RUNTIME_DIR ??
-			(app.isPackaged
-				? path.join(process.resourcesPath, "acp-runtime")
-				: path.join(app.getAppPath(), "resources", "acp-runtime")),
 		...(bundledTmuxBinary ? { OPEN_AGENTS_TMUX_BINARY: bundledTmuxBinary, OPEN_AGENTS_TMUX_SOCKET_NAME: "open-agents" } : {}),
 	};
 	// In dev mode, inject isolation defaults so the dev daemon never collides with

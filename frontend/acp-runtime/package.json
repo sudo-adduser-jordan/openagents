@@ -1,9 +1,0 @@
-{
-	"name": "@openagents/acp-runtime",
-	"version": "0.1.0",
-	"private": true,
-	"description": "Pinned ACP adapters packaged with the Open Agents desktop app (provider CLIs are not included)",
-	"dependencies": {
-		"@agentclientprotocol/claude-agent-acp": "0.70.0"
-	}
-}

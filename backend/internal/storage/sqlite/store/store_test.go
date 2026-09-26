@@ -132,7 +132,7 @@ func TestSessionPersistsDeterministicHandoffInputs(t *testing.T) {
 	rec.Metadata.LatestAssistantUpdate = "The generation fence is implemented; the test is unfinished."
 	rec.Metadata.LatestAssistantUpdateAt = rec.CreatedAt.Add(2 * time.Minute)
 	rec.Metadata.NativeIdentityObservedAt = rec.CreatedAt.Add(3 * time.Minute)
-	rec.Metadata.NativeTranscriptPath = "/open-agents/transcripts/claude/session.jsonl"
+	rec.Metadata.NativeTranscriptPath = "/open-agents/transcripts/agent/session.jsonl"
 	rec.Metadata.AgentSessionID = "native-session-1"
 	rec.Metadata.AgentSessionIDLaunchID = "launch-1"
 	rec.Metadata.ConversationCheckpointState = domain.ConversationCheckpointComplete

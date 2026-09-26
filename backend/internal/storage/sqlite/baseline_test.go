@@ -130,6 +130,30 @@ func TestBaselineCreatesSessionRevisionFence(t *testing.T) {
 	}
 }
 
+// TestUsageCdcTriggersSurviveMigrations guards the change_log pipeline for usage
+// rows. A table rebuild that drops and recreates usage_bindings/usage_sources
+// silently drops their CDC triggers, and nothing fails until change events stop
+// firing. Assert all three triggers are present after the full migration chain.
+func TestUsageCdcTriggersSurviveMigrations(t *testing.T) {
+	db := openMigratedTestDB(t)
+
+	for _, trigger := range []string{
+		"usage_sources_cdc_update",
+		"usage_bindings_cdc_insert",
+		"usage_bindings_cdc_update",
+	} {
+		var count int
+		if err := db.QueryRow(
+			`SELECT COUNT(*) FROM sqlite_master WHERE type = 'trigger' AND name = ?`, trigger,
+		).Scan(&count); err != nil {
+			t.Fatalf("inspect trigger %s: %v", trigger, err)
+		}
+		if count != 1 {
+			t.Errorf("trigger %s is missing after migration; usage change events would silently stop", trigger)
+		}
+	}
+}
+
 // TestBaselineMigrationVersionsAreUnique keeps the cheap invariant the retired
 // chain needed: two migrations sharing a version number make goose apply only
 // one of them, silently. With a hand-maintained baseline and hand-appended

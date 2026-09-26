@@ -60,7 +60,7 @@ func TestParseIDLinesClassifiesCostFromID(t *testing.T) {
 		"opencode/nemotron-3-ultra-free",
 		"opencode/space-bunny-free",
 		"openrouter/some-model:free",
-		"anthropic/claude-sonnet-4",
+		"openai/gpt-4o",
 	}, "\n"))
 	models, err := parseIDLines(output)
 	if err != nil {
@@ -81,7 +81,7 @@ func TestParseIDLinesClassifiesCostFromID(t *testing.T) {
 			t.Fatalf("%s cost = %q, want free", want, got[want])
 		}
 	}
-	for _, want := range []string{"opencode/big-pickle", "anthropic/claude-sonnet-4"} {
+	for _, want := range []string{"opencode/big-pickle", "openai/gpt-4o"} {
 		if got[want] != ports.AgentModelCostPaid {
 			t.Fatalf("%s cost = %q, want paid", want, got[want])
 		}

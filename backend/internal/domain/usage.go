@@ -109,8 +109,7 @@ type UsageProviderID string
 
 // Usage provider identifiers.
 const (
-	UsageProviderOpenAI    UsageProviderID = "openai"
-	UsageProviderAnthropic UsageProviderID = "anthropic"
+	UsageProviderOpenAI UsageProviderID = "openai"
 )
 
 // UsageMeasurementKind describes the trust source for a complete usage event.
@@ -173,8 +172,8 @@ type UsageTokenMetrics struct {
 //
 // ProviderID identifies the provider vocabulary into which token counters were
 // normalized. BillingProviderID identifies the exact provider that answered and
-// is empty until attribution proves it; the two differ whenever an
-// Anthropic-vocabulary transcript is served by another provider such as z.ai.
+// is empty until attribution proves it; the two differ whenever a
+// transcript is served by a provider other than the one its vocabulary names.
 //
 // ProviderUsageJSON is the bounded usage object the CLI emitted, stored
 // verbatim so optional and future provider fields survive. It is empty when the

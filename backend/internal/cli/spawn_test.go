@@ -32,7 +32,7 @@ func TestSpawnHelpListsOpenCodeHarness(t *testing.T) {
 	if !strings.Contains(out, "opencode") {
 		t.Fatalf("spawn help does not list opencode:\n%s", out)
 	}
-	if strings.Contains(out, "prime-agent") || strings.Contains(out, "claude-code") {
+	if strings.Contains(out, "prime-agent") {
 		t.Fatalf("spawn help still lists a removed harness:\n%s", out)
 	}
 }

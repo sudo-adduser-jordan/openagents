@@ -897,17 +897,7 @@ function formatHarnessName(harness: string): string {
 // under its agent, so the prefix only repeats context the reader has. The exact
 // model id remains available as the title.
 function formatModelName(modelID: string): string {
-	let parts = modelID.trim().split(/[-_]+/).filter(Boolean);
-	const isClaude = parts[0]?.toLowerCase() === "claude";
-	if (isClaude) {
-		parts = parts.slice(1);
-		if (/^\d{8}$/.test(parts.at(-1) ?? "")) parts = parts.slice(0, -1);
-		const familyIndex = parts.findIndex((part) => ["haiku", "sonnet", "opus"].includes(part.toLowerCase()));
-		if (familyIndex >= 0) {
-			const family = parts[familyIndex];
-			parts = [family, ...parts.slice(0, familyIndex), ...parts.slice(familyIndex + 1)];
-		}
-	}
+	const parts = modelID.trim().split(/[-_]+/).filter(Boolean);
 
 	const formatted: string[] = [];
 	for (let index = 0; index < parts.length; index += 1) {

@@ -428,21 +428,21 @@ func TestApplyUsageChunkPersistsProviderSplits(t *testing.T) {
 	now := time.Unix(1700000000, 0).UTC()
 	binding := mustUpsertUsageBinding(t, s, sess, now, domain.UsageBindingRecord{
 		NativeRootID:   "root-thread",
-		InitialModelID: " claude-sonnet ",
-		ProviderHint:   " anthropic ",
+		InitialModelID: " gpt-4o ",
+		ProviderHint:   " openai ",
 		State:          domain.UsageBindingActive,
 	})
 	source := mustInsertUsageSource(t, s, now, domain.UsageSourceRecord{
 		BindingID:       binding.ID,
-		Kind:            domain.UsageSourceKind("claude_main"),
+		Kind:            domain.UsageSourceKind("codex_rollout"),
 		NativeSessionID: "root-thread",
-		ArtifactPath:    "/tmp/claude/transcript.jsonl",
+		ArtifactPath:    "/tmp/agent/transcript.jsonl",
 		State:           domain.UsageSourcePending,
 	})
 	fiveMinutes, oneHour := int64(7), int64(3)
-	providerUsage := anthropicProviderUsage(5, 10, &fiveMinutes, &oneHour)
+	providerUsage := openaiProviderUsage(5, 10, &fiveMinutes, &oneHour)
 	event := domain.ModelUsageEvent{
-		ProviderID:        domain.UsageProviderAnthropic,
+		ProviderID:        domain.UsageProviderOpenAI,
 		BillingProviderID: "source-provider", BillingProviderSource: domain.UsageBillingProviderObserved,
 		ModelID:           " source-model ",
 		MeasurementKind:   domain.UsageMeasurementNativeReported,
@@ -472,7 +472,7 @@ WHERE mue.source_event_key = 'event-cost'`).Scan(
 	); err != nil {
 		t.Fatalf("read persisted source facts: %v", err)
 	}
-	if providerHint != "anthropic" || billingProviderID != "source-provider" || modelID != "source-model" ||
+	if providerHint != "openai" || billingProviderID != "source-provider" || modelID != "source-model" ||
 		measurementKind != string(domain.UsageMeasurementNativeReported) || storedUsage != providerUsage {
 		t.Fatalf("persisted facts = hint:%q billing:%q model:%q kind:%q usage:%s",
 			providerHint, billingProviderID, modelID, measurementKind, storedUsage)
@@ -494,7 +494,7 @@ FROM model_usage_events WHERE source_event_key = 'event-cost'`).Scan(
 			gotInput, gotCachedInput, gotOutput, gotTotal, pricingVersion)
 	}
 	contextRow, ok, err := s.GetUsageSourceForIngestion(ctx, source.ID)
-	if err != nil || !ok || contextRow.ProviderHint != "anthropic" || contextRow.InitialModelID != "claude-sonnet" {
+	if err != nil || !ok || contextRow.ProviderHint != "openai" || contextRow.InitialModelID != "gpt-4o" {
 		t.Fatalf("source context = %+v, ok=%v err=%v", contextRow, ok, err)
 	}
 }
@@ -509,10 +509,10 @@ func TestApplyUsageChunkReplayComparesNewSourceFacts(t *testing.T) {
 	now := time.Unix(1700000000, 0).UTC()
 	source := seedUsageSource(t, s, sess, now)
 	fiveMinutes, oneHour := int64(7), int64(3)
-	event := anthropicUsageEvent("event-1", 5, 10, 5, 4)
-	event.BillingProviderID = "anthropic"
+	event := openaiUsageEvent("event-1", 5, 10, 5, 4)
+	event.BillingProviderID = "openai"
 	event.BillingProviderSource = domain.UsageBillingProviderObserved
-	event.ProviderUsageJSON = anthropicProviderUsage(5, 10, &fiveMinutes, &oneHour)
+	event.ProviderUsageJSON = openaiProviderUsage(5, 10, &fiveMinutes, &oneHour)
 	if err := s.ApplyUsageChunk(ctx, source.ID, 0, source.UpdatedAt, domain.SourceCursorState{ByteOffset: 10, State: domain.UsageSourceActive, UpdatedAt: now}, []domain.ModelUsageEvent{event}); err != nil {
 		t.Fatalf("seed event: %v", err)
 	}
@@ -524,7 +524,7 @@ func TestApplyUsageChunkReplayComparesNewSourceFacts(t *testing.T) {
 	}
 	otherFiveMinutes, otherOneHour := int64(6), int64(4)
 	splitConflict := event
-	splitConflict.ProviderUsageJSON = anthropicProviderUsage(5, 10, &otherFiveMinutes, &otherOneHour)
+	splitConflict.ProviderUsageJSON = openaiProviderUsage(5, 10, &otherFiveMinutes, &otherOneHour)
 	if err := s.ApplyUsageChunk(ctx, source.ID, 10, now, domain.SourceCursorState{ByteOffset: 30, State: domain.UsageSourceActive, UpdatedAt: now.Add(2 * time.Second)}, []domain.ModelUsageEvent{splitConflict}); !errors.Is(err, domain.ErrUsageSourceEventConflict) {
 		t.Fatalf("split replay err = %v, want source conflict", err)
 	}
@@ -645,13 +645,13 @@ func TestApplyUsageChunkProviderUsageConflictsRollback(t *testing.T) {
 			},
 		},
 		{
-			name: "Anthropic", harness: domain.HarnessOpenCode, wantInput: 20, wantOutput: 4,
+			name: "OpenAI", harness: domain.HarnessOpenCode, wantInput: 20, wantOutput: 4,
 			baseEvent: func(key string) domain.ModelUsageEvent {
-				return anthropicUsageEvent(key, 10, 3, 7, 4)
+				return openaiUsageEvent(key, 10, 3, 7, 4)
 			},
 			conflicting: func(key string) domain.ModelUsageEvent {
-				event := anthropicUsageEvent(key, 10, 3, 7, 4)
-				event.ProviderUsageJSON = anthropicProviderUsage(10, 4, nil, nil)
+				event := openaiUsageEvent(key, 10, 3, 7, 4)
+				event.ProviderUsageJSON = openaiProviderUsage(10, 4, nil, nil)
 				return event
 			},
 		},
@@ -707,11 +707,11 @@ func TestApplyUsageChunkProviderUsageEnrichmentAdvancesCursorWithoutDuplicate(t 
 			},
 		},
 		{
-			name: "Anthropic", harness: domain.HarnessOpenCode, wantInput: 20, wantOutput: 4,
+			name: "OpenAI", harness: domain.HarnessOpenCode, wantInput: 20, wantOutput: 4,
 			richer: func() domain.ModelUsageEvent {
 				fiveM, oneH := int64(2), int64(1)
-				event := anthropicUsageEvent("event-1", 10, 3, 7, 4)
-				event.ProviderUsageJSON = anthropicProviderUsage(10, 3, &fiveM, &oneH)
+				event := openaiUsageEvent("event-1", 10, 3, 7, 4)
+				event.ProviderUsageJSON = openaiProviderUsage(10, 3, &fiveM, &oneH)
 				return event
 			},
 		},
@@ -1111,7 +1111,7 @@ func seedUsageSession(t *testing.T, s *sqlite.Store, harness domain.AgentHarness
 
 // TestKimiUsageEventRoundTrip catches schema or validation changes that accept
 // Kimi sessions in the app but reject their certified usage source or canonical
-// Anthropic-shaped token event at the storage boundary.
+// OpenAI-shaped token event at the storage boundary.
 func TestKimiUsageEventRoundTrip(t *testing.T) {
 	s := newTestStore(t)
 	now := time.Date(2026, 8, 23, 12, 0, 0, 0, time.UTC)
@@ -1128,7 +1128,7 @@ func TestKimiUsageEventRoundTrip(t *testing.T) {
 		FileIdentity:    "dev:ino",
 		State:           domain.UsageSourcePending,
 	})
-	event := anthropicUsageEvent("kimi-event", 13, 8, 21, 5)
+	event := openaiUsageEvent("kimi-event", 13, 8, 21, 5)
 	event.ModelID = "kimi-for-coding"
 	if err := s.ApplyUsageChunk(context.Background(), source.ID, 0, source.UpdatedAt, domain.SourceCursorState{
 		ByteOffset: 100, State: domain.UsageSourceActive, ParserStateJSON: `{}`,
@@ -1221,7 +1221,7 @@ func codexProviderUsage(cacheWrite, reasoning int64) string {
 	)
 }
 
-func anthropicProviderUsage(directInput, cacheCreationInput int64, fiveM, oneH *int64) string {
+func openaiProviderUsage(directInput, cacheCreationInput int64, fiveM, oneH *int64) string {
 	usage := map[string]any{
 		"input_tokens":                directInput,
 		"cache_creation_input_tokens": cacheCreationInput,
@@ -1246,15 +1246,15 @@ func pricedCandidateEvent(key string) domain.ModelUsageEvent {
 	return event
 }
 
-func anthropicUsageEvent(key string, directInput, cacheCreationInput, cachedInput, output int64) domain.ModelUsageEvent {
+func openaiUsageEvent(key string, directInput, cacheCreationInput, cachedInput, output int64) domain.ModelUsageEvent {
 	input := directInput + cacheCreationInput + cachedInput
 	uncachedInput := directInput + cacheCreationInput
 	return domain.ModelUsageEvent{
-		ProviderID:        domain.UsageProviderAnthropic,
-		ModelID:           "claude-x",
+		ProviderID:        domain.UsageProviderOpenAI,
+		ModelID:           "gpt-test",
 		MeasurementKind:   domain.UsageMeasurementNativeReported,
 		Tokens:            canonicalUsageTokens(input, cachedInput, uncachedInput, output),
-		ProviderUsageJSON: anthropicProviderUsage(directInput, cacheCreationInput, nil, nil),
+		ProviderUsageJSON: openaiProviderUsage(directInput, cacheCreationInput, nil, nil),
 		SourceEventKey:    key,
 	}
 }
@@ -1313,7 +1313,7 @@ func TestApplyUsageChunkRehomesAnOpenDuplicateToTheReplacementSource(t *testing.
 
 	// Unattributed on the original generation, exactly what the repairer exists
 	// to finish.
-	event := anthropicUsageEvent("replaced-event", 5, 10, 5, 4)
+	event := openaiUsageEvent("replaced-event", 5, 10, 5, 4)
 	mustNoError(t, s.ApplyUsageChunk(ctx, retired.ID, 0, retired.UpdatedAt, domain.SourceCursorState{
 		ByteOffset: 10, State: domain.UsageSourceActive, UpdatedAt: now,
 	}, []domain.ModelUsageEvent{event}), "seed unattributed event")
@@ -1382,8 +1382,8 @@ func TestApplyUsageChunkRehomesAnInferredDuplicateToTheReplacementSource(t *test
 	now := time.Unix(1700000000, 0).UTC()
 	retired := seedUsageSource(t, s, sess, now)
 
-	event := anthropicUsageEvent("inferred-event", 5, 10, 5, 4)
-	event.BillingProviderID = "anthropic"
+	event := openaiUsageEvent("inferred-event", 5, 10, 5, 4)
+	event.BillingProviderID = "openai"
 	event.BillingProviderSource = domain.UsageBillingProviderInferred
 	mustNoError(t, s.ApplyUsageChunk(ctx, retired.ID, 0, retired.UpdatedAt, domain.SourceCursorState{
 		ByteOffset: 10, State: domain.UsageSourceActive, UpdatedAt: now,
@@ -1432,12 +1432,12 @@ func TestApplyUsageChunkPromotesRehomedInferenceToObservedProvider(t *testing.T)
 	now := time.Unix(1700000000, 0).UTC()
 	retired := seedUsageSource(t, s, sess, now)
 
-	inferred := anthropicUsageEvent("provider-promotion", 5, 10, 5, 4)
-	inferred.BillingProviderID = "anthropic"
+	inferred := openaiUsageEvent("provider-promotion", 5, 10, 5, 4)
+	inferred.BillingProviderID = "openai"
 	inferred.BillingProviderSource = domain.UsageBillingProviderInferred
 	mustNoError(t, s.ApplyUsageChunk(ctx, retired.ID, 0, retired.UpdatedAt, domain.SourceCursorState{
 		ByteOffset: 10, State: domain.UsageSourceActive, UpdatedAt: now,
-	}, []domain.ModelUsageEvent{inferred}), "seed inferred Anthropic event")
+	}, []domain.ModelUsageEvent{inferred}), "seed inferred OpenAI event")
 
 	replacement, err := s.ReplaceUsageSource(ctx, retired.ID, domain.UsageErrorArtifactReplaced, domain.UsageSourceRecord{
 		BindingID:       retired.BindingID,

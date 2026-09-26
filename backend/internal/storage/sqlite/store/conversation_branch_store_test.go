@@ -1174,8 +1174,8 @@ func TestRepairIncompleteProjectEditDoesNotTransferProviderOwnerToReboundSession
 	sourceRecord.Mode = domain.SessionModeChat
 	sourceRecord.Kind = domain.KindManager
 	sourceRecord.Harness = domain.HarnessOpenCode
-	sourceRecord.Metadata.ProviderConversationID = "claude-source-thread"
-	sourceRecord.Metadata.ControllerGeneration = "claude-source-generation"
+	sourceRecord.Metadata.ProviderConversationID = "agent-source-thread"
+	sourceRecord.Metadata.ControllerGeneration = "agent-source-generation"
 	source, err := s.CreateSession(ctx, sourceRecord)
 	if err != nil {
 		t.Fatalf("Create source session: %v", err)
@@ -1187,14 +1187,14 @@ func TestRepairIncompleteProjectEditDoesNotTransferProviderOwnerToReboundSession
 	}
 	seedBranchTurns(t, s, source, conversation)
 	child := domain.ConversationBranch{
-		ID: "abandoned-claude-edit", ConversationID: conversation.ID, SessionID: source.ID,
-		ProviderConversationID: "claude-child-thread", ParentBranchID: conversation.ActiveBranchID,
+		ID: "abandoned-agent-edit", ConversationID: conversation.ID, SessionID: source.ID,
+		ProviderConversationID: "agent-child-thread", ParentBranchID: conversation.ActiveBranchID,
 		ReplacedTurnID: "turn-2", ForkAfterSequence: 2,
-		ProviderScopeID: "claude-child-scope", Strategy: domain.ConversationBranchStrategyApproximateContext,
+		ProviderScopeID: "agent-child-scope", Strategy: domain.ConversationBranchStrategyApproximateContext,
 		CreatedAt: testNow.Add(2 * time.Minute),
 	}
 	if err := s.CreateAndActivateConversationBranch(ctx, source.ID, child,
-		"claude-child-generation", child.CreatedAt); err != nil {
+		"agent-child-generation", child.CreatedAt); err != nil {
 		t.Fatalf("CreateAndActivateConversationBranch: %v", err)
 	}
 

@@ -495,7 +495,7 @@ describe("startAutoUpdates", () => {
       updaterEvents.get("update-downloaded")?.({ version: "2.1.0" });
       await flushMicrotasks();
       const failure = new Error(
-        "ditto: Could not lstat /Users/test/Library/Caches/dev.openagents.desktop.ShipIt/update.abc/Open Agents.app/Contents/Resources/acp-runtime/node_modules/.bin/node-which: No such file or directory",
+        "ditto: Could not lstat /Users/test/Library/Caches/dev.openagents.desktop.ShipIt/update.abc/Open Agents.app/Contents/Resources/tmux/bin/tmux: No such file or directory",
       );
       updaterEvents.get("error")?.(failure);
       nativeAutoUpdater.emit("error", failure);

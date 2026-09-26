@@ -48,7 +48,7 @@ func TestInsertReviewRunDuplicatePRSHAMapsToSentinel(t *testing.T) {
 		t.Fatalf("same sha on different PR should insert: %v", err)
 	}
 
-	if ok, err := s.UpdateReviewRunResult(ctx, "run-1", domain.ReviewRunFailed, domain.VerdictNone, "claude: not found", "", true); err != nil {
+	if ok, err := s.UpdateReviewRunResult(ctx, "run-1", domain.ReviewRunFailed, domain.VerdictNone, "agent: not found", "", true); err != nil {
 		t.Fatalf("mark failed: %v", err)
 	} else if !ok {
 		t.Fatal("mark failed: got ok=false")
@@ -210,10 +210,10 @@ func TestReviewUpsertReusesRowAndRunRoundTrip(t *testing.T) {
 	}
 	got, ok, err := s.GetReviewBySessionAndHarness(ctx, rec.ID, domain.ReviewerOpenCode)
 	if err != nil || !ok {
-		t.Fatalf("get claude review: ok=%v err=%v", ok, err)
+		t.Fatalf("get opencode review: ok=%v err=%v", ok, err)
 	}
 	if got.ID != "rev-1" {
-		t.Fatalf("claude review id = %q, want rev-1", got.ID)
+		t.Fatalf("opencode review id = %q, want rev-1", got.ID)
 	}
 	got, ok, err = s.GetReviewBySessionAndHarness(ctx, rec.ID, domain.ReviewerHarness("greptile"))
 	if err != nil || !ok {
@@ -245,23 +245,23 @@ func TestReviewUpsertReusesRowAndRunRoundTrip(t *testing.T) {
 	if got.AgentSessionID != "reviewer-native-1" {
 		t.Fatalf("agent session id = %q, want reviewer-native-1", got.AgentSessionID)
 	}
-	updated, err := s.UpdateReviewActivity(ctx, "rev-1", domain.ActivityIdle, "claude-native-1", "")
+	updated, err := s.UpdateReviewActivity(ctx, "rev-1", domain.ActivityIdle, "agent-native-1", "")
 	if err != nil || !updated {
-		t.Fatalf("update claude activity/native session: updated=%v err=%v", updated, err)
+		t.Fatalf("update opencode activity/native session: updated=%v err=%v", updated, err)
 	}
 	got, ok, err = s.GetReviewBySessionAndHarness(ctx, rec.ID, domain.ReviewerOpenCode)
 	if err != nil || !ok {
-		t.Fatalf("get claude review after native update: ok=%v err=%v", ok, err)
+		t.Fatalf("get opencode review after native update: ok=%v err=%v", ok, err)
 	}
-	if got.AgentSessionID != "claude-native-1" {
-		t.Fatalf("claude agent session id = %q, want claude-native-1", got.AgentSessionID)
+	if got.AgentSessionID != "agent-native-1" {
+		t.Fatalf("opencode agent session id = %q, want agent-native-1", got.AgentSessionID)
 	}
 	if got.ReviewerActivityState != domain.ActivityIdle {
-		t.Fatalf("claude reviewer activity state = %q, want idle", got.ReviewerActivityState)
+		t.Fatalf("opencode reviewer activity state = %q, want idle", got.ReviewerActivityState)
 	}
 	got, ok, err = s.GetReviewBySessionAndHarness(ctx, rec.ID, domain.ReviewerHarness("greptile"))
 	if err != nil || !ok {
-		t.Fatalf("get greptile review after claude update: ok=%v err=%v", ok, err)
+		t.Fatalf("get greptile review after opencode update: ok=%v err=%v", ok, err)
 	}
 	if got.AgentSessionID != "reviewer-native-1" {
 		t.Fatalf("greptile agent session id = %q, want reviewer-native-1", got.AgentSessionID)
