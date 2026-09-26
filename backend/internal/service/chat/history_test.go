@@ -355,6 +355,120 @@ func TestRollbackReportsAnUnknownTurn(t *testing.T) {
 	}
 }
 
+// A worker session has a task-scoped conversation with nothing worth trimming:
+// the prefix delete is a manager control, refused outright.
+func TestDeleteHistoryBeforeRefusesAWorkerSession(t *testing.T) {
+	recorder := newHistoryRecorder()
+	h := newHarnessWithConversation(t, recorder)
+	ctx := context.Background()
+	setHarnessSessionKind(t, h, domain.KindWorker)
+
+	turnID := completeTurn(t, h, "first", "provider-turn-1")
+	h.awaitSnapshot(t, func(s store.ConversationSnapshot) bool { return len(s.Messages) == 2 })
+
+	_, err := h.svc.DeleteHistoryBefore(ctx, testSession, turnID)
+	if !errors.Is(err, chatsvc.ErrHistoryManagerOnly) {
+		t.Fatalf("err = %v, want ErrHistoryManagerOnly", err)
+	}
+}
+
+// setHarnessSessionKind flips the harness session's kind in place. The service
+// gates the prefix trim on the durable record, never the caller. The harness
+// seeds a manager session, so the worker case demotes it explicitly.
+func setHarnessSessionKind(t *testing.T, h *harness, kind domain.SessionKind) {
+	t.Helper()
+	ctx := context.Background()
+	rec, found, err := h.st.GetSession(ctx, testSession)
+	if err != nil || !found {
+		t.Fatalf("get session: found=%v err=%v", found, err)
+	}
+	rec.Kind = kind
+	if err := h.st.UpdateSession(ctx, rec); err != nil {
+		t.Fatalf("set session kind %q: %v", kind, err)
+	}
+}
+
+// The manager shape of the trim: earlier prose is permanently removed, the
+// anchor and everything after it survive, and the provider is never asked to
+// forget anything.
+func TestDeleteHistoryBeforeTrimsThePrefixForAManager(t *testing.T) {
+	recorder := newHistoryRecorder()
+	h := newHarnessWithConversation(t, recorder)
+	ctx := context.Background()
+
+	completeTurn(t, h, "first", "provider-turn-1")
+	h.awaitSnapshot(t, func(s store.ConversationSnapshot) bool { return len(s.Messages) == 2 })
+	second := completeTurn(t, h, "second", "provider-turn-2")
+	h.awaitSnapshot(t, func(s store.ConversationSnapshot) bool { return len(s.Messages) == 4 })
+
+	result, err := h.svc.DeleteHistoryBefore(ctx, testSession, second)
+	if err != nil {
+		t.Fatalf("DeleteHistoryBefore: %v", err)
+	}
+	// The first turn leaves a user message and an assistant reply; neither
+	// emits a command activity, so only messages go.
+	if result.MessagesDeleted != 2 || result.ActivitiesDeleted != 0 {
+		t.Fatalf("deleted = %+v, want 2 messages and 0 activities", result)
+	}
+
+	// Durable-only: the provider was never asked to roll anything back.
+	if targets := recorder.rollbackTargets(); len(targets) != 0 {
+		t.Fatalf("provider rollback targets = %v, want none", targets)
+	}
+
+	snapshot, err := h.st.LoadConversationSnapshot(ctx, h.ctrl.ConversationID())
+	if err != nil {
+		t.Fatalf("load snapshot: %v", err)
+	}
+	requireMessageTexts(t, snapshot.Messages, []string{"second", "reply to second"})
+	for _, turn := range snapshot.Turns {
+		if turn.RolledBackAt != nil {
+			t.Errorf("turn %s was marked rolled back by a prefix delete", turn.ID)
+		}
+	}
+}
+
+// Refused, not raced: same guard as rollback. Deleting history out from under
+// a streaming turn would leave rows arriving into a range that no longer exists.
+func TestDeleteHistoryBeforeIsRefusedWhileATurnIsRunning(t *testing.T) {
+	recorder := newHistoryRecorder()
+	h := newHarnessWithConversation(t, recorder)
+	ctx := context.Background()
+
+	turnID := completeTurn(t, h, "first", "provider-turn-1")
+	h.awaitSnapshot(t, func(s store.ConversationSnapshot) bool { return len(s.Messages) == 2 })
+
+	if _, err := h.svc.Send(ctx, testSession, ports.ChatUserMessage{
+		Text: "still going", Origin: domain.MessageOriginHuman,
+	}); err != nil {
+		t.Fatalf("Send: %v", err)
+	}
+
+	_, err := h.svc.DeleteHistoryBefore(ctx, testSession, turnID)
+	if !errors.Is(err, chatsvc.ErrTurnRunning) {
+		t.Fatalf("err = %v, want ErrTurnRunning", err)
+	}
+
+	// A refused delete leaves the timeline alone.
+	snapshot, err := h.st.LoadConversationSnapshot(ctx, h.ctrl.ConversationID())
+	if err != nil {
+		t.Fatalf("load snapshot: %v", err)
+	}
+	if len(snapshot.Messages) != 3 {
+		t.Fatalf("messages = %d, want the settled pair plus the running prompt", len(snapshot.Messages))
+	}
+}
+
+// A turn id from nowhere is a 404-shaped answer, not a conflict.
+func TestDeleteHistoryBeforeReportsAnUnknownTurn(t *testing.T) {
+	h := newHarness(t)
+
+	_, err := h.svc.DeleteHistoryBefore(context.Background(), testSession, "turn-that-never-was")
+	if !errors.Is(err, domain.ErrNoConversationTurn) {
+		t.Fatalf("err = %v, want domain.ErrNoConversationTurn", err)
+	}
+}
+
 // The provider's own refusal must arrive as a conflict carrying its explanation. A
 // generic failure would tell the user nothing they could act on.
 func TestRollbackClassifiesAProviderRefusal(t *testing.T) {

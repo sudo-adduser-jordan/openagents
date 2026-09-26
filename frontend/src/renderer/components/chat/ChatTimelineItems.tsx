@@ -34,6 +34,7 @@ import {
 	ShieldQuestion,
 	ShieldX,
 	SquareTerminal,
+	Trash2,
 	Undo2,
 	User,
 } from "lucide-react";
@@ -721,6 +722,7 @@ export function AssistantMessage({
 	message,
 	showCopy = false,
 	onRollback,
+	onDeleteBefore,
 	durationMs,
 }: {
 	message: ConversationMessage;
@@ -731,13 +733,19 @@ export function AssistantMessage({
 	 * answer owns both "keep this" and "undo from here".
 	 */
 	onRollback?: () => void;
+	/**
+	 * Permanently delete rendered history before this turn. Manager-only: the
+	 * daemon refuses it elsewhere, so the affordance is not drawn at all rather
+	 * than shown and then refused.
+	 */
+	onDeleteBefore?: () => void;
 	/** How long the finished turn took; sits next to rollback on the action row. */
 	durationMs?: number;
 }) {
 	const visibleText = useSmoothStreamingText(message);
 	const renderingStreaming = message.streaming || visibleText.length < message.text.length;
 	const hasDuration = durationMs !== undefined && durationMs > 0;
-	const showActions = !renderingStreaming && (showCopy || Boolean(onRollback) || hasDuration);
+	const showActions = !renderingStreaming && (showCopy || Boolean(onRollback) || Boolean(onDeleteBefore) || hasDuration);
 	return (
 		<div className="group/message relative">
 			<ChatMarkdown text={visibleText} streaming={renderingStreaming} />
@@ -769,6 +777,21 @@ export function AssistantMessage({
 								</button>
 							</TooltipTrigger>
 							<TooltipContent side="bottom">Roll back to here</TooltipContent>
+						</Tooltip>
+					) : null}
+					{onDeleteBefore ? (
+						<Tooltip>
+							<TooltipTrigger asChild>
+								<button
+									type="button"
+									onClick={onDeleteBefore}
+									aria-label="Delete history before here"
+									className="flex size-7 items-center justify-center rounded-md text-muted-foreground transition-[scale,background-color,color] duration-150 ease-out hover:bg-interactive-hover hover:text-foreground active:scale-[0.96] motion-reduce:transition-none motion-reduce:active:scale-100"
+								>
+									<Trash2 aria-hidden="true" className="size-3" />
+								</button>
+							</TooltipTrigger>
+							<TooltipContent side="bottom">Delete history before here</TooltipContent>
 						</Tooltip>
 					) : null}
 					{hasDuration ? <TurnDuration durationMs={durationMs} /> : null}

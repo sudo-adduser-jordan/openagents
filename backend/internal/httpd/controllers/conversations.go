@@ -48,6 +48,7 @@ type ConversationService interface {
 	Compact(ctx context.Context, session domain.SessionID) (ports.ChatCompactionResult, error)
 	ClearHistory(ctx context.Context, session domain.SessionID) error
 	Rollback(ctx context.Context, session domain.SessionID, turnID string) (int, error)
+	DeleteHistoryBefore(ctx context.Context, session domain.SessionID, turnID string) (chatsvc.DeleteHistoryBeforeResult, error)
 	RetryTurn(ctx context.Context, session domain.SessionID, turnID string) (domain.ConversationTurn, error)
 	SetTitle(ctx context.Context, session domain.SessionID, title string) (string, error)
 	ReloadMCPServers(ctx context.Context, session domain.SessionID) ([]domain.ConversationMCPServer, error)
@@ -87,6 +88,7 @@ func (c *ConversationsController) Register(r chi.Router) {
 	r.Get("/sessions/{sessionId}/conversation/skills", c.skills)
 	r.Patch("/sessions/{sessionId}/conversation/settings", c.setSettings)
 	r.Post("/sessions/{sessionId}/conversation/turns/{turnId}/rollback", c.rollback)
+	r.Post("/sessions/{sessionId}/conversation/turns/{turnId}/delete-before", c.deleteHistoryBefore)
 	r.Post("/sessions/{sessionId}/conversation/turns/{turnId}/edit", c.editMessage)
 	r.Post("/sessions/{sessionId}/conversation/turns/{turnId}/retry", c.retryTurn)
 	r.Post("/sessions/{sessionId}/conversation/branches/{branchId}/activate", c.activateBranch)
@@ -347,6 +349,27 @@ func (c *ConversationsController) rollback(w http.ResponseWriter, r *http.Reques
 		return
 	}
 	envelope.WriteJSON(w, http.StatusOK, RollbackConversationResponse{TurnsDiscarded: discarded})
+}
+
+// deleteHistoryBefore permanently removes rendered manager history strictly
+// before the named turn. The anchor turn and everything after it survive, and
+// the provider thread is untouched: this reclaims transcript, not agent memory.
+func (c *ConversationsController) deleteHistoryBefore(w http.ResponseWriter, r *http.Request) {
+	if c.Svc == nil {
+		apispec.NotImplemented(w, r, "POST",
+			"/api/v1/sessions/{sessionId}/conversation/turns/{turnId}/delete-before")
+		return
+	}
+	result, err := c.Svc.DeleteHistoryBefore(r.Context(),
+		domain.SessionID(chi.URLParam(r, "sessionId")), chi.URLParam(r, "turnId"))
+	if err != nil {
+		writeConversationError(w, r, err)
+		return
+	}
+	envelope.WriteJSON(w, http.StatusOK, DeleteHistoryBeforeResponse{
+		MessagesDeleted:   result.MessagesDeleted,
+		ActivitiesDeleted: result.ActivitiesDeleted,
+	})
 }
 
 // setTitle names the provider's thread.
@@ -836,6 +859,10 @@ func writeConversationError(w http.ResponseWriter, r *http.Request, err error) {
 	case errors.Is(err, chatsvc.ErrRollbackUnsupported):
 		envelope.WriteAPIError(w, r, http.StatusConflict, "conflict",
 			"CHAT_ROLLBACK_UNSUPPORTED", "this agent cannot discard conversation history", nil)
+
+	case errors.Is(err, chatsvc.ErrHistoryManagerOnly):
+		envelope.WriteAPIError(w, r, http.StatusForbidden, "forbidden",
+			"CHAT_HISTORY_MANAGER_ONLY", "deleting conversation history is only available for manager sessions", nil)
 
 	case errors.Is(err, chatsvc.ErrForkUnsupported):
 		envelope.WriteAPIError(w, r, http.StatusConflict, "conflict",

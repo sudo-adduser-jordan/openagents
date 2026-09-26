@@ -820,6 +820,29 @@ export function useConversationCommands(sessionId: string | undefined) {
 		onSuccess: invalidate,
 	});
 
+	/**
+	 * Permanently delete rendered history before a turn. Unlike rollback this
+	 * asks nothing of the agent: the daemon removes its own transcript rows and
+	 * reports how many went, so a success is followed by a refetch rather than
+	 * an optimistic edit. Manager-only and destructive, so the control lives
+	 * behind a confirmation the rollback dialog does not share.
+	 */
+	const deleteBefore = useMutation({
+		mutationFn: async (turnId: string) => {
+			const { data, error } = await apiClient.POST(
+				"/api/v1/sessions/{sessionId}/conversation/turns/{turnId}/delete-before",
+				{
+					params: {
+						path: { sessionId: sessionId as string, turnId },
+					},
+				},
+			);
+			if (error) throw error;
+			return data;
+		},
+		onSuccess: invalidate,
+	});
+
 	const retryTurn = useMutation({
 		mutationFn: async ({ targetSessionId, sourceTurnId }: ConversationRetryMutationInput) => {
 			const { data, error } = await apiClient.POST(
@@ -985,6 +1008,9 @@ export function useConversationCommands(sessionId: string | undefined) {
 		rollback: (turnId: string) => rollback.mutateAsync(turnId),
 		rollbackPending: rollback.isPending,
 		rollbackError: rollback.error ? apiErrorMessage(rollback.error) : undefined,
+		deleteBefore: (turnId: string) => deleteBefore.mutateAsync(turnId),
+		deleteBeforePending: deleteBefore.isPending,
+		deleteBeforeError: deleteBefore.error ? apiErrorMessage(deleteBefore.error) : undefined,
 		retryControl: {
 			retry: (turnId: string) => {
 				if (!sessionId) return Promise.reject(new Error("No conversation session is selected."));

@@ -71,6 +71,10 @@ var (
 	// ErrBranchProviderMismatch refuses a historical branch whose opaque provider
 	// conversation id belongs to an earlier agent ownership epoch.
 	ErrBranchProviderMismatch = errors.New("conversation branch belongs to a different agent provider")
+	// ErrHistoryManagerOnly refuses a history prefix delete for a session that
+	// is not a manager. Only the manager's project-scoped conversation
+	// accumulates narrative across tasks, so only it gets the trim control.
+	ErrHistoryManagerOnly = errors.New("history deletion is only available for manager conversations")
 )
 
 // providerRefusal is satisfied by driver errors that mean "the provider said no"
@@ -120,6 +124,44 @@ func (s *Service) Rollback(ctx context.Context, id domain.SessionID, turnID stri
 		return 0, ErrRollbackUnsupported
 	}
 	return controller.Rollback(ctx, turnID)
+}
+
+// DeleteHistoryBeforeResult counts what a manager history prefix trim removed.
+type DeleteHistoryBeforeResult struct {
+	MessagesDeleted   int
+	ActivitiesDeleted int
+}
+
+// DeleteHistoryBefore permanently removes rendered history strictly before the
+// named turn, for a manager session only.
+//
+// Durable-only by design: the provider thread is untouched, because no driver
+// offers a prefix-forget primitive. What shrinks is Open Agents's transcript and
+// storage -- messages and activities before the anchor -- while turn rows, the
+// raw provider-event archive, and everything from the anchor on survive. The
+// agent keeps whatever context it still holds; the timeline simply starts later.
+//
+// Refused while a turn is running, before anything is deleted: removing history
+// out from under a streaming turn would leave rows arriving into a range that
+// no longer exists. A worker session is refused outright -- its conversation is
+// scoped to its own task and has nothing worth trimming.
+func (s *Service) DeleteHistoryBefore(ctx context.Context, id domain.SessionID, turnID string) (DeleteHistoryBeforeResult, error) {
+	record, err := s.requireChatSession(ctx, id)
+	if err != nil {
+		return DeleteHistoryBeforeResult{}, err
+	}
+	if record.Kind != domain.KindManager {
+		return DeleteHistoryBeforeResult{}, ErrHistoryManagerOnly
+	}
+	controller, err := s.Controller(id)
+	if err != nil {
+		return DeleteHistoryBeforeResult{}, err
+	}
+	messages, activities, err := controller.DeleteHistoryBefore(ctx, turnID)
+	if err != nil {
+		return DeleteHistoryBeforeResult{}, err
+	}
+	return DeleteHistoryBeforeResult{MessagesDeleted: messages, ActivitiesDeleted: activities}, nil
 }
 
 // ForkConversation branches this session's provider conversation and returns the

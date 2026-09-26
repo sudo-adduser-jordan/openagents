@@ -864,6 +864,30 @@ describe("conversation branching commands", () => {
 		).toBe(false);
 	});
 
+	it("deletes history before a turn through the dedicated endpoint", async () => {
+		postMock.mockResolvedValue({
+			data: { messagesDeleted: 4, activitiesDeleted: 6 },
+			error: undefined,
+		});
+		const { result } = renderHook(() => useConversationCommands("open-agents-1"), { wrapper });
+
+		let response: unknown;
+		await act(async () => {
+			response = await result.current.deleteBefore("turn-3");
+		});
+
+		expect(postMock).toHaveBeenCalledWith(
+			"/api/v1/sessions/{sessionId}/conversation/turns/{turnId}/delete-before",
+			expect.objectContaining({
+				params: { path: { sessionId: "open-agents-1", turnId: "turn-3" } },
+			}),
+		);
+		expect(response).toEqual({ messagesDeleted: 4, activitiesDeleted: 6 });
+		expect(
+			postMock.mock.calls.some(([path]) => String(path).endsWith("/rollback")),
+		).toBe(false);
+	});
+
 	it("returns a typed non-acceptance for a durably rejected inline edit", async () => {
 		apiErrorCodeMock.mockReturnValue("CHAT_EDIT_REJECTED");
 		apiErrorMessageMock.mockReturnValue("provider rejected edited prompt");

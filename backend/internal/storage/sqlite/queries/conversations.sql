@@ -1501,3 +1501,44 @@ SET state = 'rejected',
 WHERE conversation_id = ?
   AND client_message_id = ?
   AND state = 'reserved';
+
+-- The earliest timeline position of one turn. A prefix delete removes everything
+-- strictly before this sequence, so the anchor turn itself and everything after
+-- it survive. A turn with no items yet has no position; the caller falls back to
+-- the conversation head so deleting "up to" a fresh head turn clears the prefix.
+-- name: SelectConversationTurnAnchorSequence :one
+SELECT CAST(COALESCE(MIN(sequence), 0) AS INTEGER) AS anchor_sequence
+FROM (
+    SELECT sequence FROM conversation_messages
+    WHERE conversation_messages.conversation_id = sqlc.arg(conversation_id)
+      AND conversation_messages.turn_id = sqlc.arg(turn_id)
+    UNION ALL
+    SELECT sequence FROM conversation_activities
+    WHERE conversation_activities.conversation_id = sqlc.arg(conversation_id)
+      AND conversation_activities.turn_id = sqlc.arg(turn_id)
+);
+
+-- The head sequence of a conversation, for anchoring a prefix delete at a turn
+-- that has no timeline items yet.
+-- name: SelectConversationHeadSequence :one
+SELECT CAST(COALESCE(MAX(sequence), 0) AS INTEGER) AS head_sequence
+FROM (
+    SELECT sequence FROM conversation_messages
+    WHERE conversation_messages.conversation_id = sqlc.arg(conversation_id)
+    UNION ALL
+    SELECT sequence FROM conversation_activities
+    WHERE conversation_activities.conversation_id = sqlc.arg(conversation_id)
+);
+
+-- Durable prefix trim for manager history: drop rendered prose strictly before
+-- the anchor. Turn rows and the raw provider-event archive survive, so retry
+-- lineage and repairability are preserved; only what the timeline renders goes.
+-- name: DeleteConversationMessagesBeforeSequence :execrows
+DELETE FROM conversation_messages
+WHERE conversation_messages.conversation_id = sqlc.arg(conversation_id)
+  AND conversation_messages.sequence < sqlc.arg(before_sequence);
+
+-- name: DeleteConversationActivitiesBeforeSequence :execrows
+DELETE FROM conversation_activities
+WHERE conversation_activities.conversation_id = sqlc.arg(conversation_id)
+  AND conversation_activities.sequence < sqlc.arg(before_sequence);

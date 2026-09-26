@@ -29,7 +29,7 @@ import {
 	type ReactNode,
 	type WheelEvent as ReactWheelEvent,
 } from "react";
-import { ArrowDown, Loader2, LoaderCircle, TriangleAlert, Undo2 } from "lucide-react";
+import { ArrowDown, Loader2, LoaderCircle, Trash2, TriangleAlert, Undo2 } from "lucide-react";
 import { Reorder, useDragControls } from "motion/react";
 import { resolveWorkflowMode, WORKFLOW_MODE_LABELS } from "@openagents/product-ui";
 import { cn } from "../../lib/utils";
@@ -379,6 +379,14 @@ export interface ChatWorkspaceProps {
 	onRollback?: (turnId: string) => void | Promise<unknown>;
 	rollbackPending?: boolean;
 	rollbackError?: string;
+	/**
+	 * Permanently delete rendered history before a turn. Manager-only, like
+	 * onClearHistory: only the project-scoped conversation accumulates narrative
+	 * worth trimming. Absent means the affordance is not drawn at all.
+	 */
+	onDeleteBefore?: (turnId: string) => void | Promise<unknown>;
+	deleteBeforePending?: boolean;
+	deleteBeforeError?: string;
 	/** Opens the session Files inspector from a turn's changed-files Review control. */
 	onOpenFiles?: () => void;
 	/** Opens the Files inspector focused on one changed path. */
@@ -589,6 +597,9 @@ function ChatWorkspaceContent({
 	onRollback,
 	rollbackPending,
 	rollbackError,
+	onDeleteBefore,
+	deleteBeforePending,
+	deleteBeforeError,
 	onOpenFiles,
 	onOpenFile,
 	retryControl,
@@ -915,6 +926,10 @@ function ChatWorkspaceContent({
 	// The turn a confirmation is open for. Undo is not reversible and it changes what
 	// the agent knows, so it is never one click.
 	const [confirming, setConfirming] = useState<string | undefined>(undefined);
+	// The turn a history-deletion confirmation is open for. A prefix delete
+	// permanently removes transcript rows, so it gets its own confirmation with
+	// its own honest copy, separate from the rollback one.
+	const [deleting, setDeleting] = useState<string | undefined>(undefined);
 	const surfaceRef = useRef<HTMLElement | null>(null);
 	const lastWheelZoomAtRef = useRef(0);
 	const wheelZoomRemainderRef = useRef(0);
@@ -1132,6 +1147,12 @@ function ChatWorkspaceContent({
 	const effectiveSessionRole = session
 		? isManagerSession(session) ? "manager" : "worker"
 		: sessionRole;
+	// Same idle gating as rollback, plus manager-only like onClearHistory: only
+	// the project-scoped conversation accumulates narrative worth trimming.
+	const deleteBeforeTarget =
+		onDeleteBefore && effectiveSessionRole === "manager" && !turn && !newWorkDisabled
+			? (id: string) => setDeleting(id)
+			: undefined;
 	const workflowTone = resolveWorkflowMode(effectiveSessionRole, session?.workflowMode);
 	const working = Boolean(turn) || busy;
 	const prePR = !session?.kanbanColumn || session.kanbanColumn === "building";
@@ -1518,6 +1539,7 @@ function ChatWorkspaceContent({
 								onResolveInput={onResolveInput}
 								busy={busy}
 								onRollback={rollbackTarget}
+								onDeleteBefore={deleteBeforeTarget}
 								onOpenFiles={onOpenFiles}
 								onOpenFile={onOpenFile}
 								retryControl={retryControl}
@@ -1635,6 +1657,39 @@ function ChatWorkspaceContent({
 					if (!turnId) return;
 					setConfirming(undefined);
 					void Promise.resolve(onRollback?.(turnId)).catch(() => {});
+				}}
+			/>
+			{/* The copy has to be honest in the other direction: this is not "the
+			    agent forgets", it is "the transcript is gone". The agent keeps
+			    whatever context it still holds; what is permanently removed is
+			    Open Agents's own record of everything before this point. */}
+			<ConfirmDialog
+				open={Boolean(deleting) && !reviewerActive && !shellActive}
+				onOpenChange={(open) => {
+					if (!open) setDeleting(undefined);
+				}}
+				title="Delete history before this point?"
+				description={
+					<>
+						<p className="text-sm font-medium text-foreground">
+							Everything before this exchange will be permanently deleted.
+						</p>
+						<p className="mt-1 text-xs text-muted-foreground">
+							This exchange and everything after it stays. The agent itself keeps whatever
+							context it still holds -- only Open Agents's transcript is removed, and it
+							cannot be recovered. Files in the worktree are left exactly as they are.
+						</p>
+					</>
+				}
+				confirmLabel="Delete history"
+				destructive
+				busy={deleteBeforePending}
+				error={deleteBeforeError ?? null}
+				onConfirm={() => {
+					const turnId = deleting;
+					if (!turnId) return;
+					setDeleting(undefined);
+					void Promise.resolve(onDeleteBefore?.(turnId)).catch(() => {});
 				}}
 			/>
 		</section>
@@ -2079,6 +2134,7 @@ function Timeline({
 	onResolveInput,
 	busy,
 	onRollback,
+	onDeleteBefore,
 	onOpenFiles,
 	onOpenFile,
 	retryControl,
@@ -2101,6 +2157,7 @@ function Timeline({
 	onResolveInput?: ChatWorkspaceProps["onResolveInput"];
 	busy?: boolean;
 	onRollback?: (turnId: string) => void;
+	onDeleteBefore?: (turnId: string) => void;
 	onOpenFiles?: () => void;
 	onOpenFile?: (path: string) => void;
 	retryControl?: ChatRetryControl;
@@ -2216,6 +2273,7 @@ function Timeline({
 	const decide = useStableCallback(onDecide);
 	const resolveInput = useStableCallback(onResolveInput);
 	const rollback = useStableCallback(onRollback);
+	const deleteBefore = useStableCallback(onDeleteBefore);
 	const openFiles = useStableCallback(onOpenFiles);
 	const openFile = useStableCallback(onOpenFile);
 	const retryTurn = useStableCallback(retryControl?.retry);
@@ -3010,6 +3068,7 @@ function Timeline({
 									onDecide={decide}
 									onResolveInput={resolveInput}
 									onRollback={rollback}
+									onDeleteBefore={deleteBefore}
 									onOpenFiles={onOpenFiles ? openFiles : undefined}
 									onOpenFile={onOpenFile ? openFile : undefined}
 									retry={retry}
@@ -3040,6 +3099,10 @@ function Timeline({
 									// never saw holds no history to discard, and the daemon refuses it
 									// rather than hiding rows the agent still remembers.
 									canRollback={Boolean(onRollback && group.turnId && group.rollbackable)}
+									// A prefix delete needs only a durable anchor: unlike rollback
+									// it asks nothing of the provider, so any settled turn qualifies.
+									// Manager gating happened upstream where the target was built.
+									canDeleteBefore={Boolean(onDeleteBefore && group.turnId)}
 									busy={busy}
 									queued={Boolean(group.turnId && queued.has(group.turnId))}
 								/>
@@ -3205,6 +3268,7 @@ const TurnGroup = memo(function TurnGroup({
 	onDecide,
 	onResolveInput,
 	onRollback,
+	onDeleteBefore,
 	onOpenFiles,
 	onOpenFile,
 	onEditHumanMessage,
@@ -3225,6 +3289,7 @@ const TurnGroup = memo(function TurnGroup({
 	activateBranchPending,
 	activateBranchError,
 	canRollback,
+	canDeleteBefore,
 	retry,
 	busy,
 	queued,
@@ -3236,6 +3301,7 @@ const TurnGroup = memo(function TurnGroup({
 	onDecide: (requestId: string, decisionId: string) => void;
 	onResolveInput: NonNullable<ChatWorkspaceProps["onResolveInput"]>;
 	onRollback: (turnId: string) => void;
+	onDeleteBefore: (turnId: string) => void;
 	onOpenFiles?: () => void;
 	onOpenFile?: (path: string) => void;
 	onEditHumanMessage?: ChatWorkspaceProps["onEditMessage"];
@@ -3257,6 +3323,8 @@ const TurnGroup = memo(function TurnGroup({
 	activateBranchError?: string;
 	/** The daemon would accept a rollback of this turn, so offer the affordance. */
 	canRollback: boolean;
+	/** The daemon would accept a prefix delete anchored at this turn. */
+	canDeleteBefore: boolean;
 	/** Present only when this failed turn is eligible for a new attempt. */
 	retry?: TurnOutcomeRetryControl;
 	busy?: boolean;
@@ -3331,6 +3399,11 @@ const TurnGroup = memo(function TurnGroup({
 								? () => onRollback(group.turnId as string)
 								: undefined
 						}
+						onDeleteBefore={
+							canDeleteBefore && run.items[0]?.id === copyableMessageId
+								? () => onDeleteBefore(group.turnId as string)
+								: undefined
+						}
 						durationMs={
 							run.items[0]?.id === copyableMessageId ? group.outcome?.durationMs : undefined
 						}
@@ -3361,9 +3434,10 @@ const TurnGroup = memo(function TurnGroup({
 			) : null}
 			{/* No assistant prose to hang the undo / duration on — still offer them
 			    before the outcome divider so a tool-only turn is not stuck without a
-			    way back or a record of how long it took. */}
+			    way back or a record of how long it took. The prefix delete joins
+			    them for the same reason: a tool-only turn is still a valid anchor. */}
 			{!copyableMessageId &&
-			(canRollback || (group.outcome?.durationMs !== undefined && group.outcome.durationMs > 0)) ? (
+			(canRollback || canDeleteBefore || (group.outcome?.durationMs !== undefined && group.outcome.durationMs > 0)) ? (
 				<div className="mt-2 flex h-[18px] items-center gap-0.5">
 					{canRollback ? (
 						<button
@@ -3374,6 +3448,17 @@ const TurnGroup = memo(function TurnGroup({
 							className="flex items-center rounded px-1.5 py-0.5 text-muted-foreground transition-colors hover:bg-interactive-hover hover:text-foreground"
 						>
 							<Undo2 aria-hidden="true" className="size-3" />
+						</button>
+					) : null}
+					{canDeleteBefore ? (
+						<button
+							type="button"
+							onClick={() => onDeleteBefore(group.turnId as string)}
+							aria-label="Delete history before here"
+							title="Delete history before here"
+							className="flex items-center rounded px-1.5 py-0.5 text-muted-foreground transition-colors hover:bg-interactive-hover hover:text-foreground"
+						>
+							<Trash2 aria-hidden="true" className="size-3" />
 						</button>
 					) : null}
 					{group.outcome?.durationMs !== undefined && group.outcome.durationMs > 0 ? (
@@ -3494,6 +3579,7 @@ function TimelineItem({
 	newHumanMessageIds,
 	showCopy,
 	onRollback,
+	onDeleteBefore,
 	durationMs,
 }: {
 	item: ConversationItem;
@@ -3529,6 +3615,8 @@ function TimelineItem({
 	showCopy?: boolean;
 	/** Undo this finished turn from the answer that owns its copy action. */
 	onRollback?: () => void;
+	/** Delete rendered history before this turn, from the same action row. */
+	onDeleteBefore?: () => void;
 	/** Finished-turn duration; shown next to rollback on the final answer. */
 	durationMs?: number;
 	/** This message is the live edge of its turn, rather than an earlier fragment
@@ -3541,6 +3629,7 @@ function TimelineItem({
 					message={item}
 					showCopy={showCopy}
 					onRollback={onRollback}
+					onDeleteBefore={onDeleteBefore}
 					durationMs={durationMs}
 				/>
 			);

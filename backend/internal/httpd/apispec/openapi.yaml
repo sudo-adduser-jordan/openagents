@@ -3190,6 +3190,66 @@ paths:
       summary: Remove one queued message without stopping the running turn
       tags:
       - conversations
+  /api/v1/sessions/{sessionId}/conversation/turns/{turnId}/delete-before:
+    post:
+      operationId: deleteSessionConversationHistoryBefore
+      parameters:
+      - description: Session identifier, e.g. project-1.
+        in: path
+        name: sessionId
+        required: true
+        schema:
+          description: Session identifier, e.g. project-1.
+          type: string
+      - description: Open Agents conversation turn identifier, from the snapshot's
+          turns array.
+        in: path
+        name: turnId
+        required: true
+        schema:
+          description: Open Agents conversation turn identifier, from the snapshot's
+            turns array.
+          type: string
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/DeleteHistoryBeforeResponse'
+          description: OK
+        "403":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/APIError'
+          description: Forbidden
+        "404":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/APIError'
+          description: Not Found
+        "409":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/APIError'
+          description: Conflict
+        "500":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/APIError'
+          description: Internal Server Error
+        "501":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/APIError'
+          description: Not Implemented
+      summary: Permanently delete rendered manager history before a turn
+      tags:
+      - conversations
   /api/v1/sessions/{sessionId}/conversation/turns/{turnId}/edit:
     post:
       operationId: editSessionConversationMessage
@@ -7708,6 +7768,16 @@ components:
       required:
       - ok
       - workerId
+      type: object
+    DeleteHistoryBeforeResponse:
+      properties:
+        activitiesDeleted:
+          type: integer
+        messagesDeleted:
+          type: integer
+      required:
+      - messagesDeleted
+      - activitiesDeleted
       type: object
     DesktopWorkspaceLocationResponse:
       properties:

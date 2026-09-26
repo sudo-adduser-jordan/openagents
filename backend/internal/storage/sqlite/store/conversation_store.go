@@ -2595,6 +2595,84 @@ func (s *Store) RollbackTurns(
 	return int(discarded), nil
 }
 
+// DeleteHistoryBefore permanently removes rendered history strictly before the
+// named turn: messages and activities with an earlier sequence. The anchor turn
+// itself and everything after it survive. It returns how many messages and
+// activities were removed.
+//
+// Turn rows and the raw provider-event archive are left alone. Turns keep their
+// rows so retry lineage (retry_of_turn_id is ON DELETE RESTRICT) and the
+// rolled-back-turn filters keep working; the provider events are the only way
+// to answer what the provider actually said after a projection bug. What goes
+// is what the timeline renders: prose and activities. The provider thread is
+// untouched -- there is no ACP primitive for forgetting a prefix -- so this
+// reclaims Open Agents transcript and storage, not provider context.
+func (s *Store) DeleteHistoryBefore(
+	ctx context.Context,
+	conversationID, turnID string,
+) (messagesDeleted, activitiesDeleted int, err error) {
+	s.writeMu.Lock()
+	defer s.writeMu.Unlock()
+
+	turn, err := s.qr.SelectConversationTurnByID(ctx, turnID)
+	if errors.Is(err, sql.ErrNoRows) {
+		return 0, 0, fmt.Errorf("%w: %s", ErrConversationTurnNotFound, turnID)
+	}
+	if err != nil {
+		return 0, 0, fmt.Errorf("select turn %s: %w", turnID, err)
+	}
+	if turn.ConversationID != conversationID {
+		// Same guard as RollbackTurns: a foreign turn must not anchor a range
+		// operation against this conversation.
+		return 0, 0, fmt.Errorf("%w: %s is not in conversation %s",
+			ErrConversationTurnNotFound, turnID, conversationID)
+	}
+
+	var deletedMessages, deletedActivities int64
+	err = s.inTx(ctx, "delete history before turn", func(q *gen.Queries) error {
+		anchor, err := q.SelectConversationTurnAnchorSequence(ctx,
+			gen.SelectConversationTurnAnchorSequenceParams{
+				ConversationID: conversationID,
+				TurnID:         sql.NullString{String: turnID, Valid: true},
+			})
+		if err != nil {
+			return fmt.Errorf("select anchor sequence for turn %s: %w", turnID, err)
+		}
+		if anchor <= 0 {
+			// The anchor has no timeline items yet (a freshly dispatched head
+			// turn). Everything durable precedes it, so the cutoff is past the
+			// head rather than zero, which would delete nothing.
+			head, err := q.SelectConversationHeadSequence(ctx, conversationID)
+			if err != nil {
+				return fmt.Errorf("select head sequence for conversation %s: %w", conversationID, err)
+			}
+			anchor = head + 1
+		}
+		messages, err := q.DeleteConversationMessagesBeforeSequence(ctx,
+			gen.DeleteConversationMessagesBeforeSequenceParams{
+				ConversationID: conversationID,
+				BeforeSequence: anchor,
+			})
+		if err != nil {
+			return fmt.Errorf("delete messages before sequence %d: %w", anchor, err)
+		}
+		activities, err := q.DeleteConversationActivitiesBeforeSequence(ctx,
+			gen.DeleteConversationActivitiesBeforeSequenceParams{
+				ConversationID: conversationID,
+				BeforeSequence: anchor,
+			})
+		if err != nil {
+			return fmt.Errorf("delete activities before sequence %d: %w", anchor, err)
+		}
+		deletedMessages, deletedActivities = messages, activities
+		return nil
+	})
+	if err != nil {
+		return 0, 0, err
+	}
+	return int(deletedMessages), int(deletedActivities), nil
+}
+
 // SetProviderTitle records the title the provider reports for this conversation.
 func (s *Store) SetProviderTitle(
 	ctx context.Context,

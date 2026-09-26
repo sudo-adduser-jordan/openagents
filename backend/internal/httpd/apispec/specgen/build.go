@@ -183,6 +183,7 @@ var schemaNames = map[string]string{ //nolint:gosec // Public OpenAPI type names
 	"ControllersReloadConversationMCPServersResponse":      "ReloadConversationMCPServersResponse",
 	"ControllersCompactConversationResponse":               "CompactConversationResponse",
 	"ControllersRollbackConversationResponse":              "RollbackConversationResponse",
+	"ControllersDeleteHistoryBeforeResponse":               "DeleteHistoryBeforeResponse",
 	"ControllersRetryTurnResponse":                         "RetryTurnResponse",
 	"ControllersSetConversationTitleRequest":               "SetConversationTitleRequest",
 	"ControllersSetConversationTitleResponse":              "SetConversationTitleResponse",
@@ -964,6 +965,19 @@ func shellTerminalOperations() []operation {
 			resps: []respUnit{
 				{http.StatusOK, controllers.RollbackConversationResponse{}},
 				{http.StatusNotFound, envelope.APIError{}},
+				{http.StatusConflict, envelope.APIError{}},
+				{http.StatusInternalServerError, envelope.APIError{}},
+				{http.StatusNotImplemented, envelope.APIError{}},
+			},
+		},
+		{
+			method: http.MethodPost, path: "/api/v1/sessions/{sessionId}/conversation/turns/{turnId}/delete-before", id: "deleteSessionConversationHistoryBefore", tag: "conversations",
+			summary:    "Permanently delete rendered manager history before a turn",
+			pathParams: []any{controllers.SessionIDParam{}, controllers.ConversationTurnIDParam{}},
+			resps: []respUnit{
+				{http.StatusOK, controllers.DeleteHistoryBeforeResponse{}},
+				{http.StatusNotFound, envelope.APIError{}},
+				{http.StatusForbidden, envelope.APIError{}},
 				{http.StatusConflict, envelope.APIError{}},
 				{http.StatusInternalServerError, envelope.APIError{}},
 				{http.StatusNotImplemented, envelope.APIError{}},

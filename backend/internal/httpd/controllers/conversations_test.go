@@ -109,6 +109,10 @@ func (f *fakeConversationService) Rollback(context.Context, domain.SessionID, st
 	return 0, nil
 }
 
+func (f *fakeConversationService) DeleteHistoryBefore(context.Context, domain.SessionID, string) (chatsvc.DeleteHistoryBeforeResult, error) {
+	return chatsvc.DeleteHistoryBeforeResult{}, nil
+}
+
 func (f *fakeConversationService) RetryTurn(context.Context, domain.SessionID, string) (domain.ConversationTurn, error) {
 	return domain.ConversationTurn{}, nil
 }

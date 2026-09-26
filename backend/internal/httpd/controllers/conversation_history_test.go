@@ -23,16 +23,18 @@ import (
 // are different instructions, and a generic internal error is neither.
 
 type fakeChatService struct {
-	discarded   int
-	title       string
-	rollback    error
-	setTitle    error
-	edit        chatsvc.EditMessageResult
-	editErr     error
-	activate    string
-	activateErr error
-	retryTurn   domain.ConversationTurn
-	retryErr    error
+	discarded       int
+	title           string
+	rollback        error
+	setTitle        error
+	deletedBefore   chatsvc.DeleteHistoryBeforeResult
+	deleteBeforeErr error
+	edit            chatsvc.EditMessageResult
+	editErr         error
+	activate        string
+	activateErr     error
+	retryTurn       domain.ConversationTurn
+	retryErr        error
 
 	gotTurnID      string
 	gotTitle       string
@@ -92,6 +94,14 @@ func (f *fakeChatService) Rollback(_ context.Context, _ domain.SessionID, turnID
 		return 0, f.rollback
 	}
 	return f.discarded, nil
+}
+
+func (f *fakeChatService) DeleteHistoryBefore(_ context.Context, _ domain.SessionID, turnID string) (chatsvc.DeleteHistoryBeforeResult, error) {
+	f.gotTurnID = turnID
+	if f.deleteBeforeErr != nil {
+		return chatsvc.DeleteHistoryBeforeResult{}, f.deleteBeforeErr
+	}
+	return f.deletedBefore, nil
 }
 
 func (f *fakeChatService) RetryTurn(_ context.Context, _ domain.SessionID, turnID string) (domain.ConversationTurn, error) {
@@ -157,6 +167,51 @@ func TestRollbackRouteReportsWhatWasDiscarded(t *testing.T) {
 	mustJSON(t, body, &got)
 	if got.TurnsDiscarded != 3 {
 		t.Errorf("turnsDiscarded = %d, want 3", got.TurnsDiscarded)
+	}
+}
+
+func TestDeleteHistoryBeforeRouteReportsWhatWasRemoved(t *testing.T) {
+	svc := &fakeChatService{deletedBefore: chatsvc.DeleteHistoryBeforeResult{MessagesDeleted: 4, ActivitiesDeleted: 6}}
+	srv := newChatTestServer(t, svc)
+
+	body, status, headers := doRequest(t, srv, "POST",
+		"/api/v1/sessions/open-agents-1/conversation/turns/turn-7/delete-before", "")
+	assertJSON(t, headers)
+	if status != http.StatusOK {
+		t.Fatalf("status = %d, want 200; body=%s", status, body)
+	}
+	if svc.gotTurnID != "turn-7" {
+		t.Errorf("turn id = %q, want turn-7", svc.gotTurnID)
+	}
+	var got struct {
+		MessagesDeleted   int `json:"messagesDeleted"`
+		ActivitiesDeleted int `json:"activitiesDeleted"`
+	}
+	mustJSON(t, body, &got)
+	if got.MessagesDeleted != 4 || got.ActivitiesDeleted != 6 {
+		t.Errorf("deleted = %+v, want 4 messages and 6 activities", got)
+	}
+}
+
+func TestDeleteHistoryBeforeRouteRefusalsAreTyped(t *testing.T) {
+	cases := []struct {
+		name       string
+		err        error
+		wantStatus int
+		wantCode   string
+	}{
+		{"manager only", chatsvc.ErrHistoryManagerOnly, http.StatusForbidden, "CHAT_HISTORY_MANAGER_ONLY"},
+		{"busy", chatsvc.ErrTurnRunning, http.StatusConflict, "CHAT_TURN_RUNNING"},
+		{"unknown turn", domain.ErrNoConversationTurn, http.StatusNotFound, "CHAT_TURN_NOT_FOUND"},
+	}
+	for _, tc := range cases {
+		t.Run(tc.name, func(t *testing.T) {
+			srv := newChatTestServer(t, &fakeChatService{deleteBeforeErr: tc.err})
+			body, status, headers := doRequest(t, srv, http.MethodPost,
+				"/api/v1/sessions/open-agents-1/conversation/turns/turn-7/delete-before", "")
+			assertJSON(t, headers)
+			assertErrorCode(t, body, status, tc.wantStatus, tc.wantCode)
+		})
 	}
 }
 

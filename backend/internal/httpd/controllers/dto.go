@@ -2047,6 +2047,16 @@ type RollbackConversationResponse struct {
 	TurnsDiscarded int `json:"turnsDiscarded"`
 }
 
+// DeleteHistoryBeforeResponse reports what a manager history prefix trim removed.
+type DeleteHistoryBeforeResponse struct {
+	// MessagesDeleted counts the rendered messages permanently removed from
+	// before the anchor turn. The anchor and everything after it survive.
+	MessagesDeleted int `json:"messagesDeleted"`
+	// ActivitiesDeleted counts the timeline activities permanently removed from
+	// before the anchor turn.
+	ActivitiesDeleted int `json:"activitiesDeleted"`
+}
+
 // SetConversationTitleRequest names the provider's thread.
 type SetConversationTitleRequest struct {
 	Title string `json:"title"`

@@ -100,6 +100,7 @@ type Store interface {
 
 	TurnByID(ctx context.Context, turnID string) (domain.ConversationTurn, error)
 	RollbackTurns(ctx context.Context, conversationID, turnID string, now time.Time) (int, error)
+	DeleteHistoryBefore(ctx context.Context, conversationID, turnID string) (messagesDeleted, activitiesDeleted int, err error)
 
 	SetProviderTitle(ctx context.Context, conversationID, title string, now time.Time) error
 	ApplyProviderTitle(ctx context.Context, conversationID string, session domain.SessionID, title string, now time.Time) (bool, error)
@@ -2309,6 +2310,40 @@ func (c *Controller) Rollback(ctx context.Context, turnID string) (int, error) {
 		return 0, fmt.Errorf("record rollback of %s: %w", turnID, err)
 	}
 	return discarded, nil
+}
+
+// DeleteHistoryBefore permanently removes rendered history strictly before the
+// named turn. Unlike Rollback it never touches the provider: there is no ACP
+// primitive for forgetting a prefix, so the agent keeps whatever context it
+// holds and only Open Agents's transcript shrinks.
+//
+// The busy check is inside sendMu for the same reason Rollback holds it: a
+// turn starting or streaming between the check and the delete would write new
+// rows into the range being removed, or be removed from under itself.
+func (c *Controller) DeleteHistoryBefore(ctx context.Context, turnID string) (messagesDeleted, activitiesDeleted int, err error) {
+	c.sendMu.Lock()
+	defer c.sendMu.Unlock()
+	if c.handoffActive() {
+		return 0, 0, ErrControllerHandoff
+	}
+
+	if c.busy() {
+		// Same retryable refusal as Rollback: deleting history out from under a
+		// running turn would leave the timeline and the agent describing
+		// different conversations.
+		return 0, 0, ErrTurnRunning
+	}
+
+	turn, err := c.store.TurnByID(ctx, turnID)
+	if err != nil {
+		return 0, 0, err
+	}
+	if turn.ConversationID != c.conversation.ID {
+		return 0, 0, fmt.Errorf("%w: turn %s is not in this session's conversation",
+			domain.ErrNoConversationTurn, turnID)
+	}
+
+	return c.store.DeleteHistoryBefore(ctx, c.conversation.ID, turnID)
 }
 
 // Close detaches this daemon's controller. Persistent provider hosts keep the

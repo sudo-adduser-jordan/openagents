@@ -564,6 +564,47 @@ func (q *Queries) ConversationActivityExistsForProviderItem(ctx context.Context,
 	return exists, err
 }
 
+const deleteConversationActivitiesBeforeSequence = `-- name: DeleteConversationActivitiesBeforeSequence :execrows
+DELETE FROM conversation_activities
+WHERE conversation_activities.conversation_id = ?1
+  AND conversation_activities.sequence < ?2
+`
+
+type DeleteConversationActivitiesBeforeSequenceParams struct {
+	ConversationID string
+	BeforeSequence int64
+}
+
+func (q *Queries) DeleteConversationActivitiesBeforeSequence(ctx context.Context, arg DeleteConversationActivitiesBeforeSequenceParams) (int64, error) {
+	result, err := q.db.ExecContext(ctx, deleteConversationActivitiesBeforeSequence, arg.ConversationID, arg.BeforeSequence)
+	if err != nil {
+		return 0, err
+	}
+	return result.RowsAffected()
+}
+
+const deleteConversationMessagesBeforeSequence = `-- name: DeleteConversationMessagesBeforeSequence :execrows
+DELETE FROM conversation_messages
+WHERE conversation_messages.conversation_id = ?1
+  AND conversation_messages.sequence < ?2
+`
+
+type DeleteConversationMessagesBeforeSequenceParams struct {
+	ConversationID string
+	BeforeSequence int64
+}
+
+// Durable prefix trim for manager history: drop rendered prose strictly before
+// the anchor. Turn rows and the raw provider-event archive survive, so retry
+// lineage and repairability are preserved; only what the timeline renders goes.
+func (q *Queries) DeleteConversationMessagesBeforeSequence(ctx context.Context, arg DeleteConversationMessagesBeforeSequenceParams) (int64, error) {
+	result, err := q.db.ExecContext(ctx, deleteConversationMessagesBeforeSequence, arg.ConversationID, arg.BeforeSequence)
+	if err != nil {
+		return 0, err
+	}
+	return result.RowsAffected()
+}
+
 const failOrphanedConversationActivities = `-- name: FailOrphanedConversationActivities :exec
 UPDATE conversation_activities
 SET status = 'failed', revision = revision + 1, updated_at = ?1
@@ -2201,6 +2242,26 @@ func (q *Queries) SelectConversationEditDelivery(ctx context.Context, arg Select
 	return i, err
 }
 
+const selectConversationHeadSequence = `-- name: SelectConversationHeadSequence :one
+SELECT CAST(COALESCE(MAX(sequence), 0) AS INTEGER) AS head_sequence
+FROM (
+    SELECT sequence FROM conversation_messages
+    WHERE conversation_messages.conversation_id = ?1
+    UNION ALL
+    SELECT sequence FROM conversation_activities
+    WHERE conversation_activities.conversation_id = ?1
+)
+`
+
+// The head sequence of a conversation, for anchoring a prefix delete at a turn
+// that has no timeline items yet.
+func (q *Queries) SelectConversationHeadSequence(ctx context.Context, conversationID string) (int64, error) {
+	row := q.db.QueryRowContext(ctx, selectConversationHeadSequence, conversationID)
+	var head_sequence int64
+	err := row.Scan(&head_sequence)
+	return head_sequence, err
+}
+
 const selectConversationMessageByClientID = `-- name: SelectConversationMessageByClientID :one
 SELECT id, conversation_id, turn_id, sequence, revision, role, origin, text, streaming, provider_item_id, client_message_id, created_at, updated_at, delivery_content_json, branch_id FROM conversation_messages
 WHERE conversation_id = ? AND client_message_id = ?
@@ -2643,6 +2704,35 @@ func (q *Queries) SelectConversationSteerDelivery(ctx context.Context, arg Selec
 		&i.SettledAt,
 	)
 	return i, err
+}
+
+const selectConversationTurnAnchorSequence = `-- name: SelectConversationTurnAnchorSequence :one
+SELECT CAST(COALESCE(MIN(sequence), 0) AS INTEGER) AS anchor_sequence
+FROM (
+    SELECT sequence FROM conversation_messages
+    WHERE conversation_messages.conversation_id = ?1
+      AND conversation_messages.turn_id = ?2
+    UNION ALL
+    SELECT sequence FROM conversation_activities
+    WHERE conversation_activities.conversation_id = ?1
+      AND conversation_activities.turn_id = ?2
+)
+`
+
+type SelectConversationTurnAnchorSequenceParams struct {
+	ConversationID string
+	TurnID         sql.NullString
+}
+
+// The earliest timeline position of one turn. A prefix delete removes everything
+// strictly before this sequence, so the anchor turn itself and everything after
+// it survive. A turn with no items yet has no position; the caller falls back to
+// the conversation head so deleting "up to" a fresh head turn clears the prefix.
+func (q *Queries) SelectConversationTurnAnchorSequence(ctx context.Context, arg SelectConversationTurnAnchorSequenceParams) (int64, error) {
+	row := q.db.QueryRowContext(ctx, selectConversationTurnAnchorSequence, arg.ConversationID, arg.TurnID)
+	var anchor_sequence int64
+	err := row.Scan(&anchor_sequence)
+	return anchor_sequence, err
 }
 
 const selectConversationTurnByID = `-- name: SelectConversationTurnByID :one
