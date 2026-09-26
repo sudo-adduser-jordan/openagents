@@ -302,6 +302,11 @@ type Store interface {
 	// when the row had already progressed past seed state — preserving the
 	// no-resurrection guarantee for live sessions.
 	DeleteSession(ctx context.Context, id domain.SessionID) (bool, error)
+	// RetireSession permanently removes a terminated session's row, recording its
+	// number as retired and emitting a change event so connected clients drop the
+	// card. Refuses a session that is still running: that is Kill's job, and
+	// Kill is what already preserves the worktree.
+	RetireSession(ctx context.Context, id domain.SessionID, now time.Time) (bool, error)
 	// UpsertSessionWorktree records or updates the worktree row for a session.
 	// SaveAndTeardownAll writes the preserved_ref here (even when empty) as the
 	// "shutdown-saved" marker before ForceDestroying the worktree.
@@ -1695,6 +1700,30 @@ const killTeardownBudget = 90 * time.Second
 // failed partway, handle lost after a crash) is still terminated after the
 // available destroy steps are skipped so it can be cleaned up from the
 // dashboard.
+// RetireSession permanently removes a finished session, the user-initiated
+// counterpart to Kill. It refuses a running session: killing first is what runs
+// teardown and preserves a dirty worktree, and skipping it would delete a row
+// while its process and directory are still live.
+//
+// The worktree itself is not removed here. Kill already left the directory
+// alone when it could not prove it clean, and re-implementing that judgement at
+// delete time would mean a second, looser version of the rule.
+func (m *Manager) RetireSession(ctx context.Context, id domain.SessionID) (bool, error) {
+	if _, ok, err := m.store.GetSession(ctx, id); err != nil {
+		return false, err
+	} else if !ok {
+		return false, nil
+	}
+	if err := m.beginAgentOperation(ctx, id, agentOperationRetireSession); err != nil {
+		if errors.Is(err, errAgentOperationInProgress) {
+			err = ErrExclusiveOperationInProgress
+		}
+		return false, fmt.Errorf("retire session %s: %w", id, err)
+	}
+	defer m.endAgentOperation(id, agentOperationRetireSession)
+	return m.store.RetireSession(ctx, id, m.clock())
+}
+
 func (m *Manager) Kill(ctx context.Context, id domain.SessionID) (bool, error) {
 	// Teardown deliberately stops riding the caller's context. Kill runs a
 	// sequence (stop the agent, tear the controller down, drop the worktree,

@@ -378,6 +378,12 @@ type Project struct {
 	Kind          string
 }
 
+type RetiredSessionNum struct {
+	ProjectID string
+	Num       int64
+	RetiredAt time.Time
+}
+
 type Review struct {
 	ID                    string
 	SessionID             domain.SessionID

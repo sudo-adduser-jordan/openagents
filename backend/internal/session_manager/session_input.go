@@ -13,11 +13,14 @@ import (
 type agentOperationKind string
 
 const (
-	agentOperationExit              agentOperationKind = "exit"
-	agentOperationResume            agentOperationKind = "resume"
-	agentOperationKill              agentOperationKind = "kill"
-	agentOperationRestore           agentOperationKind = "restore"
-	agentOperationRetire            agentOperationKind = "retire"
+	agentOperationExit    agentOperationKind = "exit"
+	agentOperationResume  agentOperationKind = "resume"
+	agentOperationKill    agentOperationKind = "kill"
+	agentOperationRestore agentOperationKind = "restore"
+	agentOperationRetire  agentOperationKind = "retire"
+	// Deleting a finished session's row. Distinct from agentOperationRetire,
+	// which captures work for a replacement session rather than removing one.
+	agentOperationRetireSession     agentOperationKind = "retire_session"
 	agentOperationReconcile         agentOperationKind = "reconcile"
 	agentOperationInterfaceRecovery agentOperationKind = "interface_recovery"
 )

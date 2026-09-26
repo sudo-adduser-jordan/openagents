@@ -9,6 +9,7 @@ import (
 	"time"
 
 	"github.com/sudo-adduser-jordan/open-agents/backend/internal/domain"
+	"github.com/sudo-adduser-jordan/open-agents/backend/internal/ports"
 	"github.com/sudo-adduser-jordan/open-agents/backend/internal/storage/sqlite/gen"
 )
 
@@ -29,7 +30,12 @@ func (s *Store) CreateSession(ctx context.Context, rec domain.SessionRecord) (do
 		num, err = s.qw.NextStandaloneSessionNum(ctx)
 		prefix = "standalone"
 	} else {
-		num, err = s.qw.NextSessionNum(ctx, optionalProjectID(rec.ProjectID))
+		// Both project_id placeholders are the same project: one reads live
+		// sessions, the other retired numbers.
+		num, err = s.qw.NextSessionNum(ctx, gen.NextSessionNumParams{
+			ProjectID:   optionalProjectID(rec.ProjectID),
+			ProjectID_2: string(rec.ProjectID),
+		})
 	}
 	if err != nil {
 		return domain.SessionRecord{}, fmt.Errorf("next session num for %s: %w", rec.ProjectID, err)
@@ -440,6 +446,71 @@ WHERE id = ?
 		return false, fmt.Errorf("delete seed session: commit: %w", err)
 	}
 	return n > 0, nil
+}
+
+// RetireSession permanently removes a terminated session's row, and is the
+// deliberate, user-initiated counterpart to DeleteSession's seed-only cleanup.
+//
+// DeleteSession refuses any row that has progressed past seed state, which
+// includes every terminated session, so it can never do this job.
+//
+// The ordering is what makes it safe. change_log FKs sessions(id) without
+// ON DELETE CASCADE, so its rows go first; then the session number is recorded
+// as retired so the next spawn cannot be handed this id; then the row itself
+// goes, and the sessions_cdc_delete trigger records the event the client needs
+// to drop the card. conversation_turns now detaches rather than cascades, so a
+// manager's turns and the project narrative survive their owner.
+//
+// The whole thing is one transaction. A partial retire would leave a session
+// with no row, no change_log, and a reusable number.
+func (s *Store) RetireSession(ctx context.Context, id domain.SessionID, now time.Time) (bool, error) {
+	s.writeMu.Lock()
+	defer s.writeMu.Unlock()
+	tx, err := s.writeDB.BeginTx(ctx, nil)
+	if err != nil {
+		return false, fmt.Errorf("begin retire session: %w", err)
+	}
+	defer func() { _ = tx.Rollback() }()
+
+	row := tx.QueryRowContext(ctx, `
+SELECT COALESCE(project_id, ''), num, is_terminated FROM sessions WHERE id = ?`, id)
+	var projectID string
+	var num int64
+	var terminated bool
+	switch err := row.Scan(&projectID, &num, &terminated); {
+	case errors.Is(err, sql.ErrNoRows):
+		if err := tx.Commit(); err != nil {
+			return false, fmt.Errorf("retire session: commit no-op: %w", err)
+		}
+		return false, nil
+	case err != nil:
+		return false, fmt.Errorf("retire session %s: read row: %w", id, err)
+	case !terminated:
+		// Retiring a live session is a kill, not a retire. Refusing keeps the two
+		// from being confused, and Kill already preserves the worktree.
+		if err := tx.Commit(); err != nil {
+			return false, fmt.Errorf("retire session: commit no-op: %w", err)
+		}
+		return false, fmt.Errorf("%w: %s is still running; terminate it before retiring it", ports.ErrSessionNotTerminated, id)
+	}
+
+	if _, err := tx.ExecContext(ctx, `DELETE FROM change_log WHERE session_id = ?`, id); err != nil {
+		return false, fmt.Errorf("retire session %s: clear change log: %w", id, err)
+	}
+	// Recorded before the row goes, while its number is still readable. After the
+	// delete the num would have to come from somewhere else and could be lost.
+	if _, err := tx.ExecContext(ctx, `
+INSERT INTO retired_session_nums (project_id, num, retired_at) VALUES (?, ?, ?)
+ON CONFLICT (project_id, num) DO NOTHING`, projectID, num, now); err != nil {
+		return false, fmt.Errorf("retire session %s: record retired number: %w", id, err)
+	}
+	if _, err := tx.ExecContext(ctx, `DELETE FROM sessions WHERE id = ?`, id); err != nil {
+		return false, fmt.Errorf("retire session %s: %w", id, err)
+	}
+	if err := tx.Commit(); err != nil {
+		return false, fmt.Errorf("retire session: commit: %w", err)
+	}
+	return true, nil
 }
 
 // GetSession returns the full record for a session, or ok=false if absent.

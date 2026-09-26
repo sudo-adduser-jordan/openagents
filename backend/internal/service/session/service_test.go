@@ -2408,6 +2408,7 @@ func TestSessionRenameMissingSessionReturnsNotFound(t *testing.T) {
 // fakeCommander records Kill/Spawn calls so a test can assert the
 // clean-manager ordering without wiring a real session engine.
 type fakeCommander struct {
+	retiredSessions []domain.SessionID
 	killed          []domain.SessionID
 	retired         []domain.SessionID
 	exited          []domain.SessionID

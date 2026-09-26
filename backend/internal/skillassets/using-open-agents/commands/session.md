@@ -98,6 +98,33 @@ open-agents session kill mer-3
 
 ---
 
+### open-agents session rm
+
+Permanently remove a terminated session and its record. The counterpart to `kill`: **kill** ends a running session, **rm** removes the record of one that already finished.
+
+Deleting is refused while the session is still running — `kill` first. The session row, its change log, and the PR facts and conversation turns that cascade from it are removed, and the session's number is retired so it is never reused. The worktree directory is left alone.
+
+**Syntax:**
+```
+open-agents session rm <id> [flags]
+```
+
+**Flags:**
+
+| Flag | Meaning | Default / Required |
+|---|---|---|
+| `--project string` | Project id to scope the session lookup | - |
+| `--json` | Output as JSON | - |
+
+**Examples:**
+```bash
+# Kill, then remove for good
+open-agents session kill mer-3
+open-agents session rm mer-3
+```
+
+---
+
 ### open-agents session rename
 
 Rename a session.

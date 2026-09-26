@@ -2054,6 +2054,23 @@ func sessionOperations() []operation {
 			},
 		},
 		{
+			// The counterpart to kill, and easy to confuse with it. This deletes
+			// the record of a session that already finished; it does not end a
+			// running one, and refuses that with 409. What goes with the row is the
+			// change log, the PR facts and conversation turns that cascade, and the
+			// session's number, which is retired so it is never reused.
+			method: http.MethodDelete, path: "/api/v1/sessions/{sessionId}", id: "removeSession", tag: "sessions",
+			summary:    "Permanently remove a terminated session and its record",
+			pathParams: []any{controllers.SessionIDParam{}},
+			resps: []respUnit{
+				{http.StatusOK, controllers.KillSessionResponse{}},
+				{http.StatusNotFound, envelope.APIError{}},
+				{http.StatusConflict, envelope.APIError{}},
+				{http.StatusInternalServerError, envelope.APIError{}},
+				{http.StatusNotImplemented, envelope.APIError{}},
+			},
+		},
+		{
 			method: http.MethodPost, path: "/api/v1/sessions/{sessionId}/kill", id: "killSession", tag: "sessions",
 			summary:    "Mark a session terminated and tear down runtime/workspace resources",
 			pathParams: []any{controllers.SessionIDParam{}},

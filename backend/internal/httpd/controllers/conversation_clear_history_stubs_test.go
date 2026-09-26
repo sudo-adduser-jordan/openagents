@@ -25,3 +25,7 @@ func (s *reorderQueuedStub) ClearHistory(context.Context, domain.SessionID) erro
 func (s *steerStub) ClearHistory(context.Context, domain.SessionID) error { return nil }
 
 func (s *promoteQueuedStub) ClearHistory(context.Context, domain.SessionID) error { return nil }
+
+func (f *fakeSessionService) Retire(context.Context, domain.SessionID) (bool, error) {
+	return false, nil
+}

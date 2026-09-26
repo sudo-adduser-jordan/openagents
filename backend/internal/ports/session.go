@@ -9,6 +9,11 @@ import (
 // ErrSessionNotFound reports an observation for an unknown session id.
 var ErrSessionNotFound = errors.New("session not found")
 
+// ErrSessionNotTerminated reports an attempt to retire a session that is still
+// running. Retiring is for a finished session; a live one has to be terminated
+// first, which is the operation that already preserves its worktree.
+var ErrSessionNotTerminated = errors.New("session is not terminated")
+
 // ErrActivityProjectionContention means no signal projection committed after
 // retrying concurrent session writes. The same hook payload may be retried.
 var ErrActivityProjectionContention = errors.New("activity projection contention")

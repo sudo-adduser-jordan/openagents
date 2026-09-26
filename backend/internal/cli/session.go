@@ -194,6 +194,7 @@ func newSessionCommand(ctx *commandContext) *cobra.Command {
 	cmd.AddCommand(newSessionListCommand(ctx))
 	cmd.AddCommand(newSessionGetCommand(ctx))
 	cmd.AddCommand(newSessionKillCommand(ctx))
+	cmd.AddCommand(newSessionRetireCommand(ctx))
 	cmd.AddCommand(newSessionRestoreCommand(ctx))
 	cmd.AddCommand(newSessionExitAgentCommand(ctx))
 	cmd.AddCommand(newSessionResumeAgentCommand(ctx))
@@ -257,6 +258,51 @@ func newSessionKillCommand(ctx *commandContext) *cobra.Command {
 	}
 	addSessionProjectFlag(cmd.Flags(), &opts.project, "Project id to scope the lookup")
 	return cmd
+}
+
+// newSessionRetireCommand deletes the record of a session that already finished.
+// The wording matters: `kill` ends a running session, `rm` removes a dead one.
+// A running session has to be killed first, which is also what preserves a
+// dirty worktree -- retiring never tears anything down.
+func newSessionRetireCommand(ctx *commandContext) *cobra.Command {
+	var opts sessionOptions
+	cmd := &cobra.Command{
+		Use:   "rm <id>",
+		Short: "Permanently remove a terminated session and its record",
+		Long: "Permanently remove a terminated session and its record.\n\n" +
+			"This deletes the session row, its change log, and the PR facts and " +
+			"conversation turns that cascade from it. The session's number is retired " +
+			"so it is never reused. A running session must be killed first; the " +
+			"worktree is left alone either way.",
+		Args: oneSessionIDArg,
+		RunE: func(cmd *cobra.Command, args []string) error {
+			id, err := normalizeSessionID(args[0])
+			if err != nil {
+				return err
+			}
+			return ctx.retireSession(cmd.Context(), cmd, id, opts)
+		},
+	}
+	addSessionProjectFlag(cmd.Flags(), &opts.project, "Project id to scope the lookup")
+	cmd.Flags().BoolVar(&opts.json, "json", false, "Output as JSON")
+	return cmd
+}
+
+func (c *commandContext) retireSession(ctx context.Context, cmd *cobra.Command, id string, opts sessionOptions) error {
+	if opts.project != "" {
+		if _, err := c.fetchScopedSession(ctx, id, opts.project); err != nil {
+			return err
+		}
+	}
+	var res killSessionResponse
+	if err := c.deleteJSON(ctx, "sessions/"+url.PathEscape(id), &res); err != nil {
+		return err
+	}
+	if opts.json {
+		return writeJSON(cmd.OutOrStdout(), res)
+	}
+	_, err := fmt.Fprintf(cmd.OutOrStdout(), "session %s removed\n", res.SessionID)
+	return err
 }
 
 func newSessionRestoreCommand(ctx *commandContext) *cobra.Command {

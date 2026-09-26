@@ -25,6 +25,7 @@ import {
 } from "../hooks/useTerminateSession";
 import { cn } from "../lib/utils";
 import { AgentAvatar } from "./AgentAvatar";
+import { ArchiveRemoveButton } from "./ArchiveRemoveButton";
 import { ProductExternalLink } from "./ProductExternalLink";
 import { SessionTerminationPopover } from "./SessionTerminationPopover";
 import { Tooltip, TooltipContent, TooltipTrigger } from "./ui/tooltip";
@@ -85,6 +86,9 @@ export function BoardSessionCardAdapter({
 export function ArchivedSessionCardAdapter({
 	isRestoreDisabled,
 	isRestoring,
+	onRemove,
+	isRemoving,
+	removeError,
 	restoreAction,
 	restoreError,
 	session,
@@ -92,6 +96,9 @@ export function ArchivedSessionCardAdapter({
 }: {
 	isRestoreDisabled: boolean;
 	isRestoring: boolean;
+	onRemove: () => void;
+	isRemoving: boolean;
+	removeError?: string;
 	restoreAction: (event: MouseEvent<HTMLButtonElement>) => void;
 	restoreError?: string;
 	session: WorkspaceSession;
@@ -101,15 +108,22 @@ export function ArchivedSessionCardAdapter({
 	return (
 		<DesktopSessionCard
 			action={
-				<ArchiveRestoreButton
-					isDisabled={isRestoreDisabled}
-					isRestoring={isRestoring}
-					label={`Restore ${session.title}`}
-					onClick={restoreAction}
-				/>
+				<div className="flex items-center gap-0.5">
+					<ArchiveRestoreButton
+						isDisabled={isRestoreDisabled}
+						isRestoring={isRestoring}
+						label={`Restore ${session.title}`}
+						onClick={restoreAction}
+					/>
+					<ArchiveRemoveButton
+						isRemoving={isRemoving}
+						label={session.title}
+						onRemove={onRemove}
+					/>
+				</div>
 			}
 			branchAction={branch ? <CopyActionButton label={`branch ${branch}`} value={branch} /> : undefined}
-			footer={<ArchiveRestoreError message={restoreError} />}
+			footer={<ArchiveRestoreError message={restoreError ?? removeError} />}
 			interactive={false}
 			session={session}
 			usage={usage}

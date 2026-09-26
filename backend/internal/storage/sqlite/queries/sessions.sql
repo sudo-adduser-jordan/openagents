@@ -1,8 +1,29 @@
 -- name: NextSessionNum :one
-SELECT COALESCE(MAX(num), 0) + 1 AS next FROM sessions WHERE project_id = ?;
+-- Retired numbers are counted too. A retired session freed its row, and without
+-- this the next spawn would be handed the same id that a registered worktree
+-- path, a PR conversation, or a change_log row still references.
+--
+-- COALESCE(MAX(...)) takes one argument, not MAX(x, 0): in a query that already
+-- aggregates, SQLite reads the two-argument form as the aggregate and silently
+-- drops its second argument, discarding the retired half of this union.
+SELECT COALESCE(MAX(candidate), 0) + 1 AS next FROM (
+    SELECT COALESCE(MAX(s.num), 0) AS candidate
+    FROM sessions AS s WHERE s.project_id = ?
+    UNION ALL
+    SELECT COALESCE(MAX(r.num), 0)
+    FROM retired_session_nums AS r WHERE r.project_id = ?
+);
 
 -- name: NextStandaloneSessionNum :one
-SELECT COALESCE(MAX(num), 0) + 1 AS next FROM sessions WHERE project_id IS NULL;
+-- Standalone sessions have no project, so they are recorded under the empty
+-- string rather than NULL, which cannot take part in a PRIMARY KEY.
+SELECT COALESCE(MAX(candidate), 0) + 1 AS next FROM (
+    SELECT COALESCE(MAX(s.num), 0) AS candidate
+    FROM sessions AS s WHERE s.project_id IS NULL
+    UNION ALL
+    SELECT COALESCE(MAX(r.num), 0)
+    FROM retired_session_nums AS r WHERE r.project_id = ''
+);
 
 -- name: SessionIDExists :one
 SELECT COUNT(*) > 0 FROM sessions WHERE id = ?;

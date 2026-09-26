@@ -62,6 +62,7 @@ type commander interface {
 	RestoreWithMode(ctx context.Context, id domain.SessionID) (sessionmanager.RestoreResult, error)
 	ResumeAgentWithMode(ctx context.Context, id domain.SessionID) (sessionmanager.RestoreResult, error)
 	Kill(ctx context.Context, id domain.SessionID) (bool, error)
+	RetireSession(ctx context.Context, id domain.SessionID) (bool, error)
 	RetireForReplacement(ctx context.Context, id domain.SessionID) error
 	WaitForMessageDeliveryReady(ctx context.Context, id domain.SessionID) error
 	Send(ctx context.Context, id domain.SessionID, message string, attachment *ports.SpawnAttachment) error
@@ -616,6 +617,19 @@ func restoreModeView(mode sessionmanager.RestoreMode) RestoreModeView {
 func (s *Service) Kill(ctx context.Context, id domain.SessionID) (bool, error) {
 	freed, err := s.manager.Kill(ctx, id)
 	return freed, toAPIError(err)
+}
+
+// Retire permanently removes a finished session's row: the user-initiated
+// counterpart to Kill, for a task they no longer want on the board at all.
+//
+// A running session is refused rather than killed here. Retire removes a record;
+// Kill ends a process and is the operation that runs teardown and preserves a
+// dirty worktree, so a caller wanting the session gone should terminate first and
+// retire second. What retire destroys is the row, its change log, and any PR
+// facts and conversation turns that cascade from it.
+func (s *Service) Retire(ctx context.Context, id domain.SessionID) (bool, error) {
+	removed, err := s.manager.RetireSession(ctx, id)
+	return removed, toAPIError(err)
 }
 
 // RollbackSpawn deletes a seed-state session row, or falls back to a Kill if

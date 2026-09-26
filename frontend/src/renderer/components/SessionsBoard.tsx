@@ -25,6 +25,8 @@ import {
 	useSessionUsageSummaries,
 	type SessionUsageSummary,
 } from "../hooks/useSessionUsageSummaries";
+import { apiErrorMessage } from "../lib/api-client";
+import { useRetireSession } from "../hooks/useRetireSession";
 import { useRestoreSession } from "../hooks/useRestoreSession";
 import { useTerminateSession } from "../hooks/useTerminateSession";
 import { useWorkspaceQuery, workspaceQueryKey } from "../hooks/useWorkspaceQuery";
@@ -360,6 +362,7 @@ const BoardArchivePanel = memo(function BoardArchivePanel({
 	sessions: WorkspaceSession[];
 	usageBySession: UsageBySession;
 }) {
+	const retireSession = useRetireSession();
 	const navigate = useNavigate();
 	const queryClient = useQueryClient();
 	const restoreSessionById = useRestoreSession();
@@ -434,6 +437,11 @@ const BoardArchivePanel = memo(function BoardArchivePanel({
 					<ArchivedSessionCardAdapter
 						isRestoreDisabled={restoringSessionId !== undefined}
 						isRestoring={restoringSessionId === session.id}
+						onRemove={() => retireSession.mutate(session.id)}
+						isRemoving={retireSession.isPending && retireSession.variables === session.id}
+						removeError={retireSession.isError && retireSession.variables === session.id
+							? apiErrorMessage(retireSession.error, `Failed to remove ${session.title}`)
+							: undefined}
 						restoreAction={(event) => void restoreArchivedSession(event, session)}
 						restoreError={restoreErrors[session.id]}
 						session={session}

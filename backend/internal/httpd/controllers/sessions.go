@@ -81,6 +81,7 @@ type SessionService interface {
 	ExitAgent(ctx context.Context, id domain.SessionID) (sessionsvc.ExitAgentOutcome, error)
 	ResumeAgent(ctx context.Context, id domain.SessionID) (sessionsvc.ResumeAgentOutcome, error)
 	Kill(ctx context.Context, id domain.SessionID) (bool, error)
+	Retire(ctx context.Context, id domain.SessionID) (bool, error)
 	RollbackSpawn(ctx context.Context, id domain.SessionID) (sessionsvc.RollbackOutcome, error)
 	Cleanup(ctx context.Context, project domain.ProjectID) (sessionsvc.CleanupOutcome, error)
 	Rename(ctx context.Context, id domain.SessionID, displayName string) error
@@ -191,6 +192,7 @@ func (c *SessionsController) Register(r chi.Router) {
 	r.Delete("/sessions/{sessionId}/interface-transition", c.cancelInterfaceTransition)
 	r.Put("/sessions/{sessionId}/interface-transition/{transitionId}/notice-acknowledgement", c.acknowledgeInterfaceTransitionNotice)
 	r.Post("/sessions/{sessionId}/kill", c.kill)
+	r.Delete("/sessions/{sessionId}", c.retire)
 	r.Post("/sessions/{sessionId}/rollback", c.rollback)
 	r.Post("/sessions/{sessionId}/send", c.send)
 	r.Post("/sessions/{sessionId}/activity", c.activity)
@@ -1343,6 +1345,30 @@ func (c *SessionsController) kill(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	envelope.WriteJSON(w, http.StatusOK, KillSessionResponse{OK: true, SessionID: sessionID(r), Freed: freed})
+}
+
+// retire permanently removes a finished session's row. This is the counterpart
+// to kill, and the two must not be confused: kill ends a running session and
+// runs its teardown, retire deletes the record of one that already finished.
+//
+// 409 rather than 400 for a session that is still running, because it is a
+// state the caller has to change first, not a malformed request.
+func (c *SessionsController) retire(w http.ResponseWriter, r *http.Request) {
+	if c.Svc == nil {
+		apispec.NotImplemented(w, r, "DELETE", "/api/v1/sessions/{sessionId}")
+		return
+	}
+	removed, err := c.Svc.Retire(r.Context(), sessionID(r))
+	if err != nil {
+		if errors.Is(err, ports.ErrSessionNotTerminated) {
+			envelope.WriteAPIError(w, r, http.StatusConflict, "conflict",
+				"SESSION_NOT_TERMINATED", err.Error(), nil)
+			return
+		}
+		envelope.WriteError(w, r, err)
+		return
+	}
+	envelope.WriteJSON(w, http.StatusOK, KillSessionResponse{OK: true, SessionID: sessionID(r), Freed: removed})
 }
 
 // rollback undoes a partially-completed spawn: if the session row is still in
