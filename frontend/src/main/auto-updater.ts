@@ -1,10 +1,6 @@
-import { autoUpdater as stockAutoUpdater } from "electron-updater";
-import { MacDifferentialV2Updater } from "./mac-differential-v2-updater";
-import macV2TrustedKeys from "../../scripts/mac-differential-v2-trust.json";
-import macDifferentialRollout from "../../scripts/mac-differential-rollout.json";
+import { autoUpdater } from "electron-updater";
 import { CancellationToken } from "builder-util-runtime";
-import { app, dialog, autoUpdater as nativeAutoUpdater } from "electron";
-import { startMacUpdateProgress } from "./mac-update-progress";
+import { app, dialog } from "electron";
 import { markUpdateRelaunch } from "./update-relaunch-flag";
 import { accessSync, constants as fsConstants, existsSync, lstatSync, readFileSync, readdirSync, statfsSync, writeFileSync } from "node:fs";
 import { mkdir, readFile, unlink, writeFile } from "node:fs/promises";
@@ -15,7 +11,6 @@ import { OPEN_AGENTS_BUNDLE_ID } from "./stale-app-copies";
 import type { RequestOptions } from "node:http";
 import {
   readUpdateSettings,
-  macDifferentialUpdatesEnabled,
   updateUpdateSettings,
   writeUpdateSettings,
   UPDATE_SETTINGS_FILE_NAME,
@@ -28,70 +23,39 @@ import { reconcileFeaturePin } from "./feature-builds";
 import { evaluateEscalation } from "./escalation-evaluator";
 import { isNetErrorMessage, normalizeReleaseNotes } from "../shared/update-support";
 
-// Current Open Agents uses the stock full-ZIP path. A future compatible build explicitly
-// selects the v2 subclass; old clients never learn its metadata or map URLs.
-const autoUpdater = process.platform === "darwin" && macDifferentialRollout.enabled === true
-  ? new MacDifferentialV2Updater({ trustedKeys: macV2TrustedKeys })
-  : stockAutoUpdater;
-
 const FAIL_CLOSED_UPDATE_SETTINGS: UpdateSettings = {
   enabled: false,
   channel: "latest",
   nightlyAck: false,
   feature: null,
-  macDifferentialUpdates: false,
 };
 let lastAppliedUpdateSettings: UpdateSettings = FAIL_CLOSED_UPDATE_SETTINGS;
 let developerModeHydrated = false;
 let developerModeRequested = false;
-let differentialEligible = false;
 let offeredUpdateVersion: string | undefined;
-let transferObservation = {
-  eligible: false,
-  attemptedDifferential: false,
-  fallback: false,
-  transferred: undefined as number | undefined,
-};
 let updaterLoggerWired = false;
-
-// electron-updater defaults this flag to false on macOS. Override it before
-// any renderer or settings hydration can race an update operation.
-if (process.platform === "darwin") autoUpdater.disableDifferentialDownload = true;
 
 export function applyUpdaterPolicy(
   settings: UpdateSettings,
   platform: NodeJS.Platform = process.platform,
 ): void {
   lastAppliedUpdateSettings = settings;
-  // Keep this gate closed until the dependency and older-client feed isolation
-  // contracts pass. This repository never generates macOS release sidecars.
-  const eligible = macDifferentialRollout.enabled === true && developerModeHydrated && macDifferentialUpdatesEnabled({ platform, settings });
-  differentialEligible = eligible;
-  if (platform === "darwin") autoUpdater.disableDifferentialDownload = !eligible;
-  console.info("[auto-updater] mac differential policy", {
-    eligible,
+  console.info("[auto-updater] update policy", {
     platform,
     channel: settings.channel,
     featurePinned: settings.feature !== null,
-    developerMode: settings.macDifferentialUpdates === true,
   });
 }
 
 // This observes the pinned dependency's phase messages, never its raw URLs,
 // paths, HTTP headers or error stacks. Unknown messages cannot leak credentials.
 function wireUpdaterLogger(): void {
-  if (updaterLoggerWired || process.platform !== "darwin" || macDifferentialRollout.enabled !== true) return;
+  if (updaterLoggerWired) return;
   updaterLoggerWired = true;
   const base = autoUpdater.logger ?? console;
   const observe = (level: "info" | "warn" | "error" | "debug", first: unknown) => {
     const message = typeof first === "string" ? first : "";
-    if (message.startsWith("Download block maps") || message.startsWith("Differential download:")) {
-      transferObservation.attemptedDifferential = true;
-      base.info("[auto-updater] differential transfer attempted");
-    } else if (/(?:fall(?:ing)? back|fallback) to full download/i.test(message)) {
-      transferObservation.fallback = true;
-      base.warn("[auto-updater] differential transfer fell back to full download");
-    } else if (level === "warn" || level === "error") {
+    if (level === "warn" || level === "error") {
       base[level](`[auto-updater] ${message}`);
     }
   };
@@ -172,13 +136,8 @@ let lastCheckError: string | undefined;
 // re-evaluated every 30 minutes while the update sits uninstalled. stateDir is
 // captured from whichever entry point wired the events (both receive it).
 let stagedVersion: string | undefined;
-// A persisted stamp is not an installer handoff in this process. In particular,
-// MacUpdater has no native feed/server after relaunch until it downloads again.
 let stagedInCurrentProcess = false;
-let macRestartPreparation: Promise<UpdateInstallResult> | undefined;
-let macRestartRequested = false;
 let restartFailureHandler: (() => void) | undefined;
-let macRestartProgress: Awaited<ReturnType<typeof startMacUpdateProgress>> | undefined;
 let nativeReadyVersion: string | undefined;
 let nativePreparationError: Error | undefined;
 // Squirrel.Mac staging has no progress event and no cancel API, so a fixed
@@ -378,7 +337,7 @@ function beginNativePreparation(version: string, archiveBytes?: number): void {
 }
 
 function isNativeInstallReady(): boolean {
-  return process.platform !== "darwin" || (stagedInCurrentProcess && nativeReadyVersion !== undefined && nativeReadyVersion === stagedVersion);
+  return stagedInCurrentProcess && nativeReadyVersion !== undefined && nativeReadyVersion === stagedVersion;
 }
 // Release notes for the build currently on offer or staged, already
 // sanitized. Held here because only the updater events carry it, and the

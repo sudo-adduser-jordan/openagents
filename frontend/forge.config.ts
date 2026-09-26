@@ -4,9 +4,8 @@ import { VitePlugin } from "@electron-forge/plugin-vite";
 import { rebuild } from "@electron/rebuild";
 import electronPackage from "electron/package.json";
 import MakerNSIS from "./makers/maker-nsis";
-import MakerDMG, { isSigningConfigured, sealDmg, verifyDmg, verifyMacArtifact } from "./makers/maker-dmg";
 import MakerAppImage from "./makers/maker-appimage";
-import { existsSync, readdirSync, renameSync, writeFileSync } from "node:fs";
+import { existsSync, writeFileSync } from "node:fs";
 import { spawnSync } from "node:child_process";
 import path from "node:path";
 
@@ -59,8 +58,7 @@ export function extraResourcesForPlatform(platform: NodeJS.Platform): string[] {
 	return [
 		"daemon",
 		"agent-browser",
-		...(platform === "darwin" ? ["update-helper"] : []),
-		...(platform === "darwin" || platform === "linux" ? ["tmux"] : []),
+		...(platform === "linux" ? ["tmux"] : []),
 		"assets/icon.png",
 		"assets/icon.ico",
 		"assets/trayIconTemplate.png",
@@ -81,12 +79,6 @@ function parseReleaseRepo(value: string | undefined): { owner: string; name: str
 	return { owner, name };
 }
 
-export function canonicalDarwinZipPath(filePath: string): string {
-	const match = /-darwin-(arm64|x64)-(.+)\.zip$/.exec(path.basename(filePath));
-	if (!match) return filePath;
-	return path.join(path.dirname(filePath), `open-agents-darwin-${match[1]}-${match[2]}.zip`);
-}
-
 const config: ForgeConfig = {
 	packagerConfig: {
 		asar: true,
@@ -99,50 +91,20 @@ const config: ForgeConfig = {
 		name: "Open Agents",
 		executableName: EXECUTABLE_NAME,
 		protocols: [AUTH_PROTOCOL],
-		appCategoryType: "public.app-category.developer-tools",
 		// App icon. electron-packager appends the per-platform extension
-		// (.icns on macOS, .ico on Windows); Linux menu icons come from the
+		// (.ico on Windows); Linux menu icons come from the
 		// deb/rpm makers below, and the runtime window icon from src/main.ts.
 		icon: "assets/icon",
 		extraResource: extraResourcesForPlatform(process.platform),
-		// Notarization. Two paths:
-		//  - CI: an App Store Connect API key. APPLE_API_KEY is a PATH to the .p8
-		//    (the workflow decodes APPLE_API_KEY_BASE64 to a temp file), plus the
-		//    key id + issuer uuid. Matches the proven local runbook creds.
-		//  - Local: OPEN_AGENTS_NOTARY_PROFILE, a notarytool keychain profile created with
-		//    `notarytool store-credentials`. See open-agents-macos-signed-release runbook.
-		// Both are valid NotaryToolCredentials, so no cast is needed.
-		osxSign: process.env.APPLE_SIGNING_IDENTITY
-			? { identity: process.env.APPLE_SIGNING_IDENTITY }
-			: process.env.CSC_LINK
-				? {}
-				: undefined,
-		osxNotarize: process.env.OPEN_AGENTS_NOTARY_PROFILE
-			? { keychainProfile: process.env.OPEN_AGENTS_NOTARY_PROFILE }
-			: process.env.APPLE_API_KEY
-				? {
-						appleApiKey: process.env.APPLE_API_KEY,
-						appleApiKeyId: process.env.APPLE_API_KEY_ID!,
-						appleApiIssuer: process.env.APPLE_API_ISSUER!,
-					}
-				: undefined,
 	},
 	hooks: {
 		// electron-forge does not generate app-update.yml (electron-builder does);
 		// electron-updater reads it from the app's Resources dir at runtime to know
 		// which GitHub repo to pull from, else it throws ENOENT during download.
-		// Generate it in prePackage (BEFORE osxSign) and ship it via extraResource
-		// above, so it is copied into the bundle and SIGNED as part of the seal.
-		// Writing it after signing (a postPackage hook) adds an unsealed resource
-		// and macOS reports the app as "damaged". owner/repo are baked from
-		// OPEN_AGENTS_RELEASE_REPO at build time.
+		// Generate it in prePackage and ship it via extraResource above.
+		// owner/repo are baked from OPEN_AGENTS_RELEASE_REPO at build time.
 		prePackage: async (_forgeConfig, platform, arch) => {
 			await prepareNativeDependencies(platform as NodeJS.Platform, arch);
-			if (platform === "darwin") {
-				const helperBuild = spawnSync(process.execPath, [path.resolve("scripts/build-update-helper.mjs"), "--arch", arch], { stdio: "inherit" });
-				if (helperBuild.error) throw helperBuild.error;
-				if (helperBuild.status !== 0) throw new Error("macOS update helper build failed");
-			}
 			const { owner, name } = parseReleaseRepo(process.env.OPEN_AGENTS_RELEASE_REPO);
 			const yml = [
 				"provider: github",
@@ -166,20 +128,13 @@ const config: ForgeConfig = {
 				throw new Error("Packaged app is missing the better-sqlite3 native runtime");
 			}
 		},
-		// Assert the native resource survived Electron Packager's copy/asar/sign
+		// Assert the native resource survived Electron Packager's copy/asar
 		// pipeline. A source build succeeding is not enough: a missing extraResource
 		// would otherwise publish an app that silently fell back to machine tmux.
 		postPackage: async (_forgeConfig, packageResult) => {
-			if (packageResult.platform !== "darwin" && packageResult.platform !== "linux") return;
+			if (packageResult.platform !== "linux") return;
 			for (const outputPath of packageResult.outputPaths) {
-				let resourcesPath = path.join(outputPath, "resources");
-				if (packageResult.platform === "darwin") {
-					const appBundle = readdirSync(outputPath).find((entry) => entry.endsWith(".app"));
-					if (!appBundle) throw new Error(`packaged macOS app bundle missing from ${outputPath}`);
-					resourcesPath = path.join(outputPath, appBundle, "Contents", "Resources");
-					const helper = path.join(resourcesPath, "update-helper", "open-agents-update-progress");
-					if (!existsSync(helper)) throw new Error(`packaged macOS update helper missing from ${helper}`);
-				}
+				const resourcesPath = path.join(outputPath, "resources");
 				const binary = path.join(resourcesPath, "tmux", "bin", "tmux");
 				if (!existsSync(binary)) throw new Error(`packaged tmux missing from ${binary}`);
 				const version = spawnSync(binary, ["-V"], { encoding: "utf8" });
@@ -187,52 +142,6 @@ const config: ForgeConfig = {
 					throw new Error(`packaged tmux failed verification at ${binary}: ${version.stderr || version.stdout}`);
 				}
 			}
-		},
-		// The dmg container is NOT signed, notarized or stapled by any maker
-		// (neither Forge's maker-dmg nor app-builder-lib's dmg target does it), and
-		// the .app's own stapled ticket does not propagate through an unsealed
-		// container. So seal it here, after the maker has produced it, reusing the
-		// same credentials packagerConfig already consumes (#3267 decision 3).
-		// The .app inside was already signed + notarized + stapled by
-		// packagerConfig above, before any maker ran; nothing here touches it.
-		//
-		// Then PROVE the seal. sealDmg exiting 0 only says three commands ran on
-		// this machine; it does not say Gatekeeper accepts the published bytes with
-		// a stapled ticket. verify-mac-artifact.sh is the canonical gate
-		// for both (#3288 workstreams 1 and 2), and #3267 decision 3 step 4 asks
-		// for exactly this check on the dmg. Run only when sealDmg actually
-		// sealed: an unsigned local or desktop-testing build has nothing to verify
-		// and must keep producing its dmg.
-		//
-		// The zip needs the same verification but no separate sealing step:
-		// its inner .app was already signed/notarized/stapled by packagerConfig
-		// above, so verifying it only needs the same "was this build actually
-		// signed" gate sealDmg uses (isSigningConfigured), not a seal call of its
-		// own. Without this, the dmg-only check left the maker-zip artifact — the
-		// one electron-updater actually installs auto-updates from, per
-		// makers/maker-dmg.ts's ERR_UPDATER_ZIP_FILE_NOT_FOUND note, and per-arch
-		// the artifact CI ships for x64 — completely unverified.
-		postMake: async (_forgeConfig, makeResults) => {
-			for (const result of makeResults) {
-				if (result.platform !== "darwin") continue;
-				for (let index = 0; index < result.artifacts.length; index += 1) {
-					let artifact = result.artifacts[index];
-					if (artifact.endsWith(".zip")) {
-						const canonical = canonicalDarwinZipPath(artifact);
-						if (canonical !== artifact) {
-							renameSync(artifact, canonical);
-							result.artifacts[index] = canonical;
-							artifact = canonical;
-						}
-					}
-					if (artifact.endsWith(".dmg")) {
-						if (await sealDmg(artifact)) await verifyDmg(artifact);
-					} else if (artifact.endsWith(".zip") && isSigningConfigured()) {
-						await verifyMacArtifact(artifact);
-					}
-				}
-			}
-			return makeResults;
 		},
 	},
 	rebuildConfig: {},
@@ -250,21 +159,6 @@ const config: ForgeConfig = {
 				icon: "assets/icon.ico",
 			},
 			["win32"],
-		),
-		// macOS auto-update artifact. This entry can NEVER be removed:
-		// MacUpdater.doDownloadUpdate looks for a "zip" and explicitly excludes
-		// .pkg/.dmg, throwing ERR_UPDATER_ZIP_FILE_NOT_FOUND otherwise, so the zip
-		// and latest-mac.yml must keep publishing forever (#3267 decision 2).
-		{ name: "@electron-forge/maker-zip", platforms: ["darwin"], config: {} },
-		// macOS FIRST-INSTALL artifact, additive to the zip above: a dmg has no
-		// user-driven extraction step, so a third-party unzip tool can no longer
-		// break the signature seal on the way in (see makers/maker-dmg.ts, #3267).
-		new MakerDMG(
-			{
-				appId: "dev.openagents.desktop",
-				productName: "Open Agents",
-			},
-			["darwin"],
 		),
 		// Linux fetch-and-run artifact for `open-agents start`: a single self-contained
 		// AppImage the Go bootstrapper downloads and runs directly (see

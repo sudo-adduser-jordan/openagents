@@ -10,7 +10,7 @@ export function bundledTmuxBinaryPath(
 	resourcesPath: string,
 	platform: NodeJS.Platform,
 ): string | null {
-	if (!isPackaged || (platform !== "darwin" && platform !== "linux")) return null;
+	if (!isPackaged || platform !== "linux") return null;
 	return joinPath(resourcesPath, "tmux", "bin", "tmux");
 }
 
@@ -25,7 +25,7 @@ export function stableBundledTmuxBinaryPath(
 	platform: NodeJS.Platform,
 	arch: string,
 ): string | null {
-	if (!isPackaged || (platform !== "darwin" && platform !== "linux")) return null;
+	if (!isPackaged || platform !== "linux") return null;
 	const identity = `${appVersion}-${platform}-${arch}`.replace(/[^a-zA-Z0-9._-]/g, "_");
 	return joinPath(openAgentsDataDir, "runtime", "tmux", identity, "tmux");
 }

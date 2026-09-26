@@ -10,8 +10,6 @@
 		"bin/"
 	],
 	"optionalDependencies": {
-		"@openagents/open-agents-darwin-arm64": "0.10.0",
-		"@openagents/open-agents-darwin-x64": "0.10.0",
 		"@openagents/open-agents-linux-x64": "0.10.0",
 		"@openagents/open-agents-win32-x64": "0.10.0"
 	},

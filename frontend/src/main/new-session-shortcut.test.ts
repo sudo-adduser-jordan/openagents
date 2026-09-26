@@ -73,20 +73,10 @@ describe("attachAppShortcuts", () => {
 		expect(event.preventDefault).toHaveBeenCalledTimes(1);
 	});
 
-	it("forwards the macOS command chord", () => {
-		const source = fakeSource();
-		const target = fakeTarget();
-		attachAppShortcuts(source, true, target);
-
-		source.emit({ key: "n", meta: true });
-
-		expect(target.send).toHaveBeenCalledWith(NEW_SESSION_SHORTCUT_CHANNEL);
-	});
-
 	it("focuses a separate shell target before forwarding", () => {
 		const source = fakeSource();
 		const target = fakeTarget();
-		attachAppShortcuts(source, false, target, true);
+		attachAppShortcuts(source, target, true);
 
 		source.emit({ key: "N", control: true, shift: true });
 
@@ -125,22 +115,19 @@ describe("attachAppShortcuts", () => {
 	])("forwards the new-shell-terminal chord on %s", (_name, isMac, input) => {
 		const source = fakeSource();
 		const target = fakeTarget();
-		attachAppShortcuts(source, isMac, target);
+		attachAppShortcuts(source, target);
 
 		source.emit(input);
 
 		expect(target.send).toHaveBeenCalledWith(NEW_SHELL_TERMINAL_SHORTCUT_CHANNEL);
 	});
 
-	it.each([
-		["macOS", true, { key: "w", meta: true }],
-		["Windows/Linux", false, { key: "w", control: true }],
-	])("forwards and consumes the close-shell-terminal chord on %s", (_name, isMac, input) => {
+	it("forwards and consumes the close-shell-terminal chord", () => {
 		const source = fakeSource();
 		const target = fakeTarget();
-		attachAppShortcuts(source, isMac, target);
+		attachAppShortcuts(source, target);
 
-		const event = source.emit(input);
+		const event = source.emit({ key: "w", control: true });
 
 		expect(target.send).toHaveBeenCalledWith(CLOSE_SHELL_TERMINAL_SHORTCUT_CHANNEL);
 		expect(event.preventDefault).toHaveBeenCalledOnce();
@@ -176,19 +163,13 @@ describe("attachAppShortcuts", () => {
 		expect(event.preventDefault).toHaveBeenCalledOnce();
 	});
 
-	it("forwards keyboard-shortcut help on each platform", () => {
-		const windowsSource = fakeSource();
-		const windowsTarget = fakeTarget();
-		attachAppShortcuts(windowsSource, false, windowsTarget);
-		windowsSource.emit({ key: "/", control: true });
+	it("forwards keyboard-shortcut help", () => {
+		const source = fakeSource();
+		const target = fakeTarget();
+		attachAppShortcuts(source, target);
+		source.emit({ key: "/", control: true });
 
-		const macSource = fakeSource();
-		const macTarget = fakeTarget();
-		attachAppShortcuts(macSource, true, macTarget);
-		macSource.emit({ key: "/", meta: true });
-
-		expect(windowsTarget.send).toHaveBeenCalledWith(KEYBOARD_SHORTCUTS_HELP_CHANNEL);
-		expect(macTarget.send).toHaveBeenCalledWith(KEYBOARD_SHORTCUTS_HELP_CHANNEL);
+		expect(target.send).toHaveBeenCalledWith(KEYBOARD_SHORTCUTS_HELP_CHANNEL);
 	});
 
 	it.each([
@@ -244,16 +225,12 @@ describe("attachAppShortcuts", () => {
 		expect(target.send).toHaveBeenCalledWith(KEYBOARD_SHORTCUTS_HELP_CHANNEL);
 	});
 
-	it.each([
-		["macOS", true, { key: "=", code: "Equal", meta: true }],
-		["Windows/Linux", false, { key: "+", code: "Equal", control: true }],
-	] as const)("routes primary-modifier plus/minus to the focused terminal on %s and preserves app zoom otherwise", (_platform, isMac, input) => {
+	it("routes Ctrl+= to the focused terminal and preserves app zoom otherwise", () => {
 		const source = fakeSource();
 		const target = fakeTarget();
 		let terminalFocused = true;
 		attachAppShortcuts(
 			source,
-			isMac,
 			target,
 			false,
 			() => ({}),
@@ -263,18 +240,14 @@ describe("attachAppShortcuts", () => {
 			() => terminalFocused,
 		);
 
-		const focusedEvent = source.emit(input);
+		const focusedEvent = source.emit({ key: "+", code: "Equal", control: true });
 
 		expect(focusedEvent.preventDefault).toHaveBeenCalledOnce();
 		expect(target.send).toHaveBeenCalledWith(TERMINAL_FONT_SIZE_SHORTCUT_CHANNEL, 1);
 
 		target.send.mockClear();
 		terminalFocused = false;
-		const appZoomEvent = source.emit(
-			isMac
-				? { key: "-", code: "Minus", meta: true }
-				: { key: "-", code: "Minus", control: true },
-		);
+		const appZoomEvent = source.emit({ key: "-", code: "Minus", control: true });
 
 		expect(appZoomEvent.preventDefault).not.toHaveBeenCalled();
 		expect(target.send).not.toHaveBeenCalled();

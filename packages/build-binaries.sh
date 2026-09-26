@@ -18,8 +18,6 @@ BACKEND_DIR="${REPO_ROOT}/backend"
 
 # pkg_dir : npm_os : npm_arch : GOOS : GOARCH : bin_name
 TARGETS=(
-  "open-agents-darwin-arm64:darwin:arm64:darwin:arm64:open-agents"
-  "open-agents-darwin-x64:darwin:x64:darwin:amd64:open-agents"
   "open-agents-win32-x64:win32:x64:windows:amd64:open-agents.exe"
   "open-agents-linux-x64:linux:x64:linux:amd64:open-agents"
 )

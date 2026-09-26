@@ -19,10 +19,8 @@ export const SET_CLOSE_SHELL_TERMINAL_SHORTCUT_ENABLED_CHANNEL =
 export const SET_TERMINAL_FOCUSED_CHANNEL = "terminal:set-focused";
 export const TERMINAL_FONT_SIZE_SHORTCUT_CHANNEL = "terminal:font-size-shortcut";
 
-export function terminalFontSizeDelta(chord: ShortcutChord, isMac: boolean): -1 | 0 | 1 {
-	const hasPrimaryModifier = isMac
-		? chord.meta && !chord.ctrl
-		: chord.ctrl && !chord.meta;
+export function terminalFontSizeDelta(chord: ShortcutChord): -1 | 0 | 1 {
+	const hasPrimaryModifier = chord.ctrl && !chord.meta;
 	if (!hasPrimaryModifier || chord.alt) return 0;
 	if (chord.key === "+" || chord.key === "=" || chord.code === "NumpadAdd") return 1;
 	if (chord.key === "-" || chord.code === "NumpadSubtract") return -1;
@@ -153,49 +151,48 @@ const binding = (
 	...modifiers,
 });
 
-export function defaultShortcutBindings(id: AppShortcutId, isMac: boolean): readonly ShortcutBinding[] {
+export function defaultShortcutBindings(id: AppShortcutId): readonly ShortcutBinding[] {
 	switch (id) {
 		case "new-session":
-			return [isMac ? binding("n", { meta: true }) : binding("n", { ctrl: true, shift: true })];
+			return [binding("n", { ctrl: true, shift: true })];
 		case "new-shell-terminal":
-			return [isMac ? binding("t", { meta: true }) : binding("t", { ctrl: true })];
+			return [binding("t", { ctrl: true })];
 		case "close-shell-terminal":
-			return [isMac ? binding("w", { meta: true }) : binding("w", { ctrl: true })];
+			return [binding("w", { ctrl: true })];
 		case "keyboard-shortcuts":
-			return [isMac ? binding("/", { meta: true }) : binding("/", { ctrl: true })];
+			return [binding("/", { ctrl: true })];
 		case "toggle-sidebar":
-			return [isMac ? binding("b", { meta: true }) : binding("b", { ctrl: true })];
+			return [binding("b", { ctrl: true })];
 		case "open-project":
-			return [isMac ? binding("1-9", { meta: true }) : binding("1-9", { ctrl: true })];
+			return [binding("1-9", { ctrl: true })];
 		case "toggle-inspector":
-			return [isMac ? binding("b", { meta: true, shift: true }) : binding("b", { ctrl: true, shift: true })];
+			return [binding("b", { ctrl: true, shift: true })];
 		case "command-palette":
-			return [isMac ? binding("k", { meta: true }) : binding("k", { ctrl: true })];
+			return [binding("k", { ctrl: true })];
 		case "open-settings":
-			return [isMac ? binding(",", { meta: true }) : binding(",", { ctrl: true })];
+			return [binding(",", { ctrl: true })];
 		case "previous-session":
-			return [isMac ? binding("ArrowUp", { meta: true, alt: true }) : binding("PageUp", { ctrl: true })];
+			return [binding("PageUp", { ctrl: true })];
 		case "next-session":
-			return [isMac ? binding("ArrowDown", { meta: true, alt: true }) : binding("PageDown", { ctrl: true })];
+			return [binding("PageDown", { ctrl: true })];
 		case "previous-tab":
 			return [binding("Tab", { ctrl: true, shift: true })];
 		case "next-tab":
 			return [binding("Tab", { ctrl: true })];
 		case "focus-terminal":
-			return [isMac ? binding("t", { meta: true, shift: true }) : binding("t", { ctrl: true, shift: true })];
+			return [binding("t", { ctrl: true, shift: true })];
 		case "toggle-browser-devtools":
-			return [isMac ? binding("i", { meta: true, alt: true }) : binding("i", { ctrl: true, shift: true })];
+			return [binding("i", { ctrl: true, shift: true })];
 		case "toggle-workflow-mode":
-			return [isMac ? binding("p", { meta: true, shift: true }) : binding("p", { ctrl: true, shift: true })];
+			return [binding("p", { ctrl: true, shift: true })];
 	}
 }
 
 export function effectiveShortcutBindings(
 	id: AppShortcutId,
-	isMac: boolean,
 	overrides: KeybindingOverrides = {},
 ): readonly ShortcutBinding[] {
-	return overrides[id] ?? defaultShortcutBindings(id, isMac);
+	return overrides[id] ?? defaultShortcutBindings(id);
 }
 
 function normalizedKey(key: string): string {
@@ -228,7 +225,7 @@ export function matchesShortcutBinding(chord: ShortcutChord, candidate: Shortcut
  * field sees them. Reject bindings that would consume ordinary input, terminal
  * control sequences, or common OS editing/window commands.
  */
-export function shortcutBindingValidationError(binding: ShortcutBinding, isMac: boolean): string | null {
+export function shortcutBindingValidationError(binding: ShortcutBinding): string | null {
 	if (
 		["alt", "altgraph", "capslock", "control", "dead", "meta", "numlock", "process", "scrolllock", "shift", "unidentified"].includes(
 			normalizedKey(binding.key),
@@ -250,13 +247,7 @@ export function shortcutBindingValidationError(binding: ShortcutBinding, isMac: 
 		}
 	}
 
-	if (isMac && binding.meta && !binding.ctrl && !binding.alt) {
-		if (["a", "c", "h", "m", "q", "s", "v", "w", "x", "z"].includes(key)) {
-			return "That shortcut is reserved by macOS or standard editing commands.";
-		}
-	}
-
-	if (!isMac && binding.alt && !binding.ctrl && !binding.meta && key === "f4") {
+	if (binding.alt && !binding.ctrl && !binding.meta && key === "f4") {
 		return "That shortcut is reserved for closing the window.";
 	}
 
@@ -266,17 +257,16 @@ export function shortcutBindingValidationError(binding: ShortcutBinding, isMac: 
 export function matchesAppShortcut(
 	id: AppShortcutId,
 	chord: ShortcutChord,
-	isMac: boolean,
 	overrides: KeybindingOverrides = {},
 ): boolean {
-	return effectiveShortcutBindings(id, isMac, overrides).some((candidate) => matchesShortcutBinding(chord, candidate));
+	return effectiveShortcutBindings(id, overrides).some((candidate) => matchesShortcutBinding(chord, candidate));
 }
 
-export function shortcutBindingKeys(binding: ShortcutBinding, isMac: boolean): readonly string[] {
+export function shortcutBindingKeys(binding: ShortcutBinding): readonly string[] {
 	const keys: string[] = [];
 	if (binding.ctrl) keys.push("Ctrl");
-	if (binding.meta) keys.push(isMac ? "⌘" : "Meta");
-	if (binding.alt) keys.push(isMac ? "⌥" : "Alt");
+	if (binding.meta) keys.push("Meta");
+	if (binding.alt) keys.push("Alt");
 	if (binding.shift) keys.push("Shift");
 	const labels: Record<string, string> = {
 		ArrowUp: "↑",
@@ -289,8 +279,8 @@ export function shortcutBindingKeys(binding: ShortcutBinding, isMac: boolean): r
 	return keys;
 }
 
-export function shortcutBindingLabel(binding: ShortcutBinding, isMac: boolean): string {
-	return shortcutBindingKeys(binding, isMac).join(isMac ? "" : "+");
+export function shortcutBindingLabel(binding: ShortcutBinding): string {
+	return shortcutBindingKeys(binding).join("+");
 }
 
 // IPC channel the main process uses to tell the renderer shell to open the New
@@ -307,48 +297,48 @@ export const PREVIOUS_TAB_SHORTCUT_CHANNEL = "app:previous-tab";
 export const NEXT_TAB_SHORTCUT_CHANNEL = "app:next-tab";
 export const FOCUS_TERMINAL_SHORTCUT_CHANNEL = "app:focus-terminal";
 
-// New session: ⌘N on macOS, Ctrl+Shift+N on Windows/Linux. Plain Ctrl+N is a
-// live terminal keystroke (readline/vim "next line"), so the non-mac binding
+// New session: Ctrl+Shift+N on Windows/Linux. Plain Ctrl+N is a
+// live terminal keystroke (readline/vim "next line"), so the binding
 // adds Shift to stay clear of the shell. Handled at the application level
 // (main-process before-input-event) so it fires even when focus is inside
 // xterm's helper textarea or a native Browser-preview WebContentsView.
-export function matchesNewSessionShortcut(chord: ShortcutChord, isMac: boolean): boolean {
-	return matchesAppShortcut("new-session", chord, isMac);
+export function matchesNewSessionShortcut(chord: ShortcutChord): boolean {
+	return matchesAppShortcut("new-session", chord);
 }
 
-// Terminal tabs follow the desktop tab convention: ⌘T on macOS and Ctrl+T on
+// Terminal tabs follow the desktop tab convention: Ctrl+T on
 // Windows/Linux. Handled in the main process so xterm cannot swallow it.
-export function matchesNewShellTerminalShortcut(chord: ShortcutChord, isMac: boolean): boolean {
-	return matchesAppShortcut("new-shell-terminal", chord, isMac);
+export function matchesNewShellTerminalShortcut(chord: ShortcutChord): boolean {
+	return matchesAppShortcut("new-shell-terminal", chord);
 }
 
-// Keyboard shortcut help: ⌘/ on macOS, Ctrl+/ on Windows/Linux. This is also
+// Keyboard shortcut help: Ctrl+/ on Windows/Linux. This is also
 // handled at the application level so the terminal and Browser preview cannot
 // swallow the command before the shell sees it.
-export function matchesKeyboardShortcutsHelpShortcut(chord: ShortcutChord, isMac: boolean): boolean {
-	return matchesAppShortcut("keyboard-shortcuts", chord, isMac);
+export function matchesKeyboardShortcutsHelpShortcut(chord: ShortcutChord): boolean {
+	return matchesAppShortcut("keyboard-shortcuts", chord);
 }
 
-export function matchesOpenSettingsShortcut(chord: ShortcutChord, isMac: boolean): boolean {
-	return matchesAppShortcut("open-settings", chord, isMac);
+export function matchesOpenSettingsShortcut(chord: ShortcutChord): boolean {
+	return matchesAppShortcut("open-settings", chord);
 }
 
-export function matchesPreviousSessionShortcut(chord: ShortcutChord, isMac: boolean): boolean {
-	return matchesAppShortcut("previous-session", chord, isMac);
+export function matchesPreviousSessionShortcut(chord: ShortcutChord): boolean {
+	return matchesAppShortcut("previous-session", chord);
 }
 
-export function matchesNextSessionShortcut(chord: ShortcutChord, isMac: boolean): boolean {
-	return matchesAppShortcut("next-session", chord, isMac);
+export function matchesNextSessionShortcut(chord: ShortcutChord): boolean {
+	return matchesAppShortcut("next-session", chord);
 }
 
-export function matchesPreviousTabShortcut(chord: ShortcutChord, isMac: boolean): boolean {
-	return matchesAppShortcut("previous-tab", chord, isMac);
+export function matchesPreviousTabShortcut(chord: ShortcutChord): boolean {
+	return matchesAppShortcut("previous-tab", chord);
 }
 
-export function matchesNextTabShortcut(chord: ShortcutChord, isMac: boolean): boolean {
-	return matchesAppShortcut("next-tab", chord, isMac);
+export function matchesNextTabShortcut(chord: ShortcutChord): boolean {
+	return matchesAppShortcut("next-tab", chord);
 }
 
-export function matchesFocusTerminalShortcut(chord: ShortcutChord, isMac: boolean): boolean {
-	return matchesAppShortcut("focus-terminal", chord, isMac);
+export function matchesFocusTerminalShortcut(chord: ShortcutChord): boolean {
+	return matchesAppShortcut("focus-terminal", chord);
 }

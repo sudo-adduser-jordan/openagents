@@ -11,7 +11,7 @@ import type { TerminalShellPreference } from "./ui-locale";
 
 export const SHELL_ENV_SENTINEL = "__OPEN_AGENTS_SHELL_ENV__";
 
-// PATH floor: dirs a working macOS/Linux box keeps tools in, appended when the
+// PATH floor: dirs a working Linux box keeps tools in, appended when the
 // shell probe fails so zellij/git/agents still resolve.
 export const FALLBACK_PATH_DIRS = [
 	"/opt/homebrew/bin",

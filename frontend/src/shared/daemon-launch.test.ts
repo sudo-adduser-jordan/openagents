@@ -4,7 +4,7 @@ import { bundledDaemonIdentityError, resolveDaemonLaunch } from "./daemon-launch
 describe("resolveDaemonLaunch", () => {
 	it("uses OPEN_AGENTS_DAEMON_COMMAND when configured", () => {
 		expect(
-			resolveDaemonLaunch({ OPEN_AGENTS_DAEMON_COMMAND: "/tmp/open-agents daemon" }, false, "/resources", "/app", "/home/user", "darwin"),
+			resolveDaemonLaunch({ OPEN_AGENTS_DAEMON_COMMAND: "/tmp/open-agents daemon" }, false, "/resources", "/app", "/home/user", "linux"),
 		).toEqual({
 			command: "/tmp/open-agents daemon",
 			args: [],
@@ -15,7 +15,7 @@ describe("resolveDaemonLaunch", () => {
 	});
 
 	it("runs the backend daemon from source in non-Windows dev without an explicit command", () => {
-		expect(resolveDaemonLaunch({}, false, "/resources", "/repo/frontend", "/home/user", "darwin")).toEqual({
+		expect(resolveDaemonLaunch({}, false, "/resources", "/repo/frontend", "/home/user", "linux")).toEqual({
 			command: "go",
 			args: ["run", "./cmd/open-agents", "daemon"],
 			cwd: "/repo/frontend/../backend",
@@ -53,20 +53,20 @@ describe("resolveDaemonLaunch", () => {
 		});
 	});
 
-	it("uses the bundled daemon binary for packaged macOS/Linux builds", () => {
+	it("uses the bundled daemon binary for packaged Linux builds", () => {
 		expect(
 			resolveDaemonLaunch(
 				{},
 				true,
-				"/Applications/Open Agents.app/Contents/Resources",
+				"/usr/lib/open-agents/resources",
 				"/app",
-				"/Users/alice",
-				"darwin",
+				"/home/alice",
+				"linux",
 			),
 		).toEqual({
-			command: "/Applications/Open Agents.app/Contents/Resources/daemon/open-agents",
+			command: "/usr/lib/open-agents/resources/daemon/open-agents",
 			args: ["daemon"],
-			cwd: "/Users/alice/.open-agents",
+			cwd: "/home/alice/.open-agents",
 			shell: false,
 			source: "bundled",
 		});

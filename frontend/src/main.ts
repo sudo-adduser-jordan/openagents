@@ -1,5 +1,4 @@
 import { finishUpdateQuit } from "./main/update-quit";
-import { acknowledgeMacUpdateRestart } from "./main/mac-update-progress";
 import { consumeUpdateRelaunchFlag } from "./main/update-relaunch-flag";
 import {
 	app,
@@ -31,7 +30,6 @@ import {
 	setUpdateRestartFailureHandler,
 	getUpdateStatus,
 	setUpdateSettings,
-	setMacDifferentialUpdates,
 	returnToHome,
 	type UpdateCheckOptions,
 } from "./main/auto-updater";
@@ -135,8 +133,8 @@ import { connectBrowserRuntime, type BrowserRuntimeLinkHandle } from "./main/bro
 import { keepDaemonAlive, shouldLinkOnAttach } from "./main/daemon-owner";
 import { writeAppStateMarker } from "./main/app-state";
 import { isAllowedAppExternalURL, openAllowedAppExternalURL } from "./main/external-open";
-import { dockBounceType, shouldReplaceBounce, shouldSignalAttention, shouldToast } from "./main/notification-signals";
-import { buildLinuxAppMenuTemplate, buildMacAppMenuTemplate, buildWindowsAppMenuTemplate } from "./main/menu";
+import { shouldSignalAttention, shouldToast } from "./main/notification-signals";
+import { buildLinuxAppMenuTemplate, buildWindowsAppMenuTemplate } from "./main/menu";
 import { ancestorRepositorySetupWarning, resolveCheckedOutBranch, scanImportFolder } from "./main/import-folder-scan";
 import { parseOpenFolderPathArg } from "./main/open-folder-arg";
 
@@ -159,14 +157,14 @@ process.stdout.on("error", ignoreStdStreamError);
 process.stderr.on("error", ignoreStdStreamError);
 
 // Must run before app ready so the About panel and default-menu role labels use it.
-// Unpackaged runs get a distinct name so the dev window, dock menu, and About
+// Unpackaged runs get a distinct name so the dev window and About
 // panel never impersonate the installed app (#3642).
 app.setName(app.isPackaged ? "Open Agents" : "Open Agents (dev)");
 
 // Windows shows native toasts only when the app declares an AppUserModelID that
 // matches its installer shortcut (the NSIS maker's appId). Without it,
 // Notification.isSupported() still returns true but show() silently drops the
-// toast, so notifications never appear. No-op on macOS/Linux.
+// toast, so notifications never appear.
 if (process.platform === "win32") {
 	app.setAppUserModelId("dev.openagents.desktop");
 }
@@ -184,8 +182,8 @@ if (disableGpu === "1" || disableGpu === "true" || disableGpu === "yes" || disab
 }
 
 // Pin ALL Electron-owned state (Chromium cache, cookies, local/session storage,
-// crash dumps) under the canonical Open Agents home at ~/.open-agents instead of Electron's macOS
-// default ~/Library/Application Support/<name>. Keeps the app's entire footprint
+// crash dumps) under the canonical Open Agents home at ~/.open-agents instead of Electron's
+// default OS app-data location. Keeps the app's entire footprint
 // inside ~/.open-agents alongside the daemon's data dir and running.json. sessionData and
 // crashDumps derive from userData, so this one override reparents them all.
 // Must run before app ready.
@@ -257,11 +255,6 @@ let chatDraftWindowCloseConfirmed = false;
 let supervisorLink: SupervisorLinkHandle | null = null;
 // Guard: prevents stacking multiple flashFrame(true) calls when notifications arrive rapidly.
 let isFlashing = false;
-// macOS: the in-flight dock bounce, cancelled once the window regains focus
-// so a "critical" bounce stops as soon as the user looks at the app. Held as
-// one object so the id and its criticality can never drift apart; a pending
-// critical bounce is not replaced by a later informational notification.
-let pendingBounce: { id: number; critical: boolean } | null = null;
 // Live mirror of the persisted `soundNotificationsEnabled` UI setting, kept in sync by the
 // uiSettings:set handler so a toggle flip takes effect without an app restart.
 let soundNotificationsEnabled = DEFAULT_UI_SETTINGS.soundNotificationsEnabled;
@@ -274,11 +267,6 @@ const isDev = !app.isPackaged;
 // on Windows (supervisorPipeFromRunFile derives it from the same dir basename).
 const DEV_DAEMON_PORT = 3002;
 const DEV_STATE_SUBDIR = "dev"; // ~/.open-agents/dev/
-
-// Traffic lights stay fixed across sidebar expand/collapse. Y matches the
-// natural macOS titlebar band (TitlebarNav is h-traffic-light-clearance).
-const MAC_WINDOW_BUTTON_X = 14;
-const MAC_WINDOW_BUTTON_Y = 12;
 
 const RENDERER_SCHEME = "app";
 const RENDERER_HOST = "renderer";
@@ -379,11 +367,10 @@ function annotatePreloadPath(): string {
 	return path.join(__dirname, "annotate-preload.js");
 }
 
-// Runtime window/taskbar icon for Linux and Windows. macOS ignores this and
-// uses the .app bundle's .icns instead. Packaged: shipped via extraResource to
-// resources/icon.png.
+// Runtime window/taskbar icon for Linux and Windows. Packaged: shipped via
+// extraResource to resources/icon.png.
 // Unpackaged runs return undefined so the dev window keeps Electron's default
-// icon and never impersonates the installed app's taskbar/dock icon (#3642).
+// icon and never impersonates the installed app's taskbar icon (#3642).
 function windowIconPath(): string | undefined {
 	if (!app.isPackaged) return undefined;
 	const iconFile = process.platform === "win32" ? "icon.ico" : "icon.png";
@@ -391,19 +378,6 @@ function windowIconPath(): string | undefined {
 	if (existsSync(candidate)) return candidate;
 	const fallback = path.join(process.resourcesPath, "icon.png");
 	return existsSync(fallback) ? fallback : undefined;
-}
-
-function applyRuntimeAppIcon(): void {
-	if (process.platform !== "darwin") return;
-	// Unpackaged runs keep Electron's default dock icon so the dev window is
-	// visually distinct from the installed app (#3642).
-	if (!app.isPackaged) return;
-	const iconPath = windowIconPath();
-	if (!iconPath) return;
-	const icon = nativeImage.createFromPath(iconPath);
-	if (!icon.isEmpty()) {
-		app.dock.setIcon(icon);
-	}
 }
 
 function focusMainWindow(): void {
@@ -508,7 +482,7 @@ async function createWindowInternal(): Promise<void> {
 	const agentBrowserRuntime = new AgentBrowserRuntime({
 		binaryPath: resolveAgentBrowserBinaryPath(),
 		// Agent Browser creates Unix sockets below each run root. Keep this base
-		// deliberately short so the namespace/session suffix stays below macOS's
+		// deliberately short so the namespace/session suffix stays below the
 		// 103-byte sockaddr_un limit; all Open Agents state remains under ~/.open-agents.
 		dataDir: path.join(os.homedir(), ".open-agents", ...(app.isPackaged ? ["br"] : ["dev", "br"])),
 		log: (message) => console.log(`Open Agents: ${message}`),
@@ -536,8 +510,7 @@ async function createWindowInternal(): Promise<void> {
 		icon: windowIconPath(),
 		backgroundColor: NATIVE_WINDOW_BACKGROUND_DARK,
 		// Windows goes frameless and the renderer paints the whole titlebar,
-		// including custom min/max/close controls. macOS keeps the inset
-		// traffic-light chrome, and Linux uses standard frame decorations.
+		// including custom min/max/close controls. Linux uses standard frame decorations.
 		...(process.platform === "win32"
 			? {
 					titleBarStyle: "hidden" as const,
@@ -545,17 +518,11 @@ async function createWindowInternal(): Promise<void> {
 					// accelerators) below; the visible menu is painted by WindowTitlebar.
 					autoHideMenuBar: true,
 				}
-			: process.platform === "linux"
-				? {
-						// Auto-hide the native menu bar strip. Accelerators stay active
-						// via the application menu; pressing Alt reveals the menu bar.
-						autoHideMenuBar: true,
-					}
-				: {
-						titleBarStyle: "hiddenInset" as const,
-						// Fixed natural titlebar position — never moved on sidebar toggle.
-						trafficLightPosition: { x: MAC_WINDOW_BUTTON_X, y: MAC_WINDOW_BUTTON_Y },
-					}),
+			: {
+					// Auto-hide the native menu bar strip. Accelerators stay active
+					// via the application menu; pressing Alt reveals the menu bar.
+					autoHideMenuBar: true,
+				}),
 	};
 	mainWindow = new BaseWindow(windowOptions);
 	const composition = createWindowComposition({
@@ -576,29 +543,12 @@ async function createWindowInternal(): Promise<void> {
 	// On Windows the app paints its own title bar (WindowTitlebar), so the native
 	// menu bar is hidden (autoHideMenuBar above). The role-based menu is still
 	// installed so its accelerators keep working and act on the focused pane;
-	// setMenuBarVisibility(false) keeps the strip itself out of view. macOS gets
-	// an explicit menu so DevTools avoids Electron's unsafe built-in role; Linux
+	// setMenuBarVisibility(false) keeps the strip itself out of view. Linux
 	// installs the role-based menu so accelerators and guarded DevTools work,
 	// while autoHideMenuBar and setMenuBarVisibility(false) hide the menu strip.
 	if (process.platform === "win32") {
 		Menu.setApplicationMenu(buildWindowsAppMenu());
 		mainWindow.setMenuBarVisibility(false);
-	} else if (process.platform === "darwin") {
-		Menu.setApplicationMenu(
-			Menu.buildFromTemplate(
-				buildMacAppMenuTemplate(() => {
-					const fallback = () => getShellWebContents()?.toggleDevTools();
-					const host = browserViewHost;
-					if (!host) {
-						fallback();
-						return;
-					}
-					void host.toggleDevToolsForLastFocused().then((state) => {
-						if (!state) fallback();
-					}).catch(fallback);
-				}),
-			),
-		);
 	} else if (process.platform === "linux") {
 		Menu.setApplicationMenu(buildLinuxAppMenu());
 		mainWindow.setMenuBarVisibility(false);
@@ -650,17 +600,16 @@ async function createWindowInternal(): Promise<void> {
 	// Application shortcuts are handled here so they fire no matter which web
 	// contents holds focus — the shell renderer, xterm's helper textarea, or a
 	// browser-preview view (wired per-view in the browser host).
-	const isMac = process.platform === "darwin";
 	attachAppShortcuts(
 		shellWebContents,
-		isMac,
+		false,
 		shellWebContents,
 		false,
 		() => keybindingOverrides,
 		() => keybindingRecordingActive,
 		(id, chord) =>
 			!browserViewHost?.isLastUsedBrowser() ||
-			shouldHandleAppShortcutInBrowserContext(id, chord, isMac),
+			shouldHandleAppShortcutInBrowserContext(id, chord, false),
 		(id) => {
 			if (id !== "toggle-browser-devtools") return;
 			void toggleAppDevTools(browserViewHost, getShellWebContents);
@@ -676,7 +625,7 @@ async function createWindowInternal(): Promise<void> {
 		WebContentsView,
 		annotatePreloadPath: annotatePreloadPath(),
 		rendererOrigin: new URL(rendererUrl()).origin,
-		isMac,
+		isMac: false,
 		getKeybindingOverrides: () => keybindingOverrides,
 		isKeybindingRecording: () => keybindingRecordingActive,
 		agentBrowserRuntime,
@@ -727,9 +676,7 @@ async function createWindowInternal(): Promise<void> {
 		});
 	}
 
-	// macOS: traffic lights vanish in native fullscreen, so the renderer drops
-	// the clearance pad above TitlebarNav. Push state so the sidebar can react
-	// without polling isFullScreen().
+	// Push fullscreen state so the sidebar can react without polling isFullScreen().
 	const pushFullScreen = () => {
 		if (!mainWindow) return;
 		getShellWebContents()?.send("window:fullscreen", mainWindow.isFullScreen());
@@ -771,10 +718,6 @@ async function createWindowInternal(): Promise<void> {
 				console.error("Open Agents: window teardown failed:", error);
 			});
 		mainWindow = null;
-		// Drop any pending dock bounce with the window it was attached to: its
-		// focus listener died with the window, so leaving the id set would make
-		// the next bounce skip attaching one to the replacement window.
-		cancelDockBounce();
 		trayLifecycle.clearPendingTarget();
 	});
 }
@@ -1323,8 +1266,8 @@ async function startDaemonInner(startEpoch: number): Promise<DaemonStatus> {
 	}
 
 	// Single chokepoint: make sure the login-shell env is resolved before the
-	// daemon is spawned, so a Finder/Dock launch hands the daemon a real PATH and
-	// shell-exported credentials rather than launchd's minimal env.
+	// daemon is spawned, so a GUI launch hands the daemon a real PATH and
+	// shell-exported credentials rather than the minimal env.
 	await ensureShellEnv();
 
 	const launch = resolveDaemonLaunch(
@@ -1892,14 +1835,6 @@ ipcMain.on("shell:focus", () => browserViewHost?.forgetLastFocusedPanel());
 ipcMain.on("browser:overlay", (event, open: unknown) => {
 	if (event.sender !== getShellWebContents() || typeof open !== "boolean") return;
 	windowComposition?.setOverlayOpen(open);
-	// Refresh the live page's surface only on macOS: refreshLastFocusedPanelSurface
-	// is a macOS-specific compositor workaround (its own docstring says so). On
-	// Windows, hiding/restoring the native view under the raised shell causes a
-	// brief black flash, and window-composition.ts gates its equivalent nudge to
-	// darwin for the same reason.
-	if (open && process.platform === "darwin") {
-		browserViewHost?.refreshLastFocusedPanelSurface();
-	}
 });
 
 ipcMain.on(SET_CLOSE_SHELL_TERMINAL_SHORTCUT_ENABLED_CHANNEL, (_event, enabled: unknown) => {
@@ -2133,7 +2068,7 @@ ipcMain.handle("clipboard:writeText", (_event, text: string) => {
 ipcMain.handle("clipboard:readText", () => clipboard.readText());
 
 // A file dropped onto the terminal is delivered as raw bytes (its original path
-// is unavailable to the sandboxed renderer on macOS — see webUtils.getPathForFile
+// is unavailable to the sandboxed renderer — see webUtils.getPathForFile
 // regressions in Electron 30-33). Stash the bytes under the app's own state dir
 // and return the path so the terminal can insert it, mirroring how a native
 // terminal inserts a dropped file's path.
@@ -2148,19 +2083,13 @@ ipcMain.handle("terminal:saveDroppedFile", async (_event, input: { name: string;
 
 ipcMain.handle("updateSettings:get", async (): Promise<UpdateSettings> => {
 	const runFile = runFilePath();
-	if (!runFile) return { enabled: false, channel: "latest", nightlyAck: false, feature: null, macDifferentialUpdates: false };
+	if (!runFile) return { enabled: false, channel: "latest", nightlyAck: false, feature: null };
 	return readUpdateSettings(path.dirname(runFile));
 });
 ipcMain.handle("updateSettings:set", async (_event, settings: UpdateSettings) => {
 	const runFile = runFilePath();
 	if (!runFile) return;
 	await setUpdateSettings(path.dirname(runFile), settings);
-});
-ipcMain.handle("updateSettings:setMacDifferentialUpdates", async (_event, enabled: unknown) => {
-	if (typeof enabled !== "boolean") return;
-	const runFile = runFilePath();
-	if (!runFile) return;
-	await setMacDifferentialUpdates(path.dirname(runFile), enabled);
 });
 
 ipcMain.handle("uiSettings:get", async (): Promise<UiSettings> => {
@@ -2208,7 +2137,7 @@ ipcMain.handle("updates:download", async (_event, requestId?: string) => {
 	await downloadUpdateNow(requestId);
 });
 ipcMain.handle("updates:install", (_event, confirmedVersion?: string) => quitAndInstallUpdate(confirmedVersion));
-// Retry after a failed macOS preparation: Squirrel can't reset a stalled staging
+// Retry after a failed update preparation: the updater can't reset a stalled staging
 // in-process, so restart Open Agents like a manual quit-and-reopen. install-on-quit is
 // already off on the failed path, so quitting can't apply a half-prepared build.
 ipcMain.handle("updates:relaunch", () => {
@@ -2235,16 +2164,9 @@ function detectPostUpdateRelaunch(): Promise<boolean> {
 }
 ipcMain.handle("updates:isPostUpdateRelaunch", () => detectPostUpdateRelaunch());
 
-function cancelDockBounce(): void {
-	if (pendingBounce === null) return;
-	const { id } = pendingBounce;
-	pendingBounce = null;
-	app.dock?.cancelBounce(id);
-}
-
 ipcMain.handle(
 	"notifications:show",
-	(_event, notification: { id: string; title: string; body?: string; type?: string }) => {
+	(_event, notification: { id: string; title: string, body?: string, type?: string }) => {
 		if (!notification.id || !mainWindow) return;
 		// Only signal when the window isn't already focused (the user is looking).
 		if (mainWindow.isFocused()) return;
@@ -2255,11 +2177,7 @@ ipcMain.handle(
 			const toast = new ElectronNotification({
 				title: notification.title,
 				body: notification.body,
-				// Open Agents logo as the notification icon on Windows/Linux. Omitted on macOS,
-				// where a custom icon renders only as a redundant right-side content image —
-				// macOS uses the app-bundle icon (the Open Agents logo in a packaged build) as the
-				// single main icon.
-				icon: process.platform === "darwin" ? undefined : windowIconPath(),
+				icon: windowIconPath(),
 			});
 			toast.on("click", () => {
 				if (!mainWindow) return;
@@ -2271,28 +2189,9 @@ ipcMain.handle(
 			toast.show();
 		}
 
-		// Dock (macOS) / taskbar (Windows/Linux) attention signal. On macOS every
-		// notification bounces the dock — urgency is carried by the bounce type,
-		// so a merged PR bounces once while a blocked agent keeps bouncing. On
-		// Windows/Linux only the actionable types flash (see
-		// shouldSignalAttention), preserving the pre-existing behavior there.
-		if (process.platform === "darwin" && app.dock) {
-			// A pending critical bounce (agent blocked on the user) is never
-			// replaced: a later informational notification must not downgrade it
-			// to a one-shot bounce.
-			if (shouldReplaceBounce(pendingBounce)) {
-				// A focus listener from an earlier un-cancelled bounce still works for
-				// the new id, so only attach one at a time.
-				const hadPendingBounce = pendingBounce !== null;
-				cancelDockBounce();
-				const bounceType = dockBounceType(notification.type);
-				const id = app.dock.bounce(bounceType);
-				if (typeof id === "number" && id >= 0) {
-					pendingBounce = { id, critical: bounceType === "critical" };
-					if (!hadPendingBounce) mainWindow.once("focus", cancelDockBounce);
-				}
-			}
-		} else if ((process.platform === "win32" || process.platform === "linux") && shouldSignalAttention(notification.type)) {
+		// Taskbar (Windows/Linux) attention signal. Only the actionable types flash
+		// (see shouldSignalAttention), preserving the pre-existing behavior there.
+		if ((process.platform === "win32" || process.platform === "linux") && shouldSignalAttention(notification.type)) {
 			if (!isFlashing) {
 				isFlashing = true;
 				mainWindow.flashFrame(true);
@@ -2312,12 +2211,7 @@ ipcMain.handle(
 if (!app.isPackaged) {
 	ipcMain.handle("notifications:devBounce", () => {
 		if (!mainWindow) return;
-		if (process.platform === "darwin") {
-			const id = app.dock?.bounce("critical");
-			setTimeout(() => {
-				if (id !== undefined) app.dock?.cancelBounce(id);
-			}, 2000);
-		} else if (process.platform === "win32" || process.platform === "linux") {
+		if (process.platform === "win32" || process.platform === "linux") {
 			mainWindow.flashFrame(true);
 			setTimeout(() => {
 				mainWindow?.flashFrame(false);
@@ -2332,15 +2226,7 @@ if (!app.isPackaged) {
 ipcMain.handle("notifications:setBadge", (_event, count: number) => {
 	if (!mainWindow) return { error: "no mainWindow" };
 	const n = Number.isFinite(count) && count > 0 ? Math.floor(count) : 0;
-	if (process.platform === "darwin") {
-		const dock = app.dock;
-		if (!dock) return { error: "no app.dock" };
-		try {
-			dock.setBadge(n > 0 ? String(n) : "");
-		} catch (e) {
-			return { error: String(e) };
-		}
-	} else if (process.platform === "win32") {
+	if (process.platform === "win32") {
 		if (n > 0) {
 			// Pre-built red dot PNG overlay — indicates unread without needing Canvas.
 			const badgeDataUrl =
@@ -2367,15 +2253,6 @@ ipcMain.on(TRAY_RENDERER_READY_CHANNEL, (event) => {
 	trayLifecycle.handleRendererReady(event);
 	// This existing handshake comes from TrayRuntime after the React shell has
 	// mounted. Loading the HTML or merely observing a new PID is not success.
-	if (app.isPackaged && process.platform === "darwin" && event.sender === getShellWebContents()) {
-		const runFile = runFilePath();
-		if (runFile) void acknowledgeMacUpdateRestart({
-			stateDir: path.dirname(runFile),
-			appPath: resolveBundlePath(),
-			version: app.getVersion(),
-		});
-	}
-
 	if (pendingFolderPath && event.sender === getShellWebContents()) {
 		event.sender.send(OPEN_FOLDER_PATH_CHANNEL, pendingFolderPath);
 		pendingFolderPath = null;
@@ -2429,16 +2306,9 @@ function initAutoUpdates(): void {
 }
 
 // Resolve the bundle path `open-agents start` will later `open` and stat as a usable app.
-// On macOS process.execPath is .../Open Agents.app/Contents/MacOS/<exe>;
-// the thing `open-agents start` opens is the enclosing `.app` directory, so walk up three
-// levels (MacOS -> Contents -> .app). app.getAppPath() is WRONG here: it returns
-// the app.asar archive path inside the bundle, not the bundle itself.
 // On win32/linux there is no .app wrapper, so record execPath; a richer
 // resolveApp() for those platforms lands in T6/T7.
 function resolveBundlePath(): string {
-	if (process.platform === "darwin") {
-		return path.resolve(process.execPath, "..", "..", "..");
-	}
 	return process.execPath;
 }
 
@@ -2497,36 +2367,6 @@ app.whenReady().then(async () => {
 		}
 	}
 
-	if (process.platform === "darwin" && app.isPackaged) {
-		const bundlePath = resolveBundlePath();
-		const action = decideRelocation({
-			inApplicationsFolder: app.isInApplicationsFolder(),
-			runningVersion: app.getVersion(),
-			...inspectInstalledBundle(bundlePath),
-		});
-		if (action === "handoff") {
-			// A stale copy (the original download, a mounted dmg) launching while a
-			// newer build sits in /Applications. Relocating here would trash that
-			// build and pin the user to this bundle's version forever, so open the
-			// install and quit instead. Return before the marker write below: the
-			// instance we just launched records the path and version.
-			const installed = installedBundlePath(bundlePath);
-			console.info(`newer install at ${installed}; handing off and quitting`);
-			await shell.openPath(installed);
-			app.quit();
-			return;
-		}
-		if (action === "relocate") {
-			try {
-				// On success this restarts the app from /Applications, so code past
-				// here only runs when no move happened (already there, or declined).
-				app.moveToApplicationsFolder();
-			} catch (err) {
-				console.error("relocation to Applications failed:", err);
-			}
-		}
-	}
-
 	// Refresh the marker post-relocation so appPath records the final bundle path;
 	// the sticky installSource preserves the value captured above. A marker-write
 	// failure is non-fatal: log and continue so the app still boots.
@@ -2537,11 +2377,11 @@ app.whenReady().then(async () => {
 	}
 
 	// A pre-fix bundle cannot be patched retroactively. After the maintained
-	// /Applications build runs, offer to retire older Open Agents copies that can still
-	// overwrite it if Finder, Spotlight, or an old Dock tile launches them.
+	// build runs, offer to retire older Open Agents copies that can still
+	// overwrite it if a launcher or shortcut launches them.
 	try {
-		const { formatStaleAppCopies, retireStaleMacAppCopies } = await import("./main/stale-app-copies");
-		await retireStaleMacAppCopies({
+		const { formatStaleAppCopies, retireStaleAppCopies } = await import("./main/stale-app-copies");
+		await retireStaleAppCopies({
 			platform: process.platform,
 			isPackaged: app.isPackaged,
 			runningPath: resolveBundlePath(),
@@ -2681,7 +2521,5 @@ process.on("exit", () => {
 });
 
 app.on("window-all-closed", () => {
-	if (process.platform !== "darwin") {
-		app.quit();
-	}
+	app.quit();
 });

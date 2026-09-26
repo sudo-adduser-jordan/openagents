@@ -2,14 +2,11 @@
 name: Desktop build artifacts
 
 # Dispatchable unsigned desktop build for an external release conductor.
-# Builds the Electron app for all four platforms at a pinned ref with a
+# Builds the Electron app for all supported platforms at a pinned ref with a
 # caller-supplied version, uploads each installer as a short-lived run
 # artifact, and emits a digests.json artifact (a flat JSON object mapping
 # each artifact filename to its sha256 hex string) that the conductor reads
 # to verify hashes before signing. Creates no release, references no secrets.
-# macOS output is intentionally UNSIGNED: forge.config.ts only activates
-# osxSign/osxNotarize when the Apple env vars are present, and this workflow
-# never sets them (no macos-signing-setup). The conductor signs downstream.
 
 on:
   workflow_dispatch:
@@ -39,12 +36,6 @@ jobs:
           # conductor consumes; the contained filenames keep the existing stable
           # alias names so the cask/updater/landing stay compatible. Do not
           # rename either without updating the conductor.
-          - os: macos-latest
-            platform: darwin-arm64
-            artifact: mac-arm64
-          - os: macos-15-intel
-            platform: darwin-x64
-            artifact: mac-x64
           - os: windows-latest
             platform: win32-x64
             artifact: win

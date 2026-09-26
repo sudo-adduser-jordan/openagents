@@ -113,10 +113,6 @@ describe("parseRunFile", () => {
 });
 
 describe("defaultRunFilePath", () => {
-	it("matches Go's canonical Open Agents home default on macOS", () => {
-		expect(defaultRunFilePath("darwin", {}, "/Users/me")).toBe("/Users/me/.open-agents/running.json");
-	});
-
 	it("ignores XDG_CONFIG_HOME on linux", () => {
 		expect(defaultRunFilePath("linux", { XDG_CONFIG_HOME: "/xdg" }, "/home/me")).toBe("/home/me/.open-agents/running.json");
 		expect(defaultRunFilePath("linux", {}, "/home/me")).toBe("/home/me/.open-agents/running.json");
@@ -131,7 +127,6 @@ describe("defaultRunFilePath", () => {
 
 	it("returns null when no home directory can be resolved", () => {
 		expect(defaultRunFilePath("linux", {}, "")).toBeNull();
-		expect(defaultRunFilePath("darwin", {}, "")).toBeNull();
 		expect(defaultRunFilePath("win32", {}, "")).toBeNull();
 	});
 });

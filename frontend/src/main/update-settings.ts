@@ -22,8 +22,6 @@ export interface UpdateSettings {
 	nightlyAck: boolean;
 	/** When set, the updater tracks the pr<N> prerelease channel instead of `channel`. Null = not pinned. */
 	feature: FeaturePin | null;
-	/** Internal fail-closed mirror of Developer Mode for macOS Nightly updates. */
-	macDifferentialUpdates?: boolean;
 }
 
 // Live state of an automatic or manual update check/download, streamed to the
@@ -92,7 +90,6 @@ const DEFAULTS: UpdateSettings = {
 	channel: "latest",
 	nightlyAck: false,
 	feature: null,
-	macDifferentialUpdates: false,
 };
 let settingsOperationQueue: Promise<void> = Promise.resolve();
 
@@ -112,21 +109,7 @@ function coerce(raw: unknown): UpdateSettings {
 		nightlyAck: o.nightlyAck === true,
 		// Legacy files with no `feature` key default to null (migration-safe).
 		feature: coerceFeature(o.feature),
-		macDifferentialUpdates: o.macDifferentialUpdates === true && (o.feature === null || coerceFeature(o.feature) !== null),
 	};
-}
-
-/** Enables differential transfer only inside the approved guarded rollout. */
-export function macDifferentialUpdatesEnabled(input: {
-	platform: NodeJS.Platform;
-	settings: Pick<UpdateSettings, "channel" | "feature" | "macDifferentialUpdates">;
-}): boolean {
-	return (
-		input.platform === "darwin" &&
-		input.settings.channel === "nightly" &&
-		input.settings.feature === null &&
-		input.settings.macDifferentialUpdates === true
-	);
 }
 
 async function readUpdateSettingsUnlocked(stateDir: string): Promise<UpdateSettings> {

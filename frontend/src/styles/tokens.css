@@ -328,7 +328,7 @@
 			var(--size-titlebar-content-gap)
 	);
 
-	/* Keep macOS traffic-light chrome aligned with the shared route topbar. */
+	/* Keep window controls aligned with the shared route topbar. */
 	--size-traffic-light-clearance: var(--size-toolbar);
 	/* Fullscreen has no traffic lights, but the left navigation still needs one
 	 * compact row before sidebar content begins. */
@@ -406,13 +406,13 @@
 	--size-center-panel-inset: 24px;
 	--size-center-panel-inline-inset: 16px;
 	--size-center-panel-bottom-inset: 14px;
-	/* macOS frames the panel with one uniform inset on all four sides. It stays
+	/* Linux frames the panel with one uniform inset on all four sides. It stays
 	 * near-flush so in-panel titles align with the fixed TitlebarNav row. */
-	--size-center-panel-inset-mac: 6px;
+	--size-center-panel-inset-linux: 6px;
 	/* Formula: inner = outer_window_radius - inset (nested corner alignment).
-	 * macOS window corner ≈ 18px; inset = 6px → inner = 12px. */
+	 * Linux window corner ≈ 18px; inset = 6px → inner = 12px. */
 	--radius-window: 18px;
-	--radius-center-panel: calc(var(--radius-window) - var(--size-center-panel-inset-mac));
+	--radius-center-panel: calc(var(--radius-window) - var(--size-center-panel-inset-linux));
 
 	/* Welcome / import radius alias (CreateProjectFlow rounded-welcome-panel) */
 	--color-border-welcome-panel: var(--border);

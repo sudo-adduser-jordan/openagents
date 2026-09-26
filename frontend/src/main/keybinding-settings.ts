@@ -16,7 +16,7 @@ const customizableIds = new Set<AppShortcutId>(
 
 let settingsOperationQueue: Promise<void> = Promise.resolve();
 
-function coerceBinding(raw: unknown, isMac: boolean): ShortcutBinding | null {
+function coerceBinding(raw: unknown): ShortcutBinding | null {
 	if (!raw || typeof raw !== "object") return null;
 	const value = raw as Record<string, unknown>;
 	if (typeof value.key !== "string" || value.key.length === 0 || value.key.length > 32) return null;
@@ -29,11 +29,11 @@ function coerceBinding(raw: unknown, isMac: boolean): ShortcutBinding | null {
 		shift: value.shift === true,
 		alt: value.alt === true,
 	};
-	if (shortcutBindingValidationError(candidate, isMac)) return null;
+	if (shortcutBindingValidationError(candidate)) return null;
 	return candidate;
 }
 
-export function coerceKeybindingOverrides(raw: unknown, isMac = process.platform === "darwin"): KeybindingOverrides {
+export function coerceKeybindingOverrides(raw: unknown): KeybindingOverrides {
 	if (!raw || typeof raw !== "object") return {};
 	const source = raw as Record<string, unknown>;
 	const overrides: KeybindingOverrides = {};
@@ -42,7 +42,7 @@ export function coerceKeybindingOverrides(raw: unknown, isMac = process.platform
 		if (!Array.isArray(rawBindings)) continue;
 		const bindings = rawBindings
 			.slice(0, 2)
-			.map((binding) => coerceBinding(binding, isMac))
+			.map((binding) => coerceBinding(binding))
 			.filter((candidate): candidate is ShortcutBinding => candidate !== null);
 		// Preserve an intentional empty array as "unassigned". If a non-empty
 		// persisted value contains no valid bindings, omit it so defaults recover.

@@ -2,14 +2,14 @@ import { describe, expect, it } from "vitest";
 import { bundledTmuxBinaryPath, stableBundledTmuxBinaryPath } from "./bundled-tmux";
 
 describe("bundledTmuxBinaryPath", () => {
-	it.each(["darwin", "linux"] as const)("uses the packaged tmux on %s", (platform) => {
-		expect(bundledTmuxBinaryPath(true, "/opt/open-agents/resources", platform)).toBe(
+	it("uses the packaged tmux on linux", () => {
+		expect(bundledTmuxBinaryPath(true, "/opt/open-agents/resources", "linux")).toBe(
 			"/opt/open-agents/resources/tmux/bin/tmux",
 		);
 	});
 
 	it("does not override tmux in development", () => {
-		expect(bundledTmuxBinaryPath(false, "/opt/open-agents/resources", "darwin")).toBeNull();
+		expect(bundledTmuxBinaryPath(false, "/opt/open-agents/resources", "linux")).toBeNull();
 	});
 
 	it("does not require tmux on Windows", () => {
@@ -18,9 +18,9 @@ describe("bundledTmuxBinaryPath", () => {
 });
 
 describe("stableBundledTmuxBinaryPath", () => {
-	it.each(["darwin", "linux"] as const)("uses durable versioned Open Agents storage on %s", (platform) => {
-		expect(stableBundledTmuxBinaryPath(true, "/home/me/.open-agents", "0.10.3", platform, "arm64")).toBe(
-			`/home/me/.open-agents/runtime/tmux/0.10.3-${platform}-arm64/tmux`,
+	it("uses durable versioned Open Agents storage on linux", () => {
+		expect(stableBundledTmuxBinaryPath(true, "/home/me/.open-agents", "0.10.3", "linux", "x64")).toBe(
+			"/home/me/.open-agents/runtime/tmux/0.10.3-linux-x64/tmux",
 		);
 	});
 

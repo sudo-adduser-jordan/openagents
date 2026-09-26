@@ -186,8 +186,8 @@ export type BrowserShortcutAction =
 	| "focus-location"
 	| "reload";
 
-export function browserShortcutAction(input: BrowserShortcutInput, isMac: boolean): BrowserShortcutAction | null {
-	const primaryModifier = isMac ? input.meta && !input.control : input.control && !input.meta;
+export function browserShortcutAction(input: BrowserShortcutInput): BrowserShortcutAction | null {
+	const primaryModifier = input.control && !input.meta;
 	if (primaryModifier && !input.alt) {
 		if (input.shift) return input.key.toLowerCase() === "t" ? "reopen-tab" : null;
 		switch (input.key.toLowerCase()) {
@@ -207,7 +207,6 @@ export function browserShortcutAction(input: BrowserShortcutInput, isMac: boolea
 export function shouldHandleAppShortcutInBrowserContext(
 	id: AppShortcutId,
 	chord: ShortcutChord,
-	isMac: boolean,
 ): boolean {
 	if (id === "new-shell-terminal" || id === "close-shell-terminal") return false;
 	return browserShortcutAction(
@@ -219,7 +218,6 @@ export function shouldHandleAppShortcutInBrowserContext(
 			alt: chord.alt,
 			type: "keyDown",
 		},
-		isMac,
 	) === null;
 }
 
@@ -317,9 +315,6 @@ export type BrowserViewHostOptions = {
 	WebContentsView: WebContentsViewConstructor;
 	annotatePreloadPath: string;
 	rendererOrigin: string;
-	// Platform flag for application shortcuts forwarded from each preview view
-	// to the shell. Defaults to non-mac when omitted (tests).
-	isMac?: boolean;
 	getKeybindingOverrides?: () => KeybindingOverrides;
 	isKeybindingRecording?: () => boolean;
 	agentBrowserRuntime?: AgentBrowserRuntime;
@@ -353,7 +348,7 @@ export type BrowserViewHost = {
 	isLastUsedBrowser: () => boolean;
 	// Refresh the live page after raising the transparent shell for an overlay.
 	// Hide immediately, then restore visibility with the bounds nudge on the next
-	// tick — a same-turn hide/show can coalesce into a no-op on macOS and leave
+	// tick — a same-turn hide/show can coalesce into a no-op and leave
 	// the page blank for the whole overlay lifetime.
 	refreshLastFocusedPanelSurface: () => void;
 };
@@ -776,12 +771,11 @@ export function createBrowserViewHost(options: BrowserViewHostOptions): BrowserV
 		// shell renderer so they still work with the panel focused.
 		attachAppShortcuts(
 			view.webContents,
-			Boolean(options.isMac),
 			shellWebContents,
 			true,
 			options.getKeybindingOverrides,
 			options.isKeybindingRecording,
-			(id, chord) => shouldHandleAppShortcutInBrowserContext(id, chord, Boolean(options.isMac)),
+			(id, chord) => shouldHandleAppShortcutInBrowserContext(id, chord),
 			(id) => {
 				if (id !== "toggle-browser-devtools" || !isCurrentEntry() || session.profileSwitching) return;
 				lastFocusedViewId = session.viewId;
@@ -1223,7 +1217,7 @@ export function createBrowserViewHost(options: BrowserViewHostOptions): BrowserV
 	): void {
 		contents.on("before-input-event", (event, input) => {
 			if (input.type !== "keyDown" || options.isKeybindingRecording?.()) return;
-			const action = browserShortcutAction(input, Boolean(options.isMac));
+			const action = browserShortcutAction(input);
 			if (!action) return;
 			const session = getSession();
 			if (!session) return;
@@ -2526,7 +2520,7 @@ export function createBrowserViewHost(options: BrowserViewHostOptions): BrowserV
 		clearProfileData,
 		isLastUsedBrowser: () => lastUsedViewId !== null && entries.has(lastUsedViewId),
 		// Reordering the transparent shell above a live page can leave either
-		// WebContentsView showing a stale compositor surface on macOS. A one-pixel
+		// WebContentsView showing a stale compositor surface. A one-pixel
 		// bounds nudge alone is insufficient: Electron also needs a visibility
 		// reset. Hide immediately, then restore visibility together with the
 		// bounds on the next tick. A same-turn setVisible(false)+setVisible(true)
@@ -2906,8 +2900,8 @@ async function fetchFaviconFromSession(tabSession: Session, url: string): Promis
 			// Fall through to the validated ICO path below. Test environments and
 			// some Electron platforms throw rather than returning an empty image.
 		}
-		// nativeImage does not decode ICO buffers on every platform (notably
-		// macOS), while Chromium's <img> decoder does. Preserve a bounded,
+		// nativeImage does not decode ICO buffers on every platform, while
+		// Chromium's <img> decoder does. Preserve a bounded,
 		// structurally valid ICO as local image data rather than falling back to
 		// a direct renderer request that would escape the selected profile.
 		if (isIcoBuffer(buffer)) return `data:image/x-icon;base64,${buffer.toString("base64")}`;

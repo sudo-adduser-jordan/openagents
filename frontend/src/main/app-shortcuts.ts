@@ -60,11 +60,10 @@ const mainShortcutChannels: readonly [AppShortcutId, string][] = [
 
 const appShortcutChannel = (
 	chord: ShortcutChord,
-	isMac: boolean,
 	overrides: KeybindingOverrides,
 ): readonly [AppShortcutId, string] | null => {
 	for (const [id, channel] of mainShortcutChannels) {
-		if (matchesAppShortcut(id, chord, isMac, overrides)) return [id, channel];
+		if (matchesAppShortcut(id, chord, overrides)) return [id, channel];
 	}
 	return null;
 };
@@ -74,7 +73,6 @@ const appShortcutChannel = (
 // the native Browser-preview WebContentsView.
 export function attachAppShortcuts(
 	contents: BeforeInputContents,
-	isMac: boolean,
 	target: ShortcutTargetContents,
 	focusTarget = false,
 	getOverrides: () => KeybindingOverrides = () => ({}),
@@ -93,7 +91,7 @@ export function attachAppShortcuts(
 			shift: input.shift,
 			alt: input.alt,
 		};
-		const fontSizeDelta = terminalFontSizeDelta(chord, isMac);
+		const fontSizeDelta = terminalFontSizeDelta(chord);
 		if (fontSizeDelta !== 0 && isTerminalFocused()) {
 			event.preventDefault();
 			if (focusTarget) target.focus();
@@ -106,7 +104,7 @@ export function attachAppShortcuts(
 		if (
 			onShortcut &&
 			!input.isAutoRepeat &&
-			matchesAppShortcut("toggle-browser-devtools", chord, isMac, getOverrides()) &&
+			matchesAppShortcut("toggle-browser-devtools", chord, getOverrides()) &&
 			shouldHandle("toggle-browser-devtools", chord)
 		) {
 			event.preventDefault();
@@ -114,7 +112,7 @@ export function attachAppShortcuts(
 			onShortcut("toggle-browser-devtools");
 			return;
 		}
-		const match = appShortcutChannel(chord, isMac, getOverrides());
+		const match = appShortcutChannel(chord, getOverrides());
 		if (!match) return;
 		const [id, channel] = match;
 		if (!shouldHandle(id, chord)) {

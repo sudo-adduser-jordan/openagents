@@ -22,15 +22,6 @@ function chord(overrides: Partial<ShortcutChord> & { key: string }): ShortcutCho
 }
 
 describe("matchesNewSessionShortcut", () => {
-	it("matches ⌘N on macOS (either key case)", () => {
-		expect(matchesNewSessionShortcut(chord({ key: "n", meta: true }), true)).toBe(true);
-		expect(matchesNewSessionShortcut(chord({ key: "N", meta: true }), true)).toBe(true);
-	});
-
-	it("does not match plain Ctrl+N on macOS", () => {
-		expect(matchesNewSessionShortcut(chord({ key: "n", ctrl: true }), true)).toBe(false);
-	});
-
 	it("matches Ctrl+Shift+N on Windows/Linux", () => {
 		expect(matchesNewSessionShortcut(chord({ key: "N", ctrl: true, shift: true }), false)).toBe(true);
 	});
@@ -39,88 +30,67 @@ describe("matchesNewSessionShortcut", () => {
 		expect(matchesNewSessionShortcut(chord({ key: "n", ctrl: true }), false)).toBe(false);
 	});
 
-	it("does not match ⌘N on Windows/Linux", () => {
-		expect(matchesNewSessionShortcut(chord({ key: "n", meta: true }), false)).toBe(false);
-	});
-
 	it("ignores other keys and extra modifiers", () => {
-		expect(matchesNewSessionShortcut(chord({ key: "m", meta: true }), true)).toBe(false);
-		expect(matchesNewSessionShortcut(chord({ key: "n", meta: true, alt: true }), true)).toBe(false);
 		expect(matchesNewSessionShortcut(chord({ key: "n", ctrl: true, shift: true, alt: true }), false)).toBe(false);
 		expect(matchesNewSessionShortcut(chord({ key: "n", ctrl: true, shift: true, meta: true }), false)).toBe(false);
 	});
 });
 
 describe("matchesNewShellTerminalShortcut", () => {
-	it("matches Command+T on macOS and Ctrl+T on Windows/Linux", () => {
-		expect(matchesNewShellTerminalShortcut(chord({ key: "t", meta: true }), true)).toBe(true);
+	it("matches Ctrl+T on Windows/Linux", () => {
 		expect(matchesNewShellTerminalShortcut(chord({ key: "T", ctrl: true }), false)).toBe(true);
 	});
 
-	it("rejects the wrong platform modifier, old backtick chord, and extra modifiers", () => {
-		expect(matchesNewShellTerminalShortcut(chord({ key: "t", ctrl: true }), true)).toBe(false);
-		expect(matchesNewShellTerminalShortcut(chord({ key: "t", meta: true }), false)).toBe(false);
+	it("rejects extra modifiers", () => {
 		expect(matchesNewShellTerminalShortcut(chord({ key: "`", ctrl: true }), false)).toBe(false);
 		expect(matchesNewShellTerminalShortcut(chord({ key: "t", ctrl: true, shift: true }), false)).toBe(false);
 	});
 });
 
 describe("matchesKeyboardShortcutsHelpShortcut", () => {
-	it("matches Ctrl+/ on Windows/Linux and Command+/ on macOS", () => {
+	it("matches Ctrl+/ on Windows/Linux", () => {
 		expect(matchesKeyboardShortcutsHelpShortcut(chord({ key: "/", ctrl: true }), false)).toBe(true);
-		expect(matchesKeyboardShortcutsHelpShortcut(chord({ key: "/", meta: true }), true)).toBe(true);
 	});
 
-	it("rejects the wrong platform modifier and extra modifiers", () => {
-		expect(matchesKeyboardShortcutsHelpShortcut(chord({ key: "/", meta: true }), false)).toBe(false);
-		expect(matchesKeyboardShortcutsHelpShortcut(chord({ key: "/", ctrl: true }), true)).toBe(false);
+	it("rejects extra modifiers", () => {
 		expect(matchesKeyboardShortcutsHelpShortcut(chord({ key: "/", ctrl: true, shift: true }), false)).toBe(false);
 		expect(matchesKeyboardShortcutsHelpShortcut(chord({ key: "?", ctrl: true }), false)).toBe(false);
 	});
 });
 
 describe("additional application shortcuts", () => {
-	it("matches settings on each platform and rejects extra modifiers", () => {
-		expect(matchesOpenSettingsShortcut(chord({ key: ",", meta: true }), true)).toBe(true);
+	it("matches settings and rejects extra modifiers", () => {
 		expect(matchesOpenSettingsShortcut(chord({ key: ",", ctrl: true }), false)).toBe(true);
 		expect(matchesOpenSettingsShortcut(chord({ key: ",", ctrl: true, shift: true }), false)).toBe(false);
 	});
 
-	it("matches previous and next session on each platform", () => {
-		expect(matchesPreviousSessionShortcut(chord({ key: "ArrowUp", meta: true, alt: true }), true)).toBe(true);
+	it("matches previous and next session", () => {
 		expect(matchesPreviousSessionShortcut(chord({ key: "PageUp", ctrl: true }), false)).toBe(true);
-		expect(matchesNextSessionShortcut(chord({ key: "ArrowDown", meta: true, alt: true }), true)).toBe(true);
 		expect(matchesNextSessionShortcut(chord({ key: "PageDown", ctrl: true }), false)).toBe(true);
 		expect(matchesNextSessionShortcut(chord({ key: "Down", ctrl: true, alt: true }), false)).toBe(false);
 		expect(matchesNextSessionShortcut(chord({ key: "Down", ctrl: true }), false)).toBe(false);
 	});
 
-	it("matches Ctrl+Tab and Ctrl+Shift+Tab on each platform", () => {
-		for (const isMac of [true, false]) {
-			expect(matchesNextTabShortcut(chord({ key: "Tab", ctrl: true }), isMac)).toBe(true);
-			expect(matchesPreviousTabShortcut(chord({ key: "Tab", ctrl: true, shift: true }), isMac)).toBe(true);
-			expect(matchesNextTabShortcut(chord({ key: "Tab", ctrl: true, shift: true }), isMac)).toBe(false);
-			expect(matchesPreviousTabShortcut(chord({ key: "Tab", ctrl: true }), isMac)).toBe(false);
-		}
+	it("matches Ctrl+Tab and Ctrl+Shift+Tab", () => {
+		expect(matchesNextTabShortcut(chord({ key: "Tab", ctrl: true }), false)).toBe(true);
+		expect(matchesPreviousTabShortcut(chord({ key: "Tab", ctrl: true, shift: true }), false)).toBe(true);
+		expect(matchesNextTabShortcut(chord({ key: "Tab", ctrl: true, shift: true }), false)).toBe(false);
+		expect(matchesPreviousTabShortcut(chord({ key: "Tab", ctrl: true }), false)).toBe(false);
 	});
 
-	it("matches focus terminal on each platform and rejects extra modifiers", () => {
-		expect(matchesFocusTerminalShortcut(chord({ key: "T", meta: true, shift: true }), true)).toBe(true);
+	it("matches focus terminal and rejects extra modifiers", () => {
 		expect(matchesFocusTerminalShortcut(chord({ key: "t", ctrl: true, shift: true }), false)).toBe(true);
 		expect(matchesFocusTerminalShortcut(chord({ key: "t", ctrl: true, shift: true, alt: true }), false)).toBe(false);
 	});
 
-	it("matches close terminal on each platform", () => {
-		expect(matchesAppShortcut("close-shell-terminal", chord({ key: "w", meta: true }), true)).toBe(true);
+	it("matches close terminal", () => {
 		expect(matchesAppShortcut("close-shell-terminal", chord({ key: "w", ctrl: true }), false)).toBe(true);
-		expect(matchesAppShortcut("close-shell-terminal", chord({ key: "w", meta: true }), false)).toBe(false);
 	});
 });
 
 describe("shortcut catalog", () => {
-	it("provides runtime defaults for every shortcut on each platform", () => {
+	it("provides runtime defaults for every shortcut", () => {
 		for (const shortcut of APP_SHORTCUTS) {
-			expect(defaultShortcutBindings(shortcut.id, true).length).toBeGreaterThan(0);
 			expect(defaultShortcutBindings(shortcut.id, false).length).toBeGreaterThan(0);
 		}
 	});
