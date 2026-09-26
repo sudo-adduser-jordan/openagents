@@ -766,7 +766,7 @@ func TestPromoteSelectedQueuedTurnIntoTheRunningTurn(t *testing.T) {
 			t.Fatalf("promoted source turn remains visible: %+v", turn)
 		}
 	}
-	next, err := h.st.NextQueuedTurn(ctx, h.ctrl.ConversationID())
+	next, err := h.st.NextQueuedTurn(ctx, h.ctrl.ConversationID(), testSession)
 	if err != nil {
 		t.Fatalf("remaining queue: %v", err)
 	}
@@ -792,7 +792,7 @@ func TestPromoteQueuedTurnRefusalRestoresItsQueuePosition(t *testing.T) {
 	if !errors.Is(err, chatsvc.ErrTurnNotSteerable) {
 		t.Fatalf("promotion error = %v, want ErrTurnNotSteerable", err)
 	}
-	next, err := h.st.NextQueuedTurn(ctx, h.ctrl.ConversationID())
+	next, err := h.st.NextQueuedTurn(ctx, h.ctrl.ConversationID(), testSession)
 	if err != nil || next.TurnID != queued.ID {
 		t.Fatalf("restored queue head = %+v, %v; want %s", next, err, queued.ID)
 	}
@@ -818,7 +818,7 @@ func TestPromoteQueuedTurnRejectsNonHumanSourceWithoutContactingProvider(t *test
 	if calls := provider.steers(); len(calls) != 0 {
 		t.Fatalf("provider received %d steer attempts, want none", len(calls))
 	}
-	next, err := h.st.NextQueuedTurn(ctx, h.ctrl.ConversationID())
+	next, err := h.st.NextQueuedTurn(ctx, h.ctrl.ConversationID(), testSession)
 	if err != nil {
 		t.Fatalf("load queue after rejection: %v", err)
 	}
@@ -876,7 +876,7 @@ func TestPromoteQueuedTurnAmbiguousProviderFailureSettlesUncertainWithoutRedeliv
 	if source.State != domain.TurnStateFailed || source.ErrorMessage != chatsvc.ErrPromotionUncertain.Error() {
 		t.Fatalf("uncertain source = %+v, want failed with promotion-uncertain error", *source)
 	}
-	if _, err := h.st.NextQueuedTurn(storeCtx, h.ctrl.ConversationID()); !errors.Is(err, domain.ErrNoQueuedTurn) {
+	if _, err := h.st.NextQueuedTurn(storeCtx, h.ctrl.ConversationID(), testSession); !errors.Is(err, domain.ErrNoQueuedTurn) {
 		t.Fatalf("uncertain source remained drainable: %v", err)
 	}
 

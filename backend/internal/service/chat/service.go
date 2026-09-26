@@ -214,12 +214,23 @@ func cloneStartConfig(cfg StartConfig) StartConfig {
 // settleOrphanedWork closes out anything a previous controller left behind.
 //
 // Best-effort by design: a failure here must not stop a session from coming back,
-// because a session the user cannot reopen is worse than a stale row. Both
-// failures are logged rather than swallowed.
+// because a session the user cannot reopen is worse than a stale row. Every
+// failure is logged rather than swallowed.
 func (s *Service) settleOrphanedWork(ctx context.Context, session domain.SessionID, conversationID string) {
 	now := s.now()
 	if err := s.store.SettleOrphanedTurns(ctx, session, now); err != nil {
 		s.log.Error("chat start: settle orphaned turns", "session", session, "error", err)
+	}
+	// Queued rows this session owns are left for the drain that follows, which is
+	// the only thing that can send them. Rows no session can claim are not: a
+	// permanently removed session detaches its turns rather than taking them with
+	// it, so without this they would sit queued behind a controller that will never
+	// exist and no one would ever be able to explain why.
+	if settled, err := s.store.SettleUndeliverableQueuedTurns(ctx, now); err != nil {
+		s.log.Error("chat start: settle undeliverable queued turns", "session", session, "error", err)
+	} else if settled > 0 {
+		s.log.Warn("chat start: cancelled queued messages no session can send",
+			"session", session, "turns", settled)
 	}
 	// An approval left pending can never be answered: the provider call it was
 	// blocking died with the process that was holding it.
@@ -764,6 +775,14 @@ func (s *Service) Start(ctx context.Context, cfg StartConfig) (*Controller, erro
 					if err := s.store.SettleOrphanedTurns(commitCtx, handoff.PreviousSessionID, s.now()); err != nil {
 						return err
 					}
+					// Withdrawn rather than failed: nothing dispatched it, and the
+					// session that would have is being replaced. Leaving it queued
+					// would strand a message the user can still see, with no
+					// controller left that is allowed to send it.
+					if _, err := s.store.CancelQueuedTurnsForSession(
+						commitCtx, handoff.PreviousSessionID, s.now()); err != nil {
+						return err
+					}
 					if err := s.store.FailPendingApprovals(commitCtx, conversation.ID, s.now()); err != nil {
 						return err
 					}
@@ -826,6 +845,16 @@ func (s *Service) Start(ctx context.Context, cfg StartConfig) (*Controller, erro
 		cfg.ExpectedControllerOwner.ProviderConversationID = controller.ProviderConversationID()
 		cfg.ExpectedControllerOwner.ControllerGeneration = controller.Generation()
 	}
+	// A queue is durable rows, not controller memory, so it outlives the controller
+	// that accepted it. Nothing else dispatches it: the only other trigger is a
+	// turn completion, and a controller that has just come up with work waiting has
+	// no turn coming. Without this, messages a user could see queued behind a
+	// daemon restart or a resume sat there permanently.
+	//
+	// A provider handoff is excluded because it owns its own queue settlement --
+	// a drain here would deliver the source's messages through the target, which
+	// is the one thing the handoff policies exist to decide.
+	fromHandoff := cfg.ProviderHandoff != nil
 	s.mu.Lock()
 	s.controllers[cfg.SessionID] = controller
 	// A committed reservation is consumed. Internal controller restarts must
@@ -836,6 +865,10 @@ func (s *Service) Start(ctx context.Context, cfg StartConfig) (*Controller, erro
 	s.startConfigs[cfg.SessionID] = cloneStartConfig(cfg)
 	controller.start()
 	s.mu.Unlock()
+
+	if !fromHandoff {
+		go controller.ResumeQueue(context.WithoutCancel(ctx))
+	}
 
 	// Drop the registry entry when the provider stream ends, so a later command
 	// reports ErrNoController instead of writing into a dead controller.

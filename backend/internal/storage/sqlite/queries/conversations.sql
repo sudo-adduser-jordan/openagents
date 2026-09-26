@@ -558,12 +558,36 @@ WHERE status = 'running'
 -- Restart reconciliation: a turn left running by a dead controller is not
 -- evidence the work finished, so it is settled honestly rather than silently
 -- completed.
+--
+-- A queued row is deliberately NOT settled here. It was never dispatched, so
+-- 'controller ended before the turn completed' would be false of it, and the
+-- message the user typed would be lost to a controller that never ran it. The
+-- queue belongs to the next controller for this session, which drains it.
 -- name: SettleOrphanedConversationTurns :exec
 UPDATE conversation_turns
 SET state = 'failed',
     error_message = 'controller ended before the turn completed',
     completed_at = ?
-WHERE handled_by_session_id = ? AND state IN ('queued', 'running');
+WHERE handled_by_session_id = ? AND state = 'running';
+
+-- Restart reconciliation for the queue itself, scoped to rows no live session
+-- can claim: a permanently removed session detaches its turns (handled_by_session_id
+-- becomes NULL) rather than taking them with it, and a retired session's rows
+-- would otherwise wait on a controller that will never exist.
+--
+-- The reservation is released as well as the state settled. A steer promotion
+-- that a crash interrupted between reserve and completion leaves
+-- promotion_started_at set on a still-queued row, and the drain query skips
+-- reserved rows, so leaving it set would strand the message permanently.
+-- name: SettleUndeliverableQueuedConversationTurns :execrows
+UPDATE conversation_turns
+SET state = 'cancelled',
+    error_message = 'the session that accepted this message can no longer send it',
+    promotion_started_at = NULL,
+    completed_at = ?
+WHERE state = 'queued'
+  AND (handled_by_session_id IS NULL
+       OR handled_by_session_id IN (SELECT id FROM sessions WHERE is_terminated = 1));
 
 -- The running turns visible on the active branch, in the same order as the
 -- snapshot. Interrupt uses this exact projection when in-memory turn tracking
@@ -797,6 +821,10 @@ WHERE conversation_activities.conversation_id = ?
 -- busy. Joined to its own user message because dispatching needs the text, and
 -- the queue is durable rows rather than controller memory, so a restart can see
 -- what was never sent.
+--
+-- Scoped to the draining session. A manager's conversation is project-scoped and
+-- outlives any single manager, so an unscoped read would let a replacement
+-- deliver prompts the user typed to a manager that no longer exists.
 -- NOTE: keep these comments ASCII. sqlc locates its star-expansion edits by byte
 -- offset, so a multi-byte character here silently corrupts later queries.
 -- name: SelectNextQueuedConversationTurn :one
@@ -810,6 +838,7 @@ JOIN conversation_messages
     ON conversation_messages.turn_id = conversation_turns.id
     AND conversation_messages.role = 'user'
 WHERE conversation_turns.conversation_id = ?
+  AND conversation_turns.handled_by_session_id = ?
   AND conversation_turns.state = 'queued'
   AND conversation_turns.promotion_started_at IS NULL
 ORDER BY conversation_turns.requested_at, conversation_turns.rowid
@@ -885,6 +914,19 @@ WHERE conversation_id = ? AND state = 'queued' AND requested_at <= ?;
 UPDATE conversation_turns
 SET state = 'interrupted', completed_at = ?
 WHERE conversation_id = ? AND state = 'queued';
+
+-- Cancel every message a session accepted and never sent, whatever conversation
+-- they belong to. A manager's conversation is project-scoped, so retiring one
+-- manager and spawning its replacement keeps the same narrative: without this
+-- the replacement would drain prompts the user typed to an agent that is gone.
+-- They settle as cancelled rather than interrupted, the same as withdrawing a
+-- row from the queue dock: nothing failed, the prompt was withdrawn.
+-- name: CancelQueuedConversationTurnsForSession :execrows
+UPDATE conversation_turns
+SET state = 'cancelled', completed_at = ?
+WHERE handled_by_session_id = ?
+  AND state = 'queued'
+  AND promotion_started_at IS NULL;
 
 -- Remove one queued turn without disturbing the running turn or later queue items.
 -- name: CancelQueuedConversationTurnByID :execrows

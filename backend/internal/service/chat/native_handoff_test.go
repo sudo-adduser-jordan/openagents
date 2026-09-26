@@ -190,7 +190,9 @@ func TestNativeChatHandoffAtomicPublication(t *testing.T) {
 			}
 			wantTurn, wantRequest := domain.TurnStateQueued, domain.ActivityStatusPending
 			if scenario == "success" {
-				wantTurn, wantRequest = domain.TurnStateFailed, domain.ActivityStatusFailed
+				// Withdrawn, not failed: the handoff retires the session that accepted
+				// it, and a message that was never dispatched cannot have failed.
+				wantTurn, wantRequest = domain.TurnStateCancelled, domain.ActivityStatusFailed
 			}
 			for _, turn := range rows.Turns {
 				if turn.ID == "old-turn" && turn.State != wantTurn {
@@ -203,7 +205,11 @@ func TestNativeChatHandoffAtomicPublication(t *testing.T) {
 				}
 			}
 			if scenario == "success" {
-				if rows.Conversation.SessionID != f.target.ID || rows.Conversation.ActiveBranchID != handoff.BoundaryID || len(rows.Messages) != 3 {
+				// The imported question and answer only. The predecessor's queued
+				// prompt is withdrawn, which is what withdrawing a queued message does
+				// anywhere else: the row leaves the transcript rather than sitting
+				// there claiming an agent will answer it.
+				if rows.Conversation.SessionID != f.target.ID || rows.Conversation.ActiveBranchID != handoff.BoundaryID || len(rows.Messages) != 2 {
 					t.Fatalf("incomplete publication: %+v", rows)
 				}
 			} else {

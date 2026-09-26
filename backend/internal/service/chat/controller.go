@@ -62,6 +62,8 @@ type Store interface {
 	SettleTurn(ctx context.Context, conversationID, providerTurnID string, state domain.TurnState, errMessage string, now time.Time) error
 	SettleTurnByID(ctx context.Context, turnID string, state domain.TurnState, errMessage string, now time.Time) error
 	SettleOrphanedTurns(ctx context.Context, session domain.SessionID, now time.Time) error
+	SettleUndeliverableQueuedTurns(ctx context.Context, now time.Time) (int64, error)
+	CancelQueuedTurnsForSession(ctx context.Context, session domain.SessionID, now time.Time) (int64, error)
 	CleanupOwnedControllerWork(ctx context.Context, session domain.SessionID, conversationID, generation string, now time.Time) (bool, error)
 	ListVisibleRunningTurnProviderIDs(ctx context.Context, conversationID string) ([]string, error)
 
@@ -73,7 +75,9 @@ type Store interface {
 	RecordUsage(ctx context.Context, conversationID string, usage domain.ConversationUsage) error
 	RecordRateLimits(ctx context.Context, conversationID string, limits domain.ConversationRateLimits) error
 
-	NextQueuedTurn(ctx context.Context, conversationID string) (domain.QueuedTurn, error)
+	// Scoped to the draining session: a project-scoped conversation outlives any
+	// single manager, and a successor must not deliver the predecessor's prompts.
+	NextQueuedTurn(ctx context.Context, conversationID string, session domain.SessionID) (domain.QueuedTurn, error)
 	ReserveQueuedTurnForPromotion(ctx context.Context, conversationID, turnID string, now time.Time) (domain.QueuedTurn, error)
 	ReleaseQueuedTurnPromotion(ctx context.Context, conversationID, turnID string) error
 	CompleteQueuedTurnPromotion(ctx context.Context, conversationID, sourceTurnID, providerTurnID string, activity domain.ConversationActivity, now time.Time) error
@@ -1613,6 +1617,16 @@ func (c *Controller) dispatch(
 		if deferred, ok := c.conv.(ports.ChatDeferredTurnStarter); ok {
 			deferred.DiscardDeferredTurn(ref.ProviderTurnID)
 		}
+		// The provider has the turn; only the durable record of it is missing. Leaving
+		// the row queued says the daemon never offered it, which is false and is read
+		// as permission to offer it again -- a second delivery of a prompt the agent
+		// may already be acting on. Settled as failed because the honest state is
+		// that the outcome is unknown, not that nothing happened.
+		if settleErr := c.store.SettleTurnByID(ctx, turnID, domain.TurnStateFailed,
+			"the agent may have started this turn, but the daemon could not record it",
+			c.now()); settleErr != nil {
+			c.log.Error("failed to settle turn after bind failure", "error", settleErr)
+		}
 		return domain.ConversationTurn{}, fmt.Errorf("bind turn: %w", err)
 	}
 
@@ -1651,6 +1665,21 @@ func (c *Controller) dispatch(
 		State:              domain.TurnStateRunning,
 		RequestedAt:        requestedAt,
 	}, nil
+}
+
+// ResumeQueue delivers anything the durable queue still holds for this session.
+//
+// A queue is rows, not controller memory, so it outlives the controller that
+// accepted it. Until something claims those rows they are stranded: the only
+// other drain trigger is a turn completion, and an idle controller that just
+// came back has no turn coming. That is the state a daemon restart or a
+// live-reconnect resume leaves behind — accepted messages the user can see in
+// the dock and no code path will ever send.
+//
+// Callers run this once the controller is published and consuming events, so a
+// drain that loses the dispatch lock is picked up by the turn it collided with.
+func (c *Controller) ResumeQueue(ctx context.Context) {
+	c.drain(ctx)
 }
 
 // drain sends the next queued message now that the agent is free.
@@ -1699,7 +1728,7 @@ func (c *Controller) drainLocked(ctx context.Context, allowDispatch bool) {
 		return
 	}
 
-	queued, err := c.store.NextQueuedTurn(ctx, c.conversation.ID)
+	queued, err := c.store.NextQueuedTurn(ctx, c.conversation.ID, c.sessionID)
 	if errors.Is(err, domain.ErrNoQueuedTurn) {
 		return
 	}
@@ -1830,7 +1859,7 @@ func (c *Controller) BeginHandoff(
 		busy := c.pendingTurnID != ""
 		c.mu.Unlock()
 		if !busy {
-			_, err := c.store.NextQueuedTurn(ctx, c.conversation.ID)
+			_, err := c.store.NextQueuedTurn(ctx, c.conversation.ID, c.sessionID)
 			switch {
 			case errors.Is(err, domain.ErrNoQueuedTurn):
 				c.sendMu.Unlock()
@@ -1871,7 +1900,7 @@ func (c *Controller) BeginIdleBranchHandoff(ctx context.Context) error {
 	if c.pendingTurnID != "" {
 		return ErrTurnRunning
 	}
-	if _, err := c.store.NextQueuedTurn(ctx, c.conversation.ID); err == nil {
+	if _, err := c.store.NextQueuedTurn(ctx, c.conversation.ID, c.sessionID); err == nil {
 		return ErrTurnRunning
 	} else if !errors.Is(err, domain.ErrNoQueuedTurn) {
 		return fmt.Errorf("check queue before branch handoff: %w", err)
@@ -2065,6 +2094,11 @@ func (c *Controller) interruptForHandoff(ctx context.Context) error {
 //     The provider is the authority that the work already ended; surfacing a bare
 //     "no active turn" would leave the user staring at a Working bar they cannot
 //     dismiss. Reconcile the durable row instead.
+//
+// With nothing running at all the refusal is still returned, because there was no
+// turn to cancel and a client must be able to branch on that. The queue is
+// cancelled anyway: it is stranded work Stop is meant to release, and a refusal
+// that leaves the user's messages in the dock forever is not a brake.
 func (c *Controller) Interrupt(ctx context.Context) error {
 	// Stop's linearization point is the dispatch lock. A Send that acquired the
 	// lock first is existing work Stop should cancel; a Send that arrives after
@@ -2088,16 +2122,30 @@ func (c *Controller) Interrupt(ctx context.Context) error {
 			return fmt.Errorf("check running turns: %w", err)
 		}
 		if len(providerTurnIDs) == 0 {
+			// Nothing is running, but a queue can still be stranded behind a turn
+			// that already settled, and Stop is the only brake the user has on it.
+			// Report the honest answer -- there was no turn to cancel -- and cancel
+			// the queue anyway, so the button is never a no-op against work the
+			// user can see. Nothing was queued after the cutoff, because the
+			// dispatch lock has been held since before it was taken.
+			c.mu.Lock()
+			c.cancelQueuedAt = cutoff
+			c.mu.Unlock()
+			c.drainLocked(ctx, true)
 			c.sendMu.Unlock()
 			return ErrNoActiveTurn
 		}
-		// The list uses the snapshot's visibility and ordering rules, so its first
-		// row is the same running turn whose Working bar the user pressed Stop on.
+		// The list uses the snapshot's visibility and ordering rules, so its rows
+		// are the running turns whose Working bar the user pressed Stop on. All of
+		// them are cancelled, not just the first: a provider that has two turns on
+		// one conversation keeps streaming the one that was not addressed.
 		providerTurnID := providerTurnIDs[0]
-		if err := c.conv.Interrupt(ctx, providerTurnID); err != nil &&
-			!errors.Is(err, ports.ErrChatNoActiveTurn) {
-			c.log.Warn("provider interrupt during reconciliation failed",
-				"session", c.sessionID, "turn", providerTurnID, "error", err)
+		for _, id := range providerTurnIDs {
+			if err := c.conv.Interrupt(ctx, id); err != nil &&
+				!errors.Is(err, ports.ErrChatNoActiveTurn) {
+				c.log.Warn("provider interrupt during reconciliation failed",
+					"session", c.sessionID, "turn", id, "error", err)
+			}
 		}
 		err = c.reconcileDurableTurnsLocked(ctx, providerTurnID, providerTurnIDs, cutoff)
 		c.sendMu.Unlock()

@@ -329,6 +329,13 @@ type conversationSettingsStore interface {
 	ConversationForSession(ctx context.Context, session domain.SessionID) (domain.ConversationRecord, error)
 }
 
+// queuedTurnCanceller is the narrow optional write boundary for withdrawing the
+// messages a retiring session accepted and never sent. Older embedders without
+// chat persistence simply do not offer it, and their sessions have no queue.
+type queuedTurnCanceller interface {
+	CancelQueuedTurnsForSession(ctx context.Context, session domain.SessionID, now time.Time) (int64, error)
+}
+
 // Manager coordinates internal session spawn, restore, kill, and cleanup over
 // the outbound ports. User-facing read-model assembly lives in the service package.
 type Manager struct {
@@ -1894,6 +1901,17 @@ func (m *Manager) RetireForReplacement(ctx context.Context, id domain.SessionID)
 	}
 	m.stopPreviewBestEffort(ctx, id)
 	m.destroyBrowserBestEffort(ctx, id)
+	// A manager's conversation is project-scoped, so the replacement continues this
+	// one. Anything the outgoing manager accepted and never sent belongs to an agent
+	// that is about to stop existing, and the replacement's first drain would
+	// deliver it -- so it is withdrawn here, as cancelled, the same as a row the
+	// user pulled out of the queue dock. Placed before either retirement path so a
+	// session that fails partway through still does not hand its queue forward.
+	if canceller, ok := m.store.(queuedTurnCanceller); ok {
+		if _, err := canceller.CancelQueuedTurnsForSession(ctx, id, m.clock()); err != nil {
+			return fmt.Errorf("retire replacement %s: withdraw queued messages: %w", id, err)
+		}
+	}
 	if rec.Metadata.WorkspacePath == "" || rec.Metadata.Branch == "" {
 		if err := m.store.DeleteSessionWorktrees(ctx, rec.ID); err != nil {
 			return fmt.Errorf("retire replacement %s: clear restore markers: %w", id, err)

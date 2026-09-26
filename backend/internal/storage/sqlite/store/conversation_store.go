@@ -1749,8 +1749,15 @@ func (s *Store) SettleActivityStreamedText(
 // The queue is these rows, not a slice in a controller: a message the user typed
 // is durable before it is delivered, so a daemon that dies with one queued can
 // still account for it.
-func (s *Store) NextQueuedTurn(ctx context.Context, conversationID string) (domain.QueuedTurn, error) {
-	row, err := s.qr.SelectNextQueuedConversationTurn(ctx, conversationID)
+func (s *Store) NextQueuedTurn(
+	ctx context.Context,
+	conversationID string,
+	sessionID domain.SessionID,
+) (domain.QueuedTurn, error) {
+	row, err := s.qr.SelectNextQueuedConversationTurn(ctx, gen.SelectNextQueuedConversationTurnParams{
+		ConversationID:     conversationID,
+		HandledBySessionID: sessionID,
+	})
 	if errors.Is(err, sql.ErrNoRows) {
 		return domain.QueuedTurn{}, ErrNoQueuedTurn
 	}
@@ -1897,6 +1904,47 @@ func (s *Store) CancelAllQueuedTurns(
 		return fmt.Errorf("cancel all queued turns for %s: %w", conversationID, err)
 	}
 	return nil
+}
+
+// SettleUndeliverableQueuedTurns closes out queued messages that no live
+// session can send, and reports how many went.
+//
+// This is the queue's counterpart to SettleOrphanedTurns. That one settles work
+// a dead controller claimed; this settles work no controller can ever claim,
+// because the session that accepted it was permanently removed or retired.
+// A reservation is released along with the state, so a promotion a crash
+// interrupted cannot keep the row invisible to every later drain.
+func (s *Store) SettleUndeliverableQueuedTurns(ctx context.Context, now time.Time) (int64, error) {
+	q, unlock := s.conversationWriter(ctx)
+	defer unlock()
+	rows, err := q.SettleUndeliverableQueuedConversationTurns(
+		ctx, sql.NullTime{Time: now, Valid: true})
+	if err != nil {
+		return 0, fmt.Errorf("settle undeliverable queued turns: %w", err)
+	}
+	return rows, nil
+}
+
+// CancelQueuedTurnsForSession withdraws every message a session accepted and
+// never sent.
+//
+// Used when a session is being replaced: a manager's conversation is
+// project-scoped and continues under the successor, so without this the
+// successor's first drain would deliver prompts the user typed to an agent that
+// no longer exists. Called from inside a handoff's publication transaction, so it
+// joins that transaction rather than taking the writer lock a second time.
+func (s *Store) CancelQueuedTurnsForSession(ctx context.Context, sessionID domain.SessionID, now time.Time) (int64, error) {
+	q, unlock := s.conversationWriter(ctx)
+	defer unlock()
+	rows, err := q.CancelQueuedConversationTurnsForSession(
+		ctx, gen.CancelQueuedConversationTurnsForSessionParams{
+			CompletedAt:        sql.NullTime{Time: now, Valid: true},
+			HandledBySessionID: sessionID,
+		})
+	if err != nil {
+		return 0, fmt.Errorf("cancel queued turns for %s: %w", sessionID, err)
+	}
+	return rows, nil
 }
 
 // CancelQueuedTurnByID removes one undispatched queue item without disturbing

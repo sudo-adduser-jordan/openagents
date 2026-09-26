@@ -40,6 +40,10 @@ type fakeStore struct {
 	updateSessionErr error
 	// worktrees maps session ID to its saved worktree rows (shutdown-saved marker).
 	worktrees map[domain.SessionID][]domain.SessionWorktreeRecord
+	// withdrawnQueues records every session whose queued messages were withdrawn
+	// on retirement, and cancelQueuesErr fails that write.
+	withdrawnQueues []domain.SessionID
+	cancelQueuesErr error
 	// sharedLog, when non-nil, receives an ordered call entry for each
 	// UpsertSessionWorktree invocation so ordering tests can compare across fakes.
 	sharedLog *[]string
@@ -122,6 +126,13 @@ func (f *fakeStore) ConversationForSession(_ context.Context, id domain.SessionI
 		return domain.ConversationRecord{}, domain.ErrNoConversation
 	}
 	return conversation, nil
+}
+func (f *fakeStore) CancelQueuedTurnsForSession(_ context.Context, id domain.SessionID, _ time.Time) (int64, error) {
+	if f.cancelQueuesErr != nil {
+		return 0, f.cancelQueuesErr
+	}
+	f.withdrawnQueues = append(f.withdrawnQueues, id)
+	return 1, nil
 }
 func (f *fakeStore) ListSessions(_ context.Context, p domain.ProjectID) ([]domain.SessionRecord, error) {
 	var out []domain.SessionRecord
@@ -6727,6 +6738,35 @@ func TestRetireForReplacementCapturesAndReleasesWorkspace(t *testing.T) {
 	}
 	if len(browser.destroyed) != 1 || browser.destroyed[0] != "mer-orch" {
 		t.Fatalf("browser targets destroyed = %v, want mer-orch", browser.destroyed)
+	}
+	// The conversation outlives the manager: it is project-scoped, so the
+	// replacement continues it. A message the outgoing manager accepted and never
+	// sent would otherwise reach that replacement's agent on its first drain.
+	if len(st.withdrawnQueues) != 1 || st.withdrawnQueues[0] != "mer-orch" {
+		t.Fatalf("withdrawn queues = %v, want the retiring manager mer-orch", st.withdrawnQueues)
+	}
+}
+
+// A queue that cannot be withdrawn is not a queue the replacement may inherit,
+// so the retirement stops rather than handing the next manager prompts typed for
+// this one. The session stays live, which is what makes the refusal retryable.
+func TestRetireForReplacementStopsWhenTheQueueCannotBeWithdrawn(t *testing.T) {
+	m, st, _, _ := newLifecycleManager()
+	st.sessions["mer-orch"] = domain.SessionRecord{
+		ID:        "mer-orch",
+		ProjectID: "mer",
+		Kind:      domain.KindManager,
+		Metadata:  domain.SessionMetadata{WorkspacePath: "/ws/mer-orch", Branch: "open-agents/mer-manager"},
+		Activity:  domain.Activity{State: domain.ActivityActive},
+	}
+	st.cancelQueuesErr = errors.New("database is locked")
+
+	err := m.RetireForReplacement(ctx, "mer-orch")
+	if err == nil || !strings.Contains(err.Error(), "withdraw queued messages") {
+		t.Fatalf("RetireForReplacement err = %v, want the queue withdrawal failure", err)
+	}
+	if st.sessions["mer-orch"].IsTerminated {
+		t.Fatal("retired manager terminated even though its queue was left behind")
 	}
 }
 

@@ -576,7 +576,7 @@ func TestQueuedTurnPromotionReservationPreservesTheOtherQueueOrder(t *testing.T)
 		t.Fatalf("second reservation error = %v, want ErrQueuedTurnNotAvailable", err)
 	}
 
-	next, err := s.NextQueuedTurn(ctx, conversation)
+	next, err := s.NextQueuedTurn(ctx, conversation, session)
 	if err != nil {
 		t.Fatalf("next queued turn: %v", err)
 	}
@@ -586,7 +586,7 @@ func TestQueuedTurnPromotionReservationPreservesTheOtherQueueOrder(t *testing.T)
 	if err := s.SettleTurnByID(ctx, "queued-1", domain.TurnStateCompleted, "", histClock); err != nil {
 		t.Fatalf("remove queue head: %v", err)
 	}
-	next, err = s.NextQueuedTurn(ctx, conversation)
+	next, err = s.NextQueuedTurn(ctx, conversation, session)
 	if err != nil {
 		t.Fatalf("next queued turn behind reservation: %v", err)
 	}
@@ -597,7 +597,7 @@ func TestQueuedTurnPromotionReservationPreservesTheOtherQueueOrder(t *testing.T)
 	if err := s.ReleaseQueuedTurnPromotion(ctx, conversation, "queued-2"); err != nil {
 		t.Fatalf("release reservation: %v", err)
 	}
-	next, err = s.NextQueuedTurn(ctx, conversation)
+	next, err = s.NextQueuedTurn(ctx, conversation, session)
 	if err != nil {
 		t.Fatalf("next queued turn after release: %v", err)
 	}
@@ -623,7 +623,7 @@ func TestReorderQueuedTurns(t *testing.T) {
 	if err := s.ReorderQueuedTurns(ctx, conversation, []string{"queued-3", "queued-1", "queued-2"}); err != nil {
 		t.Fatalf("reorder queued turns: %v", err)
 	}
-	next, err := s.NextQueuedTurn(ctx, conversation)
+	next, err := s.NextQueuedTurn(ctx, conversation, session)
 	if err != nil {
 		t.Fatalf("next queued turn: %v", err)
 	}
@@ -710,6 +710,74 @@ func TestCancelQueuedTurnByIDHidesMessageFromSnapshot(t *testing.T) {
 		return
 	}
 	t.Fatal("cancelled turn row disappeared")
+}
+
+// The queue is drained by a controller, so rows whose owner can never have one
+// wait forever unless startup says otherwise. A terminated session is that
+// owner: it accepted the message and will never send it, and the queue read is
+// scoped to a live session, so nothing else can claim it either.
+func TestSettleUndeliverableQueuedTurnsWithdrawsWhatNoSessionCanSend(t *testing.T) {
+	s, session, conversation := conversationFixture(t)
+	ctx := context.Background()
+	for i, text := range []string{"first stranded", "second stranded"} {
+		turnID := fmt.Sprintf("queued-%d", i+1)
+		created, err := s.AppendUserMessage(ctx, conversation, session, "gen-1",
+			domain.ConversationMessage{
+				ID: turnID + "-message", Text: text, Origin: domain.MessageOriginHuman,
+			}, turnID, histClock.Add(time.Duration(i)*time.Second))
+		if err != nil || !created {
+			t.Fatalf("append %s: created=%v err=%v", turnID, created, err)
+		}
+	}
+
+	// The owner is alive, so this is a no-op: the queue belongs to the controller
+	// that will come up and drain it.
+	settled, err := s.SettleUndeliverableQueuedTurns(ctx, histClock.Add(time.Minute))
+	if err != nil || settled != 0 {
+		t.Fatalf("SettleUndeliverableQueuedTurns with a live owner = %d turns err=%v, want none settled", settled, err)
+	}
+	if next, err := s.NextQueuedTurn(ctx, conversation, session); err != nil || next.TurnID != "queued-1" {
+		t.Fatalf("queue head = %+v err=%v, want the undrained queued-1", next, err)
+	}
+
+	rec, found, err := s.GetSession(ctx, session)
+	if err != nil || !found {
+		t.Fatalf("GetSession: found=%v err=%v", found, err)
+	}
+	rec.IsTerminated = true
+	rec.Activity.State = domain.ActivityExited
+	rec.UpdatedAt = histClock.Add(2 * time.Minute)
+	if err := s.UpdateSession(ctx, rec); err != nil {
+		t.Fatalf("terminate owner: %v", err)
+	}
+
+	settled, err = s.SettleUndeliverableQueuedTurns(ctx, histClock.Add(3*time.Minute))
+	if err != nil || settled != 2 {
+		t.Fatalf("SettleUndeliverableQueuedTurns after termination = %d turns err=%v, want 2", settled, err)
+	}
+	if _, err := s.NextQueuedTurn(ctx, conversation, session); !errors.Is(err, store.ErrNoQueuedTurn) {
+		t.Fatalf("queue after sweep error = %v, want ErrNoQueuedTurn", err)
+	}
+
+	page, err := s.LoadConversationSnapshotPage(ctx, conversation, 0, 10)
+	if err != nil {
+		t.Fatalf("load snapshot: %v", err)
+	}
+	if got := texts(page.Messages); len(got) != 0 {
+		t.Fatalf("messages after sweep = %#v, want none: a withdrawn prompt is not history", got)
+	}
+	states := make(map[string]domain.TurnState, len(page.Turns))
+	for _, turn := range page.Turns {
+		states[turn.ID] = turn.State
+	}
+	for _, turnID := range []string{"queued-1", "queued-2"} {
+		// Withdrawn, not failed: nothing dispatched them, and the session that
+		// would have is gone. That is the same outcome a row the user pulls out of
+		// the queue dock has.
+		if states[turnID] != domain.TurnStateCancelled {
+			t.Errorf("%s = %q after the sweep, want cancelled", turnID, states[turnID])
+		}
+	}
 }
 
 // seedTurn records one dispatched turn with a user message and an activity, which is
@@ -1108,7 +1176,7 @@ func TestQueuedTurnRetainsNativeDeliveryContent(t *testing.T) {
 		t.Fatalf("append native message: created=%v err=%v", created, err)
 	}
 
-	queued, err := s.NextQueuedTurn(ctx, conversation)
+	queued, err := s.NextQueuedTurn(ctx, conversation, session)
 	if err != nil {
 		t.Fatalf("NextQueuedTurn: %v", err)
 	}

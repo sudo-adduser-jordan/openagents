@@ -5005,6 +5005,73 @@ func TestServiceLiveReconnectKeepsDurableRunningTurnBusy(t *testing.T) {
 	}
 }
 
+// A live reconnect has no turn coming to drain a queue the dead controller left:
+// it adopts the provider's running turn if there is one, and when there is none
+// there is nothing to complete and nothing to wait for. The queue is durable
+// rows, so the replacement has to claim them itself or the user watches messages
+// they can see sitting queued forever.
+func TestLiveReconnectDeliversAQueueLeftByTheDeadController(t *testing.T) {
+	st := openStore(t)
+	ctx := context.Background()
+	now := time.Date(2026, 8, 2, 10, 0, 0, 0, time.UTC)
+
+	rec, found, err := st.GetSession(ctx, testSession)
+	if err != nil || !found {
+		t.Fatalf("load session: found=%v err=%v", found, err)
+	}
+	rec.Mode = domain.SessionModeChat
+	rec.Metadata.ProviderConversationID = "thread-1"
+	rec.Activity = domain.Activity{State: domain.ActivityActive, LastActivityAt: now}
+	if err := st.UpdateSession(ctx, rec); err != nil {
+		t.Fatalf("seed provider owner: %v", err)
+	}
+
+	// A message the daemon accepted and never sent, and no turn left running to
+	// drain it. This is what a kill between a turn's completion and its drain
+	// leaves behind.
+	conversation, err := st.CreateConversation(ctx, "queue-conversation",
+		domain.ConversationScopeSession, testProject, testSession, now)
+	if err != nil {
+		t.Fatalf("create conversation: %v", err)
+	}
+	if _, err := st.AppendUserMessage(ctx, conversation.ID, testSession, "dead-generation",
+		domain.ConversationMessage{
+			ID: "queued-message", Text: "stranded across the reconnect",
+			Origin: domain.MessageOriginHuman, ClientMessageID: "queued-client-message",
+		}, "queued-turn", now); err != nil {
+		t.Fatalf("seed queued turn: %v", err)
+	}
+
+	provider := &liveReconnectedConversation{nativeHistoryConversation: &nativeHistoryConversation{
+		fakeConversation: newFakeConversation(),
+	}}
+	svc := chatsvc.New(chatsvc.Options{
+		Store: st, Reader: fullSnapshotReader(st), Sessions: st,
+		Drivers: fakeRegistry{driver: fakeDriver{conv: provider}},
+		Log:     slog.New(slog.DiscardHandler), NewID: func() string { return "reconnect-id" },
+		Now: func() time.Time { return now },
+	})
+	t.Cleanup(func() { svc.StopAll(ctx) })
+	controller, err := svc.Start(ctx, chatsvc.StartConfig{
+		SessionID: testSession, ProjectID: testProject, Harness: domain.HarnessOpenCode,
+		WorkspacePath: t.TempDir(), ProviderConversationID: "thread-1",
+	})
+	if err != nil {
+		t.Fatalf("reconnect Start: %v", err)
+	}
+
+	h := &harness{st: st, ctrl: controller}
+	snapshot := h.awaitSnapshot(t, func(s store.ConversationSnapshot) bool {
+		return turnStateByText(t, s)["stranded across the reconnect"] == domain.TurnStateRunning
+	})
+	if got := turnStateByText(t, snapshot)["stranded across the reconnect"]; got != domain.TurnStateRunning {
+		t.Fatalf("queued message = %q after the reconnect, want running: the replacement must send it", got)
+	}
+	if got := provider.sentTexts(); len(got) != 1 || got[0] != "stranded across the reconnect" {
+		t.Fatalf("reconnected provider received %v, want the message the dead controller queued", got)
+	}
+}
+
 func TestStartWaitsForStoppedControllerCleanupBeforeRelaunch(t *testing.T) {
 	st := openStore(t)
 	first := newFakeConversation()
@@ -5661,9 +5728,9 @@ func TestInterruptReconcilesStaleRunningTurnOnDisk(t *testing.T) {
 }
 
 // A root and a nested provider turn can both be durably running. The UI renders
-// the oldest visible row first, but clearing only that row would merely reveal a
-// second Working bar. Recovery cancels the visible root and settles the full
-// visible running set.
+// the oldest visible row first, but clearing only that row -- locally or at the
+// provider -- would merely reveal a second Working bar. Recovery cancels and
+// settles the full visible running set.
 func TestInterruptReconcilesAllVisibleRunningTurns(t *testing.T) {
 	conv := newInterruptRecorder()
 	h := newHarnessWithConversation(t, conv)
@@ -5697,8 +5764,11 @@ func TestInterruptReconcilesAllVisibleRunningTurns(t *testing.T) {
 	conv.activeMu.Lock()
 	attempts := append([]string(nil), conv.attempts...)
 	conv.activeMu.Unlock()
-	if len(attempts) != 1 || attempts[0] != "provider-root" {
-		t.Fatalf("provider interrupt attempts = %v, want visible root first", attempts)
+	// Both, not just the first. A provider that has been told to cancel one of two
+	// running turns keeps streaming the other, so the same Working bar the user
+	// pressed Stop on comes back -- and this is the path that settles it locally.
+	if !slices.Equal(attempts, []string{"provider-root", "provider-child"}) {
+		t.Fatalf("provider interrupt attempts = %v, want both visible running turns", attempts)
 	}
 }
 
@@ -5810,11 +5880,62 @@ func TestInterruptReconciliationCancelsQueuedTurns(t *testing.T) {
 	}
 }
 
+// A queue the drain cannot claim still belongs to the user. A steer promotion
+// reserves its row, and a reserved row is invisible to the queue read, so the
+// session is left idle with work it can see waiting and no turn coming to drain
+// it. Stop is the only brake on that, so it has to reach the queue even though
+// the honest answer about turns is that there is none.
+type undrainableQueueStore struct{ chatsvc.Store }
+
+func (undrainableQueueStore) NextQueuedTurn(context.Context, string, domain.SessionID) (domain.QueuedTurn, error) {
+	return domain.QueuedTurn{}, domain.ErrNoQueuedTurn
+}
+
+func TestInterruptCancelsAStrandedQueueWithNothingRunning(t *testing.T) {
+	h := newHarnessWithConversationAndStore(t, nil, func(st *sqlite.Store) chatsvc.Store {
+		return undrainableQueueStore{Store: st}
+	})
+	ctx := context.Background()
+
+	// Written straight to the store because an idle controller cannot produce
+	// this itself: it is the durable shape a steer promotion leaves behind.
+	if _, err := h.st.AppendUserMessage(ctx, h.ctrl.ConversationID(), testSession, h.ctrl.Generation(),
+		domain.ConversationMessage{
+			ID: "stranded-message", Text: "stranded", Origin: domain.MessageOriginHuman,
+			ClientMessageID: "stranded-client-message",
+		}, "stranded-turn", h.now()); err != nil {
+		t.Fatalf("seed stranded queued turn: %v", err)
+	}
+
+	if err := h.svc.Interrupt(ctx, testSession); !errorsIs(err, chatsvc.ErrNoActiveTurn) {
+		t.Fatalf("err = %v, want ErrNoActiveTurn: there was no turn to cancel", err)
+	}
+	// Stop is a brake, not a dispatch: the message is withdrawn, not sent.
+	if got := h.conv.sentTexts(); len(got) != 0 {
+		t.Fatalf("provider received %v; Stop must not release a stranded queue", got)
+	}
+
+	snapshot := h.awaitSnapshot(t, func(s store.ConversationSnapshot) bool {
+		return turnStateByText(t, s)["stranded"] == domain.TurnStateInterrupted
+	})
+	// Interrupted, not cancelled: the user pressed Stop, so the transcript keeps
+	// the message and says why nothing answered it. A withdrawn row is a message
+	// the user removed themselves, and this is not that.
+	if got := turnStateByText(t, snapshot)["stranded"]; got != domain.TurnStateInterrupted {
+		t.Errorf("stranded queued turn = %q, want interrupted", got)
+	}
+}
+
 // A daemon that is killed never runs its own cleanup, so whatever the dead
 // controller left in flight is still marked live on disk. The next controller to
 // come up has to close it out: nothing else ever will, and until then the timeline
 // claims a turn is running and a queued message is waiting to be sent behind a
 // controller that no longer exists.
+//
+// The two halves are different operations. Work the agent was already doing is
+// settled as failed, because a dead controller is not evidence it finished. Work
+// that was only accepted is handed to the replacement, because the user did ask
+// for it and the queue is durable rows rather than controller memory.
 func TestStartSettlesWorkLeftByAKilledController(t *testing.T) {
 	h := newHarness(t)
 	ctx := context.Background()
@@ -5841,10 +5962,17 @@ func TestStartSettlesWorkLeftByAKilledController(t *testing.T) {
 	// the next controller comes up in a NEW service over the SAME store. Building
 	// it that way rather than reusing this one is the point: nothing in the old
 	// process gets a chance to clean up.
+	//
+	// The replacement provider counts its own turn ids from zero, so they start
+	// past the dead controller's. A real provider process does the same after a
+	// restart, and reusing a recorded id would fail the conversation's uniqueness
+	// fence rather than exercise the queue.
+	replacement := newFakeConversation()
+	replacement.turnSeq = 100
 	next := chatsvc.New(chatsvc.Options{
 		Store:    h.st,
 		Sessions: h.st,
-		Drivers:  fakeRegistry{driver: fakeDriver{conv: newFakeConversation()}},
+		Drivers:  fakeRegistry{driver: fakeDriver{conv: replacement}},
 		Log:      slog.New(slog.DiscardHandler),
 		NewID:    func() string { return "next-" + fmt.Sprint(time.Now().UnixNano()) },
 		Now:      h.now,
@@ -5862,19 +5990,18 @@ func TestStartSettlesWorkLeftByAKilledController(t *testing.T) {
 	}
 
 	snapshot := h.awaitSnapshot(t, func(s store.ConversationSnapshot) bool {
-		for _, turn := range s.Turns {
-			if !turn.State.Terminal() {
-				return false
-			}
-		}
-		return len(s.Turns) == 2
+		states := turnStateByText(t, s)
+		return states["running"] == domain.TurnStateFailed &&
+			states["queued"] == domain.TurnStateRunning
 	})
 	states := turnStateByText(t, snapshot)
 	if states["running"] != domain.TurnStateFailed {
 		t.Errorf("turn abandoned mid-flight = %q, want failed", states["running"])
 	}
-	if states["queued"] != domain.TurnStateFailed {
-		t.Errorf("message left queued by a dead controller = %q; nothing would ever send it",
+	// The queue outlives the controller that accepted it, so the replacement has to
+	// deliver it. Settling it instead would report that the user never asked.
+	if states["queued"] != domain.TurnStateRunning {
+		t.Errorf("message left queued by a dead controller = %q; the replacement must send it",
 			states["queued"])
 	}
 	if got := snapshot.Activities[0].Status; got == domain.ActivityStatusPending {
