@@ -2380,38 +2380,51 @@ app.whenReady().then(async () => {
 	// build runs, offer to retire older Open Agents copies that can still
 	// overwrite it if a launcher or shortcut launches them.
 	try {
-		const { formatStaleAppCopies, retireStaleAppCopies } = await import("./main/stale-app-copies");
-		await retireStaleAppCopies({
-			platform: process.platform,
-			isPackaged: app.isPackaged,
-			runningPath: resolveBundlePath(),
-			runningVersion: app.getVersion(),
-			confirm: async (copies) => {
-				const result = await dialog.showMessageBox({
-					type: "warning",
-					buttons: ["Move old copies to Trash", "Not now"],
-					defaultId: 0,
-					cancelId: 1,
-					title: "Remove old Open Agents copies",
-					message: "Old copies of Open Agents can replace your updated app.",
-					detail: `${formatStaleAppCopies(copies)}\n\nMove these copies to Trash to prevent another downgrade. Your Open Agents projects and sessions will not be removed.`,
-					noLink: true,
-				});
-				return result.response === 0;
-			},
-			trashItem: (candidate) => shell.trashItem(candidate),
-			reportFailures: async (paths) => {
-				await dialog.showMessageBox({
-					type: "warning",
-					buttons: ["OK"],
-					defaultId: 0,
-					title: "Some old copies could not be removed",
-					message: "Move these copies to Trash manually before launching Open Agents again.",
-					detail: paths.join("\n"),
-					noLink: true,
-				});
-			},
-		});
+		// The scan looks for .app bundles under ~/Downloads and ~/Desktop, so it
+		// only applies to a packaged copy installed on macOS.
+		if (process.platform === "darwin" && app.isPackaged) {
+			const {
+				findStaleAppCopies,
+				formatStaleAppCopies,
+				isUnchangedStaleAppCopy,
+				restoreStagedAppCopy,
+				retireStaleAppCopies,
+				stageStaleAppCopy,
+			} = await import("./main/stale-app-copies");
+			const runningVersion = app.getVersion();
+			await retireStaleAppCopies({
+				findCopies: () => findStaleAppCopies({ runningVersion, homeDir: os.homedir() }),
+				confirm: async (copies) => {
+					const result = await dialog.showMessageBox({
+						type: "warning",
+						buttons: ["Move old copies to Trash", "Not now"],
+						defaultId: 0,
+						cancelId: 1,
+						title: "Remove old Open Agents copies",
+						message: "Old copies of Open Agents can replace your updated app.",
+						detail: `${formatStaleAppCopies(copies)}\n\nMove these copies to Trash to prevent another downgrade. Your Open Agents projects and sessions will not be removed.`,
+						noLink: true,
+					});
+					return result.response === 0;
+				},
+				stage: (copy) => stageStaleAppCopy(copy),
+				revalidate: (copy, stagedPath) =>
+					isUnchangedStaleAppCopy(copy, stagedPath, runningVersion),
+				restore: (copy, stagedPath) => restoreStagedAppCopy(copy, stagedPath),
+				trashItem: (candidate) => shell.trashItem(candidate),
+				reportFailures: async (paths) => {
+					await dialog.showMessageBox({
+						type: "warning",
+						buttons: ["OK"],
+						defaultId: 0,
+						title: "Some old copies could not be removed",
+						message: "Move these copies to Trash manually before launching Open Agents again.",
+						detail: paths.join("\n"),
+						noLink: true,
+					});
+				},
+			});
+		}
 	} catch (err) {
 		console.warn("stale Open Agents copy cleanup failed:", err);
 	}
@@ -2422,7 +2435,6 @@ app.whenReady().then(async () => {
 	}
 
 	registerRendererProtocol();
-	applyRuntimeAppIcon();
 	const initialUiSettings = keybindingRunFile
 		? await readUiSettings(path.dirname(keybindingRunFile))
 		: { ...DEFAULT_UI_SETTINGS };

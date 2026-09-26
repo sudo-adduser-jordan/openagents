@@ -11,13 +11,11 @@ import {
 	readBundleMetadata,
 	restoreStagedAppCopy,
 	retireStaleAppCopies,
-	retireStaleMacAppCopies,
 	stageStaleAppCopy,
 	type BundleMetadata,
 	type StaleAppCopy,
 } from "./stale-app-copies";
 
-const RUNNING_PATH = "/Applications/Open Agents.app";
 const RUNNING_VERSION = "0.13.1-nightly.202609121623";
 const DOWNLOADS_COPY = "/Users/user/Downloads/Open Agents.app";
 const DESKTOP_COPY = "/Users/user/Desktop/Open Agents.app";
@@ -337,38 +335,5 @@ describe("retireStaleAppCopies", () => {
 
 		expect(trashItem).not.toHaveBeenCalled();
 		expect(restore).toHaveBeenCalledWith(stale, STAGED_PATH);
-	});
-});
-
-describe("retireStaleMacAppCopies", () => {
-	function runtime(overrides: Record<string, unknown> = {}) {
-		return {
-			platform: "darwin",
-			isPackaged: true,
-			runningPath: RUNNING_PATH,
-			runningVersion: RUNNING_VERSION,
-			findCopies: vi.fn(async () => []),
-			confirm: vi.fn(async () => false),
-			trashItem: vi.fn(async () => undefined),
-			reportFailures: vi.fn(async () => undefined),
-			...overrides,
-		};
-	}
-
-	it.each([
-		{ platform: "linux" },
-		{ isPackaged: false },
-		{ runningPath: DOWNLOADS_COPY },
-		{ runningVersion: "development" },
-	])("does not inspect files outside the maintained packaged macOS app: %o", async (override) => {
-		const options = runtime(override);
-		await retireStaleMacAppCopies(options);
-		expect(options.findCopies).not.toHaveBeenCalled();
-	});
-
-	it("checks once after the maintained packaged macOS app starts", async () => {
-		const options = runtime();
-		await retireStaleMacAppCopies(options);
-		expect(options.findCopies).toHaveBeenCalledOnce();
 	});
 });

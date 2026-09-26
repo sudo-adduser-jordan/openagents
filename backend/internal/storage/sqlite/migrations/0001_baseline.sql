@@ -46,7 +46,7 @@ CREATE TABLE sessions (
     kind                    TEXT NOT NULL DEFAULT 'worker'
         CHECK (kind IN ('worker', 'manager')),
     harness                 TEXT NOT NULL DEFAULT ''
-        CHECK (harness IN ('', 'codex', 'aider', 'opencode', 'grok', 'droid', 'amp', 'agy', 'crush', 'cursor', 'qwen', 'copilot', 'goose', 'auggie', 'continue', 'devin', 'cline', 'kimi', 'muse', 'kiro', 'kilocode', 'vibe', 'pi', 'kimchi', 'prime-agent', 'autohand', 'omp', 'fake')),
+        CHECK (harness IN ('', 'aider', 'opencode', 'grok', 'droid', 'amp', 'agy', 'crush', 'cursor', 'qwen', 'copilot', 'goose', 'auggie', 'continue', 'devin', 'cline', 'kimi', 'muse', 'kiro', 'kilocode', 'vibe', 'pi', 'kimchi', 'prime-agent', 'autohand', 'omp', 'fake')),
 
     activity_state          TEXT NOT NULL DEFAULT 'idle'
         CHECK (activity_state IN ('active', 'idle', 'waiting_input', 'blocked', 'exited')),
@@ -382,28 +382,10 @@ CREATE TABLE conversation_steer_deliveries (
     PRIMARY KEY (conversation_id, client_message_id)
 );
 
-CREATE TABLE "codex_account_switches" (
-    id TEXT PRIMARY KEY,
-    source_account_id TEXT NOT NULL,
-    target_account_id TEXT NOT NULL,
-    idempotency_key TEXT NOT NULL UNIQUE,
-    phase TEXT NOT NULL CHECK (phase IN (
-        'requested', 'checkpointing_source', 'activating_target',
-        'recovery_required', 'completed', 'failed'
-    )),
-    failure_code TEXT NOT NULL DEFAULT '',
-    credentials_committed_at TIMESTAMP,
-    created_at TIMESTAMP NOT NULL,
-    updated_at TIMESTAMP NOT NULL,
-    completed_at TIMESTAMP,
-    source_kind TEXT NOT NULL DEFAULT 'managed'
-        CHECK (source_kind IN ('managed', 'device', 'none'))
-);
-
 CREATE TABLE "usage_bindings" (
     id                 INTEGER PRIMARY KEY AUTOINCREMENT,
     session_id         TEXT NOT NULL REFERENCES sessions (id) ON DELETE CASCADE,
-    harness            TEXT NOT NULL CHECK (harness IN ('claude-code', 'codex', 'kimi', 'opencode')),
+    harness            TEXT NOT NULL CHECK (harness IN ('kimi', 'opencode')),
     native_root_id     TEXT NOT NULL CHECK (trim(native_root_id) <> ''),
     initial_model_id   TEXT NOT NULL DEFAULT '',
     state              TEXT NOT NULL CHECK (state IN ('discovering', 'active', 'finalizing', 'complete', 'partial')),
@@ -416,7 +398,7 @@ CREATE TABLE "usage_bindings" (
 CREATE TABLE "usage_sources" (
     id                  INTEGER PRIMARY KEY AUTOINCREMENT,
     binding_id          INTEGER NOT NULL REFERENCES usage_bindings (id) ON DELETE CASCADE,
-    kind                TEXT NOT NULL CHECK (kind IN ('claude_main', 'claude_subagent', 'codex_rollout', 'kimi_wire')),
+    kind                TEXT NOT NULL CHECK (kind IN ('kimi_wire')),
     native_session_id   TEXT NOT NULL DEFAULT '',
     subagent_id         TEXT NOT NULL DEFAULT '',
     artifact_path       TEXT NOT NULL CHECK (trim(artifact_path) <> ''),
@@ -437,7 +419,7 @@ CREATE TABLE "model_usage_events" (
     id                          INTEGER PRIMARY KEY AUTOINCREMENT,
     binding_id                  INTEGER NOT NULL REFERENCES usage_bindings (id) ON DELETE CASCADE,
     usage_source_id             INTEGER NOT NULL REFERENCES usage_sources (id) ON DELETE CASCADE,
-    provider_id                 TEXT NOT NULL CHECK (provider_id IN ('openai', 'anthropic')),
+    provider_id                 TEXT NOT NULL CHECK (provider_id IN ('openai')),
     billing_provider_id         TEXT CHECK (billing_provider_id IS NULL OR trim(billing_provider_id) <> ''),
     model_id                    TEXT NOT NULL CHECK (trim(model_id) <> ''),
     usage_measurement_kind      TEXT NOT NULL
@@ -679,14 +661,7 @@ CREATE INDEX idx_usage_sources_state_retry ON usage_sources (state, next_retry_a
 
 CREATE INDEX idx_usage_sources_binding_kind ON usage_sources (binding_id, kind);
 
-CREATE INDEX idx_usage_sources_codex_native_latest
-    ON usage_sources (kind, native_session_id, binding_id, generation DESC, id DESC);
-
 CREATE INDEX idx_change_log_created_at_seq ON change_log (created_at, seq);
-
-CREATE UNIQUE INDEX idx_codex_account_switches_one_active
-ON codex_account_switches((1))
-WHERE phase NOT IN ('completed', 'failed');
 
 CREATE INDEX idx_usage_bindings_session_state ON usage_bindings (session_id, state);
 
@@ -726,55 +701,6 @@ CREATE INDEX idx_conversation_turns_branch
 CREATE INDEX idx_conversation_turns_retry_source
     ON conversation_turns(conversation_id, retry_of_turn_id)
     WHERE retry_of_turn_id IS NOT NULL;
-
-CREATE VIEW usage_codex_source_discovery AS
-SELECT source_id, binding_id, native_session_id,
-    CASE WHEN child_ids_json IS NOT NULL AND NOT EXISTS (
-        SELECT 1 FROM json_each(child_ids_json) WHERE type <> 'text'
-    ) THEN child_ids_json ELSE '[]' END AS discovered_child_ids_json,
-    CASE WHEN child_ids_json IS NOT NULL AND EXISTS (
-        SELECT 1 FROM json_each(child_ids_json) WHERE type <> 'text'
-    ) THEN 1 ELSE 0 END AS has_mixed_child_types
-FROM (
-    SELECT id AS source_id, binding_id, native_session_id,
-        CASE WHEN json_valid(parser_state_json)
-          AND json_type(parser_state_json, '$') = 'object'
-          AND json_type(parser_state_json, '$.version') = 'integer'
-          AND json_extract(parser_state_json, '$.version') = 1
-          AND json_type(parser_state_json, '$.source_kind') = 'text'
-          AND json_extract(parser_state_json, '$.source_kind') = 'codex_rollout'
-          AND json_type(parser_state_json, '$.codex') = 'object'
-          AND json_type(parser_state_json, '$.codex.discovered_child_ids') = 'array'
-        THEN json_extract(parser_state_json, '$.codex.discovered_child_ids') END AS child_ids_json
-    FROM usage_sources WHERE kind = 'codex_rollout'
-);
-
-CREATE VIEW usage_codex_pending_children AS
-SELECT spawning.binding_id, CAST(discovered.value AS TEXT) AS native_session_id
-FROM usage_codex_source_discovery spawning
-JOIN json_each(spawning.discovered_child_ids_json) discovered
-WHERE discovered.type = 'text'
-  AND length(discovered.value) = 36
-  AND substr(discovered.value, 9, 1) = '-'
-  AND substr(discovered.value, 14, 1) = '-'
-  AND substr(discovered.value, 19, 1) = '-'
-  AND substr(discovered.value, 24, 1) = '-'
-  AND lower(discovered.value) = discovered.value
-  AND length(replace(discovered.value, '-', '')) = 32
-  AND replace(discovered.value, '-', '') NOT GLOB '*[^0-9a-f]*'
-  AND spawning.source_id = (
-      SELECT latest.id FROM usage_sources latest
-      WHERE latest.binding_id = spawning.binding_id
-        AND latest.kind = 'codex_rollout'
-        AND latest.native_session_id = spawning.native_session_id
-      ORDER BY latest.generation DESC, latest.id DESC LIMIT 1
-  )
-  AND NOT EXISTS (
-      SELECT 1 FROM usage_sources registered
-      WHERE registered.binding_id = spawning.binding_id
-        AND registered.kind = 'codex_rollout'
-        AND registered.native_session_id = CAST(discovered.value AS TEXT)
-  );
 
 CREATE VIEW usage_session_integrity AS
 SELECT ub.session_id,
@@ -1292,10 +1218,6 @@ DROP TRIGGER IF EXISTS conversation_turns_branch_insert;
 
 DROP TRIGGER IF EXISTS conversation_turns_cdc_update;
 
-DROP VIEW IF EXISTS usage_codex_source_discovery;
-
-DROP VIEW IF EXISTS usage_codex_pending_children;
-
 DROP VIEW IF EXISTS usage_session_integrity;
 
 DROP INDEX IF EXISTS idx_sessions_project;
@@ -1386,11 +1308,7 @@ DROP INDEX IF EXISTS idx_usage_sources_state_retry;
 
 DROP INDEX IF EXISTS idx_usage_sources_binding_kind;
 
-DROP INDEX IF EXISTS idx_usage_sources_codex_native_latest;
-
 DROP INDEX IF EXISTS idx_change_log_created_at_seq;
-
-DROP INDEX IF EXISTS idx_codex_account_switches_one_active;
 
 DROP INDEX IF EXISTS idx_usage_bindings_session_state;
 
@@ -1465,8 +1383,6 @@ DROP TABLE IF EXISTS conversation_queued_edit_deliveries;
 DROP TABLE IF EXISTS conversation_edit_deliveries;
 
 DROP TABLE IF EXISTS conversation_steer_deliveries;
-
-DROP TABLE IF EXISTS codex_account_switches;
 
 DROP TABLE IF EXISTS usage_bindings;
 

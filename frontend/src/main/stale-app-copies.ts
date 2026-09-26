@@ -1,11 +1,9 @@
 import { randomUUID } from "node:crypto";
 import { lstat, readFile, rename } from "node:fs/promises";
-import os from "node:os";
 import path from "node:path";
 import semver from "semver";
 
 export const OPEN_AGENTS_BUNDLE_ID = "dev.openagents.desktop";
-export const MAINTAINED_MAC_APP_PATH = "/Applications/Open Agents.app";
 
 export interface BundleMetadata {
 	bundleId: string | null;
@@ -36,21 +34,6 @@ interface RetirementDependencies {
 	restore: (copy: StaleAppCopy, stagedPath: string) => Promise<void>;
 	trashItem: (candidate: string) => Promise<void>;
 	reportFailures: (paths: string[]) => Promise<void>;
-}
-
-interface MacRetirementOptions
-	extends Omit<RetirementDependencies, "findCopies" | "stage" | "revalidate" | "restore"> {
-	platform: NodeJS.Platform | string;
-	isPackaged: boolean;
-	runningPath: string;
-	runningVersion: string;
-	homeDir?: string;
-	findCopies?: () => Promise<StaleAppCopy[]>;
-	stage?: (copy: StaleAppCopy) => Promise<string | null>;
-	revalidate?: (copy: StaleAppCopy, stagedPath: string) => Promise<boolean>;
-	restore?: (copy: StaleAppCopy, stagedPath: string) => Promise<void>;
-	discoveryDependencies?: Partial<DiscoveryDependencies>;
-	stagingDependencies?: Partial<StagingDependencies>;
 }
 
 function plistString(contents: string, key: string): string | null {
@@ -198,32 +181,4 @@ export async function retireStaleAppCopies(dependencies: RetirementDependencies)
 		}
 	}
 	if (failures.length > 0) await dependencies.reportFailures(failures);
-}
-
-export async function retireStaleMacAppCopies(options: MacRetirementOptions): Promise<void> {
-	if (options.platform !== "darwin" || !options.isPackaged) return;
-	if (path.resolve(options.runningPath) !== MAINTAINED_MAC_APP_PATH) return;
-	if (semver.valid(options.runningVersion) === null) return;
-
-	await retireStaleAppCopies({
-		findCopies: options.findCopies ?? (() => findStaleAppCopies({
-			runningVersion: options.runningVersion,
-			homeDir: options.homeDir ?? os.homedir(),
-		}, options.discoveryDependencies)),
-		confirm: options.confirm,
-		stage: options.stage ?? ((copy) => stageStaleAppCopy(copy, options.stagingDependencies)),
-		revalidate: options.revalidate ?? ((copy, stagedPath) => isUnchangedStaleAppCopy(
-			copy,
-			stagedPath,
-			options.runningVersion,
-			options.discoveryDependencies,
-		)),
-		restore: options.restore ?? ((copy, stagedPath) => restoreStagedAppCopy(
-			copy,
-			stagedPath,
-			options.stagingDependencies,
-		)),
-		trashItem: options.trashItem,
-		reportFailures: options.reportFailures,
-	});
 }
