@@ -163,6 +163,40 @@ func TestBuildSystemPrompt_ManagerStatesThePlanToManualReviewLoop(t *testing.T) 
 	}
 }
 
+// The loop used to open by telling the manager to move itself into planning.
+// That was wrong twice over: it substituted the project id into a command that
+// takes a session id, and self-demotion disarms the manager, because
+// gateManagerDelegation refuses every spawn from a planning-mode parent with
+// PLANNING_MANAGER_NO_TASKS. A manager in its default stage has to keep
+// delegating, so nothing in the prompt may stage the manager itself.
+func TestBuildSystemPrompt_ManagerNeverStagesItselfOutOfDelegation(t *testing.T) {
+	t.Parallel()
+	got := buildSystemPromptText(systemPromptConfig{
+		Role:    sessionPromptRoleManager,
+		Project: promptProject{ID: "mer", Name: "Mercury"},
+	})
+	for _, unwanted := range []string{
+		"open-agents plan mer",
+		"move yourself to planning",
+		"move this manager to planning",
+	} {
+		if strings.Contains(got, unwanted) {
+			t.Fatalf("manager prompt tells the manager to change its own delivery stage (%q):\n%s", unwanted, got)
+		}
+	}
+	// The stage stays the human's, in both directions.
+	for _, want := range []string{
+		"This session's delivery stage belongs to the human",
+		"Never use it on this manager session",
+		"Only the human changes your stage",
+		"Do not change this session's delivery stage",
+	} {
+		if !strings.Contains(got, want) {
+			t.Fatalf("manager prompt missing %q:\n%s", want, got)
+		}
+	}
+}
+
 func TestBuildSystemPrompt_WorkerHandlesTaskSourcesAndProviderPRRules(t *testing.T) {
 	t.Parallel()
 	got := buildSystemPromptText(systemPromptConfig{

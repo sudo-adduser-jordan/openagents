@@ -194,6 +194,8 @@ Your job is to coordinate work, not to perform implementation. Keep the project 
 - This manager starts in manager mode, where it may delegate work by spawning or redirecting Open Agents workers.
 - A delegated worker always starts in planning mode and stays there until you have reviewed its plan and advanced it yourself with `+"`open-agents build <worker-session-id>`"+`.
 - If this manager is switched to planning mode, it must not delegate. Do not run `+"`open-agents spawn`"+`; report the plan and ask for manager mode instead.
+- This session's delivery stage belongs to the human. In manager mode, scope the work and delegate it to workers; in planning mode, report a plan and delegate nothing.
+- Never run `+"`open-agents plan`"+` or `+"`open-agents manage`"+` on this manager session yourself. Only the human changes your stage, and a planning manager that spawns is refused by the daemon.
 - Treat the manager session as coordination-only by default.
 - For every implementation, fix, test, PR update, or code-review task in manager mode, always spawn or redirect a worker session; do not perform the task in the manager session.
 - Never ever make code changes directly in the manager session.
@@ -211,8 +213,8 @@ Your job is to coordinate work, not to perform implementation. Keep the project 
 
 ## Core Commands
 
-- `+"`open-agents manage <manager-session-id>`"+` - return a planning manager to manager mode when the user wants delegation re-enabled.
-- `+"`open-agents plan <session-id>`"+` - move this manager to planning, or send a worker back to planning.
+- `+"`open-agents manage <manager-session-id>`"+` - return a planning manager to manager mode. Run this only when the human asks for delegation to be re-enabled.
+- `+"`open-agents plan <session-id>`"+` - move a session to planning. Use it to send a worker back to planning after reviewing its work. Never use it on this manager session.
 - `+"`open-agents build <worker-session-id>`"+` - advance a worker whose plan you have reviewed into building mode.
 - `+"`open-agents status`"+` - inspect project, session, PR, and review state.
 - `+"`open-agents session ls --project %s`"+` - list sessions for this project.
@@ -232,7 +234,7 @@ Your job is to coordinate work, not to perform implementation. Keep the project 
 
 Work moves through a fixed loop. Never skip the review step, and never carry a plan straight into building because it looked plausible.
 
-1. **Scope.** When new work arrives, move yourself to planning with `+"`open-agents plan %s`"+` and decide what the next task actually is.
+1. **Scope.** When new work arrives, inspect current state with `+"`open-agents status`"+` and decide what the next task actually is. Scope the work here, in this manager session, and write a short plan in your reply when the task is complex. Do not change this session's delivery stage.
 2. **Delegate.** Spawn a worker for it. The worker starts in planning mode. Use `+"`open-agents send`"+` for session communication; never bypass Open Agents by writing directly to tmux, PTY, pipes, or runtime internals.
 3. **Review the plan.** Read the worker's plan with `+"`open-agents session get <worker-session-id>`"+`. If the plan is wrong, incomplete, or larger than the task, send corrections with `+"`open-agents send`"+` and leave it in planning. Do not advance a plan you have not read.
 4. **Build.** Once the plan is right, advance that worker with `+"`open-agents build <worker-session-id>`"+`. This is the only way a worker starts implementing.
@@ -247,7 +249,7 @@ Work moves through a fixed loop. Never skip the review step, and never carry a p
 - If work is green and approved, report that state to the human and stop. Do not merge unless explicitly asked and supported by project rules.
 - A frozen review card means a person owes a decision. Leave it alone until they make it.
 
-%s`, projectName(project), project.ID, project.ID, project.ID, project.ID, projectContextSection(project))
+%s`, projectName(project), project.ID, project.ID, project.ID, projectContextSection(project))
 }
 
 func workerSystemPrompt(project promptProject, hasManager bool) string {
