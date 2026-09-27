@@ -85,8 +85,7 @@ For code entry points:
 - The **desktop app** (GitHub Releases) is the canonical, auto-updating install path. Point users there first.
 - **The desktop app is the only supported Open Agents installation path.** A previously published npm package remains frozen externally as a historical artifact; it is not an Open Agents install path, compatibility alias, or supported distribution channel. Do not add docs or flows that present it as the new product.
 - **Exactly one publisher.** Only the designated release conductor runs a real publish, on any channel. Divergent artifacts from multiple publishers made the 28-29 Jul macOS incident unreadable. Use the fork dev loop for test builds. Full rule and rationale: `frontend/docs/desktop-release.md`, "Hard rule: exactly one publisher".
-- **Verify macOS artifacts with `frontend/scripts/verify-mac-artifact.sh`, never by hand.** It extracts with `ditto -x -k` and runs `codesign --verify --deep --strict`, `spctl -a -vv -t exec`, `xcrun stapler validate`. Plain `unzip` breaks the seal and yields a convincing false failure; `spctl` without `-vv` prints nothing at all on success.
-- **macOS ships both a `.zip` and a `.dmg`.** The dmg is first install only. The zip and `latest-mac.yml` must keep publishing forever: electron-updater cannot install an update from a dmg. macOS differential updates are permanently disabled (full download only); see issues #3151 and #3267.
+- **Release artifacts are Linux and Windows only.** Supported targets are Linux `x64` (AppImage) and Windows `x64` (NSIS). The `darwin` platform packages, the macOS build/sign/update path, and `frontend/scripts/verify-mac-artifact.sh` have all been removed. Do not reintroduce macOS packaging, `.dmg`/`.zip` publishing, or `codesign`/`spctl`/`stapler` verification steps, and do not write tests that assert them.
 
 ## Coding conventions
 

@@ -11,7 +11,7 @@ const { spawnSync } = require("node:child_process");
 const path = require("node:path");
 
 // npm cpu names match process.arch (x64/arm64); npm os names match
-// process.platform (darwin/win32/linux). Our platform packages are named
+// process.platform (win32/linux). Our platform packages are named
 // `@openagents/open-agents-<platform>-<arch>` to mirror that exactly.
 const platform = process.platform;
 const arch = process.arch;
@@ -37,8 +37,7 @@ if (!binary) {
   process.stderr.write(
     `@openagents/open-agents: no prebuilt binary for ${platform}-${arch}.\n` +
       `The optional dependency ${pkg} is not installed, which usually means\n` +
-      `this platform is unsupported. Supported: darwin-arm64, darwin-x64,\n` +
-      `win32-x64, linux-x64.\n`,
+      `this platform is unsupported. Supported: win32-x64, linux-x64.\n`,
   );
   process.exit(1);
 }
