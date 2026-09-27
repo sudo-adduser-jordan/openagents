@@ -74,13 +74,13 @@ describe("preload repository branch bridge", () => {
 	});
 });
 
-describe("preload Developer Mode updater bridge", () => {
-	it("sends only the updater eligibility boolean to the main process", async () => {
-		await exposedBridge().updateSettings.setMacDifferentialUpdates(true);
+describe("preload update settings bridge", () => {
+	it("sends the update settings to the main process", async () => {
+		await exposedBridge().updateSettings.set({ enabled: true, channel: "nightly", nightlyAck: true, feature: null });
 
 		expect(electronMocks.invoke).toHaveBeenCalledWith(
-			"updateSettings:setMacDifferentialUpdates",
-			true,
+			"updateSettings:set",
+			{ enabled: true, channel: "nightly", nightlyAck: true, feature: null },
 		);
 	});
 });

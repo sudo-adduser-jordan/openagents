@@ -1,5 +1,4 @@
 import { create } from "zustand";
-import { openAgentsBridge } from "../lib/bridge";
 import type { TerminalTarget } from "../types/terminal";
 import {
 	applyDocumentTheme,
@@ -185,11 +184,6 @@ function initialDeveloperMode() {
 	return getLocalStorage()?.getItem(developerModeStorageKey) === "true";
 }
 
-function syncDeveloperModeToUpdater(enabled: boolean): void {
-	const request = openAgentsBridge.updateSettings?.setMacDifferentialUpdates?.(enabled);
-	void request?.catch(() => undefined);
-}
-
 function inspectorState(sessions: Record<string, InspectorSessionState>, sessionId: string): InspectorSessionState {
 	return sessions[sessionId] ?? { isOpen: true, view: "summary" };
 }
@@ -251,7 +245,6 @@ export const useUiStore = create<UiState>((set, get) => ({
 	setDeveloperMode: (developerMode) => {
 		getLocalStorage()?.setItem(developerModeStorageKey, String(developerMode));
 		set({ developerMode });
-		syncDeveloperModeToUpdater(developerMode);
 	},
 	updateInstallPromptOpen: false,
 	openUpdateInstallPrompt: () => set({ updateInstallPromptOpen: true }),
@@ -451,10 +444,6 @@ export const useUiStore = create<UiState>((set, get) => ({
 			return { visibleTerminalKindBySession };
 		}),
 }));
-
-// Hydration synchronizes legacy renderer-only Developer Mode state into the
-// main-process updater mirror. Until this completes, the updater is fail-closed.
-syncDeveloperModeToUpdater(initialDeveloperModeValue);
 
 export function useResolvedTheme(): Theme {
 	return useUiStore((state) => state.resolvedTheme);

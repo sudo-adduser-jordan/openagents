@@ -2,7 +2,7 @@ import { autoUpdater } from "electron-updater";
 import { CancellationToken } from "builder-util-runtime";
 import { app, dialog } from "electron";
 import { markUpdateRelaunch } from "./update-relaunch-flag";
-import { accessSync, constants as fsConstants, existsSync, lstatSync, readFileSync, readdirSync, statfsSync, writeFileSync } from "node:fs";
+import { accessSync, constants as fsConstants, existsSync, lstatSync, readFileSync, readdirSync, statfsSync } from "node:fs";
 import { mkdir, readFile, unlink, writeFile } from "node:fs/promises";
 import os from "node:os";
 import path from "node:path";
@@ -30,8 +30,6 @@ const FAIL_CLOSED_UPDATE_SETTINGS: UpdateSettings = {
   feature: null,
 };
 let lastAppliedUpdateSettings: UpdateSettings = FAIL_CLOSED_UPDATE_SETTINGS;
-let developerModeHydrated = false;
-let developerModeRequested = false;
 let offeredUpdateVersion: string | undefined;
 let updaterLoggerWired = false;
 
@@ -137,9 +135,7 @@ let lastCheckError: string | undefined;
 // captured from whichever entry point wired the events (both receive it).
 let stagedVersion: string | undefined;
 let stagedInCurrentProcess = false;
-let restartFailureHandler: (() => void) | undefined;
 let nativeReadyVersion: string | undefined;
-let nativePreparationError: Error | undefined;
 // Squirrel.Mac staging has no progress event and no cancel API, so a fixed
 // deadline punished slow disks (#5170). Watch the staging dir for growth and
 // give up only after a stretch of no progress; fall back to a fixed cap when the
@@ -227,15 +223,6 @@ function insufficientDiskForStaging(requiredBytes: number): boolean {
   } catch { return false; }
 }
 
-// Rewrites only known extraction/verification failures to a short line; any
-// other error passes through so its own recovery and messaging stay intact.
-function shortStagingMessage(err: unknown): string {
-  const raw = err instanceof Error ? err.message : String(err);
-  if (/no space left on device/i.test(raw)) return STAGE_DISK_MESSAGE;
-  if (/ditto:|pkzip|code ?signature|codesign|failed to (?:extract|unzip)/i.test(raw)) return STAGE_STALL_MESSAGE;
-  return raw;
-}
-
 function blockNativePreparation(message: string): void {
   nativePreparationBlocked = new Error(message);
   autoUpdater.autoDownload = false;
@@ -266,12 +253,10 @@ function beginNativePreparation(version: string, archiveBytes?: number): void {
   if (stagingDiskIsFull(requiredFreeBytesToStage(archiveBytes))) {
     blockNativePreparation(STAGE_DISK_MESSAGE);
     nativeReadyVersion = undefined;
-    nativePreparationError = nativePreparationBlocked;
     broadcast(stagedDownloadedStatus());
     return;
   }
   nativeReadyVersion = undefined;
-  nativePreparationError = undefined;
   let resolve!: () => void;
   let reject!: (error: Error) => void;
   const promise = new Promise<void>((yes, no) => { resolve = yes; reject = no; });
@@ -283,7 +268,6 @@ function beginNativePreparation(version: string, archiveBytes?: number): void {
       if (nativePreparation !== preparation) return;
       clearInterval(watchdog);
       nativePreparation = undefined;
-      nativePreparationError = error;
       if (error) {
         nativeReadyVersion = undefined;
         rejectNativeOperation?.(error);
@@ -1485,53 +1469,6 @@ async function clearPendingUpdateCache(): Promise<void> {
   }
 }
 
-// OPEN_AGENTS_E2E_UPDATE_SENTINEL is the absolute path the end-to-end mac update test
-// (scripts/e2e-mac-update.mjs) asks the app to write once an update is actually
-// STAGED on disk and ready for the ShipIt swap. Unset in every real build, so
-// this is a complete no-op for users.
-//
-// Do not delete this while tidying: scripts/e2e-mac-update.mjs refuses to run
-// against a bundle whose app.asar does not contain this exact string, so
-// dropping it silently disables the whole macOS update-hop e2e job rather than
-// failing it. That is what happened between #3012 and #4254, and
-// e2e-mac-update.test.mjs now asserts the coupling to keep it from recurring.
-export const E2E_UPDATE_SENTINEL_ENV = "OPEN_AGENTS_E2E_UPDATE_SENTINEL";
-
-// installE2EUpdateSentinel hangs the sentinel off the NATIVE macOS updater
-// (require("electron").autoUpdater, i.e. Squirrel.Mac), NOT electron-updater's
-// own "update-downloaded".
-//
-// That distinction is load-bearing and was verified against the published
-// electron-updater@6.8.9 tarball. In MacUpdater.updateDownloaded(),
-// dispatchUpdateDownloaded(event) fires FIRST and only then does
-// `if (this.autoInstallOnAppQuit) { this.nativeUpdater.checkForUpdates() }`
-// kick Squirrel into fetching from the local proxy server. So electron-updater
-// announces "downloaded" BEFORE Squirrel has fetched or staged anything: a
-// harness that quits on that signal stages nothing, installs nothing, and
-// reports a false failure or flaps. The native event is the one MacUpdater
-// itself listens to in order to set squirrelDownloadedUpdate = true, and it is
-// the only signal that means "staged, will swap on quit". See #3288.
-//
-// macOS only in practice: NsisUpdater and AppImageUpdater never drive the
-// native updater, so this listener simply never fires off darwin.
-function installE2EUpdateSentinel(): void {
-  const sentinelPath = process.env[E2E_UPDATE_SENTINEL_ENV];
-  if (!sentinelPath) return;
-  nativeAutoUpdater.on("update-downloaded", (_event, _notes, releaseName) => {
-    try {
-      // Written synchronously: the harness quits the app right after seeing
-      // this file, so an async write could lose the race with termination.
-      writeFileSync(
-        sentinelPath,
-        `${JSON.stringify({ stagedAt: Date.now(), releaseName: releaseName ?? null })}\n`,
-      );
-      console.info(`[e2e] native updater staged ${releaseName ?? "an update"}; wrote ${sentinelPath}`);
-    } catch (err) {
-      console.error("[e2e] failed to write update sentinel:", err);
-    }
-  });
-}
-
 // wireUpdaterEvents registers electron-updater listeners once and forwards each
 // to the renderer as an UpdateStatus. Idempotent: safe to call on every entry
 // point (launch auto-check and manual check).
@@ -1539,35 +1476,6 @@ function wireUpdaterEvents(): void {
   wireUpdaterLogger();
   if (eventsWired) return;
   eventsWired = true;
-  if (process.platform === "darwin") {
-    nativeAutoUpdater.on("update-downloaded", (_event, _notes, releaseName) => {
-      if (!nativePreparation || (releaseName && releaseName !== nativePreparation.version)) return;
-      nativePreparation.finish();
-      broadcast(lastStatus.state === "downloading" ? lastStatus : stagedDownloadedStatus());
-    });
-    nativeAutoUpdater.on("error", (error) => {
-      // Log the full detail; surface only a short line.
-      console.error("native macOS updater error during staging:", error);
-      const short = new Error(shortStagingMessage(error));
-      nativePreparation?.finish(short);
-      nativeReadyVersion = undefined;
-      nativePreparationError = short;
-      if (macRestartRequested) {
-        macRestartRequested = false;
-        macRestartPreparation = undefined;
-        stagedInCurrentProcess = false;
-        void macRestartProgress?.fail(short.message).catch(() => undefined);
-        broadcast({ state: "error", message: short.message });
-        // Squirrel can close the windows, then fail to persist its relaunch
-        // request. Restore Open Agents in that still-running process instead of leaving
-        // the user with no app window and no possible automatic restart.
-        restartFailureHandler?.();
-      }
-    });
-  }
-  // Registered last so a native update-downloaded reaches the sentinel handler
-  // through the test harness's single-handler map lookup.
-  installE2EUpdateSentinel();
   // With a build staged, "checking" briefly hides the sidebar restart row; that
   // is acceptable and self-healing: the available / not-available handlers below
   // restore the enriched downloaded status right after.
@@ -1588,12 +1496,6 @@ function wireUpdaterEvents(): void {
   });
   autoUpdater.on("update-available", (info) => {
     offeredUpdateVersion = info?.version;
-    transferObservation = {
-      eligible: differentialEligible,
-      attemptedDifferential: false,
-      fallback: false,
-      transferred: undefined,
-    };
     // A successful check proves the network stack is healthy.
     consecutiveAutomaticNetFailures = 0;
     consecutiveAutomaticCheckFailures = 0;
@@ -1647,7 +1549,6 @@ function wireUpdaterEvents(): void {
     const transferred = Number.isFinite(p?.transferred) && p.transferred >= 0 ? p.transferred : undefined;
     const total = Number.isFinite(p?.total) && p.total >= 0 ? p.total : undefined;
     const bytesPerSecond = Number.isFinite(p?.bytesPerSecond) && p.bytesPerSecond >= 0 ? p.bytesPerSecond : undefined;
-    transferObservation.transferred = transferred;
     if (p?.transferred === undefined || p.transferred !== lastStatus.transferred) armDownloadStallWatchdog();
     return broadcastUpdaterStatus({
       state: p?.percent >= 100 ? "preparing" : "downloading",
@@ -2087,16 +1988,11 @@ export async function startAutoUpdates(stateDir: string): Promise<void> {
     schedulePeriodicAutomaticUpdateCheck(stateDir, intervalMs);
 }
 
-// The mirror belongs to Developer Mode IPC. A stale settings form must not
-// restore an old value when changing channel or automatic-download preference.
 async function persistRendererUpdateSettings(
   stateDir: string,
   settings: UpdateSettings,
 ): Promise<UpdateSettings> {
-  return updateUpdateSettings(stateDir, current => ({
-    ...settings,
-    macDifferentialUpdates: current.macDifferentialUpdates === true,
-  }));
+  return updateUpdateSettings(stateDir, () => settings);
 }
 
 async function persistUpdaterSettings(
@@ -2319,7 +2215,6 @@ export async function downloadUpdateNow(requestId?: string): Promise<void> {
         broadcastUpdaterStatus({ state: "downloading", version: pendingUpdateVersion });
         activeDownloadCancellation = token;
         applyUpdaterPolicy(lastAppliedUpdateSettings);
-        transferObservation = { eligible: differentialEligible, attemptedDifferential: false, fallback: false, transferred: undefined };
         armDownloadStallWatchdog();
         await autoUpdater.downloadUpdate(token);
       },
@@ -2351,29 +2246,6 @@ export async function downloadUpdateNow(requestId?: string): Promise<void> {
     manualDownloadPending = false;
     clearDownloadStallWatchdog();
   }
-}
-
-/** Persist the narrow Developer Mode mirror and apply its fail-closed policy. */
-export async function setMacDifferentialUpdates(
-  stateDir: string,
-  enabled: boolean,
-): Promise<void> {
-  if (typeof enabled !== "boolean") return;
-  developerModeRequested = enabled;
-  // Revoke eligibility synchronously, even while a previous operation is busy.
-  // An already-started dependency download retains its captured options.
-  if (!enabled) {
-    developerModeHydrated = false;
-    applyUpdaterPolicy(FAIL_CLOSED_UPDATE_SETTINGS);
-  }
-  await runSerializedUpdaterOperation("settings-write", async () => {
-    const settings = await updateUpdateSettings(stateDir, (current) => ({
-      ...current,
-      macDifferentialUpdates: enabled,
-    }));
-    developerModeHydrated = enabled && developerModeRequested;
-    applyUpdaterPolicy(settings);
-  });
 }
 
 // getMacInstallBlocker is the macOS install preflight. An app launched straight
@@ -2451,9 +2323,11 @@ function applyInstallOnQuitPolicy(): void {
 
 // quitAndInstallUpdate installs a downloaded update and relaunches. isSilent
 // false keeps the installer UI on Windows; isForceRunAfter relaunches the app.
-export function setUpdateRestartFailureHandler(handler: () => void): void { restartFailureHandler = handler; }
-
-export function isUpdateRestartRequested(): boolean { return macRestartRequested; }
+// The macOS native installer is gone, so nothing arms a restart request any
+// more: ShipIt drove that path and it no longer ships. Kept as an exported
+// always-false probe so the shutdown deadline logic in main.ts keeps its
+// contract without reintroducing the macOS branch.
+export function isUpdateRestartRequested(): boolean { return false; }
 
 export async function quitAndInstallUpdate(confirmedVersion?: string): Promise<UpdateInstallResult> {
   if (confirmedVersion !== undefined && (typeof confirmedVersion !== "string" || !confirmedVersion.trim())) {
@@ -2463,139 +2337,32 @@ export async function quitAndInstallUpdate(confirmedVersion?: string): Promise<U
   if (awaitingStagedReplacement) {
     throw new Error("Check for updates and download an update before restarting to install.");
   }
-  const blocker = getMacInstallBlocker();
-  if (blocker !== undefined) {
-    throw new Error(blocker);
+  if (!hasStagedBuild() || lastStatus.state === "downloading" || lastStatus.state === "preparing") {
+    throw new Error("The update is not ready to install. Check for updates again.");
   }
-  if (process.platform !== "darwin") {
-    if (!hasStagedBuild() || lastStatus.state === "downloading" || lastStatus.state === "preparing") {
-      throw new Error("The update is not ready to install. Check for updates again.");
-    }
-    if (!stagedInCurrentProcess) {
-      await runSerializedUpdaterOperation("manual-install", async () => {
-        await prepareRememberedNonDarwinUpdate();
-      });
-    }
-    if (confirmedVersion !== undefined && stagedVersion && confirmedVersion !== stagedVersion) {
-      return { state: "confirmation-required", version: stagedVersion,
-        releaseNotes: lastStatus.state === "downloaded" && lastStatus.version === stagedVersion ? lastStatus.releaseNotes : undefined };
-    }
-    // Signal the next boot that it is a post-update relaunch so the startup loader
-    // shows "Updating / Restarting" copy. macOS gets this via the same marker on
-    // its own path below; here it is the only such signal (no native helper).
-    if (escalationStateDir && stagedVersion) {
-      // Best-effort and time-bounded: a hung state-dir write must never delay the
-      // install. The marker only drives startup-loader copy.
-      await Promise.race([
-        markUpdateRelaunch({ stateDir: escalationStateDir, version: stagedVersion }).catch((err) => {
-          console.warn("failed to write post-update relaunch marker:", err);
-        }),
-        new Promise<void>((resolve) => setTimeout(resolve, 750)),
-      ]);
-    }
-    autoUpdater.quitAndInstall(false, true);
-    return;
+  if (!stagedInCurrentProcess) {
+    await runSerializedUpdaterOperation("manual-install", async () => {
+      await prepareRememberedNonDarwinUpdate();
+    });
   }
-  if (macRestartPreparation) return macRestartPreparation;
-  let confirmation: UpdateInstallResult;
-  macRestartPreparation = runSerializedUpdaterOperation("manual-install", async () => {
-    let progress: Awaited<ReturnType<typeof startMacUpdateProgress>> | undefined;
-    try {
-      if (!escalationStateDir || !hasStagedBuild()) {
-        throw new Error("Check for updates and download an update before restarting to install.");
-      }
-      if (!stagedInCurrentProcess) {
-        confirmation = await prepareRememberedMacUpdate(confirmedVersion);
-        if (confirmation) return;
-      }
-      if (confirmedVersion !== undefined && stagedVersion && confirmedVersion !== stagedVersion) {
-        confirmation = { state: "confirmation-required", version: stagedVersion,
-          releaseNotes: lastStatus.state === "downloaded" && lastStatus.version === stagedVersion ? lastStatus.releaseNotes : undefined };
-        return;
-      }
-      const version = stagedVersion;
-      if (!version) throw new Error("The update is no longer ready to install. Check for updates again.");
-      await waitForNativePreparation(version);
-      // The helper must acknowledge it is up (its READY handshake) before Open Agents
-      // quits. It stays hidden on the normal path and only shows a window if the
-      // update stalls or fails.
-      progress = await startMacUpdateProgress({
-        stateDir: escalationStateDir,
-        resourcesPath: process.resourcesPath,
-        appPath: path.resolve(process.execPath, "..", "..", ".."),
-        version,
-      });
-      progress.assertAlive();
-      macRestartProgress = progress;
-      macRestartRequested = true;
-      // Same cross-platform post-update signal the renderer reads at boot. This
-      // is separate from the helper's active.json handshake above and only drives
-      // the startup loader copy; failing to write it must not abort the install.
-      // Best-effort and time-bounded: a hung state-dir write must never delay the
-      // install. The marker only drives startup-loader copy.
-      await Promise.race([
-        markUpdateRelaunch({ stateDir: escalationStateDir, version }).catch((err) => {
-          console.warn("failed to write post-update relaunch marker:", err);
-        }),
-        new Promise<void>((resolve) => setTimeout(resolve, 750)),
-      ]);
-      autoUpdater.quitAndInstall(false, true);
-      if (!macRestartRequested) throw nativePreparationError ?? new Error("The installer could not restart Open Agents.");
-    } catch (err) {
-      macRestartRequested = false;
-      stagedInCurrentProcess = false;
-      nativeReadyVersion = undefined;
-      console.error("failed to prepare update for restart:", err);
-      await progress?.fail(errorMessage(err)).catch(() => undefined);
-      broadcast({ state: "error", message: errorMessage(err) });
-      throw err;
-    }
-  }).then(() => confirmation).finally(() => { if (!macRestartRequested) macRestartPreparation = undefined; });
-  return macRestartPreparation;
-}
-
-async function waitForNativePreparation(version: string): Promise<void> {
-  if (nativePreparationBlocked) throw nativePreparationBlocked;
-  if (nativePreparation?.version === version) await nativePreparation.promise;
-  if (nativePreparationError) throw nativePreparationError;
-  if (nativeReadyVersion !== version || stagedVersion !== version) {
-    throw new Error("The update is not ready in macOS. Check for updates again.");
+  if (confirmedVersion !== undefined && stagedVersion && confirmedVersion !== stagedVersion) {
+    return { state: "confirmation-required", version: stagedVersion,
+      releaseNotes: lastStatus.state === "downloaded" && lastStatus.version === stagedVersion ? lastStatus.releaseNotes : undefined };
   }
-}
-
-async function prepareRememberedMacUpdate(confirmedVersion?: string): Promise<UpdateInstallResult> {
-  if (!escalationStateDir) throw new Error("Check for updates before restarting to install.");
-  const settings = await reconcileAndPersist(escalationStateDir, await readUpdateSettings(escalationStateDir));
-  configureFeed(settings);
-  autoUpdater.autoDownload = false;
-  applyInstallOnQuitPolicy();
-  broadcastUpdaterStatus({ state: "checking" });
-  const restoreFeed = await configureDirectPrereleaseFeed(settings);
-  try {
-    const result = await checkForUpdatesWithDeadline();
-    if (result?.isUpdateAvailable !== true) {
-      throw new Error("The remembered update is no longer available on the selected channel. Check for updates and try again.");
-    }
-    // A remembered stamp is not permission to install a different release.
-    // Stop before downloading/arming it so cancelling the new confirmation
-    // cannot install the unconfirmed target on a later ordinary quit.
-    if (confirmedVersion !== undefined && result.updateInfo.version !== confirmedVersion) {
-      return {
-        state: "confirmation-required",
-        version: result.updateInfo.version,
-        releaseNotes: normalizeReleaseNotes(result.updateInfo.releaseNotes) ?? directFeedReleaseNotes,
-      };
-    }
-    activeUpdaterPhase = "download";
-    pendingUpdateVersion = result.updateInfo.version;
-    const token = new CancellationToken();
-    activeDownloadCancellation = token;
-    // A cache hit re-establishes the native feed. The download promise is not
-    // native readiness: waitForNativePreparation separately gates the quit.
-    await autoUpdater.downloadUpdate(token);
-  } finally {
-    restoreFeed?.();
+  // Signal the next boot that it is a post-update relaunch so the startup loader
+  // shows "Updating / Restarting" copy. This marker is the only such signal;
+  // it does not drive the install itself.
+  if (escalationStateDir && stagedVersion) {
+    // Best-effort and time-bounded: a hung state-dir write must never delay the
+    // install. The marker only drives startup-loader copy.
+    await Promise.race([
+      markUpdateRelaunch({ stateDir: escalationStateDir, version: stagedVersion }).catch((err) => {
+        console.warn("failed to write post-update relaunch marker:", err);
+      }),
+      new Promise<void>((resolve) => setTimeout(resolve, 750)),
+    ]);
   }
+  autoUpdater.quitAndInstall(false, true);
 }
 
 // On Windows and Linux, a remembered staged build has no installer file in

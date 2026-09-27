@@ -27,7 +27,6 @@ import {
 	downloadUpdateNow,
 	quitAndInstallUpdate,
 	isUpdateRestartRequested,
-	setUpdateRestartFailureHandler,
 	getUpdateStatus,
 	setUpdateSettings,
 	returnToHome,
@@ -2469,10 +2468,6 @@ app.whenReady().then(async () => {
 // self-stops ~5s after the last client (this process) drops its connection.
 // The supervisorLink fd is NOT explicitly closed on quit; the OS closes it when
 // the process exits for any reason (Cmd+Q, crash, SIGKILL). Sessions survive.
-setUpdateRestartFailureHandler(() => {
-	if (!browserQuitRequested) focusMainWindow();
-});
-
 let updateQuitDeadlineArmed = false;
 app.on("before-quit", (event) => {
 	if (chatDraftRisks.length > 0 && !chatDraftQuitConfirmed) {

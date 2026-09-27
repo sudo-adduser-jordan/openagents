@@ -297,9 +297,8 @@ if (typeof window !== "undefined") {
 			onOpenSession: () => () => undefined,
 		},
 		updateSettings: {
-			get: async () => ({ enabled: false, channel: "latest", nightlyAck: false, feature: null, macDifferentialUpdates: false }),
+			get: async () => ({ enabled: false, channel: "latest", nightlyAck: false, feature: null }),
 			set: async () => undefined,
-			setMacDifferentialUpdates: async () => undefined,
 		},
 		uiSettings: {
 			get: async () => ({ ...DEFAULT_UI_SETTINGS }),
