@@ -881,22 +881,6 @@ export function Sidebar({
 						tabIndex={isCollapsed ? -1 : 0}
 					/>
 					<button
-						aria-label="Connect mobile"
-						className={cn(
-							FOOTER_NAV_BUTTON_CLASS,
-							"disabled:cursor-not-allowed disabled:opacity-50 disabled:hover:text-muted-foreground",
-						)}
-						disabled
-						tabIndex={isCollapsed ? -1 : 0}
-						type="button"
-					>
-						<NavRowHighlight disabled />
-						<span className="relative z-[1] flex min-w-0 flex-1 items-center gap-2.5 [&_svg]:size-icon-md [&_svg]:shrink-0">
-							<Smartphone aria-hidden="true" />
-							<span className="tracking-tight">{"Connect mobile"}</span>
-						</span>
-					</button>
-					<button
 						aria-label="Tools"
 						className={FOOTER_NAV_BUTTON_CLASS}
 						onClick={() => selection.goToolsSettings()}
@@ -920,6 +904,22 @@ export function Sidebar({
 						<span className="relative z-[1] flex min-w-0 flex-1 items-center gap-2.5 [&_svg]:size-icon-md [&_svg]:shrink-0">
 							<Settings aria-hidden="true" />
 							<span className="tracking-tight">{"Settings"}</span>
+						</span>
+					</button>
+					<button
+						aria-label="Connect mobile"
+						className={cn(
+							FOOTER_NAV_BUTTON_CLASS,
+							"disabled:cursor-not-allowed disabled:opacity-50 disabled:hover:text-muted-foreground",
+						)}
+						disabled
+						tabIndex={isCollapsed ? -1 : 0}
+						type="button"
+					>
+						<NavRowHighlight disabled />
+						<span className="relative z-[1] flex min-w-0 flex-1 items-center gap-2.5 [&_svg]:size-icon-md [&_svg]:shrink-0">
+							<Smartphone aria-hidden="true" />
+							<span className="tracking-tight">{"Connect mobile"}</span>
 						</span>
 					</button>
 				</div>
