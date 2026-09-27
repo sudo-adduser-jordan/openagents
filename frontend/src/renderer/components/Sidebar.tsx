@@ -27,7 +27,6 @@ import {
 	Search,
 	Settings,
 	Wrench,
-	Smartphone,
 	Trash2,
 	X,
 } from "lucide-react";
@@ -849,10 +848,9 @@ export function Sidebar({
 			</SidebarContent>
 
 			{/* Footer — Settings opens the global settings page directly.
-			    Footer rows share NAV_ROW height so Settings, the disabled
-			    Connect mobile row, and account actions line up. Bottom spacing
-			    stays inside the footer so there is no empty strip beneath the
-			    final action. */}
+			    Footer rows share NAV_ROW height so Settings, Tools, and account
+			    actions line up. Bottom spacing stays inside the footer so there is
+			    no empty strip beneath the final action. */}
 			<SidebarFooter
 				className="relative mt-auto gap-0 overflow-hidden border-t border-border-strong px-2 !py-2 transition-[padding] duration-200 ease-linear group-data-[collapsible=icon]:min-h-20 group-data-[collapsible=icon]:items-center group-data-[collapsible=icon]:border-t-0 group-data-[collapsible=icon]:overflow-visible group-data-[collapsible=icon]:px-1.5 group-data-[collapsible=icon]:!pb-2 group-data-[collapsible=icon]:!pt-1.5"
 			>
@@ -906,22 +904,6 @@ export function Sidebar({
 							<span className="tracking-tight">{"Settings"}</span>
 						</span>
 					</button>
-					<button
-						aria-label="Connect mobile"
-						className={cn(
-							FOOTER_NAV_BUTTON_CLASS,
-							"disabled:cursor-not-allowed disabled:opacity-50 disabled:hover:text-muted-foreground",
-						)}
-						disabled
-						tabIndex={isCollapsed ? -1 : 0}
-						type="button"
-					>
-						<NavRowHighlight disabled />
-						<span className="relative z-[1] flex min-w-0 flex-1 items-center gap-2.5 [&_svg]:size-icon-md [&_svg]:shrink-0">
-							<Smartphone aria-hidden="true" />
-							<span className="tracking-tight">{"Connect mobile"}</span>
-						</span>
-					</button>
 				</div>
 				<div
 					aria-hidden={!isCollapsed || undefined}
@@ -933,26 +915,6 @@ export function Sidebar({
 						status={updateStatus}
 						tabIndex={isCollapsed ? 0 : -1}
 					/>
-					<Tooltip>
-						<TooltipTrigger asChild>
-							<button
-								aria-label="Connect mobile"
-								className={cn(
-									FOOTER_RAIL_BUTTON_CLASS,
-									"disabled:cursor-not-allowed disabled:opacity-50 disabled:hover:text-muted-foreground",
-								)}
-								disabled
-								tabIndex={isCollapsed ? 0 : -1}
-								type="button"
-							>
-								<NavRowHighlight disabled />
-								<span className="relative z-[1] grid place-items-center [&_svg]:size-icon-base">
-									<Smartphone aria-hidden="true" />
-								</span>
-							</button>
-						</TooltipTrigger>
-						<TooltipContent side="right">{"Connect mobile"}</TooltipContent>
-					</Tooltip>
 					<Tooltip>
 						<TooltipTrigger asChild>
 							<button
@@ -1955,7 +1917,7 @@ function installVersionNumber(version: string | undefined): string | null {
 }
 
 // UpdateStatusRow makes download progress visible in the footer. A staged build
-// ready to install renders as UpdateInstallSlide above Connect mobile / Settings.
+// ready to install renders as UpdateInstallSlide above Tools / Settings.
 function UpdateStatusRow({
 	availableDismissed,
 	onDismissAvailable,
@@ -2050,7 +2012,7 @@ function UpdateStatusRow({
 }
 
 /**
- * Alert-style install cue above Connect mobile / Settings. Muted fill so it
+ * Alert-style install cue above Tools / Settings. Muted fill so it
  * reads apart from nav rows; shows the version number only (no Nightly/date).
  */
 function UpdateInstallSlide({

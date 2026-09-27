@@ -437,7 +437,6 @@ describe("Sidebar", () => {
 		const footer = document.querySelector('[data-sidebar="footer"]');
 		expect(footer).toHaveClass("border-t", "border-border-strong", "!py-2");
 		expect(screen.getAllByRole("button", { name: "Settings" })[0]).toHaveClass("h-9");
-		expect(screen.getAllByRole("button", { name: "Connect mobile" })[0]).toHaveClass("h-9");
 		expect(footer?.className).not.toContain("--size-center-panel-bottom-inset");
 		expect(footer?.className).not.toContain("--size-center-panel-inset-mac");
 	});
@@ -1543,22 +1542,6 @@ describe("Sidebar", () => {
 		expect(navigateMock).not.toHaveBeenCalled();
 	});
 
-	it("keeps the Connect mobile footer button disabled", async () => {
-		const user = userEvent.setup();
-		renderSidebar();
-
-		const mobileButtons = await screen.findAllByRole("button", { name: "Connect mobile" });
-		expect(mobileButtons.length).toBeGreaterThan(0);
-		for (const button of mobileButtons) {
-			expect(button).toBeVisible();
-			expect(button).toBeDisabled();
-		}
-
-		await user.click(mobileButtons[0]);
-		expect(useUiStore.getState().settingsModal).toBeNull();
-		expect(navigateMock).not.toHaveBeenCalled();
-	});
-
 	it("opens the command palette when Search is clicked", async () => {
 		const user = userEvent.setup();
 		renderSidebar();
@@ -2206,9 +2189,9 @@ describe("Sidebar", () => {
 		expect(within(readyRow).queryByText(/ready|Nightly/)).not.toBeInTheDocument();
 		expect(readyRow.querySelector(".rounded-full")).toBeNull();
 		expect(screen.queryAllByLabelText("Retry update check")).toHaveLength(0);
-		// Stays above Connect mobile / Settings — not overlaid on them.
-		const connectMobile = screen.getByRole("button", { name: "Connect mobile" });
-		expect(readyRow.compareDocumentPosition(connectMobile) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy();
+		// Stays above Tools / Settings — not overlaid on them.
+		const toolsButton = screen.getByRole("button", { name: "Tools" });
+		expect(readyRow.compareDocumentPosition(toolsButton) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy();
 		expect(screen.queryByLabelText(/Hide update/)).not.toBeInTheDocument();
 	});
 
