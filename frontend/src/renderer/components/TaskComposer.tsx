@@ -128,14 +128,13 @@ export function TaskComposer({
 	// spins forever. Local projects keep their scope.
 	const modelsProjectId = isStandalone ? "" : (projectId ?? "");
 
-	// A project task is not spawned here: the daemon hands the brief to the
-	// project manager, which creates the worker itself. There is no session id
-	// to navigate to, so resolve to undefined and let the board pick the card up
-	// once the manager spawns it.
+	// A project task spawns a worker synchronously: the daemon creates the
+	// session and returns its id, so the UI can navigate straight to it. The
+	// manager handoff (scope, plan review, advance) happens in the background.
 	const createLocalTask = useCallback(
-		async (input: CreateTaskInput): Promise<string | undefined> => {
+		async (input: CreateTaskInput): Promise<string> => {
 			try {
-				const { error } = await apiClient.POST("/api/v1/managers/delegate", {
+				const { data, error } = await apiClient.POST("/api/v1/managers/delegate", {
 				body: {
 					projectId: input.projectId,
 					brief: input.brief,
@@ -154,8 +153,8 @@ export function TaskComposer({
 						error.details,
 					);
 				}
-				// Accepted, not spawned. The manager owns worker creation.
-				return undefined;
+				if (!data?.workerId) throw new Error("Task creation returned no session");
+				return data.workerId;
 			} catch (err) {
 				if (
 					err instanceof TaskCreateError &&
@@ -200,7 +199,7 @@ export function TaskComposer({
 	);
 
 	const createTask = useCallback(
-		(input: CreateTaskInput): Promise<string | undefined> =>
+		(input: CreateTaskInput): Promise<string> =>
 			isStandalone ? createStandaloneTask(input) : createLocalTask(input),
 		[isStandalone, createStandaloneTask, createLocalTask],
 	);
@@ -358,7 +357,7 @@ export function TaskComposer({
 				approvalMode,
 				attachments: attachmentPayloads.length > 0 ? attachmentPayloads : undefined,
 			});
-			onCreated(sessionId ?? "");
+			onCreated(sessionId);
 		} catch (err) {
 			const canBypassApprovals =
 				err instanceof TaskCreateError &&

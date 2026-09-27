@@ -2428,6 +2428,7 @@ type fakeCommander struct {
 	spawnCalls      int
 	spawned         bool
 	spawnedCfg      ports.SpawnConfig
+	spawnedCfgs     []ports.SpawnConfig
 	killsAtSpawn    int
 	restoreErr      error
 	restoreResult   sessionmanager.RestoreResult
@@ -2447,6 +2448,7 @@ func (f *fakeCommander) Spawn(_ context.Context, cfg ports.SpawnConfig) (domain.
 	f.spawned = true
 	f.spawnCalls++
 	f.spawnedCfg = cfg
+	f.spawnedCfgs = append(f.spawnedCfgs, cfg)
 	f.killsAtSpawn = len(f.retired)
 	if f.spawnFunc != nil {
 		return f.spawnFunc(cfg), len(cfg.Prompt), 0, nil
@@ -3674,15 +3676,14 @@ func TestSpawnManagerVerifiesReplacementHarness(t *testing.T) {
 	}
 }
 
-func TestDelegateTaskStagesAttachmentsForTheManagerInsteadOfSpawningAWorker(t *testing.T) {
+func TestDelegateTaskPassesAttachmentsToSpawnConfig(t *testing.T) {
 	st := newFakeStore()
 	st.projects["mer"] = domain.ProjectRecord{ID: "mer"}
-	st.sessions["orch"] = domain.SessionRecord{
-		ID: "orch", ProjectID: "mer", Kind: domain.KindManager,
-		Metadata: domain.SessionMetadata{WorkspacePath: t.TempDir()},
-	}
 	fc := &fakeCommander{}
 	svc := NewWithDeps(Deps{Manager: fc, Store: st})
+	// This test only inspects the worker spawn. Keep the asynchronous manager
+	// handoff from racing the recording fake.
+	svc.runBackground = func(func()) {}
 
 	_, err := svc.DelegateTask(context.Background(), DelegateTaskInput{
 		ProjectID:      "mer",
@@ -3695,18 +3696,19 @@ func TestDelegateTaskStagesAttachmentsForTheManagerInsteadOfSpawningAWorker(t *t
 	if err != nil {
 		t.Fatalf("DelegateTask: %v", err)
 	}
-	// The manager owns worker creation, so the daemon must not spawn a worker and
-	// must never hand attachment bytes to a spawn.
-	if fc.spawned {
-		t.Fatalf("DelegateTask spawned a worker: cfg = %#v", fc.spawnedCfg)
+	if !fc.spawned {
+		t.Fatal("DelegateTask did not call Spawn")
 	}
-	if len(fc.stagedPayloads) != 1 {
-		t.Fatalf("staged payloads = %#v, want one", fc.stagedPayloads)
+	if fc.spawnedCfg.ProjectID != "mer" || fc.spawnedCfg.Kind != domain.KindWorker {
+		t.Fatalf("spawned cfg identity = %#v", fc.spawnedCfg)
 	}
-	if len(fc.stagedPayloads[0]) != 1 {
-		t.Fatalf("staged attachments = %#v, want one", fc.stagedPayloads[0])
+	if fc.spawnedCfg.Harness != domain.HarnessOpenCode || fc.spawnedCfg.Prompt != "Use the attached image." {
+		t.Fatalf("spawned cfg fields = %#v", fc.spawnedCfg)
 	}
-	if got := fc.stagedPayloads[0][0]; got.Ext != ".png" || string(got.Data) != "\x01\x02\x03" {
+	if len(fc.spawnedCfg.Attachments) != 1 {
+		t.Fatalf("attachments = %#v, want one", fc.spawnedCfg.Attachments)
+	}
+	if got := fc.spawnedCfg.Attachments[0]; got.Ext != ".png" || string(got.Data) != "\x01\x02\x03" {
 		t.Fatalf("attachment = %#v, want decoded png", got)
 	}
 }

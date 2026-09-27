@@ -92,7 +92,7 @@ beforeEach(() => {
 	});
 	postMock.mockReset().mockImplementation(async (path: string) => {
 		if (path === "/api/v1/agents/readiness/ensure") return { data: agentInventory, error: undefined };
-		return { data: { ok: true, managerId: "mgr-1" }, error: undefined };
+		return { data: { ok: true, workerId: "worker-1", managerId: "mgr-1" }, error: undefined };
 	});
 });
 
@@ -153,8 +153,7 @@ describe("NewTaskDialog", () => {
 		expect(requestBody()).not.toHaveProperty("issueId");
 		expect(requestBody()).not.toHaveProperty("branch");
 		expect(requestBody()).not.toHaveProperty("harness");
-		// The manager owns worker creation, so no session is opened yet.
-		expect(onCreated).toHaveBeenCalledWith("");
+		expect(onCreated).toHaveBeenCalledWith("worker-1");
 		expect(onOpenChange).toHaveBeenCalledWith(false);
 	}, 20_000);
 
@@ -169,7 +168,7 @@ describe("NewTaskDialog", () => {
 					error: { code: "CHAT_AUTH_REQUIRED", message: "OpenCode needs login" },
 				};
 			}
-			return { data: { ok: true, managerId: "mgr-1" }, error: undefined };
+			return { data: { ok: true, workerId: "worker-tui" }, error: undefined };
 		});
 		const { onCreated } = renderDialog();
 		const user = userEvent.setup();
@@ -185,7 +184,7 @@ describe("NewTaskDialog", () => {
 		await waitFor(() => expect(delegateCalls()).toHaveLength(2));
 		const retryBody = (delegateCalls()[1][1] as { body: Record<string, unknown> }).body;
 		expect(retryBody.mode).toBe("tui");
-		expect(onCreated).toHaveBeenCalledWith("");
+		expect(onCreated).toHaveBeenCalledWith("worker-tui");
 	});
 
 	it("starts an untitled task without an initial prompt", async () => {
@@ -201,8 +200,7 @@ describe("NewTaskDialog", () => {
 			brief: "",
 			agent: "opencode",
 		});
-		// The manager owns worker creation, so no session is opened yet.
-		expect(onCreated).toHaveBeenCalledWith("");
+		expect(onCreated).toHaveBeenCalledWith("worker-1");
 		expect(onOpenChange).toHaveBeenCalledWith(false);
 	});
 

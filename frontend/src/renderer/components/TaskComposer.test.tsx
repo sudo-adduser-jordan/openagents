@@ -193,9 +193,9 @@ describe("TaskComposer", () => {
 		expect(queryClient.getQueryData(agentReadinessQueryKey)).toEqual({ agents: [completed] });
 	});
 
-	it("hands a promptless project task to the manager without a session", async () => {
+	it("starts a promptless worker when the task is empty", async () => {
 		const onCreated = vi.fn();
-		h.post.mockResolvedValueOnce({ data: { managerId: "orch-1" } });
+		h.post.mockResolvedValueOnce({ data: { workerId: "sess-empty" } });
 
 		render(
 			<Wrap>
@@ -214,8 +214,8 @@ describe("TaskComposer", () => {
 				expect.objectContaining({ body: expect.objectContaining({ projectId: "proj-1", brief: "" }) }),
 			),
 		);
-		// The manager creates the worker, so there is no session to open yet.
-		expect(onCreated).toHaveBeenCalledWith("");
+		// The worker exists, so the UI opens it.
+		expect(onCreated).toHaveBeenCalledWith("sess-empty");
 	});
 
 	it("keeps prompt guidance in the field instead of adding a separate footer row", () => {
@@ -278,7 +278,7 @@ describe("TaskComposer", () => {
 	it("emits busy state around an in-flight create and reports the new session", async () => {
 		const onSubmittingChange = vi.fn();
 		const onCreated = vi.fn();
-		let resolveCreate!: (value: { data: { managerId: string } }) => void;
+		let resolveCreate!: (value: { data: { workerId: string } }) => void;
 		h.post.mockReturnValueOnce(new Promise((resolve) => (resolveCreate = resolve)));
 
 		render(
@@ -304,8 +304,8 @@ describe("TaskComposer", () => {
 			}),
 		);
 
-		await act(async () => resolveCreate({ data: { managerId: "orch-1" } }));
-		await waitFor(() => expect(onCreated).toHaveBeenCalledWith(""));
+		await act(async () => resolveCreate({ data: { workerId: "sess-1" } }));
+		await waitFor(() => expect(onCreated).toHaveBeenCalledWith("sess-1"));
 		await waitFor(() => expect(onSubmittingChange).toHaveBeenLastCalledWith(false));
 	});
 
@@ -427,7 +427,7 @@ describe("TaskComposer", () => {
 	});
 
 	it("attaches a selected file and sends it in the delegate body", async () => {
-		h.post.mockResolvedValueOnce({ data: { managerId: "orch-1" } });
+		h.post.mockResolvedValueOnce({ data: { workerId: "sess-1" } });
 
 		const { container } = render(
 			<Wrap>
@@ -454,7 +454,7 @@ describe("TaskComposer", () => {
 	});
 
 	it("waits for a selected file read before submitting", async () => {
-		h.post.mockResolvedValueOnce({ data: { managerId: "orch-1" } });
+		h.post.mockResolvedValueOnce({ data: { workerId: "sess-1" } });
 		let finishRead!: () => void;
 		class SlowFileReader {
 			error: Error | null = null;
@@ -494,7 +494,7 @@ describe("TaskComposer", () => {
 	});
 
 	it("waits for both rapidly selected file batches before delegating", async () => {
-		h.post.mockResolvedValueOnce({ data: { managerId: "orch-1" } });
+		h.post.mockResolvedValueOnce({ data: { workerId: "sess-1" } });
 		const pendingReads: Array<() => void> = [];
 		class SlowFileReader {
 			error: Error | null = null;
@@ -541,7 +541,7 @@ describe("TaskComposer", () => {
 	});
 
 	it("removes a selected file before submitting", async () => {
-		h.post.mockResolvedValueOnce({ data: { managerId: "orch-1" } });
+		h.post.mockResolvedValueOnce({ data: { workerId: "sess-1" } });
 
 		const { container } = render(
 			<Wrap>
@@ -584,7 +584,7 @@ describe("TaskComposer", () => {
 	it("offers an explicit Terminal UI retry after Chat preflight fails", async () => {
 		h.post
 			.mockResolvedValueOnce({ error: { code: "CHAT_DRIVER_UNAVAILABLE" } })
-			.mockResolvedValueOnce({ data: { managerId: "orch-1" } });
+			.mockResolvedValueOnce({ data: { workerId: "sess-tui" } });
 		const onCreated = vi.fn();
 
 		render(
@@ -597,7 +597,7 @@ describe("TaskComposer", () => {
 
 		const fallback = await screen.findByRole("button", { name: "Create as Terminal UI" });
 		fireEvent.click(fallback);
-		await waitFor(() => expect(onCreated).toHaveBeenCalledWith(""));
+		await waitFor(() => expect(onCreated).toHaveBeenCalledWith("sess-tui"));
 		expect(h.post).toHaveBeenLastCalledWith(
 			"/api/v1/managers/delegate",
 			expect.objectContaining({ body: expect.objectContaining({ mode: "tui" }) }),
@@ -622,7 +622,7 @@ describe("TaskComposer", () => {
 					},
 				},
 			})
-			.mockResolvedValueOnce({ data: { managerId: "orch-1" } });
+			.mockResolvedValueOnce({ data: { workerId: "sess-pi" } });
 		const onCreated = vi.fn();
 
 		render(
@@ -636,7 +636,7 @@ describe("TaskComposer", () => {
 
 		const fallback = await screen.findByRole("button", { name: "Start without approvals" });
 		fireEvent.click(fallback);
-		await waitFor(() => expect(onCreated).toHaveBeenCalledWith(""));
+		await waitFor(() => expect(onCreated).toHaveBeenCalledWith("sess-pi"));
 		expect(h.post).toHaveBeenLastCalledWith(
 			"/api/v1/managers/delegate",
 			expect.objectContaining({
@@ -668,7 +668,7 @@ describe("TaskComposer", () => {
 				data: { status: "ok", project: { agent: "opencode", config: { worker: { agent: "codex" } } } },
 			};
 		});
-		h.post.mockResolvedValueOnce({ data: { managerId: "orch-1" } });
+		h.post.mockResolvedValueOnce({ data: { workerId: "sess-1" } });
 
 		render(
 			<Wrap>
@@ -913,7 +913,7 @@ describe("TaskComposer", () => {
 				},
 			};
 		});
-		h.post.mockResolvedValueOnce({ data: { managerId: "orch-1" } });
+		h.post.mockResolvedValueOnce({ data: { workerId: "sess-1" } });
 
 		render(
 			<Wrap>
@@ -961,7 +961,7 @@ describe("TaskComposer", () => {
 				} } } } },
 			};
 		});
-		h.post.mockResolvedValue({ data: { managerId: "orch-1" } });
+		h.post.mockResolvedValue({ data: { workerId: "sess-1" } });
 
 		render(<Wrap><TaskComposer projectId="proj-1" onCreated={vi.fn()} /></Wrap>);
 		const picker = await screen.findByRole("button", { name: "Model" });

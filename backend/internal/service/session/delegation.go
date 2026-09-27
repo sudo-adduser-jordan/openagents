@@ -4,8 +4,9 @@ import (
 	"context"
 	"errors"
 	"fmt"
-	"path/filepath"
 	"strings"
+	"time"
+	"unicode/utf8"
 
 	"github.com/sudo-adduser-jordan/open-agents/backend/internal/domain"
 	"github.com/sudo-adduser-jordan/open-agents/backend/internal/httpd/apierr"
@@ -13,11 +14,15 @@ import (
 	sessionmanager "github.com/sudo-adduser-jordan/open-agents/backend/internal/session_manager"
 )
 
-// DelegateTaskInput describes a task the user submitted through the New Task
-// composer. Open Agents does not create the worker itself: the project manager
-// scopes the work, spawns the worker in planning mode, reviews its plan, and
-// advances it into building. Brief may be empty to hand the manager a task to
-// scope later. Empty RequestedAgent leaves the choice to the project default.
+const (
+	delegatedTaskTitleLimit     = 20
+	delegatedTaskUntitledName   = "Untitled task"
+	delegatedTaskHandoffTimeout = time.Minute
+)
+
+// DelegateTaskInput describes a task Open Agents should spawn as a worker session. Brief
+// may be empty to open an idle worker that the user can instruct later. Empty
+// RequestedAgent means the spawn uses the project's worker-agent default.
 type DelegateTaskInput struct {
 	ProjectID      domain.ProjectID
 	Brief          string
@@ -28,17 +33,21 @@ type DelegateTaskInput struct {
 	Attachments    []ports.SpawnAttachment
 }
 
-// DelegateTaskOutcome identifies the manager that now owns the new task. There
-// is deliberately no worker id: the manager creates the worker, so the board
-// card appears when the manager spawns it rather than when the user submits.
+// DelegateTaskOutcome identifies the spawned worker. ManagerID names the manager
+// that received the follow-up review-and-advance handoff when that best-effort
+// delivery resolved before the response was built; it is empty when the handoff
+// is still running in the background.
 type DelegateTaskOutcome struct {
 	ManagerID domain.SessionID
+	WorkerID  domain.SessionID
 }
 
-// DelegateTask hands the user's brief to the project manager, resuming or
-// creating the manager when necessary, and asks it to scope, delegate, review,
-// and advance the work. The manager owns task creation end to end; the daemon
-// only guarantees the brief reaches it.
+// DelegateTask spawns the worker directly, matching `open-agents spawn`, with a
+// provisional display name derived from the task brief. The worker spawn is the
+// commit point: task creation never depends on the manager agent complying with
+// a message. Open Agents then best-effort hands the worker to the project
+// manager in the background so it can scope the work, review the plan, and
+// advance the build — resuming or creating the manager when necessary.
 func (s *Service) DelegateTask(ctx context.Context, in DelegateTaskInput) (DelegateTaskOutcome, error) {
 	if _, err := s.requireProject(ctx, in.ProjectID); err != nil {
 		return DelegateTaskOutcome{}, err
@@ -49,61 +58,73 @@ func (s *Service) DelegateTask(ctx context.Context, in DelegateTaskInput) (Deleg
 	if in.RequestedMode != "" && !in.RequestedMode.Valid() {
 		return DelegateTaskOutcome{}, apierr.Invalid("INVALID_SESSION_MODE", "mode must be chat or tui", nil)
 	}
-
-	managerID, err := s.taskManager(ctx, in.ProjectID)
-	if err != nil {
-		return DelegateTaskOutcome{}, err
-	}
-	if err := s.manager.WaitForMessageDeliveryReady(ctx, managerID); err != nil {
-		return DelegateTaskOutcome{}, fmt.Errorf("wait for task manager %s: %w", managerID, err)
+	prompt := in.Brief
+	if strings.TrimSpace(prompt) == "" {
+		prompt = ""
 	}
 
-	attachmentPaths, err := s.stageDelegatedAttachments(ctx, managerID, in.Attachments)
+	worker, _, _, err := s.manager.Spawn(ctx, ports.SpawnConfig{
+		ProjectID:             in.ProjectID,
+		Kind:                  domain.KindWorker,
+		RequestedWorkflowMode: domain.WorkflowModePlanning,
+		Harness:               in.RequestedAgent,
+		Prompt:                prompt,
+		DisplayName:           delegatedTaskDisplayName(in.Brief),
+		AgentConfig: ports.AgentConfig{
+			Model:       strings.TrimSpace(in.Model),
+			Permissions: in.ApprovalMode,
+		},
+		RequestedMode: in.RequestedMode,
+		Attachments:   in.Attachments,
+	})
 	if err != nil {
-		return DelegateTaskOutcome{}, err
+		return DelegateTaskOutcome{}, toSpawnAPIError(err)
 	}
-	if err := s.manager.Send(ctx, managerID, taskDelegationMessage(managerID, in, attachmentPaths), nil); err != nil {
-		return DelegateTaskOutcome{}, fmt.Errorf("send task to %s: %w", managerID, err)
-	}
-	return DelegateTaskOutcome{ManagerID: managerID}, nil
+
+	// The worker spawn is the commit point. Manager resolution and the handoff
+	// message must never hold the new-task response open: a promptless worker
+	// stays idle with its provisional title until the manager or the user
+	// supplies instructions.
+	s.handWorkerToManagerInBackground(worker.ID, in)
+	return DelegateTaskOutcome{WorkerID: worker.ID}, nil
 }
 
-// stageDelegatedAttachments writes the submitted files into the manager's
-// workspace and returns their absolute paths. The manager passes those paths
-// on to the worker it spawns, so they are resolved against the manager's
-// workspace rather than a worker worktree that does not exist yet.
-func (s *Service) stageDelegatedAttachments(
-	ctx context.Context,
-	managerID domain.SessionID,
-	attachments []ports.SpawnAttachment,
-) ([]string, error) {
-	if len(attachments) == 0 {
-		return nil, nil
-	}
-	record, ok, err := s.store.GetSession(ctx, managerID)
-	if err != nil {
-		return nil, fmt.Errorf("load task manager %s: %w", managerID, err)
-	}
-	if !ok {
-		return nil, fmt.Errorf("task manager %s no longer exists", managerID)
-	}
-	workspace := strings.TrimSpace(record.Metadata.WorkspacePath)
-	if workspace == "" {
-		return nil, fmt.Errorf("task manager %s has no workspace for attachments", managerID)
-	}
-	refs, err := s.manager.StageAttachments(ctx, managerID, attachments)
-	if err != nil {
-		return nil, fmt.Errorf("stage task attachments: %w", err)
-	}
-	paths := make([]string, 0, len(refs))
-	for _, ref := range refs {
-		if filepath.IsAbs(ref) {
-			paths = append(paths, ref)
-			continue
+func (s *Service) handWorkerToManagerInBackground(workerID domain.SessionID, in DelegateTaskInput) {
+	work := func() {
+		base := s.backgroundContext
+		if base == nil {
+			base = context.Background()
 		}
-		paths = append(paths, filepath.Join(workspace, filepath.FromSlash(ref)))
+		ctx, cancel := context.WithTimeout(base, delegatedTaskHandoffTimeout)
+		defer cancel()
+
+		if err := s.handWorkerToManager(ctx, workerID, in); err != nil && s.logger != nil {
+			s.logger.Warn("delegated task manager handoff failed",
+				"projectID", in.ProjectID,
+				"workerID", workerID,
+				"error", err,
+			)
+		}
 	}
-	return paths, nil
+	if s.runBackground != nil {
+		s.runBackground(work)
+		return
+	}
+	go work()
+}
+
+func (s *Service) handWorkerToManager(ctx context.Context, workerID domain.SessionID, in DelegateTaskInput) error {
+	managerID, err := s.taskManager(ctx, in.ProjectID)
+	if err != nil {
+		return err
+	}
+	if err := s.manager.WaitForMessageDeliveryReady(ctx, managerID); err != nil {
+		return fmt.Errorf("wait for task manager %s: %w", managerID, err)
+	}
+	if err := s.manager.Send(ctx, managerID, workerHandoffMessage(workerID, in), nil); err != nil {
+		return fmt.Errorf("send task handoff to %s: %w", managerID, err)
+	}
+	return nil
 }
 
 // taskManager resolves the project manager that should own a new task,
@@ -145,16 +166,39 @@ func (s *Service) taskManager(ctx context.Context, projectID domain.ProjectID) (
 	return manager.ID, nil
 }
 
-func taskDelegationMessage(managerID domain.SessionID, in DelegateTaskInput, attachmentPaths []string) string {
+func delegatedTaskDisplayName(brief string) string {
+	title := strings.Join(strings.Fields(brief), " ")
+	if title == "" {
+		return delegatedTaskUntitledName
+	}
+	if utf8.RuneCountInString(title) <= delegatedTaskTitleLimit {
+		return title
+	}
+	return strings.TrimSpace(string([]rune(title)[:delegatedTaskTitleLimit]))
+}
+
+// workerHandoffMessage tells the project manager about a worker the daemon just
+// spawned. The worker starts in planning mode; the manager scopes the work,
+// reviews the plan, and advances the build. It must not spawn a second worker
+// for this task and must not implement the task in the manager session.
+func workerHandoffMessage(workerID domain.SessionID, in DelegateTaskInput) string {
 	var b strings.Builder
 	b.WriteString("Open Agents NEW TASK\n")
-	b.WriteString("The human submitted this task from the New Task composer. You own it from here: scope it, delegate it, review the worker's plan, and advance it. Do not implement it in this manager session.\n")
-	b.WriteString("Spawn the worker with a --name label of 20 characters or fewer, review the plan it produces, then advance it with `open-agents build <worker-session-id>`.\n\n")
+	b.WriteString("A worker was already spawned with the human's task below and starts in planning mode. You own it from here: scope it, review its plan, and advance it. Do not spawn another worker for this task and do not implement it in this manager session.\n\n")
+	b.WriteString("1. Scope: inspect current state. If the brief needs narrowing, steer the worker with `open-agents send --session ")
+	b.WriteString(string(workerID))
+	b.WriteString(" --message \"...\"`.\n")
+	b.WriteString("2. Review the plan: read it with `open-agents session get ")
+	b.WriteString(string(workerID))
+	b.WriteString("`. If the plan is wrong or incomplete, send corrections and leave the worker in planning.\n")
+	b.WriteString("3. Build: once the plan is right, advance the worker with `open-agents build ")
+	b.WriteString(string(workerID))
+	b.WriteString("`. This is the only way it starts implementing.\n\n")
 
 	b.WriteString("Project: ")
 	b.WriteString(string(in.ProjectID))
-	b.WriteString("\nManager session id: ")
-	b.WriteString(string(managerID))
+	b.WriteString("\nWorker session id: ")
+	b.WriteString(string(workerID))
 	if agent := strings.TrimSpace(string(in.RequestedAgent)); agent != "" {
 		b.WriteString("\nRequested agent: ")
 		b.WriteString(agent)
@@ -170,14 +214,6 @@ func taskDelegationMessage(managerID domain.SessionID, in DelegateTaskInput, att
 	if in.ApprovalMode != "" && in.ApprovalMode != domain.PermissionModeDefault {
 		b.WriteString("\nRequested approval mode: ")
 		b.WriteString(string(in.ApprovalMode))
-	}
-	if len(attachmentPaths) > 0 {
-		b.WriteString("\n\nAttached files, staged in this manager's workspace. Pass these paths to the worker so it can read them:\n")
-		for _, path := range attachmentPaths {
-			b.WriteString("- ")
-			b.WriteString(path)
-			b.WriteString("\n")
-		}
 	}
 
 	b.WriteString("\nTask brief:\n")

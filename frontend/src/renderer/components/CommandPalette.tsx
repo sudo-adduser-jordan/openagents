@@ -480,9 +480,6 @@ export function CommandPalette() {
 		async (projectId: string, sessionId: string) => {
 			closePalette();
 			await queryClient.invalidateQueries({ queryKey: workspaceQueryKey });
-			// The project manager creates project workers itself, so a new task
-			// has no session to open yet. Closing and refreshing is the response.
-			if (!sessionId) return;
 			void navigateToTarget(sessionRoute(projectId, sessionId));
 		},
 		[queryClient, closePalette, navigateToTarget, sessionRoute],

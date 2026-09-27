@@ -113,6 +113,25 @@ func TestBuildSystemPrompt_ManagerNeverEditsAndOnlyDelegatesToOpenAgents(t *test
 	}
 }
 
+// When the human asks for a task, the manager once wrote a TASK-*.md file
+// instead of spawning a worker. A task is a worker session, never a document,
+// so the prompt must say so explicitly.
+func TestBuildSystemPrompt_ManagerDefinesTaskAsWorkerSession(t *testing.T) {
+	t.Parallel()
+	got := buildSystemPromptText(systemPromptConfig{
+		Role:    sessionPromptRoleManager,
+		Project: promptProject{ID: "mer", Name: "Mercury"},
+	})
+	for _, want := range []string{
+		"A \"task\" is always a worker session created with `open-agents spawn`",
+		"when the human asks to create a task, spawn the worker",
+	} {
+		if !strings.Contains(got, want) {
+			t.Fatalf("manager prompt missing %q:\n%s", want, got)
+		}
+	}
+}
+
 // The manager used to be able to unlock direct edits by confirming them. That
 // contradicted "never edit files", so the escape hatch and its wording are gone
 // and the prompt must not drift back into offering one.

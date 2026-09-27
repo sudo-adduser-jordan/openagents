@@ -9,6 +9,7 @@ import (
 	"net/http"
 	"net/http/httptest"
 	"strings"
+	"sync"
 	"testing"
 	"time"
 
@@ -128,11 +129,25 @@ func (s *stubWorkspace) AddExclude(_ context.Context, _ ports.WorkspaceInfo, _ .
 	return nil
 }
 
-type captureMessenger struct{ msgs []string }
+type captureMessenger struct {
+	mu   sync.Mutex
+	msgs []string
+}
 
 func (c *captureMessenger) Send(_ context.Context, _ domain.SessionID, msg string) error {
+	c.mu.Lock()
+	defer c.mu.Unlock()
 	c.msgs = append(c.msgs, msg)
 	return nil
+}
+
+// snapshot returns a copy of the messages received so far. The delegated-task
+// manager handoff runs in the background, so tests polling for it must not
+// race the delivering goroutine.
+func (c *captureMessenger) snapshot() []string {
+	c.mu.Lock()
+	defer c.mu.Unlock()
+	return append([]string(nil), c.msgs...)
 }
 
 type stack struct {
@@ -176,7 +191,7 @@ func newStack(t *testing.T) *stack {
 	return &stack{store: store, sm: sm, mgr: mgr, lcm: lcm, prm: prm, rt: rt, ws: ws, msg: msg}
 }
 
-func TestDelegateEndpointSpawnsManager(t *testing.T) {
+func TestDelegateEndpointSpawnsWorkerAndHandsToManager(t *testing.T) {
 	ctx := context.Background()
 	store, err := sqlitetest.Open(t.TempDir())
 	if err != nil {
@@ -187,8 +202,8 @@ func TestDelegateEndpointSpawnsManager(t *testing.T) {
 		ID:           "mer",
 		Path:         "/repo/mer",
 		RegisteredAt: time.Now(),
-		// A manager owns every new task now, so the project must be able to
-		// spawn one. Mirrors the newStack fixture.
+		// The background handoff resolves the project manager, so the project
+		// must be able to spawn one. Mirrors the newStack fixture.
 		Config: domain.ProjectConfig{
 			Manager: domain.RoleOverride{Harness: domain.HarnessOpenCode},
 		},
@@ -237,40 +252,75 @@ func TestDelegateEndpointSpawnsManager(t *testing.T) {
 	if status != http.StatusAccepted {
 		t.Fatalf("delegate = %d, want 202; body=%s", status, body)
 	}
-	// Delegation hands the brief to the manager, which spawns the worker itself.
-	// The only session this call creates is therefore the manager.
+	// Delegation spawns the worker synchronously: task creation never waits on
+	// the manager. The manager resolution and handoff run in the background.
 	if runtime.created != 1 {
-		t.Fatalf("runtime Create calls = %d, want 1", runtime.created)
+		t.Fatalf("runtime Create calls = %d, want the worker spawn", runtime.created)
 	}
 	var accepted struct {
 		OK        bool   `json:"ok"`
+		WorkerID  string `json:"workerId"`
 		ManagerID string `json:"managerId"`
 	}
 	if err := json.Unmarshal(body, &accepted); err != nil {
 		t.Fatalf("decode delegate response: %v; body=%s", err, body)
 	}
-	if !accepted.OK || accepted.ManagerID == "" {
-		t.Fatalf("delegate response = %+v, want ok with a managerId", accepted)
+	if !accepted.OK || accepted.WorkerID == "" {
+		t.Fatalf("delegate response = %+v, want ok with a workerId", accepted)
 	}
-	record, ok, err := store.GetSession(ctx, domain.SessionID(accepted.ManagerID))
+	record, ok, err := store.GetSession(ctx, domain.SessionID(accepted.WorkerID))
 	if err != nil || !ok {
-		t.Fatalf("manager %s not persisted: ok=%v err=%v", accepted.ManagerID, ok, err)
+		t.Fatalf("worker %s not persisted: ok=%v err=%v", accepted.WorkerID, ok, err)
 	}
-	if record.Kind != domain.KindManager {
-		t.Fatalf("delegated session kind = %q, want %q", record.Kind, domain.KindManager)
+	if record.Kind != domain.KindWorker {
+		t.Fatalf("delegated session kind = %q, want %q", record.Kind, domain.KindWorker)
+	}
+	if record.WorkflowMode != domain.WorkflowModePlanning {
+		t.Fatalf("delegated session workflow mode = %q, want planning", record.WorkflowMode)
+	}
+	// The manager handoff runs in the background so the 202 never waits on it.
+	deadline := time.Now().Add(10 * time.Second)
+	for time.Now().Before(deadline) {
+		projectSessions, err := store.ListSessions(ctx, "mer")
+		if err != nil {
+			t.Fatalf("list sessions: %v", err)
+		}
+		var workers, managers int
+		for _, projectSession := range projectSessions {
+			switch projectSession.Kind {
+			case domain.KindWorker:
+				workers++
+			case domain.KindManager:
+				managers++
+			}
+		}
+		if workers == 1 && managers == 1 && len(msg.snapshot()) == 1 {
+			break
+		}
+		time.Sleep(20 * time.Millisecond)
+	}
+	msgs := msg.snapshot()
+	if len(msgs) != 1 || !strings.Contains(msgs[0], "Open Agents NEW TASK") {
+		t.Fatalf("manager messages = %#v, want one NEW TASK hand-off", msgs)
+	}
+	if !strings.Contains(msgs[0], accepted.WorkerID) {
+		t.Fatalf("handoff does not name the worker %s:\n%s", accepted.WorkerID, msgs[0])
 	}
 	projectSessions, err := store.ListSessions(ctx, "mer")
 	if err != nil {
 		t.Fatalf("list sessions: %v", err)
 	}
+	var workers, managers int
 	for _, projectSession := range projectSessions {
-		if projectSession.Kind == domain.KindWorker {
-			t.Fatalf("delegate spawned a worker; the manager owns worker creation")
+		switch projectSession.Kind {
+		case domain.KindWorker:
+			workers++
+		case domain.KindManager:
+			managers++
 		}
 	}
-	// The brief reaches the manager, which is what scopes and spawns the worker.
-	if len(msg.msgs) != 1 || !strings.Contains(msg.msgs[0], "Open Agents NEW TASK") {
-		t.Fatalf("manager messages = %#v, want one NEW TASK hand-off", msg.msgs)
+	if workers != 1 || managers != 1 {
+		t.Fatalf("workers = %d, managers = %d; want one of each", workers, managers)
 	}
 }
 

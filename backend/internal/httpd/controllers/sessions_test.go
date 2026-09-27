@@ -425,7 +425,7 @@ func (f *fakeSessionService) DelegateTask(_ context.Context, in sessionsvc.Deleg
 	if f.delegationErr != nil {
 		return sessionsvc.DelegateTaskOutcome{}, f.delegationErr
 	}
-	return sessionsvc.DelegateTaskOutcome{ManagerID: "open-agents-orch"}, nil
+	return sessionsvc.DelegateTaskOutcome{WorkerID: "open-agents-7", ManagerID: "open-agents-orch"}, nil
 }
 
 func (f *fakeSessionService) CompleteManager(_ context.Context, id domain.SessionID) error {
@@ -2746,10 +2746,11 @@ func TestSessionsAPI_DelegateTask(t *testing.T) {
 	}
 	var got struct {
 		OK        bool   `json:"ok"`
+		WorkerID  string `json:"workerId"`
 		ManagerID string `json:"managerId"`
 	}
 	mustJSON(t, body, &got)
-	if !got.OK || got.ManagerID != "open-agents-orch" {
+	if !got.OK || got.WorkerID != "open-agents-7" || got.ManagerID != "open-agents-orch" {
 		t.Fatalf("response = %#v", got)
 	}
 	if svc.delegationInput.ProjectID != "open-agents" || svc.delegationInput.Brief != "Fix it" || svc.delegationInput.RequestedAgent != domain.HarnessOpenCode || svc.delegationInput.Model != "sonnet-custom" || svc.delegationInput.RequestedMode != domain.SessionModeChat || svc.delegationInput.ApprovalMode != domain.PermissionModeBypassPermissions {
