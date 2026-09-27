@@ -95,7 +95,7 @@ func TestListCurrentHeadReviewRunsForSessionKeepsLatestRunPerHarness(t *testing.
 	for _, run := range runs {
 		byHarness[run.Harness] = run.Verdict
 	}
-	if byHarness["opencode"] != domain.VerdictApproved || byHarness["opencode"] != domain.VerdictApproved {
+	if byHarness["opencode"] != domain.VerdictApproved {
 		t.Fatalf("runs = %+v, want latest approved run per harness", runs)
 	}
 }
@@ -418,7 +418,7 @@ func TestListCurrentHeadReviewRunsForSessionsKeepsLatestRunPerHarness(t *testing
 		}
 		byHarness[run.Harness] = run.Verdict
 	}
-	if byHarness["opencode"] != domain.VerdictApproved || byHarness["opencode"] != domain.VerdictApproved {
+	if byHarness["opencode"] != domain.VerdictApproved {
 		t.Fatalf("first session runs = %+v, want latest per harness", got[first.ID])
 	}
 	if got[second.ID][0].Verdict != domain.VerdictApproved {
