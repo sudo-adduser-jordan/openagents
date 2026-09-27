@@ -4,9 +4,8 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"path/filepath"
 	"strings"
-	"time"
-	"unicode/utf8"
 
 	"github.com/sudo-adduser-jordan/open-agents/backend/internal/domain"
 	"github.com/sudo-adduser-jordan/open-agents/backend/internal/httpd/apierr"
@@ -14,15 +13,11 @@ import (
 	sessionmanager "github.com/sudo-adduser-jordan/open-agents/backend/internal/session_manager"
 )
 
-const (
-	delegatedTaskTitleLimit             = 20
-	delegatedTaskUntitledName           = "Untitled task"
-	delegatedTaskTitleRefinementTimeout = time.Minute
-)
-
-// DelegateTaskInput describes a task Open Agents should spawn as a worker session. Brief
-// may be empty to open an idle worker that the user can instruct later. Empty
-// RequestedAgent means the spawn uses the project's worker-agent default.
+// DelegateTaskInput describes a task the user submitted through the New Task
+// composer. Open Agents does not create the worker itself: the project manager
+// scopes the work, spawns the worker in planning mode, reviews its plan, and
+// advances it into building. Brief may be empty to hand the manager a task to
+// scope later. Empty RequestedAgent leaves the choice to the project default.
 type DelegateTaskInput struct {
 	ProjectID      domain.ProjectID
 	Brief          string
@@ -33,18 +28,17 @@ type DelegateTaskInput struct {
 	Attachments    []ports.SpawnAttachment
 }
 
-// DelegateTaskOutcome identifies the spawned worker. ManagerID remains
-// optional for wire compatibility; asynchronous title refinement does not wait
-// to resolve the manager before returning.
+// DelegateTaskOutcome identifies the manager that now owns the new task. There
+// is deliberately no worker id: the manager creates the worker, so the board
+// card appears when the manager spawns it rather than when the user submits.
 type DelegateTaskOutcome struct {
 	ManagerID domain.SessionID
-	WorkerID  domain.SessionID
 }
 
-// DelegateTask spawns the worker directly, matching `open-agents spawn`, with a
-// provisional display name derived from the task brief. Open Agents then best-effort
-// refines that title in the background through the project manager,
-// resuming or creating the manager when necessary.
+// DelegateTask hands the user's brief to the project manager, resuming or
+// creating the manager when necessary, and asks it to scope, delegate, review,
+// and advance the work. The manager owns task creation end to end; the daemon
+// only guarantees the brief reaches it.
 func (s *Service) DelegateTask(ctx context.Context, in DelegateTaskInput) (DelegateTaskOutcome, error) {
 	if _, err := s.requireProject(ctx, in.ProjectID); err != nil {
 		return DelegateTaskOutcome{}, err
@@ -55,77 +49,66 @@ func (s *Service) DelegateTask(ctx context.Context, in DelegateTaskInput) (Deleg
 	if in.RequestedMode != "" && !in.RequestedMode.Valid() {
 		return DelegateTaskOutcome{}, apierr.Invalid("INVALID_SESSION_MODE", "mode must be chat or tui", nil)
 	}
-	prompt := in.Brief
-	if strings.TrimSpace(prompt) == "" {
-		prompt = ""
-	}
 
-	worker, _, _, err := s.manager.Spawn(ctx, ports.SpawnConfig{
-		ProjectID:             in.ProjectID,
-		Kind:                  domain.KindWorker,
-		RequestedWorkflowMode: domain.WorkflowModePlanning,
-		Harness:               in.RequestedAgent,
-		Prompt:                prompt,
-		DisplayName:           delegatedTaskDisplayName(in.Brief),
-		AgentConfig: ports.AgentConfig{
-			Model:       strings.TrimSpace(in.Model),
-			Permissions: in.ApprovalMode,
-		},
-		RequestedMode: in.RequestedMode,
-		Attachments:   in.Attachments,
-	})
+	managerID, err := s.taskManager(ctx, in.ProjectID)
 	if err != nil {
-		return DelegateTaskOutcome{}, toSpawnAPIError(err)
-	}
-
-	// The worker spawn is the commit point. Manager startup and title
-	// generation must never hold the new-task response open. A promptless worker
-	// stays idle with its provisional title until the user supplies instructions.
-	if prompt != "" {
-		s.refineDelegatedTaskTitleInBackground(worker.ID, in)
-	}
-	return DelegateTaskOutcome{WorkerID: worker.ID}, nil
-}
-
-func (s *Service) refineDelegatedTaskTitleInBackground(workerID domain.SessionID, in DelegateTaskInput) {
-	work := func() {
-		base := s.backgroundContext
-		if base == nil {
-			base = context.Background()
-		}
-		ctx, cancel := context.WithTimeout(base, delegatedTaskTitleRefinementTimeout)
-		defer cancel()
-
-		if err := s.refineDelegatedTaskTitle(ctx, workerID, in); err != nil && s.logger != nil {
-			s.logger.Warn("delegated task title refinement failed",
-				"projectID", in.ProjectID,
-				"workerID", workerID,
-				"error", err,
-			)
-		}
-	}
-	if s.runBackground != nil {
-		s.runBackground(work)
-		return
-	}
-	go work()
-}
-
-func (s *Service) refineDelegatedTaskTitle(ctx context.Context, workerID domain.SessionID, in DelegateTaskInput) error {
-	managerID, err := s.taskTitleManager(ctx, in.ProjectID)
-	if err != nil {
-		return err
+		return DelegateTaskOutcome{}, err
 	}
 	if err := s.manager.WaitForMessageDeliveryReady(ctx, managerID); err != nil {
-		return fmt.Errorf("wait for title manager %s: %w", managerID, err)
+		return DelegateTaskOutcome{}, fmt.Errorf("wait for task manager %s: %w", managerID, err)
 	}
-	if err := s.manager.Send(ctx, managerID, taskTitleDelegationMessage(workerID, in), nil); err != nil {
-		return fmt.Errorf("send title request to %s: %w", managerID, err)
+
+	attachmentPaths, err := s.stageDelegatedAttachments(ctx, managerID, in.Attachments)
+	if err != nil {
+		return DelegateTaskOutcome{}, err
 	}
-	return nil
+	if err := s.manager.Send(ctx, managerID, taskDelegationMessage(managerID, in, attachmentPaths), nil); err != nil {
+		return DelegateTaskOutcome{}, fmt.Errorf("send task to %s: %w", managerID, err)
+	}
+	return DelegateTaskOutcome{ManagerID: managerID}, nil
 }
 
-func (s *Service) taskTitleManager(ctx context.Context, projectID domain.ProjectID) (domain.SessionID, error) {
+// stageDelegatedAttachments writes the submitted files into the manager's
+// workspace and returns their absolute paths. The manager passes those paths
+// on to the worker it spawns, so they are resolved against the manager's
+// workspace rather than a worker worktree that does not exist yet.
+func (s *Service) stageDelegatedAttachments(
+	ctx context.Context,
+	managerID domain.SessionID,
+	attachments []ports.SpawnAttachment,
+) ([]string, error) {
+	if len(attachments) == 0 {
+		return nil, nil
+	}
+	record, ok, err := s.store.GetSession(ctx, managerID)
+	if err != nil {
+		return nil, fmt.Errorf("load task manager %s: %w", managerID, err)
+	}
+	if !ok {
+		return nil, fmt.Errorf("task manager %s no longer exists", managerID)
+	}
+	workspace := strings.TrimSpace(record.Metadata.WorkspacePath)
+	if workspace == "" {
+		return nil, fmt.Errorf("task manager %s has no workspace for attachments", managerID)
+	}
+	refs, err := s.manager.StageAttachments(ctx, managerID, attachments)
+	if err != nil {
+		return nil, fmt.Errorf("stage task attachments: %w", err)
+	}
+	paths := make([]string, 0, len(refs))
+	for _, ref := range refs {
+		if filepath.IsAbs(ref) {
+			paths = append(paths, ref)
+			continue
+		}
+		paths = append(paths, filepath.Join(workspace, filepath.FromSlash(ref)))
+	}
+	return paths, nil
+}
+
+// taskManager resolves the project manager that should own a new task,
+// resuming the newest exited manager or spawning a fresh one as needed.
+func (s *Service) taskManager(ctx context.Context, projectID domain.ProjectID) (domain.SessionID, error) {
 	unlock := s.lockManagerProject(projectID)
 	managers, err := s.activeManagers(ctx, projectID)
 	if err != nil {
@@ -162,32 +145,42 @@ func (s *Service) taskTitleManager(ctx context.Context, projectID domain.Project
 	return manager.ID, nil
 }
 
-func delegatedTaskDisplayName(brief string) string {
-	title := strings.Join(strings.Fields(brief), " ")
-	if title == "" {
-		return delegatedTaskUntitledName
-	}
-	if utf8.RuneCountInString(title) <= delegatedTaskTitleLimit {
-		return title
-	}
-	return strings.TrimSpace(string([]rune(title)[:delegatedTaskTitleLimit]))
-}
-
-func taskTitleDelegationMessage(workerID domain.SessionID, in DelegateTaskInput) string {
+func taskDelegationMessage(managerID domain.SessionID, in DelegateTaskInput, attachmentPaths []string) string {
 	var b strings.Builder
-	b.WriteString("Open Agents TASK TITLE UPDATE\n")
-	b.WriteString("A worker was already spawned directly with the user's task. Do not spawn another worker or manager, and do not implement the task in this manager session.\n")
-	b.WriteString("Choose a concise task title from the brief and run:\n\n")
-	b.WriteString("open-agents session rename ")
-	b.WriteString(string(workerID))
-	b.WriteString(" \"<title, max 20 chars>\"\n\n")
-	b.WriteString("Worker session id: ")
-	b.WriteString(string(workerID))
-	b.WriteString("\nTask brief:\n")
-	b.WriteString(in.Brief)
+	b.WriteString("Open Agents NEW TASK\n")
+	b.WriteString("The human submitted this task from the New Task composer. You own it from here: scope it, delegate it, review the worker's plan, and advance it. Do not implement it in this manager session.\n")
+	b.WriteString("Spawn the worker with a --name label of 20 characters or fewer, review the plan it produces, then advance it with `open-agents build <worker-session-id>`.\n\n")
+
+	b.WriteString("Project: ")
+	b.WriteString(string(in.ProjectID))
+	b.WriteString("\nManager session id: ")
+	b.WriteString(string(managerID))
+	if agent := strings.TrimSpace(string(in.RequestedAgent)); agent != "" {
+		b.WriteString("\nRequested agent: ")
+		b.WriteString(agent)
+	}
 	if model := strings.TrimSpace(in.Model); model != "" {
 		b.WriteString("\nRequested model: ")
 		b.WriteString(model)
 	}
+	if in.RequestedMode != "" {
+		b.WriteString("\nRequested interface mode: ")
+		b.WriteString(string(in.RequestedMode))
+	}
+	if in.ApprovalMode != "" && in.ApprovalMode != domain.PermissionModeDefault {
+		b.WriteString("\nRequested approval mode: ")
+		b.WriteString(string(in.ApprovalMode))
+	}
+	if len(attachmentPaths) > 0 {
+		b.WriteString("\n\nAttached files, staged in this manager's workspace. Pass these paths to the worker so it can read them:\n")
+		for _, path := range attachmentPaths {
+			b.WriteString("- ")
+			b.WriteString(path)
+			b.WriteString("\n")
+		}
+	}
+
+	b.WriteString("\nTask brief:\n")
+	b.WriteString(in.Brief)
 	return b.String()
 }

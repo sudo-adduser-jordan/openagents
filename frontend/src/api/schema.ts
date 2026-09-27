@@ -2570,7 +2570,6 @@ export interface components {
         DelegateTaskResponse: {
             managerId?: string;
             ok: boolean;
-            workerId: string;
         };
         DeleteHistoryBeforeResponse: {
             activitiesDeleted: number;

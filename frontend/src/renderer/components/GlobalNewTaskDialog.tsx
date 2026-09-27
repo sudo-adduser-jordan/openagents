@@ -34,6 +34,10 @@ export function GlobalNewTaskDialog() {
 	const handleCreated = async (sessionId: string) => {
 		if (!projectId) return;
 		await queryClient.invalidateQueries({ queryKey: workspaceQueryKey });
+		// A project task is owned by the manager, which spawns the worker itself,
+		// so there is no session to open yet. Refreshing the board is the whole
+		// response; the card appears when the manager gets there.
+		if (!sessionId) return;
 		if (projectId === STANDALONE_WORKSPACE_ID) {
 			void navigate({ to: "/sessions/$sessionId", params: { sessionId } });
 			return;

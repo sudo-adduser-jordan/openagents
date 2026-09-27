@@ -2434,6 +2434,10 @@ type fakeCommander struct {
 	readyErr        error
 	killFunc        func(domain.SessionID)
 	killMu          sync.Mutex
+	staged          []domain.SessionID
+	stagedPayloads  [][]ports.SpawnAttachment
+	stagedRefs      []string
+	stageErr        error
 }
 
 func (f *fakeCommander) Spawn(_ context.Context, cfg ports.SpawnConfig) (domain.SessionRecord, int, int, error) {
@@ -2524,11 +2528,16 @@ func (f *fakeCommander) RollbackSpawn(context.Context, domain.SessionID) (bool, 
 }
 
 func (f *fakeCommander) StageAttachments(
-	context.Context,
-	domain.SessionID,
-	[]ports.SpawnAttachment,
+	_ context.Context,
+	id domain.SessionID,
+	attachments []ports.SpawnAttachment,
 ) ([]string, error) {
-	return nil, nil
+	if f.stageErr != nil {
+		return nil, f.stageErr
+	}
+	f.staged = append(f.staged, id)
+	f.stagedPayloads = append(f.stagedPayloads, attachments)
+	return f.stagedRefs, nil
 }
 
 // TestCleanupMapsManagerResult: the service forwards both reclaimed and
@@ -3665,14 +3674,15 @@ func TestSpawnManagerVerifiesReplacementHarness(t *testing.T) {
 	}
 }
 
-func TestDelegateTaskPassesAttachmentsToSpawnConfig(t *testing.T) {
+func TestDelegateTaskStagesAttachmentsForTheManagerInsteadOfSpawningAWorker(t *testing.T) {
 	st := newFakeStore()
 	st.projects["mer"] = domain.ProjectRecord{ID: "mer"}
+	st.sessions["orch"] = domain.SessionRecord{
+		ID: "orch", ProjectID: "mer", Kind: domain.KindManager,
+		Metadata: domain.SessionMetadata{WorkspacePath: t.TempDir()},
+	}
 	fc := &fakeCommander{}
 	svc := NewWithDeps(Deps{Manager: fc, Store: st})
-	// This test only inspects the worker spawn. Keep asynchronous title
-	// refinement from issuing a second Spawn against the recording fake.
-	svc.runBackground = func(func()) {}
 
 	_, err := svc.DelegateTask(context.Background(), DelegateTaskInput{
 		ProjectID:      "mer",
@@ -3685,19 +3695,18 @@ func TestDelegateTaskPassesAttachmentsToSpawnConfig(t *testing.T) {
 	if err != nil {
 		t.Fatalf("DelegateTask: %v", err)
 	}
-	if !fc.spawned {
-		t.Fatal("DelegateTask did not call Spawn")
+	// The manager owns worker creation, so the daemon must not spawn a worker and
+	// must never hand attachment bytes to a spawn.
+	if fc.spawned {
+		t.Fatalf("DelegateTask spawned a worker: cfg = %#v", fc.spawnedCfg)
 	}
-	if fc.spawnedCfg.ProjectID != "mer" || fc.spawnedCfg.Kind != domain.KindWorker {
-		t.Fatalf("spawned cfg identity = %#v", fc.spawnedCfg)
+	if len(fc.stagedPayloads) != 1 {
+		t.Fatalf("staged payloads = %#v, want one", fc.stagedPayloads)
 	}
-	if fc.spawnedCfg.Harness != domain.HarnessOpenCode || fc.spawnedCfg.Prompt != "Use the attached image." {
-		t.Fatalf("spawned cfg fields = %#v", fc.spawnedCfg)
+	if len(fc.stagedPayloads[0]) != 1 {
+		t.Fatalf("staged attachments = %#v, want one", fc.stagedPayloads[0])
 	}
-	if len(fc.spawnedCfg.Attachments) != 1 {
-		t.Fatalf("attachments = %#v, want one", fc.spawnedCfg.Attachments)
-	}
-	if got := fc.spawnedCfg.Attachments[0]; got.Ext != ".png" || string(got.Data) != "\x01\x02\x03" {
+	if got := fc.stagedPayloads[0][0]; got.Ext != ".png" || string(got.Data) != "\x01\x02\x03" {
 		t.Fatalf("attachment = %#v, want decoded png", got)
 	}
 }

@@ -816,16 +816,16 @@ type DelegateTaskRequest struct {
 	Mode domain.SessionMode `json:"mode,omitempty" enum:"tui,chat"`
 	// Attachments are files pasted, dropped, or picked into the delegated task
 	// brief. Each carries bytes as standard base64 (no data: URL prefix). The
-	// daemon writes them into the spawned worker worktree and appends path
-	// references to the worker prompt.
+	// daemon writes them into the manager's workspace and passes their paths to
+	// the manager, which forwards them to the worker it spawns.
 	Attachments []AttachmentInput `json:"attachments,omitempty"`
 }
 
-// DelegateTaskResponse confirms which worker was spawned and, when available,
-// which manager received the follow-up title request.
+// DelegateTaskResponse confirms which manager took ownership of the new task.
+// There is no worker id: the manager creates the worker, so the board card
+// appears once the manager spawns it.
 type DelegateTaskResponse struct {
 	OK        bool             `json:"ok"`
-	WorkerID  domain.SessionID `json:"workerId"`
 	ManagerID domain.SessionID `json:"managerId,omitempty"`
 }
 

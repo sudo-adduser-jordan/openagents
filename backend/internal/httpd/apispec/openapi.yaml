@@ -7742,11 +7742,8 @@ components:
           type: string
         ok:
           type: boolean
-        workerId:
-          type: string
       required:
       - ok
-      - workerId
       type: object
     DeleteHistoryBeforeResponse:
       properties:

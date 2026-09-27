@@ -3,10 +3,12 @@ package integration
 import (
 	"bytes"
 	"context"
+	"encoding/json"
 	"io"
 	"log/slog"
 	"net/http"
 	"net/http/httptest"
+	"strings"
 	"testing"
 	"time"
 
@@ -181,16 +183,27 @@ func TestDelegateEndpointSpawnsManager(t *testing.T) {
 		t.Fatal(err)
 	}
 	t.Cleanup(func() { _ = store.Close() })
-	if err := store.UpsertProject(ctx, domain.ProjectRecord{ID: "mer", Path: "/repo/mer", RegisteredAt: time.Now()}); err != nil {
+	if err := store.UpsertProject(ctx, domain.ProjectRecord{
+		ID:           "mer",
+		Path:         "/repo/mer",
+		RegisteredAt: time.Now(),
+		// A manager owns every new task now, so the project must be able to
+		// spawn one. Mirrors the newStack fixture.
+		Config: domain.ProjectConfig{
+			Manager: domain.RoleOverride{Harness: domain.HarnessOpenCode},
+		},
+	}); err != nil {
 		t.Fatal(err)
 	}
 
 	runtime := &stubRuntime{}
 	workspace := &stubWorkspace{}
-	lcm := lifecycle.New(store, &captureMessenger{})
+	msg := &captureMessenger{}
+	lcm := lifecycle.New(store, msg)
 	manager := sessionmanager.New(sessionmanager.Deps{
 		Runtime: runtime, Agents: stubAgents{}, Workspace: workspace, Store: store,
-		Lifecycle: lcm, LookPath: func(string) (string, error) { return "/usr/bin/true", nil },
+		Lifecycle: lcm, Messenger: msg,
+		LookPath: func(string) (string, error) { return "/usr/bin/true", nil },
 	})
 	manager.SetAgentReadiness(agentsvc.NewWithDeps(agentsvc.Deps{
 		Context: ctx, Logger: slog.New(slog.NewTextHandler(io.Discard, nil)),
@@ -224,8 +237,40 @@ func TestDelegateEndpointSpawnsManager(t *testing.T) {
 	if status != http.StatusAccepted {
 		t.Fatalf("delegate = %d, want 202; body=%s", status, body)
 	}
+	// Delegation hands the brief to the manager, which spawns the worker itself.
+	// The only session this call creates is therefore the manager.
 	if runtime.created != 1 {
 		t.Fatalf("runtime Create calls = %d, want 1", runtime.created)
+	}
+	var accepted struct {
+		OK        bool   `json:"ok"`
+		ManagerID string `json:"managerId"`
+	}
+	if err := json.Unmarshal(body, &accepted); err != nil {
+		t.Fatalf("decode delegate response: %v; body=%s", err, body)
+	}
+	if !accepted.OK || accepted.ManagerID == "" {
+		t.Fatalf("delegate response = %+v, want ok with a managerId", accepted)
+	}
+	record, ok, err := store.GetSession(ctx, domain.SessionID(accepted.ManagerID))
+	if err != nil || !ok {
+		t.Fatalf("manager %s not persisted: ok=%v err=%v", accepted.ManagerID, ok, err)
+	}
+	if record.Kind != domain.KindManager {
+		t.Fatalf("delegated session kind = %q, want %q", record.Kind, domain.KindManager)
+	}
+	projectSessions, err := store.ListSessions(ctx, "mer")
+	if err != nil {
+		t.Fatalf("list sessions: %v", err)
+	}
+	for _, projectSession := range projectSessions {
+		if projectSession.Kind == domain.KindWorker {
+			t.Fatalf("delegate spawned a worker; the manager owns worker creation")
+		}
+	}
+	// The brief reaches the manager, which is what scopes and spawns the worker.
+	if len(msg.msgs) != 1 || !strings.Contains(msg.msgs[0], "Open Agents NEW TASK") {
+		t.Fatalf("manager messages = %#v, want one NEW TASK hand-off", msg.msgs)
 	}
 }
 

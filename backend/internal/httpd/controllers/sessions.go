@@ -1499,7 +1499,7 @@ func (c *SessionsController) delegateTask(w http.ResponseWriter, r *http.Request
 		envelope.WriteError(w, r, err)
 		return
 	}
-	envelope.WriteJSON(w, http.StatusAccepted, DelegateTaskResponse{OK: true, WorkerID: out.WorkerID, ManagerID: out.ManagerID})
+	envelope.WriteJSON(w, http.StatusAccepted, DelegateTaskResponse{OK: true, ManagerID: out.ManagerID})
 }
 
 func sanitizedOptionalString(value *string) *string {
