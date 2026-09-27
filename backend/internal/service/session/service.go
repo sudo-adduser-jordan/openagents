@@ -155,6 +155,13 @@ type scmProvider interface {
 	FetchReviewThreads(ctx context.Context, ref ports.SCMPRRef) (ports.SCMReviewObservation, error)
 }
 
+// managerReengagement is the daemon's durable idle-manager wake-up loop. The
+// narrow surface is just the loop's one exit: a manager that has finished its
+// assigned work calls it so the daemon stops nudging that session.
+type managerReengagement interface {
+	Complete(ctx context.Context, id domain.SessionID) error
+}
+
 // Service is the controller-facing session service. It delegates command-side
 // session operations to the internal sessionmanager.Manager and owns read-model
 // assembly, including user-facing display status derivation.
@@ -185,6 +192,7 @@ type Service struct {
 	// normal, not a broken pipeline. nil means "unknown": never downgrade.
 	signalCapable         func(domain.AgentHarness) bool
 	chatProviderPreserved func(domain.SessionID) bool
+	reengagement          managerReengagement
 }
 
 // SetChatProviderPreserver wires the live Chat lifetime observation after both
@@ -220,6 +228,10 @@ type Deps struct {
 	// wiring passes activitydispatch.SupportsHarness. Left nil, no session is
 	// ever downgraded to no_signal.
 	SignalCapable func(domain.AgentHarness) bool
+	// Reengagement is the daemon's durable idle-manager wake-up loop. Left nil
+	// (focused tests, non-daemon callers) the loop does not run and
+	// CompleteManager reports REENGAGEMENT_UNAVAILABLE.
+	Reengagement managerReengagement
 }
 
 // NewWithDeps wires a session service with optional PR-claim dependencies.
@@ -228,7 +240,7 @@ func NewWithDeps(d Deps) *Service {
 	if backgroundContext == nil {
 		backgroundContext = context.Background()
 	}
-	s := &Service{manager: d.Manager, store: d.Store, prClaimer: d.PRClaimer, scm: d.SCM, tracker: d.Tracker, clock: d.Clock, dataDir: d.DataDir, signalCapable: d.SignalCapable, logger: d.Logger, backgroundContext: backgroundContext, agentReadiness: d.AgentReadiness}
+	s := &Service{manager: d.Manager, store: d.Store, prClaimer: d.PRClaimer, scm: d.SCM, tracker: d.Tracker, clock: d.Clock, dataDir: d.DataDir, signalCapable: d.SignalCapable, logger: d.Logger, backgroundContext: backgroundContext, agentReadiness: d.AgentReadiness, reengagement: d.Reengagement}
 	if s.prClaimer == nil {
 		if w, ok := d.Store.(ports.PRClaimer); ok {
 			s.prClaimer = w
@@ -239,6 +251,27 @@ func NewWithDeps(d Deps) *Service {
 	}
 	s.workspaceCache = newWorkspaceCache(workspaceCacheTTL, s.clock)
 	return s
+}
+
+// CompleteManager durably suppresses further automated re-engagement for a
+// manager session. It is the loop's only exit: a manager whose assigned work is
+// finished calls it (`open-agents manager done --session <id>`) rather than
+// waiting out the retry ceiling and raising a human-attention notification.
+func (s *Service) CompleteManager(ctx context.Context, id domain.SessionID) error {
+	rec, ok, err := s.store.GetSession(ctx, id)
+	if err != nil {
+		return err
+	}
+	if !ok {
+		return apierr.NotFound("SESSION_NOT_FOUND", "Unknown session")
+	}
+	if rec.Kind != domain.KindManager {
+		return apierr.Invalid("NOT_MANAGER", "Session is not a manager", nil)
+	}
+	if s.reengagement == nil {
+		return apierr.Internal("REENGAGEMENT_UNAVAILABLE", "Manager re-engagement is unavailable")
+	}
+	return s.reengagement.Complete(ctx, id)
 }
 
 // Spawn creates a session and returns the API-facing read model plus

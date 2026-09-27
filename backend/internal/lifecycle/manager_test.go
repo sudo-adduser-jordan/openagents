@@ -4446,3 +4446,61 @@ func TestActivitySignalRetryPreservesCursorPermissionCorrelation(t *testing.T) {
 		t.Fatalf("state after approved tool and revision retry = %q, want active", got)
 	}
 }
+
+// The re-engagement loop counts progress and schedules wake-ups off these
+// observations. Both reduced-path shapes (a same-state tool event, and a real
+// idle transition) must reach it; a hook that only fires on state changes
+// silently loses the tool-use progress that resets the backoff.
+type fakeReengagementTracker struct {
+	before domain.SessionRecord
+	after  domain.SessionRecord
+	event  string
+	calls  int
+}
+
+func (f *fakeReengagementTracker) ObserveActivity(_ context.Context, before, after domain.SessionRecord, event string) {
+	f.before = before
+	f.after = after
+	f.event = event
+	f.calls++
+}
+
+func TestActivity_ForwardsSameStateToolProgressToReengagement(t *testing.T) {
+	now := time.Now().UTC()
+	st := newFakeStore()
+	st.sessions["mer-mgr"] = domain.SessionRecord{
+		ID: "mer-mgr", ProjectID: "mer", Kind: domain.KindManager,
+		Activity:      domain.Activity{State: domain.ActivityActive, LastActivityAt: now},
+		FirstSignalAt: now,
+	}
+	tracker := &fakeReengagementTracker{}
+	m := New(st, nil, WithManagerReengagement(tracker))
+	if err := m.ApplyActivitySignal(context.Background(), "mer-mgr", ports.ActivitySignal{
+		Valid: true, State: domain.ActivityActive, Event: "post-tool-use", Timestamp: now.Add(time.Second),
+	}); err != nil {
+		t.Fatal(err)
+	}
+	if tracker.calls != 1 || tracker.event != "post-tool-use" {
+		t.Fatalf("tracker = %#v", tracker)
+	}
+}
+
+func TestActivity_ForwardsIdleTransitionToReengagement(t *testing.T) {
+	now := time.Now().UTC()
+	st := newFakeStore()
+	st.sessions["mer-mgr"] = domain.SessionRecord{
+		ID: "mer-mgr", ProjectID: "mer", Kind: domain.KindManager,
+		Activity:      domain.Activity{State: domain.ActivityActive, LastActivityAt: now},
+		FirstSignalAt: now,
+	}
+	tracker := &fakeReengagementTracker{}
+	m := New(st, nil, WithManagerReengagement(tracker))
+	if err := m.ApplyActivitySignal(context.Background(), "mer-mgr", ports.ActivitySignal{
+		Valid: true, State: domain.ActivityIdle, Event: "stop", Timestamp: now.Add(time.Second),
+	}); err != nil {
+		t.Fatal(err)
+	}
+	if tracker.calls != 1 || tracker.before.Activity.State != domain.ActivityActive || tracker.after.Activity.State != domain.ActivityIdle {
+		t.Fatalf("tracker = %#v", tracker)
+	}
+}

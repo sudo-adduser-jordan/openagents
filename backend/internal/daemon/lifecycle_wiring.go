@@ -19,6 +19,7 @@ import (
 	"github.com/sudo-adduser-jordan/open-agents/backend/internal/config"
 	"github.com/sudo-adduser-jordan/open-agents/backend/internal/domain"
 	"github.com/sudo-adduser-jordan/open-agents/backend/internal/lifecycle"
+	"github.com/sudo-adduser-jordan/open-agents/backend/internal/managerloop"
 	activityobserver "github.com/sudo-adduser-jordan/open-agents/backend/internal/observe/activity"
 	"github.com/sudo-adduser-jordan/open-agents/backend/internal/observe/reaper"
 	"github.com/sudo-adduser-jordan/open-agents/backend/internal/ports"
@@ -50,6 +51,11 @@ type lifecycleStack struct {
 	autoReviewDone <-chan struct{}
 	scmDone        <-chan struct{}
 	trackerDone    <-chan struct{}
+	// reengagementDone is the idle-manager wake-up loop. It is exposed so
+	// startSession can share the same loop instance that the LCM reports
+	// activity to, so the loop and its observer cannot diverge.
+	reengagementDone <-chan struct{}
+	reengagement     *managerloop.Manager
 }
 
 // startLifecycle constructs the Lifecycle Manager over the store and starts the
@@ -57,20 +63,30 @@ type lifecycleStack struct {
 // The messenger is the per-daemon agent messenger the LCM uses to nudge agents
 // in response to SCM observations (CI failure, review feedback, merge conflict).
 func startLifecycle(ctx context.Context, store *sqlite.Store, runtime ports.Runtime, messenger ports.AgentMessenger, notifier notificationSink, agents ports.AgentResolver, logger *slog.Logger) *lifecycleStack {
+	steering := activeTurnSteering(agents)
+	// The loop owns every write into an idle manager's pane, so it runs behind
+	// the same sessionguard the lifecycle reducer uses for its own nudges.
+	reengagement := managerloop.New(store, messenger, notifier, managerloop.Config{
+		Logger:       logger,
+		SteersActive: steering,
+	})
 	lcm := lifecycle.New(store, messenger,
 		lifecycle.WithNotificationSink(notifier),
 		lifecycle.WithContainerReaper(dockerreap.New(), store),
-		lifecycle.WithActiveSteering(activeTurnSteering(agents)),
+		lifecycle.WithActiveSteering(steering),
 		lifecycle.WithStartupSignalGate(startupSignalGatesInput(agents)),
 		lifecycle.WithUrgentNudgeGate(urgentNudgeWaitingInputSafe(agents)),
+		lifecycle.WithManagerReengagement(reengagement),
 	)
 	rp := reaper.New(lcm, store, runtime, reaper.Config{Logger: logger})
 	activityPoller := activityobserver.New(store, lcm, runtime, agents, activityobserver.Config{Logger: logger})
 	return &lifecycleStack{
-		LCM:           lcm,
-		runtimeReaper: rp,
-		reaperDone:    rp.Start(ctx),
-		activityDone:  activityPoller.Start(ctx),
+		LCM:              lcm,
+		runtimeReaper:    rp,
+		reaperDone:       rp.Start(ctx),
+		activityDone:     activityPoller.Start(ctx),
+		reengagement:     reengagement,
+		reengagementDone: reengagement.Start(ctx),
 	}
 }
 
@@ -154,6 +170,9 @@ func (l *lifecycleStack) Stop() {
 	if l.trackerDone != nil {
 		<-l.trackerDone
 	}
+	if l.reengagementDone != nil {
+		<-l.reengagementDone
+	}
 }
 
 // sessionLifecycle is the narrow surface of sessionmanager.Manager used for
@@ -213,7 +232,7 @@ func (m sessionLifecycleMessenger) Send(ctx context.Context, id domain.SessionID
 // (issue #2685). The returned service is mounted at httpd APIDeps.Sessions.
 // It also returns the manager so the caller can wire Reconcile into the boot
 // sequence.
-func startSession(ctx context.Context, cfg config.Config, runtime runtimeselect.Runtime, store *sqlite.Store, lcm *lifecycle.Manager, messenger ports.AgentMessenger, agents ports.AgentResolver, agentReadiness ports.AgentReadinessProvider, previewLifecycle sessionmanager.PreviewLifecycle, browserLifecycle sessionmanager.BrowserLifecycle, browserCapabilities sessionmanager.BrowserCapabilityIssuer, chat sessionmanager.ChatLauncher, defaults sessionmanager.SessionModeDefaults, tracker ports.Tracker, log *slog.Logger) (*sessionsvc.Service, reviewsvc.Manager, sessionLifecycle, error) {
+func startSession(ctx context.Context, cfg config.Config, runtime runtimeselect.Runtime, store *sqlite.Store, lcm *lifecycle.Manager, reengagement *managerloop.Manager, messenger ports.AgentMessenger, agents ports.AgentResolver, agentReadiness ports.AgentReadinessProvider, previewLifecycle sessionmanager.PreviewLifecycle, browserLifecycle sessionmanager.BrowserLifecycle, browserCapabilities sessionmanager.BrowserCapabilityIssuer, chat sessionmanager.ChatLauncher, defaults sessionmanager.SessionModeDefaults, tracker ports.Tracker, log *slog.Logger) (*sessionsvc.Service, reviewsvc.Manager, sessionLifecycle, error) {
 	gitWS, err := gitworktree.New(gitworktree.Options{
 		// Per-session worktrees live under the data dir, so a single OPEN_AGENTS_DATA_DIR
 		// override moves all durable per-user state together.
@@ -271,6 +290,7 @@ func startSession(ctx context.Context, cfg config.Config, runtime runtimeselect.
 		// no_signal only makes sense for harnesses with complete lifecycle signal
 		// coverage; partial callbacks cannot prove that silence is abnormal.
 		SignalCapable: activitydispatch.FullySupportsHarness,
+		Reengagement:  reengagement,
 	})
 	// Triggering a review spawns a reviewer over the worker's worktree, resolved
 	// from the reviewer registry (distinct from the worker agent set). The

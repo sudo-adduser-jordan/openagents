@@ -2,6 +2,7 @@ package cli
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	"sort"
 	"strings"
@@ -24,6 +25,36 @@ func newManagerCommand(ctx *commandContext) *cobra.Command {
 		Short: "Manage manager sessions",
 	}
 	cmd.AddCommand(newManagerListCommand(ctx))
+	cmd.AddCommand(newManagerDoneCommand(ctx))
+	return cmd
+}
+
+// newManagerDoneCommand backs the re-engagement loop's only exit. A manager
+// whose assigned work is finished runs this so the daemon stops nudging it
+// instead of waiting out the retry ceiling and raising a human-attention
+// notification.
+func newManagerDoneCommand(ctx *commandContext) *cobra.Command {
+	var sessionID string
+	cmd := &cobra.Command{
+		Use:   "done",
+		Short: "Stop automatic re-engagement for a completed manager",
+		Args:  noArgs,
+		RunE: func(cmd *cobra.Command, _ []string) error {
+			if strings.TrimSpace(sessionID) == "" {
+				return usageError{errors.New("--session is required")}
+			}
+			var res struct {
+				OK        bool   `json:"ok"`
+				SessionID string `json:"sessionId"`
+			}
+			if err := ctx.postJSON(cmd.Context(), "managers/"+sessionID+"/done", nil, &res); err != nil {
+				return err
+			}
+			_, err := fmt.Fprintf(cmd.OutOrStdout(), "Manager %s marked done.\n", res.SessionID)
+			return err
+		},
+	}
+	cmd.Flags().StringVar(&sessionID, "session", "", "Manager session id")
 	return cmd
 }
 

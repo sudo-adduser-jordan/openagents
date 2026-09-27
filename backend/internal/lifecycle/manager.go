@@ -170,6 +170,19 @@ func WithActiveSteering(pred func(domain.AgentHarness) bool) Option {
 	}
 }
 
+// managerReengagementTracker receives every durable activity observation so the
+// re-engagement loop can schedule and reset idle managers.
+type managerReengagementTracker interface {
+	ObserveActivity(ctx context.Context, before, after domain.SessionRecord, event string)
+}
+
+// WithManagerReengagement wires durable manager activity tracking. The
+// re-engagement loop runs its own poll; this hook is how it learns that a
+// manager went busy or idle without re-scanning the whole session table.
+func WithManagerReengagement(tracker managerReengagementTracker) Option {
+	return func(m *Manager) { m.reengagement = tracker }
+}
+
 // WithStartupSignalGate supplies the adapter capability predicate used to
 // suppress reaction writes until a TUI's first startup-ready hook arrives.
 func WithStartupSignalGate(pred func(domain.AgentHarness) bool) Option {
@@ -241,6 +254,9 @@ type Manager struct {
 	// adapter via WithUrgentNudgeGate; the default answers false, so an unknown
 	// harness never takes an urgent write while waiting_input.
 	urgentNudgeWaitingInputSafe func(domain.AgentHarness) bool
+	// reengagement observes durable activity transitions so the daemon's
+	// idle-manager loop can schedule a wake-up. nil disables the hook.
+	reengagement managerReengagementTracker
 }
 
 // New builds a Lifecycle Manager over the session store it writes and the messenger it uses for agent nudges.
@@ -271,6 +287,16 @@ func New(store sessionStore, messenger ports.AgentMessenger, opts ...Option) *Ma
 		m.guard.SetStartupSignalGate(m.startupSignalGatesInput)
 	}
 	return m
+}
+
+// observeReengagement forwards one durable activity observation to the
+// re-engagement loop. Callers must invoke it after releasing m.mu: the tracker
+// writes its own store rows, and holding the reducer lock across that would
+// serialize every signal behind the loop's store round trip.
+func (m *Manager) observeReengagement(ctx context.Context, before, after domain.SessionRecord, event string) {
+	if m.reengagement != nil {
+		m.reengagement.ObserveActivity(ctx, before, after, event)
+	}
 }
 
 // SetCompletionTerminator wires merge completion to the same teardown path as
@@ -830,6 +856,9 @@ retryProjection:
 			goto retryProjection
 		}
 		m.mu.Unlock()
+		// A metadata-only signal carries no state transition, but its event name
+		// is still the proof of work the re-engagement loop counts.
+		m.observeReengagement(ctx, rec, rec, s.Event)
 		return nil
 	}
 	if metadataChanged {
@@ -861,9 +890,11 @@ retryProjection:
 				return nil
 			}
 			m.mu.Unlock()
+			m.observeReengagement(ctx, rec, rec, s.Event)
 			return nil
 		}
 		m.mu.Unlock()
+		m.observeReengagement(ctx, rec, rec, s.Event)
 		return nil
 	}
 	next := rec
@@ -907,6 +938,7 @@ retryProjection:
 	// that pinged them has nothing left to resolve.
 	resolutions := needsInputResolutions(rec, next, now)
 	m.mu.Unlock()
+	m.observeReengagement(ctx, rec, next, s.Event)
 	m.emitNotification(ctx, intent)
 	m.resolveNotifications(ctx, resolutions...)
 	return nil

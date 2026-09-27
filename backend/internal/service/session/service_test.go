@@ -4881,3 +4881,52 @@ func sameStrings(got, want []string) bool {
 	}
 	return true
 }
+
+type fakeReengagement struct {
+	completed domain.SessionID
+	err       error
+}
+
+func (f *fakeReengagement) Complete(_ context.Context, id domain.SessionID) error {
+	f.completed = id
+	return f.err
+}
+
+func TestCompleteManagerMarksTheLoopDone(t *testing.T) {
+	st := newFakeStore()
+	st.sessions["mer-mgr"] = domain.SessionRecord{ID: "mer-mgr", ProjectID: "mer", Kind: domain.KindManager}
+	reengagement := &fakeReengagement{}
+	svc := NewWithDeps(Deps{Store: st, Reengagement: reengagement})
+	if err := svc.CompleteManager(context.Background(), "mer-mgr"); err != nil {
+		t.Fatal(err)
+	}
+	if reengagement.completed != "mer-mgr" {
+		t.Fatalf("completed = %q, want mer-mgr", reengagement.completed)
+	}
+}
+
+func TestCompleteManagerRejectsWorker(t *testing.T) {
+	st := newFakeStore()
+	st.sessions["mer-1"] = domain.SessionRecord{ID: "mer-1", ProjectID: "mer", Kind: domain.KindWorker}
+	err := NewWithDeps(Deps{Store: st, Reengagement: &fakeReengagement{}}).CompleteManager(context.Background(), "mer-1")
+	if err == nil {
+		t.Fatal("expected worker rejection")
+	}
+}
+
+func TestCompleteManagerRejectsUnknownSession(t *testing.T) {
+	err := NewWithDeps(Deps{Store: newFakeStore(), Reengagement: &fakeReengagement{}}).CompleteManager(context.Background(), "nope")
+	if err == nil {
+		t.Fatal("expected unknown-session rejection")
+	}
+}
+
+func TestCompleteManagerReportsUnavailableLoop(t *testing.T) {
+	st := newFakeStore()
+	st.sessions["mer-mgr"] = domain.SessionRecord{ID: "mer-mgr", ProjectID: "mer", Kind: domain.KindManager}
+	// Reengagement is nil when the daemon has not wired the loop. The surface
+	// still exists, so say so rather than silently claiming success.
+	if err := NewWithDeps(Deps{Store: st}).CompleteManager(context.Background(), "mer-mgr"); err == nil {
+		t.Fatal("expected REENGAGEMENT_UNAVAILABLE when the loop is not wired")
+	}
+}

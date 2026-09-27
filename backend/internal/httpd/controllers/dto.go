@@ -1145,6 +1145,13 @@ type ManagerResponse struct {
 	ProjectName string           `json:"projectName,omitempty"`
 }
 
+// CompleteManagerResponse is returned after a manager declares its assigned
+// work complete.
+type CompleteManagerResponse struct {
+	OK        bool             `json:"ok"`
+	SessionID domain.SessionID `json:"sessionId"`
+}
+
 // ListAgentsResponse is the body of GET /api/v1/agents.
 type ListAgentsResponse = agentsvc.Inventory
 

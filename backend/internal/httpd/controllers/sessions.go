@@ -87,6 +87,7 @@ type SessionService interface {
 	Rename(ctx context.Context, id domain.SessionID, displayName string) error
 	SetPreview(ctx context.Context, id domain.SessionID, previewURL string) (domain.Session, error)
 	SetTerminateOnPRMerge(ctx context.Context, id domain.SessionID, terminate bool) (domain.Session, error)
+	CompleteManager(ctx context.Context, id domain.SessionID) error
 	SetWorkflowMode(ctx context.Context, id domain.SessionID, mode domain.WorkflowMode) (domain.Session, error)
 	SetAutoInjectReview(ctx context.Context, id domain.SessionID, autoInject bool) (domain.Session, error)
 	SetAutoInjectCI(ctx context.Context, id domain.SessionID, autoInject bool) (domain.Session, error)
@@ -202,6 +203,7 @@ func (c *SessionsController) Register(r chi.Router) {
 	r.Post("/managers", c.spawnManager)
 	r.Post("/managers/delegate", c.delegateTask)
 	r.Get("/managers/{id}", c.getManager)
+	r.Post("/managers/{id}/done", c.completeManager)
 }
 
 // RegisterStreams mounts long-lived session streams outside the REST timeout
@@ -1703,6 +1705,19 @@ func (c *SessionsController) getManager(w http.ResponseWriter, r *http.Request) 
 		return
 	}
 	envelope.WriteJSON(w, http.StatusOK, SessionResponse{Session: sessionView(sess)})
+}
+
+func (c *SessionsController) completeManager(w http.ResponseWriter, r *http.Request) {
+	if c.Svc == nil {
+		apispec.NotImplemented(w, r, "POST", "/api/v1/managers/{id}/done")
+		return
+	}
+	id := managerID(r)
+	if err := c.Svc.CompleteManager(r.Context(), id); err != nil {
+		envelope.WriteError(w, r, err)
+		return
+	}
+	envelope.WriteJSON(w, http.StatusOK, CompleteManagerResponse{OK: true, SessionID: id})
 }
 
 func sessionID(r *http.Request) domain.SessionID {

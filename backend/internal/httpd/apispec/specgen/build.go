@@ -301,6 +301,7 @@ var schemaNames = map[string]string{ //nolint:gosec // Public OpenAPI type names
 	"ControllersSpawnManagerRequest":                      "SpawnManagerRequest",
 	"ControllersSpawnManagerResponse":                     "SpawnManagerResponse",
 	"ControllersManagerResponse":                          "ManagerResponse",
+	"ControllersCompleteManagerResponse":                  "CompleteManagerResponse",
 	"AgentInventory":                                      "ListAgentsResponse",
 	"AgentInfo":                                           "AgentInfo",
 	"AgentProbeResult":                                    "ProbeAgentResponse",
@@ -2188,6 +2189,18 @@ func sessionOperations() []operation {
 			pathParams: []any{controllers.ManagerIDParam{}},
 			resps: []respUnit{
 				{http.StatusOK, controllers.SessionResponse{}},
+				{http.StatusNotFound, envelope.APIError{}},
+				{http.StatusInternalServerError, envelope.APIError{}},
+				{http.StatusNotImplemented, envelope.APIError{}},
+			},
+		},
+		{
+			method: http.MethodPost, path: "/api/v1/managers/{id}/done", id: "completeManager", tag: "sessions",
+			summary:    "Declare a manager complete and stop automatic re-engagement",
+			pathParams: []any{controllers.ManagerIDParam{}},
+			resps: []respUnit{
+				{http.StatusOK, controllers.CompleteManagerResponse{}},
+				{http.StatusBadRequest, envelope.APIError{}},
 				{http.StatusNotFound, envelope.APIError{}},
 				{http.StatusInternalServerError, envelope.APIError{}},
 				{http.StatusNotImplemented, envelope.APIError{}},

@@ -928,6 +928,51 @@ paths:
       summary: Fetch one manager session
       tags:
       - sessions
+  /api/v1/managers/{id}/done:
+    post:
+      operationId: completeManager
+      parameters:
+      - description: Manager session identifier, e.g. project-manager.
+        in: path
+        name: id
+        required: true
+        schema:
+          description: Manager session identifier, e.g. project-manager.
+          type: string
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/CompleteManagerResponse'
+          description: OK
+        "400":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/APIError'
+          description: Bad Request
+        "404":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/APIError'
+          description: Not Found
+        "500":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/APIError'
+          description: Internal Server Error
+        "501":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/APIError'
+          description: Not Implemented
+      summary: Declare a manager complete and stop automatic re-engagement
+      tags:
+      - sessions
   /api/v1/managers/delegate:
     post:
       operationId: delegateTask
@@ -6826,6 +6871,16 @@ components:
       - processedTokens
       - totalTokens
       - incomplete
+      type: object
+    CompleteManagerResponse:
+      properties:
+        ok:
+          type: boolean
+        sessionId:
+          type: string
+      required:
+      - ok
+      - sessionId
       type: object
     ContainerReapConfig:
       properties:

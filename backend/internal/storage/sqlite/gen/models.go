@@ -213,6 +213,18 @@ type ConversationTurn struct {
 	RetryOfTurnID        sql.NullString
 }
 
+type ManagerReengagement struct {
+	SessionID            string
+	AttemptCount         int64
+	NextAttemptAt        time.Time
+	LastAttemptAt        sql.NullTime
+	ProgressSinceAttempt bool
+	AttentionNotified    bool
+	State                string
+	CreatedAt            time.Time
+	UpdatedAt            time.Time
+}
+
 type ModelUsageEvent struct {
 	ID                    int64
 	BindingID             int64

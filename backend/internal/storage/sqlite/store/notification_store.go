@@ -14,6 +14,13 @@ import (
 	"github.com/sudo-adduser-jordan/open-agents/backend/internal/storage/sqlite/gen"
 )
 
+// SessionHasUnreadNotification reports whether user attention is already
+// pending for the session. The manager re-engagement loop uses it to stay quiet
+// while a human still owes the session a reply.
+func (s *Store) SessionHasUnreadNotification(ctx context.Context, id domain.SessionID) (bool, error) {
+	return s.qr.SessionHasUnreadNotification(ctx, id)
+}
+
 // CreateNotification inserts one unread notification. It returns created=false
 // when the open dedupe index already has a matching row — open meaning unseen
 // or still unresolved, so a notification the user has already looked at is not

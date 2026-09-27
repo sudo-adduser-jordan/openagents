@@ -41,6 +41,8 @@ type fakeSessionService struct {
 	sentAttachment             *ports.SpawnAttachment
 	delegationInput            sessionsvc.DelegateTaskInput
 	delegationErr              error
+	completedManager           domain.SessionID
+	completeManagerErr         error
 	cleanupProjects            []domain.ProjectID
 	cleanupResult              []domain.SessionID
 	cleanupSkipped             []sessionsvc.CleanupSkipped
@@ -424,6 +426,11 @@ func (f *fakeSessionService) DelegateTask(_ context.Context, in sessionsvc.Deleg
 		return sessionsvc.DelegateTaskOutcome{}, f.delegationErr
 	}
 	return sessionsvc.DelegateTaskOutcome{ManagerID: "open-agents-orch"}, nil
+}
+
+func (f *fakeSessionService) CompleteManager(_ context.Context, id domain.SessionID) error {
+	f.completedManager = id
+	return f.completeManagerErr
 }
 
 func (f *fakeSessionService) ListPRs(_ context.Context, id domain.SessionID) ([]domain.PRFacts, error) {
@@ -2684,6 +2691,41 @@ func TestSessionsAPI_ListManagersOnly(t *testing.T) {
 	}
 	if _, ok := got["open-agents-1"]; ok {
 		t.Fatalf("worker session leaked into manager list: %#v", got)
+	}
+}
+
+func TestSessionsAPI_CompleteManager(t *testing.T) {
+	svc := newFakeSessionService()
+	now := time.Now().UTC()
+	svc.sessions["ao-mgr"] = domain.Session{SessionRecord: domain.SessionRecord{
+		ID: "ao-mgr", ProjectID: "ao", Kind: domain.KindManager,
+		Activity:  domain.Activity{State: domain.ActivityIdle, LastActivityAt: now},
+		CreatedAt: now, UpdatedAt: now,
+	}}
+	srv := newSessionTestServer(t, svc)
+	body, status, _ := doRequest(t, srv, http.MethodPost, "/api/v1/managers/ao-mgr/done", "")
+	if status != http.StatusOK {
+		t.Fatalf("complete manager = %d, want 200; body=%s", status, body)
+	}
+	if svc.completedManager != "ao-mgr" {
+		t.Fatalf("completed id = %q, want ao-mgr", svc.completedManager)
+	}
+	var got controllers.CompleteManagerResponse
+	if err := json.Unmarshal(body, &got); err != nil {
+		t.Fatal(err)
+	}
+	if !got.OK || got.SessionID != "ao-mgr" {
+		t.Fatalf("response = %#v", got)
+	}
+}
+
+func TestSessionsAPI_CompleteManagerPropagatesServiceError(t *testing.T) {
+	svc := newFakeSessionService()
+	svc.completeManagerErr = apierr.Internal("REENGAGEMENT_UNAVAILABLE", "Manager re-engagement is unavailable")
+	srv := newSessionTestServer(t, svc)
+	_, status, _ := doRequest(t, srv, http.MethodPost, "/api/v1/managers/ao-mgr/done", "")
+	if status != http.StatusInternalServerError {
+		t.Fatalf("complete manager = %d, want 500; the loop being unwired is not a client error", status)
 	}
 }
 

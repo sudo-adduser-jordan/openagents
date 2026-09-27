@@ -22,6 +22,8 @@ func managerCommandServer(t *testing.T) (*httptest.Server, *sessionRequestLog) {
 				sessionJSON("other-orch", "other", "manager", "idle", false)+`,`+
 				sessionJSON("demo-worker", "demo", "worker", "working", false)+`,`+
 				sessionJSON("demo-orch", "demo", "manager", "working", false)+`]}`)
+		case r.Method == http.MethodPost && r.URL.Path == "/api/v1/managers/demo-orch/done":
+			_, _ = io.WriteString(w, `{"ok":true,"sessionId":"demo-orch"}`)
 		default:
 			http.NotFound(w, r)
 		}
@@ -79,5 +81,30 @@ func TestManagerList_JSONOutputDecodes(t *testing.T) {
 	}
 	if got.Data[1].ID != "other-orch" || got.Data[1].ProjectID != "other" || got.Data[1].Role != "manager" {
 		t.Fatalf("unexpected second JSON entry: %#v", got.Data[1])
+	}
+}
+
+func TestManagerDone(t *testing.T) {
+	cfg := setConfigEnv(t)
+	srv, log := managerCommandServer(t)
+	writeRunFileFor(t, cfg, srv)
+
+	out, errOut, err := executeCLI(t, Deps{ProcessAlive: func(int) bool { return true }}, "manager", "done", "--session", "demo-orch")
+	if err != nil {
+		t.Fatalf("manager done failed: %v\nstderr=%s", err, errOut)
+	}
+	if !strings.Contains(out, "Manager demo-orch marked done.") {
+		t.Fatalf("output = %q", out)
+	}
+	want := []string{"POST /api/v1/managers/demo-orch/done"}
+	if got := log.all(); !reflect.DeepEqual(got, want) {
+		t.Fatalf("requests = %#v, want %#v", got, want)
+	}
+}
+
+func TestManagerDoneRequiresSession(t *testing.T) {
+	_, _, err := executeCLI(t, Deps{}, "manager", "done")
+	if err == nil || ExitCode(err) != 2 {
+		t.Fatalf("error = %v, exit = %d; want usage error", err, ExitCode(err))
 	}
 }

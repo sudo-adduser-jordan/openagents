@@ -114,3 +114,8 @@ WHERE session_id = ?
   AND pr_url = ?
   AND (status = 'unread' OR resolved_at IS NULL)
 LIMIT 1;
+-- name: SessionHasUnreadNotification :one
+SELECT EXISTS(
+    SELECT 1 FROM notifications
+    WHERE session_id = ? AND status = 'unread'
+) AS has_unread;
