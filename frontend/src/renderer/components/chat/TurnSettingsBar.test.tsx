@@ -61,7 +61,6 @@ describe.each(["native", "ACP submenu", "ACP standalone"] as const)("%s model se
 			id: `provider-${index % 2}/model-${index}`,
 			displayName: `Model ${index}`,
 			default: index === 0,
-			efforts: ["high"],
 		}));
 		const modelOption: ChatConfigOption = {
 			id: "model",
@@ -80,7 +79,7 @@ describe.each(["native", "ACP submenu", "ACP standalone"] as const)("%s model se
 			<div onClick={onComposerClick}>
 				<TurnSettingsBar
 					models={path === "native" ? models : []}
-					settings={{ model: models[0].id, reasoningEffort: "high", approvalMode: "accept-edits" }}
+					settings={{ model: models[0].id, approvalMode: "accept-edits" }}
 					onChange={path === "native" ? onChange : undefined}
 					configOptions={path === "native" ? undefined : path === "ACP submenu" ? [modelOption, OPTIONS[1]] : [modelOption]}
 					onChangeConfigOption={path === "native" ? undefined : onChange}
@@ -121,7 +120,7 @@ describe.each(["native", "ACP submenu", "ACP standalone"] as const)("%s model se
 		expect(screen.getAllByRole("menuitemradio")).toHaveLength(1);
 		await user.click(screen.getByRole("menuitemradio", { name: "Model 99" }));
 		if (path === "native") {
-			expect(onChange).toHaveBeenCalledWith({ model: "provider-1/model-99", reasoningEffort: undefined, approvalMode: "accept-edits" });
+			expect(onChange).toHaveBeenCalledWith({ model: "provider-1/model-99", approvalMode: "accept-edits" });
 		} else {
 			expect(onChange).toHaveBeenCalledWith("model", { value: "provider-1/model-99" });
 		}
@@ -540,20 +539,20 @@ describe("ACP session config options", () => {
 
 	
 
-	it("keeps native model+effort in one trigger when the provider has no catalog", () => {
+	it("keeps the native model trigger when the provider has no catalog", () => {
 		render(
 			<TurnSettingsBar
 				models={[
-					{ id: "gpt-5.6-terra", displayName: "gpt-5.6-terra", default: true, efforts: ["high"] },
+					{ id: "gpt-5.6-terra", displayName: "gpt-5.6-terra", default: true },
 				]}
-				settings={{ model: "gpt-5.6-terra", reasoningEffort: "high" }}
+				settings={{ model: "gpt-5.6-terra" }}
 				onChange={vi.fn()}
 			/>,
 		);
 
 		expect(
 			screen.getByRole("button", { name: "Model and reasoning effort for the next turn" }),
-		).toHaveTextContent("gpt-5.6-terra High");
+		).toHaveTextContent(/^gpt-5\.6-terra$/);
 		expect(screen.getByRole("button", { name: "Approval policy for the next turn" })).toHaveTextContent(
 			"Default approvals",
 		);
@@ -672,7 +671,7 @@ describe("native model selection", () => {
 		render(
 			<TurnSettingsBar
 				models={[
-					{ id: "astra", displayName: "Astra", default: true, efforts: ["high"], defaultEffort: "high" },
+					{ id: "astra", displayName: "Astra", default: true },
 				]}
 				settings={{ model: "nano" }}
 				onChange={vi.fn()}

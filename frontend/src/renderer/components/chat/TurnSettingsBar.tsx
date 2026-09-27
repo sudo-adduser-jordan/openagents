@@ -107,23 +107,18 @@ export function TurnSettingsBar({
 }) {
 	const selected = models.find((model) => model.id === settings.model);
 	const fallback = settings.model ? undefined : models.find((model) => model.default);
-	// A catalog miss must not relabel an explicit choice or borrow another model's
-	// effort settings. Custom or newly available models may not be listed yet.
+	// A catalog miss must not relabel an explicit choice. Custom or newly
+	// available models may not be listed yet.
 	const chosenLabel =
 		selected?.displayName ?? settings.model ?? fallback?.displayName ?? "Provider default";
 	const rerouted = reroute
 		? models.find((model) => model.id === reroute.toModel)?.displayName ?? reroute.toModel
 		: undefined;
 	const modelLabel = rerouted ?? chosenLabel;
-	const efforts = (selected ?? fallback)?.efforts ?? [];
-	const effortLabel =
-		settings.reasoningEffort ?? (selected ?? fallback)?.defaultEffort ?? undefined;
 	const approvalCopy = APPROVAL_COPY;
 	const approvalOrder = APPROVAL_ORDER;
 	const approvalLabel = approvalCopy[settings.approvalMode ?? "default"].label;
-	const modelGroupLabel = effortLabel
-		? `${modelLabel} ${capitalize(effortLabel)}`
-		: modelLabel;
+	const modelGroupLabel = modelLabel;
 	const grouped = partitionConfigOptions(configOptions ?? []);
 	const optionDisabled = Boolean(disabled || configPending || rememberPermissionsPending);
 	const applyOption = (optionId: string, value: ChatConfigOptionValue) => {
@@ -171,8 +166,6 @@ export function TurnSettingsBar({
 							disabled={optionDisabled}
 							modelLabel={modelLabel}
 							groupLabel={modelGroupLabel}
-							effortLabel={effortLabel}
-							efforts={efforts}
 							reroute={reroute}
 							rerouted={rerouted}
 							chosenLabel={chosenLabel}
@@ -270,8 +263,6 @@ function ModelEffortPicker({
 	disabled,
 	modelLabel,
 	groupLabel,
-	effortLabel,
-	efforts,
 	reroute,
 	rerouted,
 	chosenLabel,
@@ -286,8 +277,6 @@ function ModelEffortPicker({
 	disabled?: boolean;
 	modelLabel: string;
 	groupLabel: string;
-	effortLabel?: string;
-	efforts: string[];
 	reroute?: ModelReroute;
 	rerouted?: string;
 	chosenLabel: string;
@@ -336,7 +325,7 @@ function ModelEffortPicker({
 									key={model.id}
 									active={model.id === settings.model}
 									radio
-									onSelect={() => onChange({ ...settings, model: model.id, reasoningEffort: undefined })}
+									onSelect={() => onChange({ ...settings, model: model.id })}
 									className={cn("text-xs", model.id === settings.model ? "text-foreground" : "text-muted-foreground")}
 								>
 									{model.displayName}
@@ -346,32 +335,6 @@ function ModelEffortPicker({
 					</OptionMenuSubContent>
 				</OptionMenuSub>
 
-				{efforts.length > 0 ? (
-					<OptionMenuSub>
-						<OptionMenuSubTrigger label="Effort" value={effortLabel ? capitalize(effortLabel) : "Effort"} />
-						<OptionMenuSubContent className={CHAT_MENU_CLASS}>
-							{efforts.map((effort) => (
-								<OptionMenuItem
-									key={effort}
-									active={effort === settings.reasoningEffort}
-									radio
-									onSelect={() => onChange({ ...settings, reasoningEffort: effort })}
-									className={cn("text-xs")}
-								>
-									<span
-										className={cn(
-											effort === settings.reasoningEffort
-												? "text-foreground"
-												: "text-muted-foreground",
-										)}
-									>
-										{capitalize(effort)}
-									</span>
-								</OptionMenuItem>
-							))}
-						</OptionMenuSubContent>
-					</OptionMenuSub>
-				) : null}
 				{executionMode && onChangeConfigOption ? (
 					<PlanModeToggle option={executionMode} onChange={onChangeConfigOption} />
 				) : null}
@@ -773,10 +736,6 @@ function focusModelSearch(event: FocusEvent<HTMLDivElement>) {
 		event.preventDefault();
 		search.focus();
 	}
-}
-
-function capitalize(value: string): string {
-	return value.charAt(0).toUpperCase() + value.slice(1);
 }
 
 function isModelOption(option: ChatConfigOption): boolean {

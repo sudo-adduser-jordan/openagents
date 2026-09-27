@@ -1,9 +1,8 @@
-import { Check, ChevronDown, Search } from "lucide-react";
+import { ChevronDown, Search } from "lucide-react";
 import { type ReactNode, useCallback, useLayoutEffect, useMemo, useRef, useState } from "react";
 import type { AgentModelCatalog } from "../../hooks/useAgentModelsQuery";
 import { useSuppressStrayFocusRing } from "../../hooks/useSuppressStrayFocusRing";
 import { cn } from "../../lib/utils";
-import { OptionMenuItem, OptionMenuSub, OptionMenuSubContent, OptionMenuSubTrigger } from "../ui/option-menu";
 import {
 	DropdownMenu,
 	DropdownMenuContent,
@@ -356,27 +355,7 @@ export function AgentModelCombobox({
 						aria-hidden="true"
 					/>
 				</div>
-				{showEffort && tuning && (
-					<div className="shrink-0">
-						<DropdownMenuSeparator />
-						<OptionMenuSub>
-							<OptionMenuSubTrigger label="Reasoning effort" value={currentEffortLabel} />
-							<OptionMenuSubContent>
-								{["", ...(effortModel?.efforts ?? [])].map((effort) => (
-									<OptionMenuItem key={effort} role="menuitemradio" aria-checked={effort === tuning.effort}
-										active={effort === tuning.effort} onSelect={() => tuning.onEffortChange(effort)} className="gap-3 text-xs">
-										{effort ? effortLabel(effort) : "Provider default"}
-										{effort === tuning.effort && <Check className="ml-auto size-icon-sm shrink-0" aria-hidden="true" />}
-									</OptionMenuItem>
-								))}
-							</OptionMenuSubContent>
-						</OptionMenuSub>
-					</div>
-				)}
 			</DropdownMenuContent>
-			{tuning && invalidEffort && <p role="alert" className="px-1 text-xs leading-row text-warning">
-				{`${tuning.roleLabel ? `${tuning.roleLabel} ` : ""}model tuning is no longer supported by the selected model. Choose a supported value before saving.`}
-			</p>}
 		</DropdownMenu>
 	);
 }

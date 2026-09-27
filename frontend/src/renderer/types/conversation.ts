@@ -564,7 +564,6 @@ export type ApprovalMode = "default" | "accept-edits" | "auto" | "bypass-permiss
  */
 export interface TurnSettings {
 	model?: string;
-	reasoningEffort?: string;
 	approvalMode?: ApprovalMode;
 }
 
@@ -575,9 +574,6 @@ export interface ChatModel {
 	description?: string;
 	/** The model the provider would pick on its own. */
 	default: boolean;
-	/** Reasoning levels this model supports, in the provider's order. */
-	efforts?: string[];
-	defaultEffort?: string;
 }
 
 /** One provider-owned setting advertised for this live chat session. */

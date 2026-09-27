@@ -184,7 +184,6 @@ function SettingsBody({
 			const {
 				model: _legacyModel,
 				mode: _legacyMode,
-				effort: _legacyEffort,
 				permissions: _legacyPermissions,
 				...sharedAgentConfig
 			} = config.agentConfig ?? {};
@@ -197,7 +196,7 @@ function SettingsBody({
 						worker: {
 							...config.worker,
 							agent: form.workerAgent,
-							agentConfig: buildRoleAgentConfig(config.worker?.agentConfig, form.workerModel, form.workerMode, "", form.workerPermissions),
+							agentConfig: buildRoleAgentConfig(config.worker?.agentConfig, form.workerModel, form.workerMode, form.workerPermissions),
 						},
 						manager: {
 							...config.manager,
@@ -206,7 +205,6 @@ function SettingsBody({
 								config.manager?.agentConfig,
 								form.managerModel,
 								form.managerMode,
-								"",
 								form.managerPermissions,
 							),
 						},
@@ -225,7 +223,7 @@ function SettingsBody({
 						worker: {
 							...config.worker,
 							agent: form.workerAgent,
-							agentConfig: buildRoleAgentConfig(config.worker?.agentConfig, form.workerModel, form.workerMode, "", form.workerPermissions),
+							agentConfig: buildRoleAgentConfig(config.worker?.agentConfig, form.workerModel, form.workerMode, form.workerPermissions),
 						},
 						manager: {
 							...config.manager,
@@ -234,7 +232,6 @@ function SettingsBody({
 								config.manager?.agentConfig,
 								form.managerModel,
 								form.managerMode,
-								"",
 								form.managerPermissions,
 							),
 						},
@@ -245,7 +242,7 @@ function SettingsBody({
 						reviewers: form.reviewerHarness
 							? [{
 									harness: form.reviewerHarness,
-									agentConfig: buildRoleAgentConfig(existingReviewerAgentConfig, form.reviewerModel, form.reviewerMode, "", form.reviewerPermissions),
+									agentConfig: buildRoleAgentConfig(existingReviewerAgentConfig, form.reviewerModel, form.reviewerMode, form.reviewerPermissions),
 								}]
 							: undefined,
 						trackerIntake: buildIntake(intakeForm, config.trackerIntake),
@@ -376,10 +373,6 @@ function SettingsBody({
 								? "Project name is required."
 								: "Enabling intake requires an assignee.",
 					);
-					return;
-				}
-				if (!tuningValidity.worker || !tuningValidity.manager || !tuningValidity.reviewer) {
-					setValidationError("Choose supported model tuning values before saving.");
 					return;
 				}
 				setValidationError(null);
@@ -643,7 +636,6 @@ function AgentModelField({
 	mode,
 	onModelChange,
 	onModeChange,
-	onValidityChange,
 }: {
 	role: "worker" | "manager" | "reviewer";
 	agentId: string;
@@ -752,10 +744,6 @@ function AgentModelField({
 						onCustom={selectCustomModel}
 						triggerClassName="justify-end"
 						compact={agentId === "opencode"}
-						tuning={agentId === "opencode" ? {
-							onValidityChange,
-							roleLabel: ({"worker": "Worker", "manager": "Manager", "reviewer": "Reviewer"}[role] ?? role),
-						} : undefined}
 					/>
 				</div>
 			</SettingsRow>

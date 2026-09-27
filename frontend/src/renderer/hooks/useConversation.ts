@@ -1521,7 +1521,6 @@ function toSnapshot(wire: WireSnapshot): ConversationSnapshot {
 		nativeForkAvailableAfterSequence: wire.nativeForkAvailableAfterSequence ?? 0,
 		settings: {
 			model: wire.settings?.model || undefined,
-			reasoningEffort: wire.settings?.reasoningEffort || undefined,
 			approvalMode: (wire.settings?.approvalMode as ApprovalMode | undefined) || undefined,
 		},
 		// Absent means the provider has not reported, which the meter renders as
