@@ -237,6 +237,19 @@ type SessionRecord struct {
 // IsStandalone reports whether the session has no registered project owner.
 func (s SessionRecord) IsStandalone() bool { return s.ProjectID == "" }
 
+// SessionNumRef is the addressing triple for a session: its id, its owning
+// project, and the per-project agent number users type to address it.
+//
+// Num is not a SessionRecord field on purpose. It is the narrow result of a
+// by-id or by-number lookup, not part of the session read model, so the
+// resolver does not have to wait on (or duplicate) the plumbing that puts Num on
+// the read model for display. A projectless session reports ProjectID "".
+type SessionNumRef struct {
+	ID        SessionID
+	ProjectID ProjectID
+	Num       int64
+}
+
 // SessionControllerOwner is the durable identity of the process/controller
 // currently allowed to act for a session. Narrow lifecycle writes compare this
 // snapshot before updating so stale launch work cannot mutate a replacement.

@@ -529,6 +529,19 @@ func (s *Store) GetSession(ctx context.Context, id domain.SessionID) (domain.Ses
 	return getSessionRowToRecord(row), true, nil
 }
 
+// GetSessionRef returns the addressing triple (id, owning project, agent
+// number) for an exact session id, or ok=false if absent.
+func (s *Store) GetSessionRef(ctx context.Context, id domain.SessionID) (domain.SessionNumRef, bool, error) {
+	row, err := s.qr.GetSessionRef(ctx, id)
+	if errors.Is(err, sql.ErrNoRows) {
+		return domain.SessionNumRef{}, false, nil
+	}
+	if err != nil {
+		return domain.SessionNumRef{}, false, fmt.Errorf("get session ref %s: %w", id, err)
+	}
+	return sessionNumRefFromRow(row.ID, row.ProjectID, row.Num), true, nil
+}
+
 // ListSessions returns every session in a project, ordered by num.
 func (s *Store) ListSessions(ctx context.Context, project domain.ProjectID) ([]domain.SessionRecord, error) {
 	rows, err := s.qr.ListSessionsByProject(ctx, optionalProjectID(project))
@@ -545,6 +558,44 @@ func (s *Store) ListAllSessions(ctx context.Context) ([]domain.SessionRecord, er
 		return nil, fmt.Errorf("list all sessions: %w", err)
 	}
 	return mapListAllSessionsRows(rows), nil
+}
+
+// ListSessionRefsByNum returns every live session holding this agent number,
+// across all projects. More than one result is a real cross-project collision,
+// not a duplicate row: UNIQUE (project_id, num) only holds within a project, and
+// a projectless session keeps its own number space.
+func (s *Store) ListSessionRefsByNum(ctx context.Context, num int64) ([]domain.SessionNumRef, error) {
+	rows, err := s.qr.ListSessionRefsByNum(ctx, num)
+	if err != nil {
+		return nil, fmt.Errorf("list session refs for num %d: %w", num, err)
+	}
+	out := make([]domain.SessionNumRef, 0, len(rows))
+	for _, r := range rows {
+		out = append(out, sessionNumRefFromRow(r.ID, r.ProjectID, r.Num))
+	}
+	return out, nil
+}
+
+// ListRetiredSessionNumProjects returns the projects that permanently retired
+// this agent number, so a caller can distinguish a retired number from one that
+// was never issued. A projectless session's retired number is recorded under the
+// empty string.
+func (s *Store) ListRetiredSessionNumProjects(ctx context.Context, num int64) ([]domain.ProjectID, error) {
+	rows, err := s.qr.ListRetiredSessionNumProjects(ctx, num)
+	if err != nil {
+		return nil, fmt.Errorf("list retired session nums for %d: %w", num, err)
+	}
+	out := make([]domain.ProjectID, 0, len(rows))
+	for _, r := range rows {
+		out = append(out, domain.ProjectID(r))
+	}
+	return out, nil
+}
+
+// sessionNumRefFromRow flattens a nullable project_id column. A NULL owner is a
+// projectless session, which the domain already models as the empty ProjectID.
+func sessionNumRefFromRow(id domain.SessionID, project *domain.ProjectID, num int64) domain.SessionNumRef {
+	return domain.SessionNumRef{ID: id, ProjectID: projectIDValue(project), Num: num}
 }
 
 func mapListSessionsByProjectRows(rows []gen.ListSessionsByProjectRow) []domain.SessionRecord {

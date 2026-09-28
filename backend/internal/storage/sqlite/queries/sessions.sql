@@ -182,6 +182,27 @@ SET session_mode = sqlc.arg(target_mode),
     updated_at = sqlc.arg(updated_at)
 WHERE id = sqlc.arg(id) AND session_mode = sqlc.arg(source_mode) AND is_terminated = 0;
 
+-- name: GetSessionRef :one
+-- The addressing triple for an exact id. Primary-key lookup.
+SELECT id, project_id, num FROM sessions WHERE id = ?;
+
+-- name: ListSessionRefsByNum :many
+-- :many, not :one, because a number is unique only WITHIN a project
+-- (UNIQUE (project_id, num)); the same number can be live in several projects
+-- at once, which is exactly the cross-project collision the resolver has to
+-- report rather than silently pick from. Callers that scope to a project filter
+-- the result: the unique constraint already guarantees at most one row survives.
+-- Ordered so a collision is reported in a stable order, not storage order.
+SELECT id, project_id, num FROM sessions WHERE num = ? ORDER BY project_id, id;
+
+-- name: ListRetiredSessionNumProjects :many
+-- The projects that permanently retired this number. A retired number is never
+-- reused, so a missing session with a retired number must say so instead of
+-- reporting the same not-found answer as a number that was never issued.
+-- Standalone numbers are recorded under the empty string. Ordered so the
+-- retired-in list is stable.
+SELECT project_id FROM retired_session_nums WHERE num = ? ORDER BY project_id;
+
 -- name: GetSession :one
 SELECT id, project_id, num, issue_id, kind, harness,
     activity_state, activity_last_at, is_terminated, branch, workspace_path,

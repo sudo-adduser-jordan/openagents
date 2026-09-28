@@ -5851,6 +5851,58 @@ paths:
       summary: Clean up terminated session workspaces
       tags:
       - sessions
+  /api/v1/sessions/resolve:
+    get:
+      operationId: resolveSessionRef
+      parameters:
+      - description: Session id, or a bare agent number such as 5.
+        in: query
+        name: ref
+        schema:
+          description: Session id, or a bare agent number such as 5.
+          type: string
+      - description: Project id that scopes a bare agent number. When omitted, the
+          number must be unique across all projects.
+        in: query
+        name: project
+        schema:
+          description: Project id that scopes a bare agent number. When omitted, the
+            number must be unique across all projects.
+          type: string
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ResolveSessionRefResponse'
+          description: OK
+        "400":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/APIError'
+          description: Bad Request
+        "404":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/APIError'
+          description: Not Found
+        "409":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/APIError'
+          description: Conflict
+        "500":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/APIError'
+          description: Internal Server Error
+      summary: Resolve a session id or agent number to a canonical session id
+      tags:
+      - sessions
   /api/v1/settings:
     get:
       operationId: getSettings
@@ -9108,6 +9160,28 @@ components:
           type: object
       required:
       - action
+      type: object
+    ResolveSessionRefResponse:
+      properties:
+        matchedBy:
+          enum:
+          - id
+          - num
+          type: string
+        num:
+          format: int64
+          type: integer
+        projectId:
+          type: string
+        ref:
+          type: string
+        sessionId:
+          type: string
+      required:
+      - ref
+      - sessionId
+      - num
+      - matchedBy
       type: object
     RestoreReviewResponse:
       properties:
