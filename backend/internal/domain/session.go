@@ -240,10 +240,10 @@ func (s SessionRecord) IsStandalone() bool { return s.ProjectID == "" }
 // SessionNumRef is the addressing triple for a session: its id, its owning
 // project, and the per-project agent number users type to address it.
 //
-// Num is not a SessionRecord field on purpose. It is the narrow result of a
-// by-id or by-number lookup, not part of the session read model, so the
-// resolver does not have to wait on (or duplicate) the plumbing that puts Num on
-// the read model for display. A projectless session reports ProjectID "".
+// This stays a narrow result of a by-id or by-number lookup rather than reusing
+// SessionRecord, so a resolve is not dragged through the whole read model. Num
+// is on SessionRecord too now, for display; the two are read from the same
+// column. A projectless session reports ProjectID "".
 type SessionNumRef struct {
 	ID        SessionID
 	ProjectID ProjectID
