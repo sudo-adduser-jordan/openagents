@@ -1,6 +1,7 @@
 import { act, render, screen, waitFor, within } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { describe, expect, it, vi } from "vitest";
+import { openAgentsBridge } from "../../lib/bridge";
 import { QueuedMessageDock, type QueuedMessage } from "./QueuedMessageDock";
 
 const { dragEnds, dragStarts } = vi.hoisted(() => ({
@@ -157,5 +158,17 @@ describe("QueuedMessageDock reorder", () => {
 		await waitFor(() => {
 			expect(onReorderQueuedTurns).toHaveBeenCalledWith(["queued-2", "queued-1"]);
 		});
+	});
+
+	it("copies the full queued message text", async () => {
+		const user = userEvent.setup();
+		const writeText = vi.spyOn(openAgentsBridge.clipboard, "writeText").mockResolvedValue(undefined);
+		try {
+			render(<QueuedMessageDock messages={queuedMessages(["a very long queued message that truncates"])} />);
+			await user.click(screen.getByRole("button", { name: "Copy queued message" }));
+			expect(writeText).toHaveBeenCalledWith("a very long queued message that truncates");
+		} finally {
+			writeText.mockRestore();
+		}
 	});
 });

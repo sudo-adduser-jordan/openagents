@@ -16,6 +16,7 @@ import { memo } from "react";
 import { KeyRound, Plug, RefreshCw, TriangleAlert } from "lucide-react";
 import { cn } from "../../lib/utils";
 import { Button } from "../ui/button";
+import { CopyButton } from "./CopyButton";
 import type { ConversationAccount, ConversationThreadState, McpServer } from "../../types/conversation";
 
 /**
@@ -60,9 +61,15 @@ export const ReauthBanner = memo(function ReauthBanner({
 					{command ? (
 						<>
 							Run{" "}
-							<code className="rounded bg-background px-1 py-0.5 font-mono text-[10.5px] text-foreground">
+							<code className="rounded bg-background px-1 py-0.5 font-mono text-[10.5px] text-foreground select-text">
 								{command}
 							</code>{" "}
+							<CopyButton
+								text={command}
+								label="Copy sign-in command"
+								compact
+								className="ml-1 inline-flex size-6 justify-center rounded-md px-0 py-0 align-middle"
+							/>
 							in a terminal, then send your message again. Open Agents holds no credentials of its own.
 						</>
 					) : (
@@ -192,8 +199,8 @@ export const McpServerBanner = memo(function McpServerBanner({
 				<ul className="flex flex-col gap-0.5">
 					{servers.map((server) => (
 						<li key={server.name} className="text-[11px] leading-snug">
-							<span className="font-mono text-foreground">{server.name}</span>
-							<span className="text-muted-foreground">
+							<span className="font-mono text-foreground select-text">{server.name}</span>
+							<span className="text-muted-foreground select-text">
 								{" · "}
 								{server.status}
 								{/* The classification first, then the raw text: one is actionable,
@@ -201,14 +208,22 @@ export const McpServerBanner = memo(function McpServerBanner({
 								{server.failureReason ? ` · ${server.failureReason}` : ""}
 							</span>
 							{server.error ? (
-								<span className="block truncate text-[10.5px] text-muted-foreground/70" title={server.error}>
-									{server.error}
+								<span className="flex min-w-0 items-start gap-1">
+									<span className="block min-w-0 flex-1 truncate text-[10.5px] text-muted-foreground/70 select-text" title={server.error}>
+										{server.error}
+									</span>
+									<CopyButton
+										text={server.error}
+										label={`Copy ${server.name} error`}
+										compact
+										className="size-6 shrink-0 justify-center rounded-md px-0 py-0"
+									/>
 								</span>
 							) : null}
 						</li>
 					))}
 				</ul>
-				{error ? <span className="text-[11px] text-destructive">{error}</span> : null}
+				{error ? <span className="text-[11px] text-destructive select-text">{error}</span> : null}
 			</div>
 			{onReload ? (
 				<Button

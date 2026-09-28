@@ -375,10 +375,20 @@ export function TurnOutcome({
 		return (
 			<div className="flex min-w-0 flex-col gap-2 py-3">
 				<div className="flex items-baseline justify-between gap-3 text-sm font-medium text-destructive">
-					<span>{copy.label}</span>
+					<span className="flex min-w-0 items-center gap-1">
+						<span>{copy.label}</span>
+						{error ? (
+							<CopyButton
+								text={error}
+								label="Copy error"
+								compact
+								className="size-6 justify-center rounded-md px-0 py-0 text-muted-foreground hover:text-foreground"
+							/>
+						) : null}
+					</span>
 					{action}
 				</div>
-				{error ? <div className="whitespace-pre-wrap wrap-anywhere text-sm leading-relaxed text-foreground">{linkifiedProviderErrorText(error)}</div> : null}
+				{error ? <div className="whitespace-pre-wrap wrap-anywhere text-sm leading-relaxed text-foreground select-text">{linkifiedProviderErrorText(error)}</div> : null}
 			</div>
 		);
 	}
@@ -1321,14 +1331,16 @@ function ActivityState({
 		);
 	}
 	if (status === "failed") {
+		const exitLabel = detail?.exitCode !== undefined ? `exit ${detail.exitCode}` : "failed";
 		return (
 			<span
 				className={cn(
-					"shrink-0 font-mono text-[10px] tabular-nums",
+					"shrink-0 font-mono text-[10px] tabular-nums select-text",
 					isNonzeroCommandExit(activity) ? "text-muted-foreground/70" : "text-destructive",
 				)}
+				title={exitLabel}
 			>
-				{detail?.exitCode !== undefined ? `exit ${detail.exitCode}` : "failed"}
+				{exitLabel}
 			</span>
 		);
 	}
@@ -1982,9 +1994,10 @@ function ErrorActivityRow({ activity }: { activity: ConversationActivity }) {
 	const { headline, detail } = providerErrorCopy(activity);
 	const actionUrl = String(activity.detail?.actionUrl ?? "").trim();
 	const standaloneActionUrl = actionUrl && !detail?.includes(actionUrl) ? actionUrl : undefined;
+	const copyText = [headline, detail, standaloneActionUrl].filter(Boolean).join("\n");
 	return (
-		<div className="flex min-w-0 max-w-full items-baseline overflow-hidden py-0.5 text-[11.5px] leading-snug text-muted-foreground">
-			<span className="wrap-anywhere min-w-0 whitespace-pre-wrap">
+		<div className="flex min-w-0 max-w-full items-start gap-1 overflow-hidden py-0.5 text-[11.5px] leading-snug text-muted-foreground">
+			<span className="wrap-anywhere min-w-0 flex-1 whitespace-pre-wrap select-text">
 				<span>{linkifiedProviderErrorText(headline)}</span>
 				{detail ? (
 					<>
@@ -2003,6 +2016,12 @@ function ErrorActivityRow({ activity }: { activity: ConversationActivity }) {
 					</>
 				) : null}
 			</span>
+			<CopyButton
+				text={copyText}
+				label="Copy error"
+				compact
+				className="size-6 shrink-0 justify-center rounded-md px-0 py-0"
+			/>
 		</div>
 	);
 }

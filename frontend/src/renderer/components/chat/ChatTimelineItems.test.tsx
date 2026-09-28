@@ -1,7 +1,9 @@
 import { act, render as rtlRender, screen } from "@testing-library/react";
+import userEvent from "@testing-library/user-event";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { StrictMode, type ReactElement } from "react";
 import { ActivityRow, AssistantMessage, HumanMessage, TurnOutcome } from "./ChatTimelineItems";
+import { openAgentsBridge } from "../../lib/bridge";
 import type { ConversationMessage } from "../../types/conversation";
 import { TooltipProvider } from "../ui/tooltip";
 
@@ -85,6 +87,18 @@ describe("TurnOutcome", () => {
 			"href",
 			"https://example.com/billing",
 		);
+	});
+
+	it("copies the failed turn error", async () => {
+		const user = userEvent.setup();
+		const writeText = vi.spyOn(openAgentsBridge.clipboard, "writeText").mockResolvedValue(undefined);
+		try {
+			render(<TurnOutcome state="failed" error="Provider error" />);
+			await user.click(screen.getByRole("button", { name: "Copy error" }));
+			expect(writeText).toHaveBeenCalledWith("Provider error");
+		} finally {
+			writeText.mockRestore();
+		}
 	});
 });
 

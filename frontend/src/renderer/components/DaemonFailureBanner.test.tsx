@@ -1,4 +1,5 @@
 import { act, fireEvent, render, screen, waitFor } from "@testing-library/react";
+import userEvent from "@testing-library/user-event";
 import { afterEach, describe, expect, it, vi } from "vitest";
 import { openAgentsBridge } from "../lib/bridge";
 import { DaemonFailureBanner } from "./DaemonFailureBanner";
@@ -56,6 +57,18 @@ describe("DaemonFailureBanner", () => {
 		act(() => vi.advanceTimersByTime(2_000));
 
 		expect(screen.getByRole("button", { name: "Copy details" })).toBeInTheDocument();
+	});
+
+	it("copies the error code", async () => {
+		const user = userEvent.setup();
+		const writeText = vi.spyOn(openAgentsBridge.clipboard, "writeText").mockResolvedValue(undefined);
+		try {
+			render(<DaemonFailureBanner status={{ state: "stopped", code: "exited" }} />);
+			await user.click(screen.getByRole("button", { name: "Copy error code" }));
+			expect(writeText).toHaveBeenCalledWith("exited");
+		} finally {
+			writeText.mockRestore();
+		}
 	});
 
 	it("renders nothing while the daemon is not in an error state", () => {

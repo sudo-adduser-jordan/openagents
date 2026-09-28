@@ -116,6 +116,7 @@ import { TurnPlan } from "./TurnPlan";
 import { TurnSettingsBar } from "./TurnSettingsBar";
 import { ElicitationCard } from "./ElicitationCard";
 import { McpServerBanner, ReauthBanner, ThreadStateBanner } from "./ChatStatusBanners";
+import { CopyButton } from "./CopyButton";
 import {
 	activeTurn,
 	activityPlan,
@@ -3569,6 +3570,7 @@ function TurnLiveStatus({
 		);
 	}
 	if (providerFailure) {
+		const copyText = [providerFailure.summary, providerFailure.detail?.text].filter(Boolean).join("\n");
 		return (
 			<div
 				role="status"
@@ -3580,12 +3582,18 @@ function TurnLiveStatus({
 					aria-hidden="true"
 					className="mt-0.5 size-3.5 shrink-0 text-warning"
 				/>
-				<span className="flex min-w-0 flex-col gap-0.5">
-					<strong className="text-xs font-medium text-warning">
-						{providerFailure.summary}
+				<span className="flex min-w-0 flex-1 flex-col gap-0.5">
+					<strong className="flex items-center gap-1 text-xs font-medium text-warning">
+						<span className="min-w-0 select-text">{providerFailure.summary}</span>
+						<CopyButton
+							text={copyText}
+							label="Copy provider error"
+							compact
+							className="size-6 shrink-0 justify-center rounded-md px-0 py-0"
+						/>
 					</strong>
 					{providerFailure.detail?.text ? (
-						<span className="text-[11px] leading-snug text-muted-foreground">
+						<span className="text-[11px] leading-snug text-muted-foreground select-text">
 							{providerFailure.detail.text}
 						</span>
 					) : null}

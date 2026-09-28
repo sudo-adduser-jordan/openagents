@@ -4,6 +4,7 @@ import type { DaemonStatus } from "../../shared/daemon-status";
 import { isSlowDaemonStartupStatus } from "../../shared/daemon-startup-status";
 import { daemonFailureHint, daemonFailureMessage, daemonFailureTitle } from "../lib/daemon-failure";
 import { openAgentsBridge } from "../lib/bridge";
+import { CopyButton } from "./chat/CopyButton";
 
 export function DaemonFailureBanner({ status }: { status: DaemonStatus }) {
 	if ((!status.code && !isSlowDaemonStartupStatus(status)) || status.state === "ready") return null;
@@ -114,13 +115,24 @@ function DaemonFailureContent({ status }: { status: DaemonStatus }) {
 					) : null}
 				</div>
 				{status.code ? (
-					<code className="shrink-0 rounded-md bg-(--color-bg-import-chip) px-1.5 py-0.5 font-mono text-micro text-[var(--color-text-import-muted)]">
-						{status.code}
-					</code>
+					<span className="flex shrink-0 items-center gap-1">
+						<code
+							className="rounded-md bg-(--color-bg-import-chip) px-1.5 py-0.5 font-mono text-micro text-[var(--color-text-import-muted)] select-text"
+							title={status.code}
+						>
+							{status.code}
+						</code>
+						<CopyButton
+							text={status.code}
+							label="Copy error code"
+							compact
+							className="size-6 justify-center rounded-md px-0 py-0"
+						/>
+					</span>
 				) : null}
 			</div>
 			{details && detailsOpen ? (
-				<pre className="mt-2 max-h-daemon-failure-details-max w-full overflow-auto rounded-md border border-[var(--color-border-import-modal)] bg-[var(--color-bg-import-card)] px-1.5 py-1 font-mono text-caption leading-relaxed text-[var(--color-text-import-muted)]">
+				<pre className="mt-2 max-h-daemon-failure-details-max w-full overflow-auto rounded-md border border-[var(--color-border-import-modal)] bg-[var(--color-bg-import-card)] px-1.5 py-1 font-mono text-caption leading-relaxed text-[var(--color-text-import-muted)] select-text">
 					{details}
 				</pre>
 			) : null}

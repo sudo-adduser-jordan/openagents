@@ -1,6 +1,7 @@
 import { render, screen } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { describe, expect, it, vi } from "vitest";
+import { openAgentsBridge } from "../../lib/bridge";
 import { McpServerBanner, ReauthBanner, ThreadStateBanner } from "./ChatStatusBanners";
 
 // Each of these answers a question the timeline structurally cannot, so the tests are
@@ -43,6 +44,20 @@ describe("ReauthBanner", () => {
 			<ReauthBanner account={{ reauthRequiredAt: "2026-08-03T00:00:00Z" }} harness="opencode" />,
 		);
 		expect(screen.getByText("opencode auth login")).toBeInTheDocument();
+	});
+
+	it("copies the sign-in command", async () => {
+		const user = userEvent.setup();
+		const writeText = vi.spyOn(openAgentsBridge.clipboard, "writeText").mockResolvedValue(undefined);
+		try {
+			render(
+				<ReauthBanner account={{ reauthRequiredAt: "2026-08-03T00:00:00Z" }} harness="opencode" />,
+			);
+			await user.click(screen.getByRole("button", { name: "Copy sign-in command" }));
+			expect(writeText).toHaveBeenCalledWith("opencode auth login");
+		} finally {
+			writeText.mockRestore();
+		}
 	});
 
 	it("falls back to generic wording rather than guessing a command", () => {
@@ -129,14 +144,26 @@ describe("McpServerBanner", () => {
 		);
 	});
 
-	it("draws no control at all when the harness cannot reload", () => {
+	it("draws no reload control when the harness cannot reload", () => {
 		render(<McpServerBanner servers={broken} />);
-		expect(screen.queryByRole("button")).not.toBeInTheDocument();
+		expect(screen.queryByRole("button", { name: /Reload/ })).not.toBeInTheDocument();
 	});
 
 	it("surfaces a failed reload", () => {
 		render(<McpServerBanner servers={broken} onReload={vi.fn()} error="controller not ready" />);
 		expect(screen.getByText("controller not ready")).toBeInTheDocument();
+	});
+
+	it("copies the tool server error", async () => {
+		const user = userEvent.setup();
+		const writeText = vi.spyOn(openAgentsBridge.clipboard, "writeText").mockResolvedValue(undefined);
+		try {
+			render(<McpServerBanner servers={broken} />);
+			await user.click(screen.getByRole("button", { name: "Copy playwright error" }));
+			expect(writeText).toHaveBeenCalledWith("did not report ready within 30s");
+		} finally {
+			writeText.mockRestore();
+		}
 	});
 
 	// A healthy server is not news. The caller filters, and an empty list must not
