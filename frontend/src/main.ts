@@ -3,6 +3,7 @@ import { consumeUpdateRelaunchFlag } from "./main/update-relaunch-flag";
 import {
 	app,
 	BaseWindow,
+	ClipboardItem,
 	clipboard,
 	dialog,
 	ipcMain,
@@ -624,7 +625,6 @@ async function createWindowInternal(): Promise<void> {
 		WebContentsView,
 		annotatePreloadPath: annotatePreloadPath(),
 		rendererOrigin: new URL(rendererUrl()).origin,
-		isMac: false,
 		getKeybindingOverrides: () => keybindingOverrides,
 		isKeybindingRecording: () => keybindingRecordingActive,
 		agentBrowserRuntime,
@@ -638,7 +638,7 @@ async function createWindowInternal(): Promise<void> {
 			notify: (state) => shellWebContents.send("browser:downloadsChanged", state),
 		}),
 		clearBrowserProfileData: clearElectronBrowserProfileData,
-		clipboard,
+		clipboard: { writeImage: (image) => writeNativeImageToClipboard(image) },
 	});
 	browserProfileImporter = profileImporter;
 	browserProfileIpc = registerBrowserProfileIpc({
@@ -2058,10 +2058,16 @@ ipcMain.handle("app:checkGitHubRepositoryAvailability", async (_event, input: { 
 		return { available: false, message: "Could not check this repository name. Confirm GitHub CLI is signed in." };
 	}
 });
-ipcMain.handle("clipboard:writeText", (_event, text: string) => {
-	clipboard.writeText(text, "clipboard");
+// Electron 44 removed the synchronous clipboard image API (clipboard.writeImage).
+// Screenshots are written through the async clipboard.write with an image/png ClipboardItem.
+async function writeNativeImageToClipboard(image: Electron.NativeImage): Promise<void> {
+	const png = image.toPNG();
+	await clipboard.write([new ClipboardItem({ "image/png": new Blob([Uint8Array.from(png)], { type: "image/png" }) })]);
+}
+ipcMain.handle("clipboard:writeText", async (_event, text: string) => {
+	await clipboard.writeText(text);
 	if (process.platform === "linux") {
-		clipboard.writeText(text, "selection");
+		await clipboard.selection.writeText(text);
 	}
 });
 ipcMain.handle("clipboard:readText", () => clipboard.readText());

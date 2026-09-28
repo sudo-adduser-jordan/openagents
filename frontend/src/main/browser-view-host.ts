@@ -1,8 +1,8 @@
 import type {
-	Clipboard,
 	IpcMain,
 	IpcMainEvent,
 	IpcMainInvokeEvent,
+	NativeImage,
 	Rectangle,
 	Session,
 	View,
@@ -323,7 +323,7 @@ export type BrowserViewHostOptions = {
 	browserHistoryStore?: BrowserHistoryStore;
 	browserDownloadManager?: BrowserDownloadManager;
 	clearBrowserProfileData?: (partition: string) => Promise<void>;
-	clipboard?: Pick<Clipboard, "writeImage">;
+	clipboard?: { writeImage: (image: NativeImage) => Promise<void> };
 };
 
 export type BrowserViewHost = {
@@ -2089,7 +2089,7 @@ export function createBrowserViewHost(options: BrowserViewHostOptions): BrowserV
 		if (image.isEmpty()) {
 			throw browserError("SCREENSHOT_UNAVAILABLE", "The browser page could not be captured");
 		}
-		options.clipboard.writeImage(image);
+		await options.clipboard.writeImage(image);
 	});
 	handle("browser:downloads:list", (event) => {
 		if (event.sender.id !== shellWebContents.id) return { downloads: [] };
