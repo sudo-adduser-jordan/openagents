@@ -156,3 +156,10 @@ Commit `openapi.yaml` and `frontend/src/api/schema.ts` together with the Go chan
 - Use conventional commit messages (`feat:`, `fix:`, `docs:`, `test:`, `chore:`).
 - Explain intentional omissions in the PR body, especially when the TypeScript original had more behavior than the Go rewrite domain currently supports.
 - Run the narrowest relevant tests first, then the repo/CI commands that match the touched area.
+
+## Domain glossary
+
+Canonical vocabulary terms (no implementation details; decisions live in `docs/adr/`).
+
+- **Loopback Listener** — the daemon's only supported HTTP surface, bound to
+  `127.0.0.1`. It serves the desktop app and CLI and remains unauthenticated.

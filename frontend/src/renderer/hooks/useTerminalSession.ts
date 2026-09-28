@@ -1,4 +1,4 @@
-// Terminal Attachment (see CONTEXT.md): the live binding between a terminal
+// Terminal Attachment: the live binding between a terminal
 // pane and a PTY over the mux. The hook owns the whole attachment lifecycle —
 // open ordering, auto-reattach with backoff, error surfacing, and exit
 // handling — so the pane component only renders.
