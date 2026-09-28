@@ -16,7 +16,7 @@ import { useCallback, useEffect, useRef, useState } from "react";
 import { ArrowDownUp, CornerDownLeft } from "lucide-react";
 import { cn } from "../../lib/utils";
 import { composerFileIcon } from "./composerFileIcon";
-import type { Suggestion, TriggerKind } from "./composerSuggest";
+import { skillSourceLabel, type Suggestion, type TriggerKind } from "./composerSuggest";
 
 export function ComposerSuggestMenu({
 	id,
@@ -160,9 +160,9 @@ export function ComposerSuggestMenu({
 										</span>
 									) : null}
 								</span>
-								{displayBadge(item.badge) ? (
+								{skillSourceLabel(item.badge) ? (
 									<span className="shrink-0 text-micro tracking-wide text-muted-foreground">
-										{displayBadge(item.badge)}
+										{skillSourceLabel(item.badge)}
 									</span>
 								) : null}
 								{index === highlighted ? (
@@ -204,9 +204,4 @@ export function ComposerSuggestMenu({
 			) : null}
 		</div>
 	);
-}
-
-function displayBadge(badge?: string): string | undefined {
-	if (!badge || badge.toLowerCase() === "agent") return undefined;
-	return badge.toLowerCase() === "open-agents" ? "Open Agents" : badge;
 }

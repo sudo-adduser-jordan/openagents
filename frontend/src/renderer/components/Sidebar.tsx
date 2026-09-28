@@ -26,6 +26,7 @@ import {
 	RefreshCw,
 	Search,
 	Settings,
+	Sparkles,
 	Wrench,
 	Trash2,
 	X,
@@ -334,6 +335,9 @@ function useSelection() {
 	// Tools is a settings section, not a second surface: the footer row is a
 	// shortcut that opens Settings already parked on it.
 	const goToolsSettings = useCallback(() => openGlobalSettings("tools"), [openGlobalSettings]);
+	// Skills is the same kind of shortcut, and sits above Tools in the footer to
+	// match the settings nav.
+	const goSkillsSettings = useCallback(() => openGlobalSettings("skills"), [openGlobalSettings]);
 	const goSettings = useCallback((projectId: string) => openProjectSettings(projectId), [openProjectSettings]);
 	const goProject = useCallback(
 		(projectId: string) => void navigate({ to: "/projects/$projectId", params: { projectId } }),
@@ -360,11 +364,12 @@ function useSelection() {
 		// Settings is a modal — open it in place so the current page (session
 		// terminal, board, etc.) stays underneath.
 		goGlobalSettings,
+		goSkillsSettings,
 		goToolsSettings,
 		goSettings,
 		goProject,
 		goSession,
-	}), [goGlobalSettings, goHome, goProject, goSession, goSettings, goToolsSettings, params.projectId, params.sessionId, pathname]);
+	}), [goGlobalSettings, goHome, goProject, goSession, goSettings, goSkillsSettings, goToolsSettings, params.projectId, params.sessionId, pathname]);
 }
 
 // Colour tracks the session's board section, preserving SCM state while the
@@ -879,6 +884,19 @@ export function Sidebar({
 						tabIndex={isCollapsed ? -1 : 0}
 					/>
 					<button
+						aria-label="Skills"
+						className={FOOTER_NAV_BUTTON_CLASS}
+						onClick={() => selection.goSkillsSettings()}
+						tabIndex={isCollapsed ? -1 : 0}
+						type="button"
+					>
+						<NavRowHighlight />
+						<span className="relative z-[1] flex min-w-0 flex-1 items-center gap-2.5 [&_svg]:size-icon-md [&_svg]:shrink-0">
+							<Sparkles aria-hidden="true" />
+							<span className="tracking-tight">{"Skills"}</span>
+						</span>
+					</button>
+					<button
 						aria-label="Tools"
 						className={FOOTER_NAV_BUTTON_CLASS}
 						onClick={() => selection.goToolsSettings()}
@@ -915,6 +933,23 @@ export function Sidebar({
 						status={updateStatus}
 						tabIndex={isCollapsed ? 0 : -1}
 					/>
+					<Tooltip>
+						<TooltipTrigger asChild>
+							<button
+								aria-label="Skills"
+								className={FOOTER_RAIL_BUTTON_CLASS}
+								onClick={() => selection.goSkillsSettings()}
+								tabIndex={isCollapsed ? 0 : -1}
+								type="button"
+							>
+								<NavRowHighlight />
+								<span className="relative z-[1] grid place-items-center [&_svg]:size-icon-base">
+									<Sparkles aria-hidden="true" />
+								</span>
+							</button>
+						</TooltipTrigger>
+						<TooltipContent side="right">{"Skills"}</TooltipContent>
+					</Tooltip>
 					<Tooltip>
 						<TooltipTrigger asChild>
 							<button

@@ -1388,7 +1388,8 @@ export function useConversationConfigOptions(sessionId: string | undefined, enab
  *
  * An empty list is a real answer and the composer depends on being able to tell it
  * from a failure — with no skills, `/` has to stay an ordinary character rather than
- * opening an empty menu.
+ * opening an empty menu. `error` is handed back for the surfaces that have to make
+ * that same distinction in words rather than by staying silent.
  */
 export function useConversationSkills(sessionId: string | undefined, enabled: boolean) {
 	const query = useQuery({
@@ -1424,7 +1425,7 @@ export function useConversationSkills(sessionId: string | undefined, enabled: bo
 			return (data?.skills ?? []) as ChatSkill[];
 		},
 	});
-	return { skills: query.data ?? [], isLoading: query.isLoading };
+	return { skills: query.data ?? [], isLoading: query.isLoading, error: query.error };
 }
 
 /**

@@ -158,6 +158,20 @@ function skillDetail(skill: ChatSkill): string | undefined {
 }
 
 /**
+ * The scope label to show beside a skill, or nothing to show.
+ *
+ * "agent" is the generic fallback the ACP adapter stamps on skills the provider
+ * offers without naming a scope, so it says nothing and is dropped; the rest are
+ * shown, with the one legacy Open Agents spelling spelled out. Every surface that
+ * lists skills has to apply this or the same skill is labelled differently in two
+ * places.
+ */
+export function skillSourceLabel(source?: string): string | undefined {
+	if (!source || source.toLowerCase() === "agent") return undefined;
+	return source.toLowerCase() === "open-agents" ? "Open Agents" : source;
+}
+
+/**
  * Rank worktree paths for an `@` query.
  *
  * The basename is scored ahead of the full path: people search for `ChatComposer`,

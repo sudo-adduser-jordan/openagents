@@ -1,4 +1,4 @@
-import { Bot, CircleHelp, Globe2, Keyboard, RefreshCw, Settings2, Smartphone, Wrench, type LucideIcon } from "lucide-react";
+import { Bot, CircleHelp, Globe2, Keyboard, RefreshCw, Settings2, Smartphone, Sparkles, Wrench, type LucideIcon } from "lucide-react";
 import { lazy, type ReactNode } from "react";
 import type { GlobalSettingsSection } from "../../stores/ui-store";
 import { BrowserDownloadsSection } from "./BrowserDownloadsSection";
@@ -9,6 +9,7 @@ import { KeyboardShortcutsContent } from "./KeyboardShortcutsContent";
 import { OpencodeConfigSection } from "./OpencodeConfigSection";
 import { ReportProblemContent } from "./ReportProblemContent";
 import { SettingsSection } from "./SettingsSection";
+import { SkillsSection } from "./SkillsSection";
 
 const UpdatesSection = lazy(async () => {
 	const module = await import("./UpdatesSection");
@@ -69,6 +70,14 @@ const globalSettingsCatalog: SettingsCatalogItem[] = [
 				</div>
 			</SettingsSection>
 		),
+	},
+	{
+		// The slash commands the open session's agent accepts. Sits before Tools so
+		// the sidebar footer and this nav read in the same order.
+		id: "skills",
+		icon: Sparkles,
+		label: () => "Skills",
+		render: (titleHidden) => <SkillsSection titleHidden={titleHidden} />,
 	},
 	{
 		// The user's own opencode config, and the tool policy Open Agents layers

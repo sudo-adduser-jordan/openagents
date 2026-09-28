@@ -469,8 +469,44 @@ describe("Sidebar", () => {
 		expect(collapsedButton?.closest('[aria-hidden="true"]')).toBeNull();
 	});
 
-	it("keeps sidebar scrolling functional without a layout gutter", () => {
+	it("places Skills directly above Tools in the expanded footer", () => {
 		renderSidebar();
+
+		// The rail copy is aria-hidden while expanded, so the accessible tree has
+		// exactly one of each — the footer row this assertion is about.
+		const skillsButton = screen.getByRole("button", { name: "Skills" });
+		const toolsButton = screen.getByRole("button", { name: "Tools" });
+		expect(skillsButton).toHaveTextContent("Skills");
+		expect(toolsButton.previousElementSibling).toBe(skillsButton);
+	});
+
+	it("places Skills directly above Tools in the collapsed icon rail", () => {
+		renderSidebar({ initialOpen: false });
+
+		const skillsButtons = Array.from(document.querySelectorAll<HTMLButtonElement>('button[aria-label="Skills"]'));
+		const toolsButtons = Array.from(document.querySelectorAll<HTMLButtonElement>('button[aria-label="Tools"]'));
+		expect(skillsButtons).toHaveLength(2);
+		expect(toolsButtons).toHaveLength(2);
+
+		// Collapsed: the rail copy is the reachable one (the expanded footer is
+		// hidden), and it keeps the same order so the icons do not jump when the
+		// rail is restored.
+		const railSkills = screen.getByRole("button", { name: "Skills" });
+		const railTools = screen.getByRole("button", { name: "Tools" });
+		expect(railSkills).toBe(skillsButtons.find((button) => !button.textContent?.includes("Skills")));
+		expect(railTools).toBe(toolsButtons.find((button) => !button.textContent?.includes("Tools")));
+		expect(railSkills.nextElementSibling).toBe(railTools);
+	});
+
+	it("opens the skills settings section from the footer", async () => {
+		const user = userEvent.setup();
+		renderSidebar();
+		await user.click(screen.getByRole("button", { name: "Skills" }));
+		expect(useUiStore.getState().settingsModal).toEqual({ scope: "global", section: "skills" });
+		expect(navigateMock).not.toHaveBeenCalled();
+	});
+
+	it("keeps sidebar scrolling functional without a layout gutter", () => {		renderSidebar();
 
 		const content = document.querySelector('[data-sidebar="content"]');
 		expect(content).toHaveClass("overflow-y-auto", "scrollbar-none");

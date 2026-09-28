@@ -22,6 +22,7 @@ export type GlobalSettingsSection =
 	| "general"
 	| "harness"
 	| "mobile"
+	| "skills"
 	| "tools"
 	| "shortcuts"
 	| "browserProfiles"
