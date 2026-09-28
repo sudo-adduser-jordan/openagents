@@ -14,8 +14,8 @@ export type CreateSessionPRResult = {
 };
 
 /**
- * Push a Ready session's branch to origin and open exactly one pull request
- * against dev, returning its URL. The daemon de-duplicates (durable facts,
+ * Push a Review or Ready session's branch to origin and open exactly one pull
+ * request against dev, returning its URL. The daemon de-duplicates (durable facts,
  * then the provider listing, then the creation race), so a double-click can
  * never create two PRs — but the button still disables while pending. The
  * session stays alive for review; only the local-merge button ends it.

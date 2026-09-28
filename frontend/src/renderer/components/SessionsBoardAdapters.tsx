@@ -200,17 +200,22 @@ function DesktopSessionCard({
 				/>
 			</div>
 		) : boardLane === "review" && onReviewToCommit ? (
-			// Review-lane Commit: resolve the pending approval so the agent
-			// commits; the lane itself follows only once the daemon observes
-			// the resulting PR facts. Exactly one button per review card. The
-			// daemon's status phrase stays visible beside it (it names the loop
-			// that is turning).
+			// Review-lane Commit: with a pending edit, resolve the approval so
+			// the agent commits; with nothing pending, push the branch and
+			// ensure exactly one pull request against dev. Either way the lane
+			// itself follows only once the daemon observes the resulting PR
+			// facts. Exactly one button per review card, never terminating.
+			// The daemon's status phrase stays visible beside it (it names the
+			// loop that is turning). The button disables while the PR leg is
+			// in flight; a race that still reaches the daemon resolves to the
+			// same PR via its duplicate protection.
 			<div className="flex min-w-0 items-center gap-1.5">
 				<DeliveryStatusLabel session={session} lane={boardLane} />
 				<WorkflowStageActionButton
-					label="Commit"
+					label={createPR.isPending ? "Opening…" : "Commit"}
+					disabled={createPR.isPending || mergeLocal.isPending}
 					onClick={() => onReviewToCommit(session)}
-					title="Approve the pending edit so the agent commits and opens a pull request"
+					title="Approve the pending edit so the agent commits, or push and open a pull request when already committed"
 				/>
 			</div>
 		) : boardLane === "ready" ? (

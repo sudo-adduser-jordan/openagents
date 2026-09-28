@@ -1377,24 +1377,135 @@ describe("SessionsBoard", () => {
 		);
 	});
 
-	it("opens the session for review to commit when there is nothing to approve", async () => {
+	it("commits a finished Review card with nothing to approve by ensuring a pull request", async () => {
+		// The 19 exhibit: work committed, worktree clean, no PR, daemon idles
+		// on "Awaiting PR". Commit must push + open the PR (POST /pr) instead
+		// of opening the session and leaving the card where it was.
 		workspaceQueryMock.mockReturnValue({
 			data: [workspaceWithSessions([awaitingPrSession({ workflowMode: "building" })])],
 			isError: false,
 			isSuccess: true,
 		});
 		getMock.mockResolvedValue({ data: { activities: [] } });
+		postMock.mockResolvedValue({
+			data: { ok: true, prUrl: "https://github.com/example/radic/pull/145", prNumber: 145, created: true },
+		});
 
 		renderBoard("p1");
 		await userEvent.click(screen.getByRole("button", { name: "Commit" }));
 
 		await waitFor(() =>
-			expect(navigateMock).toHaveBeenCalledWith({
-				to: "/projects/$projectId/sessions/$sessionId",
-				params: { projectId: "p1", sessionId: "s-stage" },
+			expect(postMock).toHaveBeenCalledWith("/api/v1/sessions/{sessionId}/pr", {
+				params: { path: { sessionId: "s-stage" } },
 			}),
 		);
-		expect(postMock).not.toHaveBeenCalled();
+		await waitFor(() =>
+			expect(openExternalMock).toHaveBeenCalledWith("https://github.com/example/radic/pull/145"),
+		);
+		expect(navigateMock).not.toHaveBeenCalled();
+	});
+
+	it("commits an in-review card with no pending edit by pushing to its pull request", async () => {
+		workspaceQueryMock.mockReturnValue({
+			data: [workspaceWithSessions([reviewLaneSession()])],
+			isError: false,
+			isSuccess: true,
+		});
+		getMock.mockResolvedValue({ data: { activities: [] } });
+		postMock.mockResolvedValue({
+			data: { ok: true, prUrl: "https://github.com/example/radic/pull/146", prNumber: 146, created: false },
+		});
+
+		renderBoard("p1");
+		await userEvent.click(screen.getByRole("button", { name: "Commit" }));
+
+		await waitFor(() =>
+			expect(postMock).toHaveBeenCalledWith("/api/v1/sessions/{sessionId}/pr", {
+				params: { path: { sessionId: "s-review" } },
+			}),
+		);
+		await waitFor(() =>
+			expect(openExternalMock).toHaveBeenCalledWith("https://github.com/example/radic/pull/146"),
+		);
+		expect(navigateMock).not.toHaveBeenCalled();
+	});
+
+	it("reports a Commit pull-request failure on the review card without advancing it", async () => {
+		workspaceQueryMock.mockReturnValue({
+			data: [workspaceWithSessions([reviewLaneSession()])],
+			isError: false,
+			isSuccess: true,
+		});
+		getMock.mockResolvedValue({ data: { activities: [] } });
+		postMock.mockResolvedValue({
+			error: { code: "GH_AUTH_MISSING", message: "gh is not authenticated" },
+			response: { status: 403 },
+		});
+
+		renderBoard("p1");
+		await userEvent.click(screen.getByRole("button", { name: "Commit" }));
+
+		const card = screen.getByText("review worker").closest('[data-testid="board-session-card"]') as HTMLElement;
+		// The suite mocks apiErrorMessage to its fallback, so the card shows
+		// the status-qualified fallback; production surfaces the daemon text.
+		expect(await within(card).findByRole("alert")).toHaveTextContent(
+			"Failed to open a pull request for review worker (403)",
+		);
+		expect(navigateMock).not.toHaveBeenCalled();
+		expect(openExternalMock).not.toHaveBeenCalled();
+		// The card stays live: a failed Commit never terminates or advances.
+		expect(within(card).getByRole("button", { name: "Commit" })).toBeEnabled();
+	});
+
+	it("fires a single pull request creation on Commit double-click", async () => {
+		workspaceQueryMock.mockReturnValue({
+			data: [workspaceWithSessions([reviewLaneSession()])],
+			isError: false,
+			isSuccess: true,
+		});
+		getMock.mockResolvedValue({ data: { activities: [] } });
+		let resolvePost!: (value: { data: Record<string, unknown> }) => void;
+		postMock.mockReturnValueOnce(
+			new Promise((resolve) => {
+				resolvePost = resolve;
+			}),
+		);
+
+		renderBoard("p1");
+		const commit = screen.getByRole("button", { name: "Commit" });
+		await userEvent.click(commit);
+		// The pending request disables the button, so the second click lands on
+		// a disabled control and fires nothing; a race that still reaches the
+		// daemon resolves to the same PR via durable/remote/race protection.
+		await waitFor(() => expect(commit).toBeDisabled());
+		await userEvent.click(commit);
+		expect(postMock).toHaveBeenCalledTimes(1);
+
+		await act(async () => {
+			resolvePost({ data: { ok: true, prUrl: "https://github.com/example/radic/pull/146", created: true } });
+		});
+		await waitFor(() =>
+			expect(openExternalMock).toHaveBeenCalledWith("https://github.com/example/radic/pull/146"),
+		);
+	});
+
+	it("never shows Commit on building or archived cards", () => {
+		workspaceQueryMock.mockReturnValue({
+			data: [
+				workspaceWithSessions([
+					boardSession({ id: "s-building", title: "building worker", status: "working", kanbanColumn: "building" }),
+					terminatedSession({ id: "s-dead", title: "dead worker" }),
+				]),
+			],
+			isError: false,
+			isSuccess: true,
+		});
+
+		renderBoard("p1");
+
+		const buildingCard = screen.getByText("building worker").closest('[data-testid="board-session-card"]') as HTMLElement;
+		expect(within(buildingCard).queryByRole("button", { name: "Commit" })).not.toBeInTheDocument();
+		expect(screen.queryByRole("button", { name: "Commit" })).not.toBeInTheDocument();
 	});
 
 	function readySession(overrides: Partial<WorkspaceSession> = {}): WorkspaceSession {

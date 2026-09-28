@@ -190,11 +190,36 @@ export function SessionsBoard({ projectId }: SessionsBoardProps) {
 		},
 		[setWorkflowMode],
 	);
+	const mergeSessionLocal = useMergeSessionLocal();
+	const createSessionPR = useCreateSessionPR();
+	// Push the branch if needed and open exactly one pull request against
+	// dev, then hand its URL to the browser. Shared by the Ready Open-PR
+	// action and the Review Commit fallback below: the daemon de-duplicates
+	// (durable facts, then the provider listing, then the creation race), so
+	// either entry point is safe to retry. Failures surface on the card via
+	// mutation state; nothing is optimistic and the session stays alive.
+	const ensureSessionPR = useCallback(
+		async (session: WorkspaceSession) => {
+			try {
+				const result = await createSessionPR.mutateAsync(session);
+				if (result.prUrl) await openAgentsBridge.app.openExternal(result.prUrl);
+			} catch {
+				// The card footer reports the failure via mutation state.
+			}
+		},
+		[createSessionPR],
+	);
 	const reviewToCommit = useCallback(
 		async (session: WorkspaceSession) => {
-			// Approve the pending conversation edit so the agent commits and the
-			// session waits on PR approval. With nothing pending the same action
-			// needs the composer, so hand the session over.
+			// Two-link Commit chain toward Ready. With a pending edit, approve
+			// it so the agent commits and return: the push must wait for that
+			// commit to land, so the next Commit click (now with nothing
+			// pending) pulls the delivery link. With nothing pending the work
+			// is already committed — push the branch and ensure exactly one
+			// pull request against dev, then let the daemon's observed PR
+			// facts move the card. Only an approval-resolution failure hands
+			// the session to the composer; a PR-leg failure stays on the card
+			// footer so the lane never advances without real facts.
 			if (usesPreviewWorkspaceData) {
 				openSession(session);
 				return;
@@ -216,14 +241,14 @@ export function SessionsBoard({ projectId }: SessionsBoardProps) {
 					void queryClient.invalidateQueries({ queryKey: workspaceQueryKey });
 					return;
 				}
+				openSession(session);
+				return;
 			}
-			openSession(session);
+			await ensureSessionPR(session);
 		},
-		[openSession, queryClient],
+		[ensureSessionPR, openSession, queryClient],
 	);
 
-	const mergeSessionLocal = useMergeSessionLocal();
-	const createSessionPR = useCreateSessionPR();
 	// Merge local is end-of-life: the daemon merges, verifies, removes the
 	// branch, and terminates, so the card settles into archive on the
 	// invalidation. Failures surface on the card; nothing is optimistic.
@@ -240,16 +265,9 @@ export function SessionsBoard({ projectId }: SessionsBoardProps) {
 				if (url) void openAgentsBridge.app.openExternal(url);
 				return;
 			}
-			void (async () => {
-				try {
-					const result = await createSessionPR.mutateAsync(session);
-					if (result.prUrl) await openAgentsBridge.app.openExternal(result.prUrl);
-				} catch {
-					// The card footer reports the failure via mutation state.
-				}
-			})();
+			void ensureSessionPR(session);
 		},
-		[createSessionPR],
+		[ensureSessionPR],
 	);
 
 	const restartManager = async () => {
