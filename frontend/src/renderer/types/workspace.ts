@@ -59,6 +59,14 @@ export type WorkspaceSession = {
 	workspaceId: string;
 	workspaceName: string;
 	title: string;
+	/**
+	 * The session's ordinal in its project's sequence: the number in
+	 * `openagents-7`, which is also how a user refers to it. Per-project and
+	 * never reused, so the sequence is monotonic but gapped. Absent only from a
+	 * daemon too old to send it, or for a session the UI has not read back yet;
+	 * 0 is likewise treated as absent, since every real number is at least 1.
+	 */
+	num?: number;
 	/** Raw issue/task identifier from the daemon. Intake ids are provider-prefixed. */
 	issueId?: string;
 	provider: AgentProvider;

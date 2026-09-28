@@ -7100,6 +7100,9 @@ components:
           type: string
         model:
           type: string
+        num:
+          format: int64
+          type: integer
         pinnedAt:
           format: date-time
           type:
@@ -7175,6 +7178,7 @@ components:
           type: string
       required:
       - id
+      - num
       - kind
       - autoReviewEnabled
       - mode

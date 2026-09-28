@@ -2374,3 +2374,164 @@ describe("Sidebar", () => {
 		expect(screen.getByTestId("sidebar-dev-badge")).toHaveTextContent("dev");
 	});
 });
+
+/**
+ * Every session row leads with the agent's number in its project sequence, the
+ * ordinal behind `openagents-<num>`. It is the identity a user quotes out
+ * loud, so it has to be on the row itself rather than behind a hover.
+ */
+describe("Sidebar session numbers", () => {
+	const numbered = (overrides: Partial<WorkspaceSession> = {}): WorkspaceSession => ({
+		...session,
+		num: 7,
+		...overrides,
+	});
+
+	function rowFor(title: string): HTMLElement {
+		const open = screen.getByRole("button", { name: `Open ${title}` });
+		const row = open.closest<HTMLElement>("[data-session-row]");
+		if (!row) throw new Error(`no row for ${title}`);
+		return row;
+	}
+
+	const numberIn = (row: HTMLElement) => row.querySelector<HTMLElement>("[data-session-num]");
+	const titleIn = (row: HTMLElement) => row.querySelector<HTMLElement>("[data-session-name]");
+
+	/** The number must precede the title in document order, i.e. sit left of it. */
+	function expectNumberLeftOfTitle(row: HTMLElement) {
+		const num = numberIn(row);
+		const name = titleIn(row);
+		expect(num).not.toBeNull();
+		expect(name).not.toBeNull();
+		expect(num!.compareDocumentPosition(name!) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy();
+	}
+
+	it("renders the number immediately left of the task title", () => {
+		renderSidebar({ workspaces: [{ ...workspace, sessions: [numbered()] }] });
+
+		const row = rowFor("fix login");
+		expect(numberIn(row)).toHaveTextContent("7");
+		expectNumberLeftOfTitle(row);
+		// Still behind the status dot, which keeps the leading position it had.
+		const dot = row.querySelector(`[data-session-status="${session.status}"]`);
+		expect(dot).not.toBeNull();
+		expect(dot!.compareDocumentPosition(numberIn(row)!) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy();
+	});
+
+	it("shows the number on a pinned row", () => {
+		renderSidebar({
+			workspaces: [{ ...workspace, sessions: [numbered({ isPinned: true, pinnedAt: "2026-06-30T00:00:00Z" })] }],
+		});
+
+		const pinned = screen.getByTestId("pinned-session-list");
+		const row = pinned.querySelector<HTMLElement>("[data-session-row]");
+		expect(row).not.toBeNull();
+		expectNumberLeftOfTitle(row!);
+	});
+
+	// The sortable list is a separate row component, reached only once the
+	// project is expanded. It delegates to the same row, so the number has to
+	// survive that delegation too.
+	it("shows the number on rows in the sortable project list", () => {
+		renderSidebar({
+			workspaces: [{ ...workspace, sessions: [numbered(), numbered({ id: "proj-1-12", num: 12, title: "fix logout" })] }],
+		});
+
+		const list = screen.getByTestId("session-list-proj-1");
+		expect(list.querySelectorAll("[data-session-row]")).toHaveLength(2);
+		expectNumberLeftOfTitle(rowFor("fix login"));
+		expect(numberIn(rowFor("fix login"))).toHaveTextContent("7");
+		expectNumberLeftOfTitle(rowFor("fix logout"));
+		expect(numberIn(rowFor("fix logout"))).toHaveTextContent("12");
+	});
+
+	// Managers draw an ordinal from the same sequence, but the sidebar never
+	// lists a manager as a session row (workerSessions filters them out), so
+	// there is no manager row for the number to appear on. Pinned this way so a
+	// future change that starts listing managers does not silently skip it.
+	it("does not list manager sessions as rows, so no manager row is numbered", () => {
+		renderSidebar({ workspaces: [{ ...workspace, sessions: [numbered({ kind: "manager", title: "ship release" })] }] });
+
+		expect(screen.queryByRole("button", { name: "Open ship release" })).not.toBeInTheDocument();
+	});
+
+	// Numbers are per-project and never reused, so a gap is normal, not a bug.
+	it("renders a gapped sequence without renumbering", () => {
+		renderSidebar({
+			workspaces: [{ ...workspace, sessions: [numbered({ num: 4, id: "proj-1-4" }), numbered({ num: 9, id: "proj-1-9" })] }],
+		});
+
+		const list = screen.getByTestId("session-list-proj-1");
+		// Compared as a set: the sidebar orders worker sessions by update time,
+		// not by ordinal. The point is that 4 and 9 are shown as themselves and
+		// never compacted to a dense 1,2.
+		const shown = Array.from(list.querySelectorAll<HTMLElement>("[data-session-num]"))
+			.map((el) => el.textContent)
+			.sort();
+		expect(shown).toEqual(["4", "9"]);
+	});
+
+	// The row is h-8 and the title is the part that must give way: the number
+	// is shrink-0 so it can never be pushed out by a long task name.
+	it("keeps the number visible and the title truncating for a long name", () => {
+		const longTitle = "refactor the entire notification delivery pipeline for every channel";
+		renderSidebar({ workspaces: [{ ...workspace, sessions: [numbered({ title: longTitle })] }] });
+
+		const row = rowFor(longTitle);
+		expect(numberIn(row)).toHaveTextContent("7");
+		expectNumberLeftOfTitle(row);
+		expect(numberIn(row)).toHaveClass("shrink-0");
+		expect(titleIn(row)).toHaveClass("truncate");
+	});
+
+	it("keeps the number in place while renaming", async () => {
+		const user = userEvent.setup();
+		renderSidebar({ workspaces: [{ ...workspace, sessions: [numbered()] }] });
+
+		await user.dblClick(screen.getByRole("button", { name: "Open fix login" }));
+		const input = await screen.findByRole("textbox", { name: "Rename fix login" });
+		const row = input.closest<HTMLElement>("[data-session-row]");
+		expect(row).not.toBeNull();
+
+		// Same position as before the row flipped into its editor, and outside
+		// the input, since the number is not part of the editable name.
+		const num = numberIn(row!);
+		expect(num).toHaveTextContent("7");
+		expect(num!.compareDocumentPosition(input) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy();
+		expect(input).toHaveValue("fix login");
+	});
+
+	// A daemon too old to send the field must degrade to today's row, not
+	// render a bare 0.
+	it("hides the number when the session carries none", () => {
+		const { num: _omitted, ...withoutNum } = numbered();
+		renderSidebar({ workspaces: [{ ...workspace, sessions: [withoutNum as WorkspaceSession] }] });
+
+		const row = rowFor("fix login");
+		expect(numberIn(row)).toBeNull();
+		expect(titleIn(row)).toHaveTextContent("fix login");
+	});
+
+	it("hides a zero number rather than rendering it", () => {
+		renderSidebar({ workspaces: [{ ...workspace, sessions: [numbered({ num: 0 })] }] });
+
+		const row = rowFor("fix login");
+		expect(numberIn(row)).toBeNull();
+		expect(titleIn(row)).toHaveTextContent("fix login");
+	});
+
+	// The number is a visual index. The row's accessible name stays the title,
+	// so screen readers are not read a redundant ordinal.
+	it("keeps the accessible name on the title in both states", async () => {
+		const user = userEvent.setup();
+		renderSidebar({ workspaces: [{ ...workspace, sessions: [numbered()] }] });
+
+		const open = screen.getByRole("button", { name: "Open fix login" });
+		expect(open).toHaveAccessibleName("Open fix login");
+		expect(numberIn(rowFor("fix login"))).toHaveAttribute("aria-hidden", "true");
+
+		await user.dblClick(open);
+		const input = await screen.findByRole("textbox", { name: "Rename fix login" });
+		expect(input).toHaveAccessibleName("Rename fix login");
+	});
+});

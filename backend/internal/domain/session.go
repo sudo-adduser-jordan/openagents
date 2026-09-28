@@ -172,11 +172,18 @@ type SessionMetadata struct {
 // facts: identity, agent harness, activity_state, is_terminated, and operational
 // metadata. The user-facing Status is derived from these facts plus PR facts.
 type SessionRecord struct {
-	ID        SessionID    `json:"id"`
-	ProjectID ProjectID    `json:"projectId,omitempty"`
-	IssueID   IssueID      `json:"issueId,omitempty"`
-	Kind      SessionKind  `json:"kind" enum:"worker,manager"`
-	Harness   AgentHarness `json:"harness,omitempty"`
+	ID        SessionID `json:"id"`
+	ProjectID ProjectID `json:"projectId,omitempty"`
+	IssueID   IssueID   `json:"issueId,omitempty"`
+	// Num is this session's ordinal in its project's sequence, the number
+	// behind the open-agents-1, open-agents-2 ids users already quote. It is
+	// per-project (standalone sessions draw from their own sequence), and
+	// retired numbers are never reused, so the sequence is monotonic and
+	// deliberately gapped. Always at least 1: every session is minted by the
+	// next-num allocator, never left at zero.
+	Num     int64        `json:"num"`
+	Kind    SessionKind  `json:"kind" enum:"worker,manager"`
+	Harness AgentHarness `json:"harness,omitempty"`
 	// ReviewerHarness is this session's preferred reviewer. Empty delegates to
 	// the project configuration.
 	ReviewerHarness   ReviewerHarness `json:"reviewerHarness,omitempty" enum:"opencode"`

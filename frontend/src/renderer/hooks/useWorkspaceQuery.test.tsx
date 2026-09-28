@@ -313,6 +313,82 @@ describe("useWorkspaceQuery", () => {
 		});
 	});
 
+	// Both list paths build WorkspaceSession independently: project sessions
+	// through one mapper, projectless ad-hoc sessions through another. The
+	// agent number has to survive either, or it appears on some rows and not
+	// others depending on which mapper filled the list.
+	it("carries the agent number through both session mappers", async () => {
+		respondWith({
+			projects: { data: { projects: [{ id: "proj-1", name: "my-app", path: "/p" }] }, error: undefined },
+			sessions: {
+				data: {
+					sessions: [
+						{
+							id: "proj-1-7",
+							projectId: "proj-1",
+							num: 7,
+							displayName: "fix login",
+							harness: "codex",
+							status: "working",
+							isTerminated: false,
+							updatedAt: "2026-06-10T16:15:04Z",
+						},
+						{
+							id: "standalone-2",
+							num: 2,
+							displayName: "Research",
+							harness: "codex",
+							status: "working",
+							isTerminated: false,
+							updatedAt: "2026-06-10T16:15:04Z",
+						},
+					],
+				},
+				error: undefined,
+			},
+		});
+
+		const { result } = renderHook(() => useWorkspaceQuery(), { wrapper });
+		await waitFor(() => expect(result.current.isSuccess).toBe(true));
+
+		const project = result.current.data?.find((workspace) => workspace.id === "proj-1");
+		expect(project?.sessions[0]).toMatchObject({ id: "proj-1-7", num: 7 });
+
+		const standalone = result.current.data?.find((workspace) => workspace.id === "__standalone__");
+		expect(standalone?.sessions[0]).toMatchObject({ id: "standalone-2", num: 2 });
+	});
+
+	// Zero is not a real ordinal: every session is minted by the next-num
+	// allocator, so 0 means the field never arrived (an older daemon) and must
+	// not render as a number.
+	it("treats a zero agent number as absent", async () => {
+		respondWith({
+			projects: { data: { projects: [{ id: "proj-1", name: "my-app", path: "/p" }] }, error: undefined },
+			sessions: {
+				data: {
+					sessions: [
+						{
+							id: "proj-1-1",
+							projectId: "proj-1",
+							num: 0,
+							displayName: "fix login",
+							harness: "codex",
+							status: "working",
+							isTerminated: false,
+							updatedAt: "2026-06-10T16:15:04Z",
+						},
+					],
+				},
+				error: undefined,
+			},
+		});
+
+		const { result } = renderHook(() => useWorkspaceQuery(), { wrapper });
+		await waitFor(() => expect(result.current.isSuccess).toBe(true));
+
+		expect(result.current.data?.[0].sessions[0].num).toBeUndefined();
+	});
+
 	it("maps each session's prs straight from the session list", async () => {
 		respondWith({
 			projects: { data: { projects: [{ id: "proj-1", name: "my-app", path: "/p" }] }, error: undefined },

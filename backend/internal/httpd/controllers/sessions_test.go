@@ -191,7 +191,7 @@ func (f *fakeManagedPreviewServer) Status(sessionID domain.SessionID) previewser
 
 func newFakeSessionService() *fakeSessionService {
 	now := time.Now().UTC()
-	s := domain.Session{SessionRecord: domain.SessionRecord{ID: "open-agents-1", ProjectID: "open-agents", Kind: domain.KindWorker, Activity: domain.Activity{State: domain.ActivityIdle, LastActivityAt: now}, AutoInjectReview: true, AutoInjectCI: true, CreatedAt: now, UpdatedAt: now}, Status: domain.StatusIdle, TerminalHandleID: "open-agents-1/terminal_0"}
+	s := domain.Session{SessionRecord: domain.SessionRecord{ID: "open-agents-1", ProjectID: "open-agents", Num: 1, Kind: domain.KindWorker, Activity: domain.Activity{State: domain.ActivityIdle, LastActivityAt: now}, AutoInjectReview: true, AutoInjectCI: true, CreatedAt: now, UpdatedAt: now}, Status: domain.StatusIdle, TerminalHandleID: "open-agents-1/terminal_0"}
 	return &fakeSessionService{
 		sessions: map[domain.SessionID]domain.Session{s.ID: s},
 	}
@@ -224,7 +224,7 @@ func (f *fakeSessionService) Spawn(_ context.Context, cfg ports.SpawnConfig) (do
 	if cfg.RequestedWorkflowMode.Valid() {
 		workflowMode = cfg.RequestedWorkflowMode
 	}
-	s := domain.Session{SessionRecord: domain.SessionRecord{ID: domain.SessionID(string(cfg.ProjectID) + "-2"), ProjectID: cfg.ProjectID, IssueID: cfg.IssueID, Kind: cfg.Kind, Harness: cfg.Harness, DisplayName: cfg.DisplayName, Activity: domain.Activity{State: domain.ActivityIdle, LastActivityAt: now}, AutoInjectReview: true, AutoInjectCI: true, WorkflowMode: workflowMode, CreatedAt: now, UpdatedAt: now}, Status: domain.StatusIdle}
+	s := domain.Session{SessionRecord: domain.SessionRecord{ID: domain.SessionID(string(cfg.ProjectID) + "-2"), ProjectID: cfg.ProjectID, Num: 2, IssueID: cfg.IssueID, Kind: cfg.Kind, Harness: cfg.Harness, DisplayName: cfg.DisplayName, Activity: domain.Activity{State: domain.ActivityIdle, LastActivityAt: now}, AutoInjectReview: true, AutoInjectCI: true, WorkflowMode: workflowMode, CreatedAt: now, UpdatedAt: now}, Status: domain.StatusIdle}
 	f.sessions[s.ID] = s
 	return s, len(cfg.Prompt), 0, nil
 }
@@ -3044,6 +3044,7 @@ func TestSessionsAPI_CleanupWithoutProjectFilter(t *testing.T) {
 type sessionBody struct {
 	ID               string `json:"id"`
 	ProjectID        string `json:"projectId"`
+	Num              int64  `json:"num"`
 	IssueID          string `json:"issueId"`
 	Kind             string `json:"kind"`
 	Harness          string `json:"harness"`
@@ -3233,5 +3234,71 @@ func TestSessionsAPI_ResumeAgentReportsAChatResumeFailureAsAConflict(t *testing.
 	reason, _ := wire.Details["reason"].(string)
 	if !strings.Contains(reason, "ACP session/load") {
 		t.Fatalf("details.reason = %q, want the driver's explanation on the wire", reason)
+	}
+}
+
+// The per-project ordinal is part of the session wire contract: the sidebar
+// renders it, and a user quotes it as `openagents-<num>`. It reaches the client
+// through the embedded record, so this pins that it serializes and that the list
+// and get envelopes agree on it. The fake's ids are plain strings rather than
+// anything derived from the ordinal, so nothing here can pass by accident.
+func TestSessionsAPI_SessionNumSerializesAndListGetAgree(t *testing.T) {
+	svc := newFakeSessionService()
+	srv := newSessionTestServer(t, svc)
+
+	body, status, _ := doRequest(t, srv, "GET", "/api/v1/sessions?project=open-agents", "")
+	if status != http.StatusOK {
+		t.Fatalf("GET sessions = %d, want 200; body=%s", status, body)
+	}
+	var list struct {
+		Sessions []sessionBody `json:"sessions"`
+	}
+	mustJSON(t, body, &list)
+	if len(list.Sessions) != 1 {
+		t.Fatalf("list returned %d sessions, want 1; body=%s", len(list.Sessions), body)
+	}
+	if list.Sessions[0].Num != 1 {
+		t.Fatalf("list num = %d, want 1; body=%s", list.Sessions[0].Num, body)
+	}
+
+	body, status, _ = doRequest(t, srv, "GET", "/api/v1/sessions/open-agents-1", "")
+	if status != http.StatusOK {
+		t.Fatalf("GET session = %d, want 200; body=%s", status, body)
+	}
+	var got struct {
+		Session sessionBody `json:"session"`
+	}
+	mustJSON(t, body, &got)
+	if got.Session.Num != 1 {
+		t.Fatalf("get num = %d, want 1; body=%s", got.Session.Num, body)
+	}
+	if got.Session.Num != list.Sessions[0].Num {
+		t.Fatalf("get num = %d but list num = %d; the two envelopes must agree",
+			got.Session.Num, list.Sessions[0].Num)
+	}
+
+	// A spawned session carries its own freshly allocated ordinal, not the
+	// seeded one.
+	body, status, _ = doRequest(t, srv, "POST", "/api/v1/sessions", `{"projectId":"open-agents","issueId":"ISS-9","kind":"worker","harness":"opencode","prompt":"fix"}`)
+	if status != http.StatusCreated {
+		t.Fatalf("POST session = %d, want 201; body=%s", status, body)
+	}
+	var spawned struct {
+		Session sessionBody `json:"session"`
+	}
+	mustJSON(t, body, &spawned)
+	if spawned.Session.Num != 2 {
+		t.Fatalf("spawned num = %d, want 2; body=%s", spawned.Session.Num, body)
+	}
+
+	// num is a required part of the shape, not an optional extra.
+	var raw map[string]any
+	mustJSON(t, body, &raw)
+	rawSession, ok := raw["session"].(map[string]any)
+	if !ok {
+		t.Fatalf("spawn response has no session object: %s", body)
+	}
+	if v, present := rawSession["num"]; !present || v.(float64) != 2 {
+		t.Fatalf("spawned session is missing num on the wire: %s", body)
 	}
 }
