@@ -362,8 +362,9 @@ func (s *Service) EditMessage(
 				} else {
 					provider, err = driver.Resume(operationCtx, ports.ChatResumeConfig{
 						SessionID: cfg.SessionID, ProviderConversationID: providerConversationID,
+						Kind: cfg.Kind, WorkflowMode: cfg.WorkflowMode,
 						DataDir: cfg.DataDir, WorkspacePath: cfg.WorkspacePath, Env: launchEnv,
-						Model: cfg.Model,
+						Model:       cfg.Model,
 						Permissions: cfg.Permissions, SystemPrompt: cfg.SystemPrompt,
 						ProviderScopeID:       sourceBranch.ProviderScopeID,
 						ProviderIDsScoped:     sourceBranch.ProviderIDsScoped,
@@ -401,7 +402,8 @@ func (s *Service) EditMessage(
 				err = prepareErr
 			} else {
 				provider, err = driver.Start(operationCtx, ports.ChatStartConfig{
-					SessionID: cfg.SessionID, DataDir: cfg.DataDir, WorkspacePath: cfg.WorkspacePath,
+					SessionID: cfg.SessionID, Kind: cfg.Kind, WorkflowMode: cfg.WorkflowMode,
+					DataDir: cfg.DataDir, WorkspacePath: cfg.WorkspacePath,
 					Env: launchEnv, Model: cfg.Model,
 					Permissions:  cfg.Permissions,
 					SystemPrompt: cfg.SystemPrompt, AdditionalDirectories: cfg.AdditionalDirectories,
@@ -943,8 +945,9 @@ func (s *Service) activateBranchLocked(ctx context.Context, id domain.SessionID,
 	}
 	provider, err := driver.Resume(operationCtx, ports.ChatResumeConfig{
 		SessionID: cfg.SessionID, ProviderConversationID: branch.ProviderConversationID,
+		Kind: cfg.Kind, WorkflowMode: cfg.WorkflowMode,
 		DataDir: cfg.DataDir, WorkspacePath: cfg.WorkspacePath, Env: launchEnv,
-		Model: cfg.Model,
+		Model:       cfg.Model,
 		Permissions: cfg.Permissions, SystemPrompt: cfg.SystemPrompt,
 		ProviderScopeID:       branch.ProviderScopeID,
 		ProviderIDsScoped:     branch.ProviderIDsScoped,
@@ -1043,8 +1046,9 @@ func (s *Service) restoreClosedSourceController(
 	}
 	provider, err := driver.Resume(recoveryCtx, ports.ChatResumeConfig{
 		SessionID: cfg.SessionID, ProviderConversationID: providerConversationID,
+		Kind: cfg.Kind, WorkflowMode: cfg.WorkflowMode,
 		DataDir: cfg.DataDir, WorkspacePath: cfg.WorkspacePath, Env: launchEnv,
-		Model: cfg.Model,
+		Model:       cfg.Model,
 		Permissions: cfg.Permissions, SystemPrompt: cfg.SystemPrompt,
 		ProviderScopeID:       branch.ProviderScopeID,
 		ProviderIDsScoped:     branch.ProviderIDsScoped,

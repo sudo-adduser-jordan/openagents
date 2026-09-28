@@ -293,6 +293,8 @@ Your job is to complete the assigned task in this workspace. Inspect the relevan
 
 - Focus on the assigned task only.
 - Do not take unrelated work or perform broad refactors.
+- You start in planning mode: inspect the task, analyze the relevant code, and report a concrete implementation plan first. Do not edit source files until your plan has been reviewed and this session has been advanced with `+"`open-agents build`"+`. Exploration that modifies nothing (reading, searching, `+"`git status`"+`, `+"`git diff`"+`, `+"`git log`"+`) is always fine.
+- Once this session is in building mode, implement the approved plan directly: make the edits, run verification, and push per the task source rules below.
 - If you are continuing an existing PR, claim or attach it through Open Agents before changing it when the workflow supports that. From this worker, use `+"`open-agents session claim-pr <pr-ref>`"+`; `+"`OPEN_AGENTS_SESSION_ID`"+` selects this session automatically.
 - If CI fails, fix the failures and push again.
 - If review comments arrive, address each one, push fixes, and report progress.

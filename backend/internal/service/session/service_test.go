@@ -616,6 +616,80 @@ func TestSessionSetWorkflowModeReleasesReviewLock(t *testing.T) {
 	}
 }
 
+// Approving a plan is an in-place unlock: moving a live planning worker to
+// building sends the build authorization to the running session without
+// restarting it. The same path serves a user running `open-agents build` and a
+// manager advancing its worker. A repeated build, a terminated worker, or an
+// undeliverable send keeps the new stage and never fails the transition.
+func TestSessionSetWorkflowModeBuildSendsInPlaceUnlock(t *testing.T) {
+	st := newFakeStore()
+	st.sessions["mer-1"] = domain.SessionRecord{
+		ID: "mer-1", ProjectID: "mer", Kind: domain.KindWorker, WorkflowMode: domain.WorkflowModePlanning,
+	}
+	fc := &fakeCommander{}
+	svc := &Service{store: st, manager: fc}
+
+	if _, err := svc.SetWorkflowMode(context.Background(), "mer-1", domain.WorkflowModeBuilding); err != nil {
+		t.Fatal(err)
+	}
+	if len(fc.sent) != 1 || fc.sent[0] != "mer-1" {
+		t.Fatalf("unlock sent to %v, want one send to mer-1", fc.sent)
+	}
+	if len(fc.sentMessages) != 1 || !strings.Contains(fc.sentMessages[0], "BUILD APPROVED") {
+		t.Fatalf("unlock message = %q, want the build authorization", fc.sentMessages)
+	}
+}
+
+func TestSessionSetWorkflowModeBuildSkipsUnlockWhenAlreadyBuilding(t *testing.T) {
+	st := newFakeStore()
+	st.sessions["mer-1"] = domain.SessionRecord{
+		ID: "mer-1", ProjectID: "mer", Kind: domain.KindWorker, WorkflowMode: domain.WorkflowModeBuilding,
+	}
+	fc := &fakeCommander{}
+	svc := &Service{store: st, manager: fc}
+
+	if _, err := svc.SetWorkflowMode(context.Background(), "mer-1", domain.WorkflowModeBuilding); err != nil {
+		t.Fatal(err)
+	}
+	if len(fc.sent) != 0 {
+		t.Fatalf("unlock sent to %v, want no send for an already-building worker", fc.sent)
+	}
+}
+
+func TestSessionSetWorkflowModeBuildSkipsUnlockForTerminatedWorker(t *testing.T) {
+	st := newFakeStore()
+	st.sessions["mer-1"] = domain.SessionRecord{
+		ID: "mer-1", ProjectID: "mer", Kind: domain.KindWorker,
+		WorkflowMode: domain.WorkflowModePlanning, IsTerminated: true,
+	}
+	fc := &fakeCommander{}
+	svc := &Service{store: st, manager: fc}
+
+	if _, err := svc.SetWorkflowMode(context.Background(), "mer-1", domain.WorkflowModeBuilding); err != nil {
+		t.Fatal(err)
+	}
+	if len(fc.sent) != 0 {
+		t.Fatalf("unlock sent to %v, want no send for a terminated worker", fc.sent)
+	}
+}
+
+func TestSessionSetWorkflowModeBuildSucceedsWhenUnlockUndeliverable(t *testing.T) {
+	st := newFakeStore()
+	st.sessions["mer-1"] = domain.SessionRecord{
+		ID: "mer-1", ProjectID: "mer", Kind: domain.KindWorker, WorkflowMode: domain.WorkflowModePlanning,
+	}
+	fc := &fakeCommander{sendErr: errors.New("runtime gone")}
+	svc := &Service{store: st, manager: fc}
+
+	sess, err := svc.SetWorkflowMode(context.Background(), "mer-1", domain.WorkflowModeBuilding)
+	if err != nil {
+		t.Fatalf("undeliverable unlock failed the transition: %v", err)
+	}
+	if sess.WorkflowMode != domain.WorkflowModeBuilding || st.sessions["mer-1"].WorkflowMode != domain.WorkflowModeBuilding {
+		t.Fatalf("workflow mode was not persisted: session=%+v stored=%+v", sess, st.sessions["mer-1"])
+	}
+}
+
 // A user message is the commit-forward review lock release path: the human has
 // taken their turn on the card, so the freeze is released (here via Send, which
 // is how the UI's "commit forward to wait for PR" action works).

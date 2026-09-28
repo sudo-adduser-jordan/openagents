@@ -1355,6 +1355,30 @@ func TestSpawn_ResolvesProjectConfig(t *testing.T) {
 	}
 }
 
+// A worker spawn starts in planning and forwards that stage to the agent
+// launch so the adapter can apply the plan-equivalent tool policy.
+func TestSpawn_ForwardsPlanningWorkflowModeToLaunch(t *testing.T) {
+	t.Parallel()
+	st := newFakeStore()
+	st.projects["mer"] = domain.ProjectRecord{ID: "mer", Config: domain.ProjectConfig{}}
+	agent := &recordingAgent{}
+	rt := &fakeRuntime{}
+	ws := &fakeWorkspace{}
+	lookPath := func(string) (string, error) { return "/bin/true", nil }
+	m := New(Deps{Runtime: rt, Agents: singleAgent{agent: agent}, Workspace: ws, Store: st, Messenger: &fakeMessenger{}, Lifecycle: &fakeLCM{store: st}, LookPath: lookPath})
+
+	rec, _, _, err := m.Spawn(ctx, ports.SpawnConfig{ProjectID: "mer", Kind: domain.KindWorker, Harness: domain.HarnessOpenCode})
+	if err != nil {
+		t.Fatal(err)
+	}
+	if rec.WorkflowMode != domain.WorkflowModePlanning {
+		t.Fatalf("session workflow mode = %q, want planning", rec.WorkflowMode)
+	}
+	if agent.lastLaunch.WorkflowMode != domain.WorkflowModePlanning {
+		t.Fatalf("launch workflow mode = %q, want planning", agent.lastLaunch.WorkflowMode)
+	}
+}
+
 func TestSpawn_InheritsChatManagerPermissions(t *testing.T) {
 	t.Parallel()
 	m, st, rt, _ := newManager()

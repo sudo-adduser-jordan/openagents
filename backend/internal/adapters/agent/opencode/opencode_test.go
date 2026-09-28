@@ -474,7 +474,7 @@ func TestGetLaunchCommandBuildsArgv(t *testing.T) {
 // only, and denying the edit/write tools alone would still let `sed -i` and a
 // stray `git commit` through bash, so the policy scopes bash too.
 func TestManagerLaunchOverlayCarriesReadOnlyToolPolicy(t *testing.T) {
-	content, agentName, err := sessionConfigContent("manager rules", "mer-1", domain.KindManager)
+	content, agentName, err := sessionConfigContent("manager rules", "mer-1", domain.KindManager, domain.WorkflowModeManager)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -524,12 +524,67 @@ func TestManagerLaunchOverlayCarriesReadOnlyToolPolicy(t *testing.T) {
 }
 
 func TestWorkerLaunchOverlayCarriesNoToolPolicy(t *testing.T) {
-	content, _, err := sessionConfigContent("worker rules", "mer-2", domain.KindWorker)
+	content, _, err := sessionConfigContent("worker rules", "mer-2", domain.KindWorker, domain.WorkflowModeBuilding)
 	if err != nil {
 		t.Fatal(err)
 	}
 	if strings.Contains(content, `"permission"`) {
 		t.Fatalf("worker overlay carries a tool policy: %s", content)
+	}
+}
+
+func TestPlanningWorkerLaunchOverlayCarriesPlanToolPolicy(t *testing.T) {
+	content, _, err := sessionConfigContent("worker rules", "mer-3", domain.KindWorker, domain.WorkflowModePlanning)
+	if err != nil {
+		t.Fatal(err)
+	}
+	var config struct {
+		Agent map[string]struct {
+			Mode       string         `json:"mode"`
+			Prompt     string         `json:"prompt"`
+			Permission map[string]any `json:"permission"`
+		} `json:"agent"`
+		DefaultAgent string `json:"default_agent"`
+	}
+	if err := json.Unmarshal([]byte(content), &config); err != nil {
+		t.Fatal(err)
+	}
+	agent := config.Agent["open-agents-mer-3"]
+	// Same Open Agents standing instructions as a building worker: only the
+	// tool policy changes, mirroring opencode's native plan agent.
+	if agent.Mode != "primary" || agent.Prompt != "worker rules" {
+		t.Fatalf("agent config = %#v, want primary inline prompt", agent)
+	}
+	if agent.Permission["edit"] != "deny" {
+		t.Fatalf("planning worker edit policy = %v, want deny: %s", agent.Permission["edit"], content)
+	}
+	if len(agent.Permission) != 1 {
+		t.Fatalf("planning worker policy = %v, want only the native plan edit denial: %s", agent.Permission, content)
+	}
+}
+
+// A planning worker launches the same generated agent (same Open Agents
+// standing instructions) under opencode's native plan restriction.
+func TestGetLaunchCommandPlanningWorkerDeniesEdits(t *testing.T) {
+	plugin := &Plugin{resolvedBinary: "opencode"}
+	cmd, err := plugin.GetLaunchCommand(context.Background(), ports.LaunchConfig{
+		SessionID:    "sess-9",
+		Kind:         domain.KindWorker,
+		WorkflowMode: domain.WorkflowModePlanning,
+		SystemPrompt: "follow Open Agents rules",
+	})
+	if err != nil {
+		t.Fatal(err)
+	}
+	if len(cmd) < 2 || cmd[0] != "env" {
+		t.Fatalf("expected an env prefix, got %#v", cmd)
+	}
+	assignment, ok := strings.CutPrefix(cmd[1], opencodeConfigContentEnvVar+"=")
+	if !ok {
+		t.Fatalf("expected %s assignment, got %q", opencodeConfigContentEnvVar, cmd[1])
+	}
+	if !strings.Contains(assignment, `"edit":"deny"`) {
+		t.Fatalf("planning launch overlay carries no edit denial: %s", assignment)
 	}
 }
 

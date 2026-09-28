@@ -39,7 +39,10 @@ type Launch struct {
 type LaunchConfig struct {
 	SessionID domain.SessionID
 	// Kind is the session role, so a driver can scope tool policy per role.
-	Kind           domain.SessionKind
+	Kind domain.SessionKind
+	// WorkflowMode is the session's delivery posture, so a driver can scope
+	// tool policy per stage (a planning worker launches plan-restricted).
+	WorkflowMode    domain.WorkflowMode
 	DataDir         string
 	WorkspacePath   string
 	Env             map[string]string
@@ -195,7 +198,7 @@ func (d *Driver) Start(ctx context.Context, cfg ports.ChatStartConfig) (ports.Ch
 		}
 	}
 	launchCfg := LaunchConfig{
-		SessionID: cfg.SessionID, Kind: cfg.Kind, DataDir: cfg.DataDir, WorkspacePath: cfg.WorkspacePath,
+		SessionID: cfg.SessionID, Kind: cfg.Kind, WorkflowMode: cfg.WorkflowMode, DataDir: cfg.DataDir, WorkspacePath: cfg.WorkspacePath,
 		Env:   cfg.Env,
 		Model: cfg.Model, Permissions: cfg.Permissions, SystemPrompt: cfg.SystemPrompt,
 		ProviderScopeID: cfg.ProviderScopeID,
@@ -284,7 +287,7 @@ func (d *Driver) Resume(ctx context.Context, cfg ports.ChatResumeConfig) (ports.
 		}
 	}
 	launchCfg := LaunchConfig{
-		SessionID: cfg.SessionID, Kind: cfg.Kind, DataDir: cfg.DataDir, WorkspacePath: cfg.WorkspacePath,
+		SessionID: cfg.SessionID, Kind: cfg.Kind, WorkflowMode: cfg.WorkflowMode, DataDir: cfg.DataDir, WorkspacePath: cfg.WorkspacePath,
 		Env:   cfg.Env,
 		Model: cfg.Model, Permissions: cfg.Permissions, SystemPrompt: cfg.SystemPrompt,
 		ProviderScopeID: cfg.ProviderScopeID,

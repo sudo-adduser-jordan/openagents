@@ -271,6 +271,10 @@ type ChatStartConfig struct {
 	// Kind is the session role. Drivers that scope tool policy per role (the
 	// opencode overlay restricts a manager to read-only tools) need it here.
 	Kind domain.SessionKind
+	// WorkflowMode is the session's delivery posture. Drivers that scope tool
+	// policy per stage (the opencode overlay restricts a planning worker to
+	// plan-equivalent tools) need it here.
+	WorkflowMode domain.WorkflowMode
 	// DataDir is Open Agents's state root. Provider bindings may write process-scoped
 	// configuration beneath it, but must never use the worktree or an OS-default
 	// application-data directory for Open Agents-owned state.
@@ -313,7 +317,9 @@ type ChatResumeConfig struct {
 	// See ChatStartConfig.ProviderIDsScoped.
 	ProviderIDsScoped bool
 	// See ChatStartConfig.Kind.
-	Kind                   domain.SessionKind
+	Kind domain.SessionKind
+	// See ChatStartConfig.WorkflowMode.
+	WorkflowMode           domain.WorkflowMode
 	SessionID              domain.SessionID
 	ProviderConversationID string
 	DataDir                string
@@ -322,7 +328,7 @@ type ChatResumeConfig struct {
 	// See ChatStartConfig.PrepareEnv.
 	PrepareEnv func(context.Context) (map[string]string, error)
 	// Model is optional; empty keeps the provider conversation's current model.
-	Model      string
+	Model       string
 	Permissions PermissionMode
 	// SystemPrompt is recomputed by the session manager on restore and reapplied
 	// to the provider process. It is not persisted in the conversation transcript.

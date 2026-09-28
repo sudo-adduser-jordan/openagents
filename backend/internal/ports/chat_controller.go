@@ -19,9 +19,12 @@ const (
 
 // ChatControllerStart is the resolved launch contract shared by the coordinator and Chat service.
 type ChatControllerStart struct {
-	SessionID             domain.SessionID
-	ProjectID             domain.ProjectID
-	Kind                  domain.SessionKind
+	SessionID domain.SessionID
+	ProjectID domain.ProjectID
+	Kind      domain.SessionKind
+	// WorkflowMode is the session's delivery posture so the controller can
+	// scope tool policy per stage (a planning worker launches plan-restricted).
+	WorkflowMode          domain.WorkflowMode
 	Harness               domain.AgentHarness
 	DataDir               string
 	WorkspacePath         string

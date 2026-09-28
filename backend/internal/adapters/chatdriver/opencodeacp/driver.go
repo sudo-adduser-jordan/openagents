@@ -28,11 +28,11 @@ func New(plugin nativeacp.Plugin, log *slog.Logger) ports.ChatDriver {
 }
 
 func configure(_ context.Context, cfg acpdriver.LaunchConfig) ([]string, map[string]string, error) {
-	if cfg.SystemPrompt == "" && ports.NormalizePermissionMode(cfg.Permissions) != ports.PermissionModeBypassPermissions {
+	if cfg.SystemPrompt == "" && ports.NormalizePermissionMode(cfg.Permissions) != ports.PermissionModeBypassPermissions && cfg.WorkflowMode != domain.WorkflowModePlanning {
 		return []string{"acp"}, nil, nil
 	}
 	content, err := opencode.PrepareACPConfigContent(
-		cfg.Env["OPENCODE_CONFIG_CONTENT"], cfg.SystemPrompt, string(cfg.SessionID), cfg.Permissions, cfg.Kind)
+		cfg.Env["OPENCODE_CONFIG_CONTENT"], cfg.SystemPrompt, string(cfg.SessionID), cfg.Permissions, cfg.Kind, cfg.WorkflowMode)
 	if err != nil {
 		return nil, nil, err
 	}

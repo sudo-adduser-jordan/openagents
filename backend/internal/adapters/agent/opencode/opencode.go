@@ -115,7 +115,7 @@ func (p *Plugin) GetLaunchCommand(ctx context.Context, cfg ports.LaunchConfig) (
 		return nil, err
 	}
 
-	content, agentName, err := sessionConfigContent(cfg.SystemPrompt, cfg.SessionID, cfg.Kind)
+	content, agentName, err := sessionConfigContent(cfg.SystemPrompt, cfg.SessionID, cfg.Kind, cfg.WorkflowMode)
 	if err != nil {
 		return nil, err
 	}
@@ -159,7 +159,7 @@ func (p *Plugin) GetRestoreCommand(ctx context.Context, cfg ports.RestoreConfig)
 		return nil, false, err
 	}
 
-	content, agentName, err := sessionConfigContent(cfg.SystemPrompt, cfg.Session.ID, cfg.Kind)
+	content, agentName, err := sessionConfigContent(cfg.SystemPrompt, cfg.Session.ID, cfg.Kind, cfg.WorkflowMode)
 	if err != nil {
 		return nil, false, err
 	}
@@ -432,6 +432,17 @@ func managerToolPolicy() map[string]any {
 	}
 }
 
+// planningWorkerToolPolicy mirrors opencode's native plan agent: file edits are
+// denied while every other tool keeps its configured default (notably bash
+// stays available for inspection, exactly as the native plan agent allows).
+// It is emitted per agent so it is scoped to this planning worker session, and
+// the user's own ~/.config/opencode rules still apply on top.
+func planningWorkerToolPolicy() map[string]any {
+	return map[string]any{
+		"edit": "deny",
+	}
+}
+
 // sessionConfigContent builds the OpenCode config overlay that carries this
 // session's generated primary agent, returning the overlay and the agent name
 // the caller must pass as --agent.
@@ -442,11 +453,11 @@ func managerToolPolicy() map[string]any {
 // -- the one holding their providers, credentials and permission rules. Content
 // is additive, so the user's config stays the base layer and Open Agents only
 // contributes the session's agent.
-func sessionConfigContent(systemPrompt, sessionID string, kind domain.SessionKind) (string, string, error) {
+func sessionConfigContent(systemPrompt, sessionID string, kind domain.SessionKind, workflow domain.WorkflowMode) (string, string, error) {
 	if strings.TrimSpace(systemPrompt) == "" {
 		return "", "", nil
 	}
-	content, err := PrepareACPConfigContent("", systemPrompt, sessionID, ports.PermissionModeDefault, kind)
+	content, err := PrepareACPConfigContent("", systemPrompt, sessionID, ports.PermissionModeDefault, kind, workflow)
 	if err != nil {
 		return "", "", err
 	}
@@ -462,6 +473,7 @@ func PrepareACPConfigContent(
 	existing, systemPrompt, sessionID string,
 	permissions ports.PermissionMode,
 	kind domain.SessionKind,
+	workflow domain.WorkflowMode,
 ) (string, error) {
 	allowAll := ports.NormalizePermissionMode(permissions) == ports.PermissionModeBypassPermissions
 	if strings.TrimSpace(systemPrompt) == "" && !allowAll {
@@ -490,6 +502,13 @@ func PrepareACPConfigContent(
 			// Scoped to this agent entry, so a worker is unaffected and the
 			// user's own agents keep whatever policy they configured.
 			settings.Permission = managerToolPolicy()
+		} else if kind == domain.KindWorker && workflow == domain.WorkflowModePlanning {
+			// A planning worker runs under opencode's native plan restriction
+			// (edits denied) with the same Open Agents standing instructions as a
+			// building worker. Approval via `open-agents build` lifts this on the
+			// next launch; the in-place unlock message authorizes the worker to
+			// proceed once its controller reflects the building stage.
+			settings.Permission = planningWorkerToolPolicy()
 		}
 		agents[agentName] = settings
 		config["agent"] = agents

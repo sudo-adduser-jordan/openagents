@@ -90,7 +90,12 @@ form supports cross-session coordination.
 stages (planning → building) by setting `workflow_mode` on the daemon. Use
 `open-agents manage <id>` to put a manager into Manager mode. A manager starts in
 Manager mode, can delegate from that mode, and cannot delegate while it is in
-Planning mode. Workers delegated by a manager start in Planning. Setting any
+Planning mode. Workers delegated by a manager start in Planning. A planning worker
+launches under opencode's native plan restriction (file edits denied) with the same
+standing instructions as a building worker, in the same opencode terminal UI.
+Approving with `open-agents build <id>` (user or manager) unlocks the worker in place
+with a build authorization message; the building tool policy applies to any later
+relaunch from the persisted stage. Setting any
 stage is also one of the kanban review lock's release paths: a card frozen in the
 review column is released so it can move with its PR facts again.
 

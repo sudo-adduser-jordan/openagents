@@ -763,8 +763,27 @@ func (s *Service) SetWorkflowMode(ctx context.Context, id domain.SessionID, mode
 	if !updated {
 		return domain.Session{}, apierr.NotFound("SESSION_NOT_FOUND", "Unknown session")
 	}
+	// Approving a plan is an in-place unlock: the worker keeps its session,
+	// worktree, and conversation, and the daemon hands it the authorization to
+	// implement. The same path serves a user running `open-agents build` and a
+	// manager advancing its worker after plan review. Delivery is best-effort:
+	// a terminated or unreachable worker keeps the new stage regardless, and a
+	// later restore or relaunch applies the building tool policy from the
+	// persisted stage.
+	if mode == domain.WorkflowModeBuilding && current.Kind == domain.KindWorker &&
+		current.WorkflowMode == domain.WorkflowModePlanning && !current.IsTerminated && s.manager != nil {
+		if err := s.manager.Send(ctx, id, buildUnlockMessage, nil); err != nil && s.logger != nil {
+			s.logger.Warn("workflow mode build unlock undelivered", "sessionId", id, "error", err)
+		}
+	}
 	return s.Get(ctx, id)
 }
+
+// buildUnlockMessage authorizes a planning worker to implement its reviewed
+// plan in place. It changes no process state itself: the worker keeps its
+// session, worktree, and conversation, and any relaunch applies the building
+// tool policy from the persisted workflow stage.
+const buildUnlockMessage = "Open Agents BUILD APPROVED\nYour plan has been reviewed and approved. This session is now in building mode: implement the approved plan directly, verify the behavior you touched, and report blockers clearly. If the plan needs to change materially as you work, update it and say what changed."
 
 // SetAutoInjectReview persists whether new SCM and Open Agents review feedback should be sent to the session.
 func (s *Service) SetAutoInjectReview(ctx context.Context, id domain.SessionID, autoInject bool) (domain.Session, error) {

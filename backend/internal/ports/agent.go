@@ -438,13 +438,17 @@ const (
 
 // LaunchConfig carries inputs needed to build a new agent launch command.
 type LaunchConfig struct {
-	Config      AgentConfig
-	DataDir     string
-	IssueID     string
-	Kind        domain.SessionKind
-	Permissions PermissionMode
-	Prompt      string
-	SessionID   string
+	Config  AgentConfig
+	DataDir string
+	IssueID string
+	Kind    domain.SessionKind
+	// WorkflowMode is the session's delivery posture. Adapters that scope tool
+	// policy per stage (the opencode overlay restricts a planning worker to
+	// plan-equivalent tools) need it here; empty means no stage restriction.
+	WorkflowMode domain.WorkflowMode
+	Permissions  PermissionMode
+	Prompt       string
+	SessionID    string
 	// NativeSessionID optionally asks an adapter that supports caller-assigned
 	// native identities to use this id for a fresh provider conversation. It is
 	// deliberately separate from SessionID: one stable Open Agents session may create
@@ -477,9 +481,12 @@ type WorkspaceHookConfig struct {
 
 // RestoreConfig carries inputs needed to continue an existing native agent session.
 type RestoreConfig struct {
-	Config          AgentConfig
-	DataDir         string
-	Kind            domain.SessionKind
+	Config  AgentConfig
+	DataDir string
+	Kind    domain.SessionKind
+	// WorkflowMode carries the session's current delivery posture so a resumed
+	// process receives the same stage-scoped tool policy as a fresh launch.
+	WorkflowMode    domain.WorkflowMode
 	Permissions     PermissionMode
 	AllowedTools    []string
 	DisallowedTools []string
