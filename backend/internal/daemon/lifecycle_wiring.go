@@ -13,6 +13,7 @@ import (
 	"github.com/sudo-adduser-jordan/open-agents/backend/internal/adapters/container/dockerreap"
 	"github.com/sudo-adduser-jordan/open-agents/backend/internal/adapters/reviewer"
 	"github.com/sudo-adduser-jordan/open-agents/backend/internal/adapters/runtime/runtimeselect"
+	ghcreator "github.com/sudo-adduser-jordan/open-agents/backend/internal/adapters/scm/gh"
 	"github.com/sudo-adduser-jordan/open-agents/backend/internal/adapters/workspace/gitworktree"
 	workspacerouter "github.com/sudo-adduser-jordan/open-agents/backend/internal/adapters/workspace/router"
 	scratchworkspace "github.com/sudo-adduser-jordan/open-agents/backend/internal/adapters/workspace/scratch"
@@ -287,6 +288,10 @@ func startSession(ctx context.Context, cfg config.Config, runtime runtimeselect.
 		Logger:            log,
 		BackgroundContext: ctx,
 		AgentReadiness:    agentReadiness,
+		// Board delivery buttons: local merge and remote PR creation run
+		// through the routed workspace adapter and the user's gh CLI.
+		Delivery:  ws,
+		PRCreator: ghcreator.New(ghcreator.Options{}),
 		// no_signal only makes sense for harnesses with complete lifecycle signal
 		// coverage; partial callbacks cannot prove that silence is abnormal.
 		SignalCapable: activitydispatch.FullySupportsHarness,

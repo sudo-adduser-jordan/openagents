@@ -136,6 +136,59 @@ func ignoredCountArgs(worktree string) []string {
 	return []string{"-C", worktree, "status", "--ignored", "--porcelain"}
 }
 
+// symbolicRefShortArgs prints the checkout's current branch name. It exits
+// non-zero on a detached HEAD.
+func symbolicRefShortArgs(repo string) []string {
+	return []string{"-C", repo, "symbolic-ref", "--short", "HEAD"}
+}
+
+// mergeBranchArgs merges a branch into the checkout's current branch without
+// opening an editor. No --ff-only and no --no-ff: fast-forward when possible,
+// a merge commit otherwise. Both outcomes satisfy ancestor verification.
+func mergeBranchArgs(repo, branch string) []string {
+	return []string{"-C", repo, "merge", "--no-edit", branch}
+}
+
+// mergeBaseAncestorArgs tests whether tip is an ancestor of target (exit 0)
+// or not (exit 1).
+func mergeBaseAncestorArgs(repo, tip, target string) []string {
+	return []string{"-C", repo, "merge-base", "--is-ancestor", tip, target}
+}
+
+// branchDeleteArgs deletes a branch ref, refusing when it is not fully merged
+// (the post-verification guard) or still checked out in a worktree.
+func branchDeleteArgs(repo, branch string) []string {
+	return []string{"-C", repo, "branch", "-d", branch}
+}
+
+// checkoutDetachArgs detaches a worktree HEAD at its current commit without
+// touching the working tree, so a branch checked out there becomes deletable.
+func checkoutDetachArgs(worktree string) []string {
+	return []string{"-C", worktree, "checkout", "--detach", "HEAD"}
+}
+
+// pushBranchArgs pushes a branch to the origin remote without force: a
+// rejected (non-fast-forward) push fails instead of rewriting remote history.
+func pushBranchArgs(worktree, branch string) []string {
+	return []string{"-C", worktree, "push", "origin", branch}
+}
+
+// conflictedFilesArgs lists paths with unresolved merge conflicts.
+func conflictedFilesArgs(repo string) []string {
+	return []string{"-C", repo, "diff", "--name-only", "--diff-filter=U"}
+}
+
+// revParseArgs prints the SHA a ref resolves to.
+func revParseArgs(repo, ref string) []string {
+	return []string{"-C", repo, "rev-parse", ref}
+}
+
+// gitPathArgs prints the on-disk path of a git metadata file (MERGE_HEAD,
+// CHERRY_PICK_HEAD, ...), used to detect an in-progress sequencer operation.
+func gitPathArgs(repo, name string) []string {
+	return []string{"-C", repo, "rev-parse", "--git-path", name}
+}
+
 func configuredBaseRefCandidates(defaultBranch string) []string {
 	if strings.Contains(defaultBranch, "/") {
 		// A qualified default ("upstream/main") is used verbatim; git's refname

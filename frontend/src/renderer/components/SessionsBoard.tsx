@@ -29,6 +29,8 @@ import { apiErrorMessage } from "../lib/api-client";
 import { useRetireSession } from "../hooks/useRetireSession";
 import { useRestoreSession } from "../hooks/useRestoreSession";
 import { useTerminateSession } from "../hooks/useTerminateSession";
+import { useMergeSessionLocal } from "../hooks/useMergeSessionLocal";
+import { useCreateSessionPR } from "../hooks/useCreateSessionPR";
 import { useWorkspaceQuery, workspaceQueryKey } from "../hooks/useWorkspaceQuery";
 import { useSetWorkflowMode } from "../hooks/useSetWorkflowMode";
 import { apiClient } from "../lib/api-client";
@@ -41,6 +43,8 @@ import { usesPreviewWorkspaceData } from "../lib/preview-mode";
 import { demoBoardSessions } from "../lib/demo-board-sessions";
 import { isLinuxPlatform, isMacPlatform, usesBoardActionsInPanel } from "../lib/platform";
 import { cn } from "../lib/utils";
+import { openAgentsBridge } from "../lib/bridge";
+import { primaryPR } from "../types/workspace";
 import { useUiStore } from "../stores/ui-store";
 import { RestoreUnavailableDialog } from "./RestoreUnavailableDialog";
 import { DaemonStartupLoader } from "./DaemonStartupLoader";
@@ -218,6 +222,36 @@ export function SessionsBoard({ projectId }: SessionsBoardProps) {
 		[openSession, queryClient],
 	);
 
+	const mergeSessionLocal = useMergeSessionLocal();
+	const createSessionPR = useCreateSessionPR();
+	// Merge local is end-of-life: the daemon merges, verifies, removes the
+	// branch, and terminates, so the card settles into archive on the
+	// invalidation. Failures surface on the card; nothing is optimistic.
+	const requestMergeLocal = useCallback(
+		(session: WorkspaceSession) => mergeSessionLocal.mutate(session),
+		[mergeSessionLocal],
+	);
+	// Open PR leaves the session alive for review: ensure exactly one PR
+	// exists, then hand its URL to the browser. Failures surface on the card.
+	const requestCreatePR = useCallback(
+		(session: WorkspaceSession) => {
+			if (usesPreviewWorkspaceData) {
+				const url = primaryPR(session)?.url;
+				if (url) void openAgentsBridge.app.openExternal(url);
+				return;
+			}
+			void (async () => {
+				try {
+					const result = await createSessionPR.mutateAsync(session);
+					if (result.prUrl) await openAgentsBridge.app.openExternal(result.prUrl);
+				} catch {
+					// The card footer reports the failure via mutation state.
+				}
+			})();
+		},
+		[createSessionPR],
+	);
+
 	const restartManager = async () => {
 		if (!projectId) return;
 		await restartProjectManager({
@@ -324,6 +358,8 @@ export function SessionsBoard({ projectId }: SessionsBoardProps) {
 									onTerminate={() => terminateSession.mutate(session)}
 									onWorkflowModeChange={(_session, workflowMode) => changeWorkflowMode(session, workflowMode)}
 									onReviewToCommit={() => void reviewToCommit(session)}
+									onMergeLocal={() => requestMergeLocal(session)}
+									onCreatePR={() => requestCreatePR(session)}
 									session={session}
 								usage={usageBySession.get(session.id)}
 							/>

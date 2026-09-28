@@ -17,6 +17,7 @@ vi.mock("motion/react", async (importOriginal) => {
 const {
 	navigateMock,
 	notificationShowMock,
+	openExternalMock,
 	getMock,
 	patchMock,
 	postMock,
@@ -26,6 +27,7 @@ const {
 } = vi.hoisted(() => ({
 	navigateMock: vi.fn(),
 	notificationShowMock: vi.fn(),
+	openExternalMock: vi.fn(),
 	getMock: vi.fn(),
 	patchMock: vi.fn(),
 	postMock: vi.fn(),
@@ -66,6 +68,9 @@ vi.mock("../lib/api-client", () => ({
 
 vi.mock("../lib/bridge", () => ({
 	openAgentsBridge: {
+		app: {
+			openExternal: (...args: unknown[]) => openExternalMock(...args),
+		},
 		clipboard: {
 			writeText: vi.fn(),
 		},
@@ -114,6 +119,7 @@ async function expandArchive() {
 beforeEach(() => {
 	navigateMock.mockReset();
 	notificationShowMock.mockReset().mockResolvedValue(undefined);
+	openExternalMock.mockReset().mockResolvedValue(undefined);
 	getMock.mockReset().mockResolvedValue({ data: {} });
 	patchMock.mockReset().mockResolvedValue({ data: {} });
 	postMock.mockReset().mockResolvedValue({ data: {} });
@@ -529,7 +535,7 @@ describe("SessionsBoard", () => {
 		expect(status.querySelector(".animate-spin")).toBeNull();
 	});
 
-	it("keeps the loader on a Review pending card", () => {
+	it("shows review actions beside the pending label without a loader", () => {
 		workspaceQueryMock.mockReturnValue({
 			data: [
 				workspaceWithSessions([
@@ -551,10 +557,13 @@ describe("SessionsBoard", () => {
 		const card = screen.getByText("review-pending-card-task").closest('[data-testid="board-session-card"]') as HTMLElement;
 		const status = within(card).getByTestId("session-status");
 		expect(status).toHaveTextContent("Review pending");
-		expect(status.querySelector(".animate-spin")).not.toBeNull();
+		// Delivery action rows carry buttons, not the progress spinner: the
+		// daemon phrase stays, the loader does not.
+		expect(status.querySelector(".animate-spin")).toBeNull();
+		expect(within(status).getByRole("button", { name: "Commit" })).toBeInTheDocument();
 	});
 
-	it("keeps the loader on a Mergeable card while its agent is actually working", () => {
+	it("shows delivery actions beside the mergeable label while its agent is working", () => {
 		workspaceQueryMock.mockReturnValue({
 			data: [
 				workspaceWithSessions([
@@ -575,7 +584,11 @@ describe("SessionsBoard", () => {
 		renderBoard("p1");
 		const card = screen.getByText("mergeable-active-task").closest('[data-testid="board-session-card"]') as HTMLElement;
 		const status = within(card).getByTestId("session-status");
-		expect(status.querySelector(".animate-spin")).not.toBeNull();
+		// A Ready card shows delivery actions beside the daemon phrase; the
+		// working spinner does not follow it into the action row.
+		expect(status).toHaveTextContent("Mergeable");
+		expect(status.querySelector(".animate-spin")).toBeNull();
+		expect(within(status).getByRole("button", { name: "Merge local" })).toBeInTheDocument();
 	});
 
 	it("paints Closed without merge red while keeping merged status purple", () => {
@@ -599,8 +612,11 @@ describe("SessionsBoard", () => {
 		const card = screen.getByText("closed-without-merge-task").closest('[data-testid="board-session-card"]') as HTMLElement;
 		const status = within(card).getByTestId("session-status");
 		expect(status).toHaveTextContent("Closed without merge");
-		expect(status).toHaveClass("text-status-exited");
-		expect(status).not.toHaveClass("text-status-ready", "text-status-merged");
+		// The phrase moved into the delivery action row with the buttons; the
+		// red tone moves with it.
+		const label = within(status).getByText("Closed without merge");
+		expect(label).toHaveClass("text-status-exited");
+		expect(label).not.toHaveClass("text-status-ready", "text-status-merged");
 	});
 
 	it("keeps a spawning card labeled Working when raw activity has not become active", () => {
@@ -684,11 +700,13 @@ describe("SessionsBoard", () => {
 			"data-kanban-column",
 			"building",
 		);
-		expect(within(noSignalCard).getByText("No signal").parentElement).toHaveAttribute(
+		// Review-lane legacy cards render their status phrase inside the
+		// delivery action row, so the lane marker sits on the phrase itself.
+		expect(within(noSignalCard).getByText("No signal")).toHaveAttribute(
 			"data-kanban-column",
 			"review",
 		);
-		expect(within(draftCard).getByText("Draft PR").parentElement).toHaveAttribute(
+		expect(within(draftCard).getByText("Draft PR")).toHaveAttribute(
 			"data-kanban-column",
 			"review",
 		);
@@ -1377,6 +1395,231 @@ describe("SessionsBoard", () => {
 			}),
 		);
 		expect(postMock).not.toHaveBeenCalled();
+	});
+
+	function readySession(overrides: Partial<WorkspaceSession> = {}): WorkspaceSession {
+		return boardSession({
+			id: "s-ready",
+			title: "ready worker",
+			status: "approved",
+			kanbanColumn: "ready",
+			displayStatus: "Approved",
+			prs: [
+				{
+					url: "https://github.com/example/radic/pull/144",
+					number: 144,
+					state: "open",
+					ci: "passing",
+					review: "approved",
+					mergeability: "mergeable",
+					reviewComments: false,
+					updatedAt: "2026-01-01T00:00:00Z",
+				},
+			],
+			...overrides,
+		});
+	}
+
+	function reviewLaneSession(overrides: Partial<WorkspaceSession> = {}): WorkspaceSession {
+		return boardSession({
+			id: "s-review",
+			title: "review worker",
+			status: "review_pending",
+			kanbanColumn: "needs_review",
+			displayStatus: "Needs human review",
+			...overrides,
+		});
+	}
+
+	it("shows merge-local and open-PR actions on a ready card and nowhere else", () => {
+		workspaceQueryMock.mockReturnValue({
+			data: [
+				workspaceWithSessions([
+					readySession(),
+					boardSession({ id: "s-building", title: "building worker", status: "working", kanbanColumn: "building" }),
+					reviewLaneSession({ id: "s-review", title: "review worker" }),
+					awaitingPrSession({ id: "s-plan", title: "planned worker", workflowMode: "planning" }),
+					terminatedSession({ id: "s-dead", title: "dead worker" }),
+				]),
+			],
+			isError: false,
+			isSuccess: true,
+		});
+
+		renderBoard("p1");
+
+		const readyCard = screen.getByText("ready worker").closest('[data-testid="board-session-card"]') as HTMLElement;
+		expect(within(readyCard).getByRole("button", { name: "Merge local" })).toBeInTheDocument();
+		expect(within(readyCard).getByRole("button", { name: "Open PR" })).toBeInTheDocument();
+
+		for (const title of ["building worker", "review worker", "planned worker"]) {
+			const card = screen.getByText(title).closest('[data-testid="board-session-card"]') as HTMLElement;
+			expect(within(card).queryByRole("button", { name: "Merge local" })).not.toBeInTheDocument();
+			expect(within(card).queryByRole("button", { name: "Open PR" })).not.toBeInTheDocument();
+		}
+		// Ready is the only lane with delivery buttons: exactly one card owns them.
+		expect(screen.getAllByRole("button", { name: "Merge local" })).toHaveLength(1);
+		expect(screen.getAllByRole("button", { name: "Open PR" })).toHaveLength(1);
+	});
+
+	it("shows exactly one Commit button on review-lane cards and keeps Build on planning cards", () => {
+		workspaceQueryMock.mockReturnValue({
+			data: [
+				workspaceWithSessions([
+					reviewLaneSession(),
+					awaitingPrSession({ id: "s-plan", title: "planned worker", workflowMode: "planning" }),
+					awaitingPrSession({ id: "s-build", title: "built worker", workflowMode: "building" }),
+				]),
+			],
+			isError: false,
+			isSuccess: true,
+		});
+
+		renderBoard("p1");
+
+		// Awaiting-PR in building mode sits in the review lane: Commit, no Build.
+		const builtCard = screen.getByText("built worker").closest('[data-testid="board-session-card"]') as HTMLElement;
+		expect(within(builtCard).getByRole("button", { name: "Commit" })).toBeInTheDocument();
+		expect(within(builtCard).queryByRole("button", { name: "Build" })).not.toBeInTheDocument();
+		// In-review feedback loop: exactly one Commit, nothing else.
+		const reviewCard = screen.getByText("review worker").closest('[data-testid="board-session-card"]') as HTMLElement;
+		expect(within(reviewCard).getByRole("button", { name: "Commit" })).toBeInTheDocument();
+		expect(within(reviewCard).queryByRole("button", { name: "Build" })).not.toBeInTheDocument();
+		// Planning lane keeps Build and gains no Commit.
+		const plannedCard = screen.getByText("planned worker").closest('[data-testid="board-session-card"]') as HTMLElement;
+		expect(within(plannedCard).getByRole("button", { name: "Build" })).toBeInTheDocument();
+		expect(within(plannedCard).queryByRole("button", { name: "Commit" })).not.toBeInTheDocument();
+		expect(screen.getAllByRole("button", { name: "Commit" })).toHaveLength(2);
+	});
+
+	it("reviews to commit from an in-review card by approving the pending edit", async () => {
+		workspaceQueryMock.mockReturnValue({
+			data: [workspaceWithSessions([reviewLaneSession()])],
+			isError: false,
+			isSuccess: true,
+		});
+		getMock.mockResolvedValue({
+			data: {
+				activities: [
+					{
+						activityKind: "approval",
+						status: "pending",
+						requestId: "approval-1",
+						detail: { decisions: [{ id: "accept", label: "Approve" }] },
+					},
+				],
+			},
+		});
+
+		renderBoard("p1");
+		await userEvent.click(screen.getByRole("button", { name: "Commit" }));
+
+		await waitFor(() =>
+			expect(postMock).toHaveBeenCalledWith(
+				"/api/v1/sessions/{sessionId}/conversation/approvals/{requestId}/resolve",
+				{
+					params: { path: { sessionId: "s-review", requestId: "approval-1" } },
+					body: { decisionId: "accept" },
+				},
+			),
+		);
+	});
+
+	it("asks for confirmation before merging a ready branch into local dev", async () => {
+		workspaceQueryMock.mockReturnValue({
+			data: [workspaceWithSessions([readySession()])],
+			isError: false,
+			isSuccess: true,
+		});
+		postMock.mockResolvedValue({ data: { ok: true } });
+
+		renderBoard("p1");
+		await userEvent.click(screen.getByRole("button", { name: "Merge local" }));
+
+		// No request until the destructive-ish chain is confirmed.
+		expect(postMock).not.toHaveBeenCalled();
+		const dialog = screen.getByRole("dialog", { name: "Merge ready worker into dev?" });
+		await userEvent.click(within(dialog).getByRole("button", { name: "Yes, merge into dev" }));
+
+		await waitFor(() =>
+			expect(postMock).toHaveBeenCalledWith("/api/v1/sessions/{sessionId}/merge-local", {
+				params: { path: { sessionId: "s-ready" } },
+			}),
+		);
+	});
+
+	it("reports a dirty-checkout merge refusal on the ready card without terminating", async () => {
+		workspaceQueryMock.mockReturnValue({
+			data: [workspaceWithSessions([readySession()])],
+			isError: false,
+			isSuccess: true,
+		});
+		postMock.mockResolvedValue({ error: { code: "WORKSPACE_DIRTY", message: "Project checkout has uncommitted changes" }, response: { status: 409 } });
+
+		renderBoard("p1");
+		await userEvent.click(screen.getByRole("button", { name: "Merge local" }));
+		const dialog = screen.getByRole("dialog", { name: "Merge ready worker into dev?" });
+		await userEvent.click(within(dialog).getByRole("button", { name: "Yes, merge into dev" }));
+
+		const card = screen.getByText("ready worker").closest('[data-testid="board-session-card"]') as HTMLElement;
+		// The suite mocks apiErrorMessage to its fallback, so the card shows
+		// the status-qualified fallback; production surfaces the daemon text.
+		expect(await within(card).findByRole("alert")).toHaveTextContent("Failed to merge ready worker into dev (409)");
+		// The card stays live: a failed merge never terminates.
+		expect(within(card).getByRole("button", { name: "Merge local" })).toBeEnabled();
+	});
+
+	it("opens the pull request url after ensuring exactly one PR", async () => {
+		workspaceQueryMock.mockReturnValue({
+			data: [workspaceWithSessions([readySession()])],
+			isError: false,
+			isSuccess: true,
+		});
+		postMock.mockResolvedValue({
+			data: { ok: true, prUrl: "https://github.com/example/radic/pull/144", prNumber: 144, created: false },
+		});
+
+		renderBoard("p1");
+		await userEvent.click(screen.getByRole("button", { name: "Open PR" }));
+
+		await waitFor(() =>
+			expect(postMock).toHaveBeenCalledWith("/api/v1/sessions/{sessionId}/pr", {
+				params: { path: { sessionId: "s-ready" } },
+			}),
+		);
+		await waitFor(() =>
+			expect(openExternalMock).toHaveBeenCalledWith("https://github.com/example/radic/pull/144"),
+		);
+	});
+
+	it("fires a single pull request creation on double-click", async () => {
+		workspaceQueryMock.mockReturnValue({
+			data: [workspaceWithSessions([readySession()])],
+			isError: false,
+			isSuccess: true,
+		});
+		let resolvePost!: (value: { data: Record<string, unknown> }) => void;
+		postMock.mockReturnValueOnce(
+			new Promise((resolve) => {
+				resolvePost = resolve;
+			}),
+		);
+
+		renderBoard("p1");
+		const openPR = screen.getByRole("button", { name: "Open PR" });
+		await userEvent.click(openPR);
+		// The pending request disables the button, so the second click lands on
+		// a disabled control and fires nothing.
+		expect(openPR).toBeDisabled();
+		await userEvent.click(openPR);
+		expect(postMock).toHaveBeenCalledTimes(1);
+
+		await act(async () => {
+			resolvePost({ data: { ok: true, prUrl: "https://github.com/example/radic/pull/144", created: true } });
+		});
+		await waitFor(() =>
+			expect(openExternalMock).toHaveBeenCalledWith("https://github.com/example/radic/pull/144"),
+		);
 	});
 
 	it("highlights every user-attention status while leaving ordinary cards neutral", () => {

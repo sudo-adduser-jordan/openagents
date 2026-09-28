@@ -3878,6 +3878,52 @@ paths:
       summary: Mark a session terminated and tear down runtime/workspace resources
       tags:
       - sessions
+  /api/v1/sessions/{sessionId}/merge-local:
+    post:
+      operationId: mergeSessionLocal
+      parameters:
+      - description: Session identifier, e.g. project-1.
+        in: path
+        name: sessionId
+        required: true
+        schema:
+          description: Session identifier, e.g. project-1.
+          type: string
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/MergeSessionLocalResponse'
+          description: OK
+        "400":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/APIError'
+          description: Bad Request
+        "404":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/APIError'
+          description: Not Found
+        "409":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/APIError'
+          description: Conflict
+        "501":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/APIError'
+          description: Not Implemented
+      summary: Merge the session branch into the local dev checkout, remove it, and
+        terminate the session
+      tags:
+      - sessions
   /api/v1/sessions/{sessionId}/merge-policy:
     patch:
       operationId: setSessionMergePolicy
@@ -4043,6 +4089,57 @@ paths:
                 $ref: '#/components/schemas/APIError'
           description: Not Implemented
       summary: List pull requests owned by a session
+      tags:
+      - sessions
+    post:
+      operationId: createSessionPR
+      parameters:
+      - description: Session identifier, e.g. project-1.
+        in: path
+        name: sessionId
+        required: true
+        schema:
+          description: Session identifier, e.g. project-1.
+          type: string
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/CreateSessionPRResponse'
+          description: OK
+        "400":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/APIError'
+          description: Bad Request
+        "403":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/APIError'
+          description: Forbidden
+        "404":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/APIError'
+          description: Not Found
+        "409":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/APIError'
+          description: Conflict
+        "501":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/APIError'
+          description: Not Implemented
+      summary: Push the session branch to origin and open exactly one pull request
+        against dev
       tags:
       - sessions
   /api/v1/sessions/{sessionId}/pr/claim:
@@ -7733,6 +7830,28 @@ components:
       - cachedTokens
       - totalTokens
       type: object
+    CreateSessionPRResponse:
+      properties:
+        created:
+          type: boolean
+        ok:
+          type: boolean
+        prNumber:
+          type: integer
+        prUrl:
+          type: string
+        session:
+          $ref: '#/components/schemas/ControllersSessionView'
+        sessionId:
+          type: string
+      required:
+      - ok
+      - sessionId
+      - prUrl
+      - prNumber
+      - created
+      - session
+      type: object
     DegradedProject:
       properties:
         id:
@@ -8500,6 +8619,31 @@ components:
       - ok
       - prNumber
       - method
+      type: object
+    MergeSessionLocalResponse:
+      properties:
+        alreadyMerged:
+          type: boolean
+        branchRemoved:
+          type: boolean
+        ok:
+          type: boolean
+        session:
+          $ref: '#/components/schemas/ControllersSessionView'
+        sessionId:
+          type: string
+        targetBranch:
+          type: string
+        targetHeadSha:
+          type: string
+      required:
+      - ok
+      - sessionId
+      - targetBranch
+      - targetHeadSha
+      - alreadyMerged
+      - branchRemoved
+      - session
       type: object
     NotificationEnvelope:
       properties:

@@ -41,6 +41,7 @@ var _ ports.WorkspaceDefaultBranchRefresher = (*Workspace)(nil)
 var _ ports.WorkspaceProject = (*Workspace)(nil)
 var _ ports.WorkspaceObserver = (*Workspace)(nil)
 var _ ports.WorkspaceReclaimer = (*Workspace)(nil)
+var _ ports.SessionBranchDelivery = (*Workspace)(nil)
 
 // New returns a router over git and scratch workspace implementations.
 func New(deps Deps) *Workspace {
@@ -170,7 +171,6 @@ func (w *Workspace) CreateWorkspaceProject(ctx context.Context, cfg ports.Worksp
 	}
 	return gitProject.CreateWorkspaceProject(ctx, cfg)
 }
-
 // DestroyWorkspaceProject delegates root-as-repo workspace project cleanup to
 // the git adapter.
 func (w *Workspace) DestroyWorkspaceProject(ctx context.Context, info ports.WorkspaceProjectInfo) error {
@@ -179,6 +179,26 @@ func (w *Workspace) DestroyWorkspaceProject(ctx context.Context, info ports.Work
 		return err
 	}
 	return gitProject.DestroyWorkspaceProject(ctx, info)
+}
+
+// MergeSessionBranchLocal delegates board delivery merges to the git adapter.
+// Delivery is git-only (scratch sessions have no branch), so this bypasses
+// the project-kind routing that session workspaces use.
+func (w *Workspace) MergeSessionBranchLocal(ctx context.Context, projectID domain.ProjectID, sessionBranch, targetBranch string) (ports.LocalMergeResult, error) {
+	delivery, err := w.gitBranchDelivery()
+	if err != nil {
+		return ports.LocalMergeResult{}, err
+	}
+	return delivery.MergeSessionBranchLocal(ctx, projectID, sessionBranch, targetBranch)
+}
+
+// PushSessionBranch delegates board delivery pushes to the git adapter.
+func (w *Workspace) PushSessionBranch(ctx context.Context, projectID domain.ProjectID, worktreePath, branch string) error {
+	delivery, err := w.gitBranchDelivery()
+	if err != nil {
+		return err
+	}
+	return delivery.PushSessionBranch(ctx, projectID, worktreePath, branch)
 }
 
 func (w *Workspace) adapterForProject(ctx context.Context, projectID domain.ProjectID) (ports.Workspace, error) {
@@ -220,4 +240,15 @@ func (w *Workspace) gitWorkspaceProject() (ports.WorkspaceProject, error) {
 		return nil, errors.New("workspace router: git workspace does not support workspace projects")
 	}
 	return gitProject, nil
+}
+
+func (w *Workspace) gitBranchDelivery() (ports.SessionBranchDelivery, error) {
+	if w == nil || w.git == nil {
+		return nil, errors.New("workspace router: git workspace is not configured")
+	}
+	delivery, ok := w.git.(ports.SessionBranchDelivery)
+	if !ok {
+		return nil, errors.New("workspace router: git workspace does not support branch delivery")
+	}
+	return delivery, nil
 }

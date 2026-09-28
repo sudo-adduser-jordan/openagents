@@ -407,6 +407,56 @@ type WorkspaceProject interface {
 	DestroyWorkspaceProject(ctx context.Context, info WorkspaceProjectInfo) error
 }
 
+// LocalMergeResult is the verified outcome of merging a session branch into
+// the project checkout's delivery target branch.
+type LocalMergeResult struct {
+	// TargetBranch is the branch that was merged into (dev).
+	TargetBranch string
+	// TargetHeadSHA is the target branch HEAD after the merge.
+	TargetHeadSHA string
+	// AlreadyMerged reports the session tip was already an ancestor of the
+	// target, so no merge commit was created. Verification still passed.
+	AlreadyMerged bool
+	// BranchRemoved reports the session branch ref was deleted afterwards.
+	BranchRemoved bool
+}
+
+// SessionBranchDelivery is the optional board-delivery capability for
+// Git-backed workspaces: merge a session branch into the local checkout and
+// push a session branch to the remote. It is separate from Workspace so
+// scratch adapters are not forced to implement Git operations; the router
+// delegates to the git adapter and scratch reports "unsupported".
+type SessionBranchDelivery interface {
+	// MergeSessionBranchLocal merges the session branch into the local target
+	// branch (dev) of the project's repository, verifies the session tip is
+	// an ancestor of the target afterwards, detaches the session worktree so
+	// the branch is no longer checked out anywhere, and deletes the branch
+	// ref. It refuses on a dirty checkout, a checkout not on the target
+	// branch, and conflicts (leaving MERGE_HEAD and markers intact).
+	MergeSessionBranchLocal(ctx context.Context, projectID domain.ProjectID, sessionBranch, targetBranch string) (LocalMergeResult, error)
+	// PushSessionBranch pushes the session branch from its worktree to the
+	// project repository's origin remote.
+	PushSessionBranch(ctx context.Context, projectID domain.ProjectID, worktreePath, branch string) error
+}
+
+// CreatedPullRequest is one pull request the daemon created via the gh CLI.
+type CreatedPullRequest struct {
+	URL     string
+	Number  int
+	Created bool
+}
+
+// PullRequestCreator creates provider pull requests through the gh CLI. The
+// daemon shells out to gh (the same tool agents use) so creation honors the
+// user's own gh authentication.
+type PullRequestCreator interface {
+	// FindPRByHead returns the existing open pull request for a head branch,
+	// if any. Empty URL with found=false means none exists.
+	FindPRByHead(ctx context.Context, repoDir, headBranch string) (url string, number int, found bool, err error)
+	// CreatePR creates a pull request from head into base and returns its URL.
+	CreatePR(ctx context.Context, repoDir, base, head, title, body string) (CreatedPullRequest, error)
+}
+
 // Workspace-level sentinels surfaced through Create/Restore/Destroy so callers
 // can map them to typed errors rather than collapsing every adapter failure
 // into an opaque 500. Adapters wrap these via fmt.Errorf("...: %w", sentinel).
@@ -459,6 +509,32 @@ var (
 	// conflict markers for manual resolution. Adapters wrap this sentinel via
 	// fmt.Errorf so callers can match it with errors.Is.
 	ErrPreservedConflict = errors.New("workspace: preserved apply produced conflicts")
+	// ErrDeliveryNotOnTargetBranch reports the project checkout is not on the
+	// delivery target branch (dev), so a local merge would land somewhere the
+	// user did not ask for. Callers refuse rather than guess.
+	ErrDeliveryNotOnTargetBranch = errors.New("delivery: project checkout is not on the target branch")
+	// ErrDeliveryMergeConflict reports the session branch does not merge
+	// cleanly into the target branch. The checkout is left with conflict
+	// markers and MERGE_HEAD intact so the user can resolve or abort; nothing
+	// is committed and no ref is moved.
+	ErrDeliveryMergeConflict = errors.New("delivery: session branch conflicts with the target branch")
+	// ErrDeliveryBranchNotFound reports the session branch has no ref in the
+	// project repository (already removed, or never fetched there).
+	ErrDeliveryBranchNotFound = errors.New("delivery: session branch not found in the project repository")
+	// ErrDeliveryPushRejected reports the session branch push to the remote
+	// was rejected (for example non-fast-forward). The local state is
+	// untouched; the user must reconcile the remote branch first.
+	ErrDeliveryPushRejected = errors.New("delivery: push to the remote was rejected")
+	// ErrGHNotInstalled reports the gh CLI is not on PATH, so no pull request
+	// can be created from the daemon.
+	ErrGHNotInstalled = errors.New("delivery: gh CLI is not installed")
+	// ErrGHAuthMissing reports gh has no usable authentication for the host,
+	// so push/PR creation cannot proceed. The user must run `gh auth login`.
+	ErrGHAuthMissing = errors.New("delivery: gh is not authenticated")
+	// ErrGHPullRequestExists reports gh refused creation because a pull
+	// request already exists for the head branch. Callers re-list to return
+	// the existing URL instead of failing.
+	ErrGHPullRequestExists = errors.New("delivery: pull request already exists for this branch")
 	// ErrRuntimePrerequisite reports a missing host prerequisite for the selected
 	// runtime before a session can be created.
 	ErrRuntimePrerequisite = errors.New("runtime: prerequisite missing")

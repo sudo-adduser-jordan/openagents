@@ -73,6 +73,8 @@ type fakeSessionService struct {
 	managerMode                domain.SessionMode
 	claimErr                   error
 	listPRErr                  error
+	mergeLocalErr              error
+	createPRErr                error
 	workspaceErr               error
 	staged                     []ports.SpawnAttachment
 	stagedPaths                []string
@@ -498,6 +500,38 @@ func (f *fakeSessionService) ClaimPR(_ context.Context, id domain.SessionID, ref
 	}
 	prs, _ := f.ListPRs(context.Background(), id)
 	return sessionsvc.ClaimPRResult{PRs: prs, TakenOverFrom: []domain.SessionID{}, BranchChanged: true}, nil
+}
+
+func (f *fakeSessionService) MergeSessionLocal(_ context.Context, id domain.SessionID) (sessionsvc.MergeLocalOutcome, error) {
+	if f.mergeLocalErr != nil {
+		return sessionsvc.MergeLocalOutcome{}, f.mergeLocalErr
+	}
+	s, ok := f.sessions[id]
+	if !ok {
+		return sessionsvc.MergeLocalOutcome{}, apierr.NotFound("SESSION_NOT_FOUND", "Unknown session")
+	}
+	return sessionsvc.MergeLocalOutcome{
+		Session:       s,
+		TargetBranch:  "dev",
+		TargetHeadSHA: "abc123",
+		BranchRemoved: true,
+	}, nil
+}
+
+func (f *fakeSessionService) CreateSessionPR(_ context.Context, id domain.SessionID) (sessionsvc.CreatePROutcome, error) {
+	if f.createPRErr != nil {
+		return sessionsvc.CreatePROutcome{}, f.createPRErr
+	}
+	s, ok := f.sessions[id]
+	if !ok {
+		return sessionsvc.CreatePROutcome{}, apierr.NotFound("SESSION_NOT_FOUND", "Unknown session")
+	}
+	return sessionsvc.CreatePROutcome{
+		Session: s,
+		URL:     "https://github.com/acme/repo/pull/8",
+		Number:  8,
+		Created: true,
+	}, nil
 }
 
 func (f *fakeSessionService) StageAttachments(

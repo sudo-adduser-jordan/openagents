@@ -171,6 +171,8 @@ type Service struct {
 	prClaimer         ports.PRClaimer
 	scm               scmProvider
 	tracker           ports.Tracker
+	delivery          ports.SessionBranchDelivery
+	prCreator         ports.PullRequestCreator
 	clock             func() time.Time
 	dataDir           string
 	logger            *slog.Logger
@@ -215,6 +217,14 @@ type Deps struct {
 	PRClaimer ports.PRClaimer
 	SCM       scmProvider
 	Tracker   ports.Tracker
+	// Delivery merges session branches into the local checkout and pushes
+	// them to the remote for the board delivery buttons. Left nil (focused
+	// tests, non-daemon callers) the delivery endpoints report
+	// DELIVERY_UNAVAILABLE.
+	Delivery ports.SessionBranchDelivery
+	// PRCreator opens provider pull requests via the gh CLI for the remote
+	// delivery button. Left nil with Delivery, same unavailability contract.
+	PRCreator ports.PullRequestCreator
 	Clock     func() time.Time
 	DataDir   string
 	Logger    *slog.Logger
@@ -240,7 +250,7 @@ func NewWithDeps(d Deps) *Service {
 	if backgroundContext == nil {
 		backgroundContext = context.Background()
 	}
-	s := &Service{manager: d.Manager, store: d.Store, prClaimer: d.PRClaimer, scm: d.SCM, tracker: d.Tracker, clock: d.Clock, dataDir: d.DataDir, signalCapable: d.SignalCapable, logger: d.Logger, backgroundContext: backgroundContext, agentReadiness: d.AgentReadiness, reengagement: d.Reengagement}
+	s := &Service{manager: d.Manager, store: d.Store, prClaimer: d.PRClaimer, scm: d.SCM, tracker: d.Tracker, delivery: d.Delivery, prCreator: d.PRCreator, clock: d.Clock, dataDir: d.DataDir, signalCapable: d.SignalCapable, logger: d.Logger, backgroundContext: backgroundContext, agentReadiness: d.AgentReadiness, reengagement: d.Reengagement}
 	if s.prClaimer == nil {
 		if w, ok := d.Store.(ports.PRClaimer); ok {
 			s.prClaimer = w

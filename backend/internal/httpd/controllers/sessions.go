@@ -97,6 +97,8 @@ type SessionService interface {
 	DelegateTask(ctx context.Context, in sessionsvc.DelegateTaskInput) (sessionsvc.DelegateTaskOutcome, error)
 	ListPRSummaries(ctx context.Context, id domain.SessionID) ([]sessionsvc.PRSummary, error)
 	ClaimPR(ctx context.Context, id domain.SessionID, ref string, opts sessionsvc.ClaimPROptions) (sessionsvc.ClaimPRResult, error)
+	MergeSessionLocal(ctx context.Context, id domain.SessionID) (sessionsvc.MergeLocalOutcome, error)
+	CreateSessionPR(ctx context.Context, id domain.SessionID) (sessionsvc.CreatePROutcome, error)
 	StageAttachments(ctx context.Context, id domain.SessionID, attachments []ports.SpawnAttachment) ([]string, error)
 	WorkspaceWatchPaths(ctx context.Context, id domain.SessionID) ([]string, error)
 	ListWorkspaceFiles(ctx context.Context, id domain.SessionID) (sessionsvc.WorkspaceFiles, error)
@@ -177,7 +179,9 @@ func (c *SessionsController) Register(r chi.Router) {
 	r.Get("/sessions/{sessionId}/workspace/search", c.searchWorkspaceFiles)
 	r.Get("/sessions/{sessionId}/workspace/tree", c.listWorkspaceTree)
 	r.Get("/sessions/{sessionId}/pr", c.listPRs)
+	r.Post("/sessions/{sessionId}/pr", c.createPR)
 	r.Post("/sessions/{sessionId}/pr/claim", c.claimPR)
+	r.Post("/sessions/{sessionId}/merge-local", c.mergeLocal)
 	r.Patch("/sessions/{sessionId}", c.rename)
 	r.Patch("/sessions/{sessionId}/merge-policy", c.setMergePolicy)
 	r.Patch("/sessions/{sessionId}/workflow-mode", c.setWorkflowMode)
@@ -1095,6 +1099,47 @@ func (c *SessionsController) claimPR(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	envelope.WriteJSON(w, http.StatusOK, ClaimPRResponse{OK: true, SessionID: sessionID(r), PRs: sessionPRFacts(res.PRs), BranchChanged: res.BranchChanged, TakenOverFrom: nonNilSessionIDs(res.TakenOverFrom)})
+}
+
+func (c *SessionsController) mergeLocal(w http.ResponseWriter, r *http.Request) {
+	if c.Svc == nil {
+		apispec.NotImplemented(w, r, "POST", "/api/v1/sessions/{sessionId}/merge-local")
+		return
+	}
+	res, err := c.Svc.MergeSessionLocal(r.Context(), sessionID(r))
+	if err != nil {
+		envelope.WriteError(w, r, err)
+		return
+	}
+	envelope.WriteJSON(w, http.StatusOK, MergeSessionLocalResponse{
+		OK:            true,
+		SessionID:     sessionID(r),
+		TargetBranch:  res.TargetBranch,
+		TargetHeadSHA: res.TargetHeadSHA,
+		AlreadyMerged: res.AlreadyMerged,
+		BranchRemoved: res.BranchRemoved,
+		Session:       sessionView(res.Session),
+	})
+}
+
+func (c *SessionsController) createPR(w http.ResponseWriter, r *http.Request) {
+	if c.Svc == nil {
+		apispec.NotImplemented(w, r, "POST", "/api/v1/sessions/{sessionId}/pr")
+		return
+	}
+	res, err := c.Svc.CreateSessionPR(r.Context(), sessionID(r))
+	if err != nil {
+		envelope.WriteError(w, r, err)
+		return
+	}
+	envelope.WriteJSON(w, http.StatusOK, CreateSessionPRResponse{
+		OK:        true,
+		SessionID: sessionID(r),
+		PRURL:     res.URL,
+		PRNumber:  res.Number,
+		Created:   res.Created,
+		Session:   sessionView(res.Session),
+	})
 }
 
 func (c *SessionsController) rename(w http.ResponseWriter, r *http.Request) {

@@ -1052,6 +1052,27 @@ type ClaimPRResponse struct {
 	TakenOverFrom []domain.SessionID `json:"takenOverFrom"`
 }
 
+// MergeSessionLocalResponse is the body of POST /sessions/{sessionId}/merge-local.
+type MergeSessionLocalResponse struct {
+	OK            bool             `json:"ok"`
+	SessionID     domain.SessionID `json:"sessionId"`
+	TargetBranch  string           `json:"targetBranch"`
+	TargetHeadSHA string           `json:"targetHeadSha"`
+	AlreadyMerged bool             `json:"alreadyMerged"`
+	BranchRemoved bool             `json:"branchRemoved"`
+	Session       SessionView      `json:"session"`
+}
+
+// CreateSessionPRResponse is the body of POST /sessions/{sessionId}/pr.
+type CreateSessionPRResponse struct {
+	OK        bool             `json:"ok"`
+	SessionID domain.SessionID `json:"sessionId"`
+	PRURL     string           `json:"prUrl"`
+	PRNumber  int              `json:"prNumber"`
+	Created   bool             `json:"created"`
+	Session   SessionView      `json:"session"`
+}
+
 // SetActivityRequest is the body of POST /api/v1/sessions/{sessionId}/activity.
 // Event/ToolName/ToolUseID are optional correlation facts: which Open Agents hook
 // sub-command produced the state and, for tool-use hooks, which tool call it
