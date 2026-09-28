@@ -255,6 +255,11 @@ func DeriveKanbanPresentation(
 	if session.IsTerminated {
 		return KanbanPresentation{Column: KanbanArchive, DisplayStatus: DisplayTerminated}
 	}
+	// No pull request means no delivery, so the card stays in Building. A local
+	// git commit cannot move it: the daemon observes commits to start delivery
+	// (see internal/observe/head), and the card advances only once that delivery
+	// produces a pull request the daemon can see. Never add a commit-derived
+	// branch here -- that would let a card claim Ready with no observed PR.
 	if len(prs) == 0 {
 		return KanbanPresentation{
 			Column:        KanbanBuilding,

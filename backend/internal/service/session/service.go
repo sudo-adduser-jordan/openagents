@@ -30,6 +30,7 @@ type Store interface {
 	SetSessionTerminateOnPRMerge(ctx context.Context, id domain.SessionID, terminate bool, updatedAt time.Time) (bool, error)
 	SetSessionWorkflowMode(ctx context.Context, id domain.SessionID, mode domain.WorkflowMode, updatedAt time.Time) (bool, error)
 	SetSessionReviewLocked(ctx context.Context, id domain.SessionID, locked bool, updatedAt time.Time) (bool, error)
+	SetSessionDeliveredHeadSHA(ctx context.Context, id domain.SessionID, headSHA string, updatedAt time.Time) (bool, error)
 	SetSessionAutoInjectReview(ctx context.Context, id domain.SessionID, autoInject bool, updatedAt time.Time) (bool, error)
 	SetSessionAutoInjectCI(ctx context.Context, id domain.SessionID, autoInject bool, updatedAt time.Time) (bool, error)
 	SetSessionPinned(ctx context.Context, id domain.SessionID, isPinned bool, pinnedAt *time.Time, updatedAt time.Time) (bool, error)

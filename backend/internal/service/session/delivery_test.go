@@ -41,14 +41,14 @@ func (f *fakeDelivery) PushSessionBranch(_ context.Context, projectID domain.Pro
 }
 
 type fakePRCreator struct {
-	findURL    string
-	findNumber int
-	findFound  bool
-	findErr    error
-	findCalls  int
-	created    ports.CreatedPullRequest
-	createErr  error
-	createRace bool
+	findURL     string
+	findNumber  int
+	findFound   bool
+	findErr     error
+	findCalls   int
+	created     ports.CreatedPullRequest
+	createErr   error
+	createRace  bool
 	createCalls int
 }
 
@@ -282,5 +282,164 @@ func TestCreateSessionPR_PushRejectedSkipsCreate(t *testing.T) {
 	}
 	if creator.createCalls != 0 {
 		t.Fatalf("create calls = %d, want 0", creator.createCalls)
+	}
+}
+
+// autoDeliverySession is a session that qualifies for automatic delivery: a
+// live worker in building mode with a branch and a workspace.
+func autoDeliverySession() domain.SessionRecord {
+	rec := deliverySession()
+	rec.WorkflowMode = domain.WorkflowModeBuilding
+	return rec
+}
+
+func TestDeliverSessionHead_CommitsAndRecordsHead(t *testing.T) {
+	st := newFakeStore()
+	st.sessions["sess-1"] = autoDeliverySession()
+	delivery := &fakeDelivery{}
+	creator := &fakePRCreator{created: ports.CreatedPullRequest{URL: "https://github.com/acme/repo/pull/8", Number: 8, Created: true}}
+	svc := newDeliveryService(st, &fakeCommander{}, delivery, creator)
+
+	out, err := svc.DeliverSessionHead(context.Background(), "sess-1", "head1")
+	if err != nil {
+		t.Fatalf("deliver head: %v", err)
+	}
+	if !out.Delivered || out.URL != "https://github.com/acme/repo/pull/8" {
+		t.Errorf("outcome = %+v, want delivered PR 8", out)
+	}
+	if len(delivery.pushCalls) != 1 {
+		t.Fatalf("push calls = %d, want 1: the commit must be handed to the remote", len(delivery.pushCalls))
+	}
+	if got := st.sessions["sess-1"].DeliveredHeadSHA; got != "head1" {
+		t.Errorf("DeliveredHeadSHA = %q, want head1: a delivered commit must be remembered", got)
+	}
+}
+
+// The same head observed twice must not push twice. This is the property that
+// makes polling safe at all.
+func TestDeliverSessionHead_AlreadyDeliveredHeadSkipsEverything(t *testing.T) {
+	st := newFakeStore()
+	rec := autoDeliverySession()
+	rec.DeliveredHeadSHA = "head1"
+	st.sessions["sess-1"] = rec
+	delivery := &fakeDelivery{}
+	creator := &fakePRCreator{}
+	svc := newDeliveryService(st, &fakeCommander{}, delivery, creator)
+
+	out, err := svc.DeliverSessionHead(context.Background(), "sess-1", "head1")
+	if err != nil {
+		t.Fatalf("deliver head: %v", err)
+	}
+	if out.Delivered || out.Reason != autoReasonNoChange {
+		t.Errorf("outcome = %+v, want skip %q", out, autoReasonNoChange)
+	}
+	if len(delivery.pushCalls) != 0 || creator.createCalls != 0 {
+		t.Errorf("a known commit must not push (push=%d create=%d)", len(delivery.pushCalls), creator.createCalls)
+	}
+}
+
+func TestDeliverSessionHead_FailedDeliveryStaysRetryable(t *testing.T) {
+	st := newFakeStore()
+	st.sessions["sess-1"] = autoDeliverySession()
+	delivery := &fakeDelivery{pushErr: errors.New("origin unreachable")}
+	creator := &fakePRCreator{}
+	svc := newDeliveryService(st, &fakeCommander{}, delivery, creator)
+
+	if _, err := svc.DeliverSessionHead(context.Background(), "sess-1", "head1"); err == nil {
+		t.Fatal("deliver head succeeded, want a push failure")
+	}
+	if got := st.sessions["sess-1"].DeliveredHeadSHA; got != "" {
+		t.Errorf("DeliveredHeadSHA = %q, want empty: a failed attempt must stay retryable", got)
+	}
+}
+
+// A recorded head that is lost in storage must not cost the user the pull
+// request they already have.
+func TestDeliverSessionHead_LostFactStillReportsDeliveredPR(t *testing.T) {
+	st := newFakeStore()
+	st.sessions["sess-1"] = autoDeliverySession()
+	st.setDeliveredHeadErr = errors.New("disk full")
+	creator := &fakePRCreator{created: ports.CreatedPullRequest{URL: "https://github.com/acme/repo/pull/8", Number: 8, Created: true}}
+	svc := newDeliveryService(st, &fakeCommander{}, &fakeDelivery{}, creator)
+
+	out, err := svc.DeliverSessionHead(context.Background(), "sess-1", "head1")
+	if err == nil {
+		t.Fatal("err = nil, want the failed durable write reported")
+	}
+	if !out.Delivered || out.URL != "https://github.com/acme/repo/pull/8" {
+		t.Errorf("outcome = %+v, want the real PR reported alongside the error", out)
+	}
+}
+
+func TestDeliverSessionHead_UnknownSessionIsSkipped(t *testing.T) {
+	delivery := &fakeDelivery{}
+	svc := newDeliveryService(newFakeStore(), &fakeCommander{}, delivery, &fakePRCreator{})
+	out, err := svc.DeliverSessionHead(context.Background(), "nope", "head1")
+	if err != nil {
+		t.Fatalf("deliver head: %v", err)
+	}
+	if out.Delivered || out.Reason != autoReasonNotEligible {
+		t.Errorf("outcome = %+v, want a skip", out)
+	}
+	if len(delivery.pushCalls) != 0 {
+		t.Errorf("push calls = %d, want 0 for an unknown session", len(delivery.pushCalls))
+	}
+}
+
+func TestDeliverSessionHead_NoCommitSkips(t *testing.T) {
+	st := newFakeStore()
+	st.sessions["sess-1"] = autoDeliverySession()
+	delivery := &fakeDelivery{}
+	svc := newDeliveryService(st, &fakeCommander{}, delivery, &fakePRCreator{})
+
+	out, err := svc.DeliverSessionHead(context.Background(), "sess-1", "  ")
+	if err != nil {
+		t.Fatalf("deliver head: %v", err)
+	}
+	if out.Delivered || out.Reason != autoReasonNoCommit {
+		t.Errorf("outcome = %+v, want skip %q", out, autoReasonNoCommit)
+	}
+	if len(delivery.pushCalls) != 0 {
+		t.Errorf("push calls = %d, want 0 with no commit", len(delivery.pushCalls))
+	}
+}
+
+func TestEligibleForAutoDelivery(t *testing.T) {
+	openPR := []domain.PRFacts{{URL: "u", Closed: false, Merged: false}}
+	mergedPR := []domain.PRFacts{{URL: "u", Closed: false, Merged: true}}
+	cases := []struct {
+		name  string
+		mut   func(*domain.SessionRecord)
+		prs   []domain.PRFacts
+		want  bool
+		whyOK string
+	}{
+		{name: "building worker with branch and workspace", want: true},
+		{name: "terminated", mut: func(r *domain.SessionRecord) { r.IsTerminated = true }},
+		{name: "manager kind", mut: func(r *domain.SessionRecord) { r.Kind = domain.KindManager }},
+		{name: "planning mode", mut: func(r *domain.SessionRecord) { r.WorkflowMode = domain.WorkflowModePlanning }},
+		{name: "manager workflow mode", mut: func(r *domain.SessionRecord) { r.WorkflowMode = domain.WorkflowModeManager }},
+		{name: "no branch", mut: func(r *domain.SessionRecord) { r.Metadata.Branch = "" }},
+		{name: "no workspace", mut: func(r *domain.SessionRecord) { r.Metadata.WorkspacePath = "" }},
+		{name: "already has an open PR", prs: openPR},
+		{name: "terminal PR does not block", prs: mergedPR, want: true},
+	}
+	for _, tc := range cases {
+		t.Run(tc.name, func(t *testing.T) {
+			rec := autoDeliverySession()
+			if tc.mut != nil {
+				tc.mut(&rec)
+			}
+			got, reason := EligibleForAutoDelivery(rec, tc.prs)
+			if got != tc.want {
+				t.Fatalf("eligible = %v (reason %q), want %v", got, reason, tc.want)
+			}
+			if got && reason != "" {
+				t.Errorf("eligible session carries reason %q, want empty", reason)
+			}
+			if !got && reason == "" {
+				t.Error("ineligible session must say why")
+			}
+		})
 	}
 }

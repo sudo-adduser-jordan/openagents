@@ -215,6 +215,21 @@ type SessionRecord struct {
 	// Derived display status ("pending") and board phrase ("Not started") are
 	// computed from this at service read time; neither is stored.
 	AgentDeferred bool `json:"agentDeferred,omitempty"`
+	// DeliveredHeadSHA is a durable fact: the session worktree HEAD commit the
+	// daemon has already handed to the remote for this session. A git commit is
+	// not a SQLite change and so cannot reach change_log through a trigger, which
+	// means the head observer has to remember its own last action somewhere it
+	// can read back. Recorded only after a successful push and pull-request
+	// delivery, never optimistically, so a failed attempt stays retryable.
+	//
+	// It records delivery, not observation, and that narrower meaning is what
+	// keeps the trigger self-limiting: a session whose commits are already
+	// delivered is skipped rather than re-pushed on every poll. It never feeds
+	// board or status derivation -- the board column stays a function of
+	// daemon-observed PR facts only -- so it is internal, not part of the API
+	// read model. Empty means nothing has been delivered yet, which is also the
+	// state of every row written before the column existed.
+	DeliveredHeadSHA string `json:"-"`
 	// TerminateOnPRMerge is a user-controlled lifecycle policy. When enabled,
 	// completing the session's PR set through a merge tears down the session.
 	TerminateOnPRMerge bool `json:"terminateOnPrMerge"`

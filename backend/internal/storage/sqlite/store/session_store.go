@@ -284,6 +284,26 @@ func (s *Store) SetSessionReviewLocked(ctx context.Context, id domain.SessionID,
 	return rows > 0, nil
 }
 
+// SetSessionDeliveredHeadSHA records the commit the daemon has handed to the
+// remote for a session, so the head observer can tell a commit it already
+// delivered from a new one on its next poll. It is a focused write rather than a
+// full-record save on purpose: a record read before the fact was observed would
+// otherwise carry a stale empty value and clear a real delivery. It returns
+// ok=false when the session id does not exist.
+func (s *Store) SetSessionDeliveredHeadSHA(ctx context.Context, id domain.SessionID, headSHA string, updatedAt time.Time) (bool, error) {
+	s.writeMu.Lock()
+	defer s.writeMu.Unlock()
+	rows, err := s.qw.SetSessionDeliveredHeadSHA(ctx, gen.SetSessionDeliveredHeadSHAParams{
+		ID:               id,
+		DeliveredHeadSha: headSHA,
+		UpdatedAt:        updatedAt,
+	})
+	if err != nil {
+		return false, fmt.Errorf("set delivered head sha for session %s: %w", id, err)
+	}
+	return rows > 0, nil
+}
+
 // SetSessionAutoInjectReview persists a session's automatic review-injection policy.
 func (s *Store) SetSessionAutoInjectReview(ctx context.Context, id domain.SessionID, autoInject bool, updatedAt time.Time) (bool, error) {
 	s.writeMu.Lock()
@@ -635,6 +655,7 @@ func rowToRecord(row gen.GetSessionRow) domain.SessionRecord {
 		FirstSignalAt:      nullTimeToTime(row.FirstSignalAt),
 		IsTerminated:       row.IsTerminated,
 		AgentDeferred:      row.AgentDeferred,
+		DeliveredHeadSHA:   row.DeliveredHeadSha,
 		IsPinned:           row.IsPinned,
 		PinnedAt:           nullTimeToTimePtr(row.PinnedAt),
 		TerminateOnPRMerge: row.TerminateOnPRMerge,
