@@ -26,7 +26,11 @@ import { isWebLink, isWorkspaceHtmlLink } from "../../lib/external-link-policy";
 import type { ShellTerminal } from "../../hooks/useShellTerminals";
 import type { Theme } from "../../stores/ui-store";
 import { can } from "../../types/conversation";
-import type { ConversationSnapshot } from "../../types/conversation";
+import type {
+	ChatConfigOption,
+	ChatConfigOptionValue,
+	ConversationSnapshot,
+} from "../../types/conversation";
 import type { TerminalTarget } from "../../types/terminal";
 import { isManagerSession, type WorkflowMode, type WorkspaceSession } from "../../types/workspace";
 import { ChatWorkspace } from "./ChatWorkspace";
@@ -54,6 +58,57 @@ interface ConversationLinkBaseline {
 
 function cleanExtractedLink(value: string): string {
 	return value.replace(/[.,!?;:`\\]+$/, "");
+}
+
+function isPlanValue(value?: string): boolean {
+	return Boolean(value && /^plan(?:[\s_-]mode)?$/i.test(value.trim()));
+}
+
+function isAskValue(value?: string): boolean {
+	return Boolean(value && /^ask(?:[\s_-]mode)?$/i.test(value.trim()));
+}
+
+function isAgentValue(value?: string): boolean {
+	return Boolean(value && /^agent(?:[\s_-]mode)?$/i.test(value.trim()));
+}
+
+function isBuildValue(value?: string): boolean {
+	return Boolean(value && /^build(?:[\s_-]mode)?$/i.test(value.trim()));
+}
+
+function findExecutionOption(options: ChatConfigOption[]): ChatConfigOption | undefined {
+	return options.find((option) => {
+		const isMode = option.category === "mode" || option.id === "mode";
+		if (!isMode) return false;
+		return option.choices.some(
+			(choice) => isPlanValue(choice.value) || isPlanValue(choice.name),
+		);
+	});
+}
+
+function pickProviderTarget(
+	option: ChatConfigOption,
+	wantPlanning: boolean,
+): string | undefined {
+	if (wantPlanning) {
+		return (
+			option.choices.find((c) => isPlanValue(c.value) || isPlanValue(c.name))?.value ??
+			option.choices.find((c) => isAskValue(c.value) || isAskValue(c.name))?.value
+		);
+	}
+	return (
+		option.choices.find((c) => isAgentValue(c.value) || isAgentValue(c.name))?.value ??
+		option.choices.find((c) => isBuildValue(c.value) || isBuildValue(c.name))?.value ??
+		option.choices.find((c) => /(?:^|[\s_-])manual(?:[\s_-]|$)/i.test(`${c.name} ${c.value}`))
+			?.value ??
+		option.choices.find(
+			(c) =>
+				!isPlanValue(c.value) &&
+				!isPlanValue(c.name) &&
+				!isAskValue(c.value) &&
+				!isAskValue(c.name),
+		)?.value
+	);
 }
 
 function firstBrowserLink(text: string, workspacePaths: string[]): string | undefined {
@@ -244,6 +299,81 @@ export const SessionChatSurface = memo(function SessionChatSurface({
 	const hasProviderModel = providerOptions.some(
 		(option) => option.category === "model" || option.id === "model",
 	);
+	const handleChooseConfigOption = useCallback(
+		async (optionId: string, value: ChatConfigOptionValue) => {
+			const options = await configOptions.setOption(optionId, value);
+			const changed = configOptions.options.find((option) => option.id === optionId);
+			const isModeOption = changed?.category === "mode" || changed?.id === "mode";
+			const advertisesPlan = changed?.choices.some(
+				(choice) => isPlanValue(choice.value) || isPlanValue(choice.name),
+			);
+			const nextValue = "value" in value ? value.value : undefined;
+			if (!isModeOption || !advertisesPlan || nextValue === undefined) return options;
+			const managerSession = isManagerSession(session);
+			const role = managerSession ? "manager" : ("worker" as const);
+			const current = resolveWorkflowMode(role, session.workflowMode);
+			const next: WorkflowMode =
+				isPlanValue(nextValue) || isAskValue(nextValue)
+					? "planning"
+					: managerSession
+						? "manager"
+						: "building";
+			if (current !== next) {
+				forwardSyncRef.current = { workflow: next, providerValue: nextValue };
+				setWorkflowMode.mutate({ sessionId: session.id, workflowMode: next });
+			}
+			return options;
+		},
+		[configOptions, session, setWorkflowMode],
+	);
+	// Reverse sync: shortcut / stage bar writes workflowMode only. Keep the
+	// provider execution mode matched so the dropdown switch never disagrees.
+	// Forward sync (above) is event-driven; this effect only runs on workflow
+	// changes, and no-ops once the provider already matches, so no ping-pong.
+	const syncingProviderRef = useRef(false);
+	const prevWorkflowRef = useRef(session.workflowMode);
+	const forwardSyncRef = useRef<{ workflow: WorkflowMode | undefined; providerValue: string } | null>(
+		null,
+	);
+	const mountedRef = useRef(false);
+	useEffect(() => {
+		const prev = prevWorkflowRef.current;
+		prevWorkflowRef.current = session.workflowMode;
+		const isMount = !mountedRef.current;
+		mountedRef.current = true;
+		// Forward sync just claimed this workflow value from an explicit
+		// provider choice (e.g. Ask). Skip one reverse cycle so planning is
+		// kept without rewriting Ask -> Plan.
+		if (forwardSyncRef.current?.workflow === session.workflowMode) {
+			forwardSyncRef.current = null;
+			return;
+		}
+		// After mount, only workflow changes drive provider sync. This stops
+		// failed PATCH retries and external catalog polls from fighting the user.
+		if (!isMount && prev === session.workflowMode) return;
+		if (!configOptions.loaded || configOptions.pending || syncingProviderRef.current) return;
+		const execution = findExecutionOption(configOptions.options);
+		if (!execution?.currentValue) return;
+		const managerSession = isManagerSession(session);
+		const wantPlanning =
+			resolveWorkflowMode(managerSession ? "manager" : "worker", session.workflowMode) ===
+			"planning";
+		const providerPlanning =
+			isPlanValue(execution.currentValue) || isAskValue(execution.currentValue);
+		if (wantPlanning === providerPlanning) return;
+		const target = pickProviderTarget(execution, wantPlanning);
+		if (!target || target === execution.currentValue) return;
+		syncingProviderRef.current = true;
+		void configOptions
+			.setOption(execution.id, { value: target })
+			.catch(() => {})
+			.finally(() => {
+				syncingProviderRef.current = false;
+			});
+	}, [
+		configOptions,
+		session,
+	]);
 	// Only asked for once the conversation is actually readable: the catalog comes
 	// from the live controller, so there is nothing to fetch before then.
 	const { models } = useConversationModels(
@@ -426,7 +556,7 @@ export const SessionChatSurface = memo(function SessionChatSurface({
 				rememberPermissionsError={projectPermissions.error}
 				rememberedPermissionMode={projectPermissions.savedMode}
 				configOptions={configOptions.options}
-				onChooseConfigOption={configOptions.setOption}
+				onChooseConfigOption={handleChooseConfigOption}
 				configOptionPending={configOptions.pending || commands.choosingSettings}
 				configOptionError={configOptions.error}
 				onCompact={commands.compact}

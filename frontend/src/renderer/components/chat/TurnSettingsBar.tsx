@@ -336,10 +336,10 @@ function ModelEffortPicker({
 				</OptionMenuSub>
 
 				{executionMode && onChangeConfigOption ? (
-					<PlanModeToggle option={executionMode} onChange={onChangeConfigOption} />
+					<PlanModeToggle option={executionMode} disabled={disabled} onChange={onChangeConfigOption} />
 				) : null}
 				{toggles.map((option) => (
-					<ConfigToggle key={option.id} option={option} onChange={onChangeConfigOption!} />
+					<ConfigToggle key={option.id} option={option} disabled={disabled} onChange={onChangeConfigOption!} />
 				))}
 				{extraOptions.length > 0 && onChangeConfigOption ? (
 					<MoreOptionsSubmenu options={extraOptions} onChange={onChangeConfigOption} />
@@ -405,9 +405,9 @@ function ClubbedConfigPicker({
 				{effortOptions.map((option) => (
 					<OptionSubmenu key={option.id} option={option} onChange={onChange} />
 				))}
-				{executionMode ? <PlanModeToggle option={executionMode} onChange={onChange} /> : null}
+				{executionMode ? <PlanModeToggle option={executionMode} disabled={disabled} onChange={onChange} /> : null}
 				{toggles.map((option) => (
-					<ConfigToggle key={option.id} option={option} onChange={onChange} />
+					<ConfigToggle key={option.id} option={option} disabled={disabled} onChange={onChange} />
 				))}
 				{extraOptions.length > 0 ? (
 					<MoreOptionsSubmenu options={extraOptions} onChange={onChange} />
@@ -419,9 +419,11 @@ function ClubbedConfigPicker({
 
 function PlanModeToggle({
 	option,
+	disabled,
 	onChange,
 }: {
 	option: ChatConfigOption;
+	disabled?: boolean;
 	onChange: (optionId: string, value: ChatConfigOptionValue) => void;
 }) {
 	const planning = isPlanMode(option);
@@ -433,6 +435,7 @@ function PlanModeToggle({
 		<MenuToggle
 			label="Plan Mode"
 			checked={planning}
+			disabled={disabled}
 			onCheckedChange={() => onChange(option.id, { value: next.value })}
 		/>
 	);
@@ -440,15 +443,18 @@ function PlanModeToggle({
 
 function ConfigToggle({
 	option,
+	disabled,
 	onChange,
 }: {
 	option: ChatConfigOption;
+	disabled?: boolean;
 	onChange: (optionId: string, value: ChatConfigOptionValue) => void;
 }) {
 	return (
 		<MenuToggle
 			label={option.name}
 			checked={optionIsEnabled(option)}
+			disabled={disabled}
 			onCheckedChange={(enabled) => {
 				if (option.type === "boolean") {
 					onChange(option.id, { enabled });
@@ -464,14 +470,17 @@ function ConfigToggle({
 function MenuToggle({
 	label,
 	checked,
+	disabled,
 	onCheckedChange,
 }: {
 	label: string;
 	checked: boolean;
+	disabled?: boolean;
 	onCheckedChange: (checked: boolean) => void;
 }) {
 	return (
 		<OptionMenuItem
+			disabled={disabled}
 			onSelect={(event) => event.preventDefault()}
 			className="justify-between gap-4 px-3 py-2 text-xs"
 		>
@@ -479,6 +488,7 @@ function MenuToggle({
 			<Switch
 				aria-label={label}
 				checked={checked}
+				disabled={disabled}
 				onPointerDown={(event) => event.stopPropagation()}
 				onClick={(event) => event.stopPropagation()}
 				onCheckedChange={onCheckedChange}
@@ -508,7 +518,7 @@ function ExecutionModePicker({
 			</OptionMenuTrigger>
 			<OptionMenuContent align="start" className={CHAT_MENU_CLASS}>
 				{isPlanBinary(option) ? (
-					<PlanModeToggle option={option} onChange={onChange} />
+					<PlanModeToggle option={option} disabled={disabled} onChange={onChange} />
 				) : (
 					<ConfigOptionChoices
 						option={option}
