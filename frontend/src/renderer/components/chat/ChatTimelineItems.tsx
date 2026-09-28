@@ -14,10 +14,8 @@ import { AnimatePresence, motion, useReducedMotion } from "motion/react";
 import {
 	AlertTriangle,
 	Brain,
-	ChevronDown,
 	ChevronRight,
 	CircleAlert,
-	CornerDownLeft,
 	CornerDownRight,
 	File as FileIcon,
 	FileDiff,
@@ -71,12 +69,6 @@ import {
 	isNonzeroCommandExit,
 } from "./activity-command";
 import { Tooltip, TooltipContent, TooltipTrigger } from "../ui/tooltip";
-import {
-	DropdownMenu,
-	DropdownMenuContent,
-	DropdownMenuItem,
-	DropdownMenuTrigger,
-} from "../ui/dropdown-menu";
 import {
 	fileChangeFiles,
 	reviewedPaths,
@@ -2232,11 +2224,12 @@ export function SteerMessage({
 /* -------------------------------------------------------------------------- */
 
 /**
- * A decision the agent is blocked on.
+ * A decision the agent is blocked on, mirroring opencode's permission dialog.
  *
  * Decisions come from `activity.decisions` — the provider's own list — never from
- * a fixed set. The UI still presents common permission choices with Open Agents/opencode copy
- * so provider-flavored labels do not leak into the chat surface.
+ * a fixed set. Like opencode, the card offers up to three flat outcomes:
+ * Allow (once), Allow for session, Deny — each only when the provider offered a
+ * decision of that kind. Provider-custom options render as extra buttons after them.
  */
 export function ApprovalCard({
 	activity,
@@ -2255,26 +2248,39 @@ export function ApprovalCard({
 	const detail = activity.detail;
 	const command = detail?.command ?? activity.summary;
 	const subjectKind = approvalSubjectKind(activity);
-	const rejectOnceDecision = decisions.find(
-		(decision) => approvalDecisionKind(decision) === "reject_once",
-	);
-	const denyDecision =
-		rejectOnceDecision ??
-		decisions.find((decision) => approvalDecisionKind(decision) === "reject_always");
+	const requestId = activity.requestId ?? "";
+	const cardRef = useRef<HTMLDivElement>(null);
+
 	const allowOnceDecision = decisions.find(
 		(decision) => approvalDecisionKind(decision) === "allow_once",
 	);
-	const alternateAllowDecisions = allowOnceDecision
-		? decisions.filter((decision) => approvalDecisionKind(decision) === "allow_always")
-		: [];
-	const otherDecisions = decisions.filter(
-		(decision) =>
-			decision !== denyDecision &&
-			decision !== allowOnceDecision &&
-			!alternateAllowDecisions.includes(decision),
+	const allowSessionDecisions = decisions.filter(
+		(decision) => approvalDecisionKind(decision) === "allow_always",
 	);
-	const requestId = activity.requestId ?? "";
-	const cardRef = useRef<HTMLDivElement>(null);
+	const allowSessionDecision = allowSessionDecisions[0];
+	const rejectOnceDecision = decisions.find(
+		(decision) => approvalDecisionKind(decision) === "reject_once",
+	);
+	const rejectAlwaysDecision = decisions.find(
+		(decision) => approvalDecisionKind(decision) === "reject_always",
+	);
+	// opencode has a single Deny: prefer the one-shot decline, fall back to the
+	// session decline. When the provider offers both, the other stays visible as
+	// an extra button rather than hiding in a menu.
+	const denyDecision = rejectOnceDecision ?? rejectAlwaysDecision;
+	const primaryDecisions = [
+		allowOnceDecision,
+		allowSessionDecision,
+		denyDecision,
+	].filter((decision): decision is DecisionOption => Boolean(decision));
+	const otherDecisions = decisions.filter(
+		(decision) => !primaryDecisions.includes(decision),
+	);
+	const [selectedOption, setSelectedOption] = useState(0);
+	const selectedIndex =
+		primaryDecisions.length === 0
+			? 0
+			: Math.min(selectedOption, primaryDecisions.length - 1);
 
 	useEffect(() => {
 		if (!embedded || resolved || busy || !requestId) return;
@@ -2285,6 +2291,11 @@ export function ApprovalCard({
 	if (resolved) {
 		return <ResolvedApprovalRow activity={activity} command={command} />;
 	}
+
+	const decide = (decision: DecisionOption | undefined) => {
+		if (!decision || busy || !requestId) return;
+		onDecide?.(requestId, decision.id);
+	};
 
 	return (
 		<div
@@ -2298,39 +2309,147 @@ export function ApprovalCard({
 			)}
 			onKeyDown={(event) => {
 				if (busy || event.defaultPrevented || event.altKey || event.ctrlKey || event.metaKey) return;
-				if (event.key === "Escape" && rejectOnceDecision) {
+				const key = event.key.toLowerCase();
+				if (event.key === "Escape" && denyDecision) {
 					event.preventDefault();
-					onDecide?.(requestId, rejectOnceDecision.id);
+					decide(denyDecision);
+					return;
+				}
+				if (key === "a" && allowOnceDecision) {
+					event.preventDefault();
+					decide(allowOnceDecision);
+					return;
+				}
+				if (key === "s" && allowSessionDecision) {
+					event.preventDefault();
+					decide(allowSessionDecision);
+					return;
+				}
+				if (key === "d" && denyDecision) {
+					event.preventDefault();
+					decide(denyDecision);
+					return;
+				}
+				if (event.key === "ArrowRight" || event.key === "Tab") {
+					event.preventDefault();
+					setSelectedOption((selectedIndex + 1) % Math.max(primaryDecisions.length, 1));
+					return;
+				}
+				if (event.key === "ArrowLeft") {
+					event.preventDefault();
+					setSelectedOption(
+						(selectedIndex + Math.max(primaryDecisions.length, 1) - 1) %
+							Math.max(primaryDecisions.length, 1),
+					);
 					return;
 				}
 				const target = event.target;
 				const interactive =
 					target instanceof HTMLElement &&
 					Boolean(target.closest("button, a, input, textarea, select, [contenteditable='true']"));
-				if (event.key === "Enter" && !event.shiftKey && !interactive && allowOnceDecision) {
+				if ((event.key === "Enter" || event.key === " ") && !event.shiftKey && !interactive) {
 					event.preventDefault();
-					onDecide?.(requestId, allowOnceDecision.id);
+					decide(primaryDecisions[selectedIndex]);
 				}
 			}}
 		>
 			<div className="flex flex-col">
-				<p className="whitespace-pre-wrap text-[13.5px] leading-[1.4] text-foreground/90">
+				<p className="text-[13.5px] font-semibold leading-[1.4] text-foreground">
+					Permission Required
+				</p>
+				<dl className="mt-1.5 space-y-0.5 text-[12px] leading-[1.45]">
+					<div className="flex gap-1.5">
+						<dt className="font-semibold text-muted-foreground">Tool</dt>
+						<dd className="min-w-0 truncate text-foreground/90">: {approvalToolLabel(activity, subjectKind)}</dd>
+					</div>
+					{approvalPathLabel(activity) ? (
+						<div className="flex gap-1.5">
+							<dt className="font-semibold text-muted-foreground">Path</dt>
+							<dd className="min-w-0 truncate font-mono text-foreground/90">
+								: {approvalPathLabel(activity)}
+							</dd>
+						</div>
+					) : null}
+				</dl>
+				<p className="mt-2 whitespace-pre-wrap text-[13.5px] leading-[1.4] text-foreground/90">
 					{detail?.reason ?? approvalPrompt(subjectKind)}
 				</p>
 
-				<pre className="mt-2 scrollbar-none max-h-32 overflow-auto whitespace-pre-wrap break-words rounded-md border border-border/70 bg-background/45 px-2.5 py-1.5 font-mono text-[12px] leading-[1.45] text-muted-foreground">
+				<p className="mt-2 text-[12px] font-semibold leading-none text-muted-foreground">
+					{approvalContentLabel(subjectKind)}
+				</p>
+				<pre className="mt-1 scrollbar-none max-h-32 overflow-auto whitespace-pre-wrap break-words rounded-md border border-border/70 bg-background/45 px-2.5 py-1.5 font-mono text-[12px] leading-[1.45] text-muted-foreground">
 					{detail?.rawCommand ?? command}
 				</pre>
 
 				<div className="mt-2 flex flex-wrap justify-end gap-1.5">
+					{allowOnceDecision ? (
+						<button
+							type="button"
+							aria-label="Allow (a)"
+							data-selected={primaryDecisions[selectedIndex] === allowOnceDecision || undefined}
+							className={cn(
+								"inline-flex h-7 items-center gap-1.5 rounded-full border px-2.5 text-[12.5px] transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring/40 disabled:pointer-events-none disabled:opacity-50",
+								primaryDecisions[selectedIndex] === allowOnceDecision
+									? "border-transparent bg-logo-accent text-logo-accent-foreground shadow-sm hover:bg-logo-accent-bright"
+									: "border-border-strong bg-background/20 text-foreground/90 hover:bg-interactive-hover",
+							)}
+							disabled={busy}
+							onClick={() => decide(allowOnceDecision)}
+							onMouseEnter={() => setSelectedOption(primaryDecisions.indexOf(allowOnceDecision))}
+							onFocus={() => setSelectedOption(primaryDecisions.indexOf(allowOnceDecision))}
+						>
+							Allow
+							<kbd className="rounded-full bg-foreground/10 px-1.5 py-0.5 font-sans text-[10.5px] leading-none text-muted-foreground">
+								a
+							</kbd>
+						</button>
+					) : null}
+
+					{allowSessionDecision ? (
+						<button
+							type="button"
+							aria-label="Allow for session (s)"
+							data-selected={primaryDecisions[selectedIndex] === allowSessionDecision || undefined}
+							className={cn(
+								"inline-flex h-7 items-center gap-1.5 rounded-full border px-2.5 text-[12.5px] transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring/40 disabled:pointer-events-none disabled:opacity-50",
+								primaryDecisions[selectedIndex] === allowSessionDecision
+									? "border-transparent bg-logo-accent text-logo-accent-foreground shadow-sm hover:bg-logo-accent-bright"
+									: "border-border-strong bg-background/20 text-foreground/90 hover:bg-interactive-hover",
+							)}
+							disabled={busy}
+							onClick={() => decide(allowSessionDecision)}
+							onMouseEnter={() => setSelectedOption(primaryDecisions.indexOf(allowSessionDecision))}
+							onFocus={() => setSelectedOption(primaryDecisions.indexOf(allowSessionDecision))}
+							title="Approve matching requests for the rest of this session"
+						>
+							Allow for session
+							<kbd className="rounded-full bg-foreground/10 px-1.5 py-0.5 font-sans text-[10.5px] leading-none text-muted-foreground">
+								s
+							</kbd>
+						</button>
+					) : null}
+
 					{denyDecision ? (
 						<button
 							type="button"
-							className="inline-flex h-7 items-center gap-1.5 rounded-full border border-border-strong bg-background/20 px-2.5 text-[12.5px] text-foreground/90 transition-colors hover:bg-interactive-hover focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring/40 disabled:pointer-events-none disabled:opacity-50"
+							aria-label="Deny (d)"
+							data-selected={primaryDecisions[selectedIndex] === denyDecision || undefined}
+							className={cn(
+								"inline-flex h-7 items-center gap-1.5 rounded-full border px-2.5 text-[12.5px] transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring/40 disabled:pointer-events-none disabled:opacity-50",
+								primaryDecisions[selectedIndex] === denyDecision
+									? "border-transparent bg-logo-accent text-logo-accent-foreground shadow-sm hover:bg-logo-accent-bright"
+									: "border-border-strong bg-background/20 text-foreground/90 hover:bg-interactive-hover",
+							)}
 							disabled={busy}
-							onClick={() => onDecide?.(requestId, denyDecision.id)}
+							onClick={() => decide(denyDecision)}
+							onMouseEnter={() => setSelectedOption(primaryDecisions.indexOf(denyDecision))}
+							onFocus={() => setSelectedOption(primaryDecisions.indexOf(denyDecision))}
 						>
-							{approvalDecisionLabel(denyDecision, subjectKind)}
+							Deny
+							<kbd className="rounded-full bg-foreground/10 px-1.5 py-0.5 font-sans text-[10.5px] leading-none text-muted-foreground">
+								d
+							</kbd>
 							{denyDecision === rejectOnceDecision ? (
 								<kbd className="rounded-full bg-foreground/10 px-1.5 py-0.5 font-sans text-[10.5px] leading-none text-muted-foreground">
 									Esc
@@ -2338,60 +2457,13 @@ export function ApprovalCard({
 							) : null}
 						</button>
 					) : null}
-
-					{allowOnceDecision ? (
-						<div className="flex h-7 overflow-hidden rounded-full bg-logo-accent text-logo-accent-foreground shadow-sm">
-							<button
-								type="button"
-								className="inline-flex items-center gap-1.5 px-2.5 text-[12.5px] transition-colors hover:bg-logo-accent-bright focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-ring disabled:pointer-events-none disabled:opacity-50"
-								disabled={busy}
-								onClick={() => onDecide?.(requestId, allowOnceDecision.id)}
-							>
-								Allow once
-								<kbd className="rounded-full bg-logo-accent-foreground/15 p-0.5" aria-label="Press Return">
-									<CornerDownLeft aria-hidden="true" className="size-3" />
-								</kbd>
-							</button>
-							{alternateAllowDecisions.length > 0 ? (
-								<DropdownMenu>
-									<DropdownMenuTrigger asChild>
-										<button
-											type="button"
-											aria-label="More approval options"
-											className="flex w-7 items-center justify-center border-l border-logo-accent-foreground/20 transition-colors hover:bg-logo-accent-bright focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-ring disabled:pointer-events-none disabled:opacity-50"
-											disabled={busy}
-										>
-											<ChevronDown aria-hidden="true" className="size-3.5" />
-										</button>
-									</DropdownMenuTrigger>
-									<DropdownMenuContent
-										align="end"
-										side="bottom"
-										className="min-w-52"
-										data-approval-menu=""
-										onEscapeKeyDown={(event) => event.stopPropagation()}
-									>
-										{alternateAllowDecisions.map((decision) => (
-											<DropdownMenuItem
-												key={decision.id}
-												disabled={busy}
-												onSelect={() => onDecide?.(activity.requestId ?? "", decision.id)}
-											>
-												{approvalDecisionLabel(decision, subjectKind)}
-											</DropdownMenuItem>
-										))}
-									</DropdownMenuContent>
-								</DropdownMenu>
-							) : null}
-						</div>
-					) : null}
 					{otherDecisions.map((decision) => (
 						<button
 							key={decision.id}
 							type="button"
 							className="inline-flex h-7 items-center rounded-full border border-border-strong bg-background/20 px-2.5 text-[12.5px] text-foreground/90 transition-colors hover:bg-interactive-hover focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring/40 disabled:pointer-events-none disabled:opacity-50"
 							disabled={busy}
-							onClick={() => onDecide?.(requestId, decision.id)}
+							onClick={() => decide(decision)}
 						>
 							{approvalDecisionLabel(decision, subjectKind)}
 						</button>
@@ -2414,6 +2486,34 @@ function approvalSubjectKind(activity: ConversationActivity): ActivityKind | und
 	return undefined;
 }
 
+/** opencode's dialog names the tool requesting permission; fall back to the subject kind. */
+function approvalToolLabel(activity: ConversationActivity, subjectKind?: ActivityKind): string {
+	const tool = activity.detail?.toolKind ?? activity.detail?.providerToolName;
+	if (typeof tool === "string" && tool.trim() !== "") return tool;
+	if (subjectKind === "command") return "bash";
+	if (subjectKind === "file_change") return "edit";
+	return "agent tool";
+}
+
+/** opencode's dialog names where the action runs; omit the row when nothing reports it. */
+function approvalPathLabel(activity: ConversationActivity): string | undefined {
+	const cwd = activity.detail?.cwd;
+	if (typeof cwd === "string" && cwd.trim() !== "") return cwd;
+	const files = activity.detail?.files;
+	if (Array.isArray(files) && files.length === 1) {
+		const file = files[0];
+		if (typeof file === "object" && file !== null && typeof file.path === "string") return file.path;
+		if (typeof file === "string") return file;
+	}
+	return undefined;
+}
+
+function approvalContentLabel(subjectKind?: ActivityKind): string {
+	if (subjectKind === "file_change") return "File";
+	if (subjectKind === "command") return "Command";
+	return "Details";
+}
+
 function approvalPrompt(subjectKind?: ActivityKind): string {
 	return subjectKind === "file_change"
 		? "Do you want to allow these file changes?"
@@ -2426,16 +2526,16 @@ function approvalDecisionKind(decision: DecisionOption): DecisionOption["kind"] 
 
 function approvalDecisionRank(decision: DecisionOption): number {
 	switch (approvalDecisionKind(decision)) {
-		case "reject_once":
-			return 10;
-		case "reject_always":
-			return 15;
 		case "allow_once":
-			return 20;
+			return 10;
 		case "allow_always":
+			return 20;
+		case "reject_once":
 			return 30;
-		default:
+		case "reject_always":
 			return 40;
+		default:
+			return 50;
 	}
 }
 
@@ -2506,7 +2606,7 @@ function resolvedApprovalOutcome(
 		return { label: "Cancelled", success: false };
 	}
 	if (decisionKind === "allow_always" || /(remember|always|amendment|policy)/.test(value)) {
-		return { label: "Approved and remembered", success: true };
+		return { label: "Approved for session", success: true };
 	}
 	if (decisionKind === "allow_once" || /(allow|approve|accept)/.test(value)) {
 		return { label: "Approved", success: true };

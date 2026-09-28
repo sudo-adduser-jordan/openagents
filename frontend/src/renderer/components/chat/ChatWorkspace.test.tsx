@@ -432,7 +432,7 @@ describe("ChatWorkspace timeline", () => {
 		);
 
 		const approval = screen.getByRole("group", { name: "Approval request drain-approval" });
-		await user.click(within(approval).getByRole("button", { name: /Allow once/ }));
+		await user.click(within(approval).getByRole("button", { name: "Allow (a)" }));
 		expect(onDecide).toHaveBeenCalledWith("drain-approval", "allow_once");
 	});
 
@@ -785,31 +785,36 @@ describe("ChatWorkspace timeline", () => {
 		expect(screen.getByRole("log", { name: "Conversation" })).not.toContainElement(approval);
 		expect(screen.queryByLabelText("Message the agent")).not.toBeInTheDocument();
 		expect(within(approval).queryByText("Terminal")).not.toBeInTheDocument();
-		expect(within(approval).getByRole("button", { name: /Deny/ })).toHaveTextContent("DenyEsc");
-		expect(within(approval).getByRole("button", { name: /Allow once/ })).toBeInTheDocument();
-		expect(
-			within(approval).getByRole("button", {
-				name: "More approval options",
-			}),
-		).toBeInTheDocument();
+		expect(within(approval).getByRole("button", { name: /Deny/ })).toHaveTextContent("DenydEsc");
+		expect(within(approval).getByRole("button", { name: "Allow (a)" })).toBeInTheDocument();
+		expect(within(approval).getByRole("button", { name: "Allow for session (s)" })).toBeInTheDocument();
 		expect(within(approval).queryByRole("button", { name: "Allow Once" })).not.toBeInTheDocument();
 		expect(
 			within(approval).queryByRole("button", { name: "Always Allow" }),
 		).not.toBeInTheDocument();
 		expect(within(approval).queryByRole("button", { name: "Deny" })).not.toBeInTheDocument();
-		await user.click(
-			within(approval).getByRole("button", {
-				name: "More approval options",
-			}),
-		);
-		await user.keyboard("{Escape}");
-		expect(onDecide).not.toHaveBeenCalled();
+		expect(screen.getByText("Permission Required")).toBeInTheDocument();
+		expect(screen.getByText("Details")).toBeInTheDocument();
 
 		approval.focus();
 		fireEvent.keyDown(approval, { key: "Enter" });
 		expect(onDecide).toHaveBeenCalledWith("approval-1", "allow_once");
 		fireEvent.keyDown(approval, { key: "Escape" });
 		expect(onDecide).toHaveBeenCalledWith("approval-1", "deny");
+		onDecide.mockClear();
+
+		fireEvent.keyDown(approval, { key: "a" });
+		expect(onDecide).toHaveBeenCalledWith("approval-1", "allow_once");
+		fireEvent.keyDown(approval, { key: "s" });
+		expect(onDecide).toHaveBeenCalledWith("approval-1", "always_allow");
+		fireEvent.keyDown(approval, { key: "d" });
+		expect(onDecide).toHaveBeenCalledWith("approval-1", "deny");
+		onDecide.mockClear();
+
+		// Arrow keys move the selected option like opencode's dialog; Enter confirms it.
+		fireEvent.keyDown(approval, { key: "ArrowRight" });
+		fireEvent.keyDown(approval, { key: "Enter" });
+		expect(onDecide).toHaveBeenCalledWith("approval-1", "always_allow");
 		onDecide.mockClear();
 
 		const deny = within(approval).getByRole("button", { name: /Deny/ });
@@ -824,15 +829,10 @@ describe("ChatWorkspace timeline", () => {
 		fireEvent.keyDown(window, { key: "Enter" });
 		expect(onDecide).not.toHaveBeenCalled();
 
-		await user.click(within(approval).getByRole("button", { name: /Allow once/ }));
+		await user.click(within(approval).getByRole("button", { name: "Allow (a)" }));
 		expect(onDecide).toHaveBeenCalledWith("approval-1", "allow_once");
 
-		await user.click(
-			within(approval).getByRole("button", {
-				name: "More approval options",
-			}),
-		);
-		await user.click(screen.getByRole("menuitem", { name: "Always allow this command" }));
+		await user.click(within(approval).getByRole("button", { name: "Allow for session (s)" }));
 		expect(onDecide).toHaveBeenCalledWith("approval-1", "always_allow");
 	});
 
@@ -893,6 +893,10 @@ describe("ChatWorkspace timeline", () => {
 		const approval = screen.getByRole("group", {
 			name: "Approval request opaque-request",
 		});
+		expect(within(approval).getByRole("button", { name: "Allow (a)" })).toBeInTheDocument();
+		expect(within(approval).getByRole("button", { name: "Allow for session (s)" })).toBeInTheDocument();
+		expect(screen.getByText("Permission Required")).toBeInTheDocument();
+		expect(screen.getByText("File")).toBeInTheDocument();
 		approval.focus();
 		fireEvent.keyDown(approval, { key: "Enter" });
 		expect(onDecide).toHaveBeenCalledWith("opaque-request", "option-a");
@@ -928,13 +932,16 @@ describe("ChatWorkspace timeline", () => {
 			name: "Approval request unknown-request",
 		});
 		expect(within(approval).queryByRole("button", { name: /Allow once/ })).not.toBeInTheDocument();
+		expect(within(approval).queryByRole("button", { name: "Allow (a)" })).not.toBeInTheDocument();
 		const providerDecision = within(approval).getByRole("button", {
 			name: "acceptWithDifferentSemantics",
 		});
 
 		approval.focus();
 		fireEvent.keyDown(approval, { key: "Enter" });
-		expect(onDecide).not.toHaveBeenCalled();
+		// The only semantic option is Deny, so confirming the selection declines.
+		expect(onDecide).toHaveBeenCalledWith("unknown-request", "cancel");
+		onDecide.mockClear();
 
 		fireEvent.click(providerDecision);
 		expect(onDecide).toHaveBeenCalledWith("unknown-request", "acceptWithDifferentSemantics");
@@ -942,7 +949,7 @@ describe("ChatWorkspace timeline", () => {
 
 	it.each([
 		["accept", "Approved"],
-		["acceptWithExecpolicyAmendment", "Approved and remembered"],
+		["acceptWithExecpolicyAmendment", "Approved for session"],
 		["cancel", "Cancelled"],
 	] as const)("keeps a resolved %s approval compact and explicit", (decision, label) => {
 		const snapshot = structuredClone(chatFixture);
