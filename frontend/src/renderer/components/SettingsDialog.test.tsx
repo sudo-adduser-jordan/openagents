@@ -1,4 +1,4 @@
-import { fireEvent, render, screen } from "@testing-library/react";
+import { fireEvent, render, screen, within } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { beforeEach, describe, expect, it, vi } from "vitest";
@@ -102,6 +102,29 @@ describe("SettingsDialog", () => {
 
 		expect(await screen.findByTestId("global-settings-section")).toHaveTextContent("browserProfiles");
 		expect(screen.queryByRole("button", { name: "Downloads" })).not.toBeInTheDocument();
+	});
+
+	// The sidebar footer shortcut and this nav are read in the same order, so
+	// Skills has to sit directly above Tools here too.
+	it("orders the Skills tab directly above Tools in the settings nav", async () => {
+		useUiStore.getState().openGlobalSettings("general");
+		renderSettingsDialog();
+
+		const nav = await screen.findByRole("navigation", { name: "Settings sections" });
+		const labels = within(nav)
+			.getAllByRole("button")
+			.map((button) => button.textContent?.trim());
+		expect(labels.indexOf("Skills")).toBe(labels.indexOf("Tools") - 1);
+	});
+
+	it("opens the Skills page from its nav tab", async () => {
+		useUiStore.getState().openGlobalSettings("general");
+		renderSettingsDialog();
+
+		await userEvent.click(await screen.findByRole("button", { name: "Skills" }));
+
+		expect(await screen.findByTestId("global-settings-section")).toHaveTextContent("skills");
+		expect(screen.getByRole("button", { name: "Skills" })).toHaveAttribute("aria-current", "page");
 	});
 
 

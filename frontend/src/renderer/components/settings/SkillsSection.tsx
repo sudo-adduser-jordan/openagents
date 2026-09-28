@@ -17,13 +17,22 @@ import { SettingsSection } from "./SettingsSection";
  * Read-only on purpose. Open Agents does not own the files that define a skill
  * (they come from the user's agent config and the repo's own files), so there is
  * nothing here to save.
+ *
+ * Requires a router above it: the active session is route state, and the only
+ * mount of this page is the shell's settings dialog, which is inside the router.
  */
 export function SkillsSection({ titleHidden }: { titleHidden?: boolean }) {
 	// The same route-derived selection the sidebar and topbar use, so the panel
-	// always describes the session the user is actually looking at.
+	// always describes the session the user is actually looking at. Settings can
+	// be opened with nothing selected — from the board, the home page, or a
+	// project route — and that is a real state, not a failed lookup: the catalog
+	// is per-session, so there is nothing to list until a session is open.
 	const params = useParams({ strict: false }) as { sessionId?: string };
 	const sessionId = params.sessionId;
-	const { skills, isLoading, error } = useConversationSkills(sessionId, true);
+	// Called unconditionally because it is a hook; `enabled` carries the "no
+	// session" decision so the shared query is never keyed on an empty session id
+	// and the composer is left to own the real request.
+	const { skills, isLoading, error } = useConversationSkills(sessionId, Boolean(sessionId));
 
 	// A failed read is not an empty catalog. The daemon answers 409
 	// CHAT_CONTROLLER_NOT_READY until a live controller owns the session, which is
@@ -68,24 +77,27 @@ export function SkillsSection({ titleHidden }: { titleHidden?: boolean }) {
 				/>
 			) : (
 				<>
-					{skills.map((skill) => (
-						<div className="settings-row-bar h-auto min-h-(--size-settings-row) items-start py-3" key={skill.name}>
-							<div className="min-w-0 flex-1">
-								<p className="flex min-w-0 flex-wrap items-baseline gap-2 text-sm leading-5 text-settings-label">
-									<span className="font-mono">{`/${skill.displayName || skill.name}`}</span>
-									{skillSourceLabel(skill.source) ? (
-										<span className="text-xs text-muted-foreground">{skillSourceLabel(skill.source)}</span>
+					{skills.map((skill) => {
+						// The composer's slash menu labels skills through this same
+						// function, so a skill is never described two ways.
+						const source = skillSourceLabel(skill.source);
+						return (
+							<div className="settings-row-bar h-auto min-h-(--size-settings-row) items-start py-3" key={skill.name}>
+								<div className="min-w-0 flex-1">
+									<p className="flex min-w-0 flex-wrap items-baseline gap-2 text-sm leading-5 text-settings-label">
+										<span className="font-mono">{`/${skill.displayName || skill.name}`}</span>
+										{source ? <span className="text-xs text-muted-foreground">{source}</span> : null}
+									</p>
+									{skill.description ? (
+										<p className="mt-0.5 text-xs leading-4 text-muted-foreground">{skill.description}</p>
 									) : null}
-								</p>
-								{skill.description ? (
-									<p className="mt-0.5 text-xs leading-4 text-muted-foreground">{skill.description}</p>
-								) : null}
-								{skill.inputHint ? (
-									<p className="mt-0.5 font-mono text-xs leading-4 text-muted-foreground">{skill.inputHint}</p>
-								) : null}
+									{skill.inputHint ? (
+										<p className="mt-0.5 font-mono text-xs leading-4 text-muted-foreground">{skill.inputHint}</p>
+									) : null}
+								</div>
 							</div>
-						</div>
-					))}
+						);
+					})}
 					{failed ? (
 						<p className="px-3 py-3 text-xs text-error" role="alert">
 							{apiErrorMessage(error, "Could not refresh this session's skills")}

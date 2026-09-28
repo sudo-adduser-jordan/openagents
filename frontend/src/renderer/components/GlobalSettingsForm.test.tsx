@@ -3,6 +3,7 @@ import { act, render, screen, waitFor } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 import { GlobalSettingsForm, type GlobalSettingsSection } from "./GlobalSettingsForm";
+import { globalSettingsItemsFor } from "./settings/settingsCatalog";
 import { useSoundNotificationsStore } from "../stores/sound-notifications-store";
 import { useTerminalShellStore } from "../stores/terminal-shell-store";
 import { useUiStore } from "../stores/ui-store";
@@ -57,8 +58,17 @@ vi.mock("@tanstack/react-router", async (importOriginal) => {
 	return {
 		...actual,
 		useNavigate: () => navigateMock,
+		// The whole catalog renders here with no router, and the Skills section
+		// reads the active session from route state.
+		useParams: () => ({ sessionId: "sess-1" }),
 	};
 });
+
+vi.mock("../hooks/useConversation", () => ({
+	// The whole catalog renders in this file, so the Skills page would otherwise
+	// query the daemon for every test that only cares about another page.
+	useConversationSkills: () => ({ skills: [], isLoading: false, error: null }),
+}));
 
 vi.mock("../lib/platform", async (importOriginal) => {
 	const actual = await importOriginal<typeof import("../lib/platform")>();
@@ -172,6 +182,22 @@ describe("GlobalSettingsForm", () => {
 		expect(await screen.findByLabelText("Settings")).toBeInTheDocument();
 		expect(document.querySelector('[data-section="browserProfiles"]')).toBeInTheDocument();
 		expect(document.querySelector('[data-section="downloads"]')).toBeInTheDocument();
+	});
+
+	// The sidebar footer and this catalog are read in the same order, so a user
+	// who learned one finds the other: Skills sits directly above Tools in both.
+	it("orders the Skills section directly above Tools", () => {
+		const ids = globalSettingsItemsFor("all").map((item) => item.id);
+		expect(ids).toContain("skills");
+		expect(ids.indexOf("skills")).toBe(ids.indexOf("tools") - 1);
+	});
+
+	it("renders the Skills page for the skills section", async () => {
+		renderForm("skills");
+		expect(await screen.findByLabelText("Settings")).toBeInTheDocument();
+		expect(document.querySelector('[data-section="skills"]')).toBeInTheDocument();
+		// The dialog header already names the page, so the section heading is hidden.
+		expect(screen.queryByRole("heading", { name: "Skills" })).not.toBeInTheDocument();
 	});
 
 	it("renders the settings sections", async () => {

@@ -4,6 +4,7 @@ import {
 	moveHighlight,
 	rankFiles,
 	rankSkills,
+	skillSourceLabel,
 } from "./composerSuggest";
 import type { ChatSkill } from "../../types/conversation";
 
@@ -180,5 +181,29 @@ describe("moveHighlight", () => {
 
 	it("stays at zero with nothing to highlight", () => {
 		expect(moveHighlight(0, 1, 0)).toBe(0);
+	});
+});
+
+describe("skillSourceLabel", () => {
+	it("names a real scope", () => {
+		expect(skillSourceLabel("repo")).toBe("repo");
+		expect(skillSourceLabel("plugin")).toBe("plugin");
+	});
+
+	it("spells out the one legacy scope name", () => {
+		expect(skillSourceLabel("open-agents")).toBe("Open Agents");
+		expect(skillSourceLabel("Open-Agents")).toBe("Open Agents");
+	});
+
+	// The composer's slash menu and the settings Skills page both label skills
+	// through this function, so the generic scope has to drop out in both.
+	it("drops the generic scope the provider falls back to", () => {
+		expect(skillSourceLabel("agent")).toBeUndefined();
+		expect(skillSourceLabel("Agent")).toBeUndefined();
+	});
+
+	it("drops a missing scope rather than rendering an empty badge", () => {
+		expect(skillSourceLabel()).toBeUndefined();
+		expect(skillSourceLabel("")).toBeUndefined();
 	});
 });
