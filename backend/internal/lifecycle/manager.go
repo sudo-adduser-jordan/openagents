@@ -1321,6 +1321,11 @@ func (m *Manager) markSpawned(
 		// a relaunch with broken hooks degrades to no_signal instead of inheriting
 		// a stale "signals worked once" fact.
 		rec.FirstSignalAt = time.Time{}
+		// The agent is launching now, so a session staged by `spawn --no-start`
+		// is no longer deferred. This is the single commit point for TUI and
+		// Chat launches alike, so the staged -> started transition happens exactly
+		// once and the board stops reading "Not started".
+		rec.AgentDeferred = false
 		rec.Metadata = mergeMetadata(rec.Metadata, metadata)
 		if domain.NormalizeSessionMode(rec.Mode) == domain.SessionModeChat &&
 			strings.TrimSpace(metadata.ControllerGeneration) != "" {

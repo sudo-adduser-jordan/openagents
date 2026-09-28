@@ -33,6 +33,12 @@ const (
 	StatusIdle             SessionStatus = "idle"
 	StatusTerminated       SessionStatus = "terminated"
 	StatusNoSignal         SessionStatus = "no_signal"
+	// StatusPending is a staged session created by `spawn --no-start` whose
+	// agent has not been launched. It is a distinct status rather than an idle
+	// or no_signal variant because those two both mean "an agent was running and
+	// has gone quiet"; a staged task has simply never started, and saying so is
+	// the whole point of creating one ahead of time.
+	StatusPending SessionStatus = "pending"
 )
 
 // SessionFacts are the durable-agnostic facts used to derive session status.
@@ -42,6 +48,9 @@ type SessionFacts struct {
 	HasSignal      bool
 	SignalExpected bool
 	IsTerminated   bool
+	// AgentDeferred is true while a session staged by `spawn --no-start` has
+	// still never had its agent launched.
+	AgentDeferred bool
 }
 
 // CIState is the aggregate CI state of a pull request.
@@ -110,6 +119,14 @@ func DeriveStatus(
 			return StatusMerged
 		}
 		return StatusTerminated
+	}
+
+	// A staged session reports as pending before any activity or PR reasoning.
+	// It has no agent and therefore no hooks and no PR, so letting it fall
+	// through would let silentPastGrace demote it to no_signal -- which the
+	// contract defines as a broken hook pipeline, the opposite of the truth.
+	if session.AgentDeferred {
+		return StatusPending
 	}
 
 	switch session.Activity {

@@ -66,6 +66,17 @@ type SpawnConfig struct {
 	// consume inline binary data). Any file type is accepted except for
 	// explicitly blocked types (e.g., SVG for security reasons).
 	Attachments []SpawnAttachment
+
+	// NoStart stages the session instead of starting it. Everything that makes
+	// the task real is still created -- session row, worktree, provisioning,
+	// attachments, and the fully resolved prompt -- but no agent process and no
+	// chat controller is launched, and the session is persisted as
+	// agent_deferred. The session reads back as status "pending" until
+	// `session resume-agent` starts it, which reuses the stored prompt.
+	//
+	// This is deliberately not a lazy spawn: the point is to have the task exist
+	// and be inspectable on the board before anyone commits an agent to it.
+	NoStart bool
 }
 
 // SpawnAttachment is a single file attached to a spawn request. Data holds the

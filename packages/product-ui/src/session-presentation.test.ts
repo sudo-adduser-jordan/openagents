@@ -45,6 +45,9 @@ describe("session presentation", () => {
 		["review_pending", "pending"],
 		["working", "working"],
 		["terminated", "done"],
+		// A staged task is waiting on a person, so it belongs in the action zone
+		// rather than reading as work in progress.
+		["pending", "action"],
 	] as const)("maps %s to the %s attention zone", (status, zone) => {
 		expect(attentionZone(status)).toBe(zone);
 	});
@@ -55,6 +58,7 @@ describe("session presentation", () => {
 		["needs_input", "text-status-needs-you", "bg-status-needs-you"],
 		["exited", "text-status-exited", "bg-status-exited"],
 		["no_signal", "text-status-unknown", "bg-status-unknown"],
+		["pending", "text-status-needs-you", "bg-status-needs-you"],
 		["ci_failed", "text-status-exited", "bg-status-exited"],
 		["changes_requested", "text-status-needs-you", "bg-status-needs-you"],
 		["review_pending", "text-status-in-review", "bg-status-in-review"],

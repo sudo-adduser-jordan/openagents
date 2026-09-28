@@ -7078,6 +7078,8 @@ components:
       properties:
         activity:
           $ref: '#/components/schemas/DomainActivity'
+        agentDeferred:
+          type: boolean
         autoInjectCI:
           type: boolean
         autoInjectReview:
@@ -7206,6 +7208,7 @@ components:
           - idle
           - terminated
           - no_signal
+          - pending
           type: string
         statusReadiness:
           enum:
@@ -10210,6 +10213,8 @@ components:
         model:
           maxLength: 256
           type: string
+        noStart:
+          type: boolean
         parentSessionId:
           type: string
         projectId:

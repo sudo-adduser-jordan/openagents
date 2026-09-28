@@ -309,6 +309,14 @@ func (m *Manager) resumeChatController(
 			operation, rec.ID, ports.ErrChatUnsupported)
 	}
 
+	// Captured before the launch below reassigns the in-memory record and commits
+	// it, so the staged-prompt decision reflects the durable state this call
+	// started from rather than anything the commit itself just cleared.
+	stagedPrompt := ""
+	if rec.AgentDeferred {
+		stagedPrompt = rec.Metadata.Prompt
+	}
+
 	// Recomputed rather than persisted, matching the terminal path: a restored
 	// session keeps its standing instructions across the relaunch.
 	systemPrompt, err := m.buildSystemPrompt(ctx, rec.Kind, rec.ProjectID)
@@ -410,6 +418,18 @@ func (m *Manager) resumeChatController(
 			return RestoreResult{}, fmt.Errorf("%s %s: completed: %w", operation, rec.ID, completionErr)
 		}
 		return RestoreResult{}, fmt.Errorf("%s %s: resume chat: %w", operation, rec.ID, err)
+	}
+
+	// A staged Chat session has no provider conversation to resume into, so the
+	// stored prompt is the only thing that will ever ask it to do the work. It is
+	// delivered as an ordinary first turn, exactly as it would have been at spawn
+	// time. An ordinary resume is skipped: the provider already holds the
+	// conversation and the prompt was answered long ago.
+	if stagedPrompt != "" {
+		if _, err := m.chat.StartChatTurn(ctx, rec.ID, stagedPrompt); err != nil {
+			m.stopChatBestEffort(ctx, rec.ID)
+			return RestoreResult{}, fmt.Errorf("%s %s: deliver staged prompt: %w", operation, rec.ID, err)
+		}
 	}
 
 	restored, err := m.getRecord(ctx, rec.ID)

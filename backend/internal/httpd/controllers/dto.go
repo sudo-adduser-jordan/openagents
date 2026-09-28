@@ -290,6 +290,12 @@ type SpawnSessionRequest struct {
 	// its bytes as standard base64 (no data: URL prefix). The daemon writes them
 	// into the session worktree and appends path references to the prompt.
 	Attachments []AttachmentInput `json:"attachments,omitempty"`
+	// NoStart stages the session instead of starting it. The session row,
+	// worktree, provisioning, attachments, and resolved prompt are all created,
+	// but no agent process and no chat controller is launched. The session reads
+	// back with status "pending" and is started later by the resume-agent
+	// endpoint, which reuses the stored prompt.
+	NoStart bool `json:"noStart,omitempty"`
 }
 
 // AttachmentInput is one file attached to a spawn, delegate, stage, or send

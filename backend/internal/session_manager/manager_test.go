@@ -230,6 +230,10 @@ func (l *fakeLCM) MarkSpawned(_ context.Context, id domain.SessionID, metadata d
 	rec.IsTerminated = false
 	rec.Activity = domain.Activity{State: domain.ActivityIdle, LastActivityAt: time.Now()}
 	rec.FirstSignalAt = time.Now()
+	// The production lifecycle manager clears this in the same commit: the agent
+	// is launching now, so a session staged by `spawn --no-start` is no longer
+	// deferred. The fake has to mirror that or it would hide a real regression.
+	rec.AgentDeferred = false
 	rec.Metadata = preserveCheckpointOnFakeMarkSpawned(rec.Metadata, metadata)
 	l.store.sessions[id] = rec
 	return nil

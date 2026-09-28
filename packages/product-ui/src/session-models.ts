@@ -13,6 +13,7 @@ export const SESSION_STATUSES = [
 	"no_signal",
 	"idle",
 	"terminated",
+	"pending",
 	"unknown",
 ] as const;
 
@@ -106,6 +107,7 @@ export const DISPLAY_STATUSES = [
 	"Exited",
 	"No signal",
 	"Awaiting PR",
+	"Not started",
 	"Fixing CI failures",
 	"Addressing comments",
 	"Needs review",

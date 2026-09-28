@@ -967,7 +967,11 @@ function ResumeAgentControl({ session }: { session: WorkspaceSession }) {
 		onSuccess: () => resume.reset(),
 	});
 
-	if (session.isTerminated === true || session.activity?.state !== "exited") return null;
+	// A staged session (`spawn --no-start`) has never run, so its activity is
+	// `idle` rather than `exited` and the exited-only gate would hide the one
+	// control that can start it.
+	const isStaged = session.status === "pending";
+	if (session.isTerminated === true || (!isStaged && session.activity?.state !== "exited")) return null;
 
 	const error = resume.error ? apiErrorMessage(resume.error) : null;
 	const reason = apiErrorDetails(resume.error)?.reason;
@@ -990,10 +994,14 @@ function ResumeAgentControl({ session }: { session: WorkspaceSession }) {
 				{startOver.isPending
 					? "Starting over…"
 					: resume.isPending
-						? "Resuming agent…"
+						? isStaged
+							? "Starting agent…"
+							: "Resuming agent…"
 						: canStartOver
 							? "Start over"
-							: "Resume agent"}
+							: isStaged
+								? "Start agent"
+								: "Resume agent"}
 			</Button>
 			{error ? (
 				<p className="mt-2 text-2xs leading-normal text-error" role="status">

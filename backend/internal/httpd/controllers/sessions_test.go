@@ -1311,6 +1311,41 @@ func TestSessionsAPI_SpawnsChat(t *testing.T) {
 	}
 }
 
+func TestSessionsAPI_SpawnPassesThroughNoStart(t *testing.T) {
+	svc := newFakeSessionService()
+	srv := newSessionTestServer(t, svc)
+
+	body, status, _ := doRequest(t, srv, http.MethodPost, "/api/v1/sessions",
+		`{"projectId":"open-agents","harness":"opencode","prompt":"stage this","noStart":true}`)
+	if status != http.StatusCreated {
+		t.Fatalf("spawn --no-start = %d, want 201; body=%s", status, body)
+	}
+	if !svc.lastSpawn.NoStart {
+		t.Fatalf("spawn config NoStart=false, want true: %#v", svc.lastSpawn)
+	}
+	// The prompt still has to reach the manager: staging without work to do
+	// later would be a silent no-op.
+	if svc.lastSpawn.Prompt != "stage this" {
+		t.Fatalf("spawn config Prompt = %q, want the staged prompt", svc.lastSpawn.Prompt)
+	}
+}
+
+// A body without the flag is an ordinary spawn. The zero value has to stay
+// false so existing clients are unaffected.
+func TestSessionsAPI_SpawnDefaultsToStartingTheAgent(t *testing.T) {
+	svc := newFakeSessionService()
+	srv := newSessionTestServer(t, svc)
+
+	body, status, _ := doRequest(t, srv, http.MethodPost, "/api/v1/sessions",
+		`{"projectId":"open-agents","harness":"opencode","prompt":"start now"}`)
+	if status != http.StatusCreated {
+		t.Fatalf("spawn = %d, want 201; body=%s", status, body)
+	}
+	if svc.lastSpawn.NoStart {
+		t.Fatal("spawn config NoStart=true without the flag, want false")
+	}
+}
+
 func TestSessionsAPI_SpawnsStandaloneWorkerWithoutProjectID(t *testing.T) {
 	svc := newFakeSessionService()
 	srv := newSessionTestServer(t, svc)
