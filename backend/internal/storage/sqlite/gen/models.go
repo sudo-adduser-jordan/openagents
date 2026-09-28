@@ -471,6 +471,7 @@ type Session struct {
 	WorkflowMode                     string
 	ReviewLocked                     bool
 	AgentDeferred                    bool
+	DeliveredHeadSha                 string
 }
 
 type SessionCleanupFact struct {

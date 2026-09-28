@@ -1,6 +1,7 @@
 package contract_test
 
 import (
+	"reflect"
 	"testing"
 	"time"
 
@@ -835,4 +836,54 @@ func TestDeriveKanbanPresentationSpeaksForTheChosenPR(t *testing.T) {
 			t.Fatalf("presentation = %+v, want a pr-driven placement", got)
 		}
 	})
+}
+
+// The daemon now starts pull-request delivery on its own when it observes an
+// agent's commit (see internal/observe/head). These tests pin the boundary that
+// makes that safe: a commit may start delivery, but it can never decide a
+// column. A card is Ready only because the daemon observed a pull request.
+func TestDeriveKanbanPresentationCommitAloneNeverLeavesBuilding(t *testing.T) {
+	t.Parallel()
+	// SessionFacts deliberately carries no commit, head-SHA, or delivered-head
+	// field. There is no way for a caller to hand this function a local commit,
+	// which is the structural reason the invariant holds rather than a rule
+	// someone has to remember.
+	sessionType := reflect.TypeOf(contract.SessionFacts{})
+	for i := 0; i < sessionType.NumField(); i++ {
+		name := sessionType.Field(i).Name
+		switch name {
+		case "HeadSHA", "CommitSHA", "DeliveredHeadSHA", "HasCommits", "Committed":
+			t.Fatalf("SessionFacts has field %q; a commit must not be expressible to column derivation", name)
+		}
+	}
+	// Whatever the activity state, with no observed pull request the card is
+	// Building. This is the state a session is in between committing and the
+	// daemon observing the resulting PR.
+	for _, activity := range []contract.ActivityState{
+		contract.ActivityActive, contract.ActivityIdle,
+		contract.ActivityWaitingInput, contract.ActivityBlocked,
+		contract.ActivityExited,
+	} {
+		got := contract.DeriveKanbanPresentation(sessionAt(activity), nil, time.Unix(3600, 0), testGrace)
+		if got.Column != contract.KanbanBuilding {
+			t.Errorf("activity %q with no PR facts: column = %q, want %q", activity, got.Column, contract.KanbanBuilding)
+		}
+	}
+}
+
+// A card reaches Ready through pull-request facts alone: observed, mergeable.
+func TestDeriveKanbanPresentationReadyNeedsObservedPRFacts(t *testing.T) {
+	t.Parallel()
+	noPRs := contract.DeriveKanbanPresentation(sessionAt(contract.ActivityIdle), nil, time.Unix(3600, 0), testGrace)
+	if noPRs.Column == contract.KanbanReady {
+		t.Fatal("a session with no pull request reached Ready")
+	}
+	observed := contract.DeriveKanbanPresentation(
+		sessionAt(contract.ActivityIdle),
+		[]contract.KanbanPRFacts{{URL: "u", Mergeability: contract.MergeMergeable}},
+		time.Unix(3600, 0), testGrace,
+	)
+	if observed.Column != contract.KanbanReady {
+		t.Errorf("column = %q, want %q once the daemon observed a mergeable PR", observed.Column, contract.KanbanReady)
+	}
 }

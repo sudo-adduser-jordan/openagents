@@ -134,7 +134,7 @@ func (q *Queries) CommitSessionControllerEpoch(ctx context.Context, arg CommitSe
 
 const getSession = `-- name: GetSession :one
 SELECT id, project_id, num, issue_id, kind, harness,
-    activity_state, activity_last_at, is_terminated, branch, workspace_path, agent_deferred,
+    activity_state, activity_last_at, is_terminated, branch, workspace_path, agent_deferred, delivered_head_sha,
     runtime_handle_id, agent_session_id, agent_session_id_launch_id, native_identity_observed_at, prompt,
     created_at, updated_at, revision, display_name, first_signal_at, preview_url,
     preview_revision, cleanup_generation, runtime_launch_id,
@@ -161,6 +161,7 @@ type GetSessionRow struct {
 	Branch                           string
 	WorkspacePath                    string
 	AgentDeferred                    bool
+	DeliveredHeadSha                 string
 	RuntimeHandleID                  string
 	AgentSessionID                   string
 	AgentSessionIDLaunchID           string
@@ -223,6 +224,7 @@ func (q *Queries) GetSession(ctx context.Context, id domain.SessionID) (GetSessi
 		&i.Branch,
 		&i.WorkspacePath,
 		&i.AgentDeferred,
+		&i.DeliveredHeadSha,
 		&i.RuntimeHandleID,
 		&i.AgentSessionID,
 		&i.AgentSessionIDLaunchID,
@@ -428,7 +430,7 @@ func (q *Queries) InsertSession(ctx context.Context, arg InsertSessionParams) er
 
 const listAllSessions = `-- name: ListAllSessions :many
 SELECT id, project_id, num, issue_id, kind, harness,
-    activity_state, activity_last_at, is_terminated, branch, workspace_path, agent_deferred,
+    activity_state, activity_last_at, is_terminated, branch, workspace_path, agent_deferred, delivered_head_sha,
     runtime_handle_id, agent_session_id, agent_session_id_launch_id, native_identity_observed_at, prompt,
     created_at, updated_at, revision, display_name, first_signal_at, preview_url,
     preview_revision, cleanup_generation, runtime_launch_id,
@@ -455,6 +457,7 @@ type ListAllSessionsRow struct {
 	Branch                           string
 	WorkspacePath                    string
 	AgentDeferred                    bool
+	DeliveredHeadSha                 string
 	RuntimeHandleID                  string
 	AgentSessionID                   string
 	AgentSessionIDLaunchID           string
@@ -523,6 +526,7 @@ func (q *Queries) ListAllSessions(ctx context.Context) ([]ListAllSessionsRow, er
 			&i.Branch,
 			&i.WorkspacePath,
 			&i.AgentDeferred,
+			&i.DeliveredHeadSha,
 			&i.RuntimeHandleID,
 			&i.AgentSessionID,
 			&i.AgentSessionIDLaunchID,
@@ -582,13 +586,14 @@ func (q *Queries) ListAllSessions(ctx context.Context) ([]ListAllSessionsRow, er
 }
 
 const listRetiredSessionNumProjects = `-- name: ListRetiredSessionNumProjects :many
-SELECT project_id FROM retired_session_nums WHERE num = ?
+SELECT project_id FROM retired_session_nums WHERE num = ? ORDER BY project_id
 `
 
 // The projects that permanently retired this number. A retired number is never
 // reused, so a missing session with a retired number must say so instead of
 // reporting the same not-found answer as a number that was never issued.
-// Standalone numbers are recorded under the empty string.
+// Standalone numbers are recorded under the empty string. Ordered so the
+// retired-in list is stable.
 func (q *Queries) ListRetiredSessionNumProjects(ctx context.Context, num int64) ([]string, error) {
 	rows, err := q.db.QueryContext(ctx, listRetiredSessionNumProjects, num)
 	if err != nil {
@@ -613,7 +618,7 @@ func (q *Queries) ListRetiredSessionNumProjects(ctx context.Context, num int64) 
 }
 
 const listSessionRefsByNum = `-- name: ListSessionRefsByNum :many
-SELECT id, project_id, num FROM sessions WHERE num = ?
+SELECT id, project_id, num FROM sessions WHERE num = ? ORDER BY project_id, id
 `
 
 type ListSessionRefsByNumRow struct {
@@ -627,6 +632,7 @@ type ListSessionRefsByNumRow struct {
 // at once, which is exactly the cross-project collision the resolver has to
 // report rather than silently pick from. Callers that scope to a project filter
 // the result: the unique constraint already guarantees at most one row survives.
+// Ordered so a collision is reported in a stable order, not storage order.
 func (q *Queries) ListSessionRefsByNum(ctx context.Context, num int64) ([]ListSessionRefsByNumRow, error) {
 	rows, err := q.db.QueryContext(ctx, listSessionRefsByNum, num)
 	if err != nil {
@@ -652,7 +658,7 @@ func (q *Queries) ListSessionRefsByNum(ctx context.Context, num int64) ([]ListSe
 
 const listSessionsByProject = `-- name: ListSessionsByProject :many
 SELECT id, project_id, num, issue_id, kind, harness,
-    activity_state, activity_last_at, is_terminated, branch, workspace_path, agent_deferred,
+    activity_state, activity_last_at, is_terminated, branch, workspace_path, agent_deferred, delivered_head_sha,
     runtime_handle_id, agent_session_id, agent_session_id_launch_id, native_identity_observed_at, prompt,
     created_at, updated_at, revision, display_name, first_signal_at, preview_url,
     preview_revision, cleanup_generation, runtime_launch_id,
@@ -679,6 +685,7 @@ type ListSessionsByProjectRow struct {
 	Branch                           string
 	WorkspacePath                    string
 	AgentDeferred                    bool
+	DeliveredHeadSha                 string
 	RuntimeHandleID                  string
 	AgentSessionID                   string
 	AgentSessionIDLaunchID           string
@@ -747,6 +754,7 @@ func (q *Queries) ListSessionsByProject(ctx context.Context, projectID *domain.P
 			&i.Branch,
 			&i.WorkspacePath,
 			&i.AgentDeferred,
+			&i.DeliveredHeadSha,
 			&i.RuntimeHandleID,
 			&i.AgentSessionID,
 			&i.AgentSessionIDLaunchID,
@@ -1063,6 +1071,32 @@ type SetSessionAutoReviewParams struct {
 
 func (q *Queries) SetSessionAutoReview(ctx context.Context, arg SetSessionAutoReviewParams) (int64, error) {
 	result, err := q.db.ExecContext(ctx, setSessionAutoReview, arg.AutoReviewEnabled, arg.UpdatedAt, arg.ID)
+	if err != nil {
+		return 0, err
+	}
+	return result.RowsAffected()
+}
+
+const setSessionDeliveredHeadSHA = `-- name: SetSessionDeliveredHeadSHA :execrows
+UPDATE sessions SET delivered_head_sha = ?, updated_at = ? WHERE id = ?
+`
+
+type SetSessionDeliveredHeadSHAParams struct {
+	DeliveredHeadSha string
+	UpdatedAt        time.Time
+	ID               domain.SessionID
+}
+
+// SetSessionDeliveredHeadSHA records the commit the daemon has handed to the
+// remote for a session, so the head observer can tell a commit it already
+// delivered from a new one on the next poll. Written only after a successful
+// push+PR, never optimistically, so a failed attempt stays retryable. It is
+// deliberately absent from InsertSession and UpdateSession: both are full-row
+// writes, and replaying a record read before the fact was observed would
+// otherwise clear a real delivery. It returns ok=false when the id does not
+// exist.
+func (q *Queries) SetSessionDeliveredHeadSHA(ctx context.Context, arg SetSessionDeliveredHeadSHAParams) (int64, error) {
+	result, err := q.db.ExecContext(ctx, setSessionDeliveredHeadSHA, arg.DeliveredHeadSha, arg.UpdatedAt, arg.ID)
 	if err != nil {
 		return 0, err
 	}

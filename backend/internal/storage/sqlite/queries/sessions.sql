@@ -205,7 +205,7 @@ SELECT project_id FROM retired_session_nums WHERE num = ? ORDER BY project_id;
 
 -- name: GetSession :one
 SELECT id, project_id, num, issue_id, kind, harness,
-    activity_state, activity_last_at, is_terminated, branch, workspace_path, agent_deferred,
+    activity_state, activity_last_at, is_terminated, branch, workspace_path, agent_deferred, delivered_head_sha,
     runtime_handle_id, agent_session_id, agent_session_id_launch_id, native_identity_observed_at, prompt,
     created_at, updated_at, revision, display_name, first_signal_at, preview_url,
     preview_revision, cleanup_generation, runtime_launch_id,
@@ -220,7 +220,7 @@ FROM sessions WHERE id = ?;
 
 -- name: ListSessionsByProject :many
 SELECT id, project_id, num, issue_id, kind, harness,
-    activity_state, activity_last_at, is_terminated, branch, workspace_path, agent_deferred,
+    activity_state, activity_last_at, is_terminated, branch, workspace_path, agent_deferred, delivered_head_sha,
     runtime_handle_id, agent_session_id, agent_session_id_launch_id, native_identity_observed_at, prompt,
     created_at, updated_at, revision, display_name, first_signal_at, preview_url,
     preview_revision, cleanup_generation, runtime_launch_id,
@@ -235,7 +235,7 @@ FROM sessions WHERE project_id IS ? ORDER BY num;
 
 -- name: ListAllSessions :many
 SELECT id, project_id, num, issue_id, kind, harness,
-    activity_state, activity_last_at, is_terminated, branch, workspace_path, agent_deferred,
+    activity_state, activity_last_at, is_terminated, branch, workspace_path, agent_deferred, delivered_head_sha,
     runtime_handle_id, agent_session_id, agent_session_id_launch_id, native_identity_observed_at, prompt,
     created_at, updated_at, revision, display_name, first_signal_at, preview_url,
     preview_revision, cleanup_generation, runtime_launch_id,
@@ -275,6 +275,17 @@ UPDATE sessions SET workflow_mode = ?, review_locked = 0, updated_at = ? WHERE i
 -- on workflow-mode commands and on user messages (the commit-forward path). It
 -- returns ok=false when the id does not exist.
 UPDATE sessions SET review_locked = ?, updated_at = ? WHERE id = ?;
+
+-- name: SetSessionDeliveredHeadSHA :execrows
+-- SetSessionDeliveredHeadSHA records the commit the daemon has handed to the
+-- remote for a session, so the head observer can tell a commit it already
+-- delivered from a new one on the next poll. Written only after a successful
+-- push+PR, never optimistically, so a failed attempt stays retryable. It is
+-- deliberately absent from InsertSession and UpdateSession: both are full-row
+-- writes, and replaying a record read before the fact was observed would
+-- otherwise clear a real delivery. It returns ok=false when the id does not
+-- exist.
+UPDATE sessions SET delivered_head_sha = ?, updated_at = ? WHERE id = ?;
 
 -- name: SetSessionAutoInjectReview :execrows
 UPDATE sessions SET auto_inject_review = ?, updated_at = ? WHERE id = ?;

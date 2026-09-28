@@ -65,6 +65,7 @@ type fakeStore struct {
 	comments            map[string][]domain.PullRequestComment
 	commentsErr         error
 	reviewRuns          map[domain.SessionID][]domain.CurrentHeadReviewRun
+	setDeliveredHeadErr error
 	listPRFactsCalls    int
 	listReviewRunsCalls int
 	num                 int
@@ -294,6 +295,22 @@ func (f *fakeStore) SetSessionWorkflowMode(_ context.Context, id domain.SessionI
 	r.WorkflowMode = mode
 	// A workflow-mode command is one of the review lock's release paths.
 	r.ReviewLocked = false
+	r.UpdatedAt = updatedAt
+	f.sessions[id] = r
+	return true, nil
+}
+
+// setDeliveredHeadErr makes the durable write fail so a test can assert the
+// delivered pull request still survives a lost fact.
+func (f *fakeStore) SetSessionDeliveredHeadSHA(_ context.Context, id domain.SessionID, headSHA string, updatedAt time.Time) (bool, error) {
+	if f.setDeliveredHeadErr != nil {
+		return false, f.setDeliveredHeadErr
+	}
+	r, ok := f.sessions[id]
+	if !ok {
+		return false, nil
+	}
+	r.DeliveredHeadSHA = headSHA
 	r.UpdatedAt = updatedAt
 	f.sessions[id] = r
 	return true, nil

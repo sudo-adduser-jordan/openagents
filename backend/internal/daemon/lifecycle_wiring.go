@@ -52,6 +52,9 @@ type lifecycleStack struct {
 	autoReviewDone <-chan struct{}
 	scmDone        <-chan struct{}
 	trackerDone    <-chan struct{}
+	// headDone is the commit observer that starts delivery for an agent's own
+	// commit. It is exposed so shutdown waits for the loop to drain.
+	headDone <-chan struct{}
 	// reengagementDone is the idle-manager wake-up loop. It is exposed so
 	// startSession can share the same loop instance that the LCM reports
 	// activity to, so the loop and its observer cannot diverge.
@@ -171,6 +174,9 @@ func (l *lifecycleStack) Stop() {
 	if l.trackerDone != nil {
 		<-l.trackerDone
 	}
+	if l.headDone != nil {
+		<-l.headDone
+	}
 	if l.reengagementDone != nil {
 		<-l.reengagementDone
 	}
@@ -232,8 +238,9 @@ func (m sessionLifecycleMessenger) Send(ctx context.Context, id domain.SessionID
 // be nil (no usable credentials) — the service's nil-guard handles that
 // (issue #2685). The returned service is mounted at httpd APIDeps.Sessions.
 // It also returns the manager so the caller can wire Reconcile into the boot
-// sequence.
-func startSession(ctx context.Context, cfg config.Config, runtime runtimeselect.Runtime, store *sqlite.Store, lcm *lifecycle.Manager, reengagement *managerloop.Manager, messenger ports.AgentMessenger, agents ports.AgentResolver, agentReadiness ports.AgentReadinessProvider, previewLifecycle sessionmanager.PreviewLifecycle, browserLifecycle sessionmanager.BrowserLifecycle, browserCapabilities sessionmanager.BrowserCapabilityIssuer, chat sessionmanager.ChatLauncher, defaults sessionmanager.SessionModeDefaults, tracker ports.Tracker, log *slog.Logger) (*sessionsvc.Service, reviewsvc.Manager, sessionLifecycle, error) {
+// sequence, and the routed workspace adapter so observers that must read a
+// session worktree share the exact git/scratch router the sessions use.
+func startSession(ctx context.Context, cfg config.Config, runtime runtimeselect.Runtime, store *sqlite.Store, lcm *lifecycle.Manager, reengagement *managerloop.Manager, messenger ports.AgentMessenger, agents ports.AgentResolver, agentReadiness ports.AgentReadinessProvider, previewLifecycle sessionmanager.PreviewLifecycle, browserLifecycle sessionmanager.BrowserLifecycle, browserCapabilities sessionmanager.BrowserCapabilityIssuer, chat sessionmanager.ChatLauncher, defaults sessionmanager.SessionModeDefaults, tracker ports.Tracker, log *slog.Logger) (*sessionsvc.Service, reviewsvc.Manager, sessionLifecycle, ports.WorkspaceObserver, error) {
 	gitWS, err := gitworktree.New(gitworktree.Options{
 		// Per-session worktrees live under the data dir, so a single OPEN_AGENTS_DATA_DIR
 		// override moves all durable per-user state together.
@@ -245,13 +252,13 @@ func startSession(ctx context.Context, cfg config.Config, runtime runtimeselect.
 		Logger:       log,
 	})
 	if err != nil {
-		return nil, nil, nil, fmt.Errorf("session workspace: %w", err)
+		return nil, nil, nil, nil, fmt.Errorf("session workspace: %w", err)
 	}
 	scratchWS, err := scratchworkspace.New(scratchworkspace.Options{
 		ManagedRoot: filepath.Join(cfg.DataDir, "worktrees"),
 	})
 	if err != nil {
-		return nil, nil, nil, fmt.Errorf("scratch session workspace: %w", err)
+		return nil, nil, nil, nil, fmt.Errorf("scratch session workspace: %w", err)
 	}
 	ws := workspacerouter.New(workspacerouter.Deps{
 		Git:      gitWS,
@@ -303,7 +310,7 @@ func startSession(ctx context.Context, cfg config.Config, runtime runtimeselect.
 	// writer.
 	reviewers, err := reviewer.NewResolver()
 	if err != nil {
-		return nil, nil, nil, fmt.Errorf("reviewer resolver: %w", err)
+		return nil, nil, nil, nil, fmt.Errorf("reviewer resolver: %w", err)
 	}
 	reviewEngine := reviewcore.New(reviewcore.Deps{
 		Store:    store,
@@ -325,7 +332,7 @@ func startSession(ctx context.Context, cfg config.Config, runtime runtimeselect.
 	}
 	reviewSvc := reviewsvc.New(reviewEngine, store, reviewOpts...)
 	mgr.SetReviewerTerminator(reviewSvc)
-	return sessionSvc, reviewSvc, mgr, nil
+	return sessionSvc, reviewSvc, mgr, ws, nil
 }
 
 // runtimeMessageSender is the narrow part of the concrete runtime needed by

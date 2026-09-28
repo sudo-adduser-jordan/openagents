@@ -170,6 +170,115 @@ func (s *Service) CreateSessionPR(ctx context.Context, id domain.SessionID) (Cre
 	return s.prOutcome(ctx, id, created.URL, created.Number, true)
 }
 
+// AutoDeliveryOutcome reports what one automatic delivery attempt did, so the
+// head observer can log and back off without re-deriving the decision.
+type AutoDeliveryOutcome struct {
+	// Delivered is true only when this attempt actually pushed and opened (or
+	// found) the pull request. A skip leaves the durable delivered-head fact
+	// untouched so a later commit can still be delivered.
+	Delivered bool
+	// Reason names why the session was skipped. Empty when Delivered is true.
+	Reason string
+	// URL is the delivered pull request, when there is one.
+	URL string
+}
+
+// automaticDeliveryReason explains a skip. These are the load-bearing answers
+// to "why did the agent's commit not start delivery?" and are also the strings
+// tests assert on.
+const (
+	autoReasonNoChange      = "head already delivered"
+	autoReasonNotEligible   = "session not eligible for automatic delivery"
+	autoReasonNotConfigured = "delivery not configured"
+	autoReasonNoCommit      = "no commit on the session branch"
+)
+
+// EligibleForAutoDelivery reports whether a commit on this session's branch
+// should start delivery on its own, without the user pressing Commit.
+//
+// The gate is deliberately narrow and mirrors the sessions that currently
+// receive the Commit button: a live worker in building mode that already has a
+// branch and a workspace, and that the daemon has not already observed a
+// pull request for. Planning-mode and manager sessions are excluded because
+// building mode is the user's explicit "let this session ship work" signal, and
+// a manager session delivers through its workers rather than its own branch.
+//
+// This decides only whether to *start* delivery. It never selects a board
+// column: the card still moves because a pull request exists, and every column
+// is derived from daemon-observed PR facts.
+func EligibleForAutoDelivery(rec domain.SessionRecord, prs []domain.PRFacts) (bool, string) {
+	if rec.IsTerminated {
+		return false, autoReasonNotEligible
+	}
+	if rec.Kind != domain.KindWorker {
+		return false, autoReasonNotEligible
+	}
+	if rec.WorkflowMode != domain.WorkflowModeBuilding {
+		return false, autoReasonNotEligible
+	}
+	if strings.TrimSpace(rec.Metadata.Branch) == "" || strings.TrimSpace(rec.Metadata.WorkspacePath) == "" {
+		return false, autoReasonNotEligible
+	}
+	// A tracked pull request already means delivery happened. Checking the
+	// durable facts first is what makes repeated polls cheap and keeps the
+	// trigger from opening a second PR for the same session.
+	for _, pr := range prs {
+		if !pr.Closed && !pr.Merged {
+			return false, autoReasonNotEligible
+		}
+	}
+	return true, ""
+}
+
+// DeliverSessionHead runs one automatic delivery attempt for a commit the
+// daemon just observed at headSHA. It is the automatic counterpart of the
+// Commit button and deliberately reuses CreateSessionPR, so both paths share
+// the same push, the same exactly-one-PR de-duplication, and the same target
+// branch.
+//
+// The durable delivered-head fact is written only after delivery succeeds. A
+// failure returns the error and leaves the fact alone, so the same commit is
+// retried on a later poll instead of being silently skipped.
+func (s *Service) DeliverSessionHead(ctx context.Context, id domain.SessionID, headSHA string) (AutoDeliveryOutcome, error) {
+	headSHA = strings.TrimSpace(headSHA)
+	rec, ok, err := s.store.GetSession(ctx, id)
+	if err != nil {
+		return AutoDeliveryOutcome{}, fmt.Errorf("get session %s for automatic delivery: %w", id, err)
+	}
+	if !ok {
+		return AutoDeliveryOutcome{Reason: autoReasonNotEligible}, nil
+	}
+	if headSHA == "" {
+		return AutoDeliveryOutcome{Reason: autoReasonNoCommit}, nil
+	}
+	// The head the observer saw must still be the fact we recorded, otherwise
+	// the commit is already known and re-delivering would be a redundant push.
+	if rec.DeliveredHeadSHA == headSHA {
+		return AutoDeliveryOutcome{Reason: autoReasonNoChange}, nil
+	}
+	if s.delivery == nil || s.prCreator == nil {
+		return AutoDeliveryOutcome{Reason: autoReasonNotConfigured}, nil
+	}
+	prs, err := s.store.ListPRFactsForSession(ctx, id)
+	if err != nil {
+		return AutoDeliveryOutcome{}, fmt.Errorf("list pull request facts for session %s: %w", id, err)
+	}
+	if eligible, reason := EligibleForAutoDelivery(rec, prs); !eligible {
+		return AutoDeliveryOutcome{Reason: reason}, nil
+	}
+	outcome, err := s.CreateSessionPR(ctx, id)
+	if err != nil {
+		return AutoDeliveryOutcome{}, err
+	}
+	if _, err := s.store.SetSessionDeliveredHeadSHA(ctx, id, headSHA, s.now()); err != nil {
+		// The pull request exists but the fact did not stick. Return the
+		// success anyway: the PR is real, and the next poll's durable PR-fact
+		// check makes a duplicate attempt harmless.
+		return AutoDeliveryOutcome{Delivered: true, URL: outcome.URL}, fmt.Errorf("record delivered head for session %s: %w", id, err)
+	}
+	return AutoDeliveryOutcome{Delivered: true, URL: outcome.URL}, nil
+}
+
 // sessionPRExisting is one non-terminal pull request already attributed to a
 // session branch.
 type sessionPRExisting struct {
