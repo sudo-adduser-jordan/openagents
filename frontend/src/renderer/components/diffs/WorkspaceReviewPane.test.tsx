@@ -16,7 +16,11 @@ vi.mock("../../lib/api-client", () => ({
 }));
 
 vi.mock("@pierre/diffs", () => ({
-	parsePatchFiles: (patch: string) => patch ? [{ files: [{ name: patch.includes("README.md") ? "README.md" : "src/App.tsx", type: "changed" }] }] : [],
+	parsePatchFiles: (patch: string) => {
+		if (!patch) return [];
+		const names = patch.split("\n").map((line) => /^diff --git a\/(\S+)/.exec(line)?.[1]).filter((name): name is string => Boolean(name));
+		return [{ files: (names.length > 0 ? names : ["src/App.tsx"]).map((name) => ({ name, type: "changed" })) }];
+	},
 }));
 
 vi.mock("@pierre/diffs/react", () => ({
@@ -79,8 +83,24 @@ function committedWorkspace(files: WorkspaceFilesResponse["files"]): WorkspaceFi
 	return data;
 }
 
-function renderWithQuery(children: ReactNode) {
-	return render(<QueryClientProvider client={new QueryClient({ defaultOptions: { queries: { retry: false } } })}><TooltipProvider>{children}</TooltipProvider></QueryClientProvider>);
+function reviewClient() {
+	return new QueryClient({ defaultOptions: { queries: { retry: false } } });
+}
+
+function renderWithQuery(children: ReactNode, client = reviewClient()) {
+	return render(<QueryClientProvider client={client}><TooltipProvider>{children}</TooltipProvider></QueryClientProvider>);
+}
+
+// Two files in one patch, so a multi-file review can assert the whole list at once.
+function twoFilePatch(paths: string[]) {
+	return `diff --git a/${paths[0]} b/${paths[0]}\n` + `diff --git a/${paths[1]} b/${paths[1]}\n`;
+}
+
+function twoFileWorkspace() {
+	return committedWorkspace([
+		{ path: "src/App.tsx", status: "modified", additions: 1, deletions: 1, size: 20, binary: false, fileFingerprint: "file-1" },
+		{ path: "docs/guide.md", status: "modified", additions: 1, deletions: 0, size: 20, binary: false, fileFingerprint: "file-2" },
+	]);
 }
 
 describe("WorkspaceReviewPane", () => {
@@ -117,41 +137,70 @@ describe("WorkspaceReviewPane", () => {
 		});
 	});
 
-	it("collapses and expands file items through controlled CodeView state", async () => {
+	it("opens a changed file collapsed and expands it on demand", async () => {
 		const data = committedWorkspace([{ path: "src/App.tsx", status: "modified", additions: 1, deletions: 1, size: 20, binary: false, fileFingerprint: "file-1" }]);
 		renderWithQuery(<WorkspaceReviewPane annotation={annotation()} data={data} filter="" onBrowseAll={vi.fn()} sessionId="sess-1" split={false} />);
 		expect(await screen.findByTestId("code-view")).toBeInTheDocument();
 
-		await userEvent.click(screen.getAllByRole("button", { name: "Collapse src/App.tsx" })[1]);
 		expect(screen.getByTestId("code-view").querySelector("[data-collapsed]"))?.toHaveAttribute("data-collapsed", "true");
 		await userEvent.click(screen.getAllByRole("button", { name: "Expand src/App.tsx" })[1]);
 		expect(screen.getByTestId("code-view").querySelector("[data-collapsed]"))?.toHaveAttribute("data-collapsed", "false");
+		await userEvent.click(screen.getAllByRole("button", { name: "Collapse src/App.tsx" })[1]);
+		expect(screen.getByTestId("code-view").querySelector("[data-collapsed]"))?.toHaveAttribute("data-collapsed", "true");
 	});
 
-	it("uses one toggle for collapsing and expanding all files", async () => {
-		const data = committedWorkspace([{ path: "src/App.tsx", status: "modified", additions: 1, deletions: 1, size: 20, binary: false, fileFingerprint: "file-1" }]);
+	it("collapses every file in a multi-file change on open", async () => {
+		const data = twoFileWorkspace();
+		postMock.mockResolvedValue({
+			data: {
+				sessionId: "sess-1",
+				workspaceVersion: "workspace-1",
+				groups: [{ repository: "", patch: twoFilePatch(["src/App.tsx", "docs/guide.md"]), truncated: false, includedPaths: ["src/App.tsx", "docs/guide.md"], deferred: [] }],
+			},
+		});
 		renderWithQuery(<WorkspaceReviewPane annotation={annotation()} data={data} filter="" onBrowseAll={vi.fn()} sessionId="sess-1" split={false} />);
 		expect(await screen.findByTestId("code-view")).toBeInTheDocument();
 
-		const toggle = screen.getByRole("button", { name: "Collapse all files" });
-		await userEvent.click(toggle);
-		expect(screen.getByRole("button", { name: "Expand all files" })).toBeInTheDocument();
-		expect(screen.getByTestId("code-view").querySelectorAll('[data-collapsed="true"]')).toHaveLength(1);
+		expect(screen.getByTestId("code-view").querySelectorAll('[data-collapsed="true"]')).toHaveLength(2);
+		expect(screen.getAllByRole("button", { name: "Expand src/App.tsx" })[0].closest("[data-collapsed]")).toHaveAttribute("data-collapsed", "true");
+		expect(screen.getAllByRole("button", { name: "Expand docs/guide.md" })[0].closest("[data-collapsed]")).toHaveAttribute("data-collapsed", "true");
+	});
 
+	it("uses one toggle for expanding and collapsing all files", async () => {
+		const data = twoFileWorkspace();
+		postMock.mockResolvedValue({
+			data: {
+				sessionId: "sess-1",
+				workspaceVersion: "workspace-1",
+				groups: [{ repository: "", patch: twoFilePatch(["src/App.tsx", "docs/guide.md"]), truncated: false, includedPaths: ["src/App.tsx", "docs/guide.md"], deferred: [] }],
+			},
+		});
+		renderWithQuery(<WorkspaceReviewPane annotation={annotation()} data={data} filter="" onBrowseAll={vi.fn()} sessionId="sess-1" split={false} />);
+		expect(await screen.findByTestId("code-view")).toBeInTheDocument();
+
+		// Everything starts collapsed, so the single toggle offers to expand first.
+		expect(screen.getByRole("button", { name: "Expand all files" })).toBeInTheDocument();
 		await userEvent.click(screen.getByRole("button", { name: "Expand all files" }));
 		expect(screen.getByRole("button", { name: "Collapse all files" })).toBeInTheDocument();
-		expect(screen.getByTestId("code-view").querySelectorAll('[data-collapsed="false"]')).toHaveLength(1);
+		expect(screen.getByTestId("code-view").querySelectorAll('[data-collapsed="false"]')).toHaveLength(2);
+
+		await userEvent.click(screen.getByRole("button", { name: "Collapse all files" }));
+		expect(screen.getByRole("button", { name: "Expand all files" })).toBeInTheDocument();
+		expect(screen.getByTestId("code-view").querySelectorAll('[data-collapsed="true"]')).toHaveLength(2);
 	});
 
 	it("closes a file's feedback composer when that file is collapsed", async () => {
-		const model = annotation();
+		const cancel = vi.fn();
+		const model = { ...annotation(), cancel };
 		model.target = { path: "src/App.tsx", side: "file", scope: "committed", surface: "review" };
 		const data = committedWorkspace([{ path: "src/App.tsx", status: "modified", additions: 1, deletions: 1, size: 20, binary: false, fileFingerprint: "file-1" }]);
 		renderWithQuery(<WorkspaceReviewPane annotation={model} data={data} filter="" onBrowseAll={vi.fn()} sessionId="sess-1" split={false} />);
 		expect(await screen.findByRole("textbox", { name: /Feedback for src\/App\.tsx/ })).toBeInTheDocument();
 
+		await userEvent.click(screen.getAllByRole("button", { name: "Expand src/App.tsx" })[1]);
+		cancel.mockClear();
 		await userEvent.click(screen.getAllByRole("button", { name: "Collapse src/App.tsx" })[1]);
-		expect(model.cancel).toHaveBeenCalledOnce();
+		expect(cancel).toHaveBeenCalledOnce();
 	});
 
 	it("routes the gutter plus and file actions without opening an external pane", async () => {
@@ -212,7 +261,7 @@ describe("WorkspaceReviewPane", () => {
 		renderWithQuery(<WorkspaceReviewPane annotation={model} data={data} filter="" onBrowseAll={vi.fn()} sessionId="sess-1" split={false} />);
 
 		const composer = await screen.findByRole("textbox", { name: /Feedback for src\/App\.tsx/ });
-		expect(composer.closest(".relative.bg-surface")).toContainElement(screen.getAllByRole("button", { name: "Collapse src/App.tsx" })[1]);
+		expect(composer.closest(".relative.bg-surface")).toContainElement(screen.getAllByRole("button", { name: "Expand src/App.tsx" })[1]);
 	});
 
 	it("opens deleted markdown as source because no current rendered revision exists", async () => {
@@ -409,5 +458,123 @@ describe("WorkspaceReviewPane", () => {
 		await userEvent.click(screen.getByRole("button", { name: "Load diff" }));
 		await waitFor(() => expect(postMock).toHaveBeenCalled());
 		expect(postMock.mock.calls[0]?.[1]?.body.paths).toEqual(["package-lock.json"]);
+	});
+
+	it("loads deferred lockfile diffs when the reviewer expands everything", async () => {
+		const data = committedWorkspace([{ path: "package-lock.json", status: "modified", additions: 800, deletions: 700, size: 600_000, binary: false, fileFingerprint: "lock-1" }]);
+		renderWithQuery(<WorkspaceReviewPane annotation={annotation()} data={data} filter="" onBrowseAll={vi.fn()} sessionId="sess-1" split={false} />);
+
+		expect(screen.getByText(/diff is deferred/i)).toBeInTheDocument();
+		expect(postMock).not.toHaveBeenCalled();
+		await userEvent.click(screen.getByRole("button", { name: "Expand all files" }));
+		await waitFor(() => expect(postMock).toHaveBeenCalled());
+		expect(postMock.mock.calls[0]?.[1]?.body.paths).toEqual(["package-lock.json"]);
+	});
+
+	it("keeps the reviewer's collapse choices when a new workspace version arrives", async () => {
+		const paths = ["src/App.tsx", "docs/guide.md"];
+		postMock.mockResolvedValue({
+			data: {
+				sessionId: "sess-1",
+				workspaceVersion: "workspace-1",
+				groups: [{ repository: "", patch: twoFilePatch(paths), truncated: false, includedPaths: paths, deferred: [] }],
+			},
+		});
+		const client = reviewClient();
+		const model = annotation();
+		const view = (workspaceData: WorkspaceFilesResponse) => (
+			<QueryClientProvider client={client}>
+				<TooltipProvider>
+					<WorkspaceReviewPane annotation={model} data={workspaceData} filter="" onBrowseAll={vi.fn()} sessionId="sess-1" split={false} />
+				</TooltipProvider>
+			</QueryClientProvider>
+		);
+		const { rerender } = render(view(twoFileWorkspace()));
+		expect(await screen.findByTestId("code-view")).toBeInTheDocument();
+
+		await userEvent.click(screen.getAllByRole("button", { name: "Expand src/App.tsx" })[1]);
+		expect(screen.getAllByRole("button", { name: "Collapse src/App.tsx" })[0].closest("[data-collapsed]")).toHaveAttribute("data-collapsed", "false");
+
+		// The agent edited the tree: patches reload for the new version, but the
+		// open file must not be closed and the collapsed one must not re-expand.
+		const edited = twoFileWorkspace();
+		edited.workspaceVersion = "workspace-2";
+		postMock.mockResolvedValue({
+			data: {
+				sessionId: "sess-1",
+				workspaceVersion: "workspace-2",
+				groups: [{ repository: "", patch: twoFilePatch(paths), truncated: false, includedPaths: paths, deferred: [] }],
+			},
+		});
+		rerender(view(edited));
+
+		await waitFor(() => expect(postMock).toHaveBeenCalledWith("/api/v1/sessions/{sessionId}/workspace/diffs", expect.objectContaining({
+			body: expect.objectContaining({ workspaceVersion: "workspace-2" }),
+		})));
+		expect(screen.getAllByRole("button", { name: "Collapse src/App.tsx" })[0].closest("[data-collapsed]")).toHaveAttribute("data-collapsed", "false");
+		expect(screen.getAllByRole("button", { name: "Expand docs/guide.md" })[0].closest("[data-collapsed]")).toHaveAttribute("data-collapsed", "true");
+	});
+
+	it("returns to collapsed when the reviewer switches change source", async () => {
+		const unstaged = { path: "src/App.tsx", status: "modified" as const, additions: 1, deletions: 1, size: 20, binary: false, fileFingerprint: "u-1" };
+		const staged = { path: "README.md", status: "modified" as const, additions: 1, deletions: 0, size: 20, binary: false, fileFingerprint: "s-1" };
+		const data = workspace([unstaged]);
+		data.sections.staged = [staged];
+		postMock.mockImplementation((_path, init) => Promise.resolve({
+			data: {
+				sessionId: "sess-1",
+				workspaceVersion: "workspace-1",
+				groups: [{
+					repository: "",
+					patch: init?.body?.scope === "staged" ? "diff --git a/README.md b/README.md\n" : "diff --git a/src/App.tsx b/src/App.tsx\n",
+					truncated: false,
+					includedPaths: [init?.body?.scope === "staged" ? "README.md" : "src/App.tsx"],
+					deferred: [],
+				}],
+			},
+		}));
+		renderWithQuery(<WorkspaceReviewPane annotation={annotation()} data={data} filter="" onBrowseAll={vi.fn()} sessionId="sess-1" split={false} />);
+		expect(await screen.findByTestId("code-view")).toBeInTheDocument();
+
+		await userEvent.click(screen.getAllByRole("button", { name: "Expand src/App.tsx" })[1]);
+		expect(screen.getAllByRole("button", { name: "Collapse src/App.tsx" })[0].closest("[data-collapsed]")).toHaveAttribute("data-collapsed", "false");
+
+		await userEvent.click(screen.getByRole("button", { name: /Staged/ }));
+		await waitFor(() => expect(postMock).toHaveBeenCalledWith("/api/v1/sessions/{sessionId}/workspace/diffs", expect.objectContaining({
+			body: expect.objectContaining({ scope: "staged" }),
+		})));
+		// A different change source is a new review, so it starts from the default.
+		await waitFor(() => expect(screen.getAllByRole("button", { name: "Expand README.md" })[0].closest("[data-collapsed]")).toHaveAttribute("data-collapsed", "true"));
+	});
+
+	it("keeps files collapsed when the filter is widened", async () => {
+		const paths = ["src/App.tsx", "docs/guide.md"];
+		postMock.mockResolvedValue({
+			data: {
+				sessionId: "sess-1",
+				workspaceVersion: "workspace-1",
+				groups: [{ repository: "", patch: twoFilePatch(paths), truncated: false, includedPaths: paths, deferred: [] }],
+			},
+		});
+		const client = reviewClient();
+		const model = annotation();
+		const view = (filter: string) => (
+			<QueryClientProvider client={client}>
+				<TooltipProvider>
+					<WorkspaceReviewPane annotation={model} data={twoFileWorkspace()} filter={filter} onBrowseAll={vi.fn()} sessionId="sess-1" split={false} />
+				</TooltipProvider>
+			</QueryClientProvider>
+		);
+		const { rerender } = render(view("app"));
+		expect(await screen.findByTestId("code-view")).toBeInTheDocument();
+
+		await userEvent.click(screen.getAllByRole("button", { name: "Expand src/App.tsx" })[1]);
+		rerender(view(""));
+		await waitFor(() => expect(screen.getAllByRole("button", { name: "Expand docs/guide.md" })[0].closest("[data-collapsed]")).toHaveAttribute("data-collapsed", "true"));
+
+		// A file that only just came into view is collapsed too, rather than
+		// inheriting a stale snapshot of the filtered list.
+		expect(screen.getAllByRole("button", { name: "Expand docs/guide.md" })[0].closest("[data-collapsed]")).toHaveAttribute("data-collapsed", "true");
+		expect(screen.getAllByRole("button", { name: "Collapse src/App.tsx" })[0].closest("[data-collapsed]")).toHaveAttribute("data-collapsed", "false");
 	});
 });

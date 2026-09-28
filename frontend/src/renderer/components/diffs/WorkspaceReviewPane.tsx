@@ -140,7 +140,10 @@ export function WorkspaceReviewPane({
 	const [scope, setScope] = useState<WorkspaceDiffScope>(() => initialSelection.scope);
 	const [selectedCommitSha, setSelectedCommitSha] = useState<string | undefined>(() => initialSelection.commitSha);
 	const [commitBrowserOpen, setCommitBrowserOpen] = useState(false);
-	const [collapsedPaths, setCollapsedPaths] = useState<Set<string>>(() => new Set());
+	// Every file renders collapsed unless the reviewer expands it, so files that
+	// appear later (a widened filter, a new change source) stay collapsed instead of
+	// depending on a snapshot of the file list taken when the pane opened.
+	const [expandedPaths, setExpandedPaths] = useState<Set<string>>(() => new Set());
 	const [loadedDeferredPaths, setLoadedDeferredPaths] = useState<Set<string>>(() => new Set());
 	const [activeBatchCount, setActiveBatchCount] = useState(4);
 	const reviewRef = useRef<HTMLDivElement>(null);
@@ -183,11 +186,20 @@ export function WorkspaceReviewPane({
 	);
 	const { viewed, toggle: toggleViewed } = useViewedFiles(sessionId, reviewSelectionKey, allFiles);
 
+	// A new workspace version (the agent edited a file) reloads the patches
+	// progressively again, but it must leave collapse state alone: re-deriving it
+	// here used to silently re-expand every file the reviewer had collapsed, and
+	// would close a file they were still reading.
 	useEffect(() => {
-		setCollapsedPaths(new Set(files.filter(isDeferredByDefault).map((file) => file.path)));
 		setLoadedDeferredPaths(new Set());
 		setActiveBatchCount(4);
 	}, [data.workspaceVersion, reviewSelectionKey]);
+	// A different change source is a different review, so it starts from the
+	// default: every file collapsed. Returning the current set when it is already
+	// empty keeps this a no-op on mount and on a switch that expanded nothing.
+	useEffect(() => {
+		setExpandedPaths((current) => (current.size === 0 ? current : new Set()));
+	}, [reviewSelectionKey]);
 
 	const requestedFiles = useMemo(
 		() => files.filter((file) => !isDeferredByDefault(file) || loadedDeferredPaths.has(file.path)),
@@ -259,7 +271,7 @@ export function WorkspaceReviewPane({
 				if (file.binary) return [];
 				const metadata = metadataByPath.get(file.path);
 				if (!metadata) return [];
-				const collapsed = collapsedPaths.has(file.path);
+				const collapsed = !expandedPaths.has(file.path);
 				const fileAnnotationActive = annotation.target?.surface !== "focused" && annotation.target?.path === file.path && annotation.target.side === "file";
 				const activeTarget = annotation.target?.surface !== "focused" && annotation.target?.path === file.path && annotation.target.side !== "file"
 					? annotation.target
@@ -277,7 +289,7 @@ export function WorkspaceReviewPane({
 					version: (collapsed ? 1 : 0) + (activeTarget ? 2 : 0) + (fileAnnotationActive ? 4 : 0),
 				}];
 			}),
-		[annotation.target, collapsedPaths, files, metadataByPath, reviewSelectionKey],
+		[annotation.target, expandedPaths, files, metadataByPath, reviewSelectionKey],
 	);
 
 	const loadDiffFiles = useCallback(
@@ -316,22 +328,25 @@ export function WorkspaceReviewPane({
 	}, [annotation, data.workspaceVersion, scope, summaryById]);
 	const toggleCollapsed = useCallback((path: string) => {
 		if (annotation.target?.surface === "review" && annotation.target.path === path) annotation.cancel();
-		setCollapsedPaths((current) => {
+		setExpandedPaths((current) => {
 			const next = new Set(current);
 			if (next.has(path)) next.delete(path);
 			else next.add(path);
 			return next;
 		});
 	}, [annotation]);
+	// Collapsing every file is the default state, so "collapse all" clears the
+	// expanded set. "Expand all" has to name every current file explicitly,
+	// because an empty set alone would not distinguish it from collapsed.
 	const collapseAll = useCallback(() => {
 		if (annotation.target?.surface === "review") annotation.cancel();
-		setCollapsedPaths(new Set(files.map((file) => file.path)));
-	}, [annotation, files]);
+		setExpandedPaths(new Set());
+	}, [annotation]);
 	const expandAll = useCallback(() => {
 		setLoadedDeferredPaths(new Set(files.filter(isDeferredByDefault).map((file) => file.path)));
-		setCollapsedPaths(new Set());
+		setExpandedPaths(new Set(files.map((file) => file.path)));
 	}, [files]);
-	const allFilesCollapsed = files.length > 0 && files.every((file) => collapsedPaths.has(file.path));
+	const allFilesCollapsed = files.length > 0 && files.every((file) => !expandedPaths.has(file.path));
 	const toggleAll = allFilesCollapsed ? expandAll : collapseAll;
 	const selectCommit = useCallback((commit: WorkspaceCommitSummary) => {
 		if ((scope !== "committed" || selectedCommitSha !== commit.sha) && annotation.target?.surface === "review") annotation.cancel();
@@ -451,7 +466,7 @@ export function WorkspaceReviewPane({
 							const file = summaryById.get(item.id);
 							if (!file) return null;
 							const isViewed = viewed.has(file.path);
-							const isCollapsed = collapsedPaths.has(file.path);
+							const isCollapsed = !expandedPaths.has(file.path);
 							const renderedAvailable = canOpenRendered(file);
 							const fileAnnotationActive = annotation.target?.surface !== "focused" && annotation.target?.path === file.path && annotation.target.side === "file";
 							return (
