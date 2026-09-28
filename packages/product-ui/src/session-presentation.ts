@@ -48,6 +48,7 @@ const englishLabels: Record<SessionPresentationMessageKey, string> = {
 	"status.mergeable": "Ready",
 	"status.merged": "Merged",
 	"status.terminated": "Terminated",
+	"status.pending": "Not started",
 	"status.unknown": "Unknown status",
 	"zone.merge": "Ready to merge",
 	"zone.action": "Needs you",
@@ -71,6 +72,7 @@ const englishLabels: Record<SessionPresentationMessageKey, string> = {
 	"displayStatus.exited": "Exited",
 	"displayStatus.noSignal": "No signal",
 	"displayStatus.awaitingPr": "Awaiting PR",
+	"displayStatus.notStarted": "Not started",
 	"displayStatus.fixingCiFailures": "Fixing CI failures",
 	"displayStatus.addressingComments": "Addressing comments",
 	"displayStatus.needsReview": "Needs review",
@@ -100,6 +102,7 @@ export const displayStatusLabelKeys: Record<DisplayStatus, `displayStatus.${stri
 	Exited: "displayStatus.exited",
 	"No signal": "displayStatus.noSignal",
 	"Awaiting PR": "displayStatus.awaitingPr",
+	"Not started": "displayStatus.notStarted",
 	"Fixing CI failures": "displayStatus.fixingCiFailures",
 	"Addressing comments": "displayStatus.addressingComments",
 	"Needs review": "displayStatus.needsReview",
@@ -225,6 +228,9 @@ const sessionStatusStyles: Record<SessionStatus, Omit<SessionStatusView, "label"
 	needs_input: { className: "text-status-needs-you", dotClassName: "bg-status-needs-you" },
 	exited: { className: "text-status-exited", dotClassName: "bg-status-exited" },
 	no_signal: { className: "text-status-unknown", dotClassName: "bg-status-unknown" },
+	// A staged task is waiting for a person to start it, so it reads as an action
+	// item rather than as an unknown or in-flight state.
+	pending: { className: "text-status-needs-you", dotClassName: "bg-status-needs-you" },
 	ci_failed: { className: "text-status-exited", dotClassName: "bg-status-exited" },
 	changes_requested: { className: "text-status-needs-you", dotClassName: "bg-status-needs-you" },
 	review_pending: { className: "text-status-in-review", dotClassName: "bg-status-in-review" },
@@ -472,6 +478,9 @@ export function attentionZone(input: SessionStatus | SessionStatusModel): Attent
 		case "no_signal":
 		case "ci_failed":
 		case "changes_requested":
+		// A staged task sits in the action zone because the only thing moving it
+		// forward is a person choosing to start it.
+		case "pending":
 		case "unknown":
 			return "action";
 		case "review_pending":

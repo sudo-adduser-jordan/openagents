@@ -916,6 +916,27 @@ func (m *Manager) Spawn(ctx context.Context, cfg ports.SpawnConfig) (domain.Sess
 	// Everything above is shared: project, harness, prompts, seed row, worktree,
 	// provisioning, attachments. From here the two modes launch different
 	// controllers, and exactly one of them runs.
+	//
+	// `spawn --no-start` stops at this seam on purpose. The task is already fully
+	// built, so persisting here records a session a person can inspect on the
+	// board and start later, without an agent ever being launched. The workspace
+	// is deliberately NOT rolled back: it is the deliverable.
+	if cfg.NoStart {
+		staged, err := m.stageDeferredSpawn(ctx, rec, deferredSpawn{
+			cfg:           cfg,
+			workspace:     ws,
+			prompt:        prompt,
+			agentConfig:   agentConfig,
+			adapterConfig: adapterConfig,
+			projectKind:   projectKind,
+		})
+		if err != nil {
+			m.rollbackSeedSpawnWorkspace(ctx, rec, ws, workspaceProject, false)
+			return domain.SessionRecord{}, 0, 0, wrapSpawnStage(id, ErrSpawnCommit, err)
+		}
+		return staged, promptBytes, systemPromptBytes, nil
+	}
+
 	if mode == domain.SessionModeChat {
 		rec, err = m.launchChatController(ctx, chatSpawn{
 			cfg:              cfg,
@@ -1295,6 +1316,58 @@ func (m *Manager) createSessionWorkspace(ctx context.Context, project domain.Pro
 		}
 	}
 	return info.Root, &info, nil
+}
+
+// deferredSpawn carries the launch-time inputs a staged session still needs
+// after Spawn has decided not to launch anything.
+type deferredSpawn struct {
+	cfg           ports.SpawnConfig
+	workspace     ports.WorkspaceInfo
+	prompt        string
+	agentConfig   ports.AgentConfig
+	adapterConfig ports.AgentConfig
+	projectKind   domain.ProjectKind
+}
+
+// stageDeferredSpawn persists a fully built but unlaunched session.
+//
+// It deliberately writes the resolved prompt and the workspace facts now, even
+// though no agent has run, because those are exactly what `session resume-agent`
+// needs later to start the task as originally specified. Writing only the seed
+// row would leave a staged session that resume has to guess about.
+//
+// There is intentionally no runtime handle, launch id, or provider conversation
+// id here: nothing is running, and inventing an identity for it would make the
+// session look live to the runtime reconciler.
+func (m *Manager) stageDeferredSpawn(
+	ctx context.Context,
+	rec domain.SessionRecord,
+	in deferredSpawn,
+) (domain.SessionRecord, error) {
+	now := m.clock()
+
+	rec.AgentDeferred = true
+	// Permissions, BrowserCapabilityVerifier and any other metadata already on
+	// the record are carried over untouched: this updates the seed row in place
+	// rather than replacing its metadata wholesale.
+	rec.Metadata.Branch = in.workspace.Branch
+	rec.Metadata.WorkspacePath = in.workspace.Path
+	rec.Metadata.WorkspaceRepoPath = in.workspace.RepoPath
+	rec.Metadata.Prompt = in.prompt
+	rec.Metadata.LatestUserPrompt = in.prompt
+	rec.Metadata.Model = resolvedModelForMetadata(in.cfg.Harness, in.agentConfig, in.adapterConfig)
+	if in.prompt != "" {
+		rec.Metadata.LatestUserPromptAt = now
+	}
+	if in.projectKind == domain.ProjectKindSingleRepo {
+		rec.Metadata.DiffBaseSHA, rec.Metadata.DiffBaseRef = resolveSpawnDiffBase(ctx, in.workspace.Path, in.workspace.BaseRef)
+	}
+	rec.UpdatedAt = now
+
+	if err := m.store.UpdateSession(ctx, rec); err != nil {
+		return domain.SessionRecord{}, fmt.Errorf("persist deferred session %s: %w", rec.ID, err)
+	}
+	return rec, nil
 }
 
 func resolveSpawnDiffBase(ctx context.Context, root, defaultBranch string) (string, string) {
@@ -2302,20 +2375,27 @@ func (m *Manager) ResumeAgentWithMode(ctx context.Context, id domain.SessionID) 
 		return RestoreResult{Session: current, Mode: RestoreModeNative}, err
 	}
 	mode := domain.NormalizeSessionMode(rec.Mode)
-	if mode == domain.SessionModeChat && m.chat != nil && m.chat.HasLiveChatController(id) {
-		return RestoreResult{}, fmt.Errorf("resume agent %s: %w", id, ErrAgentNotExited)
-	}
-	if rec.Activity.State != domain.ActivityExited {
-		// Builds before the controller-stop lifecycle fix can leave a Chat row
-		// idle, active, or blocked even though no controller survived. The live
-		// registry is authoritative for whether a duplicate Chat controller could
-		// be created, so recover only when it confirms there is none. TUI keeps its
-		// existing durable-exited precondition.
-		if mode != domain.SessionModeChat || m.chat == nil {
+	// A session staged by `spawn --no-start` has no agent to resume: this is its
+	// first launch, so the "agent already exited" preconditions below do not
+	// apply. It still has to clear the guards that stop a duplicate controller,
+	// and it starts fresh because there is no prior run to attach to.
+	deferred := rec.AgentDeferred
+	if !deferred {
+		if mode == domain.SessionModeChat && m.chat != nil && m.chat.HasLiveChatController(id) {
 			return RestoreResult{}, fmt.Errorf("resume agent %s: %w", id, ErrAgentNotExited)
 		}
+		if rec.Activity.State != domain.ActivityExited {
+			// Builds before the controller-stop lifecycle fix can leave a Chat row
+			// idle, active, or blocked even though no controller survived. The live
+			// registry is authoritative for whether a duplicate Chat controller could
+			// be created, so recover only when it confirms there is none. TUI keeps its
+			// existing durable-exited precondition.
+			if mode != domain.SessionModeChat || m.chat == nil {
+				return RestoreResult{}, fmt.Errorf("resume agent %s: %w", id, ErrAgentNotExited)
+			}
+		}
 	}
-	return m.resumeAgentRecordWithPolicy(ctx, "resume agent", rec, false, false)
+	return m.resumeAgentRecordWithPolicy(ctx, "resume agent", rec, deferred, false)
 }
 
 func (m *Manager) resumeAgentRecordWithPolicy(
@@ -2331,9 +2411,12 @@ func (m *Manager) resumeAgentRecordWithPolicy(
 	}
 	meta := rec.Metadata
 	mode := domain.NormalizeSessionMode(rec.Mode)
+	// A staged session has a workspace and a stored prompt but no runtime
+	// identity, because nothing has ever been launched for it. Requiring a handle
+	// here would reject exactly the sessions this path exists to start.
 	if meta.WorkspacePath == "" ||
 		(meta.Branch == "" && projectKindForSession(project, rec.ProjectID) != domain.ProjectKindScratch) ||
-		(mode != domain.SessionModeChat && meta.RuntimeHandleID == "") {
+		(mode != domain.SessionModeChat && meta.RuntimeHandleID == "" && !rec.AgentDeferred) {
 		return RestoreResult{}, fmt.Errorf("%s %s: %w", operation, rec.ID, ErrIncompleteHandle)
 	}
 	ws := ports.WorkspaceInfo{
@@ -2342,7 +2425,12 @@ func (m *Manager) resumeAgentRecordWithPolicy(
 		SessionID: rec.ID,
 		ProjectID: rec.ProjectID,
 	}
-	if domain.NormalizeSessionMode(rec.Mode) == domain.SessionModeChat {
+	if mode == domain.SessionModeChat {
+		return m.relaunchSessionWithPolicy(ctx, operation, rec, project, ws, nil, forceFresh, requireNativeHistory, domain.SessionInterfaceTransitionHistoryStrict)
+	}
+	// Restarting in place reuses the existing terminal. A staged session has none,
+	// so it creates a fresh one exactly like an ordinary first spawn.
+	if rec.AgentDeferred || meta.RuntimeHandleID == "" {
 		return m.relaunchSessionWithPolicy(ctx, operation, rec, project, ws, nil, forceFresh, requireNativeHistory, domain.SessionInterfaceTransitionHistoryStrict)
 	}
 	handle := ports.RuntimeHandle{ID: meta.RuntimeHandleID}

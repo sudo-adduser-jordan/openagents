@@ -1190,6 +1190,32 @@ describe("SessionInspector Activity section", () => {
     );
   });
 
+  // A session staged by `spawn --no-start` reports `idle` activity, so the
+  // exited-only gate would hide the one control that can start it.
+  it("offers a start control for a staged, never-started session", async () => {
+    renderWithQuery(
+      <SessionInspector
+        session={session([], {
+          status: "pending",
+          activity: { state: "idle", lastActivityAt: "2026-06-15T10:00:00Z" },
+        })}
+      />,
+    );
+
+    await userEvent.click(
+      activitySection().getByRole("button", { name: "Start agent" }),
+    );
+
+    await waitFor(() =>
+      expect(postMock).toHaveBeenCalledWith(
+        "/api/v1/sessions/{sessionId}/resume-agent",
+        {
+          params: { path: { sessionId: "sess-1" } },
+        },
+      ),
+    );
+  });
+
   it("does not offer agent resume for a live or terminated session", () => {
     const live = renderWithQuery(
       <SessionInspector

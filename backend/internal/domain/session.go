@@ -197,6 +197,17 @@ type SessionRecord struct {
 	// of the API read model.
 	FirstSignalAt time.Time `json:"-"`
 	IsTerminated  bool      `json:"isTerminated"`
+	// AgentDeferred is a durable fact, true only for a session created by
+	// `spawn --no-start` whose agent has not been launched yet. It exists so the
+	// board can say "not yet started" instead of mistaking a staged task for one
+	// that ran and was stopped, and so that fact survives a daemon restart
+	// (an absent runtime handle is not evidence: a spawn in flight has one
+	// too). Cleared by the single launch commit point in lifecycle.markSpawned,
+	// so a session that was staged and then started reports normally again.
+	//
+	// Derived display status ("pending") and board phrase ("Not started") are
+	// computed from this at service read time; neither is stored.
+	AgentDeferred bool `json:"agentDeferred,omitempty"`
 	// TerminateOnPRMerge is a user-controlled lifecycle policy. When enabled,
 	// completing the session's PR set through a merge tears down the session.
 	TerminateOnPRMerge bool `json:"terminateOnPrMerge"`
@@ -269,7 +280,7 @@ type Session struct {
 	// ChatProviderPreserved is a live-controller observation, never stored.
 	// False also covers recovery/unknown ownership; callers must not infer safety.
 	ChatProviderPreserved bool          `json:"chatProviderPreserved"`
-	Status                SessionStatus `json:"status" enum:"working,pr_open,draft,ci_failed,review_pending,changes_requested,approved,mergeable,merged,needs_input,exited,idle,terminated,no_signal"`
+	Status                SessionStatus `json:"status" enum:"working,pr_open,draft,ci_failed,review_pending,changes_requested,approved,mergeable,merged,needs_input,exited,idle,terminated,no_signal,pending"`
 	SCMStatus             SessionStatus `json:"scmStatus,omitempty" enum:"pr_open,draft,ci_failed,review_pending,changes_requested,approved,mergeable,merged"`
 	// KanbanColumn is where the session sits in its delivery lifecycle and
 	// which loop is turning it: an Open Agents-driven one (validating) or the

@@ -205,6 +205,10 @@ const (
 	DisplayExited     DisplayStatus = "Exited"
 	DisplayNoSignal   DisplayStatus = "No signal"
 	DisplayAwaitingPR DisplayStatus = "Awaiting PR"
+	// A session staged by `spawn --no-start` that has not been started yet. It
+	// sits in Building because nothing has been delivered yet, but it must not
+	// read as "Working" or "No signal": no agent was ever asked to do anything.
+	DisplayNotStarted DisplayStatus = "Not started"
 	// Validating.
 	DisplayFixingCI           DisplayStatus = "Fixing CI failures"
 	DisplayAddressingComments DisplayStatus = "Addressing comments"
@@ -301,6 +305,10 @@ func displayStatusInColumn(
 // has produced no delivery facts to report yet.
 func buildingDisplayStatus(session KanbanSessionFacts, now time.Time, noSignalGrace time.Duration) DisplayStatus {
 	switch {
+	// Checked before activity and before the grace period: a staged session has
+	// no agent, so it has no hooks to go silent and no work to await a PR for.
+	case session.SessionFacts.AgentDeferred:
+		return DisplayNotStarted
 	case session.Activity == ActivityActive:
 		return DisplayWorking
 	case session.Activity == ActivityBlocked || session.Activity == ActivityWaitingInput:

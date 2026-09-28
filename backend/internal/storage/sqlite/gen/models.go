@@ -470,6 +470,7 @@ type Session struct {
 	NativeIdentityObservedAt         sql.NullTime
 	WorkflowMode                     string
 	ReviewLocked                     bool
+	AgentDeferred                    bool
 }
 
 type SessionCleanupFact struct {

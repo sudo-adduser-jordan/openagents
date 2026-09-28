@@ -33,6 +33,7 @@ type spawnOptions struct {
 	claimPR         string
 	noTakeover      bool
 	skipAgentCheck  bool
+	noStart         bool
 	trackerProvider string
 }
 
@@ -50,6 +51,7 @@ type spawnRequest struct {
 	Prompt          string `json:"prompt,omitempty"`
 	Model           string `json:"model,omitempty"`
 	DisplayName     string `json:"displayName"`
+	NoStart         bool   `json:"noStart,omitempty"`
 }
 
 type spawnResult struct {
@@ -165,6 +167,7 @@ func newSpawnCommand(ctx *commandContext) *cobra.Command {
 				Prompt:          opts.prompt,
 				Model:           strings.TrimSpace(opts.model),
 				DisplayName:     name,
+				NoStart:         opts.noStart,
 			}
 			var res spawnResult
 			if err := ctx.postJSON(cmd.Context(), "sessions", req, &res); err != nil {
@@ -200,6 +203,12 @@ func newSpawnCommand(ctx *commandContext) *cobra.Command {
 				displayName = name
 			}
 			_, err = fmt.Fprintf(out, "spawned session %s %q (%s)%s%s\n", res.Session.ID, displayName, res.Session.Status, claimLabel, promptSize)
+			if err == nil && opts.noStart {
+				// Say plainly that nothing is running. The session exists and can be
+				// inspected on the board, but an operator who assumed "spawned" meant
+				// a running agent would otherwise wait for output that never comes.
+				_, err = fmt.Fprintf(out, "agent not started; start it with: open-agents session resume-agent %s\n", res.Session.ID)
+			}
 			return err
 		},
 	}
@@ -226,6 +235,7 @@ func newSpawnCommand(ctx *commandContext) *cobra.Command {
 	f.StringVar(&opts.claimPR, "claim-pr", "", "Immediately claim an existing PR for the spawned session")
 	f.BoolVar(&opts.noTakeover, "no-takeover", false, "Refuse if another active session owns the claimed PR (requires --claim-pr)")
 	f.BoolVar(&opts.skipAgentCheck, "skip-agent-check", false, "Skip CLI readiness warnings (the daemon still validates launch readiness)")
+	f.BoolVar(&opts.noStart, "no-start", false, "Create the session, worktree, and prompt but do not launch the agent; the session reads as pending until `open-agents session resume-agent <id>` starts it")
 	return cmd
 }
 

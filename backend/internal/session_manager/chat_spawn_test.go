@@ -31,14 +31,23 @@ func (r *recordingBrowserAuthority) Issue(id domain.SessionID) (string, string, 
 // branches can be exercised against the same fakes.
 func newChatManager(t *testing.T, chat ChatLauncher) (*Manager, *fakeStore, *fakeRuntime) {
 	t.Helper()
+	m, st, rt, _ := newChatManagerWithWorkspace(t, chat)
+	return m, st, rt
+}
+
+// newChatManagerWithWorkspace is newChatManager for tests that also need to
+// point the fake workspace at a real git repo.
+func newChatManagerWithWorkspace(t *testing.T, chat ChatLauncher) (*Manager, *fakeStore, *fakeRuntime, *fakeWorkspace) {
+	t.Helper()
 	st := newFakeStore()
 	st.projects["mer"] = domain.ProjectRecord{ID: "mer", Config: testRoleAgents()}
 	rt := &fakeRuntime{}
+	ws := &fakeWorkspace{}
 	lookPath := func(string) (string, error) { return "/bin/true", nil }
 	m := New(Deps{
 		Runtime:   rt,
 		Agents:    fakeAgents{},
-		Workspace: &fakeWorkspace{},
+		Workspace: ws,
 		Store:     st,
 		Messenger: &fakeMessenger{},
 		Chat:      chat,
@@ -46,7 +55,7 @@ func newChatManager(t *testing.T, chat ChatLauncher) (*Manager, *fakeStore, *fak
 		DataDir:   t.TempDir(),
 		LookPath:  lookPath,
 	})
-	return m, st, rt
+	return m, st, rt, ws
 }
 
 const chatTestProject = domain.ProjectID("mer")

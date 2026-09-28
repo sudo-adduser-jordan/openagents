@@ -24,4 +24,9 @@ const (
 	// agent is working or stuck (broken hook pipeline, blocked interactive
 	// prompt). Rendered instead of a confident idle.
 	StatusNoSignal SessionStatus = "no_signal"
+	// StatusPending marks a session staged by `spawn --no-start` whose agent has
+	// not been launched. Distinct from StatusIdle and StatusNoSignal, which both
+	// assert that an agent was running and went quiet; a staged task never
+	// started, and the board has to be able to say that.
+	StatusPending SessionStatus = "pending"
 )
