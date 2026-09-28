@@ -8,6 +8,7 @@ import (
 	"os/exec"
 	"path/filepath"
 	"runtime"
+	"sort"
 	"strings"
 	"sync"
 	"testing"
@@ -67,21 +68,28 @@ type fakeStore struct {
 	listPRFactsCalls    int
 	listReviewRunsCalls int
 	num                 int
+	// nums and retiredNums back the resolver's addressing lookups. SessionRecord
+	// carries no agent number, so the fake keeps them beside the records rather
+	// than inventing a field the real record does not have.
+	nums        map[domain.SessionID]int64
+	retiredNums map[int64][]domain.ProjectID
 }
 
 func newFakeStore() *fakeStore {
 	return &fakeStore{
-		sessions:   map[domain.SessionID]domain.SessionRecord{},
-		pr:         map[domain.SessionID]domain.PRFacts{},
-		prFacts:    map[domain.SessionID][]domain.PRFacts{},
-		prs:        map[domain.SessionID][]domain.PullRequest{},
-		projects:   map[string]domain.ProjectRecord{},
-		worktrees:  map[domain.SessionID][]domain.SessionWorktreeRecord{},
-		checks:     map[string][]domain.PullRequestCheck{},
-		reviews:    map[string][]domain.PullRequestReview{},
-		threads:    map[string][]domain.PullRequestReviewThread{},
-		comments:   map[string][]domain.PullRequestComment{},
-		reviewRuns: map[domain.SessionID][]domain.CurrentHeadReviewRun{},
+		sessions:    map[domain.SessionID]domain.SessionRecord{},
+		pr:          map[domain.SessionID]domain.PRFacts{},
+		prFacts:     map[domain.SessionID][]domain.PRFacts{},
+		prs:         map[domain.SessionID][]domain.PullRequest{},
+		projects:    map[string]domain.ProjectRecord{},
+		worktrees:   map[domain.SessionID][]domain.SessionWorktreeRecord{},
+		checks:      map[string][]domain.PullRequestCheck{},
+		reviews:     map[string][]domain.PullRequestReview{},
+		threads:     map[string][]domain.PullRequestReviewThread{},
+		comments:    map[string][]domain.PullRequestComment{},
+		reviewRuns:  map[domain.SessionID][]domain.CurrentHeadReviewRun{},
+		nums:        map[domain.SessionID]int64{},
+		retiredNums: map[int64][]domain.ProjectID{},
 	}
 }
 
@@ -193,6 +201,44 @@ func (f *fakeStore) ListAllSessions(_ context.Context) ([]domain.SessionRecord, 
 		out = append(out, r)
 	}
 	return out, nil
+}
+
+func (f *fakeStore) GetSessionRef(_ context.Context, id domain.SessionID) (domain.SessionNumRef, bool, error) {
+	if f.getSessionErr != nil {
+		return domain.SessionNumRef{}, false, f.getSessionErr
+	}
+	r, ok := f.sessions[id]
+	if !ok {
+		return domain.SessionNumRef{}, false, nil
+	}
+	return domain.SessionNumRef{ID: r.ID, ProjectID: r.ProjectID, Num: f.nums[id]}, true, nil
+}
+
+// ListSessionRefsByNum mirrors the store's stable (project, id) ordering so a
+// cross-project collision renders the same candidate list every run.
+func (f *fakeStore) ListSessionRefsByNum(_ context.Context, num int64) ([]domain.SessionNumRef, error) {
+	out := make([]domain.SessionNumRef, 0, len(f.nums))
+	for id, n := range f.nums {
+		if n != num {
+			continue
+		}
+		r, ok := f.sessions[id]
+		if !ok {
+			continue
+		}
+		out = append(out, domain.SessionNumRef{ID: r.ID, ProjectID: r.ProjectID, Num: n})
+	}
+	sort.Slice(out, func(i, j int) bool {
+		if out[i].ProjectID != out[j].ProjectID {
+			return out[i].ProjectID < out[j].ProjectID
+		}
+		return out[i].ID < out[j].ID
+	})
+	return out, nil
+}
+
+func (f *fakeStore) ListRetiredSessionNumProjects(_ context.Context, num int64) ([]domain.ProjectID, error) {
+	return f.retiredNums[num], nil
 }
 
 func (f *fakeStore) RenameSession(_ context.Context, id domain.SessionID, displayName string, updatedAt time.Time) (bool, error) {

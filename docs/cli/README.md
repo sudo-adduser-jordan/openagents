@@ -61,7 +61,7 @@ Every product command resolves to a daemon HTTP route. Run `open-agents <command
 | `open-agents manage <id>`                      | `PATCH /api/v1/sessions/{id}/workflow-mode`  |
 | `open-agents build <id>`                       | `PATCH /api/v1/sessions/{id}/workflow-mode`  |
 | `open-agents manager ls`                       | `GET /api/v1/managers`                         |
-| `open-agents send`                           | `POST /api/v1/sessions/{id}/send`              |
+| `open-agents send`                           | `GET /api/v1/sessions/resolve` (when `--session` is a number), then `POST /api/v1/sessions/{id}/send` |
 | `open-agents preview [url]`                  | `POST /api/v1/sessions/{id}/preview`           |
 | `open-agents preview start/status/stop`      | `POST/GET/DELETE /api/v1/sessions/{id}/preview/server` |
 | `open-agents browser ...`                    | `GET /api/v1/browser/status`, `POST /api/v1/browser/commands` |
@@ -85,6 +85,20 @@ branch, issue, or PR-claim options.
 `OPEN_AGENTS_SESSION_ID`. From a manager or external shell, pass the target
 explicitly with `open-agents session claim-pr <session-id> <pr-ref>`. The explicit
 form supports cross-session coordination.
+
+`open-agents send --session <n>` accepts the agent number the board shows, not just
+a session id. A number is unique only within its project, so `send` scopes the
+lookup with explicit `--project/-p`, else `OPEN_AGENTS_PROJECT_ID`, else the sending
+session's own project, else unscoped. An unscoped number must be unique across every
+project; when it is not, the command exits 2 and lists the candidates so you can
+re-run with `--project`. Retired numbers are reported separately from unknown ones
+(`SESSION_NUM_RETIRED`) because a retired number is never reused. An exact session id
+always wins over a number, including a numeric one. When the sending session's number
+is known, the message is prefixed `[from <n>]` so the recipient can reply by typing
+that number back.
+
+Against a daemon that predates the resolve route, `send` passes the target through
+unchanged, so a bare number simply fails to match.
 
 `open-agents plan <id>` and `open-agents build <id>` move a worker between its delivery
 stages (planning → building) by setting `workflow_mode` on the daemon. Use

@@ -77,6 +77,7 @@ type SessionService interface {
 	Spawn(ctx context.Context, cfg ports.SpawnConfig) (domain.Session, int, int, error)
 	SpawnManager(ctx context.Context, projectID domain.ProjectID, clean bool, requestedMode domain.SessionMode) (domain.Session, error)
 	Get(ctx context.Context, id domain.SessionID) (domain.Session, error)
+	ResolveRef(ctx context.Context, ref string, project domain.ProjectID) (sessionsvc.ResolveRefResult, error)
 	Restore(ctx context.Context, id domain.SessionID) (sessionsvc.RestoreOutcome, error)
 	ExitAgent(ctx context.Context, id domain.SessionID) (sessionsvc.ExitAgentOutcome, error)
 	ResumeAgent(ctx context.Context, id domain.SessionID) (sessionsvc.ResumeAgentOutcome, error)
@@ -161,6 +162,7 @@ func (c *SessionsController) Register(r chi.Router) {
 	r.Get("/sessions", c.list)
 	r.Post("/sessions", c.spawn)
 	r.Post("/sessions/cleanup", c.cleanup)
+	r.Get("/sessions/resolve", c.resolveSessionRef)
 	r.Get("/sessions/{sessionId}", c.get)
 	r.Get("/sessions/{sessionId}/preview", c.preview)
 	r.Post("/sessions/{sessionId}/preview", c.setPreview)
@@ -392,6 +394,35 @@ func decodeSpawnAttachments(in []AttachmentInput) ([]ports.SpawnAttachment, *att
 		out = append(out, attachment)
 	}
 	return out, nil
+}
+
+// resolveSessionRef turns a user-supplied reference — a session id, or the bare
+// agent number the board shows — into a canonical session id.
+//
+// It is a sibling of the session routes rather than a filter on them because a
+// number is only unique within its project, so resolving one requires a lookup
+// the individual session routes cannot perform. Registered next to
+// /sessions/cleanup for the same reason that is a sibling: both are operations
+// on the collection, not on one session.
+func (c *SessionsController) resolveSessionRef(w http.ResponseWriter, r *http.Request) {
+	if c.Svc == nil {
+		apispec.NotImplemented(w, r, "GET", "/api/v1/sessions/resolve")
+		return
+	}
+	q := r.URL.Query()
+	res, err := c.Svc.ResolveRef(r.Context(),
+		strings.TrimSpace(q.Get("ref")), domain.ProjectID(strings.TrimSpace(q.Get("project"))))
+	if err != nil {
+		envelope.WriteError(w, r, err)
+		return
+	}
+	envelope.WriteJSON(w, http.StatusOK, ResolveSessionRefResponse{
+		Ref:       res.Ref,
+		SessionID: string(res.SessionID),
+		ProjectID: string(res.ProjectID),
+		Num:       res.Num,
+		MatchedBy: string(res.MatchedBy),
+	})
 }
 
 func (c *SessionsController) get(w http.ResponseWriter, r *http.Request) {

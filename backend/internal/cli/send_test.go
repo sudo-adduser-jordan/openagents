@@ -95,6 +95,14 @@ func TestSend_SteerActiveTurnUsesProviderSteeringWithoutQueueing(t *testing.T) {
 			w.WriteHeader(http.StatusNoContent)
 			return
 		}
+		if r.URL.Path == "/api/v1/sessions/resolve" {
+			// The sender's agent number is read to render "[from N]". It is a
+			// lookup, not part of the delivery, so it is not one of the
+			// requests this test is counting.
+			w.Header().Set("Content-Type", "application/json")
+			_, _ = io.WriteString(w, `{"ref":"source-2","sessionId":"source-2","projectId":"demo","num":2,"matchedBy":"id"}`)
+			return
+		}
 		paths = append(paths, r.URL.Path)
 		raw, _ := io.ReadAll(r.Body)
 		bodies = append(bodies, string(raw))
@@ -117,7 +125,9 @@ func TestSend_SteerActiveTurnUsesProviderSteeringWithoutQueueing(t *testing.T) {
 	if err := json.Unmarshal([]byte(bodies[0]), &req); err != nil {
 		t.Fatal(err)
 	}
-	if req.Text != "[from source-2] correct course" || req.ClientMessageID == "" {
+	// A known sender number is what the recipient sees, and what they can type
+	// back to reply.
+	if req.Text != "[from 2] correct course" || req.ClientMessageID == "" {
 		t.Errorf("request = %+v", req)
 	}
 	if !strings.Contains(out, "accepted by provider") || !strings.Contains(out, "action is not confirmed") {
@@ -213,6 +223,9 @@ func TestSend_SteerFailureDoesNotSilentlyQueue(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			cfg := setConfigEnv(t)
+			// No sender: this counts delivery attempts, so it must not also
+			// count the sender-number lookup an ambient session id triggers.
+			t.Setenv("OPEN_AGENTS_SESSION_ID", "")
 			var calls int
 			srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 				if strings.HasPrefix(r.URL.Path, "/internal/") {
@@ -271,6 +284,8 @@ func TestSend_SteerUncertainExposesHandleForRecovery(t *testing.T) {
 
 func TestSend_SteerTransportFailureExposesRetryHandle(t *testing.T) {
 	cfg := setConfigEnv(t)
+	// No sender, so the only request is the delivery this test hijacks.
+	t.Setenv("OPEN_AGENTS_SESSION_ID", "")
 	captured := make(chan conversationMessageAPIRequest, 1)
 	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		if strings.HasPrefix(r.URL.Path, "/internal/") {
