@@ -2335,6 +2335,8 @@ export interface components {
             /** @enum {string} */
             mode: "chat" | "tui";
             model?: string;
+            /** Format: int64 */
+            num: number;
             /** Format: date-time */
             pinnedAt?: null | string;
             /** Format: int64 */

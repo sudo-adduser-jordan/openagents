@@ -1994,3 +1994,124 @@ func TestClaimChatControllerGenerationPreservesRecency(t *testing.T) {
 		t.Fatalf("claim changed user-visible facts: before=%+v after=%+v", before, after)
 	}
 }
+
+// The per-project ordinal is durable user-facing identity: it is what the
+// `mer-<num>` id and the sidebar's agent number both come from. It must survive
+// the row -> record mapping, and a caller that just created a session must get
+// it back without re-reading.
+func TestSessionNumSurvivesStorageAndCreate(t *testing.T) {
+	ctx := context.Background()
+	s := newTestStore(t)
+	seedProject(t, s, "mer")
+
+	first, err := s.CreateSession(ctx, sampleRecord("mer"))
+	if err != nil {
+		t.Fatalf("create first: %v", err)
+	}
+	if first.Num != 1 {
+		t.Fatalf("CreateSession returned Num = %d, want 1; a freshly spawned session must not read back as 0", first.Num)
+	}
+	if first.ID != "mer-1" {
+		t.Fatalf("CreateSession id = %q, want mer-1", first.ID)
+	}
+
+	second, err := s.CreateSession(ctx, sampleRecord("mer"))
+	if err != nil {
+		t.Fatalf("create second: %v", err)
+	}
+	if second.Num != 2 {
+		t.Fatalf("second Num = %d, want 2", second.Num)
+	}
+
+	// A different project draws from its own sequence: the number is per-project.
+	seedProject(t, s, "atl")
+	other, err := s.CreateSession(ctx, sampleRecord("atl"))
+	if err != nil {
+		t.Fatalf("create in other project: %v", err)
+	}
+	if other.Num != 1 {
+		t.Fatalf("other project Num = %d, want 1; the ordinal is per-project", other.Num)
+	}
+
+	// A read-back agrees with what create reported, for both the get and the
+	// list path (list is a separate generated row type from get).
+	got, ok, err := s.GetSession(ctx, second.ID)
+	if err != nil || !ok {
+		t.Fatalf("GetSession: ok=%v err=%v", ok, err)
+	}
+	if got.Num != 2 {
+		t.Fatalf("GetSession Num = %d, want 2", got.Num)
+	}
+
+	listed, err := s.ListSessions(ctx, "mer")
+	if err != nil {
+		t.Fatalf("ListSessions: %v", err)
+	}
+	if len(listed) != 2 {
+		t.Fatalf("ListSessions returned %d sessions, want 2", len(listed))
+	}
+	if listed[0].Num != 1 || listed[1].Num != 2 {
+		t.Fatalf("ListSessions nums = %d,%d, want 1,2 in order", listed[0].Num, listed[1].Num)
+	}
+
+	all, err := s.ListAllSessions(ctx)
+	if err != nil {
+		t.Fatalf("ListAllSessions: %v", err)
+	}
+	if len(all) != 3 {
+		t.Fatalf("ListAllSessions returned %d sessions, want 3", len(all))
+	}
+	for _, rec := range all {
+		if rec.Num == 0 {
+			t.Fatalf("ListAllSessions dropped the ordinal for %s", rec.ID)
+		}
+	}
+}
+
+// Numbers are never reused: a retired session permanently consumes its ordinal,
+// because a registered worktree path, a PR conversation, or a change_log row
+// may still reference it. So the live sequence is expected to be gapped, and
+// this locks that in against a future "tidy the sequence" change.
+func TestSessionNumIsNotReusedAfterRetire(t *testing.T) {
+	ctx := context.Background()
+	s := newTestStore(t)
+	seedProject(t, s, "mer")
+
+	first, err := s.CreateSession(ctx, sampleRecord("mer"))
+	if err != nil {
+		t.Fatalf("create first: %v", err)
+	}
+	if first.Num != 1 {
+		t.Fatalf("first Num = %d, want 1", first.Num)
+	}
+
+	// Retirement requires a terminated row.
+	first.IsTerminated = true
+	first.Activity.State = domain.ActivityExited
+	first.UpdatedAt = time.Now().UTC()
+	if err := s.UpdateSession(ctx, first); err != nil {
+		t.Fatalf("terminate first: %v", err)
+	}
+	if removed, err := s.RetireSession(ctx, first.ID, time.Now().UTC()); err != nil || !removed {
+		t.Fatalf("RetireSession: removed=%v err=%v", removed, err)
+	}
+
+	second, err := s.CreateSession(ctx, sampleRecord("mer"))
+	if err != nil {
+		t.Fatalf("create second: %v", err)
+	}
+	if second.Num != 2 {
+		t.Fatalf("second Num = %d, want 2; the retired ordinal must not be handed out again", second.Num)
+	}
+	if second.ID != "mer-2" {
+		t.Fatalf("second id = %q, want mer-2", second.ID)
+	}
+
+	listed, err := s.ListSessions(ctx, "mer")
+	if err != nil {
+		t.Fatalf("ListSessions: %v", err)
+	}
+	if len(listed) != 1 || listed[0].Num != 2 {
+		t.Fatalf("live list = %+v, want exactly the surviving session at Num 2", listed)
+	}
+}

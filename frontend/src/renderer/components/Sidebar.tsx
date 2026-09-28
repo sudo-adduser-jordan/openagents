@@ -1630,6 +1630,9 @@ function SessionRow({
 				>
 					<NavRowHighlight active={active} />
 					<SessionStatusDot session={session} />
+					{/* The number stays put when the row flips into rename mode, so
+					    entering the editor never reflows the row under the cursor. */}
+					<SessionNum session={session} />
 					<input
 						aria-label={`Rename ${session.title}`}
 						autoFocus
@@ -1720,6 +1723,7 @@ function SessionRow({
 						>
 							<SessionStatusDot session={session} />
 							<span className="flex min-w-0 flex-1 items-center gap-1.5">
+								<SessionNum session={session} />
 								<span
 									className={cn(
 										"min-w-0 flex-1 truncate",
@@ -1773,6 +1777,31 @@ const SessionMessageAge = memo(function SessionMessageAge({ session }: { session
 		>
 			{formatTimeTerse(session.lastUserMessageAt)}
 		</time>
+	);
+});
+
+/**
+ * The session's number in its project: the `7` in `openagents-7`, and how a
+ * user names this agent out loud. Always visible rather than hover- or
+ * selection-gated, because its whole job is letting you tell rows apart and
+ * quote one back. The number is the index, the title is the content: shrink-0
+ * keeps the number from ever being squeezed out, and the title's own
+ * min-w-0 truncate gives up the room instead. Purely visual, so the button's
+ * accessible name stays `Open <title>`.
+ */
+const SessionNum = memo(function SessionNum({ session }: { session: WorkspaceSession }) {
+	// 0 and undefined both mean "no number": an old daemon omits it, and a
+	// real number is always at least 1.
+	if (!session.num) return null;
+
+	return (
+		<span
+			aria-hidden="true"
+			className="shrink-0 font-sans text-micro tabular-nums text-passive"
+			data-session-num=""
+		>
+			{session.num}
+		</span>
 	);
 });
 

@@ -172,11 +172,18 @@ type SessionMetadata struct {
 // facts: identity, agent harness, activity_state, is_terminated, and operational
 // metadata. The user-facing Status is derived from these facts plus PR facts.
 type SessionRecord struct {
-	ID        SessionID    `json:"id"`
-	ProjectID ProjectID    `json:"projectId,omitempty"`
-	IssueID   IssueID      `json:"issueId,omitempty"`
-	Kind      SessionKind  `json:"kind" enum:"worker,manager"`
-	Harness   AgentHarness `json:"harness,omitempty"`
+	ID        SessionID `json:"id"`
+	ProjectID ProjectID `json:"projectId,omitempty"`
+	IssueID   IssueID   `json:"issueId,omitempty"`
+	// Num is this session's ordinal in its project's sequence, the number
+	// behind the open-agents-1, open-agents-2 ids users already quote. It is
+	// per-project (standalone sessions draw from their own sequence), and
+	// retired numbers are never reused, so the sequence is monotonic and
+	// deliberately gapped. Always at least 1: every session is minted by the
+	// next-num allocator, never left at zero.
+	Num     int64        `json:"num"`
+	Kind    SessionKind  `json:"kind" enum:"worker,manager"`
+	Harness AgentHarness `json:"harness,omitempty"`
 	// ReviewerHarness is this session's preferred reviewer. Empty delegates to
 	// the project configuration.
 	ReviewerHarness   ReviewerHarness `json:"reviewerHarness,omitempty" enum:"opencode"`
@@ -233,10 +240,10 @@ func (s SessionRecord) IsStandalone() bool { return s.ProjectID == "" }
 // SessionNumRef is the addressing triple for a session: its id, its owning
 // project, and the per-project agent number users type to address it.
 //
-// Num is not a SessionRecord field on purpose. It is the narrow result of a
-// by-id or by-number lookup, not part of the session read model, so the
-// resolver does not have to wait on (or duplicate) the plumbing that puts Num on
-// the read model for display. A projectless session reports ProjectID "".
+// This stays a narrow result of a by-id or by-number lookup rather than reusing
+// SessionRecord, so a resolve is not dragged through the whole read model. Num
+// is on SessionRecord too now, for display; the two are read from the same
+// column. A projectless session reports ProjectID "".
 type SessionNumRef struct {
 	ID        SessionID
 	ProjectID ProjectID

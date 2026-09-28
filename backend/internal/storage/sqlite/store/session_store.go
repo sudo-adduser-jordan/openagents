@@ -54,6 +54,10 @@ func (s *Store) CreateSession(ctx context.Context, rec domain.SessionRecord) (do
 	if err := s.qw.InsertSession(ctx, recordToInsert(rec, num)); err != nil {
 		return domain.SessionRecord{}, fmt.Errorf("insert session %s: %w", rec.ID, err)
 	}
+	// The caller gets the number it was actually inserted under, not the zero
+	// it arrived with: a freshly spawned session must render its number before
+	// anything has read the row back.
+	rec.Num = num
 	return rec, nil
 }
 
@@ -615,6 +619,7 @@ func rowToRecord(row gen.GetSessionRow) domain.SessionRecord {
 		Revision:          row.Revision,
 		ID:                row.ID,
 		ProjectID:         projectIDValue(row.ProjectID),
+		Num:               row.Num,
 		IssueID:           row.IssueID,
 		Kind:              row.Kind,
 		Harness:           row.Harness,
