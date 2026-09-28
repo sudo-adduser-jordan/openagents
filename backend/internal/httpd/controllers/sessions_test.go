@@ -81,6 +81,9 @@ type fakeSessionService struct {
 	stageErr                   error
 	autoInjectCISession        domain.SessionID
 	autoInjectCIEnabled        bool
+	// nums and resolveRefErr back the /sessions/resolve handler tests.
+	nums          map[domain.SessionID]int64
+	resolveRefErr error
 }
 
 type fakeInterfaceTransitionSessionService struct {
@@ -194,6 +197,7 @@ func newFakeSessionService() *fakeSessionService {
 	s := domain.Session{SessionRecord: domain.SessionRecord{ID: "open-agents-1", ProjectID: "open-agents", Kind: domain.KindWorker, Activity: domain.Activity{State: domain.ActivityIdle, LastActivityAt: now}, AutoInjectReview: true, AutoInjectCI: true, CreatedAt: now, UpdatedAt: now}, Status: domain.StatusIdle, TerminalHandleID: "open-agents-1/terminal_0"}
 	return &fakeSessionService{
 		sessions: map[domain.SessionID]domain.Session{s.ID: s},
+		nums:     map[domain.SessionID]int64{},
 	}
 }
 
@@ -253,6 +257,42 @@ func (f *fakeSessionService) Get(_ context.Context, id domain.SessionID) (domain
 		return domain.Session{}, apierr.NotFound("SESSION_NOT_FOUND", "Unknown session")
 	}
 	return s, nil
+}
+
+// ResolveRef mirrors the real resolver closely enough for handler tests: a digit
+// ref is a number, anything else is an exact id. The real precedence and
+// ambiguity rules are covered by the session service's own tests.
+func (f *fakeSessionService) ResolveRef(_ context.Context, ref string, project domain.ProjectID) (sessionsvc.ResolveRefResult, error) {
+	if f.resolveRefErr != nil {
+		return sessionsvc.ResolveRefResult{}, f.resolveRefErr
+	}
+	if num, err := strconv.ParseInt(ref, 10, 64); err == nil {
+		for id, n := range f.nums {
+			s, ok := f.sessions[id]
+			if n != num || !ok || (project != "" && s.ProjectID != project) {
+				continue
+			}
+			return sessionsvc.ResolveRefResult{
+				Ref:       ref,
+				SessionID: id,
+				ProjectID: s.ProjectID,
+				Num:       n,
+				MatchedBy: sessionsvc.RefMatchNum,
+			}, nil
+		}
+		return sessionsvc.ResolveRefResult{}, apierr.NotFound("SESSION_REF_NOT_FOUND", "no session with id or number "+ref)
+	}
+	s, ok := f.sessions[domain.SessionID(ref)]
+	if !ok {
+		return sessionsvc.ResolveRefResult{}, apierr.NotFound("SESSION_REF_NOT_FOUND", "no session with id "+ref)
+	}
+	return sessionsvc.ResolveRefResult{
+		Ref:       ref,
+		SessionID: s.ID,
+		ProjectID: s.ProjectID,
+		Num:       f.nums[domain.SessionID(ref)],
+		MatchedBy: sessionsvc.RefMatchID,
+	}, nil
 }
 
 func (f *fakeSessionService) SetPreview(_ context.Context, id domain.SessionID, previewURL string) (domain.Session, error) {

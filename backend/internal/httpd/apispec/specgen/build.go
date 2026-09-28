@@ -216,6 +216,8 @@ var schemaNames = map[string]string{ //nolint:gosec // Public OpenAPI type names
 	"ControllersSpawnSessionRequest":                      "SpawnSessionRequest",
 	"ControllersSpawnSessionResponse":                     "SpawnSessionResponse",
 	"ControllersSessionResponse":                          "SessionResponse",
+	"ControllersResolveSessionRefQuery":                   "ResolveSessionRefQuery",
+	"ControllersResolveSessionRefResponse":                "ResolveSessionRefResponse",
 	"ControllersSessionPreviewResponse":                   "SessionPreviewResponse",
 	"ControllersSetSessionPreviewRequest":                 "SetSessionPreviewRequest",
 	"ControllersStartPreviewServerRequest":                "StartPreviewServerRequest",
@@ -1605,6 +1607,20 @@ func sessionOperations() []operation {
 			resps: []respUnit{
 				{http.StatusOK, controllers.SessionResponse{}},
 				{http.StatusNotFound, envelope.APIError{}},
+				{http.StatusInternalServerError, envelope.APIError{}},
+			},
+		},
+		{
+			method: http.MethodGet, path: "/api/v1/sessions/resolve", id: "resolveSessionRef", tag: "sessions",
+			summary:    "Resolve a session id or agent number to a canonical session id",
+			pathParams: []any{controllers.ResolveSessionRefQuery{}},
+			resps: []respUnit{
+				{http.StatusOK, controllers.ResolveSessionRefResponse{}},
+				// 404 covers both a reference that matches nothing and one whose
+				// number was retired; the code distinguishes them.
+				{http.StatusBadRequest, envelope.APIError{}},
+				{http.StatusNotFound, envelope.APIError{}},
+				{http.StatusConflict, envelope.APIError{}},
 				{http.StatusInternalServerError, envelope.APIError{}},
 			},
 		},

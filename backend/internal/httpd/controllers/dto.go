@@ -308,6 +308,32 @@ type SessionResponse struct {
 	Session SessionView `json:"session"`
 }
 
+// ResolveSessionRefQuery is the query string accepted by GET
+// /api/v1/sessions/resolve.
+type ResolveSessionRefQuery struct {
+	Ref string `query:"ref" description:"Session id, or a bare agent number such as 5."`
+	// Project scopes a bare agent number to one project. Without it the number
+	// must be unique across every project, or the request is reported as
+	// ambiguous with its candidates.
+	Project string `query:"project,omitempty" description:"Project id that scopes a bare agent number. When omitted, the number must be unique across all projects."`
+}
+
+// ResolveSessionRefResponse is the canonical target of a user-supplied
+// reference, so a client can address a session by the number the board shows
+// instead of its id.
+type ResolveSessionRefResponse struct {
+	// Ref echoes what was asked for, so a client can key its own state on the
+	// token the user typed rather than the id it resolved to.
+	Ref       string `json:"ref"`
+	SessionID string `json:"sessionId"`
+	ProjectID string `json:"projectId,omitempty"`
+	// Num is the agent number within ProjectID.
+	Num int64 `json:"num"`
+	// MatchedBy distinguishes an id that merely looked numeric ("id") from a
+	// number that was looked up ("num").
+	MatchedBy string `json:"matchedBy" enum:"id,num"`
+}
+
 // SpawnSessionResponse includes ephemeral measurements of the final assembled
 // prompt texts. The fields are required so a measured zero remains distinct
 // from a response that never measured prompt sizes.

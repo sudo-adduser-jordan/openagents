@@ -269,6 +269,24 @@ func (q *Queries) GetSession(ctx context.Context, id domain.SessionID) (GetSessi
 	return i, err
 }
 
+const getSessionRef = `-- name: GetSessionRef :one
+SELECT id, project_id, num FROM sessions WHERE id = ?
+`
+
+type GetSessionRefRow struct {
+	ID        domain.SessionID
+	ProjectID *domain.ProjectID
+	Num       int64
+}
+
+// The addressing triple for an exact id. Primary-key lookup.
+func (q *Queries) GetSessionRef(ctx context.Context, id domain.SessionID) (GetSessionRefRow, error) {
+	row := q.db.QueryRowContext(ctx, getSessionRef, id)
+	var i GetSessionRefRow
+	err := row.Scan(&i.ID, &i.ProjectID, &i.Num)
+	return i, err
+}
+
 const insertSession = `-- name: InsertSession :exec
 INSERT INTO sessions (
     id, project_id, num, issue_id, kind, harness, reviewer_harness, reviewer_agent_config, auto_review_enabled, display_name,
@@ -544,6 +562,75 @@ func (q *Queries) ListAllSessions(ctx context.Context) ([]ListAllSessionsRow, er
 			&i.Model,
 			&i.SessionPermissions,
 		); err != nil {
+			return nil, err
+		}
+		items = append(items, i)
+	}
+	if err := rows.Close(); err != nil {
+		return nil, err
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return items, nil
+}
+
+const listRetiredSessionNumProjects = `-- name: ListRetiredSessionNumProjects :many
+SELECT project_id FROM retired_session_nums WHERE num = ?
+`
+
+// The projects that permanently retired this number. A retired number is never
+// reused, so a missing session with a retired number must say so instead of
+// reporting the same not-found answer as a number that was never issued.
+// Standalone numbers are recorded under the empty string.
+func (q *Queries) ListRetiredSessionNumProjects(ctx context.Context, num int64) ([]string, error) {
+	rows, err := q.db.QueryContext(ctx, listRetiredSessionNumProjects, num)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	items := []string{}
+	for rows.Next() {
+		var project_id string
+		if err := rows.Scan(&project_id); err != nil {
+			return nil, err
+		}
+		items = append(items, project_id)
+	}
+	if err := rows.Close(); err != nil {
+		return nil, err
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return items, nil
+}
+
+const listSessionRefsByNum = `-- name: ListSessionRefsByNum :many
+SELECT id, project_id, num FROM sessions WHERE num = ?
+`
+
+type ListSessionRefsByNumRow struct {
+	ID        domain.SessionID
+	ProjectID *domain.ProjectID
+	Num       int64
+}
+
+// :many, not :one, because a number is unique only WITHIN a project
+// (UNIQUE (project_id, num)); the same number can be live in several projects
+// at once, which is exactly the cross-project collision the resolver has to
+// report rather than silently pick from. Callers that scope to a project filter
+// the result: the unique constraint already guarantees at most one row survives.
+func (q *Queries) ListSessionRefsByNum(ctx context.Context, num int64) ([]ListSessionRefsByNumRow, error) {
+	rows, err := q.db.QueryContext(ctx, listSessionRefsByNum, num)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	items := []ListSessionRefsByNumRow{}
+	for rows.Next() {
+		var i ListSessionRefsByNumRow
+		if err := rows.Scan(&i.ID, &i.ProjectID, &i.Num); err != nil {
 			return nil, err
 		}
 		items = append(items, i)
