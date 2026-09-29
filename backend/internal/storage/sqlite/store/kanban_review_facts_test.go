@@ -80,7 +80,7 @@ func TestListCurrentHeadReviewRunsForSessionKeepsLatestRunPerHarness(t *testing.
 		}
 	}
 	insert("old", "opencode", now, domain.VerdictChangesRequested)
-	insert("other", "opencode", now.Add(time.Second), domain.VerdictApproved)
+	insert("other", "legacy-reviewer", now.Add(time.Second), domain.VerdictApproved)
 	insert("new", "opencode", now.Add(2*time.Second), domain.VerdictApproved)
 
 	runs, err := s.ListCurrentHeadReviewRunsForSession(ctx, r.ID)
@@ -95,7 +95,7 @@ func TestListCurrentHeadReviewRunsForSessionKeepsLatestRunPerHarness(t *testing.
 	for _, run := range runs {
 		byHarness[run.Harness] = run.Verdict
 	}
-	if byHarness["opencode"] != domain.VerdictApproved {
+	if byHarness["opencode"] != domain.VerdictApproved || byHarness["legacy-reviewer"] != domain.VerdictApproved {
 		t.Fatalf("runs = %+v, want latest approved run per harness", runs)
 	}
 }
@@ -400,7 +400,7 @@ func TestListCurrentHeadReviewRunsForSessionsKeepsLatestRunPerHarness(t *testing
 	}
 	insert("run-old", first.ID, "rev-"+string(first.ID), "opencode", now, domain.VerdictChangesRequested)
 	insert("run-new", first.ID, "rev-"+string(first.ID), "opencode", now.Add(time.Second), domain.VerdictApproved)
-	insert("run-other", first.ID, "rev-"+string(first.ID), "opencode", now.Add(2*time.Second), domain.VerdictApproved)
+	insert("run-other", first.ID, "rev-"+string(first.ID), "legacy-reviewer", now.Add(2*time.Second), domain.VerdictApproved)
 	insert("run-second", second.ID, "rev-"+string(second.ID), "opencode", now, domain.VerdictApproved)
 
 	got, err := s.ListCurrentHeadReviewRunsForSessions(ctx, []domain.SessionID{first.ID, second.ID})
@@ -418,7 +418,7 @@ func TestListCurrentHeadReviewRunsForSessionsKeepsLatestRunPerHarness(t *testing
 		}
 		byHarness[run.Harness] = run.Verdict
 	}
-	if byHarness["opencode"] != domain.VerdictApproved {
+	if byHarness["opencode"] != domain.VerdictApproved || byHarness["legacy-reviewer"] != domain.VerdictApproved {
 		t.Fatalf("first session runs = %+v, want latest per harness", got[first.ID])
 	}
 	if got[second.ID][0].Verdict != domain.VerdictApproved {

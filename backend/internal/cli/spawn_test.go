@@ -751,7 +751,7 @@ func TestSpawnNotInstalledAgentReadinessBlocks(t *testing.T) {
 	writeRunFileFor(t, cfg, srv)
 
 	_, _, err := executeCLI(t, Deps{ProcessAlive: func(int) bool { return true }}, "spawn", "--project", "demo", "--agent", "opencode", "--name", "worker")
-	if err == nil || !strings.Contains(err.Error(), "agent \"codex\" needs install") {
+	if err == nil || !strings.Contains(err.Error(), "agent \"opencode\" needs install") {
 		t.Fatalf("err=%v, want needs install", err)
 	}
 	want := []string{"GET /api/v1/projects/demo", "POST /api/v1/agents/readiness/ensure"}

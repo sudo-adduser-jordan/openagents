@@ -941,15 +941,15 @@ func TestCancelKeepsRunsRunningWhenReviewerCancelFailsAndHandleIsAlive(t *testin
 func TestRestoreReviewerUsesSelectedHarnessSessionAndKillsOtherActivePane(t *testing.T) {
 	// A review row written before the opencode-only strip can still carry a
 	// harness Open Agents no longer selects; restoring must destroy its stale terminal.
-	legacyHarness := domain.ReviewerHarness("opencode")
+	legacyHarness := domain.ReviewerHarness("codex")
 	store := &fakeStore{
-		review: &domain.Review{ID: "rev-1", SessionID: "mer-1", Harness: legacyHarness, ReviewerHandleID: "opencode-pane", AgentSessionID: "opencode-native"},
+		review: &domain.Review{ID: "rev-1", SessionID: "mer-1", Harness: legacyHarness, ReviewerHandleID: "codex-pane", AgentSessionID: "codex-native"},
 		reviews: map[domain.ReviewerHarness]domain.Review{
-			legacyHarness:           {ID: "rev-1", SessionID: "mer-1", Harness: legacyHarness, ReviewerHandleID: "opencode-pane", AgentSessionID: "opencode-native"},
+			legacyHarness:           {ID: "rev-1", SessionID: "mer-1", Harness: legacyHarness, ReviewerHandleID: "codex-pane", AgentSessionID: "codex-native"},
 			domain.ReviewerOpenCode: {ID: "rev-open", SessionID: "mer-1", ProjectID: "mer", Harness: domain.ReviewerOpenCode, AgentSessionID: "opencode-native"},
 		},
 		runs: []domain.ReviewRun{
-			{ID: "opencode-run", ReviewID: "rev-1", SessionID: "mer-1", Harness: legacyHarness, PRURL: "https://github.com/o/r/pull/1", TargetSHA: "sha1", Status: domain.ReviewRunComplete, Verdict: domain.VerdictApproved},
+			{ID: "codex-run", ReviewID: "rev-1", SessionID: "mer-1", Harness: legacyHarness, PRURL: "https://github.com/o/r/pull/1", TargetSHA: "sha1", Status: domain.ReviewRunComplete, Verdict: domain.VerdictApproved},
 			{ID: "opencode-run", ReviewID: "rev-open", SessionID: "mer-1", Harness: domain.ReviewerOpenCode, PRURL: "https://github.com/o/r/pull/1", TargetSHA: "sha1", Status: domain.ReviewRunComplete, Verdict: domain.VerdictApproved},
 		},
 	}
@@ -965,7 +965,7 @@ func TestRestoreReviewerUsesSelectedHarnessSessionAndKillsOtherActivePane(t *tes
 	if !res.Restored || res.ReviewerHandleID != "opencode-pane" || !launcher.restored {
 		t.Fatalf("expected opencode reviewer restore: res=%+v launcher=%+v", res, launcher)
 	}
-	if !launcher.destroyed || launcher.destroyedHandle != "opencode-pane" {
+	if !launcher.destroyed || launcher.destroyedHandle != "codex-pane" {
 		t.Fatalf("expected active legacy pane to be destroyed: %+v", launcher)
 	}
 	if launcher.gotSpec.Harness != domain.ReviewerOpenCode || launcher.gotSpec.AgentSessionID != "opencode-native" {
@@ -1950,7 +1950,7 @@ func TestTriggerRespawnsOnNextCommitAfterHarnessSwitchWithNoRun(t *testing.T) {
 
 func TestTriggerLaunchFailureRecordsFailedRun(t *testing.T) {
 	store := &fakeStore{}
-	launcher := &fakeLauncher{spawnErr: fmt.Errorf("codex: %w", ports.ErrAgentBinaryNotFound)}
+	launcher := &fakeLauncher{spawnErr: fmt.Errorf("opencode: %w", ports.ErrAgentBinaryNotFound)}
 	eng := newEngineForTest(store, fakeSessions{rec: liveWorker(), ok: true}, prAt("sha1"), fakeProjects{}, launcher)
 
 	if _, err := eng.Trigger(context.Background(), "mer-1", "", domain.AgentConfig{}); !errors.Is(err, ports.ErrAgentBinaryNotFound) {
@@ -2425,7 +2425,7 @@ func TestListReturnsActiveOneShotOverrideHandle(t *testing.T) {
 
 func TestTriggerPreflightFailureRecordsFailedRun(t *testing.T) {
 	store := &fakeStore{}
-	launcher := &fakeLauncher{preflightErr: fmt.Errorf("codex: %w", ports.ErrAgentBinaryNotFound)}
+	launcher := &fakeLauncher{preflightErr: fmt.Errorf("opencode: %w", ports.ErrAgentBinaryNotFound)}
 	eng := newEngineForTest(store, fakeSessions{rec: liveWorker(), ok: true}, prAt("sha1"), fakeProjects{}, launcher)
 
 	_, err := eng.Trigger(context.Background(), "mer-1", "", domain.AgentConfig{})

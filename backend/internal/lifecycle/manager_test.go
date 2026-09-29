@@ -2620,11 +2620,11 @@ func TestPRObservation_ReArmClearsConflictSurvivesTerminatedRestore(t *testing.T
 // below). Two states are still refused: a session blocked on a live permission
 // dialog, and a waiting_input session on a harness that cannot prove that
 // prompt is a genuine idle composer rather than a masked permission decision
-// (codex maps permission-request to waiting_input) — the harness-aware gate the
+// (an ambiguous harness may map permission-request to waiting_input) — the harness-aware gate the
 // urgent route consults, so an unsolicited paste never answers a hidden dialog.
 func TestPRObservation_MergeConflictReachesNeedsInputSession(t *testing.T) {
 	const safeHarness = domain.AgentHarness("opencode")
-	const ambiguousHarness = domain.AgentHarness("opencode")
+	const ambiguousHarness = domain.AgentHarness("aider")
 	urgentGate := func(h domain.AgentHarness) bool { return h == safeHarness }
 	cases := []struct {
 		name      string

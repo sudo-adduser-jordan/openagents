@@ -3904,14 +3904,14 @@ func TestSpawnManagerVerifiesReplacementHarness(t *testing.T) {
 			ID:        "mer-9",
 			ProjectID: "mer",
 			Kind:      domain.KindManager,
-			Harness:   "opencode",
+			Harness:   "aider",
 			Metadata:  domain.SessionMetadata{Branch: "open-agents/mer-manager"},
 		},
 	}
 	svc := &Service{manager: fc, store: st}
 
 	_, err := svc.SpawnManager(context.Background(), "mer", false, "")
-	if err == nil || !strings.Contains(err.Error(), `uses harness "opencode", want "opencode"`) {
+	if err == nil || !strings.Contains(err.Error(), `uses harness "aider", want "opencode"`) {
 		t.Fatalf("SpawnManager err = %v, want harness verification failure", err)
 	}
 }

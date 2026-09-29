@@ -137,7 +137,8 @@ func (s *Store) UpdateReviewActivity(ctx context.Context, id string, state domai
 }
 
 // InsertReviewRun records a new review pass. A unique-constraint hit on the
-// (session_id, pr_url, target_sha) index (migration 0020) is surfaced as the sentinel
+// (session_id, pr_url, target_sha, harness) index (see 0001_baseline
+// idx_review_run_session_pr_sha_harness) is surfaced as the sentinel
 // domain.ErrDuplicateReviewRun so the engine can fall back to the existing run.
 func (s *Store) InsertReviewRun(ctx context.Context, r domain.ReviewRun) error {
 	s.writeMu.Lock()

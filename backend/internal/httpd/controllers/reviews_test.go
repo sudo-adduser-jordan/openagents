@@ -151,7 +151,7 @@ func newReviewTestServer(t *testing.T, svc reviewsvc.Manager) *httptest.Server {
 }
 
 func TestReviewsTrigger_MissingReviewerBinaryReturns422WithCause(t *testing.T) {
-	err := fmt.Errorf("launch reviewer: reviewer command: codex: %w", ports.ErrAgentBinaryNotFound)
+	err := fmt.Errorf("launch reviewer: reviewer command: opencode: %w", ports.ErrAgentBinaryNotFound)
 	srv := newReviewTestServer(t, &fakeReviewService{triggerErr: err})
 
 	body, status, headers := doRequest(t, srv, "POST", "/api/v1/sessions/mer-1/reviews/trigger", "")

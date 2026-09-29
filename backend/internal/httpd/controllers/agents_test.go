@@ -238,9 +238,9 @@ func TestProbeAgent(t *testing.T) {
 	}, httpd.ControlDeps{}))
 	defer srv.Close()
 
-	body, status, _ := doRequest(t, srv, http.MethodPost, "/api/v1/agents/codex/probe", "")
+	body, status, _ := doRequest(t, srv, http.MethodPost, "/api/v1/agents/opencode/probe", "")
 	if status != http.StatusOK {
-		t.Fatalf("POST /agents/codex/probe = %d, body=%s", status, body)
+		t.Fatalf("POST /agents/opencode/probe = %d, body=%s", status, body)
 	}
 	for _, want := range []string{`"supported":true`, `"installed":true`, `"id":"opencode"`, `"authStatus":"authorized"`} {
 		if !strings.Contains(string(body), want) {
@@ -261,9 +261,9 @@ func TestGetAndRefreshAgentModels(t *testing.T) {
 		wantRefresh    bool
 		wantRevalidate bool
 	}{
-		{name: "cached", method: http.MethodGet, path: "/api/v1/agents/codex/models?projectId=proj-1"},
-		{name: "refresh", method: http.MethodPost, path: "/api/v1/agents/codex/models/refresh?projectId=proj-1", wantRefresh: true},
-		{name: "revalidate", method: http.MethodPost, path: "/api/v1/agents/codex/models/refresh?projectId=proj-1&revalidate=true", wantRevalidate: true},
+		{name: "cached", method: http.MethodGet, path: "/api/v1/agents/opencode/models?projectId=proj-1"},
+		{name: "refresh", method: http.MethodPost, path: "/api/v1/agents/opencode/models/refresh?projectId=proj-1", wantRefresh: true},
+		{name: "revalidate", method: http.MethodPost, path: "/api/v1/agents/opencode/models/refresh?projectId=proj-1&revalidate=true", wantRevalidate: true},
 	} {
 		t.Run(tc.name, func(t *testing.T) {
 			catalog := &fakeAgentCatalog{models: ports.AgentModelCatalog{
@@ -302,7 +302,7 @@ func TestRefreshAgentModelsWithoutCatalogReturnsNotImplemented(t *testing.T) {
 	srv := httptest.NewServer(httpd.NewRouterWithControl(config.Config{}, log, nil, httpd.APIDeps{}, httpd.ControlDeps{}))
 	defer srv.Close()
 
-	body, status, _ := doRequest(t, srv, http.MethodPost, "/api/v1/agents/codex/models/refresh", "")
+	body, status, _ := doRequest(t, srv, http.MethodPost, "/api/v1/agents/opencode/models/refresh", "")
 	if status != http.StatusNotImplemented {
 		t.Fatalf("POST refresh without catalog = %d, body=%s", status, body)
 	}

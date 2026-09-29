@@ -49,7 +49,7 @@ func TestAgentListRefreshAndStatuses(t *testing.T) {
 				`{"id":"aider","label":"Aider","authStatus":"unauthorized"},`+
 				`{"id":"opencode","label":"OpenCode","authStatus":"authorized"},`+
 				`{"id":"goose","label":"Goose","authStatus":"unknown"},`+
-				`{"id":"opencode","label":"OpenCode","authStatus":"unknown"}],`+
+				`{"id":"amp","label":"Amp","authStatus":"unknown"}],`+
 				`"installed":[`+
 				`{"id":"aider","label":"Aider","authStatus":"unauthorized"},`+
 				`{"id":"opencode","label":"OpenCode","authStatus":"authorized"},`+
@@ -66,7 +66,7 @@ func TestAgentListRefreshAndStatuses(t *testing.T) {
 	if err != nil {
 		t.Fatalf("agent ls --refresh failed: %v stderr=%s", err, errOut)
 	}
-	for _, want := range []string{"opencode", "authorized", "aider", "needs auth", "goose", "auth unknown", "opencode", "needs install"} {
+	for _, want := range []string{"opencode", "authorized", "aider", "needs auth", "goose", "auth unknown", "amp", "needs install"} {
 		if !strings.Contains(out, want) {
 			t.Fatalf("output missing %q:\n%s", want, out)
 		}

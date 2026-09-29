@@ -1623,13 +1623,13 @@ func TestSpawn_DropsRoleModelOnHarnessMismatch(t *testing.T) {
 			})
 
 			rec, _, _, err := m.Spawn(ctx, ports.SpawnConfig{
-				ProjectID: "mer", Kind: tc.kind, Harness: domain.AgentHarness("opencode"),
+				ProjectID: "mer", Kind: tc.kind, Harness: domain.AgentHarness("aider"),
 			})
 			if err != nil {
 				t.Fatal(err)
 			}
 			if agent.lastConfig.Model != "" {
-				t.Fatalf("launch model = %q, want empty so codex uses its own default", agent.lastConfig.Model)
+				t.Fatalf("launch model = %q, want empty so the selected harness uses its own default", agent.lastConfig.Model)
 			}
 			if agent.lastConfig.Permissions != domain.PermissionModeAuto {
 				t.Fatalf("launch permissions = %q, want auto (harness-neutral)", agent.lastConfig.Permissions)

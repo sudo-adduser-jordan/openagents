@@ -99,7 +99,7 @@ func TestAgentAuthStartIgnoresRequestBody(t *testing.T) {
 			svc := &fakeAgentAuthService{startResult: agentauth.StartResult{AgentID: "opencode", Action: agentauth.ActionLogin}}
 			server := newAgentAuthTestServer(t, svc)
 
-			_, status, _ := doRequest(t, server, http.MethodPost, "/api/v1/agents/codex/auth", body)
+			_, status, _ := doRequest(t, server, http.MethodPost, "/api/v1/agents/opencode/auth", body)
 			if status != http.StatusCreated {
 				t.Fatalf("POST agent auth = %d, want %d", status, http.StatusCreated)
 			}
