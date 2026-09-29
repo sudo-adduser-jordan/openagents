@@ -25,26 +25,14 @@ import (
 )
 
 func TestMain(m *testing.M) {
-	if len(os.Args) >= 7 && os.Args[1] == "chat-host" {
-		protocol := persistenthost.ProtocolRaw
-		fingerprint := ""
-		separator := 5
-		if os.Args[5] == string(persistenthost.ProtocolACP) {
-			protocol = persistenthost.ProtocolACP
-			if len(os.Args) > 6 {
-				fingerprint = os.Args[6]
-			}
-			separator = 7
-		}
-		if len(os.Args) <= separator || os.Args[separator] != "--" {
+	if len(os.Args) >= 2 && os.Args[1] == "chat-host" {
+		cfg, err := persistenthost.ParseHostArgs(os.Args[2:])
+		if err != nil {
+			_, _ = fmt.Fprintln(os.Stderr, err)
 			os.Exit(2)
 		}
-		err := persistenthost.Run(context.Background(), persistenthost.Config{
-			SessionID: os.Args[2], DataDir: os.Args[3], Workdir: os.Args[4],
-			Env: os.Environ(), Argv: os.Args[separator+1:], Protocol: protocol,
-			OwnershipFingerprint: fingerprint,
-		})
-		if err != nil {
+		cfg.Env = os.Environ()
+		if err := persistenthost.Run(context.Background(), cfg); err != nil {
 			_, _ = fmt.Fprintln(os.Stderr, err)
 			os.Exit(1)
 		}
@@ -168,6 +156,7 @@ func testACPProcessDetach(t *testing.T, harness domain.AgentHarness) {
 	first, err := firstDriver.Start(context.Background(), ports.ChatStartConfig{
 		SessionID: "persistent-acp-e2e", DataDir: dataDir, WorkspacePath: workdir,
 		ProviderScopeID: "scope", PrepareEnv: prepareEnv,
+		HostOwner: ports.ChatHostOwner{PID: os.Getpid(), Token: "driver-test-owner"},
 	})
 	if err != nil {
 		t.Fatalf("Start: %v", err)
@@ -293,6 +282,7 @@ func TestPersistentACPDriverReplaysOnePermissionAndOriginalResponder(t *testing.
 	first, err := New(cfg, log).Start(context.Background(), ports.ChatStartConfig{
 		SessionID: "persistent-acp-approval", DataDir: dataDir, WorkspacePath: workdir,
 		ProviderScopeID: "scope",
+		HostOwner:       ports.ChatHostOwner{PID: os.Getpid(), Token: "driver-test-owner"},
 	})
 	if err != nil {
 		t.Fatalf("Start: %v", err)

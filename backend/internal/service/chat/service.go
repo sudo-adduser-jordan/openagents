@@ -7,11 +7,13 @@ import (
 	"fmt"
 	"log/slog"
 	"maps"
+	"os"
 	"slices"
 	"strings"
 	"sync"
 	"time"
 
+	"github.com/sudo-adduser-jordan/open-agents/backend/internal/adapters/chatdriver/persistenthost"
 	"github.com/sudo-adduser-jordan/open-agents/backend/internal/domain"
 	"github.com/sudo-adduser-jordan/open-agents/backend/internal/ports"
 )
@@ -46,6 +48,10 @@ type Service struct {
 	now              Clock
 	onAccountChanged func(domain.SessionID, string, domain.AgentHarness)
 	stopProviderHost func(context.Context, domain.SessionID) error
+	// hostOwner identifies this daemon instance to the persistent provider
+	// hosts it spawns. Minted once per service: every host spawned by this
+	// daemon shares it, and no other daemon instance can mint the same token.
+	hostOwner ports.ChatHostOwner
 
 	mu           sync.RWMutex
 	controllers  map[domain.SessionID]*Controller
@@ -124,11 +130,19 @@ func New(opts Options) *Service {
 		now:              now,
 		onAccountChanged: opts.OnAccountChanged,
 		stopProviderHost: opts.StopProviderHost,
+		hostOwner:        newHostOwner(),
 		controllers:      make(map[domain.SessionID]*Controller),
 		startConfigs:     make(map[domain.SessionID]StartConfig),
 		gates:            make(map[domain.SessionID]controllerGate),
 		probed:           make(map[domain.AgentHarness]ports.ChatCapabilities),
 	}
+}
+
+// newHostOwner mints this daemon instance's persistent-host ownership
+// identity: its own PID plus a per-construction random token.
+func newHostOwner() ports.ChatHostOwner {
+	pid := os.Getpid()
+	return ports.ChatHostOwner{PID: pid, Token: persistenthost.NewOwnerToken(pid)}
 }
 
 func (s *Service) controllerGate(id domain.SessionID) controllerGate {
@@ -549,6 +563,7 @@ func (s *Service) Start(ctx context.Context, cfg StartConfig) (*Controller, erro
 			ProviderIDsScoped:      providerBoundaryID != "" || activeBranch.ProviderIDsScoped,
 			AdditionalDirectories:  cfg.AdditionalDirectories,
 			MCPServers:             cfg.MCPServers,
+			HostOwner:              s.hostOwner,
 		})
 	} else {
 		conv, err = driver.Start(ctx, ports.ChatStartConfig{
@@ -566,6 +581,7 @@ func (s *Service) Start(ctx context.Context, cfg StartConfig) (*Controller, erro
 			ProviderScopeID:       providerScopeID,
 			AdditionalDirectories: cfg.AdditionalDirectories,
 			MCPServers:            cfg.MCPServers,
+			HostOwner:             s.hostOwner,
 		})
 	}
 	if err != nil {

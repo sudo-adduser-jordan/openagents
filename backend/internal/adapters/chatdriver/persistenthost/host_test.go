@@ -15,32 +15,27 @@ import (
 )
 
 func TestMain(m *testing.M) {
-	if len(os.Args) >= 6 && os.Args[1] == "chat-host" {
-		protocol := ProtocolRaw
-		fingerprint := ""
-		separator := 5
-		if len(os.Args) > 5 && os.Args[5] == string(ProtocolACP) {
-			protocol = ProtocolACP
-			if len(os.Args) > 6 {
-				fingerprint = os.Args[6]
-			}
-			separator = 7
-		}
-		if len(os.Args) <= separator || os.Args[separator] != "--" {
+	if len(os.Args) >= 2 && os.Args[1] == "chat-host" {
+		cfg, err := ParseHostArgs(os.Args[2:])
+		if err != nil {
+			_, _ = fmt.Fprintln(os.Stderr, err)
 			os.Exit(2)
 		}
-		err := Run(context.Background(), Config{
-			SessionID: os.Args[2], DataDir: os.Args[3], Workdir: os.Args[4],
-			Env: os.Environ(), Argv: os.Args[separator+1:], Protocol: protocol,
-			OwnershipFingerprint: fingerprint,
-		})
-		if err != nil {
+		cfg.Env = os.Environ()
+		if err := Run(context.Background(), cfg); err != nil {
 			_, _ = fmt.Fprintln(os.Stderr, err)
 			os.Exit(1)
 		}
 		os.Exit(0)
 	}
 	os.Exit(m.Run())
+}
+
+// testOwner names the test process as a host owner, so spawned hosts take the
+// production wire path (owner PID + token round-trip through hostArgs) while
+// the watchdog stays inert: the test process outlives every host it spawns.
+func testOwner() Owner {
+	return Owner{PID: os.Getpid(), Token: fmt.Sprintf("test-owner-%d", os.Getpid())}
 }
 
 func TestProviderHelper(t *testing.T) {
@@ -276,8 +271,9 @@ func readFrame(t *testing.T, reader *bufio.Reader) []byte {
 
 func TestShutdownReleasesHostBeforeFreshReplacement(t *testing.T) {
 	cfg := Config{SessionID: "replace", DataDir: t.TempDir(), Workdir: t.TempDir(),
-		Env:  append(os.Environ(), "OPEN_AGENTS_CHAT_HOST_PROVIDER_HELPER=1", "OPEN_AGENTS_CHAT_HOST_DELAY_EXIT=1"),
-		Argv: []string{os.Args[0], "-test.run=TestProviderHelper"}}
+		Owner: testOwner(),
+		Env:   append(os.Environ(), "OPEN_AGENTS_CHAT_HOST_PROVIDER_HELPER=1", "OPEN_AGENTS_CHAT_HOST_DELAY_EXIT=1"),
+		Argv:  []string{os.Args[0], "-test.run=TestProviderHelper"}}
 	first, err := ConnectOrStart(context.Background(), cfg)
 	if err != nil {
 		t.Fatal(err)
@@ -382,8 +378,9 @@ func TestConnectOrStartLaunchesDetachedHost(t *testing.T) {
 	dataDir := t.TempDir()
 	cfg := Config{
 		SessionID: "detached", DataDir: dataDir, Workdir: t.TempDir(),
-		Env:  append(os.Environ(), "OPEN_AGENTS_CHAT_HOST_PROVIDER_HELPER=1"),
-		Argv: []string{os.Args[0], "-test.run=TestProviderHelper"},
+		Owner: testOwner(),
+		Env:   append(os.Environ(), "OPEN_AGENTS_CHAT_HOST_PROVIDER_HELPER=1"),
+		Argv:  []string{os.Args[0], "-test.run=TestProviderHelper"},
 	}
 	transport, err := ConnectOrStart(context.Background(), cfg)
 	if err != nil {
@@ -607,7 +604,8 @@ func TestConnectOrStartPreparesOnlyWhenLaunchingProvider(t *testing.T) {
 		dataDir := t.TempDir()
 		cfg := Config{
 			SessionID: "prepare-new", DataDir: dataDir, Workdir: t.TempDir(),
-			Env: os.Environ(), Argv: []string{os.Args[0], "-test.run=TestProviderHelper"},
+			Owner: testOwner(),
+			Env:   os.Environ(), Argv: []string{os.Args[0], "-test.run=TestProviderHelper"},
 		}
 		prepareCalls := 0
 		cfg.Prepare = func(context.Context) (PreparedProvider, error) {

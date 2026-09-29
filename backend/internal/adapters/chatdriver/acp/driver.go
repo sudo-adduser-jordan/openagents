@@ -50,6 +50,10 @@ type LaunchConfig struct {
 	Permissions     ports.PermissionMode
 	SystemPrompt    string
 	ProviderScopeID string
+	// HostOwner is the daemon instance that will own the persistent provider
+	// host. It is recorded in the host descriptor so the host exits with its
+	// owner and other daemons refuse to adopt it.
+	HostOwner ports.ChatHostOwner
 }
 
 // Config binds one harness to an ACP agent implementation.
@@ -201,7 +205,7 @@ func (d *Driver) Start(ctx context.Context, cfg ports.ChatStartConfig) (ports.Ch
 		SessionID: cfg.SessionID, Kind: cfg.Kind, WorkflowMode: cfg.WorkflowMode, DataDir: cfg.DataDir, WorkspacePath: cfg.WorkspacePath,
 		Env:   cfg.Env,
 		Model: cfg.Model, Permissions: cfg.Permissions, SystemPrompt: cfg.SystemPrompt,
-		ProviderScopeID: cfg.ProviderScopeID,
+		ProviderScopeID: cfg.ProviderScopeID, HostOwner: cfg.HostOwner,
 	}
 	conv, init, live, err := d.connect(ctx, launchCfg, cfg.PrepareEnv)
 	if err != nil {
@@ -290,7 +294,7 @@ func (d *Driver) Resume(ctx context.Context, cfg ports.ChatResumeConfig) (ports.
 		SessionID: cfg.SessionID, Kind: cfg.Kind, WorkflowMode: cfg.WorkflowMode, DataDir: cfg.DataDir, WorkspacePath: cfg.WorkspacePath,
 		Env:   cfg.Env,
 		Model: cfg.Model, Permissions: cfg.Permissions, SystemPrompt: cfg.SystemPrompt,
-		ProviderScopeID: cfg.ProviderScopeID,
+		ProviderScopeID: cfg.ProviderScopeID, HostOwner: cfg.HostOwner,
 	}
 	conv, init, live, err := d.connect(ctx, launchCfg, cfg.PrepareEnv)
 	if err != nil {
@@ -516,6 +520,7 @@ func (d *Driver) connectProcess(
 	hostConfig := persistenthost.Config{
 		SessionID: string(cfg.SessionID), DataDir: cfg.DataDir, Workdir: cfg.WorkspacePath,
 		Protocol: persistenthost.ProtocolACP, OwnershipFingerprint: identity,
+		Owner: persistenthost.Owner{PID: cfg.HostOwner.PID, Token: cfg.HostOwner.Token},
 		Prepare: func(prepareCtx context.Context) (persistenthost.PreparedProvider, error) {
 			if prepareEnv != nil {
 				env, err := prepareEnv(prepareCtx)
@@ -542,6 +547,7 @@ func (d *Driver) connectProcess(
 	transport, err := d.connectHost(ctx, hostConfig)
 	if err != nil {
 		if errors.Is(err, persistenthost.ErrOwnershipInconclusive) ||
+			errors.Is(err, persistenthost.ErrForeignOwner) ||
 			errors.Is(err, persistenthost.ErrAttached) ||
 			errors.Is(err, persistenthost.ErrIncompatible) ||
 			errors.Is(err, persistenthost.ErrUnauthorized) {

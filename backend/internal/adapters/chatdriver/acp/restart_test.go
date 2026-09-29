@@ -24,6 +24,10 @@ func restartFixture(t *testing.T, env map[string]string) (Config, ports.ChatStar
 	start := ports.ChatStartConfig{
 		SessionID: "restart-test", DataDir: t.TempDir(), WorkspacePath: t.TempDir(),
 		ProviderScopeID: "scope", Permissions: ports.PermissionModeDefault,
+		// Real hosts are spawned: name the test process as the owner so the
+		// child accepts its wire args. The watchdog stays inert because the
+		// test process outlives every host.
+		HostOwner: ports.ChatHostOwner{PID: os.Getpid(), Token: "restart-test-owner"},
 	}
 	return cfg, start
 }

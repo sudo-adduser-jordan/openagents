@@ -265,6 +265,20 @@ func MissingCapabilitiesForPermissions(caps ChatCapabilities, permissions Permis
 	return out
 }
 
+// ChatHostOwner identifies the single daemon process that owns a persistent
+// provider host. The host exits once its owner is gone, so provider processes
+// die with the app instead of lingering as orphans across restarts; a daemon
+// never adopts a host owned by another live daemon, so two app instances stay
+// separated even if they ever observed the same state directory.
+type ChatHostOwner struct {
+	// PID is the owning daemon's process id. Zero disables owner tracking
+	// (tests and legacy hosts).
+	PID int
+	// Token is a per-boot random identity. Empty disables owner matching
+	// (legacy hosts predate it and keep the old adopt-if-compatible behavior).
+	Token string
+}
+
 // ChatStartConfig is what a driver needs to open a new provider conversation.
 type ChatStartConfig struct {
 	SessionID domain.SessionID
@@ -310,6 +324,10 @@ type ChatStartConfig struct {
 	// MCPServers are client-supplied tool servers for this provider conversation.
 	// User/provider configuration still loads normally; these are additive.
 	MCPServers []ChatMCPServerConfig
+	// HostOwner is the daemon instance that will own the persistent provider
+	// host. Persistent drivers record it in the host descriptor so the host
+	// can exit with its owner and other daemons refuse to adopt it.
+	HostOwner ChatHostOwner
 }
 
 // ChatResumeConfig reattaches to a provider conversation after a restart.
@@ -338,6 +356,9 @@ type ChatResumeConfig struct {
 	ProviderScopeID       string
 	AdditionalDirectories []string
 	MCPServers            []ChatMCPServerConfig
+	// HostOwner is the daemon instance that will own the persistent provider
+	// host. See ChatStartConfig.HostOwner.
+	HostOwner ChatHostOwner
 }
 
 // ChatMCPServerConfig is the provider-neutral session-setup shape for a tool

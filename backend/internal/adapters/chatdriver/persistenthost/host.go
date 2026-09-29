@@ -1,7 +1,10 @@
-// Package persistenthost keeps a provider stdio process alive while Open Agents's daemon
-// is replaced. Raw protocols are forwarded unchanged. ACP uses a small relay
-// that preserves connection-scoped initialization, session, request-correlation,
-// and in-flight prompt state across daemon attachments.
+// Package persistenthost keeps a provider stdio process alive across daemon
+// attachments while its owning daemon lives. A host exits once its owner is
+// gone, so provider processes die with the app instead of lingering as
+// orphans; a daemon never adopts a host owned by another live daemon, so two
+// app instances stay separated. Raw protocols are forwarded unchanged. ACP
+// uses a small relay that preserves connection-scoped initialization, session,
+// request-correlation, and in-flight prompt state across daemon attachments.
 package persistenthost
 
 import (
@@ -74,6 +77,12 @@ var (
 	// client could not prove that it is safe to replace. Callers must preserve the
 	// durable session rather than treating the failed attachment as provider death.
 	ErrOwnershipInconclusive = errors.New("chat host ownership is inconclusive")
+	// ErrForeignOwner means the host belongs to another live daemon instance.
+	// Callers must not attach to, adopt, or shut down that host: the two app
+	// instances are separated, and the foreign host is someone else's provider.
+	// Like ErrOwnershipInconclusive, it preserves the durable session for retry
+	// rather than reporting provider death.
+	ErrForeignOwner = errors.New("chat host owned by another live daemon")
 )
 
 // Descriptor is the private connection record published by a running host.
@@ -82,6 +91,8 @@ type Descriptor struct {
 	SessionID            string    `json:"sessionId"`
 	Protocol             Protocol  `json:"protocol,omitempty"`
 	OwnershipFingerprint string    `json:"ownershipFingerprint,omitempty"`
+	OwnerPID             int       `json:"ownerPid,omitempty"`
+	OwnerToken           string    `json:"ownerToken,omitempty"`
 	Address              string    `json:"address"`
 	Token                string    `json:"token"`
 	PID                  int       `json:"pid"`
@@ -97,7 +108,12 @@ type Config struct {
 	Argv                 []string
 	Protocol             Protocol
 	OwnershipFingerprint string
-	Prepare              func(context.Context) (PreparedProvider, error)
+	// Owner is the daemon instance that owns the host. A valid owner binds the
+	// host's lifetime to that daemon and fences other daemons out; the zero
+	// value keeps the legacy adopt-if-compatible behavior for tests and
+	// pre-ownership hosts.
+	Owner   Owner
+	Prepare func(context.Context) (PreparedProvider, error)
 }
 
 // PreparedProvider is resolved only when no compatible live host can be
@@ -285,45 +301,55 @@ func validateDescriptor(cfg Config, d Descriptor) error {
 // current Open Agents executable. Failed/incompatible probes never terminate that host.
 func ConnectOrStart(ctx context.Context, cfg Config) (*Transport, error) {
 	if d, err := readDescriptor(cfg.DataDir, cfg.SessionID); err == nil {
-		if err := validateDescriptor(cfg, d); err != nil && processalive.Alive(d.PID) {
-			return nil, err
-		}
-		transport, attachErr := attach(ctx, d, true)
-		if attachErr == nil {
-			return transport, nil
-		}
-		if errors.Is(attachErr, ErrAttached) {
-			// Desktop updater handoff can briefly start the replacement daemon
-			// before the old controller has detached. Wait for exclusive ownership;
-			// never turn that overlap into a competing provider process.
-			deadline := time.Now().Add(startupTimeout)
-			for time.Now().Before(deadline) && processalive.Alive(d.PID) {
-				timer := time.NewTimer(20 * time.Millisecond)
-				select {
-				case <-ctx.Done():
-					timer.Stop()
-					return nil, ctx.Err()
-				case <-timer.C:
-				}
-				transport, attachErr = attach(ctx, d, true)
-				if attachErr == nil {
-					return transport, nil
-				}
-				if !errors.Is(attachErr, ErrAttached) {
-					break
+		if isForeignOwner(cfg.Owner, d) {
+			// Another daemon instance owns this host. Never adopt it: wait
+			// for the owner to go away (a desktop-updater handoff overlaps
+			// briefly), then spawn a fresh host below. Failing here preserves
+			// the durable session for retry; it never reports provider death.
+			if err := awaitForeignHostRelease(ctx, cfg, d); err != nil {
+				return nil, err
+			}
+		} else {
+			if err := validateDescriptor(cfg, d); err != nil && processalive.Alive(d.PID) {
+				return nil, err
+			}
+			transport, attachErr := attach(ctx, d, true)
+			if attachErr == nil {
+				return transport, nil
+			}
+			if errors.Is(attachErr, ErrAttached) {
+				// Desktop updater handoff can briefly start the replacement daemon
+				// before the old controller has detached. Wait for exclusive ownership;
+				// never turn that overlap into a competing provider process.
+				deadline := time.Now().Add(startupTimeout)
+				for time.Now().Before(deadline) && processalive.Alive(d.PID) {
+					timer := time.NewTimer(20 * time.Millisecond)
+					select {
+					case <-ctx.Done():
+						timer.Stop()
+						return nil, ctx.Err()
+					case <-timer.C:
+					}
+					transport, attachErr = attach(ctx, d, true)
+					if attachErr == nil {
+						return transport, nil
+					}
+					if !errors.Is(attachErr, ErrAttached) {
+						break
+					}
 				}
 			}
+			// A failed socket probe is not proof that a provider is dead. Only an OS
+			// process observation permits clearing the descriptor and falling back to
+			// native resume in a new host.
+			if processalive.Alive(d.PID) {
+				return nil, fmt.Errorf("%w: %w", ErrOwnershipInconclusive, attachErr)
+			}
+			// Do not remove stale ownership files here. Another starter may have
+			// already reclaimed the dead lock and published a replacement descriptor
+			// since this client read d. The detached host's O_EXCL lock acquisition is
+			// the single authority for reclaiming dead ownership.
 		}
-		// A failed socket probe is not proof that a provider is dead. Only an OS
-		// process observation permits clearing the descriptor and falling back to
-		// native resume in a new host.
-		if processalive.Alive(d.PID) {
-			return nil, fmt.Errorf("%w: %w", ErrOwnershipInconclusive, attachErr)
-		}
-		// Do not remove stale ownership files here. Another starter may have
-		// already reclaimed the dead lock and published a replacement descriptor
-		// since this client read d. The detached host's O_EXCL lock acquisition is
-		// the single authority for reclaiming dead ownership.
 	} else if !errors.Is(err, os.ErrNotExist) {
 		// A malformed or unreadable ownership record is not proof that no host
 		// exists. Fail closed instead of launching a competing process.
@@ -586,7 +612,8 @@ func Run(ctx context.Context, cfg Config) error {
 	d := Descriptor{
 		Version: ProtocolVersion, SessionID: cfg.SessionID, Protocol: cfg.Protocol,
 		OwnershipFingerprint: cfg.OwnershipFingerprint,
-		Address:              listener.Addr().String(), Token: token, PID: os.Getpid(), StartedAt: time.Now().UTC(),
+		OwnerPID:             cfg.Owner.PID, OwnerToken: cfg.Owner.Token,
+		Address: listener.Addr().String(), Token: token, PID: os.Getpid(), StartedAt: time.Now().UTC(),
 	}
 	if err := writeDescriptor(cfg.DataDir, d); err != nil {
 		_ = killProviderProcess(context.WithoutCancel(ctx), child)
@@ -613,6 +640,9 @@ func Run(ctx context.Context, cfg Config) error {
 	go func() { providerDone <- h.forwardProvider(stdout) }()
 	acceptDone := make(chan error, 1)
 	go func() { acceptDone <- h.accept() }()
+	if cfg.Owner.Valid() {
+		go h.watchOwner(cfg.Owner)
+	}
 
 	stopProvider := func() {
 		_ = stdin.Close()
@@ -915,8 +945,13 @@ func (h *host) bufferFrameLocked(frame []byte) {
 }
 
 // hostArgs keeps the Unix and Windows detached entry points on one wire format.
+// It must stay in lockstep with ParseHostArgs: the position of every field is
+// part of the internal spawn contract.
 func hostArgs(cfg Config) []string {
-	args := []string{"chat-host", cfg.SessionID, cfg.DataDir, cfg.Workdir}
+	args := []string{
+		"chat-host", cfg.SessionID, cfg.DataDir, cfg.Workdir,
+		strconv.Itoa(cfg.Owner.PID), cfg.Owner.Token,
+	}
 	if cfg.Protocol != ProtocolRaw {
 		args = append(args, string(cfg.Protocol), cfg.OwnershipFingerprint)
 	}

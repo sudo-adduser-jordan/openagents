@@ -41,20 +41,36 @@ func TestChatTurnSurvivesGracefulUpdaterStyleRestart(t *testing.T) {
 	})
 	hostBefore := persistentHostPID(t, dataDir, session)
 	d.stop()
-	if !processAlive(hostBefore) {
-		t.Fatalf("detached host %d died with the old daemon", hostBefore)
+	// Quitting the app takes its provider processes with it: the ownerless
+	// host must exit after its grace instead of lingering for adoption.
+	deadline := time.Now().Add(30 * time.Second)
+	for processAlive(hostBefore) {
+		if time.Now().After(deadline) {
+			t.Fatalf("detached host %d outlived its daemon", hostBefore)
+		}
+		time.Sleep(200 * time.Millisecond)
 	}
 
 	restarted := startDaemon(t, dataDir)
 	restarted.awaitLiveController(session, 90*time.Second)
-	finished := restarted.awaitConversation(session, 3*time.Minute, "the detached real OpenCode turn to finish", func(s snapshot) bool {
+	// The replacement daemon spawns a fresh host and resumes natively from
+	// durable state. The turn the old provider was killed mid-flight settles
+	// as interrupted rather than completing.
+	settled := restarted.awaitConversation(session, 2*time.Minute, "the interrupted turn to settle", func(s snapshot) bool {
 		return terminal(s.Turns[len(s.Turns)-1].State)
 	})
+	lost := settled.Turns[len(settled.Turns)-1]
+	if lost.State == "completed" || contains(settled.assistantText(), "SURVIVED-GRACEFUL") {
+		t.Fatalf("killed provider falsely completed the interrupted turn:\n%s", describe(settled))
+	}
+	send(t, restarted, session, "Reply with exactly: RECOVERED-AFTER-RESTART", "graceful-after")
+	recovered := restarted.awaitConversation(session, 3*time.Minute, "a turn after restart", func(s snapshot) bool {
+		return contains(s.assistantText(), "RECOVERED-AFTER-RESTART")
+	})
 	hostAfter := persistentHostPID(t, dataDir, session)
-	last := finished.Turns[len(finished.Turns)-1]
-	t.Logf("graceful updater simulation: host_pid=%d->%d turn_state=%s", hostBefore, hostAfter, last.State)
-	if hostAfter != hostBefore || last.State != "completed" || !contains(finished.assistantText(), "SURVIVED-GRACEFUL") {
-		t.Fatalf("real OpenCode turn did not survive graceful replacement:\n%s", describe(finished))
+	t.Logf("graceful restart: old_host_pid=%d new_host_pid=%d interrupted_state=%s", hostBefore, hostAfter, lost.State)
+	if hostAfter == hostBefore || !contains(recovered.assistantText(), "RECOVERED-AFTER-RESTART") {
+		t.Fatalf("session did not recover through a fresh host:\n%s", describe(recovered))
 	}
 }
 

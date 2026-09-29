@@ -72,7 +72,10 @@ func TestChatHostRejectsMalformedInternalArgumentsAsUsage(t *testing.T) {
 	for _, args := range [][]string{
 		{"chat-host"},
 		{"chat-host", "session", "/tmp/data", "/tmp/work", "provider"},
-		{"chat-host", "session", "/tmp/data", "/tmp/work", "not-a-separator", "provider"},
+		{"chat-host", "session", "/tmp/data", "/tmp/work", "123", "token", "not-a-separator", "provider"},
+		{"chat-host", "session", "/tmp/data", "/tmp/work", "not-a-pid", "token", "--", "provider"},
+		{"chat-host", "session", "/tmp/data", "/tmp/work", "123", "", "--", "provider"},
+		{"chat-host", "session", "/tmp/data", "/tmp/work", "123", "token", "acp", "--", "provider"},
 	} {
 		t.Run(strings.Join(args, " "), func(t *testing.T) {
 			_, _, err := executeCLI(t, Deps{}, args...)

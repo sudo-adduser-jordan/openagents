@@ -518,10 +518,12 @@ func Run() error {
 	managedPreview.Close()
 	<-previewDone
 	// Detach chat controllers before stopping the lifecycle stack. Persistent
-	// provider hosts deliberately survive this daemon and preserve in-flight
-	// turns; the replacement daemon reconnects to the same initialized stream and
-	// consumes host-replayed output. Explicit session termination, not daemon
-	// shutdown, destroys them.
+	// provider hosts are owned by this daemon instance: each host exits once
+	// its owner is gone (after a short grace so a replacement daemon booting
+	// in the same moment still finds the provider alive), and a replacement
+	// daemon never adopts a host owned by another live daemon. Explicit
+	// session termination, not daemon shutdown, is still the only path that
+	// destroys a host immediately.
 	chatStopCtx, chatCancel := context.WithTimeout(context.Background(), cfg.ShutdownTimeout)
 	chatSvc.StopAll(chatStopCtx)
 	chatCancel()
