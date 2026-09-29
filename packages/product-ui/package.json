@@ -16,12 +16,6 @@
 			"import": "./dist/index.js"
 		}
 	},
-	"scripts": {
-		"build": "vite build --config vite.build.config.ts && tsc -p tsconfig.build.json",
-		"prepack": "npm run build",
-		"test": "vitest run",
-		"typecheck": "tsc --noEmit"
-	},
 	"dependencies": {
 		"clsx": "^2.1.1",
 		"tailwind-merge": "^3.6.0"

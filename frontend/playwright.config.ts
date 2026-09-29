@@ -12,9 +12,11 @@ export default defineConfig({
 		baseURL: `http://127.0.0.1:${port}`,
 	},
 	webServer: {
-		// dev:web serves the renderer alone (VITE_NO_ELECTRON=1) — no Electron child to
+		// dev-web serves the renderer alone (VITE_NO_ELECTRON=1) — no Electron child to
 		// launch, which is all the browser-based e2e suite needs.
-		command: `npm run dev:web -- --port ${port} --host 127.0.0.1`,
+		// Runs from the repo root: the Taskfile lives there, not in frontend/.
+		command: `task frontend:dev-web -- --port ${port} --host 127.0.0.1`,
+		cwd: "..",
 		port,
 		reuseExistingServer: !process.env.CI,
 	},

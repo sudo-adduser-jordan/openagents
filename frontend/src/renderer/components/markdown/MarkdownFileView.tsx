@@ -22,7 +22,7 @@
  * combined stylesheet follows `prefers-color-scheme`, and `main.ts` already
  * drives Electron's `nativeTheme.themeSource` from Open Agents's own theme preference,
  * so this renderer's `prefers-color-scheme` already tracks Open Agents's theme, not the
- * raw OS setting. (In `npm run dev:web` there is no `nativeTheme`, so it follows
+ * raw OS setting. (In `task frontend:dev-web` there is no `nativeTheme`, so it follows
  * the OS directly.)
  */
 

@@ -752,7 +752,7 @@ function workerPreviewLines(session: WorkspaceSession | undefined, provider: str
 			"frontend/src/renderer/hooks/useBrowserView.ts: preview revision re-navigates the view",
 			"$ open-agents preview http://localhost:5173",
 			"DONE preview target set for demo-review-stack",
-			"$ npm --prefix frontend run typecheck",
+			"$ task frontend:typecheck",
 			"PASS TypeScript project references are clean",
 			"TODO wait for reviewer on PR #320 before merging the stack",
 		];
@@ -762,7 +762,7 @@ function workerPreviewLines(session: WorkspaceSession | undefined, provider: str
 			`$ ${provider} --continue`,
 			"Reading renderer board and inspector components...",
 			"Updated demo workspace data for README screenshots",
-			"$ npm --prefix frontend test -- SessionsBoard SessionInspector",
+			"$ task frontend:test -- SessionsBoard SessionInspector",
 			"PASS 18 tests passed",
 			"DONE board has Working, Needs you, In review, and Ready to merge populated",
 		];

@@ -19,16 +19,15 @@ are committed so the docs render without a build step.
 ## Regenerating
 
 ```sh
-cd frontend
-npm install
-npm run diagrams
+task install
+task frontend:diagrams
 ```
 
-`npm run diagrams` writes to `docs/assets/diagrams/`. Pass a substring to
+`task frontend:diagrams` writes to `docs/assets/diagrams/`. Pass a substring to
 regenerate only matching scenes:
 
 ```sh
-npm run diagrams -- handoff
+task frontend:diagrams -- handoff
 ```
 
 ## How it works
@@ -51,7 +50,7 @@ internal `require("node:fs")` calls.
 
 ## Editing a diagram
 
-Do not hand-edit the `.excalidraw` or `.svg` files — the next `npm run diagrams`
+Do not hand-edit the `.excalidraw` or `.svg` files — the next `task frontend:diagrams`
 overwrites them. Change the matching file in `scenes/` and regenerate.
 
 If you would rather edit visually: open the `.excalidraw` file in Excalidraw,

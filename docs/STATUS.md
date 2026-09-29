@@ -17,10 +17,10 @@ The local gate is the backend Go build and race-enabled test suite:
 cd backend && go build ./... && go test -race ./...
 ```
 
-`npm run lint` (from the repo root) runs `go test ./...` plus golangci-lint.
-Frontend checks live under `frontend/` (`npm run typecheck`, `npm run build`).
+`task backend:lint` (from the repo root) runs `go test ./...` plus golangci-lint.
+Frontend checks are `task frontend:typecheck` and `task frontend:package`.
 See [`AGENTS.md`](../AGENTS.md) for the regen workflow when touching the API
-surface (`npm run sqlc`, `npm run api`).
+surface (`task db:sqlc`, `task api`).
 
 ## Shipped
 

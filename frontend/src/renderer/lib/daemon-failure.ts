@@ -30,7 +30,7 @@ export function daemonFailureTitle(status: DaemonStatus): string {
 export function daemonFailureHint(status: DaemonStatus): string {
 	switch (status.code) {
 		case "binary_missing":
-			return "Run npm run build:daemon to rebuild the daemon.";
+			return "Run task frontend:build-daemon to rebuild the daemon.";
 		case "spawn_failed":
 		case "exited":
 			return "";
@@ -42,6 +42,6 @@ export function daemonFailureHint(status: DaemonStatus): string {
 		case "identity_mismatch":
 			return "Stop the conflicting daemon, then restart the desktop app.";
 		default:
-			return "Check the terminal where you ran npm run dev for details.";
+			return "Check the terminal where you ran task frontend:dev for details.";
 	}
 }

@@ -1,7 +1,7 @@
 # Development Guide
 
 ```sh
-(cd backend && go run .) & (cd frontend && npm i; npm run dev)
+(task backend:run) & (task install && task frontend:dev)
 ```
 
 How to set up, build, run, and test Open Agents locally.
@@ -50,7 +50,7 @@ open-agents/
 ```bash
 git clone https://github.com/sudo-adduser-jordan/open-agents.git
 cd open-agents
-npm ci
+task install   # npm ci in frontend/ and packages/product-ui/ (needs go-task; binary is go-task on some distros)
 ```
 
 ### Branching
@@ -129,17 +129,17 @@ go test -v ./internal/cli/ # a specific package
 ### Lint
 
 ```bash
-npm run lint
+task backend:lint
 ```
 
 ### Code generation
 
 ```bash
 # Regenerate sqlc code after editing queries or schema
-npm run sqlc
+task db:sqlc
 
 # Regenerate OpenAPI spec and frontend TypeScript types
-npm run api
+task api
 ```
 
 ## Frontend
@@ -147,63 +147,52 @@ npm run api
 ### Install dependencies
 
 ```bash
-cd frontend
-npm install
+task install   # npm ci in frontend/ and packages/product-ui/
 ```
 
 ### Run in development mode
 
 ```bash
-cd frontend
-npm run dev            # Electron dev mode
-npm run dev:web        # Web-only (no Electron, for quick UI iteration)
+task frontend:dev        # Electron dev mode
+task frontend:dev-web    # Web-only (no Electron, for quick UI iteration)
 ```
 
 ### Build
 
 ```bash
-cd frontend
-npm run package        # Package for current platform
-npm run make           # Create distributables when platform packaging deps are installed
+task frontend:package    # Package for current platform
+task frontend:make       # Create distributables when platform packaging deps are installed
 ```
 
-On a fresh Linux machine, treat `npm run package` as the default local build
-path. `npm run make` also needs Linux packaging tools that are not provided by a
+On a fresh Linux machine, treat `task frontend:package` as the default local build
+path. `task frontend:make` also needs Linux packaging tools that are not provided by a
 minimal setup or by `nix develop` today:
 
 - `rpm` / `rpmbuild` for the RPM target
 - the usual distro packaging toolchain required by Electron Forge makers
 
-CI installs `rpm` explicitly before running `npm run make`. Do the same locally
-if you need Linux distributables, or skip `npm run make` on a fresh setup.
+CI installs `rpm` explicitly before running `task frontend:make`. Do the same locally
+if you need Linux distributables, or skip `task frontend:make` on a fresh setup.
 
 ### Run tests
 
 ```bash
-cd frontend
-npm run test           # Vitest unit tests in a simulated renderer environment
-npm run test:e2e       # Playwright browser-based renderer E2E tests
-npx playwright show-report  # View Playwright report
+task frontend:test       # Vitest unit tests in a simulated renderer environment
+task frontend:test-e2e   # Playwright browser-based renderer E2E tests
+(cd frontend && ./node_modules/.bin/playwright show-report)  # View Playwright report
 ```
 
 ### Typecheck
 
 ```bash
-cd frontend
-npm run typecheck
-```
-
-Or from repo root:
-
-```bash
-npm run frontend:typecheck
+task frontend:typecheck
 ```
 
 ## Running end-to-end
 
-1. Start the desktop app with `npm run dev` from `frontend/`.
+1. Start the desktop app with `task frontend:dev` from the repo root.
 2. The Electron main process starts and supervises the loopback daemon for you.
-3. Use `npm run dev:web` only for renderer-only development; it does not launch Electron.
+3. Use `task frontend:dev-web` only for renderer-only development; it does not launch Electron.
 
 For CLI-only usage, open two terminals:
 
@@ -234,9 +223,9 @@ go run ./cmd/open-agents --help
 ### Frontend
 
 - Unit tests use Vitest and run in a simulated renderer environment.
-- E2E tests use Playwright against the web renderer started by `npm run dev:web`;
+- E2E tests use Playwright against the web renderer started by `task frontend:dev-web`;
   they do not launch the full Electron app.
-- After changing API types, run `npm run api` from root to regenerate
+- After changing API types, run `task api` from root to regenerate
   `frontend/src/api/schema.ts`.
 
 ## Troubleshooting
@@ -246,17 +235,17 @@ go run ./cmd/open-agents --help
 | Symptom                              | Likely cause                               | Fix                                                                                                                                                                                                                                                                               |
 | ------------------------------------ | ------------------------------------------ | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
 | `go: go.mod requires go >= 1.25`     | Wrong Go version                           | `go version`; install Go 1.25.7+ from [go.dev]                                                                                                                                                                                                                                    |
-| `sqlc generate` produces errors      | Query SQL syntax or schema migration issue | Check `backend/internal/storage/sqlite/queries/` for SQL syntax, placeholder counts, and referenced columns/tables; if you changed the schema, add a new migration in `backend/internal/storage/sqlite/migrations/` instead of editing an existing one, then rerun `npm run sqlc` |
-| `openapi.yaml` is stale              | Changed DTOs without regenerating          | Run `npm run api` from repo root                                                                                                                                                                                                                                                  |
-| `golangci-lint` failures             | Linter version mismatch                    | Install v2.12.2 or use `npm run lint` from root                                                                                                                                                                                                                                   |
+| `sqlc generate` produces errors      | Query SQL syntax or schema migration issue | Check `backend/internal/storage/sqlite/queries/` for SQL syntax, placeholder counts, and referenced columns/tables; if you changed the schema, add a new migration in `backend/internal/storage/sqlite/migrations/` instead of editing an existing one, then rerun `task db:sqlc` |
+| `openapi.yaml` is stale              | Changed DTOs without regenerating          | Run `task api` from repo root                                                                                                                                                                                                                                                  |
+| `golangci-lint` failures             | Linter version mismatch                    | Install v2.12.2 or use `task backend:lint` from root                                                                                                                                                                                                                                   |
 | Tests fail with "connection refused" | Test tries real daemon                     | Tests should use `httptest`; check for `go test ./...` without a live daemon                                                                                                                                                                                                      |
 
 ### Frontend build / test failures
 
 | Symptom                               | Likely cause            | Fix                                                          |
 | ------------------------------------- | ----------------------- | ------------------------------------------------------------ |
-| `npm run typecheck` has type errors   | API types out of sync   | Run `npm run api` from repo root to regenerate               |
-| `npm run dev` fails on native modules | Missing build tools     | Install Python + C++ build tools for `node-gyp`              |
+| `task frontend:typecheck` has type errors | API types out of sync   | Run `task api` from repo root to regenerate               |
+| `task frontend:dev` fails on native modules | Missing build tools     | Install Python + C++ build tools for `node-gyp`              |
 | `npm install` or `npm ci` fails       | Node.js version too old | `node --version`; must be 20.19.0+ (see prerequisites above) |
 | Blank window or crash on Linux        | Broken GPU driver stack | Start with `OPEN_AGENTS_DISABLE_GPU=1` to skip hardware acceleration  |
 
@@ -266,7 +255,7 @@ If CI fails on `sqlc-drift`, run the pinned generator from the repository root
 and commit the generated storage changes together with their SQL/config source:
 
 ```bash
-npm run sqlc
+task db:sqlc
 git diff --exit-code -- backend/internal/storage/sqlite/gen
 ```
 
@@ -278,7 +267,7 @@ committing.
 If CI fails on the `api-drift` check, the OpenAPI-generated files are out of sync with source. Regenerate them locally and commit the updated files:
 
 ```bash
-npm run api
+task api
 ```
 
 If regeneration introduces unexpected diffs beyond your changes, check that your local tool versions match CI (Go 1.25.7+, Node 20.19.0+, npm 10+).
@@ -289,7 +278,7 @@ The API is defined in Go controller DTOs and operation registrations. Edit
 these source files, then regenerate:
 
 ```bash
-npm run api
+task api
 ```
 
 The generated artifacts are:

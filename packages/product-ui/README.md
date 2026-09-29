@@ -36,8 +36,8 @@ own agent, model, reviewer, intake, persistence, and platform actions.
 ## Development
 
 ```bash
-npm install
-npm run typecheck
-npm test
-npm run build
+task install   # npm ci in frontend/ and packages/product-ui/
+task ui:typecheck
+task ui:test
+task ui:build
 ```

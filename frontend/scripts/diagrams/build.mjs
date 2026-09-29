@@ -1,8 +1,8 @@
 /**
  * Generates the Excalidraw architecture diagrams in `docs/assets/diagrams/`.
  *
- *     npm run diagrams
- *     npm run diagrams -- 02-state      # only scenes matching a substring
+ *     task frontend:diagrams
+ *     task frontend:diagrams -- 02-state      # only scenes matching a substring
  *
  * This is a three-step dance rather than a plain `node generate.mjs`:
  *

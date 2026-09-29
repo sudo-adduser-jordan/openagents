@@ -13,33 +13,31 @@ Operational guidance for coding agents working in this repository. Keep changes 
 
 ## Commands
 
-From the repo root unless noted:
+From the repo root unless noted (all commands are go-task tasks defined in `Taskfile.yaml`; on distros where `task` conflicts with taskwarrior the binary is `go-task`):
 
 ```bash
-npm run lint                         # backend go test ./... + golangci-lint v2.12.2
-npm run frontend:typecheck           # frontend TypeScript check
-npm run sqlc                         # regenerate backend/internal/storage/sqlite/gen from queries/schema
-npm run api                          # regenerate OpenAPI spec + frontend TS types (see API contract changes below)
-npx @redwoodjs/agent-ci run --all    # local workflow validation; requires Docker socket
+task backend:lint                 # backend go test ./... + golangci-lint v2.12.2
+task frontend:typecheck           # frontend TypeScript check
+task db:sqlc                      # regenerate backend/internal/storage/sqlite/gen from queries/schema
+task api                          # regenerate OpenAPI spec + frontend TS types (see API contract changes below)
+task ci                           # local workflow validation; requires Docker socket
 ```
 
-Backend-specific checks:
+Backend-specific checks (`task backend:build|test|test-race|vet`, or from `backend/`):
 
 ```bash
-cd backend
-go build ./...
-go test ./...
-go test -race ./...
-go vet ./...
-go run ./cmd/open-agents start
+task backend:build
+task backend:test
+task backend:test-race
+task backend:vet
+task backend:cli -- start
 ```
 
-Frontend-specific checks:
+Frontend-specific checks (from the repo root):
 
 ```bash
-cd frontend
-npm run typecheck
-npm run build
+task frontend:typecheck
+task frontend:package
 ```
 
 When showing or demoing frontend changes, run `open-agents preview [url]` from inside the session so the change renders in the desktop browser panel (the inspector rail's Browser tab); do not just describe it.
@@ -50,10 +48,10 @@ For visual verification that needs the real app rather than `open-agents preview
 
 ```bash
 git worktree add /tmp/open-agents-lab <branch>   # the PR branch under review
-cd /tmp/open-agents-lab/frontend
-npm ci                                  # never symlink node_modules from another checkout (see below)
-npm run build:daemon -- --dev
-OPEN_AGENTS_DATA_DIR=/tmp/open-agents-lab-data ./node_modules/.bin/electron-forge start
+cd /tmp/open-agents-lab
+task install                          # never symlink node_modules from another checkout (see below)
+task frontend:build-daemon -- --dev
+OPEN_AGENTS_DATA_DIR=/tmp/open-agents-lab-data ./frontend/node_modules/.bin/electron-forge start
 ```
 
 - **Run a real `npm ci`.** Symlinking another checkout's `node_modules` makes React resolve from two physical paths and shares the Vite optimizer cache across checkouts: the symptom is a black window with `Invalid hook call` / `useSyncExternalStore` errors in the renderer console. It also writes `.vite/deps` output into the other checkout's tree.
@@ -109,7 +107,7 @@ For code entry points:
 - Do not treat failed/unknown runtime probes as proof a session is dead.
 - Do not force-delete dirty registered worktrees.
 - Do not modify already-merged SQLite migrations. Add a new migration instead. `migrations/0001_baseline.sql` is the one exception: it is a hand-maintained frozen snapshot of the current schema, so change it only via a new migration like any other. Never renumber a migration, never reuse a version number, and never edit a merged migration to "fix" a schema — append the next version.
-- Do not hand-edit `backend/internal/storage/sqlite/gen/*`; change `backend/internal/storage/sqlite/queries/*` or migrations and run `npm run sqlc`.
+- Do not hand-edit `backend/internal/storage/sqlite/gen/*`; change `backend/internal/storage/sqlite/queries/*` or migrations and run `task db:sqlc`.
 - SQLite change events come from DB triggers into `change_log`; do not add parallel manual CDC emission from store methods unless the architecture changes explicitly.
 - Keep generated OpenAPI/API DTO drift in mind: controller response shapes live in `backend/internal/httpd/controllers/dto.go` and tests may assert CLI/HTTP wire compatibility.
 - Do not add network calls to tests unless the package already has an integration/e2e pattern for them. Prefer `httptest`, fakes, and injected dependencies.
@@ -128,14 +126,14 @@ The daemon API is code-first. The OpenAPI spec and frontend TypeScript types are
 **Regenerate after editing:**
 
 ```bash
-npm run api          # runs api:spec then api:ts in sequence
+task api             # runs api:spec then api:ts in sequence
 ```
 
 This is equivalent to running:
 
 ```bash
-npm run api:spec     # cd backend && go generate ./internal/httpd/apispec/...
-npm run api:ts       # npx openapi-typescript@7.4.4 backend/internal/httpd/apispec/openapi.yaml -o frontend/src/api/schema.ts
+task api:spec        # go generate ./internal/httpd/apispec/... (dir: backend)
+task api:ts          # pinned openapi-typescript backend/internal/httpd/apispec/openapi.yaml -o frontend/src/api/schema.ts
 ```
 
 **Verify:**

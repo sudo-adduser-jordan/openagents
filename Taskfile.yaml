@@ -1,0 +1,275 @@
+# Taskfile for Open Agents — replaces all npm scripts in the
+# daemon/supervisor workspace (root, frontend, packages/product-ui)
+# plus the load-bearing Go commands from AGENTS.md / docs/development.md.
+#
+# Run `task --list` (or `go-task --list` on distros where `task`
+# conflicts with taskwarrior) to see everything.
+#
+# Out of scope on purpose: frontend/src/landing, frontend/src/docs and
+# other nested deployables keep their own package.json scripts because
+# their hosts (e.g. Vercel `buildCommand: npm run build`) invoke npm
+# directly.
+#
+# Passthrough args:
+#   task backend:cli -- status
+#   task backend:run -- --help
+#   task frontend:dev-web -- --port 5173
+#   task frontend:build-daemon -- --dev
+#   task frontend:diagrams -- 02-state
+#   task frontend:test-e2e -- --grep "@T0"
+#   task frontend:test -- SessionsBoard
+
+version: "3"
+
+vars:
+  GOLANGCI_VERSION: v2.12.2
+  SQLC_VERSION: v1.31.1
+
+tasks:
+  default:
+    desc: List all tasks
+    cmds:
+      - task --list
+    silent: true
+
+  install:
+    desc: Install all Node dependencies (frontend + product-ui)
+    cmds:
+      - npm ci --prefix frontend
+      - npm ci --prefix packages/product-ui
+
+  setup:
+    desc: Alias for install
+    cmds:
+      - task: install
+
+  # -- backend (Go) ------------------------------------------------------
+
+  backend:build:
+    desc: Build the Go daemon (all packages)
+    dir: backend
+    cmds:
+      - go build ./...
+
+  backend:test:
+    desc: Run all backend tests
+    dir: backend
+    cmds:
+      - go test ./...
+
+  backend:test-race:
+    desc: Run all backend tests with the race detector
+    dir: backend
+    cmds:
+      - go test -race ./...
+
+  backend:vet:
+    desc: Vet backend packages
+    dir: backend
+    cmds:
+      - go vet ./...
+
+  backend:run:
+    desc: Start the loopback daemon (extra args after --)
+    dir: backend
+    cmds:
+      - go run . {{.CLI_ARGS}}
+
+  backend:cli:
+    desc: Run the Cobra CLI, e.g. task backend:cli -- status
+    dir: backend
+    cmds:
+      - go run ./cmd/open-agents {{.CLI_ARGS}}
+
+  backend:lint:
+    desc: Backend tests plus pinned golangci-lint (ports root npm run lint)
+    dir: backend
+    cmds:
+      - go test ./...
+      - go run github.com/golangci/golangci-lint/v2/cmd/golangci-lint@{{.GOLANGCI_VERSION}} run --path-mode=abs
+
+  # -- codegen -----------------------------------------------------------
+
+  api:spec:
+    desc: Regenerate the embedded OpenAPI spec from Go DTOs
+    dir: backend
+    cmds:
+      - go generate ./internal/httpd/apispec/...
+
+  api:ts:
+    desc: Regenerate frontend/src/api/schema.ts from openapi.yaml (uses the pinned frontend devDependency)
+    cmds:
+      - ./frontend/node_modules/.bin/openapi-typescript backend/internal/httpd/apispec/openapi.yaml -o frontend/src/api/schema.ts
+
+  api:
+    desc: Regenerate OpenAPI spec and frontend TS types
+    deps: [api:spec, api:ts]
+
+  db:sqlc:
+    desc: Regenerate sqlc query code from queries/schema (pinned sqlc)
+    dir: backend
+    cmds:
+      - go run github.com/sqlc-dev/sqlc/cmd/sqlc@{{.SQLC_VERSION}} generate
+
+  sqlc:
+    desc: Alias for db:sqlc
+    cmds:
+      - task: db:sqlc
+
+  # -- frontend (Electron + React) ----------------------------------------
+
+  frontend:typecheck:
+    desc: Typecheck the frontend
+    dir: frontend
+    cmds:
+      - ./node_modules/.bin/tsc --noEmit
+
+  frontend:typecheck-e2e:
+    desc: Typecheck the frontend e2e suite
+    dir: frontend
+    cmds:
+      - ./node_modules/.bin/tsc --noEmit -p tsconfig.e2e.json
+
+  frontend:test:
+    desc: Vitest unit tests (extra filter args after --)
+    dir: frontend
+    cmds:
+      - ./node_modules/.bin/vitest run --config vite.renderer.config.ts {{.CLI_ARGS}}
+
+  frontend:test-e2e:
+    desc: Playwright renderer e2e tests (extra args after --)
+    dir: frontend
+    cmds:
+      - ./node_modules/.bin/playwright test {{.CLI_ARGS}}
+
+  frontend:test-e2e-renderer:
+    desc: Playwright smoke subset (@T0|@P0)
+    dir: frontend
+    cmds:
+      - ./node_modules/.bin/playwright test --grep "@T0|@P0"
+
+  frontend:build-daemon:
+    desc: Build the Go daemon into frontend/daemon (pass -- --dev for Windows dev builds)
+    dir: frontend
+    cmds:
+      - node ./scripts/build-daemon.mjs {{.CLI_ARGS}}
+
+  frontend:build-tmux:
+    desc: Build the bundled tmux helper
+    dir: frontend
+    cmds:
+      - node ./scripts/build-tmux.mjs
+
+  frontend:browser-runtime:
+    desc: Prepare the agent browser runtime
+    dir: frontend
+    cmds:
+      - node ./scripts/prepare-agent-browser.mjs
+
+  frontend:ensure-runtime:
+    desc: Ensure the browser runtime exists (was inline in npm predev)
+    dir: frontend
+    cmds:
+      - node ./scripts/ensure-browser-runtime.mjs
+
+  frontend:dev:
+    desc: Electron dev mode (replaces npm predev + dev)
+    deps: [frontend:build-daemon-dev, frontend:ensure-runtime]
+    dir: frontend
+    cmds:
+      - ./node_modules/.bin/electron-forge start
+
+  frontend:build-daemon-dev:
+    desc: Build-daemon step for dev (dev-flagged build)
+    dir: frontend
+    cmds:
+      - node ./scripts/build-daemon.mjs --dev
+    internal: true
+
+  frontend:dev-web:
+    desc: Web-only renderer dev server (extra vite args after --)
+    dir: frontend
+    cmds:
+      - VITE_NO_ELECTRON=1 ./node_modules/.bin/vite --config vite.renderer.config.ts {{.CLI_ARGS}}
+
+  frontend:package:
+    desc: Package the app for the current platform (replaces npm prepackage + package)
+    deps: [frontend:build-daemon, frontend:build-tmux, frontend:browser-runtime]
+    dir: frontend
+    cmds:
+      - ./node_modules/.bin/electron-forge package
+
+  frontend:make:
+    desc: Create platform distributables (replaces npm premake + make; needs rpm/rpmbuild for the RPM target)
+    deps: [frontend:build-daemon, frontend:build-tmux, frontend:browser-runtime]
+    dir: frontend
+    cmds:
+      - ./node_modules/.bin/electron-forge make
+
+  frontend:publish:
+    desc: Publish the app (runs the prepackage build steps, then forge publish)
+    deps: [frontend:build-daemon, frontend:build-tmux, frontend:browser-runtime]
+    dir: frontend
+    cmds:
+      - ./node_modules/.bin/electron-forge publish
+
+  frontend:diagrams:
+    desc: Rebuild architecture diagrams (optional scene filter after --)
+    dir: frontend
+    cmds:
+      - node ./scripts/diagrams/build.mjs {{.CLI_ARGS}}
+
+  # -- product-ui package -------------------------------------------------
+
+  ui:typecheck:
+    desc: Typecheck @openagents/product-ui
+    dir: packages/product-ui
+    cmds:
+      - ./node_modules/.bin/tsc --noEmit
+
+  ui:test:
+    desc: Test @openagents/product-ui
+    dir: packages/product-ui
+    cmds:
+      - ./node_modules/.bin/vitest run
+
+  ui:build:
+    desc: Build @openagents/product-ui dist (replaces npm build + prepack)
+    dir: packages/product-ui
+    cmds:
+      - ./node_modules/.bin/vite build --config vite.build.config.ts && ./node_modules/.bin/tsc -p tsconfig.build.json
+
+  ui:check:
+    desc: Typecheck + test + build product-ui (ports npm run product-ui:check / shared:check)
+    deps: [ui:typecheck, ui:test, ui:build]
+
+  # -- release binaries ---------------------------------------------------
+
+  package:binaries:
+    desc: Cross-compile the CLI into the platform npm packages (replaces packages/build-binaries.sh)
+    dir: backend
+    cmds:
+      - mkdir -p ../packages/open-agents-linux-x64/bin ../packages/open-agents-win32-x64/bin
+      - CGO_ENABLED=0 GOOS=linux GOARCH=amd64 go build -o ../packages/open-agents-linux-x64/bin/open-agents ./cmd/open-agents
+      - CGO_ENABLED=0 GOOS=windows GOARCH=amd64 go build -o ../packages/open-agents-win32-x64/bin/open-agents.exe ./cmd/open-agents
+      - chmod 0755 ../packages/open-agents-linux-x64/bin/open-agents ../packages/open-agents-win32-x64/bin/open-agents.exe
+
+  # -- aggregates ----------------------------------------------------------
+
+  check:
+    desc: Full workspace check (backend lint + frontend typecheck + product-ui)
+    deps: [backend:lint, frontend:typecheck, ui:check]
+
+  check:backend:
+    desc: Alias for backend:lint
+    cmds:
+      - task: backend:lint
+
+  check:frontend:
+    desc: Frontend typecheck plus product-ui check
+    deps: [frontend:typecheck, ui:check]
+
+  ci:
+    desc: Local workflow validation (requires Docker socket)
+    cmds:
+      - npx --yes @redwoodjs/agent-ci run --all

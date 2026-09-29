@@ -193,7 +193,7 @@ if (disableGpu === "1" || disableGpu === "true" || disableGpu === "yes" || disab
 // the daemon data dir into ~/.open-agents/dev.
 // OPEN_AGENTS_DEV_ELECTRON_DIR overrides the dev profile location. The default dev path
 // is shared by every checkout, and Chromium puts a singleton lock in a profile,
-// so a second worktree's `npm run dev` loses requestSingleInstanceLock() and
+// so a second worktree's `task frontend:dev` loses requestSingleInstanceLock() and
 // exits immediately. That is a real constraint for a tool built around parallel
 // worktree sessions: two sessions could not both run the app. Packaged builds
 // are deliberately NOT overridable — their profile is part of the install.
