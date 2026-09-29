@@ -611,7 +611,12 @@ func (s *Service) Start(ctx context.Context, cfg StartConfig) (*Controller, erro
 			return nil, err
 		}
 	}
-	if !liveReconnect && cfg.Harness == domain.HarnessOpenCode && conversation.Settings.OpenCodeMode != "" {
+	if cfg.Harness == domain.HarnessOpenCode && conversation.Settings.OpenCodeMode != "" {
+		// The durable explicit selection is re-asserted on every publish,
+		// including a live reconnect: a daemon restart rebuilds the driver
+		// snapshot from the host-captured setup while the same provider
+		// process keeps running, so the catalog may report a stale value the
+		// provider is no longer (or never was) in.
 		if err := restoreOpenCodeMode(ctx, conv, conversation.Settings.OpenCodeMode); err != nil {
 			_ = cleanupUnpublishedConversation(conv, cfg.ProviderConversationID == "")
 			return nil, err
@@ -1594,14 +1599,30 @@ func (s *Service) SetConfigOption(
 	options = permissionConfigOptions(options)
 	previous := controller.Settings()
 	settings, _ := settingsFromConfigOptions(previous, options)
-	if record.Harness == domain.HarnessOpenCode && configID == "mode" {
+	explicitMode := record.Harness == domain.HarnessOpenCode && configID == "mode"
+	if explicitMode {
+		// An explicit mode selection is a durable user choice, not a provider
+		// echo to transcribe: persist exactly what was requested, after the
+		// provider confirms it is actually in that mode. A resync that moved
+		// the live snapshot must never silently overwrite it, and a 200 that
+		// records a mode the provider is not in is worse than a 409.
+		confirmed := false
 		for _, option := range options {
-			if option.ID == "mode" {
-				settings.OpenCodeMode = option.Current.Select
+			if option.ID == "mode" && option.Current.Select == value.Select {
+				confirmed = true
+				break
 			}
 		}
+		if !confirmed {
+			return nil, fmt.Errorf("set opencode mode %q: provider did not confirm selected mode: %w", value.Select, ErrProviderRefused)
+		}
+		settings.OpenCodeMode = value.Select
 	}
-	if settings != previous {
+	if settings != previous || explicitMode {
+		// The explicit branch persists unconditionally: when the in-memory
+		// settings already match the request while the durable row disagrees,
+		// skipping the write would 200 without sticking, and the next
+		// controller publish would restore the stale value.
 		if err := controller.SetSettings(ctx, settings); err != nil {
 			return nil, err
 		}

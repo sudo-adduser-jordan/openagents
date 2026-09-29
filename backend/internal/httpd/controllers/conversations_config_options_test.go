@@ -11,6 +11,7 @@ import (
 
 	"github.com/sudo-adduser-jordan/open-agents/backend/internal/httpd/controllers"
 	"github.com/sudo-adduser-jordan/open-agents/backend/internal/ports"
+	chatsvc "github.com/sudo-adduser-jordan/open-agents/backend/internal/service/chat"
 )
 
 func configOptionsRequest(
@@ -86,6 +87,25 @@ func TestSetConfigOptionAcceptsSelectAndBooleanValues(t *testing.T) {
 	}
 	if svc.setConfigValue.Boolean == nil || *svc.setConfigValue.Boolean {
 		t.Fatalf("boolean request = %#v", svc.setConfigValue)
+	}
+}
+
+func TestSetConfigOptionProviderRefusedMapsToConflict(t *testing.T) {
+	// An explicit mode change the provider did not confirm must surface as a
+	// 409 the client can act on, never a 200 that silently reverts.
+	svc := &fakeConversationService{configErr: chatsvc.ErrProviderRefused}
+	status, body := configOptionsRequest(t, http.MethodPatch, `{"value":"build"}`, svc)
+	if status != http.StatusConflict {
+		t.Fatalf("status = %d, want 409 (%s)", status, body)
+	}
+	var wire struct {
+		Code string `json:"code"`
+	}
+	if err := json.Unmarshal(body, &wire); err != nil {
+		t.Fatalf("decode: %v", err)
+	}
+	if wire.Code != "CHAT_PROVIDER_REFUSED" {
+		t.Fatalf("code = %q, want CHAT_PROVIDER_REFUSED", wire.Code)
 	}
 }
 
