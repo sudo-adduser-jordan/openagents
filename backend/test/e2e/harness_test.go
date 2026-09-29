@@ -12,7 +12,7 @@
 // Gated on OPEN_AGENTS_CHAT_E2E=1 because they cost real model calls and need a working
 // local agent install:
 //
-//	OPEN_AGENTS_CHAT_E2E=1 go test ./e2e/ -v -timeout 20m
+//	OPEN_AGENTS_CHAT_E2E=1 go test ./test/e2e/ -v -timeout 20m
 //
 // Windows is excluded: the harness uses process groups to make sure a killed
 // daemon takes its agent child processes with it.

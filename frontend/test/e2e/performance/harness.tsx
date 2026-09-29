@@ -1,4 +1,4 @@
-/// <reference path="../../src/renderer/global.d.ts" />
+/// <reference path="../../../src/renderer/global.d.ts" />
 // Browser-only workload fixture: real Open Agents rendering, deterministic synthetic data.
 // This entry is never imported by the application or included in its build.
 import { type ReactNode } from "react";
@@ -9,16 +9,16 @@ import {
 	QueryClientProvider,
 	QueryObserver,
 } from "@tanstack/react-query";
-import { TooltipProvider } from "../../src/renderer/components/ui/tooltip";
-import { AssistantMessage } from "../../src/renderer/components/chat/ChatTimelineItems";
-import { ChatWorkspace } from "../../src/renderer/components/chat/ChatWorkspace";
-import { chatFixtureLongHistory } from "../../src/renderer/lib/chat-fixture";
-import { highlight } from "../../src/renderer/lib/code-highlight";
-import { createEventTransport } from "../../src/renderer/lib/event-transport";
-import { useUiStore } from "../../src/renderer/stores/ui-store";
-import { setApiBaseUrl } from "../../src/renderer/lib/api-client";
-import type { ConversationMessage } from "../../src/renderer/types/conversation";
-import "../../src/renderer/styles.css";
+import { TooltipProvider } from "../../../src/renderer/components/ui/tooltip";
+import { AssistantMessage } from "../../../src/renderer/components/chat/ChatTimelineItems";
+import { ChatWorkspace } from "../../../src/renderer/components/chat/ChatWorkspace";
+import { chatFixtureLongHistory } from "../../../src/renderer/lib/chat-fixture";
+import { highlight } from "../../../src/renderer/lib/code-highlight";
+import { createEventTransport } from "../../../src/renderer/lib/event-transport";
+import { useUiStore } from "../../../src/renderer/stores/ui-store";
+import { setApiBaseUrl } from "../../../src/renderer/lib/api-client";
+import type { ConversationMessage } from "../../../src/renderer/types/conversation";
+import "../../../src/renderer/styles.css";
 
 const root = createRoot(document.getElementById("performance-root")!);
 const client = new QueryClient({

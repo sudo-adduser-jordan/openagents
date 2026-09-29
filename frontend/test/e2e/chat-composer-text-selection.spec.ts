@@ -1,5 +1,5 @@
 import { expect, test } from "@playwright/test";
-import { agentReadiness } from "../src/renderer/test/agent-readiness-fixtures";
+import { agentReadiness } from "../../src/renderer/test/agent-readiness-fixtures";
 import { installFakeAgent } from "./support/fake-bridge";
 
 const projectId = "chat-composer-selection";

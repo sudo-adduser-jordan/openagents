@@ -11,7 +11,7 @@ touch a developer's real Open Agents installation.
 | Tier                          | What                                                                                                                                                                                                                                                                  | Where                                                |
 | ----------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ---------------------------------------------------- |
 | **Comprehensive (primary)**   | A cross-platform Go suite that builds `open-agents` and exercises the full behaviour. Runs natively on **ubuntu + macOS + windows** — the only way to cover the OS-specific process-detach paths (`setsid` vs `CREATE_NEW_PROCESS_GROUP`) and `os.UserConfigDir()` resolution. | `backend/internal/cli/e2e_test.go` (build tag `e2e`) |
-| **Fresh-install (hardening)** | Proves a freshly installed binary works on a clean machine with no Go toolchain and no developer state.                                                                                                                                                               | `test/cli/Dockerfile` + `test/cli/install-check.sh`  |
+| **Fresh-install (hardening)** | Proves a freshly installed binary works on a clean machine with no Go toolchain and no developer state.                                                                                                                                                               | `backend/test/cli/Dockerfile` + `backend/test/cli/install-check.sh`  |
 
 ## Run it
 
@@ -30,7 +30,7 @@ get for free from `go test`.
 **Fresh-machine install, in a clean container:**
 
 ```bash
-docker build -f test/cli/Dockerfile -t open-agents-cli-smoke .
+docker build -f backend/test/cli/Dockerfile -t open-agents-cli-smoke ./backend
 docker run --rm --init open-agents-cli-smoke
 ```
 

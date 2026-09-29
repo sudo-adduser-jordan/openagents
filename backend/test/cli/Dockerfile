@@ -1,7 +1,7 @@
 # End-to-end CLI smoke test, modelling "install open-agents on a fresh machine, then use it".
 #
-# Build context is the REPO ROOT:
-#   docker build -f test/cli/Dockerfile -t open-agents-cli-smoke .
+# Build context is backend/:
+#   docker build -f backend/test/cli/Dockerfile -t open-agents-cli-smoke ./backend
 #   docker run --rm --init open-agents-cli-smoke
 #
 # `open-agents start` is now the desktop-app launcher (it no longer runs a daemon); the
@@ -13,16 +13,16 @@ FROM golang:1.25-bookworm AS build
 WORKDIR /src
 
 # Cache modules first.
-COPY backend/go.mod backend/go.sum ./backend/
-RUN cd backend && go mod download
+COPY go.mod go.sum ./
+RUN go mod download
 
-COPY backend ./backend
+COPY . ./
 # Pure-Go SQLite (modernc) builds fine with CGO disabled -> a static binary.
 # Build against a release repo with NO published assets so `open-agents start` reaches the
 # fetch path and fails cleanly (404) on a fresh box. The real sudo-adduser-jordan repo
 # now publishes a linux-x64 AppImage, so an unpinned binary would download it and
 # exit 0, defeating the fresh-install assertion below. See install-check.sh.
-RUN cd backend && CGO_ENABLED=0 go build -trimpath \
+RUN CGO_ENABLED=0 go build -trimpath \
       -ldflags "-X github.com/sudo-adduser-jordan/open-agents/backend/internal/cli.releaseRepo=sudo-adduser-jordan/open-agents-fresh-install-fixture" \
       -o /out/open-agents ./cmd/open-agents
 

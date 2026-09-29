@@ -1,6 +1,6 @@
 import { expect, test } from "@playwright/test";
-import type { OpenAgentsBridge } from "../src/preload";
-import { agentReadiness } from "../src/renderer/test/agent-readiness-fixtures";
+import type { OpenAgentsBridge } from "../../src/preload";
+import { agentReadiness } from "../../src/renderer/test/agent-readiness-fixtures";
 import { installFakeAgent } from "./support/fake-bridge";
 
 for (const destinationMode of ["picker", "typed"] as const) {

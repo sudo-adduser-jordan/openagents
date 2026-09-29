@@ -1,9 +1,9 @@
 import type { Page } from "@playwright/test";
 
-import type { UpdateSettings, UpdateStatus } from "../../src/main/update-settings";
-import type { OpenAgentsBridge } from "../../src/preload";
-import type { DaemonStatus } from "../../src/shared/daemon-status";
-import { coerceUiSettings, DEFAULT_UI_SETTINGS } from "../../src/shared/ui-locale";
+import type { UpdateSettings, UpdateStatus } from "../../../src/main/update-settings";
+import type { OpenAgentsBridge } from "../../../src/preload";
+import type { DaemonStatus } from "../../../src/shared/daemon-status";
+import { coerceUiSettings, DEFAULT_UI_SETTINGS } from "../../../src/shared/ui-locale";
 
 // The e2e suite runs the renderer under `dev:web` (VITE_NO_ELECTRON=1) with no
 // Electron preload, so `window.openAgents` is undefined and lib/bridge.ts falls back to

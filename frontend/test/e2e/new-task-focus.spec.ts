@@ -1,5 +1,5 @@
 import { expect, test, type Page } from "@playwright/test";
-import { agentReadiness } from "../src/renderer/test/agent-readiness-fixtures";
+import { agentReadiness } from "../../src/renderer/test/agent-readiness-fixtures";
 import { installFakeAgent } from "./support/fake-bridge";
 
 // Focus hand-off between a closing Radix menu and the surface its item opened.

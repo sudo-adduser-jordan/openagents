@@ -34,9 +34,11 @@ open-agents/
       domain/           # Domain types
       ports/            # Port interfaces (contracts)
       storage/          # SQLite migrations, queries, generated code
+    test/               # Test assets: CLI fresh-install container check (cli/), daemon chat e2e (e2e/)
   frontend/             # Electron + React desktop app
     src/                # Renderer, main, preload
-    e2e/                # Playwright end-to-end tests
+    test/e2e/           # Playwright end-to-end tests
+    test/e2e-pod/       # Packaged-app pod gate
   packages/
     open-agents/                 # Legacy npm CLI package (frozen)
   docs/                 # Architecture, ADRs, CLI docs, status

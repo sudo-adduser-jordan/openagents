@@ -28,7 +28,7 @@ test.describe("live renderer performance workloads", () => {
 			test.setTimeout(120_000);
 			await installFakeBridge(page);
 			await page.emulateMedia({ reducedMotion: "no-preference" });
-			await page.goto("/e2e/performance/harness.html");
+			await page.goto("/test/e2e/performance/harness.html");
 			await page.waitForFunction(() => Boolean(window.performanceHarness));
 			const result = await page.evaluate(
 				async (name): Promise<Record<string, unknown>> =>
