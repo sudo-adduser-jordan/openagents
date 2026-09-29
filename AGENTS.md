@@ -156,6 +156,12 @@ Commit `openapi.yaml` and `frontend/src/api/schema.ts` together with the Go chan
 - Explain intentional omissions in the PR body, especially when the TypeScript original had more behavior than the Go rewrite domain currently supports.
 - Run the narrowest relevant tests first, then the repo/CI commands that match the touched area.
 
+## Manager mode
+
+- Manager sessions coordinate only: they must not create, edit, or delete files, run write-shaped shell commands, or commit code.
+- All implementation goes through spawned workers (`open-agents spawn --name "<label>" --prompt "<task>"`); workers start in planning mode, and the manager advances them with `open-agents build <worker-session-id>`.
+- Plan-mode constraints apply to manager mode: reads, searches, delegation, and review only.
+
 ## Domain glossary
 
 Canonical vocabulary terms (no implementation details; decisions live in `docs/adr/`).
