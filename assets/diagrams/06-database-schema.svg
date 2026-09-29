@@ -1,0 +1,1252 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="2120" height="4288" viewBox="0 0 2120 4288" font-family="ui-monospace, SFMono-Regular, Menlo, Consolas, monospace">
+<defs><marker id="fk-arrow" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M 0 1 L 9 5 L 0 9 z" fill="#94a3b8"/></marker></defs>
+<rect x="0" y="0" width="2120" height="4288" fill="#f8fafc"/>
+<text x="40" y="34" font-size="20" font-weight="bold" fill="#0f172a">Open Agents — SQLite schema</text>
+<text x="40" y="56" font-size="12" fill="#64748b">36 tables · generated from migrations — do not edit · regen: task db:dbml · schema.dbml opens in ChartDB</text>
+<text x="40" y="138" font-size="15" font-weight="bold" fill="#0f172a">Projects &amp; sessions</text>
+<text x="460" y="138" font-size="15" font-weight="bold" fill="#0f172a">Conversations</text>
+<text x="880" y="138" font-size="15" font-weight="bold" fill="#0f172a">PR &amp; review</text>
+<text x="1300" y="138" font-size="15" font-weight="bold" fill="#0f172a">Usage</text>
+<text x="1720" y="138" font-size="15" font-weight="bold" fill="#0f172a">Change feed</text>
+<path d="M 2080 213 C 2140 213, -20 192, 40 192" fill="none" stroke="#94a3b8" stroke-width="1.5" marker-end="url(#fk-arrow)"><title>change_log.project_id → projects.id</title></path>
+<path d="M 2080 234 C 2140 234, -20 434, 40 434" fill="none" stroke="#94a3b8" stroke-width="1.5" marker-end="url(#fk-arrow)"><title>change_log.session_id → sessions.id</title></path>
+<path d="M 820 2210 C 880 2210, 400 192, 460 192" fill="none" stroke="#94a3b8" stroke-width="1.5" marker-end="url(#fk-arrow)"><title>conversation_activities.conversation_id → conversations.id</title></path>
+<path d="M 820 2231 C 880 2231, 400 959, 460 959" fill="none" stroke="#94a3b8" stroke-width="1.5" marker-end="url(#fk-arrow)"><title>conversation_activities.turn_id → conversation_turns.id</title></path>
+<path d="M 820 1821 C 880 1821, 400 192, 460 192" fill="none" stroke="#94a3b8" stroke-width="1.5" marker-end="url(#fk-arrow)"><title>conversation_branches.conversation_id → conversations.id</title></path>
+<path d="M 820 1905 C 880 1905, 400 959, 460 959" fill="none" stroke="#94a3b8" stroke-width="1.5" marker-end="url(#fk-arrow)"><title>conversation_branches.fork_after_turn_id → conversation_turns.id</title></path>
+<path d="M 820 1884 C 866 1884, 866 1905, 820 1905" fill="none" stroke="#94a3b8" stroke-width="1.5" marker-end="url(#fk-arrow)"><title>conversation_branches.parent_branch_id → conversation_branches.id</title></path>
+<path d="M 820 1926 C 880 1926, 400 959, 460 959" fill="none" stroke="#94a3b8" stroke-width="1.5" marker-end="url(#fk-arrow)"><title>conversation_branches.replaced_turn_id → conversation_turns.id</title></path>
+<path d="M 820 1947 C 880 1947, 400 959, 460 959" fill="none" stroke="#94a3b8" stroke-width="1.5" marker-end="url(#fk-arrow)"><title>conversation_branches.replacement_turn_id → conversation_turns.id</title></path>
+<path d="M 820 1842 C 880 1842, -20 434, 40 434" fill="none" stroke="#94a3b8" stroke-width="1.5" marker-end="url(#fk-arrow)"><title>conversation_branches.session_id → sessions.id</title></path>
+<path d="M 820 2883 C 880 2883, 400 192, 460 192" fill="none" stroke="#94a3b8" stroke-width="1.5" marker-end="url(#fk-arrow)"><title>conversation_edit_deliveries.conversation_id → conversations.id</title></path>
+<path d="M 820 1432 C 880 1432, 400 192, 460 192" fill="none" stroke="#94a3b8" stroke-width="1.5" marker-end="url(#fk-arrow)"><title>conversation_messages.conversation_id → conversations.id</title></path>
+<path d="M 820 1453 C 880 1453, 400 959, 460 959" fill="none" stroke="#94a3b8" stroke-width="1.5" marker-end="url(#fk-arrow)"><title>conversation_messages.turn_id → conversation_turns.id</title></path>
+<path d="M 820 2662 C 880 2662, 400 192, 460 192" fill="none" stroke="#94a3b8" stroke-width="1.5" marker-end="url(#fk-arrow)"><title>conversation_provider_events.conversation_id → conversations.id</title></path>
+<path d="M 820 2683 C 880 2683, -20 434, 40 434" fill="none" stroke="#94a3b8" stroke-width="1.5" marker-end="url(#fk-arrow)"><title>conversation_provider_events.session_id → sessions.id</title></path>
+<path d="M 820 3314 C 880 3314, 400 192, 460 192" fill="none" stroke="#94a3b8" stroke-width="1.5" marker-end="url(#fk-arrow)"><title>conversation_queued_edit_deliveries.conversation_id → conversations.id</title></path>
+<path d="M 820 3472 C 880 3472, 400 192, 460 192" fill="none" stroke="#94a3b8" stroke-width="1.5" marker-end="url(#fk-arrow)"><title>conversation_steer_deliveries.conversation_id → conversations.id</title></path>
+<path d="M 820 980 C 880 980, 400 192, 460 192" fill="none" stroke="#94a3b8" stroke-width="1.5" marker-end="url(#fk-arrow)"><title>conversation_turns.conversation_id → conversations.id</title></path>
+<path d="M 820 1001 C 880 1001, -20 434, 40 434" fill="none" stroke="#94a3b8" stroke-width="1.5" marker-end="url(#fk-arrow)"><title>conversation_turns.handled_by_session_id → sessions.id</title></path>
+<path d="M 820 1274 C 866 1274, 866 1295, 820 1295" fill="none" stroke="#94a3b8" stroke-width="1.5" marker-end="url(#fk-arrow)"><title>conversation_turns.promoted_to_turn_id → conversation_turns.id</title></path>
+<path d="M 820 1295 C 866 1295, 866 1316, 820 1316" fill="none" stroke="#94a3b8" stroke-width="1.5" marker-end="url(#fk-arrow)"><title>conversation_turns.retry_of_turn_id → conversation_turns.id</title></path>
+<path d="M 820 276 C 880 276, -20 434, 40 434" fill="none" stroke="#94a3b8" stroke-width="1.5" marker-end="url(#fk-arrow)"><title>conversations.current_session_id → sessions.id</title></path>
+<path d="M 820 234 C 880 234, -20 192, 40 192" fill="none" stroke="#94a3b8" stroke-width="1.5" marker-end="url(#fk-arrow)"><title>conversations.project_id → projects.id</title></path>
+<path d="M 820 255 C 880 255, -20 434, 40 434" fill="none" stroke="#94a3b8" stroke-width="1.5" marker-end="url(#fk-arrow)"><title>conversations.session_id → sessions.id</title></path>
+<path d="M 400 2673 C 460 2673, -20 434, 40 434" fill="none" stroke="#94a3b8" stroke-width="1.5" marker-end="url(#fk-arrow)"><title>manager_reengagements.session_id → sessions.id</title></path>
+<path d="M 1660 886 C 1720 886, 1240 192, 1300 192" fill="none" stroke="#94a3b8" stroke-width="1.5" marker-end="url(#fk-arrow)"><title>model_usage_events.binding_id → usage_bindings.id</title></path>
+<path d="M 1660 907 C 1720 907, 1240 455, 1300 455" fill="none" stroke="#94a3b8" stroke-width="1.5" marker-end="url(#fk-arrow)"><title>model_usage_events.usage_source_id → usage_sources.id</title></path>
+<path d="M 1240 3178 C 1300 3178, -20 192, 40 192" fill="none" stroke="#94a3b8" stroke-width="1.5" marker-end="url(#fk-arrow)"><title>notifications.project_id → projects.id</title></path>
+<path d="M 1240 3157 C 1300 3157, -20 434, 40 434" fill="none" stroke="#94a3b8" stroke-width="1.5" marker-end="url(#fk-arrow)"><title>notifications.session_id → sessions.id</title></path>
+<path d="M 1240 213 C 1300 213, -20 434, 40 434" fill="none" stroke="#94a3b8" stroke-width="1.5" marker-end="url(#fk-arrow)"><title>pr.session_id → sessions.id</title></path>
+<path d="M 1240 1190 C 1300 1190, 820 192, 880 192" fill="none" stroke="#94a3b8" stroke-width="1.5" marker-end="url(#fk-arrow)"><title>pr_checks.pr_url → pr.url</title></path>
+<path d="M 1240 1453 C 1300 1453, 820 192, 880 192" fill="none" stroke="#94a3b8" stroke-width="1.5" marker-end="url(#fk-arrow)"><title>pr_comment.pr_url → pr.url</title></path>
+<path d="M 1240 2084 C 1300 2084, 820 192, 880 192" fill="none" stroke="#94a3b8" stroke-width="1.5" marker-end="url(#fk-arrow)"><title>pr_review_threads.pr_url → pr.url</title></path>
+<path d="M 1240 1800 C 1300 1800, 820 192, 880 192" fill="none" stroke="#94a3b8" stroke-width="1.5" marker-end="url(#fk-arrow)"><title>pr_reviews.pr_url → pr.url</title></path>
+<path d="M 1240 2347 C 1300 2347, 820 192, 880 192" fill="none" stroke="#94a3b8" stroke-width="1.5" marker-end="url(#fk-arrow)"><title>pr_url_alias.canonical_url → pr.url</title></path>
+<path d="M 1240 2484 C 1300 2484, -20 192, 40 192" fill="none" stroke="#94a3b8" stroke-width="1.5" marker-end="url(#fk-arrow)"><title>review.project_id → projects.id</title></path>
+<path d="M 1240 2463 C 1300 2463, -20 434, 40 434" fill="none" stroke="#94a3b8" stroke-width="1.5" marker-end="url(#fk-arrow)"><title>review.session_id → sessions.id</title></path>
+<path d="M 1240 2768 C 1300 2768, 820 2442, 880 2442" fill="none" stroke="#94a3b8" stroke-width="1.5" marker-end="url(#fk-arrow)"><title>review_run.review_id → review.id</title></path>
+<path d="M 1240 2789 C 1300 2789, -20 434, 40 434" fill="none" stroke="#94a3b8" stroke-width="1.5" marker-end="url(#fk-arrow)"><title>review_run.session_id → sessions.id</title></path>
+<path d="M 400 2431 C 460 2431, -20 434, 40 434" fill="none" stroke="#94a3b8" stroke-width="1.5" marker-end="url(#fk-arrow)"><title>session_cleanup_facts.session_id → sessions.id</title></path>
+<path d="M 820 4145 C 880 4145, 400 3756, 460 3756" fill="none" stroke="#94a3b8" stroke-width="1.5" marker-end="url(#fk-arrow)"><title>session_interface_transition_messages.transition_id → session_interface_transitions.id</title></path>
+<path d="M 820 3777 C 880 3777, -20 434, 40 434" fill="none" stroke="#94a3b8" stroke-width="1.5" marker-end="url(#fk-arrow)"><title>session_interface_transitions.session_id → sessions.id</title></path>
+<path d="M 400 1726 C 460 1726, -20 434, 40 434" fill="none" stroke="#94a3b8" stroke-width="1.5" marker-end="url(#fk-arrow)"><title>session_worktrees.session_id → sessions.id</title></path>
+<path d="M 400 455 C 460 455, -20 192, 40 192" fill="none" stroke="#94a3b8" stroke-width="1.5" marker-end="url(#fk-arrow)"><title>sessions.project_id → projects.id</title></path>
+<path d="M 400 2210 C 460 2210, -20 192, 40 192" fill="none" stroke="#94a3b8" stroke-width="1.5" marker-end="url(#fk-arrow)"><title>shell_terminals.project_id → projects.id</title></path>
+<path d="M 400 2315 C 460 2315, -20 434, 40 434" fill="none" stroke="#94a3b8" stroke-width="1.5" marker-end="url(#fk-arrow)"><title>shell_terminals.session_id → sessions.id</title></path>
+<path d="M 1660 213 C 1720 213, -20 434, 40 434" fill="none" stroke="#94a3b8" stroke-width="1.5" marker-end="url(#fk-arrow)"><title>usage_bindings.session_id → sessions.id</title></path>
+<path d="M 1660 476 C 1720 476, 1240 192, 1300 192" fill="none" stroke="#94a3b8" stroke-width="1.5" marker-end="url(#fk-arrow)"><title>usage_sources.binding_id → usage_bindings.id</title></path>
+<path d="M 400 1968 C 460 1968, -20 192, 40 192" fill="none" stroke="#94a3b8" stroke-width="1.5" marker-end="url(#fk-arrow)"><title>workspace_repos.project_id → projects.id</title></path>
+<g id="tbl-projects">
+<rect x="40" y="152" width="360" height="206" rx="6" fill="#ffffff" stroke="#cbd5e1"/>
+<path d="M 40 152 h 360 a 6 6 0 0 1 6 6 v 24 h -360 z" fill="#243044"/>
+<text x="52" y="172" font-size="13" font-weight="bold" fill="#ffffff">projects</text>
+<text x="52" y="196" font-size="12" font-weight="bold" fill="#0f172a">id</text>
+<rect x="74" y="184" width="24" height="15" rx="3" fill="#f59e0b"/><text x="79" y="196" font-size="9" font-weight="bold" fill="#ffffff">PK</text>
+<text x="390" y="196" font-size="11" fill="#64748b" text-anchor="end">text</text>
+<text x="52" y="217" font-size="12" font-weight="normal" fill="#0f172a">path</text>
+<text x="390" y="217" font-size="11" fill="#64748b" text-anchor="end">text</text>
+<text x="52" y="238" font-size="12" font-weight="normal" fill="#0f172a">repo_origin_url</text>
+<text x="390" y="238" font-size="11" fill="#64748b" text-anchor="end">text</text>
+<text x="52" y="259" font-size="12" font-weight="normal" fill="#0f172a">display_name</text>
+<text x="390" y="259" font-size="11" fill="#64748b" text-anchor="end">text</text>
+<text x="52" y="280" font-size="12" font-weight="normal" fill="#0f172a">registered_at</text>
+<text x="390" y="280" font-size="11" fill="#64748b" text-anchor="end">timestamp</text>
+<text x="52" y="301" font-size="12" font-weight="normal" fill="#0f172a">archived_at</text>
+<text x="390" y="301" font-size="11" fill="#64748b" text-anchor="end">timestamp</text>
+<text x="52" y="322" font-size="12" font-weight="normal" fill="#0f172a">config</text>
+<text x="390" y="322" font-size="11" fill="#64748b" text-anchor="end">text</text>
+<text x="52" y="343" font-size="12" font-weight="normal" fill="#0f172a">kind</text>
+<text x="390" y="343" font-size="11" fill="#64748b" text-anchor="end">text</text>
+</g>
+<g id="tbl-sessions">
+<rect x="40" y="394" width="360" height="1256" rx="6" fill="#ffffff" stroke="#cbd5e1"/>
+<path d="M 40 394 h 360 a 6 6 0 0 1 6 6 v 24 h -360 z" fill="#243044"/>
+<text x="52" y="414" font-size="13" font-weight="bold" fill="#ffffff">sessions</text>
+<text x="52" y="438" font-size="12" font-weight="bold" fill="#0f172a">id</text>
+<rect x="74" y="426" width="24" height="15" rx="3" fill="#f59e0b"/><text x="79" y="438" font-size="9" font-weight="bold" fill="#ffffff">PK</text>
+<text x="390" y="438" font-size="11" fill="#64748b" text-anchor="end">text</text>
+<text x="52" y="459" font-size="12" font-weight="normal" fill="#0f172a">project_id</text>
+<rect x="130" y="447" width="22" height="15" rx="3" fill="#0ea5e9"/><text x="135" y="459" font-size="9" font-weight="bold" fill="#ffffff">FK</text>
+<text x="390" y="459" font-size="11" fill="#64748b" text-anchor="end">text</text>
+<text x="52" y="480" font-size="12" font-weight="normal" fill="#0f172a">num</text>
+<text x="390" y="480" font-size="11" fill="#64748b" text-anchor="end">integer</text>
+<text x="52" y="501" font-size="12" font-weight="normal" fill="#0f172a">issue_id</text>
+<text x="390" y="501" font-size="11" fill="#64748b" text-anchor="end">text</text>
+<text x="52" y="522" font-size="12" font-weight="normal" fill="#0f172a">kind</text>
+<text x="390" y="522" font-size="11" fill="#64748b" text-anchor="end">text</text>
+<text x="52" y="543" font-size="12" font-weight="normal" fill="#0f172a">harness</text>
+<text x="390" y="543" font-size="11" fill="#64748b" text-anchor="end">text</text>
+<text x="52" y="564" font-size="12" font-weight="normal" fill="#0f172a">activity_state</text>
+<text x="390" y="564" font-size="11" fill="#64748b" text-anchor="end">text</text>
+<text x="52" y="585" font-size="12" font-weight="normal" fill="#0f172a">activity_last_at</text>
+<text x="390" y="585" font-size="11" fill="#64748b" text-anchor="end">timestamp</text>
+<text x="52" y="606" font-size="12" font-weight="normal" fill="#0f172a">is_terminated</text>
+<text x="390" y="606" font-size="11" fill="#64748b" text-anchor="end">boolean</text>
+<text x="52" y="627" font-size="12" font-weight="normal" fill="#0f172a">branch</text>
+<text x="390" y="627" font-size="11" fill="#64748b" text-anchor="end">text</text>
+<text x="52" y="648" font-size="12" font-weight="normal" fill="#0f172a">workspace_path</text>
+<text x="390" y="648" font-size="11" fill="#64748b" text-anchor="end">text</text>
+<text x="52" y="669" font-size="12" font-weight="normal" fill="#0f172a">runtime_handle_id</text>
+<text x="390" y="669" font-size="11" fill="#64748b" text-anchor="end">text</text>
+<text x="52" y="690" font-size="12" font-weight="normal" fill="#0f172a">agent_session_id</text>
+<text x="390" y="690" font-size="11" fill="#64748b" text-anchor="end">text</text>
+<text x="52" y="711" font-size="12" font-weight="normal" fill="#0f172a">prompt</text>
+<text x="390" y="711" font-size="11" fill="#64748b" text-anchor="end">text</text>
+<text x="52" y="732" font-size="12" font-weight="normal" fill="#0f172a">created_at</text>
+<text x="390" y="732" font-size="11" fill="#64748b" text-anchor="end">timestamp</text>
+<text x="52" y="753" font-size="12" font-weight="normal" fill="#0f172a">updated_at</text>
+<text x="390" y="753" font-size="11" fill="#64748b" text-anchor="end">timestamp</text>
+<text x="52" y="774" font-size="12" font-weight="normal" fill="#0f172a">display_name</text>
+<text x="390" y="774" font-size="11" fill="#64748b" text-anchor="end">text</text>
+<text x="52" y="795" font-size="12" font-weight="normal" fill="#0f172a">first_signal_at</text>
+<text x="390" y="795" font-size="11" fill="#64748b" text-anchor="end">timestamp</text>
+<text x="52" y="816" font-size="12" font-weight="normal" fill="#0f172a">preview_url</text>
+<text x="390" y="816" font-size="11" fill="#64748b" text-anchor="end">text</text>
+<text x="52" y="837" font-size="12" font-weight="normal" fill="#0f172a">preview_revision</text>
+<text x="390" y="837" font-size="11" fill="#64748b" text-anchor="end">integer</text>
+<text x="52" y="858" font-size="12" font-weight="normal" fill="#0f172a">cleanup_generation</text>
+<text x="390" y="858" font-size="11" fill="#64748b" text-anchor="end">integer</text>
+<text x="52" y="879" font-size="12" font-weight="normal" fill="#0f172a">runtime_launch_id</text>
+<text x="390" y="879" font-size="11" fill="#64748b" text-anchor="end">text</text>
+<text x="52" y="900" font-size="12" font-weight="normal" fill="#0f172a">workspace_repo_path</text>
+<text x="390" y="900" font-size="11" fill="#64748b" text-anchor="end">text</text>
+<text x="52" y="921" font-size="12" font-weight="normal" fill="#0f172a">terminate_on_pr_merge</text>
+<text x="390" y="921" font-size="11" fill="#64748b" text-anchor="end">boolean</text>
+<text x="52" y="942" font-size="12" font-weight="normal" fill="#0f172a">diff_base_sha</text>
+<text x="390" y="942" font-size="11" fill="#64748b" text-anchor="end">text</text>
+<text x="52" y="963" font-size="12" font-weight="normal" fill="#0f172a">diff_base_ref</text>
+<text x="390" y="963" font-size="11" fill="#64748b" text-anchor="end">text</text>
+<text x="52" y="984" font-size="12" font-weight="normal" fill="#0f172a">reviewer_harness</text>
+<text x="390" y="984" font-size="11" fill="#64748b" text-anchor="end">text</text>
+<text x="52" y="1005" font-size="12" font-weight="normal" fill="#0f172a">is_pinned</text>
+<text x="390" y="1005" font-size="11" fill="#64748b" text-anchor="end">boolean</text>
+<text x="52" y="1026" font-size="12" font-weight="normal" fill="#0f172a">pinned_at</text>
+<text x="390" y="1026" font-size="11" fill="#64748b" text-anchor="end">datetime</text>
+<text x="52" y="1047" font-size="12" font-weight="normal" fill="#0f172a">session_mode</text>
+<text x="390" y="1047" font-size="11" fill="#64748b" text-anchor="end">text</text>
+<text x="52" y="1068" font-size="12" font-weight="normal" fill="#0f172a">provider_conversation_id</text>
+<text x="390" y="1068" font-size="11" fill="#64748b" text-anchor="end">text</text>
+<text x="52" y="1089" font-size="12" font-weight="normal" fill="#0f172a">controller_generation</text>
+<text x="390" y="1089" font-size="11" fill="#64748b" text-anchor="end">text</text>
+<text x="52" y="1110" font-size="12" font-weight="normal" fill="#0f172a">browser_capability_verifier</text>
+<text x="390" y="1110" font-size="11" fill="#64748b" text-anchor="end">text</text>
+<text x="52" y="1131" font-size="12" font-weight="normal" fill="#0f172a">auto_inject_review</text>
+<text x="390" y="1131" font-size="11" fill="#64748b" text-anchor="end">boolean</text>
+<text x="52" y="1152" font-size="12" font-weight="normal" fill="#0f172a">latest_user_prompt</text>
+<text x="390" y="1152" font-size="11" fill="#64748b" text-anchor="end">text</text>
+<text x="52" y="1173" font-size="12" font-weight="normal" fill="#0f172a">latest_assistant_update</text>
+<text x="390" y="1173" font-size="11" fill="#64748b" text-anchor="end">text</text>
+<text x="52" y="1194" font-size="12" font-weight="normal" fill="#0f172a">native_transcript_path</text>
+<text x="390" y="1194" font-size="11" fill="#64748b" text-anchor="end">text</text>
+<text x="52" y="1215" font-size="12" font-weight="normal" fill="#0f172a">auto_inject_ci</text>
+<text x="390" y="1215" font-size="11" fill="#64748b" text-anchor="end">boolean</text>
+<text x="52" y="1236" font-size="12" font-weight="normal" fill="#0f172a">auto_review_enabled</text>
+<text x="390" y="1236" font-size="11" fill="#64748b" text-anchor="end">integer</text>
+<text x="52" y="1257" font-size="12" font-weight="normal" fill="#0f172a">agent_session_id_launch_id</text>
+<text x="390" y="1257" font-size="11" fill="#64748b" text-anchor="end">text</text>
+<text x="52" y="1278" font-size="12" font-weight="normal" fill="#0f172a">model</text>
+<text x="390" y="1278" font-size="11" fill="#64748b" text-anchor="end">text</text>
+<text x="52" y="1299" font-size="12" font-weight="normal" fill="#0f172a">latest_user_prompt_at</text>
+<text x="390" y="1299" font-size="11" fill="#64748b" text-anchor="end">timestamp</text>
+<text x="52" y="1320" font-size="12" font-weight="normal" fill="#0f172a">reviewer_agent_config</text>
+<text x="390" y="1320" font-size="11" fill="#64748b" text-anchor="end">text</text>
+<text x="52" y="1341" font-size="12" font-weight="normal" fill="#0f172a">session_permissions</text>
+<text x="390" y="1341" font-size="11" fill="#64748b" text-anchor="end">text</text>
+<text x="52" y="1362" font-size="12" font-weight="normal" fill="#0f172a">conversation_checkpoint_state</text>
+<text x="390" y="1362" font-size="11" fill="#64748b" text-anchor="end">text</text>
+<text x="52" y="1383" font-size="12" font-weight="normal" fill="#0f172a">conversation_checkpoint_generation</text>
+<text x="390" y="1383" font-size="11" fill="#64748b" text-anchor="end">text</text>
+<text x="52" y="1404" font-size="12" font-weight="normal" fill="#0f172a">conversation_checkpoint_native_id</text>
+<text x="390" y="1404" font-size="11" fill="#64748b" text-anchor="end">text</text>
+<text x="52" y="1425" font-size="12" font-weight="normal" fill="#0f172a">conversation_checkpoint_unsettled</text>
+<text x="390" y="1425" font-size="11" fill="#64748b" text-anchor="end">boolean</text>
+<text x="52" y="1446" font-size="12" font-weight="normal" fill="#0f172a">conversation_checkpoint_turn_id</text>
+<text x="390" y="1446" font-size="11" fill="#64748b" text-anchor="end">text</text>
+<text x="52" y="1467" font-size="12" font-weight="normal" fill="#0f172a">revision</text>
+<text x="390" y="1467" font-size="11" fill="#64748b" text-anchor="end">integer</text>
+<text x="52" y="1488" font-size="12" font-weight="normal" fill="#0f172a">native_checkpoint_evidence</text>
+<text x="390" y="1488" font-size="11" fill="#64748b" text-anchor="end">text</text>
+<text x="52" y="1509" font-size="12" font-weight="normal" fill="#0f172a">latest_assistant_update_at</text>
+<text x="390" y="1509" font-size="11" fill="#64748b" text-anchor="end">timestamp</text>
+<text x="52" y="1530" font-size="12" font-weight="normal" fill="#0f172a">native_identity_observed_at</text>
+<text x="390" y="1530" font-size="11" fill="#64748b" text-anchor="end">timestamp</text>
+<text x="52" y="1551" font-size="12" font-weight="normal" fill="#0f172a">workflow_mode</text>
+<text x="390" y="1551" font-size="11" fill="#64748b" text-anchor="end">text</text>
+<text x="52" y="1572" font-size="12" font-weight="normal" fill="#0f172a">review_locked</text>
+<text x="390" y="1572" font-size="11" fill="#64748b" text-anchor="end">boolean</text>
+<text x="52" y="1593" font-size="12" font-weight="normal" fill="#0f172a">agent_deferred</text>
+<text x="390" y="1593" font-size="11" fill="#64748b" text-anchor="end">boolean</text>
+<text x="52" y="1614" font-size="12" font-weight="normal" fill="#0f172a">delivered_head_sha</text>
+<text x="390" y="1614" font-size="11" fill="#64748b" text-anchor="end">text</text>
+<text x="52" y="1635" font-size="12" font-weight="normal" fill="#0f172a">plan_approved</text>
+<text x="390" y="1635" font-size="11" fill="#64748b" text-anchor="end">boolean</text>
+</g>
+<g id="tbl-session_worktrees">
+<rect x="40" y="1686" width="360" height="206" rx="6" fill="#ffffff" stroke="#cbd5e1"/>
+<path d="M 40 1686 h 360 a 6 6 0 0 1 6 6 v 24 h -360 z" fill="#243044"/>
+<text x="52" y="1706" font-size="13" font-weight="bold" fill="#ffffff">session_worktrees</text>
+<text x="52" y="1730" font-size="12" font-weight="normal" fill="#0f172a">session_id</text>
+<rect x="130" y="1718" width="22" height="15" rx="3" fill="#0ea5e9"/><text x="135" y="1730" font-size="9" font-weight="bold" fill="#ffffff">FK</text>
+<text x="390" y="1730" font-size="11" fill="#64748b" text-anchor="end">text</text>
+<text x="52" y="1751" font-size="12" font-weight="normal" fill="#0f172a">repo_name</text>
+<text x="390" y="1751" font-size="11" fill="#64748b" text-anchor="end">text</text>
+<text x="52" y="1772" font-size="12" font-weight="normal" fill="#0f172a">branch</text>
+<text x="390" y="1772" font-size="11" fill="#64748b" text-anchor="end">text</text>
+<text x="52" y="1793" font-size="12" font-weight="normal" fill="#0f172a">base_sha</text>
+<text x="390" y="1793" font-size="11" fill="#64748b" text-anchor="end">text</text>
+<text x="52" y="1814" font-size="12" font-weight="normal" fill="#0f172a">worktree_path</text>
+<text x="390" y="1814" font-size="11" fill="#64748b" text-anchor="end">text</text>
+<text x="52" y="1835" font-size="12" font-weight="normal" fill="#0f172a">preserved_ref</text>
+<text x="390" y="1835" font-size="11" fill="#64748b" text-anchor="end">text</text>
+<text x="52" y="1856" font-size="12" font-weight="normal" fill="#0f172a">state</text>
+<text x="390" y="1856" font-size="11" fill="#64748b" text-anchor="end">text</text>
+<text x="52" y="1877" font-size="12" font-weight="normal" fill="#0f172a">base_ref</text>
+<text x="390" y="1877" font-size="11" fill="#64748b" text-anchor="end">text</text>
+</g>
+<g id="tbl-workspace_repos">
+<rect x="40" y="1928" width="360" height="185" rx="6" fill="#ffffff" stroke="#cbd5e1"/>
+<path d="M 40 1928 h 360 a 6 6 0 0 1 6 6 v 24 h -360 z" fill="#243044"/>
+<text x="52" y="1948" font-size="13" font-weight="bold" fill="#ffffff">workspace_repos</text>
+<text x="52" y="1972" font-size="12" font-weight="normal" fill="#0f172a">project_id</text>
+<rect x="130" y="1960" width="22" height="15" rx="3" fill="#0ea5e9"/><text x="135" y="1972" font-size="9" font-weight="bold" fill="#ffffff">FK</text>
+<text x="390" y="1972" font-size="11" fill="#64748b" text-anchor="end">text</text>
+<text x="52" y="1993" font-size="12" font-weight="normal" fill="#0f172a">name</text>
+<text x="390" y="1993" font-size="11" fill="#64748b" text-anchor="end">text</text>
+<text x="52" y="2014" font-size="12" font-weight="normal" fill="#0f172a">relative_path</text>
+<text x="390" y="2014" font-size="11" fill="#64748b" text-anchor="end">text</text>
+<text x="52" y="2035" font-size="12" font-weight="normal" fill="#0f172a">repo_origin_url</text>
+<text x="390" y="2035" font-size="11" fill="#64748b" text-anchor="end">text</text>
+<text x="52" y="2056" font-size="12" font-weight="normal" fill="#0f172a">registered_at</text>
+<text x="390" y="2056" font-size="11" fill="#64748b" text-anchor="end">timestamp</text>
+<text x="52" y="2077" font-size="12" font-weight="normal" fill="#0f172a">default_branch</text>
+<text x="390" y="2077" font-size="11" fill="#64748b" text-anchor="end">text</text>
+<text x="52" y="2098" font-size="12" font-weight="normal" fill="#0f172a">git_status</text>
+<text x="390" y="2098" font-size="11" fill="#64748b" text-anchor="end">text</text>
+</g>
+<g id="tbl-shell_terminals">
+<rect x="40" y="2149" width="360" height="206" rx="6" fill="#ffffff" stroke="#cbd5e1"/>
+<path d="M 40 2149 h 360 a 6 6 0 0 1 6 6 v 24 h -360 z" fill="#243044"/>
+<text x="52" y="2169" font-size="13" font-weight="bold" fill="#ffffff">shell_terminals</text>
+<text x="52" y="2193" font-size="12" font-weight="bold" fill="#0f172a">handle_id</text>
+<rect x="123" y="2181" width="24" height="15" rx="3" fill="#f59e0b"/><text x="128" y="2193" font-size="9" font-weight="bold" fill="#ffffff">PK</text>
+<text x="390" y="2193" font-size="11" fill="#64748b" text-anchor="end">text</text>
+<text x="52" y="2214" font-size="12" font-weight="normal" fill="#0f172a">project_id</text>
+<rect x="130" y="2202" width="22" height="15" rx="3" fill="#0ea5e9"/><text x="135" y="2214" font-size="9" font-weight="bold" fill="#ffffff">FK</text>
+<text x="390" y="2214" font-size="11" fill="#64748b" text-anchor="end">text</text>
+<text x="52" y="2235" font-size="12" font-weight="normal" fill="#0f172a">working_dir</text>
+<text x="390" y="2235" font-size="11" fill="#64748b" text-anchor="end">text</text>
+<text x="52" y="2256" font-size="12" font-weight="normal" fill="#0f172a">title</text>
+<text x="390" y="2256" font-size="11" fill="#64748b" text-anchor="end">text</text>
+<text x="52" y="2277" font-size="12" font-weight="normal" fill="#0f172a">app_run_id</text>
+<text x="390" y="2277" font-size="11" fill="#64748b" text-anchor="end">text</text>
+<text x="52" y="2298" font-size="12" font-weight="normal" fill="#0f172a">created_at</text>
+<text x="390" y="2298" font-size="11" fill="#64748b" text-anchor="end">timestamp</text>
+<text x="52" y="2319" font-size="12" font-weight="normal" fill="#0f172a">session_id</text>
+<rect x="130" y="2307" width="22" height="15" rx="3" fill="#0ea5e9"/><text x="135" y="2319" font-size="9" font-weight="bold" fill="#ffffff">FK</text>
+<text x="390" y="2319" font-size="11" fill="#64748b" text-anchor="end">text</text>
+<text x="52" y="2340" font-size="12" font-weight="normal" fill="#0f172a">transient</text>
+<text x="390" y="2340" font-size="11" fill="#64748b" text-anchor="end">boolean</text>
+</g>
+<g id="tbl-session_cleanup_facts">
+<rect x="40" y="2391" width="360" height="206" rx="6" fill="#ffffff" stroke="#cbd5e1"/>
+<path d="M 40 2391 h 360 a 6 6 0 0 1 6 6 v 24 h -360 z" fill="#243044"/>
+<text x="52" y="2411" font-size="13" font-weight="bold" fill="#ffffff">session_cleanup_facts</text>
+<text x="52" y="2435" font-size="12" font-weight="bold" fill="#0f172a">session_id</text>
+<rect x="130" y="2423" width="24" height="15" rx="3" fill="#f59e0b"/><text x="135" y="2435" font-size="9" font-weight="bold" fill="#ffffff">PK</text>
+<rect x="160" y="2423" width="22" height="15" rx="3" fill="#0ea5e9"/><text x="165" y="2435" font-size="9" font-weight="bold" fill="#ffffff">FK</text>
+<text x="390" y="2435" font-size="11" fill="#64748b" text-anchor="end">text</text>
+<text x="52" y="2456" font-size="12" font-weight="normal" fill="#0f172a">session_generation</text>
+<text x="390" y="2456" font-size="11" fill="#64748b" text-anchor="end">integer</text>
+<text x="52" y="2477" font-size="12" font-weight="normal" fill="#0f172a">runtime_released_at</text>
+<text x="390" y="2477" font-size="11" fill="#64748b" text-anchor="end">timestamp</text>
+<text x="52" y="2498" font-size="12" font-weight="normal" fill="#0f172a">workspace_disposition</text>
+<text x="390" y="2498" font-size="11" fill="#64748b" text-anchor="end">text</text>
+<text x="52" y="2519" font-size="12" font-weight="normal" fill="#0f172a">attempt_count</text>
+<text x="390" y="2519" font-size="11" fill="#64748b" text-anchor="end">integer</text>
+<text x="52" y="2540" font-size="12" font-weight="normal" fill="#0f172a">last_attempt_at</text>
+<text x="390" y="2540" font-size="11" fill="#64748b" text-anchor="end">timestamp</text>
+<text x="52" y="2561" font-size="12" font-weight="normal" fill="#0f172a">next_attempt_at</text>
+<text x="390" y="2561" font-size="11" fill="#64748b" text-anchor="end">timestamp</text>
+<text x="52" y="2582" font-size="12" font-weight="normal" fill="#0f172a">failure_code</text>
+<text x="390" y="2582" font-size="11" fill="#64748b" text-anchor="end">text</text>
+</g>
+<g id="tbl-manager_reengagements">
+<rect x="40" y="2633" width="360" height="227" rx="6" fill="#ffffff" stroke="#cbd5e1"/>
+<path d="M 40 2633 h 360 a 6 6 0 0 1 6 6 v 24 h -360 z" fill="#243044"/>
+<text x="52" y="2653" font-size="13" font-weight="bold" fill="#ffffff">manager_reengagements</text>
+<text x="52" y="2677" font-size="12" font-weight="bold" fill="#0f172a">session_id</text>
+<rect x="130" y="2665" width="24" height="15" rx="3" fill="#f59e0b"/><text x="135" y="2677" font-size="9" font-weight="bold" fill="#ffffff">PK</text>
+<rect x="160" y="2665" width="22" height="15" rx="3" fill="#0ea5e9"/><text x="165" y="2677" font-size="9" font-weight="bold" fill="#ffffff">FK</text>
+<text x="390" y="2677" font-size="11" fill="#64748b" text-anchor="end">text</text>
+<text x="52" y="2698" font-size="12" font-weight="normal" fill="#0f172a">attempt_count</text>
+<text x="390" y="2698" font-size="11" fill="#64748b" text-anchor="end">integer</text>
+<text x="52" y="2719" font-size="12" font-weight="normal" fill="#0f172a">next_attempt_at</text>
+<text x="390" y="2719" font-size="11" fill="#64748b" text-anchor="end">timestamp</text>
+<text x="52" y="2740" font-size="12" font-weight="normal" fill="#0f172a">last_attempt_at</text>
+<text x="390" y="2740" font-size="11" fill="#64748b" text-anchor="end">timestamp</text>
+<text x="52" y="2761" font-size="12" font-weight="normal" fill="#0f172a">progress_since_attempt</text>
+<text x="390" y="2761" font-size="11" fill="#64748b" text-anchor="end">boolean</text>
+<text x="52" y="2782" font-size="12" font-weight="normal" fill="#0f172a">attention_notified</text>
+<text x="390" y="2782" font-size="11" fill="#64748b" text-anchor="end">boolean</text>
+<text x="52" y="2803" font-size="12" font-weight="normal" fill="#0f172a">state</text>
+<text x="390" y="2803" font-size="11" fill="#64748b" text-anchor="end">text</text>
+<text x="52" y="2824" font-size="12" font-weight="normal" fill="#0f172a">created_at</text>
+<text x="390" y="2824" font-size="11" fill="#64748b" text-anchor="end">timestamp</text>
+<text x="52" y="2845" font-size="12" font-weight="normal" fill="#0f172a">updated_at</text>
+<text x="390" y="2845" font-size="11" fill="#64748b" text-anchor="end">timestamp</text>
+</g>
+<g id="tbl-retired_session_nums">
+<rect x="40" y="2896" width="360" height="101" rx="6" fill="#ffffff" stroke="#cbd5e1"/>
+<path d="M 40 2896 h 360 a 6 6 0 0 1 6 6 v 24 h -360 z" fill="#243044"/>
+<text x="52" y="2916" font-size="13" font-weight="bold" fill="#ffffff">retired_session_nums</text>
+<text x="52" y="2940" font-size="12" font-weight="normal" fill="#0f172a">project_id</text>
+<text x="390" y="2940" font-size="11" fill="#64748b" text-anchor="end">text</text>
+<text x="52" y="2961" font-size="12" font-weight="normal" fill="#0f172a">num</text>
+<text x="390" y="2961" font-size="11" fill="#64748b" text-anchor="end">integer</text>
+<text x="52" y="2982" font-size="12" font-weight="normal" fill="#0f172a">retired_at</text>
+<text x="390" y="2982" font-size="11" fill="#64748b" text-anchor="end">timestamp</text>
+</g>
+<g id="tbl-app_settings">
+<rect x="40" y="3033" width="360" height="122" rx="6" fill="#ffffff" stroke="#cbd5e1"/>
+<path d="M 40 3033 h 360 a 6 6 0 0 1 6 6 v 24 h -360 z" fill="#243044"/>
+<text x="52" y="3053" font-size="13" font-weight="bold" fill="#ffffff">app_settings</text>
+<text x="52" y="3077" font-size="12" font-weight="bold" fill="#0f172a">id</text>
+<rect x="74" y="3065" width="24" height="15" rx="3" fill="#f59e0b"/><text x="79" y="3077" font-size="9" font-weight="bold" fill="#ffffff">PK</text>
+<text x="390" y="3077" font-size="11" fill="#64748b" text-anchor="end">integer</text>
+<text x="52" y="3098" font-size="12" font-weight="normal" fill="#0f172a">default_session_mode</text>
+<text x="390" y="3098" font-size="11" fill="#64748b" text-anchor="end">text</text>
+<text x="52" y="3119" font-size="12" font-weight="normal" fill="#0f172a">updated_at</text>
+<text x="390" y="3119" font-size="11" fill="#64748b" text-anchor="end">timestamp</text>
+<text x="52" y="3140" font-size="12" font-weight="normal" fill="#0f172a">cloud_offering</text>
+<text x="390" y="3140" font-size="11" fill="#64748b" text-anchor="end">integer</text>
+</g>
+<g id="tbl-telemetry_event">
+<rect x="40" y="3191" width="360" height="227" rx="6" fill="#ffffff" stroke="#cbd5e1"/>
+<path d="M 40 3191 h 360 a 6 6 0 0 1 6 6 v 24 h -360 z" fill="#243044"/>
+<text x="52" y="3211" font-size="13" font-weight="bold" fill="#ffffff">telemetry_event</text>
+<text x="52" y="3235" font-size="12" font-weight="bold" fill="#0f172a">id</text>
+<rect x="74" y="3223" width="24" height="15" rx="3" fill="#f59e0b"/><text x="79" y="3235" font-size="9" font-weight="bold" fill="#ffffff">PK</text>
+<text x="390" y="3235" font-size="11" fill="#64748b" text-anchor="end">text</text>
+<text x="52" y="3256" font-size="12" font-weight="normal" fill="#0f172a">occurred_at</text>
+<text x="390" y="3256" font-size="11" fill="#64748b" text-anchor="end">timestamp</text>
+<text x="52" y="3277" font-size="12" font-weight="normal" fill="#0f172a">name</text>
+<text x="390" y="3277" font-size="11" fill="#64748b" text-anchor="end">text</text>
+<text x="52" y="3298" font-size="12" font-weight="normal" fill="#0f172a">source</text>
+<text x="390" y="3298" font-size="11" fill="#64748b" text-anchor="end">text</text>
+<text x="52" y="3319" font-size="12" font-weight="normal" fill="#0f172a">level</text>
+<text x="390" y="3319" font-size="11" fill="#64748b" text-anchor="end">text</text>
+<text x="52" y="3340" font-size="12" font-weight="normal" fill="#0f172a">project_id</text>
+<text x="390" y="3340" font-size="11" fill="#64748b" text-anchor="end">text</text>
+<text x="52" y="3361" font-size="12" font-weight="normal" fill="#0f172a">session_id</text>
+<text x="390" y="3361" font-size="11" fill="#64748b" text-anchor="end">text</text>
+<text x="52" y="3382" font-size="12" font-weight="normal" fill="#0f172a">request_id</text>
+<text x="390" y="3382" font-size="11" fill="#64748b" text-anchor="end">text</text>
+<text x="52" y="3403" font-size="12" font-weight="normal" fill="#0f172a">payload_json</text>
+<text x="390" y="3403" font-size="11" fill="#64748b" text-anchor="end">text</text>
+</g>
+<g id="tbl-agent_model_catalog">
+<rect x="40" y="3454" width="360" height="164" rx="6" fill="#ffffff" stroke="#cbd5e1"/>
+<path d="M 40 3454 h 360 a 6 6 0 0 1 6 6 v 24 h -360 z" fill="#243044"/>
+<text x="52" y="3474" font-size="13" font-weight="bold" fill="#ffffff">agent_model_catalog</text>
+<text x="52" y="3498" font-size="12" font-weight="normal" fill="#0f172a">agent_id</text>
+<text x="390" y="3498" font-size="11" fill="#64748b" text-anchor="end">text</text>
+<text x="52" y="3519" font-size="12" font-weight="normal" fill="#0f172a">project_id</text>
+<text x="390" y="3519" font-size="11" fill="#64748b" text-anchor="end">text</text>
+<text x="52" y="3540" font-size="12" font-weight="normal" fill="#0f172a">binary_version</text>
+<text x="390" y="3540" font-size="11" fill="#64748b" text-anchor="end">text</text>
+<text x="52" y="3561" font-size="12" font-weight="normal" fill="#0f172a">catalog_json</text>
+<text x="390" y="3561" font-size="11" fill="#64748b" text-anchor="end">text</text>
+<text x="52" y="3582" font-size="12" font-weight="normal" fill="#0f172a">source</text>
+<text x="390" y="3582" font-size="11" fill="#64748b" text-anchor="end">text</text>
+<text x="52" y="3603" font-size="12" font-weight="normal" fill="#0f172a">fetched_at</text>
+<text x="390" y="3603" font-size="11" fill="#64748b" text-anchor="end">timestamp</text>
+</g>
+<g id="tbl-agent_install_jobs">
+<rect x="40" y="3654" width="360" height="248" rx="6" fill="#ffffff" stroke="#cbd5e1"/>
+<path d="M 40 3654 h 360 a 6 6 0 0 1 6 6 v 24 h -360 z" fill="#243044"/>
+<text x="52" y="3674" font-size="13" font-weight="bold" fill="#ffffff">agent_install_jobs</text>
+<text x="52" y="3698" font-size="12" font-weight="bold" fill="#0f172a">target</text>
+<rect x="102" y="3686" width="24" height="15" rx="3" fill="#f59e0b"/><text x="107" y="3698" font-size="9" font-weight="bold" fill="#ffffff">PK</text>
+<text x="390" y="3698" font-size="11" fill="#64748b" text-anchor="end">text</text>
+<text x="52" y="3719" font-size="12" font-weight="normal" fill="#0f172a">status</text>
+<text x="390" y="3719" font-size="11" fill="#64748b" text-anchor="end">text</text>
+<text x="52" y="3740" font-size="12" font-weight="normal" fill="#0f172a">method</text>
+<text x="390" y="3740" font-size="11" fill="#64748b" text-anchor="end">text</text>
+<text x="52" y="3761" font-size="12" font-weight="normal" fill="#0f172a">command</text>
+<text x="390" y="3761" font-size="11" fill="#64748b" text-anchor="end">text</text>
+<text x="52" y="3782" font-size="12" font-weight="normal" fill="#0f172a">expected_destination</text>
+<text x="390" y="3782" font-size="11" fill="#64748b" text-anchor="end">text</text>
+<text x="52" y="3803" font-size="12" font-weight="normal" fill="#0f172a">output</text>
+<text x="390" y="3803" font-size="11" fill="#64748b" text-anchor="end">text</text>
+<text x="52" y="3824" font-size="12" font-weight="normal" fill="#0f172a">error</text>
+<text x="390" y="3824" font-size="11" fill="#64748b" text-anchor="end">text</text>
+<text x="52" y="3845" font-size="12" font-weight="normal" fill="#0f172a">started_at</text>
+<text x="390" y="3845" font-size="11" fill="#64748b" text-anchor="end">timestamp</text>
+<text x="52" y="3866" font-size="12" font-weight="normal" fill="#0f172a">finished_at</text>
+<text x="390" y="3866" font-size="11" fill="#64748b" text-anchor="end">timestamp</text>
+<text x="52" y="3887" font-size="12" font-weight="normal" fill="#0f172a">updated_at</text>
+<text x="390" y="3887" font-size="11" fill="#64748b" text-anchor="end">timestamp</text>
+</g>
+<g id="tbl-conversations">
+<rect x="460" y="152" width="360" height="731" rx="6" fill="#ffffff" stroke="#cbd5e1"/>
+<path d="M 460 152 h 360 a 6 6 0 0 1 6 6 v 24 h -360 z" fill="#243044"/>
+<text x="472" y="172" font-size="13" font-weight="bold" fill="#ffffff">conversations</text>
+<text x="472" y="196" font-size="12" font-weight="bold" fill="#0f172a">id</text>
+<rect x="494" y="184" width="24" height="15" rx="3" fill="#f59e0b"/><text x="499" y="196" font-size="9" font-weight="bold" fill="#ffffff">PK</text>
+<text x="810" y="196" font-size="11" fill="#64748b" text-anchor="end">text</text>
+<text x="472" y="217" font-size="12" font-weight="normal" fill="#0f172a">scope</text>
+<text x="810" y="217" font-size="11" fill="#64748b" text-anchor="end">text</text>
+<text x="472" y="238" font-size="12" font-weight="normal" fill="#0f172a">project_id</text>
+<rect x="550" y="226" width="22" height="15" rx="3" fill="#0ea5e9"/><text x="555" y="238" font-size="9" font-weight="bold" fill="#ffffff">FK</text>
+<text x="810" y="238" font-size="11" fill="#64748b" text-anchor="end">text</text>
+<text x="472" y="259" font-size="12" font-weight="normal" fill="#0f172a">session_id</text>
+<rect x="550" y="247" width="22" height="15" rx="3" fill="#0ea5e9"/><text x="555" y="259" font-size="9" font-weight="bold" fill="#ffffff">FK</text>
+<text x="810" y="259" font-size="11" fill="#64748b" text-anchor="end">text</text>
+<text x="472" y="280" font-size="12" font-weight="normal" fill="#0f172a">current_session_id</text>
+<rect x="606" y="268" width="22" height="15" rx="3" fill="#0ea5e9"/><text x="611" y="280" font-size="9" font-weight="bold" fill="#ffffff">FK</text>
+<text x="810" y="280" font-size="11" fill="#64748b" text-anchor="end">text</text>
+<text x="472" y="301" font-size="12" font-weight="normal" fill="#0f172a">latest_sequence</text>
+<text x="810" y="301" font-size="11" fill="#64748b" text-anchor="end">integer</text>
+<text x="472" y="322" font-size="12" font-weight="normal" fill="#0f172a">created_at</text>
+<text x="810" y="322" font-size="11" fill="#64748b" text-anchor="end">timestamp</text>
+<text x="472" y="343" font-size="12" font-weight="normal" fill="#0f172a">updated_at</text>
+<text x="810" y="343" font-size="11" fill="#64748b" text-anchor="end">timestamp</text>
+<text x="472" y="364" font-size="12" font-weight="normal" fill="#0f172a">model</text>
+<text x="810" y="364" font-size="11" fill="#64748b" text-anchor="end">text</text>
+<text x="472" y="385" font-size="12" font-weight="normal" fill="#0f172a">reasoning_effort</text>
+<text x="810" y="385" font-size="11" fill="#64748b" text-anchor="end">text</text>
+<text x="472" y="406" font-size="12" font-weight="normal" fill="#0f172a">approval_mode</text>
+<text x="810" y="406" font-size="11" fill="#64748b" text-anchor="end">text</text>
+<text x="472" y="427" font-size="12" font-weight="normal" fill="#0f172a">compacted_at</text>
+<text x="810" y="427" font-size="11" fill="#64748b" text-anchor="end">timestamp</text>
+<text x="472" y="448" font-size="12" font-weight="normal" fill="#0f172a">context_used</text>
+<text x="810" y="448" font-size="11" fill="#64748b" text-anchor="end">integer</text>
+<text x="472" y="469" font-size="12" font-weight="normal" fill="#0f172a">context_window</text>
+<text x="810" y="469" font-size="11" fill="#64748b" text-anchor="end">integer</text>
+<text x="472" y="490" font-size="12" font-weight="normal" fill="#0f172a">usage_input_tokens</text>
+<text x="810" y="490" font-size="11" fill="#64748b" text-anchor="end">integer</text>
+<text x="472" y="511" font-size="12" font-weight="normal" fill="#0f172a">usage_output_tokens</text>
+<text x="810" y="511" font-size="11" fill="#64748b" text-anchor="end">integer</text>
+<text x="472" y="532" font-size="12" font-weight="normal" fill="#0f172a">usage_cached_tokens</text>
+<text x="810" y="532" font-size="11" fill="#64748b" text-anchor="end">integer</text>
+<text x="472" y="553" font-size="12" font-weight="normal" fill="#0f172a">usage_total_tokens</text>
+<text x="810" y="553" font-size="11" fill="#64748b" text-anchor="end">integer</text>
+<text x="472" y="574" font-size="12" font-weight="normal" fill="#0f172a">rate_limit_primary_percent</text>
+<text x="810" y="574" font-size="11" fill="#64748b" text-anchor="end">real</text>
+<text x="472" y="595" font-size="12" font-weight="normal" fill="#0f172a">rate_limit_secondary_percent</text>
+<text x="810" y="595" font-size="11" fill="#64748b" text-anchor="end">real</text>
+<text x="472" y="616" font-size="12" font-weight="normal" fill="#0f172a">rate_limit_primary_resets_in</text>
+<text x="810" y="616" font-size="11" fill="#64748b" text-anchor="end">integer</text>
+<text x="472" y="637" font-size="12" font-weight="normal" fill="#0f172a">rate_limit_secondary_resets_in</text>
+<text x="810" y="637" font-size="11" fill="#64748b" text-anchor="end">integer</text>
+<text x="472" y="658" font-size="12" font-weight="normal" fill="#0f172a">rate_limit_plan</text>
+<text x="810" y="658" font-size="11" fill="#64748b" text-anchor="end">text</text>
+<text x="472" y="679" font-size="12" font-weight="normal" fill="#0f172a">provider_title</text>
+<text x="810" y="679" font-size="11" fill="#64748b" text-anchor="end">text</text>
+<text x="472" y="700" font-size="12" font-weight="normal" fill="#0f172a">applied_title</text>
+<text x="810" y="700" font-size="11" fill="#64748b" text-anchor="end">text</text>
+<text x="472" y="721" font-size="12" font-weight="normal" fill="#0f172a">model_reroute_json</text>
+<text x="810" y="721" font-size="11" fill="#64748b" text-anchor="end">text</text>
+<text x="472" y="742" font-size="12" font-weight="normal" fill="#0f172a">account_json</text>
+<text x="810" y="742" font-size="11" fill="#64748b" text-anchor="end">text</text>
+<text x="472" y="763" font-size="12" font-weight="normal" fill="#0f172a">thread_state_json</text>
+<text x="810" y="763" font-size="11" fill="#64748b" text-anchor="end">text</text>
+<text x="472" y="784" font-size="12" font-weight="normal" fill="#0f172a">mcp_servers_json</text>
+<text x="810" y="784" font-size="11" fill="#64748b" text-anchor="end">text</text>
+<text x="472" y="805" font-size="12" font-weight="normal" fill="#0f172a">usage_cost</text>
+<text x="810" y="805" font-size="11" fill="#64748b" text-anchor="end">real</text>
+<text x="472" y="826" font-size="12" font-weight="normal" fill="#0f172a">usage_currency</text>
+<text x="810" y="826" font-size="11" fill="#64748b" text-anchor="end">text</text>
+<text x="472" y="847" font-size="12" font-weight="normal" fill="#0f172a">active_branch_id</text>
+<text x="810" y="847" font-size="11" fill="#64748b" text-anchor="end">text</text>
+<text x="472" y="868" font-size="12" font-weight="normal" fill="#0f172a">opencode_mode</text>
+<text x="810" y="868" font-size="11" fill="#64748b" text-anchor="end">text</text>
+</g>
+<g id="tbl-conversation_turns">
+<rect x="460" y="919" width="360" height="416" rx="6" fill="#ffffff" stroke="#cbd5e1"/>
+<path d="M 460 919 h 360 a 6 6 0 0 1 6 6 v 24 h -360 z" fill="#243044"/>
+<text x="472" y="939" font-size="13" font-weight="bold" fill="#ffffff">conversation_turns</text>
+<text x="472" y="963" font-size="12" font-weight="bold" fill="#0f172a">id</text>
+<rect x="494" y="951" width="24" height="15" rx="3" fill="#f59e0b"/><text x="499" y="963" font-size="9" font-weight="bold" fill="#ffffff">PK</text>
+<text x="810" y="963" font-size="11" fill="#64748b" text-anchor="end">text</text>
+<text x="472" y="984" font-size="12" font-weight="normal" fill="#0f172a">conversation_id</text>
+<rect x="585" y="972" width="22" height="15" rx="3" fill="#0ea5e9"/><text x="590" y="984" font-size="9" font-weight="bold" fill="#ffffff">FK</text>
+<text x="810" y="984" font-size="11" fill="#64748b" text-anchor="end">text</text>
+<text x="472" y="1005" font-size="12" font-weight="normal" fill="#0f172a">handled_by_session_id</text>
+<rect x="627" y="993" width="22" height="15" rx="3" fill="#0ea5e9"/><text x="632" y="1005" font-size="9" font-weight="bold" fill="#ffffff">FK</text>
+<text x="810" y="1005" font-size="11" fill="#64748b" text-anchor="end">text</text>
+<text x="472" y="1026" font-size="12" font-weight="normal" fill="#0f172a">provider_turn_id</text>
+<text x="810" y="1026" font-size="11" fill="#64748b" text-anchor="end">text</text>
+<text x="472" y="1047" font-size="12" font-weight="normal" fill="#0f172a">controller_generation</text>
+<text x="810" y="1047" font-size="11" fill="#64748b" text-anchor="end">text</text>
+<text x="472" y="1068" font-size="12" font-weight="normal" fill="#0f172a">state</text>
+<text x="810" y="1068" font-size="11" fill="#64748b" text-anchor="end">text</text>
+<text x="472" y="1089" font-size="12" font-weight="normal" fill="#0f172a">error_message</text>
+<text x="810" y="1089" font-size="11" fill="#64748b" text-anchor="end">text</text>
+<text x="472" y="1110" font-size="12" font-weight="normal" fill="#0f172a">requested_at</text>
+<text x="810" y="1110" font-size="11" fill="#64748b" text-anchor="end">timestamp</text>
+<text x="472" y="1131" font-size="12" font-weight="normal" fill="#0f172a">started_at</text>
+<text x="810" y="1131" font-size="11" fill="#64748b" text-anchor="end">timestamp</text>
+<text x="472" y="1152" font-size="12" font-weight="normal" fill="#0f172a">completed_at</text>
+<text x="810" y="1152" font-size="11" fill="#64748b" text-anchor="end">timestamp</text>
+<text x="472" y="1173" font-size="12" font-weight="normal" fill="#0f172a">diff_json</text>
+<text x="810" y="1173" font-size="11" fill="#64748b" text-anchor="end">text</text>
+<text x="472" y="1194" font-size="12" font-weight="normal" fill="#0f172a">rolled_back_at</text>
+<text x="810" y="1194" font-size="11" fill="#64748b" text-anchor="end">timestamp</text>
+<text x="472" y="1215" font-size="12" font-weight="normal" fill="#0f172a">plan_json</text>
+<text x="810" y="1215" font-size="11" fill="#64748b" text-anchor="end">text</text>
+<text x="472" y="1236" font-size="12" font-weight="normal" fill="#0f172a">branch_id</text>
+<text x="810" y="1236" font-size="11" fill="#64748b" text-anchor="end">text</text>
+<text x="472" y="1257" font-size="12" font-weight="normal" fill="#0f172a">promotion_started_at</text>
+<text x="810" y="1257" font-size="11" fill="#64748b" text-anchor="end">timestamp</text>
+<text x="472" y="1278" font-size="12" font-weight="normal" fill="#0f172a">promoted_to_turn_id</text>
+<rect x="613" y="1266" width="22" height="15" rx="3" fill="#0ea5e9"/><text x="618" y="1278" font-size="9" font-weight="bold" fill="#ffffff">FK</text>
+<text x="810" y="1278" font-size="11" fill="#64748b" text-anchor="end">text</text>
+<text x="472" y="1299" font-size="12" font-weight="normal" fill="#0f172a">retry_of_turn_id</text>
+<rect x="592" y="1287" width="22" height="15" rx="3" fill="#0ea5e9"/><text x="597" y="1299" font-size="9" font-weight="bold" fill="#ffffff">FK</text>
+<text x="810" y="1299" font-size="11" fill="#64748b" text-anchor="end">text</text>
+<text x="472" y="1320" font-size="12" font-weight="normal" fill="#0f172a">workflow_mode</text>
+<text x="810" y="1320" font-size="11" fill="#64748b" text-anchor="end">text</text>
+</g>
+<g id="tbl-conversation_messages">
+<rect x="460" y="1371" width="360" height="353" rx="6" fill="#ffffff" stroke="#cbd5e1"/>
+<path d="M 460 1371 h 360 a 6 6 0 0 1 6 6 v 24 h -360 z" fill="#243044"/>
+<text x="472" y="1391" font-size="13" font-weight="bold" fill="#ffffff">conversation_messages</text>
+<text x="472" y="1415" font-size="12" font-weight="bold" fill="#0f172a">id</text>
+<rect x="494" y="1403" width="24" height="15" rx="3" fill="#f59e0b"/><text x="499" y="1415" font-size="9" font-weight="bold" fill="#ffffff">PK</text>
+<text x="810" y="1415" font-size="11" fill="#64748b" text-anchor="end">text</text>
+<text x="472" y="1436" font-size="12" font-weight="normal" fill="#0f172a">conversation_id</text>
+<rect x="585" y="1424" width="22" height="15" rx="3" fill="#0ea5e9"/><text x="590" y="1436" font-size="9" font-weight="bold" fill="#ffffff">FK</text>
+<text x="810" y="1436" font-size="11" fill="#64748b" text-anchor="end">text</text>
+<text x="472" y="1457" font-size="12" font-weight="normal" fill="#0f172a">turn_id</text>
+<rect x="529" y="1445" width="22" height="15" rx="3" fill="#0ea5e9"/><text x="534" y="1457" font-size="9" font-weight="bold" fill="#ffffff">FK</text>
+<text x="810" y="1457" font-size="11" fill="#64748b" text-anchor="end">text</text>
+<text x="472" y="1478" font-size="12" font-weight="normal" fill="#0f172a">sequence</text>
+<text x="810" y="1478" font-size="11" fill="#64748b" text-anchor="end">integer</text>
+<text x="472" y="1499" font-size="12" font-weight="normal" fill="#0f172a">revision</text>
+<text x="810" y="1499" font-size="11" fill="#64748b" text-anchor="end">integer</text>
+<text x="472" y="1520" font-size="12" font-weight="normal" fill="#0f172a">role</text>
+<text x="810" y="1520" font-size="11" fill="#64748b" text-anchor="end">text</text>
+<text x="472" y="1541" font-size="12" font-weight="normal" fill="#0f172a">origin</text>
+<text x="810" y="1541" font-size="11" fill="#64748b" text-anchor="end">text</text>
+<text x="472" y="1562" font-size="12" font-weight="normal" fill="#0f172a">text</text>
+<text x="810" y="1562" font-size="11" fill="#64748b" text-anchor="end">text</text>
+<text x="472" y="1583" font-size="12" font-weight="normal" fill="#0f172a">streaming</text>
+<text x="810" y="1583" font-size="11" fill="#64748b" text-anchor="end">integer</text>
+<text x="472" y="1604" font-size="12" font-weight="normal" fill="#0f172a">provider_item_id</text>
+<text x="810" y="1604" font-size="11" fill="#64748b" text-anchor="end">text</text>
+<text x="472" y="1625" font-size="12" font-weight="normal" fill="#0f172a">client_message_id</text>
+<text x="810" y="1625" font-size="11" fill="#64748b" text-anchor="end">text</text>
+<text x="472" y="1646" font-size="12" font-weight="normal" fill="#0f172a">created_at</text>
+<text x="810" y="1646" font-size="11" fill="#64748b" text-anchor="end">timestamp</text>
+<text x="472" y="1667" font-size="12" font-weight="normal" fill="#0f172a">updated_at</text>
+<text x="810" y="1667" font-size="11" fill="#64748b" text-anchor="end">timestamp</text>
+<text x="472" y="1688" font-size="12" font-weight="normal" fill="#0f172a">delivery_content_json</text>
+<text x="810" y="1688" font-size="11" fill="#64748b" text-anchor="end">text</text>
+<text x="472" y="1709" font-size="12" font-weight="normal" fill="#0f172a">branch_id</text>
+<text x="810" y="1709" font-size="11" fill="#64748b" text-anchor="end">text</text>
+</g>
+<g id="tbl-conversation_branches">
+<rect x="460" y="1760" width="360" height="353" rx="6" fill="#ffffff" stroke="#cbd5e1"/>
+<path d="M 460 1760 h 360 a 6 6 0 0 1 6 6 v 24 h -360 z" fill="#243044"/>
+<text x="472" y="1780" font-size="13" font-weight="bold" fill="#ffffff">conversation_branches</text>
+<text x="472" y="1804" font-size="12" font-weight="bold" fill="#0f172a">id</text>
+<rect x="494" y="1792" width="24" height="15" rx="3" fill="#f59e0b"/><text x="499" y="1804" font-size="9" font-weight="bold" fill="#ffffff">PK</text>
+<text x="810" y="1804" font-size="11" fill="#64748b" text-anchor="end">text</text>
+<text x="472" y="1825" font-size="12" font-weight="normal" fill="#0f172a">conversation_id</text>
+<rect x="585" y="1813" width="22" height="15" rx="3" fill="#0ea5e9"/><text x="590" y="1825" font-size="9" font-weight="bold" fill="#ffffff">FK</text>
+<text x="810" y="1825" font-size="11" fill="#64748b" text-anchor="end">text</text>
+<text x="472" y="1846" font-size="12" font-weight="normal" fill="#0f172a">session_id</text>
+<rect x="550" y="1834" width="22" height="15" rx="3" fill="#0ea5e9"/><text x="555" y="1846" font-size="9" font-weight="bold" fill="#ffffff">FK</text>
+<text x="810" y="1846" font-size="11" fill="#64748b" text-anchor="end">text</text>
+<text x="472" y="1867" font-size="12" font-weight="normal" fill="#0f172a">provider_conversation_id</text>
+<text x="810" y="1867" font-size="11" fill="#64748b" text-anchor="end">text</text>
+<text x="472" y="1888" font-size="12" font-weight="normal" fill="#0f172a">parent_branch_id</text>
+<rect x="592" y="1876" width="22" height="15" rx="3" fill="#0ea5e9"/><text x="597" y="1888" font-size="9" font-weight="bold" fill="#ffffff">FK</text>
+<text x="810" y="1888" font-size="11" fill="#64748b" text-anchor="end">text</text>
+<text x="472" y="1909" font-size="12" font-weight="normal" fill="#0f172a">fork_after_turn_id</text>
+<rect x="606" y="1897" width="22" height="15" rx="3" fill="#0ea5e9"/><text x="611" y="1909" font-size="9" font-weight="bold" fill="#ffffff">FK</text>
+<text x="810" y="1909" font-size="11" fill="#64748b" text-anchor="end">text</text>
+<text x="472" y="1930" font-size="12" font-weight="normal" fill="#0f172a">replaced_turn_id</text>
+<rect x="592" y="1918" width="22" height="15" rx="3" fill="#0ea5e9"/><text x="597" y="1930" font-size="9" font-weight="bold" fill="#ffffff">FK</text>
+<text x="810" y="1930" font-size="11" fill="#64748b" text-anchor="end">text</text>
+<text x="472" y="1951" font-size="12" font-weight="normal" fill="#0f172a">replacement_turn_id</text>
+<rect x="613" y="1939" width="22" height="15" rx="3" fill="#0ea5e9"/><text x="618" y="1951" font-size="9" font-weight="bold" fill="#ffffff">FK</text>
+<text x="810" y="1951" font-size="11" fill="#64748b" text-anchor="end">text</text>
+<text x="472" y="1972" font-size="12" font-weight="normal" fill="#0f172a">fork_after_sequence</text>
+<text x="810" y="1972" font-size="11" fill="#64748b" text-anchor="end">integer</text>
+<text x="472" y="1993" font-size="12" font-weight="normal" fill="#0f172a">created_at</text>
+<text x="810" y="1993" font-size="11" fill="#64748b" text-anchor="end">timestamp</text>
+<text x="472" y="2014" font-size="12" font-weight="normal" fill="#0f172a">strategy</text>
+<text x="810" y="2014" font-size="11" fill="#64748b" text-anchor="end">text</text>
+<text x="472" y="2035" font-size="12" font-weight="normal" fill="#0f172a">replay_cutoff_sequence</text>
+<text x="810" y="2035" font-size="11" fill="#64748b" text-anchor="end">integer</text>
+<text x="472" y="2056" font-size="12" font-weight="normal" fill="#0f172a">replay_truncated</text>
+<text x="810" y="2056" font-size="11" fill="#64748b" text-anchor="end">integer</text>
+<text x="472" y="2077" font-size="12" font-weight="normal" fill="#0f172a">provider_scope_id</text>
+<text x="810" y="2077" font-size="11" fill="#64748b" text-anchor="end">text</text>
+<text x="472" y="2098" font-size="12" font-weight="normal" fill="#0f172a">provider_ids_scoped</text>
+<text x="810" y="2098" font-size="11" fill="#64748b" text-anchor="end">integer</text>
+</g>
+<g id="tbl-conversation_activities">
+<rect x="460" y="2149" width="360" height="416" rx="6" fill="#ffffff" stroke="#cbd5e1"/>
+<path d="M 460 2149 h 360 a 6 6 0 0 1 6 6 v 24 h -360 z" fill="#243044"/>
+<text x="472" y="2169" font-size="13" font-weight="bold" fill="#ffffff">conversation_activities</text>
+<text x="472" y="2193" font-size="12" font-weight="bold" fill="#0f172a">id</text>
+<rect x="494" y="2181" width="24" height="15" rx="3" fill="#f59e0b"/><text x="499" y="2193" font-size="9" font-weight="bold" fill="#ffffff">PK</text>
+<text x="810" y="2193" font-size="11" fill="#64748b" text-anchor="end">text</text>
+<text x="472" y="2214" font-size="12" font-weight="normal" fill="#0f172a">conversation_id</text>
+<rect x="585" y="2202" width="22" height="15" rx="3" fill="#0ea5e9"/><text x="590" y="2214" font-size="9" font-weight="bold" fill="#ffffff">FK</text>
+<text x="810" y="2214" font-size="11" fill="#64748b" text-anchor="end">text</text>
+<text x="472" y="2235" font-size="12" font-weight="normal" fill="#0f172a">turn_id</text>
+<rect x="529" y="2223" width="22" height="15" rx="3" fill="#0ea5e9"/><text x="534" y="2235" font-size="9" font-weight="bold" fill="#ffffff">FK</text>
+<text x="810" y="2235" font-size="11" fill="#64748b" text-anchor="end">text</text>
+<text x="472" y="2256" font-size="12" font-weight="normal" fill="#0f172a">sequence</text>
+<text x="810" y="2256" font-size="11" fill="#64748b" text-anchor="end">integer</text>
+<text x="472" y="2277" font-size="12" font-weight="normal" fill="#0f172a">revision</text>
+<text x="810" y="2277" font-size="11" fill="#64748b" text-anchor="end">integer</text>
+<text x="472" y="2298" font-size="12" font-weight="normal" fill="#0f172a">kind</text>
+<text x="810" y="2298" font-size="11" fill="#64748b" text-anchor="end">text</text>
+<text x="472" y="2319" font-size="12" font-weight="normal" fill="#0f172a">status</text>
+<text x="810" y="2319" font-size="11" fill="#64748b" text-anchor="end">text</text>
+<text x="472" y="2340" font-size="12" font-weight="normal" fill="#0f172a">summary</text>
+<text x="810" y="2340" font-size="11" fill="#64748b" text-anchor="end">text</text>
+<text x="472" y="2361" font-size="12" font-weight="normal" fill="#0f172a">detail_json</text>
+<text x="810" y="2361" font-size="11" fill="#64748b" text-anchor="end">text</text>
+<text x="472" y="2382" font-size="12" font-weight="normal" fill="#0f172a">request_id</text>
+<text x="810" y="2382" font-size="11" fill="#64748b" text-anchor="end">text</text>
+<text x="472" y="2403" font-size="12" font-weight="normal" fill="#0f172a">provider_item_id</text>
+<text x="810" y="2403" font-size="11" fill="#64748b" text-anchor="end">text</text>
+<text x="472" y="2424" font-size="12" font-weight="normal" fill="#0f172a">created_at</text>
+<text x="810" y="2424" font-size="11" fill="#64748b" text-anchor="end">timestamp</text>
+<text x="472" y="2445" font-size="12" font-weight="normal" fill="#0f172a">updated_at</text>
+<text x="810" y="2445" font-size="11" fill="#64748b" text-anchor="end">timestamp</text>
+<text x="472" y="2466" font-size="12" font-weight="normal" fill="#0f172a">command_output</text>
+<text x="810" y="2466" font-size="11" fill="#64748b" text-anchor="end">text</text>
+<text x="472" y="2487" font-size="12" font-weight="normal" fill="#0f172a">command_output_truncated</text>
+<text x="810" y="2487" font-size="11" fill="#64748b" text-anchor="end">integer</text>
+<text x="472" y="2508" font-size="12" font-weight="normal" fill="#0f172a">streamed_text</text>
+<text x="810" y="2508" font-size="11" fill="#64748b" text-anchor="end">text</text>
+<text x="472" y="2529" font-size="12" font-weight="normal" fill="#0f172a">streamed_text_truncated</text>
+<text x="810" y="2529" font-size="11" fill="#64748b" text-anchor="end">integer</text>
+<text x="472" y="2550" font-size="12" font-weight="normal" fill="#0f172a">branch_id</text>
+<text x="810" y="2550" font-size="11" fill="#64748b" text-anchor="end">text</text>
+</g>
+<g id="tbl-conversation_provider_events">
+<rect x="460" y="2601" width="360" height="206" rx="6" fill="#ffffff" stroke="#cbd5e1"/>
+<path d="M 460 2601 h 360 a 6 6 0 0 1 6 6 v 24 h -360 z" fill="#243044"/>
+<text x="472" y="2621" font-size="13" font-weight="bold" fill="#ffffff">conversation_provider_events</text>
+<text x="472" y="2645" font-size="12" font-weight="bold" fill="#0f172a">id</text>
+<rect x="494" y="2633" width="24" height="15" rx="3" fill="#f59e0b"/><text x="499" y="2645" font-size="9" font-weight="bold" fill="#ffffff">PK</text>
+<text x="810" y="2645" font-size="11" fill="#64748b" text-anchor="end">integer</text>
+<text x="472" y="2666" font-size="12" font-weight="normal" fill="#0f172a">conversation_id</text>
+<rect x="585" y="2654" width="22" height="15" rx="3" fill="#0ea5e9"/><text x="590" y="2666" font-size="9" font-weight="bold" fill="#ffffff">FK</text>
+<text x="810" y="2666" font-size="11" fill="#64748b" text-anchor="end">text</text>
+<text x="472" y="2687" font-size="12" font-weight="normal" fill="#0f172a">session_id</text>
+<rect x="550" y="2675" width="22" height="15" rx="3" fill="#0ea5e9"/><text x="555" y="2687" font-size="9" font-weight="bold" fill="#ffffff">FK</text>
+<text x="810" y="2687" font-size="11" fill="#64748b" text-anchor="end">text</text>
+<text x="472" y="2708" font-size="12" font-weight="normal" fill="#0f172a">provider_event_id</text>
+<text x="810" y="2708" font-size="11" fill="#64748b" text-anchor="end">text</text>
+<text x="472" y="2729" font-size="12" font-weight="normal" fill="#0f172a">method</text>
+<text x="810" y="2729" font-size="11" fill="#64748b" text-anchor="end">text</text>
+<text x="472" y="2750" font-size="12" font-weight="normal" fill="#0f172a">payload_json</text>
+<text x="810" y="2750" font-size="11" fill="#64748b" text-anchor="end">text</text>
+<text x="472" y="2771" font-size="12" font-weight="normal" fill="#0f172a">received_at</text>
+<text x="810" y="2771" font-size="11" fill="#64748b" text-anchor="end">timestamp</text>
+<text x="472" y="2792" font-size="12" font-weight="normal" fill="#0f172a">branch_id</text>
+<text x="810" y="2792" font-size="11" fill="#64748b" text-anchor="end">text</text>
+</g>
+<g id="tbl-conversation_edit_deliveries">
+<rect x="460" y="2843" width="360" height="395" rx="6" fill="#ffffff" stroke="#cbd5e1"/>
+<path d="M 460 2843 h 360 a 6 6 0 0 1 6 6 v 24 h -360 z" fill="#243044"/>
+<text x="472" y="2863" font-size="13" font-weight="bold" fill="#ffffff">conversation_edit_deliveries</text>
+<text x="472" y="2887" font-size="12" font-weight="normal" fill="#0f172a">conversation_id</text>
+<rect x="585" y="2875" width="22" height="15" rx="3" fill="#0ea5e9"/><text x="590" y="2887" font-size="9" font-weight="bold" fill="#ffffff">FK</text>
+<text x="810" y="2887" font-size="11" fill="#64748b" text-anchor="end">text</text>
+<text x="472" y="2908" font-size="12" font-weight="normal" fill="#0f172a">client_message_id</text>
+<text x="810" y="2908" font-size="11" fill="#64748b" text-anchor="end">text</text>
+<text x="472" y="2929" font-size="12" font-weight="normal" fill="#0f172a">request_json</text>
+<text x="810" y="2929" font-size="11" fill="#64748b" text-anchor="end">text</text>
+<text x="472" y="2950" font-size="12" font-weight="normal" fill="#0f172a">state</text>
+<text x="810" y="2950" font-size="11" fill="#64748b" text-anchor="end">text</text>
+<text x="472" y="2971" font-size="12" font-weight="normal" fill="#0f172a">source_branch_id</text>
+<text x="810" y="2971" font-size="11" fill="#64748b" text-anchor="end">text</text>
+<text x="472" y="2992" font-size="12" font-weight="normal" fill="#0f172a">active_branch_id</text>
+<text x="810" y="2992" font-size="11" fill="#64748b" text-anchor="end">text</text>
+<text x="472" y="3013" font-size="12" font-weight="normal" fill="#0f172a">turn_id</text>
+<text x="810" y="3013" font-size="11" fill="#64748b" text-anchor="end">text</text>
+<text x="472" y="3034" font-size="12" font-weight="normal" fill="#0f172a">handled_by_session_id</text>
+<text x="810" y="3034" font-size="11" fill="#64748b" text-anchor="end">text</text>
+<text x="472" y="3055" font-size="12" font-weight="normal" fill="#0f172a">provider_turn_id</text>
+<text x="810" y="3055" font-size="11" fill="#64748b" text-anchor="end">text</text>
+<text x="472" y="3076" font-size="12" font-weight="normal" fill="#0f172a">turn_state</text>
+<text x="810" y="3076" font-size="11" fill="#64748b" text-anchor="end">text</text>
+<text x="472" y="3097" font-size="12" font-weight="normal" fill="#0f172a">turn_requested_at</text>
+<text x="810" y="3097" font-size="11" fill="#64748b" text-anchor="end">timestamp</text>
+<text x="472" y="3118" font-size="12" font-weight="normal" fill="#0f172a">rejection_kind</text>
+<text x="810" y="3118" font-size="11" fill="#64748b" text-anchor="end">text</text>
+<text x="472" y="3139" font-size="12" font-weight="normal" fill="#0f172a">rejection_message</text>
+<text x="810" y="3139" font-size="11" fill="#64748b" text-anchor="end">text</text>
+<text x="472" y="3160" font-size="12" font-weight="normal" fill="#0f172a">created_at</text>
+<text x="810" y="3160" font-size="11" fill="#64748b" text-anchor="end">timestamp</text>
+<text x="472" y="3181" font-size="12" font-weight="normal" fill="#0f172a">settled_at</text>
+<text x="810" y="3181" font-size="11" fill="#64748b" text-anchor="end">timestamp</text>
+<text x="472" y="3202" font-size="12" font-weight="normal" fill="#0f172a">provider_work_started</text>
+<text x="810" y="3202" font-size="11" fill="#64748b" text-anchor="end">integer</text>
+<text x="472" y="3223" font-size="12" font-weight="normal" fill="#0f172a">turn_workflow_mode</text>
+<text x="810" y="3223" font-size="11" fill="#64748b" text-anchor="end">text</text>
+</g>
+<g id="tbl-conversation_queued_edit_deliveries">
+<rect x="460" y="3274" width="360" height="122" rx="6" fill="#ffffff" stroke="#cbd5e1"/>
+<path d="M 460 3274 h 360 a 6 6 0 0 1 6 6 v 24 h -360 z" fill="#243044"/>
+<text x="472" y="3294" font-size="13" font-weight="bold" fill="#ffffff">conversation_queued_edit_deliveries</text>
+<text x="472" y="3318" font-size="12" font-weight="normal" fill="#0f172a">conversation_id</text>
+<rect x="585" y="3306" width="22" height="15" rx="3" fill="#0ea5e9"/><text x="590" y="3318" font-size="9" font-weight="bold" fill="#ffffff">FK</text>
+<text x="810" y="3318" font-size="11" fill="#64748b" text-anchor="end">text</text>
+<text x="472" y="3339" font-size="12" font-weight="normal" fill="#0f172a">client_message_id</text>
+<text x="810" y="3339" font-size="11" fill="#64748b" text-anchor="end">text</text>
+<text x="472" y="3360" font-size="12" font-weight="normal" fill="#0f172a">request_hash</text>
+<text x="810" y="3360" font-size="11" fill="#64748b" text-anchor="end">text</text>
+<text x="472" y="3381" font-size="12" font-weight="normal" fill="#0f172a">created_at</text>
+<text x="810" y="3381" font-size="11" fill="#64748b" text-anchor="end">timestamp</text>
+</g>
+<g id="tbl-conversation_steer_deliveries">
+<rect x="460" y="3432" width="360" height="248" rx="6" fill="#ffffff" stroke="#cbd5e1"/>
+<path d="M 460 3432 h 360 a 6 6 0 0 1 6 6 v 24 h -360 z" fill="#243044"/>
+<text x="472" y="3452" font-size="13" font-weight="bold" fill="#ffffff">conversation_steer_deliveries</text>
+<text x="472" y="3476" font-size="12" font-weight="normal" fill="#0f172a">conversation_id</text>
+<rect x="585" y="3464" width="22" height="15" rx="3" fill="#0ea5e9"/><text x="590" y="3476" font-size="9" font-weight="bold" fill="#ffffff">FK</text>
+<text x="810" y="3476" font-size="11" fill="#64748b" text-anchor="end">text</text>
+<text x="472" y="3497" font-size="12" font-weight="normal" fill="#0f172a">client_message_id</text>
+<text x="810" y="3497" font-size="11" fill="#64748b" text-anchor="end">text</text>
+<text x="472" y="3518" font-size="12" font-weight="normal" fill="#0f172a">request_json</text>
+<text x="810" y="3518" font-size="11" fill="#64748b" text-anchor="end">text</text>
+<text x="472" y="3539" font-size="12" font-weight="normal" fill="#0f172a">state</text>
+<text x="810" y="3539" font-size="11" fill="#64748b" text-anchor="end">text</text>
+<text x="472" y="3560" font-size="12" font-weight="normal" fill="#0f172a">provider_turn_id</text>
+<text x="810" y="3560" font-size="11" fill="#64748b" text-anchor="end">text</text>
+<text x="472" y="3581" font-size="12" font-weight="normal" fill="#0f172a">activity_id</text>
+<text x="810" y="3581" font-size="11" fill="#64748b" text-anchor="end">text</text>
+<text x="472" y="3602" font-size="12" font-weight="normal" fill="#0f172a">rejection_kind</text>
+<text x="810" y="3602" font-size="11" fill="#64748b" text-anchor="end">text</text>
+<text x="472" y="3623" font-size="12" font-weight="normal" fill="#0f172a">rejection_message</text>
+<text x="810" y="3623" font-size="11" fill="#64748b" text-anchor="end">text</text>
+<text x="472" y="3644" font-size="12" font-weight="normal" fill="#0f172a">created_at</text>
+<text x="810" y="3644" font-size="11" fill="#64748b" text-anchor="end">timestamp</text>
+<text x="472" y="3665" font-size="12" font-weight="normal" fill="#0f172a">settled_at</text>
+<text x="810" y="3665" font-size="11" fill="#64748b" text-anchor="end">timestamp</text>
+</g>
+<g id="tbl-session_interface_transitions">
+<rect x="460" y="3716" width="360" height="332" rx="6" fill="#ffffff" stroke="#cbd5e1"/>
+<path d="M 460 3716 h 360 a 6 6 0 0 1 6 6 v 24 h -360 z" fill="#243044"/>
+<text x="472" y="3736" font-size="13" font-weight="bold" fill="#ffffff">session_interface_transitions</text>
+<text x="472" y="3760" font-size="12" font-weight="bold" fill="#0f172a">id</text>
+<rect x="494" y="3748" width="24" height="15" rx="3" fill="#f59e0b"/><text x="499" y="3760" font-size="9" font-weight="bold" fill="#ffffff">PK</text>
+<text x="810" y="3760" font-size="11" fill="#64748b" text-anchor="end">text</text>
+<text x="472" y="3781" font-size="12" font-weight="normal" fill="#0f172a">session_id</text>
+<rect x="550" y="3769" width="22" height="15" rx="3" fill="#0ea5e9"/><text x="555" y="3781" font-size="9" font-weight="bold" fill="#ffffff">FK</text>
+<text x="810" y="3781" font-size="11" fill="#64748b" text-anchor="end">text</text>
+<text x="472" y="3802" font-size="12" font-weight="normal" fill="#0f172a">source_mode</text>
+<text x="810" y="3802" font-size="11" fill="#64748b" text-anchor="end">text</text>
+<text x="472" y="3823" font-size="12" font-weight="normal" fill="#0f172a">target_mode</text>
+<text x="810" y="3823" font-size="11" fill="#64748b" text-anchor="end">text</text>
+<text x="472" y="3844" font-size="12" font-weight="normal" fill="#0f172a">policy</text>
+<text x="810" y="3844" font-size="11" fill="#64748b" text-anchor="end">text</text>
+<text x="472" y="3865" font-size="12" font-weight="normal" fill="#0f172a">phase</text>
+<text x="810" y="3865" font-size="11" fill="#64748b" text-anchor="end">text</text>
+<text x="472" y="3886" font-size="12" font-weight="normal" fill="#0f172a">native_conversation_id</text>
+<text x="810" y="3886" font-size="11" fill="#64748b" text-anchor="end">text</text>
+<text x="472" y="3907" font-size="12" font-weight="normal" fill="#0f172a">error_code</text>
+<text x="810" y="3907" font-size="11" fill="#64748b" text-anchor="end">text</text>
+<text x="472" y="3928" font-size="12" font-weight="normal" fill="#0f172a">error_detail</text>
+<text x="810" y="3928" font-size="11" fill="#64748b" text-anchor="end">text</text>
+<text x="472" y="3949" font-size="12" font-weight="normal" fill="#0f172a">created_at</text>
+<text x="810" y="3949" font-size="11" fill="#64748b" text-anchor="end">timestamp</text>
+<text x="472" y="3970" font-size="12" font-weight="normal" fill="#0f172a">updated_at</text>
+<text x="810" y="3970" font-size="11" fill="#64748b" text-anchor="end">timestamp</text>
+<text x="472" y="3991" font-size="12" font-weight="normal" fill="#0f172a">completed_at</text>
+<text x="810" y="3991" font-size="11" fill="#64748b" text-anchor="end">timestamp</text>
+<text x="472" y="4012" font-size="12" font-weight="normal" fill="#0f172a">notice_acknowledged_at</text>
+<text x="810" y="4012" font-size="11" fill="#64748b" text-anchor="end">timestamp</text>
+<text x="472" y="4033" font-size="12" font-weight="normal" fill="#0f172a">history_policy</text>
+<text x="810" y="4033" font-size="11" fill="#64748b" text-anchor="end">text</text>
+</g>
+<g id="tbl-session_interface_transition_messages">
+<rect x="460" y="4084" width="360" height="164" rx="6" fill="#ffffff" stroke="#cbd5e1"/>
+<path d="M 460 4084 h 360 a 6 6 0 0 1 6 6 v 24 h -360 z" fill="#243044"/>
+<text x="472" y="4104" font-size="13" font-weight="bold" fill="#ffffff">session_interface_transition_messages</text>
+<text x="472" y="4128" font-size="12" font-weight="bold" fill="#0f172a">id</text>
+<rect x="494" y="4116" width="24" height="15" rx="3" fill="#f59e0b"/><text x="499" y="4128" font-size="9" font-weight="bold" fill="#ffffff">PK</text>
+<text x="810" y="4128" font-size="11" fill="#64748b" text-anchor="end">integer</text>
+<text x="472" y="4149" font-size="12" font-weight="normal" fill="#0f172a">transition_id</text>
+<rect x="571" y="4137" width="22" height="15" rx="3" fill="#0ea5e9"/><text x="576" y="4149" font-size="9" font-weight="bold" fill="#ffffff">FK</text>
+<text x="810" y="4149" font-size="11" fill="#64748b" text-anchor="end">text</text>
+<text x="472" y="4170" font-size="12" font-weight="normal" fill="#0f172a">message</text>
+<text x="810" y="4170" font-size="11" fill="#64748b" text-anchor="end">text</text>
+<text x="472" y="4191" font-size="12" font-weight="normal" fill="#0f172a">created_at</text>
+<text x="810" y="4191" font-size="11" fill="#64748b" text-anchor="end">timestamp</text>
+<text x="472" y="4212" font-size="12" font-weight="normal" fill="#0f172a">delivered_at</text>
+<text x="810" y="4212" font-size="11" fill="#64748b" text-anchor="end">timestamp</text>
+<text x="472" y="4233" font-size="12" font-weight="normal" fill="#0f172a">client_message_id</text>
+<text x="810" y="4233" font-size="11" fill="#64748b" text-anchor="end">text</text>
+</g>
+<g id="tbl-pr">
+<rect x="880" y="152" width="360" height="962" rx="6" fill="#ffffff" stroke="#cbd5e1"/>
+<path d="M 880 152 h 360 a 6 6 0 0 1 6 6 v 24 h -360 z" fill="#243044"/>
+<text x="892" y="172" font-size="13" font-weight="bold" fill="#ffffff">pr</text>
+<text x="892" y="196" font-size="12" font-weight="bold" fill="#0f172a">url</text>
+<rect x="921" y="184" width="24" height="15" rx="3" fill="#f59e0b"/><text x="926" y="196" font-size="9" font-weight="bold" fill="#ffffff">PK</text>
+<text x="1230" y="196" font-size="11" fill="#64748b" text-anchor="end">text</text>
+<text x="892" y="217" font-size="12" font-weight="normal" fill="#0f172a">session_id</text>
+<rect x="970" y="205" width="22" height="15" rx="3" fill="#0ea5e9"/><text x="975" y="217" font-size="9" font-weight="bold" fill="#ffffff">FK</text>
+<text x="1230" y="217" font-size="11" fill="#64748b" text-anchor="end">text</text>
+<text x="892" y="238" font-size="12" font-weight="normal" fill="#0f172a">number</text>
+<text x="1230" y="238" font-size="11" fill="#64748b" text-anchor="end">integer</text>
+<text x="892" y="259" font-size="12" font-weight="normal" fill="#0f172a">pr_state</text>
+<text x="1230" y="259" font-size="11" fill="#64748b" text-anchor="end">text</text>
+<text x="892" y="280" font-size="12" font-weight="normal" fill="#0f172a">review_decision</text>
+<text x="1230" y="280" font-size="11" fill="#64748b" text-anchor="end">text</text>
+<text x="892" y="301" font-size="12" font-weight="normal" fill="#0f172a">ci_state</text>
+<text x="1230" y="301" font-size="11" fill="#64748b" text-anchor="end">text</text>
+<text x="892" y="322" font-size="12" font-weight="normal" fill="#0f172a">mergeability</text>
+<text x="1230" y="322" font-size="11" fill="#64748b" text-anchor="end">text</text>
+<text x="892" y="343" font-size="12" font-weight="normal" fill="#0f172a">updated_at</text>
+<text x="1230" y="343" font-size="11" fill="#64748b" text-anchor="end">timestamp</text>
+<text x="892" y="364" font-size="12" font-weight="normal" fill="#0f172a">provider</text>
+<text x="1230" y="364" font-size="11" fill="#64748b" text-anchor="end">text</text>
+<text x="892" y="385" font-size="12" font-weight="normal" fill="#0f172a">host</text>
+<text x="1230" y="385" font-size="11" fill="#64748b" text-anchor="end">text</text>
+<text x="892" y="406" font-size="12" font-weight="normal" fill="#0f172a">repo</text>
+<text x="1230" y="406" font-size="11" fill="#64748b" text-anchor="end">text</text>
+<text x="892" y="427" font-size="12" font-weight="normal" fill="#0f172a">source_branch</text>
+<text x="1230" y="427" font-size="11" fill="#64748b" text-anchor="end">text</text>
+<text x="892" y="448" font-size="12" font-weight="normal" fill="#0f172a">target_branch</text>
+<text x="1230" y="448" font-size="11" fill="#64748b" text-anchor="end">text</text>
+<text x="892" y="469" font-size="12" font-weight="normal" fill="#0f172a">head_sha</text>
+<text x="1230" y="469" font-size="11" fill="#64748b" text-anchor="end">text</text>
+<text x="892" y="490" font-size="12" font-weight="normal" fill="#0f172a">title</text>
+<text x="1230" y="490" font-size="11" fill="#64748b" text-anchor="end">text</text>
+<text x="892" y="511" font-size="12" font-weight="normal" fill="#0f172a">additions</text>
+<text x="1230" y="511" font-size="11" fill="#64748b" text-anchor="end">integer</text>
+<text x="892" y="532" font-size="12" font-weight="normal" fill="#0f172a">deletions</text>
+<text x="1230" y="532" font-size="11" fill="#64748b" text-anchor="end">integer</text>
+<text x="892" y="553" font-size="12" font-weight="normal" fill="#0f172a">changed_files</text>
+<text x="1230" y="553" font-size="11" fill="#64748b" text-anchor="end">integer</text>
+<text x="892" y="574" font-size="12" font-weight="normal" fill="#0f172a">author</text>
+<text x="1230" y="574" font-size="11" fill="#64748b" text-anchor="end">text</text>
+<text x="892" y="595" font-size="12" font-weight="normal" fill="#0f172a">base_sha</text>
+<text x="1230" y="595" font-size="11" fill="#64748b" text-anchor="end">text</text>
+<text x="892" y="616" font-size="12" font-weight="normal" fill="#0f172a">merge_commit_sha</text>
+<text x="1230" y="616" font-size="11" fill="#64748b" text-anchor="end">text</text>
+<text x="892" y="637" font-size="12" font-weight="normal" fill="#0f172a">is_draft</text>
+<text x="1230" y="637" font-size="11" fill="#64748b" text-anchor="end">integer</text>
+<text x="892" y="658" font-size="12" font-weight="normal" fill="#0f172a">is_merged</text>
+<text x="1230" y="658" font-size="11" fill="#64748b" text-anchor="end">integer</text>
+<text x="892" y="679" font-size="12" font-weight="normal" fill="#0f172a">is_closed</text>
+<text x="1230" y="679" font-size="11" fill="#64748b" text-anchor="end">integer</text>
+<text x="892" y="700" font-size="12" font-weight="normal" fill="#0f172a">provider_state</text>
+<text x="1230" y="700" font-size="11" fill="#64748b" text-anchor="end">text</text>
+<text x="892" y="721" font-size="12" font-weight="normal" fill="#0f172a">provider_mergeable</text>
+<text x="1230" y="721" font-size="11" fill="#64748b" text-anchor="end">text</text>
+<text x="892" y="742" font-size="12" font-weight="normal" fill="#0f172a">provider_merge_state_status</text>
+<text x="1230" y="742" font-size="11" fill="#64748b" text-anchor="end">text</text>
+<text x="892" y="763" font-size="12" font-weight="normal" fill="#0f172a">html_url</text>
+<text x="1230" y="763" font-size="11" fill="#64748b" text-anchor="end">text</text>
+<text x="892" y="784" font-size="12" font-weight="normal" fill="#0f172a">created_at_provider</text>
+<text x="1230" y="784" font-size="11" fill="#64748b" text-anchor="end">timestamp</text>
+<text x="892" y="805" font-size="12" font-weight="normal" fill="#0f172a">updated_at_provider</text>
+<text x="1230" y="805" font-size="11" fill="#64748b" text-anchor="end">timestamp</text>
+<text x="892" y="826" font-size="12" font-weight="normal" fill="#0f172a">merged_at_provider</text>
+<text x="1230" y="826" font-size="11" fill="#64748b" text-anchor="end">timestamp</text>
+<text x="892" y="847" font-size="12" font-weight="normal" fill="#0f172a">closed_at_provider</text>
+<text x="1230" y="847" font-size="11" fill="#64748b" text-anchor="end">timestamp</text>
+<text x="892" y="868" font-size="12" font-weight="normal" fill="#0f172a">metadata_hash</text>
+<text x="1230" y="868" font-size="11" fill="#64748b" text-anchor="end">text</text>
+<text x="892" y="889" font-size="12" font-weight="normal" fill="#0f172a">ci_hash</text>
+<text x="1230" y="889" font-size="11" fill="#64748b" text-anchor="end">text</text>
+<text x="892" y="910" font-size="12" font-weight="normal" fill="#0f172a">review_hash</text>
+<text x="1230" y="910" font-size="11" fill="#64748b" text-anchor="end">text</text>
+<text x="892" y="931" font-size="12" font-weight="normal" fill="#0f172a">observed_at</text>
+<text x="1230" y="931" font-size="11" fill="#64748b" text-anchor="end">timestamp</text>
+<text x="892" y="952" font-size="12" font-weight="normal" fill="#0f172a">ci_observed_at</text>
+<text x="1230" y="952" font-size="11" fill="#64748b" text-anchor="end">timestamp</text>
+<text x="892" y="973" font-size="12" font-weight="normal" fill="#0f172a">review_observed_at</text>
+<text x="1230" y="973" font-size="11" fill="#64748b" text-anchor="end">timestamp</text>
+<text x="892" y="994" font-size="12" font-weight="normal" fill="#0f172a">last_nudge_signature</text>
+<text x="1230" y="994" font-size="11" fill="#64748b" text-anchor="end">text</text>
+<text x="892" y="1015" font-size="12" font-weight="normal" fill="#0f172a">state_changed_at</text>
+<text x="1230" y="1015" font-size="11" fill="#64748b" text-anchor="end">timestamp</text>
+<text x="892" y="1036" font-size="12" font-weight="normal" fill="#0f172a">auto_inject_ci</text>
+<text x="1230" y="1036" font-size="11" fill="#64748b" text-anchor="end">boolean</text>
+<text x="892" y="1057" font-size="12" font-weight="normal" fill="#0f172a">provider_id</text>
+<text x="1230" y="1057" font-size="11" fill="#64748b" text-anchor="end">text</text>
+<text x="892" y="1078" font-size="12" font-weight="normal" fill="#0f172a">author_avatar_url</text>
+<text x="1230" y="1078" font-size="11" fill="#64748b" text-anchor="end">text</text>
+<text x="892" y="1099" font-size="12" font-weight="normal" fill="#0f172a">review_partial</text>
+<text x="1230" y="1099" font-size="11" fill="#64748b" text-anchor="end">boolean</text>
+</g>
+<g id="tbl-pr_checks">
+<rect x="880" y="1150" width="360" height="227" rx="6" fill="#ffffff" stroke="#cbd5e1"/>
+<path d="M 880 1150 h 360 a 6 6 0 0 1 6 6 v 24 h -360 z" fill="#243044"/>
+<text x="892" y="1170" font-size="13" font-weight="bold" fill="#ffffff">pr_checks</text>
+<text x="892" y="1194" font-size="12" font-weight="normal" fill="#0f172a">pr_url</text>
+<rect x="942" y="1182" width="22" height="15" rx="3" fill="#0ea5e9"/><text x="947" y="1194" font-size="9" font-weight="bold" fill="#ffffff">FK</text>
+<text x="1230" y="1194" font-size="11" fill="#64748b" text-anchor="end">text</text>
+<text x="892" y="1215" font-size="12" font-weight="normal" fill="#0f172a">name</text>
+<text x="1230" y="1215" font-size="11" fill="#64748b" text-anchor="end">text</text>
+<text x="892" y="1236" font-size="12" font-weight="normal" fill="#0f172a">commit_hash</text>
+<text x="1230" y="1236" font-size="11" fill="#64748b" text-anchor="end">text</text>
+<text x="892" y="1257" font-size="12" font-weight="normal" fill="#0f172a">status</text>
+<text x="1230" y="1257" font-size="11" fill="#64748b" text-anchor="end">text</text>
+<text x="892" y="1278" font-size="12" font-weight="normal" fill="#0f172a">url</text>
+<text x="1230" y="1278" font-size="11" fill="#64748b" text-anchor="end">text</text>
+<text x="892" y="1299" font-size="12" font-weight="normal" fill="#0f172a">log_tail</text>
+<text x="1230" y="1299" font-size="11" fill="#64748b" text-anchor="end">text</text>
+<text x="892" y="1320" font-size="12" font-weight="normal" fill="#0f172a">created_at</text>
+<text x="1230" y="1320" font-size="11" fill="#64748b" text-anchor="end">timestamp</text>
+<text x="892" y="1341" font-size="12" font-weight="normal" fill="#0f172a">conclusion</text>
+<text x="1230" y="1341" font-size="11" fill="#64748b" text-anchor="end">text</text>
+<text x="892" y="1362" font-size="12" font-weight="normal" fill="#0f172a">details</text>
+<text x="1230" y="1362" font-size="11" fill="#64748b" text-anchor="end">text</text>
+</g>
+<g id="tbl-pr_comment">
+<rect x="880" y="1413" width="360" height="311" rx="6" fill="#ffffff" stroke="#cbd5e1"/>
+<path d="M 880 1413 h 360 a 6 6 0 0 1 6 6 v 24 h -360 z" fill="#243044"/>
+<text x="892" y="1433" font-size="13" font-weight="bold" fill="#ffffff">pr_comment</text>
+<text x="892" y="1457" font-size="12" font-weight="normal" fill="#0f172a">pr_url</text>
+<rect x="942" y="1445" width="22" height="15" rx="3" fill="#0ea5e9"/><text x="947" y="1457" font-size="9" font-weight="bold" fill="#ffffff">FK</text>
+<text x="1230" y="1457" font-size="11" fill="#64748b" text-anchor="end">text</text>
+<text x="892" y="1478" font-size="12" font-weight="normal" fill="#0f172a">comment_id</text>
+<text x="1230" y="1478" font-size="11" fill="#64748b" text-anchor="end">text</text>
+<text x="892" y="1499" font-size="12" font-weight="normal" fill="#0f172a">author</text>
+<text x="1230" y="1499" font-size="11" fill="#64748b" text-anchor="end">text</text>
+<text x="892" y="1520" font-size="12" font-weight="normal" fill="#0f172a">file</text>
+<text x="1230" y="1520" font-size="11" fill="#64748b" text-anchor="end">text</text>
+<text x="892" y="1541" font-size="12" font-weight="normal" fill="#0f172a">line</text>
+<text x="1230" y="1541" font-size="11" fill="#64748b" text-anchor="end">integer</text>
+<text x="892" y="1562" font-size="12" font-weight="normal" fill="#0f172a">body</text>
+<text x="1230" y="1562" font-size="11" fill="#64748b" text-anchor="end">text</text>
+<text x="892" y="1583" font-size="12" font-weight="normal" fill="#0f172a">resolved</text>
+<text x="1230" y="1583" font-size="11" fill="#64748b" text-anchor="end">integer</text>
+<text x="892" y="1604" font-size="12" font-weight="normal" fill="#0f172a">created_at</text>
+<text x="1230" y="1604" font-size="11" fill="#64748b" text-anchor="end">timestamp</text>
+<text x="892" y="1625" font-size="12" font-weight="normal" fill="#0f172a">thread_id</text>
+<text x="1230" y="1625" font-size="11" fill="#64748b" text-anchor="end">text</text>
+<text x="892" y="1646" font-size="12" font-weight="normal" fill="#0f172a">url</text>
+<text x="1230" y="1646" font-size="11" fill="#64748b" text-anchor="end">text</text>
+<text x="892" y="1667" font-size="12" font-weight="normal" fill="#0f172a">is_bot</text>
+<text x="1230" y="1667" font-size="11" fill="#64748b" text-anchor="end">integer</text>
+<text x="892" y="1688" font-size="12" font-weight="normal" fill="#0f172a">auto_inject_review</text>
+<text x="1230" y="1688" font-size="11" fill="#64748b" text-anchor="end">boolean</text>
+<text x="892" y="1709" font-size="12" font-weight="normal" fill="#0f172a">review_id</text>
+<text x="1230" y="1709" font-size="11" fill="#64748b" text-anchor="end">text</text>
+</g>
+<g id="tbl-pr_reviews">
+<rect x="880" y="1760" width="360" height="248" rx="6" fill="#ffffff" stroke="#cbd5e1"/>
+<path d="M 880 1760 h 360 a 6 6 0 0 1 6 6 v 24 h -360 z" fill="#243044"/>
+<text x="892" y="1780" font-size="13" font-weight="bold" fill="#ffffff">pr_reviews</text>
+<text x="892" y="1804" font-size="12" font-weight="normal" fill="#0f172a">pr_url</text>
+<rect x="942" y="1792" width="22" height="15" rx="3" fill="#0ea5e9"/><text x="947" y="1804" font-size="9" font-weight="bold" fill="#ffffff">FK</text>
+<text x="1230" y="1804" font-size="11" fill="#64748b" text-anchor="end">text</text>
+<text x="892" y="1825" font-size="12" font-weight="normal" fill="#0f172a">review_id</text>
+<text x="1230" y="1825" font-size="11" fill="#64748b" text-anchor="end">text</text>
+<text x="892" y="1846" font-size="12" font-weight="normal" fill="#0f172a">author</text>
+<text x="1230" y="1846" font-size="11" fill="#64748b" text-anchor="end">text</text>
+<text x="892" y="1867" font-size="12" font-weight="normal" fill="#0f172a">state</text>
+<text x="1230" y="1867" font-size="11" fill="#64748b" text-anchor="end">text</text>
+<text x="892" y="1888" font-size="12" font-weight="normal" fill="#0f172a">url</text>
+<text x="1230" y="1888" font-size="11" fill="#64748b" text-anchor="end">text</text>
+<text x="892" y="1909" font-size="12" font-weight="normal" fill="#0f172a">is_bot</text>
+<text x="1230" y="1909" font-size="11" fill="#64748b" text-anchor="end">integer</text>
+<text x="892" y="1930" font-size="12" font-weight="normal" fill="#0f172a">submitted_at</text>
+<text x="1230" y="1930" font-size="11" fill="#64748b" text-anchor="end">timestamp</text>
+<text x="892" y="1951" font-size="12" font-weight="normal" fill="#0f172a">body</text>
+<text x="1230" y="1951" font-size="11" fill="#64748b" text-anchor="end">text</text>
+<text x="892" y="1972" font-size="12" font-weight="normal" fill="#0f172a">auto_inject_review</text>
+<text x="1230" y="1972" font-size="11" fill="#64748b" text-anchor="end">boolean</text>
+<text x="892" y="1993" font-size="12" font-weight="normal" fill="#0f172a">target_sha</text>
+<text x="1230" y="1993" font-size="11" fill="#64748b" text-anchor="end">text</text>
+</g>
+<g id="tbl-pr_review_threads">
+<rect x="880" y="2044" width="360" height="206" rx="6" fill="#ffffff" stroke="#cbd5e1"/>
+<path d="M 880 2044 h 360 a 6 6 0 0 1 6 6 v 24 h -360 z" fill="#243044"/>
+<text x="892" y="2064" font-size="13" font-weight="bold" fill="#ffffff">pr_review_threads</text>
+<text x="892" y="2088" font-size="12" font-weight="normal" fill="#0f172a">pr_url</text>
+<rect x="942" y="2076" width="22" height="15" rx="3" fill="#0ea5e9"/><text x="947" y="2088" font-size="9" font-weight="bold" fill="#ffffff">FK</text>
+<text x="1230" y="2088" font-size="11" fill="#64748b" text-anchor="end">text</text>
+<text x="892" y="2109" font-size="12" font-weight="normal" fill="#0f172a">thread_id</text>
+<text x="1230" y="2109" font-size="11" fill="#64748b" text-anchor="end">text</text>
+<text x="892" y="2130" font-size="12" font-weight="normal" fill="#0f172a">path</text>
+<text x="1230" y="2130" font-size="11" fill="#64748b" text-anchor="end">text</text>
+<text x="892" y="2151" font-size="12" font-weight="normal" fill="#0f172a">line</text>
+<text x="1230" y="2151" font-size="11" fill="#64748b" text-anchor="end">integer</text>
+<text x="892" y="2172" font-size="12" font-weight="normal" fill="#0f172a">resolved</text>
+<text x="1230" y="2172" font-size="11" fill="#64748b" text-anchor="end">integer</text>
+<text x="892" y="2193" font-size="12" font-weight="normal" fill="#0f172a">is_bot</text>
+<text x="1230" y="2193" font-size="11" fill="#64748b" text-anchor="end">integer</text>
+<text x="892" y="2214" font-size="12" font-weight="normal" fill="#0f172a">semantic_hash</text>
+<text x="1230" y="2214" font-size="11" fill="#64748b" text-anchor="end">text</text>
+<text x="892" y="2235" font-size="12" font-weight="normal" fill="#0f172a">updated_at</text>
+<text x="1230" y="2235" font-size="11" fill="#64748b" text-anchor="end">timestamp</text>
+</g>
+<g id="tbl-pr_url_alias">
+<rect x="880" y="2286" width="360" height="80" rx="6" fill="#ffffff" stroke="#cbd5e1"/>
+<path d="M 880 2286 h 360 a 6 6 0 0 1 6 6 v 24 h -360 z" fill="#243044"/>
+<text x="892" y="2306" font-size="13" font-weight="bold" fill="#ffffff">pr_url_alias</text>
+<text x="892" y="2330" font-size="12" font-weight="bold" fill="#0f172a">alias_url</text>
+<rect x="963" y="2318" width="24" height="15" rx="3" fill="#f59e0b"/><text x="968" y="2330" font-size="9" font-weight="bold" fill="#ffffff">PK</text>
+<text x="1230" y="2330" font-size="11" fill="#64748b" text-anchor="end">text</text>
+<text x="892" y="2351" font-size="12" font-weight="normal" fill="#0f172a">canonical_url</text>
+<rect x="991" y="2339" width="22" height="15" rx="3" fill="#0ea5e9"/><text x="996" y="2351" font-size="9" font-weight="bold" fill="#ffffff">FK</text>
+<text x="1230" y="2351" font-size="11" fill="#64748b" text-anchor="end">text</text>
+</g>
+<g id="tbl-review">
+<rect x="880" y="2402" width="360" height="269" rx="6" fill="#ffffff" stroke="#cbd5e1"/>
+<path d="M 880 2402 h 360 a 6 6 0 0 1 6 6 v 24 h -360 z" fill="#243044"/>
+<text x="892" y="2422" font-size="13" font-weight="bold" fill="#ffffff">review</text>
+<text x="892" y="2446" font-size="12" font-weight="bold" fill="#0f172a">id</text>
+<rect x="914" y="2434" width="24" height="15" rx="3" fill="#f59e0b"/><text x="919" y="2446" font-size="9" font-weight="bold" fill="#ffffff">PK</text>
+<text x="1230" y="2446" font-size="11" fill="#64748b" text-anchor="end">text</text>
+<text x="892" y="2467" font-size="12" font-weight="normal" fill="#0f172a">session_id</text>
+<rect x="970" y="2455" width="22" height="15" rx="3" fill="#0ea5e9"/><text x="975" y="2467" font-size="9" font-weight="bold" fill="#ffffff">FK</text>
+<text x="1230" y="2467" font-size="11" fill="#64748b" text-anchor="end">text</text>
+<text x="892" y="2488" font-size="12" font-weight="normal" fill="#0f172a">project_id</text>
+<rect x="970" y="2476" width="22" height="15" rx="3" fill="#0ea5e9"/><text x="975" y="2488" font-size="9" font-weight="bold" fill="#ffffff">FK</text>
+<text x="1230" y="2488" font-size="11" fill="#64748b" text-anchor="end">text</text>
+<text x="892" y="2509" font-size="12" font-weight="normal" fill="#0f172a">harness</text>
+<text x="1230" y="2509" font-size="11" fill="#64748b" text-anchor="end">text</text>
+<text x="892" y="2530" font-size="12" font-weight="normal" fill="#0f172a">pr_url</text>
+<text x="1230" y="2530" font-size="11" fill="#64748b" text-anchor="end">text</text>
+<text x="892" y="2551" font-size="12" font-weight="normal" fill="#0f172a">reviewer_handle_id</text>
+<text x="1230" y="2551" font-size="11" fill="#64748b" text-anchor="end">text</text>
+<text x="892" y="2572" font-size="12" font-weight="normal" fill="#0f172a">agent_session_id</text>
+<text x="1230" y="2572" font-size="11" fill="#64748b" text-anchor="end">text</text>
+<text x="892" y="2593" font-size="12" font-weight="normal" fill="#0f172a">created_at</text>
+<text x="1230" y="2593" font-size="11" fill="#64748b" text-anchor="end">timestamp</text>
+<text x="892" y="2614" font-size="12" font-weight="normal" fill="#0f172a">updated_at</text>
+<text x="1230" y="2614" font-size="11" fill="#64748b" text-anchor="end">timestamp</text>
+<text x="892" y="2635" font-size="12" font-weight="normal" fill="#0f172a">reviewer_activity_state</text>
+<text x="1230" y="2635" font-size="11" fill="#64748b" text-anchor="end">text</text>
+<text x="892" y="2656" font-size="12" font-weight="normal" fill="#0f172a">reviewer_launch_id</text>
+<text x="1230" y="2656" font-size="11" fill="#64748b" text-anchor="end">text</text>
+</g>
+<g id="tbl-review_run">
+<rect x="880" y="2707" width="360" height="353" rx="6" fill="#ffffff" stroke="#cbd5e1"/>
+<path d="M 880 2707 h 360 a 6 6 0 0 1 6 6 v 24 h -360 z" fill="#243044"/>
+<text x="892" y="2727" font-size="13" font-weight="bold" fill="#ffffff">review_run</text>
+<text x="892" y="2751" font-size="12" font-weight="bold" fill="#0f172a">id</text>
+<rect x="914" y="2739" width="24" height="15" rx="3" fill="#f59e0b"/><text x="919" y="2751" font-size="9" font-weight="bold" fill="#ffffff">PK</text>
+<text x="1230" y="2751" font-size="11" fill="#64748b" text-anchor="end">text</text>
+<text x="892" y="2772" font-size="12" font-weight="normal" fill="#0f172a">review_id</text>
+<rect x="963" y="2760" width="22" height="15" rx="3" fill="#0ea5e9"/><text x="968" y="2772" font-size="9" font-weight="bold" fill="#ffffff">FK</text>
+<text x="1230" y="2772" font-size="11" fill="#64748b" text-anchor="end">text</text>
+<text x="892" y="2793" font-size="12" font-weight="normal" fill="#0f172a">session_id</text>
+<rect x="970" y="2781" width="22" height="15" rx="3" fill="#0ea5e9"/><text x="975" y="2793" font-size="9" font-weight="bold" fill="#ffffff">FK</text>
+<text x="1230" y="2793" font-size="11" fill="#64748b" text-anchor="end">text</text>
+<text x="892" y="2814" font-size="12" font-weight="normal" fill="#0f172a">harness</text>
+<text x="1230" y="2814" font-size="11" fill="#64748b" text-anchor="end">text</text>
+<text x="892" y="2835" font-size="12" font-weight="normal" fill="#0f172a">pr_url</text>
+<text x="1230" y="2835" font-size="11" fill="#64748b" text-anchor="end">text</text>
+<text x="892" y="2856" font-size="12" font-weight="normal" fill="#0f172a">target_sha</text>
+<text x="1230" y="2856" font-size="11" fill="#64748b" text-anchor="end">text</text>
+<text x="892" y="2877" font-size="12" font-weight="normal" fill="#0f172a">status</text>
+<text x="1230" y="2877" font-size="11" fill="#64748b" text-anchor="end">text</text>
+<text x="892" y="2898" font-size="12" font-weight="normal" fill="#0f172a">verdict</text>
+<text x="1230" y="2898" font-size="11" fill="#64748b" text-anchor="end">text</text>
+<text x="892" y="2919" font-size="12" font-weight="normal" fill="#0f172a">body</text>
+<text x="1230" y="2919" font-size="11" fill="#64748b" text-anchor="end">text</text>
+<text x="892" y="2940" font-size="12" font-weight="normal" fill="#0f172a">created_at</text>
+<text x="1230" y="2940" font-size="11" fill="#64748b" text-anchor="end">timestamp</text>
+<text x="892" y="2961" font-size="12" font-weight="normal" fill="#0f172a">github_review_id</text>
+<text x="1230" y="2961" font-size="11" fill="#64748b" text-anchor="end">text</text>
+<text x="892" y="2982" font-size="12" font-weight="normal" fill="#0f172a">delivered_at</text>
+<text x="1230" y="2982" font-size="11" fill="#64748b" text-anchor="end">timestamp</text>
+<text x="892" y="3003" font-size="12" font-weight="normal" fill="#0f172a">batch_id</text>
+<text x="1230" y="3003" font-size="11" fill="#64748b" text-anchor="end">text</text>
+<text x="892" y="3024" font-size="12" font-weight="normal" fill="#0f172a">auto_inject_review</text>
+<text x="1230" y="3024" font-size="11" fill="#64748b" text-anchor="end">boolean</text>
+<text x="892" y="3045" font-size="12" font-weight="normal" fill="#0f172a">trigger_source</text>
+<text x="1230" y="3045" font-size="11" fill="#64748b" text-anchor="end">text</text>
+</g>
+<g id="tbl-notifications">
+<rect x="880" y="3096" width="360" height="248" rx="6" fill="#ffffff" stroke="#cbd5e1"/>
+<path d="M 880 3096 h 360 a 6 6 0 0 1 6 6 v 24 h -360 z" fill="#243044"/>
+<text x="892" y="3116" font-size="13" font-weight="bold" fill="#ffffff">notifications</text>
+<text x="892" y="3140" font-size="12" font-weight="bold" fill="#0f172a">id</text>
+<rect x="914" y="3128" width="24" height="15" rx="3" fill="#f59e0b"/><text x="919" y="3140" font-size="9" font-weight="bold" fill="#ffffff">PK</text>
+<text x="1230" y="3140" font-size="11" fill="#64748b" text-anchor="end">text</text>
+<text x="892" y="3161" font-size="12" font-weight="normal" fill="#0f172a">session_id</text>
+<rect x="970" y="3149" width="22" height="15" rx="3" fill="#0ea5e9"/><text x="975" y="3161" font-size="9" font-weight="bold" fill="#ffffff">FK</text>
+<text x="1230" y="3161" font-size="11" fill="#64748b" text-anchor="end">text</text>
+<text x="892" y="3182" font-size="12" font-weight="normal" fill="#0f172a">project_id</text>
+<rect x="970" y="3170" width="22" height="15" rx="3" fill="#0ea5e9"/><text x="975" y="3182" font-size="9" font-weight="bold" fill="#ffffff">FK</text>
+<text x="1230" y="3182" font-size="11" fill="#64748b" text-anchor="end">text</text>
+<text x="892" y="3203" font-size="12" font-weight="normal" fill="#0f172a">pr_url</text>
+<text x="1230" y="3203" font-size="11" fill="#64748b" text-anchor="end">text</text>
+<text x="892" y="3224" font-size="12" font-weight="normal" fill="#0f172a">type</text>
+<text x="1230" y="3224" font-size="11" fill="#64748b" text-anchor="end">text</text>
+<text x="892" y="3245" font-size="12" font-weight="normal" fill="#0f172a">title</text>
+<text x="1230" y="3245" font-size="11" fill="#64748b" text-anchor="end">text</text>
+<text x="892" y="3266" font-size="12" font-weight="normal" fill="#0f172a">body</text>
+<text x="1230" y="3266" font-size="11" fill="#64748b" text-anchor="end">text</text>
+<text x="892" y="3287" font-size="12" font-weight="normal" fill="#0f172a">status</text>
+<text x="1230" y="3287" font-size="11" fill="#64748b" text-anchor="end">text</text>
+<text x="892" y="3308" font-size="12" font-weight="normal" fill="#0f172a">created_at</text>
+<text x="1230" y="3308" font-size="11" fill="#64748b" text-anchor="end">timestamp</text>
+<text x="892" y="3329" font-size="12" font-weight="normal" fill="#0f172a">resolved_at</text>
+<text x="1230" y="3329" font-size="11" fill="#64748b" text-anchor="end">timestamp</text>
+</g>
+<g id="tbl-usage_bindings">
+<rect x="1300" y="152" width="360" height="227" rx="6" fill="#ffffff" stroke="#cbd5e1"/>
+<path d="M 1300 152 h 360 a 6 6 0 0 1 6 6 v 24 h -360 z" fill="#243044"/>
+<text x="1312" y="172" font-size="13" font-weight="bold" fill="#ffffff">usage_bindings</text>
+<text x="1312" y="196" font-size="12" font-weight="bold" fill="#0f172a">id</text>
+<rect x="1334" y="184" width="24" height="15" rx="3" fill="#f59e0b"/><text x="1339" y="196" font-size="9" font-weight="bold" fill="#ffffff">PK</text>
+<text x="1650" y="196" font-size="11" fill="#64748b" text-anchor="end">integer</text>
+<text x="1312" y="217" font-size="12" font-weight="normal" fill="#0f172a">session_id</text>
+<rect x="1390" y="205" width="22" height="15" rx="3" fill="#0ea5e9"/><text x="1395" y="217" font-size="9" font-weight="bold" fill="#ffffff">FK</text>
+<text x="1650" y="217" font-size="11" fill="#64748b" text-anchor="end">text</text>
+<text x="1312" y="238" font-size="12" font-weight="normal" fill="#0f172a">harness</text>
+<text x="1650" y="238" font-size="11" fill="#64748b" text-anchor="end">text</text>
+<text x="1312" y="259" font-size="12" font-weight="normal" fill="#0f172a">native_root_id</text>
+<text x="1650" y="259" font-size="11" fill="#64748b" text-anchor="end">text</text>
+<text x="1312" y="280" font-size="12" font-weight="normal" fill="#0f172a">initial_model_id</text>
+<text x="1650" y="280" font-size="11" fill="#64748b" text-anchor="end">text</text>
+<text x="1312" y="301" font-size="12" font-weight="normal" fill="#0f172a">state</text>
+<text x="1650" y="301" font-size="11" fill="#64748b" text-anchor="end">text</text>
+<text x="1312" y="322" font-size="12" font-weight="normal" fill="#0f172a">last_error_code</text>
+<text x="1650" y="322" font-size="11" fill="#64748b" text-anchor="end">text</text>
+<text x="1312" y="343" font-size="12" font-weight="normal" fill="#0f172a">updated_at</text>
+<text x="1650" y="343" font-size="11" fill="#64748b" text-anchor="end">timestamp</text>
+<text x="1312" y="364" font-size="12" font-weight="normal" fill="#0f172a">provider_hint</text>
+<text x="1650" y="364" font-size="11" fill="#64748b" text-anchor="end">text</text>
+</g>
+<g id="tbl-usage_sources">
+<rect x="1300" y="415" width="360" height="374" rx="6" fill="#ffffff" stroke="#cbd5e1"/>
+<path d="M 1300 415 h 360 a 6 6 0 0 1 6 6 v 24 h -360 z" fill="#243044"/>
+<text x="1312" y="435" font-size="13" font-weight="bold" fill="#ffffff">usage_sources</text>
+<text x="1312" y="459" font-size="12" font-weight="bold" fill="#0f172a">id</text>
+<rect x="1334" y="447" width="24" height="15" rx="3" fill="#f59e0b"/><text x="1339" y="459" font-size="9" font-weight="bold" fill="#ffffff">PK</text>
+<text x="1650" y="459" font-size="11" fill="#64748b" text-anchor="end">integer</text>
+<text x="1312" y="480" font-size="12" font-weight="normal" fill="#0f172a">binding_id</text>
+<rect x="1390" y="468" width="22" height="15" rx="3" fill="#0ea5e9"/><text x="1395" y="480" font-size="9" font-weight="bold" fill="#ffffff">FK</text>
+<text x="1650" y="480" font-size="11" fill="#64748b" text-anchor="end">integer</text>
+<text x="1312" y="501" font-size="12" font-weight="normal" fill="#0f172a">kind</text>
+<text x="1650" y="501" font-size="11" fill="#64748b" text-anchor="end">text</text>
+<text x="1312" y="522" font-size="12" font-weight="normal" fill="#0f172a">native_session_id</text>
+<text x="1650" y="522" font-size="11" fill="#64748b" text-anchor="end">text</text>
+<text x="1312" y="543" font-size="12" font-weight="normal" fill="#0f172a">subagent_id</text>
+<text x="1650" y="543" font-size="11" fill="#64748b" text-anchor="end">text</text>
+<text x="1312" y="564" font-size="12" font-weight="normal" fill="#0f172a">artifact_path</text>
+<text x="1650" y="564" font-size="11" fill="#64748b" text-anchor="end">text</text>
+<text x="1312" y="585" font-size="12" font-weight="normal" fill="#0f172a">file_identity</text>
+<text x="1650" y="585" font-size="11" fill="#64748b" text-anchor="end">text</text>
+<text x="1312" y="606" font-size="12" font-weight="normal" fill="#0f172a">generation</text>
+<text x="1650" y="606" font-size="11" fill="#64748b" text-anchor="end">integer</text>
+<text x="1312" y="627" font-size="12" font-weight="normal" fill="#0f172a">byte_offset</text>
+<text x="1650" y="627" font-size="11" fill="#64748b" text-anchor="end">integer</text>
+<text x="1312" y="648" font-size="12" font-weight="normal" fill="#0f172a">parser_state_json</text>
+<text x="1650" y="648" font-size="11" fill="#64748b" text-anchor="end">text</text>
+<text x="1312" y="669" font-size="12" font-weight="normal" fill="#0f172a">state</text>
+<text x="1650" y="669" font-size="11" fill="#64748b" text-anchor="end">text</text>
+<text x="1312" y="690" font-size="12" font-weight="normal" fill="#0f172a">failure_count</text>
+<text x="1650" y="690" font-size="11" fill="#64748b" text-anchor="end">integer</text>
+<text x="1312" y="711" font-size="12" font-weight="normal" fill="#0f172a">anomaly_count</text>
+<text x="1650" y="711" font-size="11" fill="#64748b" text-anchor="end">integer</text>
+<text x="1312" y="732" font-size="12" font-weight="normal" fill="#0f172a">next_retry_at</text>
+<text x="1650" y="732" font-size="11" fill="#64748b" text-anchor="end">timestamp</text>
+<text x="1312" y="753" font-size="12" font-weight="normal" fill="#0f172a">last_error_code</text>
+<text x="1650" y="753" font-size="11" fill="#64748b" text-anchor="end">text</text>
+<text x="1312" y="774" font-size="12" font-weight="normal" fill="#0f172a">updated_at</text>
+<text x="1650" y="774" font-size="11" fill="#64748b" text-anchor="end">timestamp</text>
+</g>
+<g id="tbl-model_usage_events">
+<rect x="1300" y="825" width="360" height="458" rx="6" fill="#ffffff" stroke="#cbd5e1"/>
+<path d="M 1300 825 h 360 a 6 6 0 0 1 6 6 v 24 h -360 z" fill="#243044"/>
+<text x="1312" y="845" font-size="13" font-weight="bold" fill="#ffffff">model_usage_events</text>
+<text x="1312" y="869" font-size="12" font-weight="bold" fill="#0f172a">id</text>
+<rect x="1334" y="857" width="24" height="15" rx="3" fill="#f59e0b"/><text x="1339" y="869" font-size="9" font-weight="bold" fill="#ffffff">PK</text>
+<text x="1650" y="869" font-size="11" fill="#64748b" text-anchor="end">integer</text>
+<text x="1312" y="890" font-size="12" font-weight="normal" fill="#0f172a">binding_id</text>
+<rect x="1390" y="878" width="22" height="15" rx="3" fill="#0ea5e9"/><text x="1395" y="890" font-size="9" font-weight="bold" fill="#ffffff">FK</text>
+<text x="1650" y="890" font-size="11" fill="#64748b" text-anchor="end">integer</text>
+<text x="1312" y="911" font-size="12" font-weight="normal" fill="#0f172a">usage_source_id</text>
+<rect x="1425" y="899" width="22" height="15" rx="3" fill="#0ea5e9"/><text x="1430" y="911" font-size="9" font-weight="bold" fill="#ffffff">FK</text>
+<text x="1650" y="911" font-size="11" fill="#64748b" text-anchor="end">integer</text>
+<text x="1312" y="932" font-size="12" font-weight="normal" fill="#0f172a">provider_id</text>
+<text x="1650" y="932" font-size="11" fill="#64748b" text-anchor="end">text</text>
+<text x="1312" y="953" font-size="12" font-weight="normal" fill="#0f172a">billing_provider_id</text>
+<text x="1650" y="953" font-size="11" fill="#64748b" text-anchor="end">text</text>
+<text x="1312" y="974" font-size="12" font-weight="normal" fill="#0f172a">model_id</text>
+<text x="1650" y="974" font-size="11" fill="#64748b" text-anchor="end">text</text>
+<text x="1312" y="995" font-size="12" font-weight="normal" fill="#0f172a">usage_measurement_kind</text>
+<text x="1650" y="995" font-size="11" fill="#64748b" text-anchor="end">text</text>
+<text x="1312" y="1016" font-size="12" font-weight="normal" fill="#0f172a">input_tokens</text>
+<text x="1650" y="1016" font-size="11" fill="#64748b" text-anchor="end">integer</text>
+<text x="1312" y="1037" font-size="12" font-weight="normal" fill="#0f172a">cached_input_tokens</text>
+<text x="1650" y="1037" font-size="11" fill="#64748b" text-anchor="end">integer</text>
+<text x="1312" y="1058" font-size="12" font-weight="normal" fill="#0f172a">uncached_input_tokens</text>
+<text x="1650" y="1058" font-size="11" fill="#64748b" text-anchor="end">integer</text>
+<text x="1312" y="1079" font-size="12" font-weight="normal" fill="#0f172a">output_tokens</text>
+<text x="1650" y="1079" font-size="11" fill="#64748b" text-anchor="end">integer</text>
+<text x="1312" y="1100" font-size="12" font-weight="normal" fill="#0f172a">provider_usage_json</text>
+<text x="1650" y="1100" font-size="11" fill="#64748b" text-anchor="end">text</text>
+<text x="1312" y="1121" font-size="12" font-weight="normal" fill="#0f172a">source_event_key</text>
+<text x="1650" y="1121" font-size="11" fill="#64748b" text-anchor="end">text</text>
+<text x="1312" y="1142" font-size="12" font-weight="normal" fill="#0f172a">created_at</text>
+<text x="1650" y="1142" font-size="11" fill="#64748b" text-anchor="end">timestamp</text>
+<text x="1312" y="1163" font-size="12" font-weight="normal" fill="#0f172a">input_cost_nanos</text>
+<text x="1650" y="1163" font-size="11" fill="#64748b" text-anchor="end">integer</text>
+<text x="1312" y="1184" font-size="12" font-weight="normal" fill="#0f172a">cached_input_cost_nanos</text>
+<text x="1650" y="1184" font-size="11" fill="#64748b" text-anchor="end">integer</text>
+<text x="1312" y="1205" font-size="12" font-weight="normal" fill="#0f172a">output_cost_nanos</text>
+<text x="1650" y="1205" font-size="11" fill="#64748b" text-anchor="end">integer</text>
+<text x="1312" y="1226" font-size="12" font-weight="normal" fill="#0f172a">estimated_cost_nanos</text>
+<text x="1650" y="1226" font-size="11" fill="#64748b" text-anchor="end">integer</text>
+<text x="1312" y="1247" font-size="12" font-weight="normal" fill="#0f172a">pricing_version</text>
+<text x="1650" y="1247" font-size="11" fill="#64748b" text-anchor="end">text</text>
+<text x="1312" y="1268" font-size="12" font-weight="normal" fill="#0f172a">billing_provider_source</text>
+<text x="1650" y="1268" font-size="11" fill="#64748b" text-anchor="end">text</text>
+</g>
+<g id="tbl-change_log">
+<rect x="1720" y="152" width="360" height="164" rx="6" fill="#ffffff" stroke="#cbd5e1"/>
+<path d="M 1720 152 h 360 a 6 6 0 0 1 6 6 v 24 h -360 z" fill="#243044"/>
+<text x="1732" y="172" font-size="13" font-weight="bold" fill="#ffffff">change_log</text>
+<text x="1732" y="196" font-size="12" font-weight="bold" fill="#0f172a">seq</text>
+<rect x="1761" y="184" width="24" height="15" rx="3" fill="#f59e0b"/><text x="1766" y="196" font-size="9" font-weight="bold" fill="#ffffff">PK</text>
+<text x="2070" y="196" font-size="11" fill="#64748b" text-anchor="end">integer</text>
+<text x="1732" y="217" font-size="12" font-weight="normal" fill="#0f172a">project_id</text>
+<rect x="1810" y="205" width="22" height="15" rx="3" fill="#0ea5e9"/><text x="1815" y="217" font-size="9" font-weight="bold" fill="#ffffff">FK</text>
+<text x="2070" y="217" font-size="11" fill="#64748b" text-anchor="end">text</text>
+<text x="1732" y="238" font-size="12" font-weight="normal" fill="#0f172a">session_id</text>
+<rect x="1810" y="226" width="22" height="15" rx="3" fill="#0ea5e9"/><text x="1815" y="238" font-size="9" font-weight="bold" fill="#ffffff">FK</text>
+<text x="2070" y="238" font-size="11" fill="#64748b" text-anchor="end">text</text>
+<text x="1732" y="259" font-size="12" font-weight="normal" fill="#0f172a">event_type</text>
+<text x="2070" y="259" font-size="11" fill="#64748b" text-anchor="end">text</text>
+<text x="1732" y="280" font-size="12" font-weight="normal" fill="#0f172a">payload</text>
+<text x="2070" y="280" font-size="11" fill="#64748b" text-anchor="end">text</text>
+<text x="1732" y="301" font-size="12" font-weight="normal" fill="#0f172a">created_at</text>
+<text x="2070" y="301" font-size="11" fill="#64748b" text-anchor="end">timestamp</text>
+</g>
+</svg>

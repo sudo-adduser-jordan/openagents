@@ -111,6 +111,12 @@ tasks:
     cmds:
       - go run github.com/sqlc-dev/sqlc/cmd/sqlc@{{.SQLC_VERSION}} generate
 
+  db:dbml:
+    desc: Regenerate SQLite schema.dbml and the README schema SVG from migrations
+    dir: backend
+    cmds:
+      - go generate ./internal/storage/sqlite/
+
   sqlc:
     desc: Alias for db:sqlc
     cmds:

@@ -32,11 +32,11 @@ The desktop app runs the daemon for you, so no CLI is required. See the [install
 
 ## Screenshots
 
-<img src="docs/assets/readme/hero.png" alt="Open Agents Kanban showing worker sessions grouped by live status" width="100%" />
+<img src="assets/readme/hero.png" alt="Open Agents Kanban showing worker sessions grouped by live status" width="100%" />
 
-<img src="docs/assets/readme/tui.png" alt="A worker agent's native terminal interface supervised inside Open Agents" width="100%" />
+<img src="assets/readme/tui.png" alt="A worker agent's native terminal interface supervised inside Open Agents" width="100%" />
 
-<img src="docs/assets/readme/browser.png" alt="A worker controlling its isolated in-app browser preview" width="100%" />
+<img src="assets/readme/browser.png" alt="A worker controlling its isolated in-app browser preview" width="100%" />
 
 ## Architecture
 
@@ -44,41 +44,51 @@ The desktop app runs the daemon for you, so no CLI is required. See the [install
 
 Which processes exist, who is allowed to talk to whom, and where state actually lives. Every other diagram is a zoom-in on one of the frames below.
 
-<img src="docs/assets/diagrams/01-application-overview.svg" alt="Open Agents application overview: the desktop app, CLI, loopback daemon, adapters, external systems, and on-disk state" width="100%" />
+<img src="assets/diagrams/01-application-overview.svg" alt="Open Agents application overview: the desktop app, CLI, loopback daemon, adapters, external systems, and on-disk state" width="100%" />
 
-[Open full size](docs/assets/diagrams/01-application-overview.svg) &nbsp;&bull;&nbsp; [Edit in Excalidraw](docs/assets/diagrams/01-application-overview.excalidraw)
+[Open full size](assets/diagrams/01-application-overview.svg) &nbsp;&bull;&nbsp; [Edit in Excalidraw](assets/diagrams/01-application-overview.excalidraw)
 
 ### 2. Session state machines
 
 The two machines that are constantly mistaken for one: the durable `activity_state` written by a single reducer, and the derived display status recomputed on every read.
 
-<img src="docs/assets/diagrams/02-session-state-machines.svg" alt="Session state machines: the durable activity_state machine on the left, the derived display-status precedence ladder on the right" width="100%" />
+<img src="assets/diagrams/02-session-state-machines.svg" alt="Session state machines: the durable activity_state machine on the left, the derived display-status precedence ladder on the right" width="100%" />
 
-[Open full size](docs/assets/diagrams/02-session-state-machines.svg) &nbsp;&bull;&nbsp; [Edit in Excalidraw](docs/assets/diagrams/02-session-state-machines.excalidraw)
+[Open full size](assets/diagrams/02-session-state-machines.svg) &nbsp;&bull;&nbsp; [Edit in Excalidraw](assets/diagrams/02-session-state-machines.excalidraw)
 
 ### 3. Frontend
 
 Main owns processes, preload owns capability, renderer owns presentation. Every byte crossing into the renderer goes through the bridge.
 
-<img src="docs/assets/diagrams/03-frontend-architecture.svg" alt="Frontend architecture: the Electron main process, preload contextBridge, React renderer, and the transports across the loopback socket" width="100%" />
+<img src="assets/diagrams/03-frontend-architecture.svg" alt="Frontend architecture: the Electron main process, preload contextBridge, React renderer, and the transports across the loopback socket" width="100%" />
 
-[Open full size](docs/assets/diagrams/03-frontend-architecture.svg) &nbsp;&bull;&nbsp; [Edit in Excalidraw](docs/assets/diagrams/03-frontend-architecture.excalidraw)
+[Open full size](assets/diagrams/03-frontend-architecture.svg) &nbsp;&bull;&nbsp; [Edit in Excalidraw](assets/diagrams/03-frontend-architecture.excalidraw)
 
 ### 4. Backend
 
 The Go request path, the single write path allowed to move a durable fact, the ports the core depends on, and the CDC pipeline that fans changes back out.
 
-<img src="docs/assets/diagrams/04-backend-architecture.svg" alt="Backend architecture: the inbound httpd and service layer, the session_manager and lifecycle write path, ports and adapters, and the SQLite change_log CDC pipeline" width="100%" />
+<img src="assets/diagrams/04-backend-architecture.svg" alt="Backend architecture: the inbound httpd and service layer, the session_manager and lifecycle write path, ports and adapters, and the SQLite change_log CDC pipeline" width="100%" />
 
-[Open full size](docs/assets/diagrams/04-backend-architecture.svg) &nbsp;&bull;&nbsp; [Edit in Excalidraw](docs/assets/diagrams/04-backend-architecture.excalidraw)
+[Open full size](assets/diagrams/04-backend-architecture.svg) &nbsp;&bull;&nbsp; [Edit in Excalidraw](assets/diagrams/04-backend-architecture.excalidraw)
 
 ### 5. Session interface handoff
 
 The TUI ↔ Chat handoff as a saga: the session row is the single commit point, everything before it is reversible, and messages that arrive while no controller is live survive whoever ends up owning the session.
 
-<img src="docs/assets/diagrams/05-interface-handoff-saga.svg" alt="The TUI to Chat interface handoff saga: forward path, commit point, failure and recovery paths, and the fences around the no-controller gap" width="100%" />
+<img src="assets/diagrams/05-interface-handoff-saga.svg" alt="The TUI to Chat interface handoff saga: forward path, commit point, failure and recovery paths, and the fences around the no-controller gap" width="100%" />
 
-[Open full size](docs/assets/diagrams/05-interface-handoff-saga.svg) &nbsp;&bull;&nbsp; [Edit in Excalidraw](docs/assets/diagrams/05-interface-handoff-saga.excalidraw)
+[Open full size](assets/diagrams/05-interface-handoff-saga.svg) &nbsp;&bull;&nbsp; [Edit in Excalidraw](assets/diagrams/05-interface-handoff-saga.excalidraw)
+
+### 6. Database schema
+
+SQLite tables, columns, and foreign keys. `schema.dbml` is generated from the migrations; the SVG below is generated from the same schema for the README.
+
+<img src="assets/diagrams/06-database-schema.svg" alt="Open Agents SQLite schema: projects and sessions, conversations, PR and review, usage, and change_log tables with foreign-key relationships" width="100%" />
+
+[Open full size](assets/diagrams/06-database-schema.svg) &nbsp;&bull;&nbsp; [View DBML](backend/internal/storage/sqlite/schema.dbml) &nbsp;&bull;&nbsp; [Edit in ChartDB](https://chartdb.io)
+
+Regenerate with `task db:dbml` after adding a migration.
 
 For the reasoning behind these boundaries, start with [docs/architecture.md](docs/architecture.md) and [docs/STATUS.md](docs/STATUS.md).
 

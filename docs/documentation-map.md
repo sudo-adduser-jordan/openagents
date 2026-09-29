@@ -56,7 +56,9 @@ covered by tests rather than a generator. See "API contract changes" in
 - **Changing the daemon API**: edit `dto.go` and `build.go`, run `task api`,
   commit `openapi.yaml` and `schema.ts` with the Go change. CI fails otherwise.
 - **Changing storage**: edit queries or add a migration, run `task db:sqlc`,
-  commit `gen/`. Never hand-edit `gen/` or already-merged migrations.
+  then run `task db:dbml` and commit `gen/`, `schema.dbml`, and
+  `assets/diagrams/06-database-schema.svg` together. Never hand-edit `gen/`,
+  `schema.dbml`, or already-merged migrations.
 - **Changing a hard rule or boundary**: update `AGENTS.md` in the same PR, and
   add an ADR under `docs/adr/` when the rule is a decision that needs rationale.
 - **Changing `open-agents` CLI behavior**: update the command, its table test, and the

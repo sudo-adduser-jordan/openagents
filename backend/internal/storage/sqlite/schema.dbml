@@ -1,0 +1,704 @@
+-- Code-generated from backend/internal/storage/sqlite/migrations — do not edit.
+-- Regenerate: task db:dbml (backend: go generate ./internal/storage/sqlite/).
+-- Open in ChartDB: import this file at https://chartdb.io, then File > Export as > SVG.
+-- Excluded: goose_db_version (migration ledger), usage_session_integrity (view).
+
+Table agent_install_jobs {
+  target text [pk]
+  status text [not null]
+  method text [not null, default: '']
+  command text [not null, default: '']
+  expected_destination text [not null, default: '']
+  output text [not null, default: '']
+  error text [not null, default: '']
+  started_at timestamp [not null]
+  finished_at timestamp
+  updated_at timestamp [not null]
+}
+
+Table agent_model_catalog {
+  agent_id text [not null]
+  project_id text [not null, default: '']
+  binary_version text [not null, default: '']
+  catalog_json text [not null]
+  source text [not null]
+  fetched_at timestamp [not null]
+
+  indexes {
+    (agent_id, project_id) [pk]
+  }
+}
+
+Table app_settings {
+  id integer [pk]
+  default_session_mode text [not null, default: 'tui']
+  updated_at timestamp [not null]
+  cloud_offering integer [not null, default: 0]
+}
+
+Table change_log {
+  seq integer [pk]
+  project_id text
+  session_id text
+  event_type text [not null]
+  payload text [not null]
+  created_at timestamp [not null, default: `datetime('now')`]
+}
+
+Table conversation_activities {
+  id text [pk]
+  conversation_id text [not null]
+  turn_id text
+  sequence integer [not null]
+  revision integer [not null, default: 0]
+  kind text [not null]
+  status text [not null]
+  summary text [not null, default: '']
+  detail_json text [not null, default: '']
+  request_id text [not null, default: '']
+  provider_item_id text [not null, default: '']
+  created_at timestamp [not null]
+  updated_at timestamp [not null]
+  command_output text [not null, default: '']
+  command_output_truncated integer [not null, default: 0]
+  streamed_text text [not null, default: '']
+  streamed_text_truncated integer [not null, default: 0]
+  branch_id text [not null, default: '']
+
+  indexes {
+    (conversation_id, sequence) [unique]
+  }
+}
+
+Table conversation_branches {
+  id text [pk]
+  conversation_id text [not null]
+  session_id text
+  provider_conversation_id text [not null, default: '']
+  parent_branch_id text
+  fork_after_turn_id text
+  replaced_turn_id text
+  replacement_turn_id text
+  fork_after_sequence integer [not null, default: 0]
+  created_at timestamp [not null]
+  strategy text [not null, default: 'native']
+  replay_cutoff_sequence integer [not null, default: 0]
+  replay_truncated integer [not null, default: 0]
+  provider_scope_id text [not null, default: '']
+  provider_ids_scoped integer [not null, default: 0]
+}
+
+Table conversation_edit_deliveries {
+  conversation_id text [not null]
+  client_message_id text [not null]
+  request_json text [not null]
+  state text [not null]
+  source_branch_id text [not null, default: '']
+  active_branch_id text [not null, default: '']
+  turn_id text [not null, default: '']
+  handled_by_session_id text [not null, default: '']
+  provider_turn_id text [not null, default: '']
+  turn_state text [not null, default: '']
+  turn_requested_at timestamp
+  rejection_kind text [not null, default: '']
+  rejection_message text [not null, default: '']
+  created_at timestamp [not null]
+  settled_at timestamp
+  provider_work_started integer [not null, default: 1]
+  turn_workflow_mode text [not null, default: '']
+
+  indexes {
+    (conversation_id, client_message_id) [pk]
+  }
+}
+
+Table conversation_messages {
+  id text [pk]
+  conversation_id text [not null]
+  turn_id text
+  sequence integer [not null]
+  revision integer [not null, default: 0]
+  role text [not null]
+  origin text [not null]
+  text text [not null, default: '']
+  streaming integer [not null, default: 0]
+  provider_item_id text [not null, default: '']
+  client_message_id text [not null, default: '']
+  created_at timestamp [not null]
+  updated_at timestamp [not null]
+  delivery_content_json text [not null, default: '']
+  branch_id text [not null, default: '']
+
+  indexes {
+    (conversation_id, sequence) [unique]
+  }
+}
+
+Table conversation_provider_events {
+  id integer [pk]
+  conversation_id text [not null]
+  session_id text [not null]
+  provider_event_id text [not null, default: '']
+  method text [not null]
+  payload_json text [not null]
+  received_at timestamp [not null]
+  branch_id text [not null, default: '']
+}
+
+Table conversation_queued_edit_deliveries {
+  conversation_id text [not null]
+  client_message_id text [not null]
+  request_hash text [not null]
+  created_at timestamp [not null]
+
+  indexes {
+    (conversation_id, client_message_id) [pk]
+  }
+}
+
+Table conversation_steer_deliveries {
+  conversation_id text [not null]
+  client_message_id text [not null]
+  request_json text [not null]
+  state text [not null]
+  provider_turn_id text [not null, default: '']
+  activity_id text [not null, default: '']
+  rejection_kind text [not null, default: '']
+  rejection_message text [not null, default: '']
+  created_at timestamp [not null]
+  settled_at timestamp
+
+  indexes {
+    (conversation_id, client_message_id) [pk]
+  }
+}
+
+Table conversation_turns {
+  id text [pk]
+  conversation_id text [not null]
+  handled_by_session_id text
+  provider_turn_id text [not null, default: '']
+  controller_generation text [not null, default: '']
+  state text [not null]
+  error_message text [not null, default: '']
+  requested_at timestamp [not null]
+  started_at timestamp
+  completed_at timestamp
+  diff_json text [not null, default: '']
+  rolled_back_at timestamp
+  plan_json text [not null, default: '']
+  branch_id text [not null, default: '']
+  promotion_started_at timestamp
+  promoted_to_turn_id text
+  retry_of_turn_id text
+  workflow_mode text [not null, default: '']
+}
+
+Table conversations {
+  id text [pk]
+  scope text [not null]
+  project_id text
+  session_id text
+  current_session_id text
+  latest_sequence integer [not null, default: 0]
+  created_at timestamp [not null]
+  updated_at timestamp [not null]
+  model text
+  reasoning_effort text
+  approval_mode text
+  compacted_at timestamp
+  context_used integer
+  context_window integer
+  usage_input_tokens integer
+  usage_output_tokens integer
+  usage_cached_tokens integer
+  usage_total_tokens integer
+  rate_limit_primary_percent real
+  rate_limit_secondary_percent real
+  rate_limit_primary_resets_in integer
+  rate_limit_secondary_resets_in integer
+  rate_limit_plan text
+  provider_title text [not null, default: '']
+  applied_title text [not null, default: '']
+  model_reroute_json text
+  account_json text
+  thread_state_json text
+  mcp_servers_json text
+  usage_cost real
+  usage_currency text
+  active_branch_id text [not null, default: '']
+  opencode_mode text [not null, default: '']
+}
+
+Table manager_reengagements {
+  session_id text [pk]
+  attempt_count integer [not null, default: 0]
+  next_attempt_at timestamp [not null]
+  last_attempt_at timestamp
+  progress_since_attempt boolean [not null, default: 0]
+  attention_notified boolean [not null, default: 0]
+  state text [not null, default: 'active']
+  created_at timestamp [not null]
+  updated_at timestamp [not null]
+}
+
+Table model_usage_events {
+  id integer [pk]
+  binding_id integer [not null]
+  usage_source_id integer [not null]
+  provider_id text [not null]
+  billing_provider_id text
+  model_id text [not null]
+  usage_measurement_kind text [not null]
+  input_tokens integer
+  cached_input_tokens integer
+  uncached_input_tokens integer
+  output_tokens integer
+  provider_usage_json text
+  source_event_key text [not null]
+  created_at timestamp
+  input_cost_nanos integer
+  cached_input_cost_nanos integer
+  output_cost_nanos integer
+  estimated_cost_nanos integer
+  pricing_version text [not null, default: '']
+  billing_provider_source text
+
+  indexes {
+    (binding_id, source_event_key) [unique]
+  }
+}
+
+Table notifications {
+  id text [pk]
+  session_id text [not null]
+  project_id text
+  pr_url text [not null, default: '']
+  type text [not null]
+  title text [not null]
+  body text [not null, default: '']
+  status text [not null, default: 'unread']
+  created_at timestamp [not null]
+  resolved_at timestamp
+}
+
+Table pr {
+  url text [pk]
+  session_id text [not null]
+  number integer [not null, default: 0]
+  pr_state text [not null, default: 'open']
+  review_decision text [not null, default: 'none']
+  ci_state text [not null, default: 'unknown']
+  mergeability text [not null, default: 'unknown']
+  updated_at timestamp [not null]
+  provider text [not null, default: '']
+  host text [not null, default: '']
+  repo text [not null, default: '']
+  source_branch text [not null, default: '']
+  target_branch text [not null, default: '']
+  head_sha text [not null, default: '']
+  title text [not null, default: '']
+  additions integer [not null, default: 0]
+  deletions integer [not null, default: 0]
+  changed_files integer [not null, default: 0]
+  author text [not null, default: '']
+  base_sha text [not null, default: '']
+  merge_commit_sha text [not null, default: '']
+  is_draft integer [not null, default: 0]
+  is_merged integer [not null, default: 0]
+  is_closed integer [not null, default: 0]
+  provider_state text [not null, default: '']
+  provider_mergeable text [not null, default: '']
+  provider_merge_state_status text [not null, default: '']
+  html_url text [not null, default: '']
+  created_at_provider timestamp
+  updated_at_provider timestamp
+  merged_at_provider timestamp
+  closed_at_provider timestamp
+  metadata_hash text [not null, default: '']
+  ci_hash text [not null, default: '']
+  review_hash text [not null, default: '']
+  observed_at timestamp
+  ci_observed_at timestamp
+  review_observed_at timestamp
+  last_nudge_signature text [not null, default: '']
+  state_changed_at timestamp
+  auto_inject_ci boolean [not null, default: true]
+  provider_id text [not null, default: '']
+  author_avatar_url text [not null, default: '']
+  review_partial boolean [not null, default: true]
+}
+
+Table pr_checks {
+  pr_url text [not null]
+  name text [not null]
+  commit_hash text [not null]
+  status text [not null, default: 'unknown']
+  url text [not null, default: '']
+  log_tail text [not null, default: '']
+  created_at timestamp [not null]
+  conclusion text [not null, default: '']
+  details text [not null, default: '']
+
+  indexes {
+    (pr_url, name, commit_hash) [pk]
+  }
+}
+
+Table pr_comment {
+  pr_url text [not null]
+  comment_id text [not null]
+  author text [not null, default: '']
+  file text [not null, default: '']
+  line integer [not null, default: 0]
+  body text [not null, default: '']
+  resolved integer [not null, default: 0]
+  created_at timestamp [not null]
+  thread_id text [not null, default: '']
+  url text [not null, default: '']
+  is_bot integer [not null, default: 0]
+  auto_inject_review boolean [not null, default: true]
+  review_id text [not null, default: '']
+
+  indexes {
+    (pr_url, comment_id) [pk]
+  }
+}
+
+Table pr_review_threads {
+  pr_url text [not null]
+  thread_id text [not null]
+  path text [not null, default: '']
+  line integer [not null, default: 0]
+  resolved integer [not null, default: 0]
+  is_bot integer [not null, default: 0]
+  semantic_hash text [not null, default: '']
+  updated_at timestamp [not null]
+
+  indexes {
+    (pr_url, thread_id) [pk]
+  }
+}
+
+Table pr_reviews {
+  pr_url text [not null]
+  review_id text [not null]
+  author text [not null, default: '']
+  state text [not null, default: 'none']
+  url text [not null, default: '']
+  is_bot integer [not null, default: 0]
+  submitted_at timestamp [not null]
+  body text [not null, default: '']
+  auto_inject_review boolean [not null, default: true]
+  target_sha text [not null, default: '']
+
+  indexes {
+    (pr_url, review_id) [pk]
+  }
+}
+
+Table pr_url_alias {
+  alias_url text [pk]
+  canonical_url text [not null]
+}
+
+Table projects {
+  id text [pk]
+  path text [not null]
+  repo_origin_url text [not null, default: '']
+  display_name text [not null, default: '']
+  registered_at timestamp [not null]
+  archived_at timestamp
+  config text
+  kind text [not null, default: 'single_repo']
+}
+
+Table retired_session_nums {
+  project_id text [not null]
+  num integer [not null]
+  retired_at timestamp [not null]
+
+  indexes {
+    (project_id, num) [pk]
+  }
+}
+
+Table review {
+  id text [pk]
+  session_id text [not null]
+  project_id text [not null]
+  harness text [not null]
+  pr_url text [not null, default: '']
+  reviewer_handle_id text [not null, default: '']
+  agent_session_id text [not null, default: '']
+  created_at timestamp [not null]
+  updated_at timestamp [not null]
+  reviewer_activity_state text [not null, default: '']
+  reviewer_launch_id text [not null, default: '']
+
+  indexes {
+    (session_id, harness) [unique]
+  }
+}
+
+Table review_run {
+  id text [pk]
+  review_id text [not null]
+  session_id text [not null]
+  harness text [not null]
+  pr_url text [not null, default: '']
+  target_sha text [not null, default: '']
+  status text [not null, default: 'running']
+  verdict text [not null, default: '']
+  body text [not null, default: '']
+  created_at timestamp [not null]
+  github_review_id text [not null, default: '']
+  delivered_at timestamp
+  batch_id text [not null, default: '']
+  auto_inject_review boolean [not null, default: true]
+  trigger_source text [not null, default: 'manual']
+}
+
+Table session_cleanup_facts {
+  session_id text [pk, not null]
+  session_generation integer [not null, default: 0]
+  runtime_released_at timestamp
+  workspace_disposition text [not null, default: 'pending']
+  attempt_count integer [not null, default: 0]
+  last_attempt_at timestamp
+  next_attempt_at timestamp
+  failure_code text [not null, default: '']
+}
+
+Table session_interface_transition_messages {
+  id integer [pk]
+  transition_id text [not null]
+  message text [not null]
+  created_at timestamp [not null]
+  delivered_at timestamp
+  client_message_id text [not null, default: '']
+}
+
+Table session_interface_transitions {
+  id text [pk]
+  session_id text [not null]
+  source_mode text [not null]
+  target_mode text [not null]
+  policy text [not null]
+  phase text [not null]
+  native_conversation_id text [not null, default: '']
+  error_code text [not null, default: '']
+  error_detail text [not null, default: '']
+  created_at timestamp [not null]
+  updated_at timestamp [not null]
+  completed_at timestamp
+  notice_acknowledged_at timestamp
+  history_policy text [not null, default: 'strict']
+}
+
+Table session_worktrees {
+  session_id text [not null]
+  repo_name text [not null]
+  branch text [not null]
+  base_sha text [not null]
+  worktree_path text [not null]
+  preserved_ref text [not null, default: '']
+  state text [not null, default: 'active']
+  base_ref text [not null, default: '']
+
+  indexes {
+    (session_id, repo_name) [pk]
+  }
+}
+
+Table sessions {
+  id text [pk]
+  project_id text
+  num integer [not null]
+  issue_id text [not null, default: '']
+  kind text [not null, default: 'worker']
+  harness text [not null, default: '']
+  activity_state text [not null, default: 'idle']
+  activity_last_at timestamp [not null]
+  is_terminated boolean [not null, default: false]
+  branch text [not null, default: '']
+  workspace_path text [not null, default: '']
+  runtime_handle_id text [not null, default: '']
+  agent_session_id text [not null, default: '']
+  prompt text [not null, default: '']
+  created_at timestamp [not null]
+  updated_at timestamp [not null]
+  display_name text [not null, default: '']
+  first_signal_at timestamp
+  preview_url text [not null, default: '']
+  preview_revision integer [not null, default: 0]
+  cleanup_generation integer [not null, default: 0]
+  runtime_launch_id text [not null, default: '']
+  workspace_repo_path text [not null, default: '']
+  terminate_on_pr_merge boolean [not null, default: false]
+  diff_base_sha text [not null, default: '']
+  diff_base_ref text [not null, default: '']
+  reviewer_harness text [not null, default: '']
+  is_pinned boolean [not null, default: 0]
+  pinned_at datetime
+  session_mode text [not null, default: 'tui']
+  provider_conversation_id text [not null, default: '']
+  controller_generation text [not null, default: '']
+  browser_capability_verifier text [not null, default: '']
+  auto_inject_review boolean [not null, default: true]
+  latest_user_prompt text [not null, default: '']
+  latest_assistant_update text [not null, default: '']
+  native_transcript_path text [not null, default: '']
+  auto_inject_ci boolean [not null, default: true]
+  auto_review_enabled integer [not null, default: 0]
+  agent_session_id_launch_id text [not null, default: '']
+  model text [not null, default: '']
+  latest_user_prompt_at timestamp
+  reviewer_agent_config text [not null, default: '']
+  session_permissions text [not null, default: '']
+  conversation_checkpoint_state text [not null, default: 'legacy']
+  conversation_checkpoint_generation text [not null, default: '']
+  conversation_checkpoint_native_id text [not null, default: '']
+  conversation_checkpoint_unsettled boolean [not null, default: 0]
+  conversation_checkpoint_turn_id text [not null, default: '']
+  revision integer [not null, default: 0]
+  native_checkpoint_evidence text [not null, default: '']
+  latest_assistant_update_at timestamp
+  native_identity_observed_at timestamp
+  workflow_mode text [not null, default: 'planning']
+  review_locked boolean [not null, default: false]
+  agent_deferred boolean [not null, default: 0]
+  delivered_head_sha text [not null, default: '']
+  plan_approved boolean [not null, default: 0]
+
+  indexes {
+    (project_id, num) [unique]
+  }
+}
+
+Table shell_terminals {
+  handle_id text [pk]
+  project_id text
+  working_dir text [not null]
+  title text [not null, default: '']
+  app_run_id text [not null]
+  created_at timestamp [not null]
+  session_id text
+  transient boolean [not null, default: false]
+}
+
+Table telemetry_event {
+  id text [pk]
+  occurred_at timestamp [not null]
+  name text [not null]
+  source text [not null]
+  level text [not null]
+  project_id text
+  session_id text
+  request_id text [not null, default: '']
+  payload_json text [not null]
+}
+
+Table usage_bindings {
+  id integer [pk]
+  session_id text [not null]
+  harness text [not null]
+  native_root_id text [not null]
+  initial_model_id text [not null, default: '']
+  state text [not null]
+  last_error_code text [not null, default: '']
+  updated_at timestamp [not null]
+  provider_hint text [not null, default: '']
+
+  indexes {
+    (session_id, harness, native_root_id) [unique]
+  }
+}
+
+Table usage_sources {
+  id integer [pk]
+  binding_id integer [not null]
+  kind text [not null]
+  native_session_id text [not null, default: '']
+  subagent_id text [not null, default: '']
+  artifact_path text [not null]
+  file_identity text [not null, default: '']
+  generation integer [not null, default: 0]
+  byte_offset integer [not null, default: 0]
+  parser_state_json text [not null, default: '{}']
+  state text [not null]
+  failure_count integer [not null, default: 0]
+  anomaly_count integer [not null, default: 0]
+  next_retry_at timestamp
+  last_error_code text [not null, default: '']
+  updated_at timestamp [not null]
+
+  indexes {
+    (binding_id, artifact_path, generation) [unique]
+  }
+}
+
+Table workspace_repos {
+  project_id text [not null]
+  name text [not null]
+  relative_path text [not null]
+  repo_origin_url text [not null, default: '']
+  registered_at timestamp [not null]
+  default_branch text [not null, default: '']
+  git_status text [not null, default: 'ready']
+
+  indexes {
+    (project_id, name) [pk]
+    (project_id, relative_path) [unique]
+  }
+}
+
+Ref: change_log.project_id > projects.id
+Ref: change_log.session_id > sessions.id
+Ref: conversation_activities.conversation_id > conversations.id
+Ref: conversation_activities.turn_id > conversation_turns.id
+Ref: conversation_branches.conversation_id > conversations.id
+Ref: conversation_branches.fork_after_turn_id > conversation_turns.id
+Ref: conversation_branches.parent_branch_id > conversation_branches.id
+Ref: conversation_branches.replaced_turn_id > conversation_turns.id
+Ref: conversation_branches.replacement_turn_id > conversation_turns.id
+Ref: conversation_branches.session_id > sessions.id
+Ref: conversation_edit_deliveries.conversation_id > conversations.id
+Ref: conversation_messages.conversation_id > conversations.id
+Ref: conversation_messages.turn_id > conversation_turns.id
+Ref: conversation_provider_events.conversation_id > conversations.id
+Ref: conversation_provider_events.session_id > sessions.id
+Ref: conversation_queued_edit_deliveries.conversation_id > conversations.id
+Ref: conversation_steer_deliveries.conversation_id > conversations.id
+Ref: conversation_turns.conversation_id > conversations.id
+Ref: conversation_turns.handled_by_session_id > sessions.id
+Ref: conversation_turns.promoted_to_turn_id > conversation_turns.id
+Ref: conversation_turns.retry_of_turn_id > conversation_turns.id
+Ref: conversations.current_session_id > sessions.id
+Ref: conversations.project_id > projects.id
+Ref: conversations.session_id > sessions.id
+Ref: manager_reengagements.session_id > sessions.id
+Ref: model_usage_events.binding_id > usage_bindings.id
+Ref: model_usage_events.usage_source_id > usage_sources.id
+Ref: notifications.project_id > projects.id
+Ref: notifications.session_id > sessions.id
+Ref: pr.session_id > sessions.id
+Ref: pr_checks.pr_url > pr.url
+Ref: pr_comment.pr_url > pr.url
+Ref: pr_review_threads.pr_url > pr.url
+Ref: pr_reviews.pr_url > pr.url
+Ref: pr_url_alias.canonical_url > pr.url
+Ref: review.project_id > projects.id
+Ref: review.session_id > sessions.id
+Ref: review_run.review_id > review.id
+Ref: review_run.session_id > sessions.id
+Ref: session_cleanup_facts.session_id > sessions.id
+Ref: session_interface_transition_messages.transition_id > session_interface_transitions.id
+Ref: session_interface_transitions.session_id > sessions.id
+Ref: session_worktrees.session_id > sessions.id
+Ref: sessions.project_id > projects.id
+Ref: shell_terminals.project_id > projects.id
+Ref: shell_terminals.session_id > sessions.id
+Ref: usage_bindings.session_id > sessions.id
+Ref: usage_sources.binding_id > usage_bindings.id
+Ref: workspace_repos.project_id > projects.id
