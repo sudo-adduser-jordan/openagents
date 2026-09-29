@@ -40,10 +40,12 @@ type fakeWorkspaces struct {
 	heads      map[string]string
 	observeErr map[string]error
 	calls      []string
+	infos      []ports.WorkspaceInfo
 }
 
 func (f *fakeWorkspaces) ObserveWorkspace(_ context.Context, info ports.WorkspaceInfo) (ports.WorkspaceObservation, error) {
 	f.calls = append(f.calls, info.Path)
+	f.infos = append(f.infos, info)
 	if err, ok := f.observeErr[info.Path]; ok {
 		return ports.WorkspaceObservation{}, err
 	}
@@ -53,8 +55,10 @@ func (f *fakeWorkspaces) ObserveWorkspace(_ context.Context, info ports.Workspac
 func worker(id, worktree, headSHA string) domain.SessionRecord {
 	return domain.SessionRecord{
 		ID:               domain.SessionID(id),
+		ProjectID:        "proj-1",
 		Kind:             domain.KindWorker,
 		WorkflowMode:     domain.WorkflowModeBuilding,
+		PlanApproved:     true,
 		Metadata:         domain.SessionMetadata{Branch: "open-agents/" + id, WorkspacePath: worktree},
 		DeliveredHeadSHA: headSHA,
 	}
@@ -78,6 +82,26 @@ func TestPoll_DeliversNewCommit(t *testing.T) {
 	}
 	if len(d.calls) != 1 || d.calls[0] != "s1@new" {
 		t.Fatalf("delivery calls = %v, want one call for the new commit", d.calls)
+	}
+}
+
+// The observer must route the read through the session's project: without the
+// project id the workspace router resolves the scratch adapter, which has no
+// HEAD to report, and every poll silently skips delivery.
+func TestPoll_ForwardsProjectIDToWorkspaceObservation(t *testing.T) {
+	now := time.Now()
+	store := &fakeStore{sessions: []domain.SessionRecord{worker("s1", "/wt/s1", "old")}}
+	d := &fakeDeliverer{outcomes: map[string]Outcome{"s1": {Delivered: true, URL: "u"}}}
+	ws := &fakeWorkspaces{heads: map[string]string{"/wt/s1": "new"}}
+
+	if err := newTestObserver(store, d, ws, &now).Poll(context.Background()); err != nil {
+		t.Fatalf("poll: %v", err)
+	}
+	if len(ws.infos) != 1 {
+		t.Fatalf("workspace observations = %d, want 1", len(ws.infos))
+	}
+	if ws.infos[0].ProjectID != domain.ProjectID("proj-1") || ws.infos[0].Branch != "open-agents/s1" {
+		t.Fatalf("workspace info = %+v, want the session project and branch", ws.infos[0])
 	}
 }
 
@@ -180,6 +204,25 @@ func TestPoll_SkipsNonEligibleSessionsWithoutObserving(t *testing.T) {
 	store := &fakeStore{sessions: []domain.SessionRecord{planning, manager, dead}}
 	d := &fakeDeliverer{}
 	ws := &fakeWorkspaces{heads: map[string]string{"/wt/s1": "a", "/wt/s2": "b", "/wt/s3": "c"}}
+
+	if err := newTestObserver(store, d, ws, &now).Poll(context.Background()); err != nil {
+		t.Fatalf("poll: %v", err)
+	}
+	if len(ws.calls) != 0 || len(d.calls) != 0 {
+		t.Fatalf("workspace calls = %v, delivery calls = %v, want none", ws.calls, d.calls)
+	}
+}
+
+// A building-stage worker commit with no recorded plan approval is not work
+// the observer should even read a worktree for: the authoritative gate lives in
+// the delivery policy, and this pre-filter only avoids the git call.
+func TestPoll_SkipsUnapprovedPlanWithoutObserving(t *testing.T) {
+	now := time.Now()
+	unapproved := worker("s1", "/wt/s1", "")
+	unapproved.PlanApproved = false
+	store := &fakeStore{sessions: []domain.SessionRecord{unapproved}}
+	d := &fakeDeliverer{}
+	ws := &fakeWorkspaces{heads: map[string]string{"/wt/s1": "new"}}
 
 	if err := newTestObserver(store, d, ws, &now).Poll(context.Background()); err != nil {
 		t.Fatalf("poll: %v", err)

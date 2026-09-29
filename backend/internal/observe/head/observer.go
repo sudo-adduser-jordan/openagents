@@ -155,8 +155,10 @@ func (o *Observer) pollSession(ctx context.Context, rec domain.SessionRecord, no
 	}
 	// Cheap local pre-filter. The authoritative eligibility gate lives in the
 	// delivery policy, next to the commit itself; this only avoids a git call
-	// for sessions that could not be delivered anyway.
-	if rec.IsTerminated || rec.Kind != domain.KindWorker || rec.WorkflowMode != domain.WorkflowModeBuilding {
+	// for sessions that could not be delivered anyway. Plan approval is part
+	// of the filter for the same reason: a commit made before the plan was
+	// approved earns no delivery, so reading its worktree is wasted work.
+	if rec.IsTerminated || rec.Kind != domain.KindWorker || rec.WorkflowMode != domain.WorkflowModeBuilding || !rec.PlanApproved {
 		return
 	}
 	worktree := strings.TrimSpace(rec.Metadata.WorkspacePath)
@@ -164,7 +166,7 @@ func (o *Observer) pollSession(ctx context.Context, rec domain.SessionRecord, no
 	if worktree == "" || branch == "" {
 		return
 	}
-	obs, err := o.workspaces.ObserveWorkspace(ctx, ports.WorkspaceInfo{Path: worktree, Branch: branch})
+	obs, err := o.workspaces.ObserveWorkspace(ctx, ports.WorkspaceInfo{Path: worktree, Branch: branch, ProjectID: rec.ProjectID})
 	if err != nil {
 		// A worktree that cannot be observed tells us nothing. Not a failure.
 		o.logger.Debug("head observer: workspace observation failed", "session", rec.ID, "err", err)

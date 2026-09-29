@@ -617,6 +617,12 @@ func (s *Service) Start(ctx context.Context, cfg StartConfig) (*Controller, erro
 			return nil, err
 		}
 	}
+	if cfg.ProviderConversationID == "" && cfg.Harness == domain.HarnessOpenCode && cfg.Kind == domain.KindWorker {
+		// A fresh worker controller starts in the provider mode its stage
+		// asks for. Best-effort: the provider default stands when the mode
+		// control is absent, and the next stage change repairs it.
+		s.applyFreshOpenCodeMode(ctx, conv, &conversation, cfg.WorkflowMode)
+	}
 	var liveRows ConversationRows
 	if liveReconnect {
 		if s.reader == nil {

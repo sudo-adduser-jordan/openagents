@@ -295,6 +295,10 @@ func (f *fakeStore) SetSessionWorkflowMode(_ context.Context, id domain.SessionI
 	r.WorkflowMode = mode
 	// A workflow-mode command is one of the review lock's release paths.
 	r.ReviewLocked = false
+	// The planning-to-building transition is the plan-review approval: the
+	// plan was reviewed while uncommitted. Any other stage (including back to
+	// planning) clears it, mirroring the store's conditional write.
+	r.PlanApproved = mode == domain.WorkflowModeBuilding && r.Kind == domain.KindWorker
 	r.UpdatedAt = updatedAt
 	f.sessions[id] = r
 	return true, nil
@@ -750,6 +754,105 @@ func TestSessionSetWorkflowModeBuildSucceedsWhenUnlockUndeliverable(t *testing.T
 	}
 	if sess.WorkflowMode != domain.WorkflowModeBuilding || st.sessions["mer-1"].WorkflowMode != domain.WorkflowModeBuilding {
 		t.Fatalf("workflow mode was not persisted: session=%+v stored=%+v", sess, st.sessions["mer-1"])
+	}
+}
+
+// Entering the building stage drives the provider session into build mode
+// through the existing mode control, and records the plan approval that gates
+// automatic delivery. A sync failure never fails the stage change.
+func TestSessionSetWorkflowModeBuildSyncsProviderMode(t *testing.T) {
+	st := newFakeStore()
+	st.sessions["mer-1"] = domain.SessionRecord{
+		ID: "mer-1", ProjectID: "mer", Kind: domain.KindWorker, WorkflowMode: domain.WorkflowModePlanning,
+	}
+	var synced []domain.WorkflowMode
+	svc := &Service{store: st, manager: &fakeCommander{}}
+	svc.SetWorkflowModeSyncer(func(_ context.Context, _ domain.SessionID, mode domain.WorkflowMode) error {
+		synced = append(synced, mode)
+		return nil
+	})
+
+	sess, err := svc.SetWorkflowMode(context.Background(), "mer-1", domain.WorkflowModeBuilding)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if len(synced) != 1 || synced[0] != domain.WorkflowModeBuilding {
+		t.Fatalf("provider sync calls = %v, want one sync into building", synced)
+	}
+	if !st.sessions["mer-1"].PlanApproved {
+		t.Error("PlanApproved=false after planning->building, want the approval recorded")
+	}
+	if sess.WorkflowMode != domain.WorkflowModeBuilding {
+		t.Fatalf("workflow mode = %q, want building", sess.WorkflowMode)
+	}
+}
+
+func TestSessionSetWorkflowModePlanningSyncsProviderModeAndRevokesApproval(t *testing.T) {
+	st := newFakeStore()
+	st.sessions["mer-1"] = domain.SessionRecord{
+		ID: "mer-1", ProjectID: "mer", Kind: domain.KindWorker,
+		WorkflowMode: domain.WorkflowModeBuilding, PlanApproved: true,
+	}
+	var synced []domain.WorkflowMode
+	svc := &Service{store: st, manager: &fakeCommander{}}
+	svc.SetWorkflowModeSyncer(func(_ context.Context, _ domain.SessionID, mode domain.WorkflowMode) error {
+		synced = append(synced, mode)
+		return nil
+	})
+
+	if _, err := svc.SetWorkflowMode(context.Background(), "mer-1", domain.WorkflowModePlanning); err != nil {
+		t.Fatal(err)
+	}
+	if len(synced) != 1 || synced[0] != domain.WorkflowModePlanning {
+		t.Fatalf("provider sync calls = %v, want one sync back into planning", synced)
+	}
+	if st.sessions["mer-1"].PlanApproved {
+		t.Error("PlanApproved=true after building->planning, want the approval revoked")
+	}
+}
+
+func TestSessionSetWorkflowModeSucceedsWhenProviderSyncFails(t *testing.T) {
+	st := newFakeStore()
+	st.sessions["mer-1"] = domain.SessionRecord{
+		ID: "mer-1", ProjectID: "mer", Kind: domain.KindWorker, WorkflowMode: domain.WorkflowModePlanning,
+	}
+	svc := &Service{store: st, manager: &fakeCommander{}}
+	svc.SetWorkflowModeSyncer(func(_ context.Context, _ domain.SessionID, _ domain.WorkflowMode) error {
+		return errors.New("provider unreachable")
+	})
+
+	sess, err := svc.SetWorkflowMode(context.Background(), "mer-1", domain.WorkflowModeBuilding)
+	if err != nil {
+		t.Fatalf("failed provider sync failed the transition: %v", err)
+	}
+	if sess.WorkflowMode != domain.WorkflowModeBuilding || st.sessions["mer-1"].WorkflowMode != domain.WorkflowModeBuilding {
+		t.Fatal("workflow mode was not persisted")
+	}
+	if !st.sessions["mer-1"].PlanApproved {
+		t.Error("PlanApproved=false, want the approval recorded even when the provider sync fails")
+	}
+}
+
+func TestSessionSetWorkflowModeSkipsProviderSyncForManagers(t *testing.T) {
+	st := newFakeStore()
+	st.sessions["mer-1"] = domain.SessionRecord{
+		ID: "mer-1", ProjectID: "mer", Kind: domain.KindManager, WorkflowMode: domain.WorkflowModeManager,
+	}
+	synced := false
+	svc := &Service{store: st, manager: &fakeCommander{}}
+	svc.SetWorkflowModeSyncer(func(_ context.Context, _ domain.SessionID, _ domain.WorkflowMode) error {
+		synced = true
+		return nil
+	})
+
+	if _, err := svc.SetWorkflowMode(context.Background(), "mer-1", domain.WorkflowModePlanning); err != nil {
+		t.Fatal(err)
+	}
+	if synced {
+		t.Error("provider sync ran for a manager session, want no binding: managers never leave their stage")
+	}
+	if st.sessions["mer-1"].PlanApproved {
+		t.Error("a manager reports PlanApproved=true, want false")
 	}
 }
 

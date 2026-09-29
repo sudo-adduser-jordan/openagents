@@ -286,10 +286,12 @@ func TestCreateSessionPR_PushRejectedSkipsCreate(t *testing.T) {
 }
 
 // autoDeliverySession is a session that qualifies for automatic delivery: a
-// live worker in building mode with a branch and a workspace.
+// live worker in building mode with a branch and a workspace whose plan was
+// reviewed and approved through the planning-to-building transition.
 func autoDeliverySession() domain.SessionRecord {
 	rec := deliverySession()
 	rec.WorkflowMode = domain.WorkflowModeBuilding
+	rec.PlanApproved = true
 	return rec
 }
 
@@ -423,6 +425,7 @@ func TestEligibleForAutoDelivery(t *testing.T) {
 		{name: "no workspace", mut: func(r *domain.SessionRecord) { r.Metadata.WorkspacePath = "" }},
 		{name: "already has an open PR", prs: openPR},
 		{name: "terminal PR does not block", prs: mergedPR, want: true},
+		{name: "building worker without plan approval", mut: func(r *domain.SessionRecord) { r.PlanApproved = false }},
 	}
 	for _, tc := range cases {
 		t.Run(tc.name, func(t *testing.T) {
@@ -441,5 +444,113 @@ func TestEligibleForAutoDelivery(t *testing.T) {
 				t.Error("ineligible session must say why")
 			}
 		})
+	}
+}
+
+// A building-stage worker commit with no recorded plan approval must not start
+// delivery. This is the reported gap: commit-before-review gets an instant PR
+// today. The attempt must leave the durable delivered-head fact alone so a
+// later approval can still deliver the same commit.
+func TestDeliverSessionHead_UnapprovedPlanSkipsDelivery(t *testing.T) {
+	st := newFakeStore()
+	rec := autoDeliverySession()
+	rec.PlanApproved = false
+	st.sessions["sess-1"] = rec
+	delivery := &fakeDelivery{}
+	creator := &fakePRCreator{created: ports.CreatedPullRequest{URL: "https://github.com/acme/repo/pull/8", Number: 8, Created: true}}
+	svc := newDeliveryService(st, &fakeCommander{}, delivery, creator)
+
+	out, err := svc.DeliverSessionHead(context.Background(), "sess-1", "head1")
+	if err != nil {
+		t.Fatalf("deliver head: %v", err)
+	}
+	if out.Delivered {
+		t.Fatalf("outcome = %+v, want no delivery without plan approval", out)
+	}
+	if out.Reason == "" {
+		t.Error("skipped delivery must say why")
+	}
+	if len(delivery.pushCalls) != 0 || creator.createCalls != 0 {
+		t.Errorf("unapproved commit must not push (push=%d create=%d)", len(delivery.pushCalls), creator.createCalls)
+	}
+	if got := st.sessions["sess-1"].DeliveredHeadSHA; got != "" {
+		t.Errorf("DeliveredHeadSHA = %q, want empty: a skipped attempt stays retryable", got)
+	}
+}
+
+// Review-then-commit is the only happy path: a commit observed before the
+// plan approval earns nothing, and the same commit is still delivered once the
+// planning-to-building transition records the approval. Commit-then-review no
+// longer advances delivery by itself.
+func TestReviewThenCommitDeliversEndToEnd(t *testing.T) {
+	st := newFakeStore()
+	st.sessions["sess-1"] = deliverySession()
+	delivery := &fakeDelivery{}
+	creator := &fakePRCreator{created: ports.CreatedPullRequest{URL: "https://github.com/acme/repo/pull/8", Number: 8, Created: true}}
+	svc := NewWithDeps(Deps{Manager: &fakeCommander{}, Store: st, Delivery: delivery, PRCreator: creator})
+	ctx := context.Background()
+
+	before, err := svc.DeliverSessionHead(ctx, "sess-1", "head1")
+	if err != nil {
+		t.Fatalf("deliver head: %v", err)
+	}
+	if before.Delivered {
+		t.Fatalf("outcome = %+v, want no delivery before plan approval", before)
+	}
+
+	sess, err := svc.SetWorkflowMode(ctx, "sess-1", domain.WorkflowModeBuilding)
+	if err != nil {
+		t.Fatalf("set workflow mode: %v", err)
+	}
+	if sess.WorkflowMode != domain.WorkflowModeBuilding {
+		t.Fatalf("workflow mode = %q, want building", sess.WorkflowMode)
+	}
+
+	after, err := svc.DeliverSessionHead(ctx, "sess-1", "head1")
+	if err != nil {
+		t.Fatalf("deliver head: %v", err)
+	}
+	if !after.Delivered || after.URL != "https://github.com/acme/repo/pull/8" {
+		t.Fatalf("outcome = %+v, want the same commit delivered after approval", after)
+	}
+	if got := st.sessions["sess-1"].DeliveredHeadSHA; got != "head1" {
+		t.Errorf("DeliveredHeadSHA = %q, want head1", got)
+	}
+}
+
+// Amend-after-review resets the chain exactly once: while the delivered pull
+// request is still open, a newer commit is skipped on the existing open-PR
+// grounds, the delivered-head fact keeps pointing at the delivered commit, and
+// no second pull request is opened.
+func TestAmendAfterReviewSkipsWhilePRIsOpen(t *testing.T) {
+	st := newFakeStore()
+	st.sessions["sess-1"] = autoDeliverySession()
+	delivery := &fakeDelivery{}
+	creator := &fakePRCreator{created: ports.CreatedPullRequest{URL: "https://github.com/acme/repo/pull/8", Number: 8, Created: true}}
+	svc := newDeliveryService(st, &fakeCommander{}, delivery, creator)
+	ctx := context.Background()
+
+	first, err := svc.DeliverSessionHead(ctx, "sess-1", "head1")
+	if err != nil {
+		t.Fatalf("deliver head: %v", err)
+	}
+	if !first.Delivered {
+		t.Fatalf("outcome = %+v, want the approved commit delivered", first)
+	}
+	// The daemon has now observed the open pull request for this session.
+	st.prFacts["sess-1"] = []domain.PRFacts{{URL: "https://github.com/acme/repo/pull/8"}}
+
+	second, err := svc.DeliverSessionHead(ctx, "sess-1", "head2")
+	if err != nil {
+		t.Fatalf("deliver head: %v", err)
+	}
+	if second.Delivered {
+		t.Fatalf("outcome = %+v, want no second delivery while the PR is open", second)
+	}
+	if len(delivery.pushCalls) != 1 || creator.createCalls != 1 {
+		t.Errorf("push=%d create=%d, want exactly one push and one create", len(delivery.pushCalls), creator.createCalls)
+	}
+	if got := st.sessions["sess-1"].DeliveredHeadSHA; got != "head1" {
+		t.Errorf("DeliveredHeadSHA = %q, want head1: the skipped amend must not move the fact", got)
 	}
 }

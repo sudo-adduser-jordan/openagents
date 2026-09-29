@@ -277,6 +277,11 @@ func Run() error {
 		return fmt.Errorf("wire session service: %w", err)
 	}
 	sessionSvc.SetChatProviderPreserver(chatSvc.PreservesProviderOnRestart)
+	// Stage discipline: entering a worker's planning stage puts its opencode
+	// provider session in plan mode, entering building puts it in build mode,
+	// through the existing mode control. Best-effort: a sync failure never
+	// fails the stage change, and the persisted stage re-applies on restart.
+	sessionSvc.SetWorkflowModeSyncer(chatSvc.SyncProviderMode)
 	sessMgr = wiredSessMgr
 
 	// servers isn't clobbered. See preview_wiring.go (issue #4500).

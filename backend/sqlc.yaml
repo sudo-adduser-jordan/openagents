@@ -117,6 +117,8 @@ sql:
               type: "ReviewerHarness"
           - column: "sessions.auto_review_enabled"
             go_type: "bool"
+          - column: "sessions.plan_approved"
+            go_type: "bool"
           - column: "sessions.activity_state"
             go_type:
               import: "github.com/sudo-adduser-jordan/open-agents/backend/internal/domain"

@@ -474,6 +474,7 @@ type Session struct {
 	ReviewLocked                     bool
 	AgentDeferred                    bool
 	DeliveredHeadSha                 string
+	PlanApproved                     bool
 }
 
 type SessionCleanupFact struct {

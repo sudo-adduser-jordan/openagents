@@ -215,7 +215,7 @@ SELECT id, project_id, num, issue_id, kind, harness,
     latest_user_prompt, latest_user_prompt_at, latest_assistant_update, latest_assistant_update_at,
     conversation_checkpoint_state, conversation_checkpoint_generation, conversation_checkpoint_native_id,
     conversation_checkpoint_unsettled, conversation_checkpoint_turn_id, native_checkpoint_evidence,
-    native_transcript_path, auto_inject_review, auto_inject_ci, auto_review_enabled, model, session_permissions
+    native_transcript_path, auto_inject_review, auto_inject_ci, auto_review_enabled, model, session_permissions, plan_approved
 FROM sessions WHERE id = ?;
 
 -- name: ListSessionsByProject :many
@@ -230,7 +230,7 @@ SELECT id, project_id, num, issue_id, kind, harness,
     latest_user_prompt, latest_user_prompt_at, latest_assistant_update, latest_assistant_update_at,
     conversation_checkpoint_state, conversation_checkpoint_generation, conversation_checkpoint_native_id,
     conversation_checkpoint_unsettled, conversation_checkpoint_turn_id, native_checkpoint_evidence,
-    native_transcript_path, auto_inject_review, auto_inject_ci, auto_review_enabled, model, session_permissions
+    native_transcript_path, auto_inject_review, auto_inject_ci, auto_review_enabled, model, session_permissions, plan_approved
 FROM sessions WHERE project_id IS ? ORDER BY num;
 
 -- name: ListAllSessions :many
@@ -245,7 +245,7 @@ SELECT id, project_id, num, issue_id, kind, harness,
     latest_user_prompt, latest_user_prompt_at, latest_assistant_update, latest_assistant_update_at,
     conversation_checkpoint_state, conversation_checkpoint_generation, conversation_checkpoint_native_id,
     conversation_checkpoint_unsettled, conversation_checkpoint_turn_id, native_checkpoint_evidence,
-    native_transcript_path, auto_inject_review, auto_inject_ci, auto_review_enabled, model, session_permissions
+    native_transcript_path, auto_inject_review, auto_inject_ci, auto_review_enabled, model, session_permissions, plan_approved
 FROM sessions ORDER BY project_id, num;
 
 
@@ -265,9 +265,11 @@ UPDATE sessions SET terminate_on_pr_merge = ?, updated_at = ? WHERE id = ?;
 -- SetSessionWorkflowMode changes a session's delivery posture
 -- ("planning", "manager", or "building"). A workflow-mode command is also one
 -- of the review lock's release paths: the user has taken their turn, so any
--- review freeze is cleared together with the mode change. It returns ok=false
--- when the id does not exist.
-UPDATE sessions SET workflow_mode = ?, review_locked = 0, updated_at = ? WHERE id = ?;
+-- review freeze is cleared together with the mode change. The same write
+-- records the plan-review approval: a worker entering building is approved,
+-- any other stage (or a manager, which never leaves its own stage) is not.
+-- It returns ok=false when the id does not exist.
+UPDATE sessions SET workflow_mode = ?, plan_approved = CASE WHEN ? = 'building' AND kind = 'worker' THEN 1 ELSE 0 END, review_locked = 0, updated_at = ? WHERE id = ?;
 
 -- name: SetSessionReviewLocked :execrows
 -- SetSessionReviewLocked latches or releases the review column freeze. The

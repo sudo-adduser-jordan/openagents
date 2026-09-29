@@ -191,6 +191,10 @@ const (
 	autoReasonNotEligible   = "session not eligible for automatic delivery"
 	autoReasonNotConfigured = "delivery not configured"
 	autoReasonNoCommit      = "no commit on the session branch"
+	// autoReasonNotReviewed names the stage-discipline skip: the worker
+	// committed before its plan was reviewed and approved through the
+	// planning-to-building transition, so the commit earns no pull request.
+	autoReasonNotReviewed = "plan not approved"
 )
 
 // EligibleForAutoDelivery reports whether a commit on this session's branch
@@ -202,6 +206,14 @@ const (
 // pull request for. Planning-mode and manager sessions are excluded because
 // building mode is the user's explicit "let this session ship work" signal, and
 // a manager session delivers through its workers rather than its own branch.
+//
+// Building mode alone is not enough: the worker's plan must also have been
+// reviewed while uncommitted and approved through the planning-to-building
+// stage transition (the durable plan-approved fact). A commit made before that
+// approval — the commit-before-review behavior the stage discipline forbids —
+// earns no pull request. The skip leaves the delivered-head fact alone, so the
+// same commit is still delivered once the approval lands; nothing is silently
+// dropped.
 //
 // This decides only whether to *start* delivery. It never selects a board
 // column: the card still moves because a pull request exists, and every column
@@ -215,6 +227,9 @@ func EligibleForAutoDelivery(rec domain.SessionRecord, prs []domain.PRFacts) (bo
 	}
 	if rec.WorkflowMode != domain.WorkflowModeBuilding {
 		return false, autoReasonNotEligible
+	}
+	if !rec.PlanApproved {
+		return false, autoReasonNotReviewed
 	}
 	if strings.TrimSpace(rec.Metadata.Branch) == "" || strings.TrimSpace(rec.Metadata.WorkspacePath) == "" {
 		return false, autoReasonNotEligible

@@ -237,6 +237,15 @@ type SessionRecord struct {
 	// planning, managers default to manager mode, and every delegated worker
 	// starts in planning regardless of the requesting manager's posture.
 	WorkflowMode WorkflowMode `json:"workflowMode" enum:"planning,manager,building"`
+	// PlanApproved records that this worker's plan was reviewed while
+	// uncommitted and explicitly approved through the planning-to-building
+	// stage transition. It is the review gate for automatic delivery: the head
+	// observer hands an agent's own commit to the remote only once the plan
+	// behind it has been approved, so commit-before-review can never earn an
+	// instant pull request. Set and cleared atomically with the workflow-mode
+	// change itself; never written by full-row replays. Internal fact, not
+	// part of the API read model.
+	PlanApproved bool `json:"-"`
 	// ReviewLocked is the durable latch that freezes this session's kanban card
 	// in the needs_review column once it enters the review-feedback loop. While
 	// set, PR facts cannot move the card, so a person's owed review decision

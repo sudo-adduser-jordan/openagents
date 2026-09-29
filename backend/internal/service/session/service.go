@@ -199,12 +199,24 @@ type Service struct {
 	signalCapable         func(domain.AgentHarness) bool
 	chatProviderPreserved func(domain.SessionID) bool
 	reengagement          managerReengagement
+	// workflowModeSyncer drives the provider session mode from the delivery
+	// stage on SetWorkflowMode. Best-effort: a sync failure never fails the
+	// stage change itself, and the persisted stage re-applies on the next
+	// controller (re)start.
+	workflowModeSyncer func(ctx context.Context, id domain.SessionID, mode domain.WorkflowMode) error
 }
 
 // SetChatProviderPreserver wires the live Chat lifetime observation after both
 // services have been constructed. It performs no provider or filesystem probes.
 func (s *Service) SetChatProviderPreserver(preserves func(domain.SessionID) bool) {
 	s.chatProviderPreserved = preserves
+}
+
+// SetWorkflowModeSyncer wires the stage-to-provider-mode switch after both
+// services have been constructed. The daemon passes the Chat service's sync
+// entry point; focused tests pass a fake or leave it nil.
+func (s *Service) SetWorkflowModeSyncer(syncFn func(ctx context.Context, id domain.SessionID, mode domain.WorkflowMode) error) {
+	s.workflowModeSyncer = syncFn
 }
 
 // New wires a controller-facing session service over an internal session Manager.
@@ -246,6 +258,12 @@ type Deps struct {
 	// (focused tests, non-daemon callers) the loop does not run and
 	// CompleteManager reports REENGAGEMENT_UNAVAILABLE.
 	Reengagement managerReengagement
+	// WorkflowModeSyncer drives the provider session mode (opencode plan/build
+	// through the existing mode control) from the delivery stage. Left nil
+	// (focused tests, non-daemon callers) stage changes persist without
+	// touching the provider session; the next controller (re)start still
+	// applies the stage-derived mode from the persisted stage.
+	WorkflowModeSyncer func(ctx context.Context, id domain.SessionID, mode domain.WorkflowMode) error
 }
 
 // NewWithDeps wires a session service with optional PR-claim dependencies.
@@ -254,7 +272,7 @@ func NewWithDeps(d Deps) *Service {
 	if backgroundContext == nil {
 		backgroundContext = context.Background()
 	}
-	s := &Service{manager: d.Manager, store: d.Store, prClaimer: d.PRClaimer, scm: d.SCM, tracker: d.Tracker, delivery: d.Delivery, prCreator: d.PRCreator, clock: d.Clock, dataDir: d.DataDir, signalCapable: d.SignalCapable, logger: d.Logger, backgroundContext: backgroundContext, agentReadiness: d.AgentReadiness, reengagement: d.Reengagement}
+	s := &Service{manager: d.Manager, store: d.Store, prClaimer: d.PRClaimer, scm: d.SCM, tracker: d.Tracker, delivery: d.Delivery, prCreator: d.PRCreator, clock: d.Clock, dataDir: d.DataDir, signalCapable: d.SignalCapable, logger: d.Logger, backgroundContext: backgroundContext, agentReadiness: d.AgentReadiness, reengagement: d.Reengagement, workflowModeSyncer: d.WorkflowModeSyncer}
 	if s.prClaimer == nil {
 		if w, ok := d.Store.(ports.PRClaimer); ok {
 			s.prClaimer = w
@@ -788,6 +806,18 @@ func (s *Service) SetWorkflowMode(ctx context.Context, id domain.SessionID, mode
 		current.WorkflowMode == domain.WorkflowModePlanning && !current.IsTerminated && s.manager != nil {
 		if err := s.manager.Send(ctx, id, buildUnlockMessage, nil); err != nil && s.logger != nil {
 			s.logger.Warn("workflow mode build unlock undelivered", "sessionId", id, "error", err)
+		}
+	}
+	// Entering a stage puts the provider session in the matching mode through
+	// the existing mode control: planning runs plan mode, building runs build
+	// mode. The switch is best-effort and never fails the stage change — the
+	// persisted stage re-applies on the next controller (re)start — and it
+	// never interrupts an in-flight turn: the provider applies the mode to
+	// subsequent turns. Manager sessions are untouched: they never leave the
+	// manager stage, so there is no stage-derived provider mode for them.
+	if current.Kind == domain.KindWorker && !current.IsTerminated && s.workflowModeSyncer != nil {
+		if err := s.workflowModeSyncer(ctx, id, mode); err != nil && s.logger != nil {
+			s.logger.Warn("workflow mode provider sync undelivered", "sessionId", id, "mode", mode, "error", err)
 		}
 	}
 	return s.Get(ctx, id)

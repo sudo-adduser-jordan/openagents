@@ -252,14 +252,17 @@ func (s *Store) SetSessionTerminateOnPRMerge(ctx context.Context, id domain.Sess
 
 // SetSessionWorkflowMode changes a session's delivery posture. A workflow-mode
 // command is also one of the review lock's release paths, so the frozen
-// review_locked flag is cleared together with the mode change. It returns
-// ok=false when the session id does not exist.
+// review_locked flag is cleared together with the mode change. The same write
+// records the plan-review approval: a worker entering building is approved,
+// any other stage is not. It returns ok=false when the session id does not
+// exist.
 func (s *Store) SetSessionWorkflowMode(ctx context.Context, id domain.SessionID, mode domain.WorkflowMode, updatedAt time.Time) (bool, error) {
 	s.writeMu.Lock()
 	defer s.writeMu.Unlock()
 	rows, err := s.qw.SetSessionWorkflowMode(ctx, gen.SetSessionWorkflowModeParams{
 		ID:           id,
 		WorkflowMode: string(mode),
+		Column2:      string(mode),
 		UpdatedAt:    updatedAt,
 	})
 	if err != nil {
@@ -660,6 +663,7 @@ func rowToRecord(row gen.GetSessionRow) domain.SessionRecord {
 		PinnedAt:           nullTimeToTimePtr(row.PinnedAt),
 		TerminateOnPRMerge: row.TerminateOnPRMerge,
 		WorkflowMode:       domain.NormalizeWorkflowModeForKind(row.Kind, domain.WorkflowMode(row.WorkflowMode)),
+		PlanApproved:       row.PlanApproved,
 		ReviewLocked:       row.ReviewLocked,
 		AutoInjectReview:   row.AutoInjectReview,
 		AutoInjectCI:       row.AutoInjectCI,
