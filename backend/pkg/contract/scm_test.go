@@ -64,7 +64,7 @@ func TestSCMContractJSONUsesProviderNeutralFields(t *testing.T) {
 
 func TestSharedSCMVocabulariesMatchProductUI(t *testing.T) {
 	repoRoot := scmRepoRoot(t)
-	productData, err := os.ReadFile(filepath.Join(repoRoot, "packages", "product-ui", "src", "scm-models.ts"))
+	productData, err := os.ReadFile(filepath.Join(repoRoot, "frontend", "packages", "product-ui", "src", "scm-models.ts"))
 	if err != nil {
 		t.Fatal(err)
 	}

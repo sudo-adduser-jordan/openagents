@@ -37,10 +37,9 @@ open-agents/
     test/               # Test assets: CLI fresh-install container check (cli/), daemon chat e2e (e2e/)
   frontend/             # Electron + React desktop app
     src/                # Renderer, main, preload
+    packages/product-ui/  # @openagents/product-ui shared presentation package
     test/e2e/           # Playwright end-to-end tests
     test/e2e-pod/       # Packaged-app pod gate
-  packages/
-    open-agents/                 # Legacy npm CLI package (frozen)
   docs/                 # Architecture, ADRs, CLI docs, status
   CONTRIBUTING.md       # Contribution guide
 ```
@@ -50,7 +49,7 @@ open-agents/
 ```bash
 git clone https://github.com/sudo-adduser-jordan/open-agents.git
 cd open-agents
-task install   # npm ci in frontend/ and packages/product-ui/ (needs go-task; binary is go-task on some distros)
+task install   # npm ci in frontend/ and frontend/packages/product-ui/ (needs go-task; binary is go-task on some distros)
 ```
 
 ### Branching
@@ -147,7 +146,7 @@ task api
 ### Install dependencies
 
 ```bash
-task install   # npm ci in frontend/ and packages/product-ui/
+task install   # npm ci in frontend/ and frontend/packages/product-ui/
 ```
 
 ### Run in development mode

@@ -86,7 +86,7 @@ func TestSharedAgentVocabulariesMatchProductUI(t *testing.T) {
 		capabilities[i] = string(capability)
 	}
 
-	productPath := filepath.Join(repoRoot, "packages", "product-ui", "src", "agent-capabilities.ts")
+	productPath := filepath.Join(repoRoot, "frontend", "packages", "product-ui", "src", "agent-capabilities.ts")
 	data, err := os.ReadFile(productPath)
 	if err != nil {
 		t.Fatal(err)

@@ -1,7 +1,8 @@
 # `@openagents/product-ui`
 
 Portable Open Agents product presentation models, pure formatting helpers, and reusable
-React leaf components for desktop and cloud clients.
+React leaf components. The package keeps the board, inspector, task composer, and
+project presentation surfaces independent of the desktop app's data layer.
 
 ## Boundary
 
@@ -36,7 +37,7 @@ own agent, model, reviewer, intake, persistence, and platform actions.
 ## Development
 
 ```bash
-task install   # npm ci in frontend/ and packages/product-ui/
+task install   # npm ci in frontend/ and frontend/packages/product-ui/
 task ui:typecheck
 task ui:test
 task ui:build

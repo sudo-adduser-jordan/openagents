@@ -1,5 +1,5 @@
 # Taskfile for Open Agents — replaces all npm scripts in the
-# daemon/supervisor workspace (root, frontend, packages/product-ui)
+# daemon/supervisor workspace (root, frontend, frontend/packages/product-ui)
 # plus the load-bearing Go commands from AGENTS.md / docs/development.md.
 #
 # Run `task --list` (or `go-task --list` on distros where `task`
@@ -36,7 +36,7 @@ tasks:
     desc: Install all Node dependencies (frontend + product-ui)
     cmds:
       - npm ci --prefix frontend
-      - npm ci --prefix packages/product-ui
+      - npm ci --prefix frontend/packages/product-ui
 
   setup:
     desc: Alias for install
@@ -229,36 +229,25 @@ tasks:
 
   ui:typecheck:
     desc: Typecheck @openagents/product-ui
-    dir: packages/product-ui
+    dir: frontend/packages/product-ui
     cmds:
       - ./node_modules/.bin/tsc --noEmit
 
   ui:test:
     desc: Test @openagents/product-ui
-    dir: packages/product-ui
+    dir: frontend/packages/product-ui
     cmds:
       - ./node_modules/.bin/vitest run
 
   ui:build:
     desc: Build @openagents/product-ui dist (replaces npm build + prepack)
-    dir: packages/product-ui
+    dir: frontend/packages/product-ui
     cmds:
       - ./node_modules/.bin/vite build --config vite.build.config.ts && ./node_modules/.bin/tsc -p tsconfig.build.json
 
   ui:check:
     desc: Typecheck + test + build product-ui (ports npm run product-ui:check / shared:check)
     deps: [ui:typecheck, ui:test, ui:build]
-
-  # -- release binaries ---------------------------------------------------
-
-  package:binaries:
-    desc: Cross-compile the CLI into the platform npm packages (replaces packages/build-binaries.sh)
-    dir: backend
-    cmds:
-      - mkdir -p ../packages/open-agents-linux-x64/bin ../packages/open-agents-win32-x64/bin
-      - CGO_ENABLED=0 GOOS=linux GOARCH=amd64 go build -o ../packages/open-agents-linux-x64/bin/open-agents ./cmd/open-agents
-      - CGO_ENABLED=0 GOOS=windows GOARCH=amd64 go build -o ../packages/open-agents-win32-x64/bin/open-agents.exe ./cmd/open-agents
-      - chmod 0755 ../packages/open-agents-linux-x64/bin/open-agents ../packages/open-agents-win32-x64/bin/open-agents.exe
 
   # -- aggregates ----------------------------------------------------------
 

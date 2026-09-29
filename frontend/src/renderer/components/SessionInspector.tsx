@@ -218,7 +218,7 @@ export const SessionInspector = memo(function SessionInspector({
 		};
 	});
 	return (
-		// SessionInspectorShellView (packages/product-ui) doesn't accept a
+		// SessionInspectorShellView (frontend/packages/product-ui) doesn't accept a
 		// className, but styles.css's native-composition transparency cascade
 		// targets a `.session-inspector` ancestor around it (to punch a
 		// see-through hole for the live browser page when the compositor's

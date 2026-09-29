@@ -43,6 +43,6 @@
 	"repository": {
 		"type": "git",
 		"url": "https://github.com/sudo-adduser-jordan/open-agents",
-		"directory": "packages/product-ui"
+		"directory": "frontend/packages/product-ui"
 	}
 }

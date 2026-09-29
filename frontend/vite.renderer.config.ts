@@ -89,10 +89,10 @@ export default defineConfig({
 		alias: {
 			"@": fileURLToPath(new URL("./src/renderer", import.meta.url)),
 			"@openagents/product-ui": fileURLToPath(
-				new URL("../packages/product-ui/src/index.ts", import.meta.url),
+				new URL("./packages/product-ui/src/index.ts", import.meta.url),
 			),
 			// The alias above resolves product-ui to its source, so that package's
-			// own imports resolve from packages/product-ui/ — which only has a
+			// own imports resolve from frontend/packages/product-ui/ — which only has a
 			// node_modules if `npm ci` was run there too. CI does that; a
 			// frontend-only install does not, and the failure mode is quiet: every
 			// test importing product-ui dies at transform time with "failed to
