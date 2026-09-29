@@ -2788,13 +2788,20 @@ html.sidebar-reordering * {
 
 /* Delivery-stage identity: the composer frame carries the workflow tone so the
    current mode is visible without reading a label. Manager and worker Building
-   are the coordinating/executing stages respectively; both use the explicit
-   pink review token. Planning keeps its quieter planning tone. */
-:root .cursor-chat-composer[data-workflow="manager"],
-:root .cursor-chat-composer[data-workflow="building"] {
+   are the coordinating/executing stages respectively, so they no longer share a
+   tone: Manager keeps the explicit pink review token, Building takes the working
+   blue the app already uses for active work. Planning keeps its quieter planning
+   tone. */
+:root .cursor-chat-composer[data-workflow="manager"] {
 	--composer-border: color-mix(in oklch, var(--color-status-review) 60%, transparent);
 	--composer-border-hover: var(--color-status-review);
 	--composer-border-focus: var(--color-status-review);
+}
+
+:root .cursor-chat-composer[data-workflow="building"] {
+	--composer-border: color-mix(in oklch, var(--color-status-working) 60%, transparent);
+	--composer-border-hover: var(--color-status-working);
+	--composer-border-focus: var(--color-status-working);
 }
 
 :root .cursor-chat-composer[data-workflow="planning"] {
@@ -2807,10 +2814,11 @@ html.sidebar-reordering * {
    in as a side edge, and its scrollbar tick carries the same color, so the
    mode distribution stays visible while scrolled. The --workflow-tone
    assignment below is the single workflow→token mapping for both new
-   surfaces: manager and building resolve to the review token, planning to
-   the planning token — the same tokens the composer frame above uses, so a
-   future recolor (for example building turning blue) must update that block
-   together with this one. No token is added, removed, or revalued here. The
+   surfaces: planning resolves to the planning token, manager to the review
+   token, and building to the working blue — the same tokens the composer
+   frame above uses, so a future recolor must update that block together with
+   this one. No token is added, removed, or revalued here; building is
+   re-pointed at an existing status token rather than given a new one. The
    edge and tick rules reference the variable rather than repeating the
    mapping, so the two new surfaces cannot drift from each other. Assistant
    replies deliberately share no edge: the border marks the mode the prompt
@@ -2820,10 +2828,12 @@ html.sidebar-reordering * {
 	--workflow-tone: var(--color-status-planning);
 }
 :root .cursor-chat-human-message[data-workflow="manager"],
-:root .cursor-chat-human-message[data-workflow="building"],
-:root .chat-scroll-marker[data-workflow="manager"],
-:root .chat-scroll-marker[data-workflow="building"] {
+:root .chat-scroll-marker[data-workflow="manager"] {
 	--workflow-tone: var(--color-status-review);
+}
+:root .cursor-chat-human-message[data-workflow="building"],
+:root .chat-scroll-marker[data-workflow="building"] {
+	--workflow-tone: var(--color-status-working);
 }
 
 :root .cursor-chat-human-message[data-workflow] {

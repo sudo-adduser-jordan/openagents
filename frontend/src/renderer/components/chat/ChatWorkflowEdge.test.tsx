@@ -94,8 +94,9 @@ describe("workflow-to-token mapping", () => {
 	it("maps each workflow to the composer's exact tokens in one place", () => {
 		// The mapping lives once, in the --workflow-tone assignment consumed by
 		// both the message edge and the ticks. Assert the mapping, not the hex:
-		// planning resolves to the planning token, manager and building share
-		// the review token — exactly the tones the composer frame uses today.
+		// planning resolves to the planning token, manager to the review token,
+		// and building to the working blue — exactly the tones the composer frame
+		// uses today.
 		expect(styles).toMatch(
 			/\.cursor-chat-human-message\[data-workflow="planning"\][\s\S]*?--workflow-tone:\s*var\(--color-status-planning\)/,
 		);
@@ -103,14 +104,14 @@ describe("workflow-to-token mapping", () => {
 			/\.cursor-chat-human-message\[data-workflow="manager"\][\s\S]*?--workflow-tone:\s*var\(--color-status-review\)/,
 		);
 		expect(styles).toMatch(
-			/\.cursor-chat-human-message\[data-workflow="building"\][\s\S]*?--workflow-tone:\s*var\(--color-status-review\)/,
+			/\.cursor-chat-human-message\[data-workflow="building"\][\s\S]*?--workflow-tone:\s*var\(--color-status-working\)/,
 		);
 		// The composer frame agrees per workflow: this feature follows it.
 		expect(styles).toMatch(
 			/\.cursor-chat-composer\[data-workflow="planning"\][\s\S]*?--composer-border-hover:\s*var\(--color-status-planning\)/,
 		);
 		expect(styles).toMatch(
-			/\.cursor-chat-composer\[data-workflow="building"\][\s\S]*?--composer-border-hover:\s*var\(--color-status-review\)/,
+			/\.cursor-chat-composer\[data-workflow="building"\][\s\S]*?--composer-border-hover:\s*var\(--color-status-working\)/,
 		);
 	});
 
