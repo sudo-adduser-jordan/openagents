@@ -68,23 +68,23 @@ describe("SettingsDialog", () => {
 	});
 
 	it("opens the requested global settings page", async () => {
-		useUiStore.getState().openGlobalSettings("mobile");
+		useUiStore.getState().openGlobalSettings("tools");
 		renderSettingsDialog();
 
-		expect(await screen.findByTestId("global-settings-section")).toHaveTextContent("mobile");
-		expect(screen.getByRole("button", { name: "Mobile" })).toHaveAttribute("aria-current", "page");
+		expect(await screen.findByTestId("global-settings-section")).toHaveTextContent("tools");
+		expect(screen.getByRole("button", { name: "Tools" })).toHaveAttribute("aria-current", "page");
 	});
 
-	it("keeps the Mobile tab disabled in the settings nav", async () => {
+	it("has no Mobile tab in the settings nav", async () => {
 		useUiStore.getState().openGlobalSettings("general");
 		renderSettingsDialog();
 
-		const mobileTab = await screen.findByRole("button", { name: "Mobile" });
-		expect(mobileTab).toBeDisabled();
-		expect(mobileTab).not.toHaveAttribute("aria-current", "page");
-
-		await userEvent.click(mobileTab);
-		expect(await screen.findByTestId("global-settings-section")).toHaveTextContent("general");
+		const nav = await screen.findByRole("navigation", { name: "Settings sections" });
+		expect(within(nav).queryByRole("button", { name: "Mobile" })).not.toBeInTheDocument();
+		const labels = within(nav)
+			.getAllByRole("button")
+			.map((button) => button.textContent?.trim());
+		expect(labels).toEqual(["General", "Harness", "Browser", "Skills", "Tools", "Shortcuts", "Updates", "Help"]);
 	});
 
 	it("mounts dialog chrome before the selected settings form", async () => {

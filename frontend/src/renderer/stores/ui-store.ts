@@ -21,7 +21,6 @@ export { readStoredThemePreference, readStoredThemeStyle, resolveTheme } from ".
 export type GlobalSettingsSection =
 	| "general"
 	| "harness"
-	| "mobile"
 	| "skills"
 	| "tools"
 	| "shortcuts"

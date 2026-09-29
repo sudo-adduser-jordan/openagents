@@ -186,8 +186,12 @@ describe("GlobalSettingsForm", () => {
 
 	// The sidebar footer and this catalog are read in the same order, so a user
 	// who learned one finds the other: Skills sits directly above Tools in both.
+	// The removed mobile app leaves no section behind: no "mobile" id, no hole
+	// in the nav order.
 	it("orders the Skills section directly above Tools", () => {
 		const ids = globalSettingsItemsFor("all").map((item) => item.id);
+		expect(ids).not.toContain("mobile");
+		expect(ids).toEqual(["general", "harness", "browserProfiles", "skills", "tools", "shortcuts", "updates", "help"]);
 		expect(ids).toContain("skills");
 		expect(ids.indexOf("skills")).toBe(ids.indexOf("tools") - 1);
 	});

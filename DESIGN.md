@@ -95,7 +95,7 @@ The layout is desktop-first. On constrained widths, preserve task content first,
 - **Home:** intentionally minimal. It introduces the next meaningful action, not a fake dashboard.
   - One centered column (`max-w-[640px]`); no decorative upward translate.
   - "Star us" is a quiet text link with dashed underline on hover — never a TopbarButton, accent pill, or bordered card.
-  - Primary actions are a 2×2 grid; standalone agent is a grid cell, not a full-width hero CTA above. Mobile support remains a disabled settings entry — not on home.
+  - Primary actions are a 2×2 grid; standalone agent is a grid cell, not a full-width hero CTA above.
   - Recent project rows use shared `NavRowHighlight` (same growing pill as sidebar), not a flat `hover:bg-interactive-hover` wash.
 - **Board:** the operational overview. Each lane has a semantic reason to exist and derived status determines placement.
 - **Session:** the working room. The conversation or terminal is primary; tabs, files, PRs, and inspector are supporting context.

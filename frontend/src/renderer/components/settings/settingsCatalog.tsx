@@ -1,4 +1,4 @@
-import { Bot, CircleHelp, Globe2, Keyboard, RefreshCw, Settings2, Smartphone, Sparkles, Wrench, type LucideIcon } from "lucide-react";
+import { Bot, CircleHelp, Globe2, Keyboard, RefreshCw, Settings2, Sparkles, Wrench, type LucideIcon } from "lucide-react";
 import { lazy, type ReactNode } from "react";
 import type { GlobalSettingsSection } from "../../stores/ui-store";
 import { BrowserDownloadsSection } from "./BrowserDownloadsSection";
@@ -56,22 +56,6 @@ const globalSettingsCatalog: SettingsCatalogItem[] = [
 		),
 	},
 	{
-		id: "mobile",
-		icon: Smartphone,
-		label: () => "Mobile",
-		disabled: true,
-		render: (titleHidden) => (
-			<SettingsSection titleHidden={titleHidden} title="Mobile">
-				<div className="rounded-md bg-[var(--color-bg-settings-row)] px-3 py-4">
-					<p className="text-sm text-settings-label">{"Mobile support is currently unavailable."}</p>
-					<p className="mt-1 text-caption text-settings-muted">
-						{"The Connect Mobile entry point remains visible for a future release."}
-					</p>
-				</div>
-			</SettingsSection>
-		),
-	},
-	{
 		// The slash commands the open session's agent accepts. Sits before Tools so
 		// the sidebar footer and this nav read in the same order.
 		id: "skills",
@@ -81,7 +65,7 @@ const globalSettingsCatalog: SettingsCatalogItem[] = [
 	},
 	{
 		// The user's own opencode config, and the tool policy Open Agents layers
-		// on a manager session. Sits after Mobile to match the sidebar order.
+		// on a manager session. Sits after Skills to match the sidebar order.
 		id: "tools",
 		icon: Wrench,
 		label: () => "Tools",

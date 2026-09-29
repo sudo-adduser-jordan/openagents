@@ -166,9 +166,9 @@ surface (`npm run sqlc`, `npm run api`).
 
 ### Mobile
 
-The mobile app and its network bridge have been removed. The desktop shell keeps
-only a disabled Mobile settings entry and a disabled Connect Mobile button for
-future product work.
+The mobile app and its network bridge have been removed. The desktop shell
+keeps no Mobile settings entry and no Connect Mobile button; neither exists
+anywhere in the app.
 
 ## In flight / not yet a runtime feature
 
