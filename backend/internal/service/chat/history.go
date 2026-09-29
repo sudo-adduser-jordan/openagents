@@ -269,6 +269,15 @@ func (s *Service) EditMessage(
 		}
 		return reject(EditMessageResult{}, fmt.Errorf("%w: %w", ErrEditTurnInvalid, err))
 	}
+	// An edit revises the source prompt rather than sending a new one, so the
+	// replacement turn inherits the source turn's recorded send-mode: fixing a
+	// typo under a different mode must not recolor the prompt's history. A
+	// source that cannot be read falls back to the live mode.
+	if sourceTurn, turnErr := s.store.TurnByID(ctx, anchor.ReplacedTurnID); turnErr == nil {
+		msg.WorkflowMode = sourceTurn.WorkflowMode
+	} else {
+		msg.WorkflowMode = s.sendWorkflowMode(ctx, id)
+	}
 	var content []ports.ChatContent
 	if anchor.OriginalDeliveryContentJSON != "" {
 		if err := json.Unmarshal([]byte(anchor.OriginalDeliveryContentJSON), &content); err != nil {

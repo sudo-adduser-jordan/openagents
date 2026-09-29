@@ -55,9 +55,9 @@ type Store interface {
 	AdoptProviderTurn(ctx context.Context, conversationID string, session domain.SessionID, generation, turnID, providerTurnID string, now time.Time) error
 	AppendImportedUserMessage(ctx context.Context, conversationID, providerTurnID string, msg domain.ConversationMessage, now time.Time) error
 
-	AppendUserMessage(ctx context.Context, conversationID string, session domain.SessionID, generation string, msg domain.ConversationMessage, turnID string, now time.Time) (bool, error)
+	AppendUserMessage(ctx context.Context, conversationID string, session domain.SessionID, generation string, msg domain.ConversationMessage, turnID string, now time.Time, workflow domain.WorkflowMode) (bool, error)
 	ConversationMessageByClientID(ctx context.Context, conversationID, clientMessageID string) (domain.ConversationMessage, bool, error)
-	AppendRetryUserMessage(ctx context.Context, conversationID string, session domain.SessionID, generation string, msg domain.ConversationMessage, turnID, retryOfTurnID string, now time.Time) (bool, error)
+	AppendRetryUserMessage(ctx context.Context, conversationID string, session domain.SessionID, generation string, msg domain.ConversationMessage, turnID, retryOfTurnID string, now time.Time, workflow domain.WorkflowMode) (bool, error)
 	BindTurnToProvider(ctx context.Context, turnID, providerTurnID string, now time.Time) error
 	SettleTurn(ctx context.Context, conversationID, providerTurnID string, state domain.TurnState, errMessage string, now time.Time) error
 	SettleTurnByID(ctx context.Context, turnID string, state domain.TurnState, errMessage string, now time.Time) error
@@ -1318,7 +1318,7 @@ func (c *Controller) sendLocked(
 	}
 
 	created, err := c.store.AppendUserMessage(
-		ctx, c.conversation.ID, c.sessionID, c.generation, record, turnID, now)
+		ctx, c.conversation.ID, c.sessionID, c.generation, record, turnID, now, msg.WorkflowMode)
 	if err != nil {
 		return domain.ConversationTurn{}, fmt.Errorf("record user message: %w", err)
 	}
@@ -1338,6 +1338,7 @@ func (c *Controller) sendLocked(
 			ConversationID:     c.conversation.ID,
 			HandledBySessionID: c.sessionID,
 			State:              domain.TurnStateQueued,
+			WorkflowMode:       msg.WorkflowMode,
 			RequestedAt:        now,
 		}, nil
 	}
@@ -1358,7 +1359,7 @@ func (c *Controller) sendLocked(
 // or consume a retry. A deliberate further attempt retries the failed child:
 // the chain A -> B -> C is built from distinct sources, never by re-sending A.
 // The current next-turn settings apply.
-func (c *Controller) RetryTurn(ctx context.Context, turnID string) (domain.ConversationTurn, error) {
+func (c *Controller) RetryTurn(ctx context.Context, turnID string, workflow domain.WorkflowMode) (domain.ConversationTurn, error) {
 	c.sendMu.Lock()
 	defer c.sendMu.Unlock()
 	if c.handoffActive() {
@@ -1426,7 +1427,7 @@ func (c *Controller) RetryTurn(ctx context.Context, turnID string) (domain.Conve
 			Origin:              prompt.Origin,
 			ClientMessageID:     key,
 			DeliveryContentJSON: prompt.DeliveryContentJSON,
-		}, newTurnID, turnID, now)
+		}, newTurnID, turnID, now, workflow)
 	if err != nil {
 		return domain.ConversationTurn{}, fmt.Errorf("record retried message: %w", err)
 	}
@@ -1446,6 +1447,7 @@ func (c *Controller) RetryTurn(ctx context.Context, turnID string) (domain.Conve
 		Content:         content,
 		Origin:          prompt.Origin,
 		ClientMessageID: key,
+		WorkflowMode:    workflow,
 	}, now)
 }
 
@@ -1601,6 +1603,7 @@ func (c *Controller) dispatch(
 			ConversationID:     c.conversation.ID,
 			HandledBySessionID: c.sessionID,
 			State:              domain.TurnStateFailed,
+			WorkflowMode:       msg.WorkflowMode,
 			ErrorMessage:       err.Error(),
 			RequestedAt:        requestedAt,
 			CompletedAt:        &completedAt,
@@ -1662,6 +1665,7 @@ func (c *Controller) dispatch(
 		HandledBySessionID: c.sessionID,
 		ProviderTurnID:     ref.ProviderTurnID,
 		State:              domain.TurnStateRunning,
+		WorkflowMode:       msg.WorkflowMode,
 		RequestedAt:        requestedAt,
 	}, nil
 }

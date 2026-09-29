@@ -201,7 +201,7 @@ func seedRecoveryCheckpointHistory(t *testing.T, st *sqlite.Store, state domain.
 	}
 	created, err := st.AppendUserMessage(ctx, conversation.ID, testSession, "chat-generation",
 		domain.ConversationMessage{ID: "prior-user", Text: "Earlier prompt", Origin: domain.MessageOriginHuman,
-			ClientMessageID: "prior-client"}, "prior-turn", now.Add(-time.Minute))
+			ClientMessageID: "prior-client"}, "prior-turn", now.Add(-time.Minute), domain.WorkflowMode(""))
 	if err != nil || !created {
 		t.Fatalf("append prior completed turn: created=%v err=%v", created, err)
 	}
@@ -217,7 +217,7 @@ func seedRecoveryCheckpointHistory(t *testing.T, st *sqlite.Store, state domain.
 	}
 	created, err = st.AppendUserMessage(ctx, conversation.ID, testSession, "chat-generation",
 		domain.ConversationMessage{ID: "unsettled-user", Text: "Say hi to", Origin: domain.MessageOriginHuman,
-			ClientMessageID: "unsettled-client"}, "unsettled-turn", now)
+			ClientMessageID: "unsettled-client"}, "unsettled-turn", now, domain.WorkflowMode(""))
 	if err != nil || !created {
 		t.Fatalf("append unsettled turn: created=%v err=%v", created, err)
 	}

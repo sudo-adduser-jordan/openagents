@@ -52,6 +52,7 @@ const activityIcon: Record<ActivityKind, typeof SquareTerminal> = {
 	user_input: Keyboard,
 };
 import { cn } from "../../lib/utils";
+import type { WorkflowMode } from "@openagents/product-ui";
 import { caretNotation, stripAnsi } from "../../lib/ansi";
 import { getApiBaseUrl } from "../../lib/api-client";
 import { isWebLink, openLinkInSystemBrowser } from "../../lib/external-link-policy";
@@ -478,6 +479,7 @@ export function HumanMessage({
 	sessionId,
 	apiBaseUrl = getApiBaseUrl(),
 	queued,
+	workflow,
 	animateIn = false,
 	onEdit,
 	editing = false,
@@ -504,6 +506,11 @@ export function HumanMessage({
 	apiBaseUrl?: string;
 	/** Typed while the agent was busy, and not sent yet. */
 	queued?: boolean;
+	/**
+	 * The turn's recorded send-mode. Renders as a mode-colored side edge;
+	 * absent for turn-less and pre-change messages, which draw no edge.
+	 */
+	workflow?: WorkflowMode;
 	/** True only for a human message added after the timeline first mounted. */
 	animateIn?: boolean;
 	onEdit?: (turnId: string, text: string) => Promise<unknown> | void;
@@ -553,9 +560,11 @@ export function HumanMessage({
 					/* Themes draw sent and queued differently; light theme needs to tell them
 					   apart in CSS because it paints an enclosure only around a sent one. */
 					data-queued={queued ? "" : undefined}
+					data-workflow={workflow}
 					className={cn(
 						"cursor-chat-human-message w-fit max-w-[min(78%,560px)] rounded-[10px] px-3 py-2.5 text-sm leading-[1.55]",
 						animateIn && "chat-human-message-enter",
+						workflow && "border-l-2",
 						queued
 							? "border border-dashed border-border-strong bg-transparent text-muted-foreground"
 							: "bg-raised text-foreground",

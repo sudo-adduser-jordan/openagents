@@ -495,10 +495,16 @@ type ConversationTurn struct {
 	HasRetryAttempt bool      `json:"hasRetryAttempt,omitempty"`
 	State           TurnState `json:"state"`
 	// ErrorMessage is set for failed turns. Interrupted turns are not errors.
-	ErrorMessage string     `json:"errorMessage,omitempty"`
-	RequestedAt  time.Time  `json:"requestedAt"`
-	StartedAt    *time.Time `json:"startedAt,omitempty"`
-	CompletedAt  *time.Time `json:"completedAt,omitempty"`
+	ErrorMessage string `json:"errorMessage,omitempty"`
+	// WorkflowMode is the delivery stage (planning, manager, or building) that
+	// was active when this turn was sent, resolved against the session role at
+	// send time. Empty means the turn predates send-mode recording (or was
+	// started by the provider, which has no send mode): a reader must draw
+	// those with no mode edge rather than falling back to the current mode.
+	WorkflowMode WorkflowMode `json:"workflowMode,omitempty"`
+	RequestedAt  time.Time    `json:"requestedAt"`
+	StartedAt    *time.Time   `json:"startedAt,omitempty"`
+	CompletedAt  *time.Time   `json:"completedAt,omitempty"`
 	// RolledBackAt is set when a rollback discarded this turn provider-side. The
 	// row survives because Open Agents does not destroy durable facts, but the agent no
 	// longer remembers the exchange, so its messages and activities are left out

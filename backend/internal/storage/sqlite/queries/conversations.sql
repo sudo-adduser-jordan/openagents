@@ -470,8 +470,8 @@ RETURNING latest_sequence;
 -- name: InsertConversationTurn :exec
 INSERT INTO conversation_turns (
     id, conversation_id, handled_by_session_id, provider_turn_id,
-    controller_generation, retry_of_turn_id, state, requested_at
-) VALUES (?, ?, ?, ?, ?, ?, ?, ?);
+    controller_generation, retry_of_turn_id, state, workflow_mode, requested_at
+) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?);
 
 -- A turn the PROVIDER started that Open Agents never dispatched: a compaction runs as its
 -- own turn, and so does work resumed inside the provider's own history. Without a
@@ -1477,6 +1477,7 @@ SET state = 'accepted',
     provider_turn_id = ?,
     turn_state = ?,
     turn_requested_at = ?,
+    turn_workflow_mode = ?,
     rejection_kind = '',
     rejection_message = '',
     settled_at = ?

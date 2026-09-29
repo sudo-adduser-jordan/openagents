@@ -392,6 +392,13 @@ type ChatUserMessage struct {
 	// Origin records who is speaking. Automation shares the queue with the user
 	// and can never resolve an approval.
 	Origin domain.MessageOrigin
+	// WorkflowMode is the delivery stage recorded on the turn row at send time.
+	// Daemon-stamped, never caller-supplied: Service.Send overwrites it from
+	// the live session row (with the launch contract as fallback), the edit
+	// path inherits the source turn's recorded mode, and the controller
+	// persists whatever it carries. Empty means unknown (legacy rows and
+	// direct controller sends in tests).
+	WorkflowMode domain.WorkflowMode
 	// Settings are the per-turn provider choices for this message. Zero means the
 	// conversation's own defaults.
 	Settings ChatTurnSettings

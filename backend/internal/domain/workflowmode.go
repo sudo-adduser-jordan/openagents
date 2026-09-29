@@ -95,3 +95,14 @@ func ParseWorkflowMode(raw string) (WorkflowMode, error) {
 	}
 	return mode, nil
 }
+
+// ResolveSendWorkflowMode is the delivery stage recorded on a turn at send
+// time. It is NormalizeWorkflowModeForKind under a send-scoped name so the
+// write path states its intent: the recorded value must equal what the
+// renderer's resolveWorkflowMode(kind, workflowMode) computes for the same
+// session row (manager kind yields manager/planning, worker yields
+// building/planning), because the timeline colors the prompt from this durable
+// value rather than re-deriving it.
+func ResolveSendWorkflowMode(kind SessionKind, mode WorkflowMode) WorkflowMode {
+	return NormalizeWorkflowModeForKind(kind, mode)
+}

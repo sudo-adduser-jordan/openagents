@@ -2584,6 +2584,8 @@ export interface components {
             startedAt?: null | string;
             /** @enum {string} */
             state: "queued" | "running" | "completed" | "recovered" | "interrupted" | "failed" | "cancelled";
+            /** @enum {string} */
+            workflowMode?: "planning" | "manager" | "building";
         };
         ConversationTurnSettingsPayload: {
             /** @enum {string} */

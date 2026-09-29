@@ -33,7 +33,7 @@ func TestActivityProjectionCannotOverwriteHumanMessageWithUnchangedTimestamp(t *
 			}
 			created, err := s.AppendUserMessage(ctx, conversationID, sessionID, "gen-1", domain.ConversationMessage{
 				ID: "new-message", Origin: domain.MessageOriginHuman, Text: "new prompt",
-			}, "new-turn", before.UpdatedAt.Add(offset))
+			}, "new-turn", before.UpdatedAt.Add(offset), domain.WorkflowMode(""))
 			if err != nil || !created {
 				t.Fatalf("append message: created=%v err=%v", created, err)
 			}

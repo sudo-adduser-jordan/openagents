@@ -70,6 +70,65 @@ func turnIDs(turns []domain.ConversationTurn) []string {
 	return out
 }
 
+// A turn records its send-mode at creation in the same write as the message,
+// and rows without one (pre-migration history, provider-started turns) read
+// back empty rather than failing or guessing.
+func TestConversationTurnRecordsSendWorkflowMode(t *testing.T) {
+	s, sessionID, conversationID := conversationFixture(t)
+	ctx := context.Background()
+
+	created, err := s.AppendUserMessage(ctx, conversationID, sessionID, "gen-1", domain.ConversationMessage{
+		ID: "wf-message", Text: "do it", Origin: domain.MessageOriginHuman,
+		ClientMessageID: "wf-client",
+	}, "wf-turn", histClock, domain.WorkflowModeBuilding)
+	if err != nil || !created {
+		t.Fatalf("append user: created=%v err=%v", created, err)
+	}
+	turn, err := s.TurnByID(ctx, "wf-turn")
+	if err != nil {
+		t.Fatalf("TurnByID: %v", err)
+	}
+	if turn.WorkflowMode != domain.WorkflowModeBuilding {
+		t.Fatalf("turn workflow = %q, want %q", turn.WorkflowMode, domain.WorkflowModeBuilding)
+	}
+
+	// A retry is a new send: it carries the mode passed at retry time.
+	created, err = s.AppendRetryUserMessage(ctx, conversationID, sessionID, "gen-1", domain.ConversationMessage{
+		ID: "wf-retry-message", Text: "do it again", Origin: domain.MessageOriginHuman,
+		ClientMessageID: "wf-retry-client",
+	}, "wf-retry-turn", "wf-turn", histClock, domain.WorkflowModePlanning)
+	if err != nil || !created {
+		t.Fatalf("append retry: created=%v err=%v", created, err)
+	}
+
+	snapshot, err := s.LoadConversationSnapshot(ctx, conversationID)
+	if err != nil {
+		t.Fatalf("load snapshot: %v", err)
+	}
+	byID := make(map[string]domain.ConversationTurn, len(snapshot.Turns))
+	for _, snapshotTurn := range snapshot.Turns {
+		byID[snapshotTurn.ID] = snapshotTurn
+	}
+	if got := byID["wf-turn"].WorkflowMode; got != domain.WorkflowModeBuilding {
+		t.Fatalf("snapshot turn workflow = %q, want %q", got, domain.WorkflowModeBuilding)
+	}
+	if got := byID["wf-retry-turn"].WorkflowMode; got != domain.WorkflowModePlanning {
+		t.Fatalf("snapshot retry workflow = %q, want %q", got, domain.WorkflowModePlanning)
+	}
+
+	// A turn the provider started carries no send mode and reads back empty.
+	if err := s.AdoptProviderTurn(ctx, conversationID, sessionID, "gen-1", "wf-adopted", "provider-1", histClock); err != nil {
+		t.Fatalf("adopt provider turn: %v", err)
+	}
+	adopted, err := s.TurnByID(ctx, "wf-adopted")
+	if err != nil {
+		t.Fatalf("TurnByID adopted: %v", err)
+	}
+	if adopted.WorkflowMode != "" {
+		t.Fatalf("adopted turn workflow = %q, want empty", adopted.WorkflowMode)
+	}
+}
+
 func TestAppendUserMessageTracksOnlyLatestHumanMessage(t *testing.T) {
 	s, sessionID, conversationID := conversationFixture(t)
 	ctx := context.Background()
@@ -90,7 +149,7 @@ func TestAppendUserMessageTracksOnlyLatestHumanMessage(t *testing.T) {
 
 	created, err := s.AppendUserMessage(ctx, conversationID, sessionID, "gen-1", domain.ConversationMessage{
 		ID: "human-message", Text: "please tighten the sidebar", Origin: domain.MessageOriginHuman,
-	}, "human-turn", humanAt)
+	}, "human-turn", humanAt, domain.WorkflowMode(""))
 	if err != nil || !created {
 		t.Fatalf("append human message: created=%v err=%v", created, err)
 	}
@@ -111,7 +170,7 @@ func TestAppendUserMessageTracksOnlyLatestHumanMessage(t *testing.T) {
 	automationAt := humanAt.Add(time.Minute)
 	created, err = s.AppendUserMessage(ctx, conversationID, sessionID, "gen-1", domain.ConversationMessage{
 		ID: "automation-message", Text: "automated review follow-up", Origin: domain.MessageOriginAutomation,
-	}, "automation-turn", automationAt)
+	}, "automation-turn", automationAt, domain.WorkflowMode(""))
 	if err != nil || !created {
 		t.Fatalf("append automation message: created=%v err=%v", created, err)
 	}
@@ -376,7 +435,7 @@ func TestConversationSnapshotPagesCombinedTimelineBySequence(t *testing.T) {
 		turnID := fmt.Sprintf("turn-page-%d", i+1)
 		created, err := s.AppendUserMessage(ctx, conversation, session, "gen-1", domain.ConversationMessage{
 			ID: turnID + "-message", Text: text, Origin: domain.MessageOriginHuman,
-		}, turnID, histClock.Add(time.Duration(i)*time.Second))
+		}, turnID, histClock.Add(time.Duration(i)*time.Second), domain.WorkflowMode(""))
 		if err != nil || !created {
 			t.Fatalf("append %s: created=%v err=%v", text, created, err)
 		}
@@ -421,7 +480,7 @@ func TestProjectConversationPageStartsAtCurrentContextReset(t *testing.T) {
 	}
 	if _, err := s.AppendUserMessage(ctx, conversation.ID, first.ID, "gen-1", domain.ConversationMessage{
 		ID: "old-message", Text: "old manager history", Origin: domain.MessageOriginHuman,
-	}, "old-turn", histClock.Add(time.Second)); err != nil {
+	}, "old-turn", histClock.Add(time.Second), domain.WorkflowMode("")); err != nil {
 		t.Fatalf("append old message: %v", err)
 	}
 	if err := s.UpsertActivity(ctx, conversation.ID, "", domain.ConversationActivity{
@@ -463,7 +522,7 @@ func TestProjectConversationPageStartsAtCurrentContextReset(t *testing.T) {
 	}
 	if _, err := s.AppendUserMessage(ctx, conversation.ID, second.ID, "gen-2", domain.ConversationMessage{
 		ID: "fresh-message", Text: "fresh manager work", Origin: domain.MessageOriginHuman,
-	}, "fresh-turn", histClock.Add(5*time.Second)); err != nil {
+	}, "fresh-turn", histClock.Add(5*time.Second), domain.WorkflowMode("")); err != nil {
 		t.Fatalf("append fresh message: %v", err)
 	}
 
@@ -516,7 +575,7 @@ func TestProjectConversationFreshContextRebindWritesResetBoundaryAtomically(t *t
 	}
 	if _, err := s.AppendUserMessage(ctx, conversation.ID, first.ID, "gen-1", domain.ConversationMessage{
 		ID: "old-message", Text: "old manager history", Origin: domain.MessageOriginHuman,
-	}, "old-turn", histClock.Add(time.Second)); err != nil {
+	}, "old-turn", histClock.Add(time.Second), domain.WorkflowMode("")); err != nil {
 		t.Fatalf("append old message: %v", err)
 	}
 
@@ -557,7 +616,7 @@ func TestQueuedTurnPromotionReservationPreservesTheOtherQueueOrder(t *testing.T)
 		created, err := s.AppendUserMessage(ctx, conversation, session, "gen-1",
 			domain.ConversationMessage{
 				ID: turnID + "-message", Text: text, Origin: domain.MessageOriginHuman,
-			}, turnID, histClock.Add(time.Duration(i)*time.Second))
+			}, turnID, histClock.Add(time.Duration(i)*time.Second), domain.WorkflowMode(""))
 		if err != nil || !created {
 			t.Fatalf("append %s: created=%v err=%v", turnID, created, err)
 		}
@@ -614,7 +673,7 @@ func TestReorderQueuedTurns(t *testing.T) {
 		created, err := s.AppendUserMessage(ctx, conversation, session, "gen-1",
 			domain.ConversationMessage{
 				ID: turnID + "-message", Text: text, Origin: domain.MessageOriginHuman,
-			}, turnID, histClock.Add(time.Duration(i)*time.Second))
+			}, turnID, histClock.Add(time.Duration(i)*time.Second), domain.WorkflowMode(""))
 		if err != nil || !created {
 			t.Fatalf("append %s: created=%v err=%v", turnID, created, err)
 		}
@@ -640,7 +699,7 @@ func TestReorderQueuedTurnsRejectsInvalidOrder(t *testing.T) {
 		created, err := s.AppendUserMessage(ctx, conversation, session, "gen-1",
 			domain.ConversationMessage{
 				ID: turnID + "-message", Text: text, Origin: domain.MessageOriginHuman,
-			}, turnID, histClock.Add(time.Duration(i)*time.Second))
+			}, turnID, histClock.Add(time.Duration(i)*time.Second), domain.WorkflowMode(""))
 		if err != nil || !created {
 			t.Fatalf("append %s: created=%v err=%v", turnID, created, err)
 		}
@@ -657,7 +716,7 @@ func TestUpdateQueuedTurnMessage(t *testing.T) {
 	created, err := s.AppendUserMessage(ctx, conversation, session, "gen-1",
 		domain.ConversationMessage{
 			ID: "queued-1-message", Text: "first draft", Origin: domain.MessageOriginHuman,
-		}, "queued-1", histClock)
+		}, "queued-1", histClock, domain.WorkflowMode(""))
 	if err != nil || !created {
 		t.Fatalf("append queued turn: created=%v err=%v", created, err)
 	}
@@ -684,7 +743,7 @@ func TestCancelQueuedTurnByIDHidesMessageFromSnapshot(t *testing.T) {
 	created, err := s.AppendUserMessage(ctx, conversation, session, "gen-1",
 		domain.ConversationMessage{
 			ID: "queued-1-message", Text: "delete me", Origin: domain.MessageOriginHuman,
-		}, "queued-1", histClock)
+		}, "queued-1", histClock, domain.WorkflowMode(""))
 	if err != nil || !created {
 		t.Fatalf("append queued turn: created=%v err=%v", created, err)
 	}
@@ -724,7 +783,7 @@ func TestSettleUndeliverableQueuedTurnsWithdrawsWhatNoSessionCanSend(t *testing.
 		created, err := s.AppendUserMessage(ctx, conversation, session, "gen-1",
 			domain.ConversationMessage{
 				ID: turnID + "-message", Text: text, Origin: domain.MessageOriginHuman,
-			}, turnID, histClock.Add(time.Duration(i)*time.Second))
+			}, turnID, histClock.Add(time.Duration(i)*time.Second), domain.WorkflowMode(""))
 		if err != nil || !created {
 			t.Fatalf("append %s: created=%v err=%v", turnID, created, err)
 		}
@@ -789,7 +848,7 @@ func seedTurn(t *testing.T, s *sqlite.Store, conversationID string, session doma
 		ID:     turnID + "-msg",
 		Text:   text,
 		Origin: domain.MessageOriginHuman,
-	}, turnID, at)
+	}, turnID, at, domain.WorkflowMode(""))
 	if err != nil || !created {
 		t.Fatalf("append user message for %s: created=%v err=%v", turnID, created, err)
 	}
@@ -819,7 +878,7 @@ func TestSettleTurnStopsStreamingAssistantMessages(t *testing.T) {
 
 	created, err := s.AppendUserMessage(ctx, conversation, session, "gen-1", domain.ConversationMessage{
 		ID: turnID + "-msg", Text: "do the work", Origin: domain.MessageOriginHuman,
-	}, turnID, histClock)
+	}, turnID, histClock, domain.WorkflowMode(""))
 	if err != nil || !created {
 		t.Fatalf("append user message: created=%v err=%v", created, err)
 	}
@@ -934,7 +993,7 @@ func TestRollbackInterruptsAQueuedTurnItDiscarded(t *testing.T) {
 	// Recorded but never dispatched, exactly as a mid-turn send is.
 	if created, err := s.AppendUserMessage(ctx, conversation, session, "gen-1",
 		domain.ConversationMessage{ID: "queued-msg", Text: "and also", Origin: domain.MessageOriginHuman},
-		"turn-queued", histClock.Add(time.Minute)); err != nil || !created {
+		"turn-queued", histClock.Add(time.Minute), domain.WorkflowMode("")); err != nil || !created {
 		t.Fatalf("append queued message: created=%v err=%v", created, err)
 	}
 
@@ -1171,7 +1230,7 @@ func TestQueuedTurnRetainsNativeDeliveryContent(t *testing.T) {
 		Text:                "inspect this image",
 		Origin:              domain.MessageOriginHuman,
 		DeliveryContentJSON: want,
-	}, "native-turn", histClock)
+	}, "native-turn", histClock, domain.WorkflowMode(""))
 	if err != nil || !created {
 		t.Fatalf("append native message: created=%v err=%v", created, err)
 	}
@@ -1242,7 +1301,7 @@ func TestCleanupOwnedControllerWorkIsGenerationFenced(t *testing.T) {
 	created, err := s.AppendUserMessage(ctx, conversation, session, "gen-1", domain.ConversationMessage{
 		ID: "owned-cleanup-message", Text: "keep the replacement alive", Origin: domain.MessageOriginHuman,
 		ClientMessageID: "owned-cleanup-client",
-	}, "owned-cleanup-turn", histClock)
+	}, "owned-cleanup-turn", histClock, domain.WorkflowMode(""))
 	if err != nil || !created {
 		t.Fatalf("AppendUserMessage: created=%v err=%v", created, err)
 	}
@@ -1333,7 +1392,7 @@ func TestCleanupOwnedControllerWorkOnlySettlesReboundSessionWork(t *testing.T) {
 			domain.ConversationMessage{
 				ID: label + "-message", Text: label, Origin: domain.MessageOriginHuman,
 				ClientMessageID: label + "-client-message",
-			}, turnID, at)
+			}, turnID, at, domain.WorkflowMode(""))
 		if appendErr != nil || !created {
 			t.Fatalf("AppendUserMessage(%s): created=%v err=%v", label, created, appendErr)
 		}

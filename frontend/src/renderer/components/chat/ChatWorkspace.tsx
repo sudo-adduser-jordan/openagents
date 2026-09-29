@@ -2330,6 +2330,8 @@ function Timeline({
 			top: number;
 			scrollTop: number;
 			visible: boolean;
+			/** The anchor group's recorded send-mode, driving the tick color. */
+			workflow?: WorkflowMode;
 		}>,
 	});
 	// Show turn ticks whenever the inspector is closed and there are human
@@ -2814,7 +2816,7 @@ function Timeline({
 
 	// Keep the full transcript mounted (selection/find still work), but measure
 	// prompt positions only when content geometry changes, not on every scroll.
-	const anchorGeometry = useRef<{ height: number; width: number; positions: number[] } | null>(null);
+	const anchorGeometry = useRef<{ height: number; width: number; positions: number[]; workflows: (WorkflowMode | null)[] } | null>(null);
 	const contentMutations = useRef<MutationObserver | null>(null);
 
 	const updateScrollbar = useCallback(() => {
@@ -2844,6 +2846,11 @@ function Timeline({
 					const rect = anchor.getBoundingClientRect();
 					return rect.top - viewportRect.top + node.scrollTop + rect.height / 2;
 				}),
+				// The recorded send-mode travels with the anchor so each tick
+				// carries its group's workflow color, not the current mode.
+				workflows: anchors.map(
+					(anchor) => anchor.getAttribute("data-chat-workflow") as WorkflowMode | null,
+				),
 			};
 			anchorGeometry.current = geometry;
 		}
@@ -2855,6 +2862,7 @@ function Timeline({
 			top: markerStart + index * markerGap,
 			scrollTop: Math.min(maxScroll, Math.max(0, contentY - node.clientHeight / 2)),
 			visible: contentY >= node.scrollTop && contentY <= node.scrollTop + node.clientHeight,
+			workflow: geometry.workflows[index] ?? undefined,
 		}));
 		const next = {
 			visible,
@@ -2875,7 +2883,8 @@ function Timeline({
 					candidate !== undefined &&
 					Math.abs(marker.top - candidate.top) < 0.5 &&
 					Math.abs(marker.scrollTop - candidate.scrollTop) < 0.5 &&
-					marker.visible === candidate.visible
+					marker.visible === candidate.visible &&
+					marker.workflow === candidate.workflow
 				);
 			})
 				? current
@@ -3128,6 +3137,7 @@ function Timeline({
 							<div
 								key={group.key}
 								data-chat-scroll-anchor={groupHasHumanPrompt(group) ? "" : undefined}
+								data-chat-workflow={group.workflow}
 							>
 								<TurnGroup
 									group={group}
@@ -3270,6 +3280,7 @@ function Timeline({
 									>
 										<span
 											aria-hidden="true"
+											data-workflow={marker.workflow}
 											className={cn(
 												"chat-scroll-marker",
 												marker.visible && "chat-scroll-marker-visible",
@@ -3461,6 +3472,7 @@ const TurnGroup = memo(function TurnGroup({
 						busy={busy}
 						queued={queued}
 						newHumanMessageIds={newHumanMessageIds}
+						workflow={group.workflow}
 						showCopy={run.items[0]?.id === copyableMessageId}
 						onRollback={
 							canRollback && run.items[0]?.id === copyableMessageId
@@ -3656,6 +3668,7 @@ function TimelineItem({
 	onRollback,
 	onDeleteBefore,
 	durationMs,
+	workflow,
 }: {
 	item: ConversationItem;
 	sessionId: string;
@@ -3694,6 +3707,11 @@ function TimelineItem({
 	onDeleteBefore?: () => void;
 	/** Finished-turn duration; shown next to rollback on the final answer. */
 	durationMs?: number;
+	/**
+	 * The enclosing turn's recorded send-mode. Human prompts render it as a
+	 * side edge; assistant replies deliberately do not share it.
+	 */
+	workflow?: WorkflowMode;
 	/** This message is the live edge of its turn, rather than an earlier fragment
 	 * followed by tool activity. */
 }) {
@@ -3722,6 +3740,7 @@ function TimelineItem({
 					sessionId={sessionId}
 					apiBaseUrl={apiBaseUrl}
 					queued={queued}
+					workflow={workflow}
 					animateIn={newHumanMessageIds.has(item.id)}
 					onEdit={editAvailable ? (_turnID, text) => onSubmitMessageEdit(text) : undefined}
 					editing={editing}
@@ -3792,6 +3811,7 @@ function sameGroup(a: TimelineGroup, b: TimelineGroup): boolean {
 	return (
 		a.anchor === b.anchor &&
 		a.turnId === b.turnId &&
+		a.workflow === b.workflow &&
 		a.live === b.live &&
 		a.rollbackable === b.rollbackable &&
 		sameContent(a.outcome, b.outcome) &&
@@ -3836,6 +3856,12 @@ type TimelineGroup = {
 	/** Where this group sits in the timeline: the lowest sequence it contains. */
 	anchor: number;
 	items: ConversationItem[];
+	/**
+	 * The delivery stage recorded when this turn was sent. Absent for
+	 * turn-less groups and rows written before send-mode recording: those
+	 * render with no mode edge or tick color rather than the current mode.
+	 */
+	workflow?: WorkflowMode;
 	outcome?: {
 		state: "completed" | "recovered" | "interrupted" | "failed";
 		durationMs?: number;
@@ -4002,6 +4028,9 @@ function groupByTurn(snapshot: ConversationSnapshot): TimelineGroup[] {
 		if (!group.turnId) continue;
 		const turn = byTurn.get(group.turnId);
 		if (!turn) continue;
+		// The recorded send-mode travels with the group so the human prompt's
+		// edge and the group's scrollbar tick share one value.
+		group.workflow = turn.workflowMode;
 		// The diff and the plan are attached whether or not the turn has finished: a
 		// running turn's changed-file list growing, and its checklist ticking itself
 		// off, are the useful parts.

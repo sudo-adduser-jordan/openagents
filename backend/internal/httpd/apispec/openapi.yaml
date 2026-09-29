@@ -7838,6 +7838,12 @@ components:
           - failed
           - cancelled
           type: string
+        workflowMode:
+          enum:
+          - planning
+          - manager
+          - building
+          type: string
       required:
       - id
       - state

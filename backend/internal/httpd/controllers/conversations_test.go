@@ -160,6 +160,30 @@ func conversationSnapshotBody(t *testing.T, snapshot chatsvc.Snapshot) map[strin
 	return decoded
 }
 
+func TestConversationSnapshotCarriesTurnSendWorkflowMode(t *testing.T) {
+	now := time.Date(2026, 8, 9, 12, 0, 0, 0, time.UTC)
+	body := conversationSnapshotBody(t, chatsvc.Snapshot{
+		Conversation: domain.ConversationRecord{ID: "conversation-1"},
+		SessionID:    domain.SessionID("p1-1"),
+		Turns: []domain.ConversationTurn{
+			{ID: "turn-recorded", State: domain.TurnStateCompleted, WorkflowMode: domain.WorkflowModeBuilding, RequestedAt: now},
+			{ID: "turn-legacy", State: domain.TurnStateCompleted, RequestedAt: now},
+		},
+	})
+	turns := body["turns"].([]any)
+	if len(turns) != 2 {
+		t.Fatalf("turns = %#v, want 2", turns)
+	}
+	recorded := turns[0].(map[string]any)
+	if recorded["workflowMode"] != "building" {
+		t.Fatalf("recorded turn workflowMode = %#v, want building", recorded["workflowMode"])
+	}
+	legacy := turns[1].(map[string]any)
+	if _, present := legacy["workflowMode"]; present {
+		t.Fatalf("legacy turn workflowMode = %#v, want absent", legacy["workflowMode"])
+	}
+}
+
 func TestConversationSnapshotExposesSafeEditContentAndBranchMetadata(t *testing.T) {
 	now := time.Date(2026, 8, 9, 12, 0, 0, 0, time.UTC)
 	body := conversationSnapshotBody(t, chatsvc.Snapshot{

@@ -2803,6 +2803,40 @@ html.sidebar-reordering * {
 	--composer-border-focus: var(--color-status-planning);
 }
 
+/* Send-mode identity: a human prompt carries the workflow stage it was sent
+   in as a side edge, and its scrollbar tick carries the same color, so the
+   mode distribution stays visible while scrolled. The --workflow-tone
+   assignment below is the single workflow→token mapping for both new
+   surfaces: manager and building resolve to the review token, planning to
+   the planning token — the same tokens the composer frame above uses, so a
+   future recolor (for example building turning blue) must update that block
+   together with this one. No token is added, removed, or revalued here. The
+   edge and tick rules reference the variable rather than repeating the
+   mapping, so the two new surfaces cannot drift from each other. Assistant
+   replies deliberately share no edge: the border marks the mode the prompt
+   was sent in, not a mode the agent ran in. */
+:root .cursor-chat-human-message[data-workflow="planning"],
+:root .chat-scroll-marker[data-workflow="planning"] {
+	--workflow-tone: var(--color-status-planning);
+}
+:root .cursor-chat-human-message[data-workflow="manager"],
+:root .cursor-chat-human-message[data-workflow="building"],
+:root .chat-scroll-marker[data-workflow="manager"],
+:root .chat-scroll-marker[data-workflow="building"] {
+	--workflow-tone: var(--color-status-review);
+}
+
+:root .cursor-chat-human-message[data-workflow] {
+	border-left-width: 2px;
+	border-left-color: var(--workflow-tone);
+}
+
+/* Light theme paints a 1px enclosure around sent bubbles; keep the mode edge
+   at the 2px accent weight so it reads as an edge, not as part of the frame. */
+:root[data-theme="light"] .cursor-chat-human-message[data-workflow]:not([data-queued]) {
+	border-left-width: 2px;
+}
+
 /* Light theme collapses the surface stack the dark bubble relies on: `--card`
    and `--background` are the same near-white, so `--color-bg-secondary` cannot
    sit above the canvas. Take the unwashed tertiary step and paint the hairline
@@ -2923,6 +2957,24 @@ html.sidebar-reordering * {
 	width: 28px;
 	background: var(--color-foreground);
 	opacity: 1;
+}
+
+/* A tick carries its anchor group's recorded send-mode. The color comes from
+   the single --workflow-tone mapping above, so ticks and message edges cannot
+   drift; these rules only win the marker-state cascade (rest, visible, hover,
+   active) for ticks that recorded a mode. Width behavior is untouched, and
+   ticks without a recorded mode keep the neutral treatment above. */
+.chat-scroll-marker[data-workflow] {
+	background: var(--workflow-tone);
+}
+.group\/scroll:hover .chat-scroll-marker[data-workflow],
+.group\/scroll:focus-visible .chat-scroll-marker[data-workflow] {
+	background: var(--workflow-tone);
+}
+.group\/scroll .chat-scroll-marker-active[data-workflow],
+.group\/scroll:hover .chat-scroll-marker-active[data-workflow],
+.group\/scroll:focus-visible .chat-scroll-marker-active[data-workflow] {
+	background: var(--workflow-tone);
 }
 
 .chat-scroll-preview {

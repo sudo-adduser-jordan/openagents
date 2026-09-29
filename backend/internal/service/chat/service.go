@@ -955,14 +955,36 @@ func (s *Service) Send(
 	id domain.SessionID,
 	msg ports.ChatUserMessage,
 ) (domain.ConversationTurn, error) {
-	if _, err := s.requireChatSession(ctx, id); err != nil {
+	record, err := s.requireChatSession(ctx, id)
+	if err != nil {
 		return domain.ConversationTurn{}, err
 	}
+	// The send-mode is daemon-stamped from the live session row, never trusted
+	// from the caller: the conversation-level mode is current-only, so only a
+	// durable per-turn record taken at send time survives later mode switches.
+	msg.WorkflowMode = domain.ResolveSendWorkflowMode(record.Kind, record.WorkflowMode)
 	controller, err := s.Controller(id)
 	if err != nil {
 		return domain.ConversationTurn{}, err
 	}
 	return controller.Send(ctx, msg)
+}
+
+// sendWorkflowMode resolves the delivery stage to record on a turn sent now
+// for paths that cannot use requireChatSession. The live session row is
+// authoritative; the launch contract covers the spawn race where StartChatTurn
+// runs before the session row write lands.
+func (s *Service) sendWorkflowMode(ctx context.Context, id domain.SessionID) domain.WorkflowMode {
+	if live, found, err := s.sessions.GetSession(ctx, id); err == nil && found {
+		return domain.ResolveSendWorkflowMode(live.Kind, live.WorkflowMode)
+	}
+	s.mu.RLock()
+	cfg, ok := s.startConfigs[id]
+	s.mu.RUnlock()
+	if ok {
+		return domain.ResolveSendWorkflowMode(cfg.Kind, cfg.WorkflowMode)
+	}
+	return ""
 }
 
 // Resolve answers a pending approval.
@@ -1473,6 +1495,9 @@ func (s *Service) StartChatTurn(ctx context.Context, id domain.SessionID, text s
 		// network's. Attributing it to the daemon rendered the user's own request
 		// as a system notice.
 		Origin: domain.MessageOriginHuman,
+		// Stamped like any other send; the helper falls back to the launch
+		// contract when the session row write has not landed yet.
+		WorkflowMode: s.sendWorkflowMode(ctx, id),
 	})
 	if err != nil {
 		return "", err
@@ -1718,7 +1743,9 @@ func (s *Service) RetryTurn(
 	if err != nil {
 		return domain.ConversationTurn{}, err
 	}
-	result, err := controller.RetryTurn(ctx, turnID)
+	// A retry is a new send now, so it records the mode active at retry time
+	// rather than inheriting the failed attempt's recorded mode.
+	result, err := controller.RetryTurn(ctx, turnID, s.sendWorkflowMode(ctx, id))
 	if err != nil {
 		return domain.ConversationTurn{}, err
 	}
@@ -1782,6 +1809,7 @@ func (s *Service) RelayChatTurnWithID(
 		Text:            text,
 		ClientMessageID: clientMessageID,
 		Origin:          domain.MessageOriginAutomation,
+		WorkflowMode:    s.sendWorkflowMode(ctx, id),
 	})
 	if err != nil {
 		return "", err

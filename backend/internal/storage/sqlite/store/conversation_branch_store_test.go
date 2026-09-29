@@ -46,7 +46,7 @@ func seedBranchTurns(t *testing.T, s *sqlite.Store, session domain.SessionRecord
 	created, err := s.AppendUserMessage(ctx, conversation.ID, session.ID, "generation-root", domain.ConversationMessage{
 		ID: "message-1", Origin: domain.MessageOriginHuman, Text: "first prompt",
 		ClientMessageID: "client-1", DeliveryContentJSON: `[{"type":"text","text":"first prompt"}]`,
-	}, "turn-1", testNow)
+	}, "turn-1", testNow, domain.WorkflowMode(""))
 	if err != nil || !created {
 		t.Fatalf("AppendUserMessage turn-1: created=%v err=%v", created, err)
 	}
@@ -59,7 +59,7 @@ func seedBranchTurns(t *testing.T, s *sqlite.Store, session domain.SessionRecord
 	created, err = s.AppendUserMessage(ctx, conversation.ID, session.ID, "generation-root", domain.ConversationMessage{
 		ID: "message-2", Origin: domain.MessageOriginHuman, Text: "second prompt",
 		ClientMessageID: "client-2", DeliveryContentJSON: `[{"type":"text","text":"second prompt"},{"type":"image","url":"data:image/png;base64,AA=="}]`,
-	}, "turn-2", testNow.Add(time.Minute))
+	}, "turn-2", testNow.Add(time.Minute), domain.WorkflowMode(""))
 	if err != nil || !created {
 		t.Fatalf("AppendUserMessage turn-2: created=%v err=%v", created, err)
 	}
@@ -322,7 +322,7 @@ func TestActivateConversationBranchMovesProviderAndGenerationTogether(t *testing
 	created, err := s.AppendUserMessage(ctx, conversation.ID, session.ID, "generation-child", domain.ConversationMessage{
 		ID: "message-replacement", Origin: domain.MessageOriginHuman, Text: "edited second prompt",
 		ClientMessageID: "client-replacement",
-	}, "turn-replacement", testNow.Add(2*time.Minute))
+	}, "turn-replacement", testNow.Add(2*time.Minute), domain.WorkflowMode(""))
 	if err != nil || !created {
 		t.Fatalf("AppendUserMessage replacement: created=%v err=%v", created, err)
 	}
@@ -426,7 +426,7 @@ func TestConversationBranchRejectsCrossConversationReferences(t *testing.T) {
 	}
 	created, err := s.AppendUserMessage(ctx, otherConversation.ID, otherSession.ID, "generation-other",
 		domain.ConversationMessage{ID: "message-other", Origin: domain.MessageOriginHuman, Text: "other"},
-		"turn-other", testNow)
+		"turn-other", testNow, domain.WorkflowMode(""))
 	if err != nil || !created {
 		t.Fatalf("AppendUserMessage other: created=%v err=%v", created, err)
 	}
@@ -659,7 +659,7 @@ func appendBranchPrompt(
 		domain.ConversationMessage{
 			ID: "message-" + suffix, Origin: domain.MessageOriginHuman, Text: text,
 			ClientMessageID: "client-" + suffix,
-		}, "turn-"+suffix, testNow)
+		}, "turn-"+suffix, testNow, domain.WorkflowMode(""))
 	if err != nil || !created {
 		t.Fatalf("AppendUserMessage %s: created=%v err=%v", suffix, created, err)
 	}

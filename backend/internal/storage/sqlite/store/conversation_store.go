@@ -890,6 +890,10 @@ func (s *Store) HasConversationTurns(ctx context.Context, conversationID string)
 // Idempotent on clientMessageID: a retried send returns the message and turn that
 // already exist instead of opening a second provider turn. The caller must not
 // dispatch to the provider when `created` is false.
+//
+// workflow is the delivery stage resolved at send time; it is recorded on the
+// turn row in the same transaction so a later mode switch cannot rewrite it.
+// Fixture callers pass "" for rows that predate send-mode recording.
 func (s *Store) AppendUserMessage(
 	ctx context.Context,
 	conversationID string,
@@ -898,13 +902,15 @@ func (s *Store) AppendUserMessage(
 	msg domain.ConversationMessage,
 	turnID string,
 	now time.Time,
+	workflow domain.WorkflowMode,
 ) (created bool, err error) {
-	return s.appendUserMessage(ctx, conversationID, session, generation, msg, turnID, "", now)
+	return s.appendUserMessage(ctx, conversationID, session, generation, msg, turnID, "", now, workflow)
 }
 
 // AppendRetryUserMessage records a retry and its source as one transaction.
 // Idempotency is owned by the explicit retry relation, not by caller-controlled
-// client message ids.
+// client message ids. The retry is a new send, so workflow is the mode active
+// at retry time rather than the failed attempt's recorded mode.
 func (s *Store) AppendRetryUserMessage(
 	ctx context.Context,
 	conversationID string,
@@ -914,8 +920,9 @@ func (s *Store) AppendRetryUserMessage(
 	turnID string,
 	retryOfTurnID string,
 	now time.Time,
+	workflow domain.WorkflowMode,
 ) (created bool, err error) {
-	return s.appendUserMessage(ctx, conversationID, session, generation, msg, turnID, retryOfTurnID, now)
+	return s.appendUserMessage(ctx, conversationID, session, generation, msg, turnID, retryOfTurnID, now, workflow)
 }
 
 func (s *Store) appendUserMessage(
@@ -927,6 +934,7 @@ func (s *Store) appendUserMessage(
 	turnID string,
 	retryOfTurnID string,
 	now time.Time,
+	workflow domain.WorkflowMode,
 ) (created bool, err error) {
 	s.writeMu.Lock()
 	defer s.writeMu.Unlock()
@@ -974,6 +982,7 @@ func (s *Store) appendUserMessage(
 			ControllerGeneration: generation,
 			RetryOfTurnID:        nullableString(retryOfTurnID),
 			State:                domain.TurnStateQueued,
+			WorkflowMode:         string(workflow),
 			RequestedAt:          now,
 		}); err != nil {
 			return fmt.Errorf("insert turn: %w", err)
@@ -3377,6 +3386,7 @@ func turnToDomain(row gen.ConversationTurn) domain.ConversationTurn {
 		ProviderTurnID:     row.ProviderTurnID,
 		State:              row.State,
 		ErrorMessage:       row.ErrorMessage,
+		WorkflowMode:       domain.WorkflowMode(row.WorkflowMode),
 		RequestedAt:        row.RequestedAt,
 	}
 	if row.RetryOfTurnID.Valid {
@@ -3659,9 +3669,10 @@ func (s *Store) CompleteEditDelivery(
 				SourceBranchID: sourceBranchID, ActiveBranchID: activeBranchID,
 				TurnID: turn.ID, HandledBySessionID: string(turn.HandledBySessionID),
 				ProviderTurnID: turn.ProviderTurnID, TurnState: string(turn.State),
-				TurnRequestedAt: sql.NullTime{Time: turn.RequestedAt, Valid: !turn.RequestedAt.IsZero()},
-				SettledAt:       sql.NullTime{Time: now, Valid: true},
-				ConversationID:  conversationID, ClientMessageID: clientMessageID,
+				TurnRequestedAt:  sql.NullTime{Time: turn.RequestedAt, Valid: !turn.RequestedAt.IsZero()},
+				TurnWorkflowMode: string(turn.WorkflowMode),
+				SettledAt:        sql.NullTime{Time: now, Valid: true},
+				ConversationID:   conversationID, ClientMessageID: clientMessageID,
 			})
 		if err != nil {
 			return fmt.Errorf("accept edit delivery %s: %w", clientMessageID, err)
@@ -3709,6 +3720,7 @@ func editDeliveryToDomain(row gen.ConversationEditDelivery) domain.ConversationE
 			ID: row.TurnID, ConversationID: row.ConversationID,
 			HandledBySessionID: domain.SessionID(row.HandledBySessionID),
 			ProviderTurnID:     row.ProviderTurnID, State: domain.TurnState(row.TurnState),
+			WorkflowMode: domain.WorkflowMode(row.TurnWorkflowMode),
 		},
 		RejectionKind:    domain.ConversationEditRejectionKind(row.RejectionKind),
 		RejectionMessage: row.RejectionMessage, CreatedAt: row.CreatedAt,

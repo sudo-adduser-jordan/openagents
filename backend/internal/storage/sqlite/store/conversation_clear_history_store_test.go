@@ -38,7 +38,7 @@ func clearHistoryFixture(t *testing.T) (*sqlite.Store, *sql.DB, domain.SessionRe
 		ID:     "message-original",
 		Origin: domain.MessageOriginHuman,
 		Text:   "the original task",
-	}, "turn-1", testNow); err != nil {
+	}, "turn-1", testNow, domain.WorkflowMode("")); err != nil {
 		t.Fatalf("append message: %v", err)
 	}
 

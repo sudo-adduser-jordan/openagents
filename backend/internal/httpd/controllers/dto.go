@@ -1751,6 +1751,11 @@ type ConversationTurnResponse struct {
 	ID             string `json:"id"`
 	State          string `json:"state" enum:"queued,running,completed,recovered,interrupted,failed,cancelled"`
 	ProviderTurnID string `json:"providerTurnId,omitempty"`
+	// WorkflowMode is the delivery stage (planning, manager, or building) that
+	// was active when this turn was sent. Absent for rows written before
+	// send-mode recording: a client must draw those with no mode edge rather
+	// than falling back to the conversation's current mode.
+	WorkflowMode string `json:"workflowMode,omitempty" enum:"planning,manager,building"`
 	// RetryOfTurnID is the failed source whose durable prompt created this turn.
 	RetryOfTurnID string `json:"retryOfTurnId,omitempty"`
 	// HasRetryAttempt remains true when the attempt is outside the active branch.

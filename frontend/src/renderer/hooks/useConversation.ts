@@ -1593,6 +1593,9 @@ function toSnapshot(wire: WireSnapshot): ConversationSnapshot {
 			retryOfTurnId: turn.retryOfTurnId,
 			hasRetryAttempt: turn.hasRetryAttempt,
 			errorMessage: turn.errorMessage,
+			// Absent for rows written before send-mode recording: the timeline
+			// draws those with no mode edge rather than the current mode.
+			workflowMode: turn.workflowMode,
 			requestedAt: turn.requestedAt,
 			startedAt: turn.startedAt ?? undefined,
 			completedAt: turn.completedAt ?? undefined,

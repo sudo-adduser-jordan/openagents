@@ -1167,7 +1167,7 @@ func TestResumeImportsNativeHistoryBeforeTheChatControllerStarts(t *testing.T) {
 		domain.ConversationMessage{
 			ID: "existing-user", Text: "What changed?", Origin: domain.MessageOriginHuman,
 			ClientMessageID: "original-chat-client-id",
-		}, "existing-turn", now)
+		}, "existing-turn", now, domain.WorkflowMode(""))
 	if err != nil || !created {
 		t.Fatalf("AppendUserMessage: created=%v err=%v", created, err)
 	}
@@ -2094,8 +2094,7 @@ func TestInterfaceHandoffOpenAgentsHighWaterFallbackMustStayInItsTurn(t *testing
 			ID: "expected-user", Text: "expected user", Origin: domain.MessageOriginHuman,
 			ClientMessageID: "expected-client",
 		},
-		"expected-turn", now,
-	)
+		"expected-turn", now, domain.WorkflowMode(""))
 	if err != nil || !created {
 		t.Fatalf("append user: created=%v err=%v", created, err)
 	}
@@ -2178,8 +2177,7 @@ func TestInterfaceHandoffOpenAgentsHighWaterAcceptsMappedReassignedTurn(t *testi
 			ID: "expected-user", Text: "expected user", Origin: domain.MessageOriginHuman,
 			ClientMessageID: "expected-client",
 		},
-		"expected-turn", now,
-	)
+		"expected-turn", now, domain.WorkflowMode(""))
 	if err != nil || !created {
 		t.Fatalf("append user: created=%v err=%v", created, err)
 	}
@@ -2329,8 +2327,7 @@ func TestInterfaceHandoffRoundTripRetiresTrustedTerminalCheckpointAfterChatTurn(
 			ID: "chat-user-b", Text: "Chat turn B", Origin: domain.MessageOriginHuman,
 			ClientMessageID: "chat-client-b",
 		},
-		"chat-turn-b", now,
-	)
+		"chat-turn-b", now, domain.WorkflowMode(""))
 	if err != nil || !created {
 		t.Fatalf("append Chat turn B: created=%v err=%v", created, err)
 	}
@@ -2405,7 +2402,7 @@ func TestInterfaceHandoffDoesNotAnchorReplayCheckpointOnFailedTurn(t *testing.T)
 		domain.ConversationMessage{
 			ID: "settled-user", Text: "What changed?", Origin: domain.MessageOriginHuman,
 			ClientMessageID: "settled-client-id",
-		}, "settled-turn", now)
+		}, "settled-turn", now, domain.WorkflowMode(""))
 	if err != nil || !created {
 		t.Fatalf("AppendUserMessage settled: created=%v err=%v", created, err)
 	}
@@ -2428,7 +2425,7 @@ func TestInterfaceHandoffDoesNotAnchorReplayCheckpointOnFailedTurn(t *testing.T)
 		domain.ConversationMessage{
 			ID: "failed-user", Text: "Spawn a worker to fix the link behavior.", Origin: domain.MessageOriginHuman,
 			ClientMessageID: "failed-client-id",
-		}, "failed-turn", later)
+		}, "failed-turn", later, domain.WorkflowMode(""))
 	if err != nil || !created {
 		t.Fatalf("AppendUserMessage failed turn: created=%v err=%v", created, err)
 	}
@@ -2561,7 +2558,7 @@ func TestInterfaceHandoffDoesNotAnchorReplayBeforeProviderCoordinationBoundary(t
 		domain.ConversationMessage{
 			ID: "old-provider-user", Text: "Finish the earlier task.", Origin: domain.MessageOriginHuman,
 			ClientMessageID: "old-provider-client",
-		}, "old-provider-turn", now)
+		}, "old-provider-turn", now, domain.WorkflowMode(""))
 	if err != nil || !created {
 		t.Fatalf("AppendUserMessage old provider: created=%v err=%v", created, err)
 	}
@@ -2585,7 +2582,7 @@ func TestInterfaceHandoffDoesNotAnchorReplayBeforeProviderCoordinationBoundary(t
 			ID:     "coordination-user",
 			Text:   "Open Agents transferred the previous agent's context in hidden system instructions. Continue the task.",
 			Origin: domain.MessageOriginDaemon, ClientMessageID: "coordination-client",
-		}, "coordination-turn", boundaryAt)
+		}, "coordination-turn", boundaryAt, domain.WorkflowMode(""))
 	if err != nil || !created {
 		t.Fatalf("AppendUserMessage coordination: created=%v err=%v", created, err)
 	}
@@ -2862,7 +2859,7 @@ func TestFreshProjectControllerStartFailureKeepsPreviousHistoryHidden(t *testing
 	if _, err := st.AppendUserMessage(ctx, conversation.ID, testSession, "old-generation",
 		domain.ConversationMessage{
 			ID: "old-message", Text: "old manager history", Origin: domain.MessageOriginHuman,
-		}, "old-turn", now.Add(time.Second)); err != nil {
+		}, "old-turn", now.Add(time.Second), domain.WorkflowMode("")); err != nil {
 		t.Fatalf("seed old history: %v", err)
 	}
 
@@ -3752,7 +3749,7 @@ func TestControllerReadyDurableSettingsRefreshBeforeFirstDispatch(t *testing.T) 
 		t.Fatalf("CreateConversation: %v", err)
 	}
 	if err := st.SetConversationSettings(ctx, conversation.ID, domain.ConversationSettings{
-		Model: "source-provider-model",
+		Model:        "source-provider-model",
 		ApprovalMode: domain.PermissionModeAcceptEdits,
 	}, now); err != nil {
 		t.Fatalf("seed source settings: %v", err)
@@ -3832,7 +3829,7 @@ func TestControllerReadyDoesNotDependOnAFalliblePostCommitRead(t *testing.T) {
 		t.Fatalf("CreateConversation: %v", err)
 	}
 	if err := st.SetConversationSettings(ctx, conversation.ID, domain.ConversationSettings{
-		Model: "source-provider-model",
+		Model:        "source-provider-model",
 		ApprovalMode: domain.PermissionModeAcceptEdits,
 	}, now); err != nil {
 		t.Fatalf("seed source settings: %v", err)
@@ -5114,7 +5111,7 @@ func TestLiveReconnectDeliversAQueueLeftByTheDeadController(t *testing.T) {
 		domain.ConversationMessage{
 			ID: "queued-message", Text: "stranded across the reconnect",
 			Origin: domain.MessageOriginHuman, ClientMessageID: "queued-client-message",
-		}, "queued-turn", now); err != nil {
+		}, "queued-turn", now, domain.WorkflowMode("")); err != nil {
 		t.Fatalf("seed queued turn: %v", err)
 	}
 
@@ -5995,7 +5992,7 @@ func TestInterruptCancelsAStrandedQueueWithNothingRunning(t *testing.T) {
 		domain.ConversationMessage{
 			ID: "stranded-message", Text: "stranded", Origin: domain.MessageOriginHuman,
 			ClientMessageID: "stranded-client-message",
-		}, "stranded-turn", h.now()); err != nil {
+		}, "stranded-turn", h.now(), domain.WorkflowMode("")); err != nil {
 		t.Fatalf("seed stranded queued turn: %v", err)
 	}
 

@@ -241,7 +241,7 @@ func TestRetryTurnRejectsInvalidDurableContentClearly(t *testing.T) {
 				h.ctrl.Generation(), domain.ConversationMessage{
 					ID: "invalid-content-message", Text: "retry stored content", Origin: domain.MessageOriginHuman,
 					ClientMessageID: "invalid-content-source", DeliveryContentJSON: tc.raw,
-				}, "invalid-content-turn", h.now())
+				}, "invalid-content-turn", h.now(), domain.WorkflowMode(""))
 			if err != nil || !created {
 				t.Fatalf("AppendUserMessage: created=%v err=%v", created, err)
 			}

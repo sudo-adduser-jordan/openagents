@@ -57,7 +57,7 @@ func seedHistoricalProviderFixture(t *testing.T) historicalProviderFixture {
 		source.Metadata.ControllerGeneration, domain.ConversationMessage{
 			ID: "old-user-message", Text: "preserve the old manager transcript",
 			Origin: domain.MessageOriginHuman, ClientMessageID: "old-client-message",
-		}, "old-turn", now.Add(time.Second))
+		}, "old-turn", now.Add(time.Second), domain.WorkflowMode(""))
 	if err != nil || !created {
 		t.Fatalf("seed old transcript: created=%v err=%v", created, err)
 	}

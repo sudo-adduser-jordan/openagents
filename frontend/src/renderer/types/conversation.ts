@@ -10,6 +10,8 @@
  * lifecycle decisions all belong to the daemon. Nothing here recomputes them.
  */
 
+import type { WorkflowMode } from "@openagents/product-ui";
+
 /** Which controller currently owns the Open Agents session. */
 export type SessionMode = "chat" | "tui";
 
@@ -102,6 +104,13 @@ export interface ConversationPlan {
 export interface ConversationTurn {
 	id: string;
 	state: TurnState;
+	/**
+	 * The delivery stage recorded when this turn was sent. Absent for rows
+	 * written before send-mode recording (and turns the provider started):
+	 * the timeline draws those with no mode edge rather than falling back to
+	 * the conversation's current mode.
+	 */
+	workflowMode?: WorkflowMode;
 	/**
 	 * An undo discarded this turn. Its messages and activities are absent from the
 	 * snapshot, because the agent no longer remembers them; the turn is still

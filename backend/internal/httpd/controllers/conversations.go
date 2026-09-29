@@ -950,6 +950,7 @@ func conversationSnapshotResponse(s chatsvc.Snapshot) ConversationSnapshotRespon
 			ID:              turn.ID,
 			State:           string(turn.State),
 			ProviderTurnID:  turn.ProviderTurnID,
+			WorkflowMode:    string(turn.WorkflowMode),
 			RetryOfTurnID:   turn.RetryOfTurnID,
 			HasRetryAttempt: turn.HasRetryAttempt,
 			ErrorMessage:    turn.ErrorMessage,

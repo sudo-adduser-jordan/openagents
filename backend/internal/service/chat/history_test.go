@@ -1298,7 +1298,7 @@ func TestStartLinksDurableEditedPromptAfterCrashBeforeBranchLink(t *testing.T) {
 		"crashed-linked-generation", domain.ConversationMessage{
 			ID: "durable-unlinked-edit-message", Text: "B edited", Origin: domain.MessageOriginHuman,
 			ClientMessageID: "durable-unlinked-edit-client",
-		}, replacementTurnID, h.clock)
+		}, replacementTurnID, h.clock, domain.WorkflowMode(""))
 	if err != nil || !created {
 		t.Fatalf("AppendUserMessage: created=%v err=%v", created, err)
 	}
@@ -2574,7 +2574,7 @@ func TestEditMessageRejectsMalformedStoredContentBeforeFork(t *testing.T) {
 		h.ctrl.Generation(), domain.ConversationMessage{
 			ID: "legacy-message", Text: "legacy", Origin: domain.MessageOriginHuman,
 			ClientMessageID: "legacy-client", DeliveryContentJSON: `{broken`,
-		}, "legacy-turn", h.now())
+		}, "legacy-turn", h.now(), domain.WorkflowMode(""))
 	if err != nil || !created {
 		t.Fatalf("AppendUserMessage legacy: created=%v err=%v", created, err)
 	}
@@ -2916,7 +2916,7 @@ func TestProviderBoundaryRejectsSourceProviderBranchAndEdit(t *testing.T) {
 		domain.ConversationMessage{
 			ID: "source-message", Origin: domain.MessageOriginHuman, Text: "source task",
 			ClientMessageID: "source-client-message",
-		}, "source-turn", now)
+		}, "source-turn", now, domain.WorkflowMode(""))
 	if err != nil || !created {
 		t.Fatalf("AppendUserMessage: created=%v err=%v", created, err)
 	}

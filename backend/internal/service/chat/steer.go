@@ -148,9 +148,13 @@ func (s *Service) SteerOrSend(
 	if msg.ClientMessageID == "" {
 		return SteerOrSendResult{}, ErrSteerDeliveryUncertain
 	}
-	if _, err := s.requireChatSession(ctx, id); err != nil {
+	record, err := s.requireChatSession(ctx, id)
+	if err != nil {
 		return SteerOrSendResult{}, err
 	}
+	// A steer-or-send that finds no active turn mints a turn via sendLocked,
+	// so it carries the same daemon-stamped send-mode as an ordinary send.
+	msg.WorkflowMode = domain.ResolveSendWorkflowMode(record.Kind, record.WorkflowMode)
 	controller, err := s.Controller(id)
 	if err != nil {
 		return SteerOrSendResult{}, err

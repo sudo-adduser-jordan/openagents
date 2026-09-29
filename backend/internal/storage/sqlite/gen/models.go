@@ -142,6 +142,7 @@ type ConversationEditDelivery struct {
 	CreatedAt           time.Time
 	SettledAt           sql.NullTime
 	ProviderWorkStarted int64
+	TurnWorkflowMode    string
 }
 
 type ConversationMessage struct {
@@ -211,6 +212,7 @@ type ConversationTurn struct {
 	PromotionStartedAt   sql.NullTime
 	PromotedToTurnID     sql.NullString
 	RetryOfTurnID        sql.NullString
+	WorkflowMode         string
 }
 
 type ManagerReengagement struct {

@@ -72,7 +72,7 @@ func TestNativeReplaySettlesMatchingHooksAndRejectsConflictingOnes(t *testing.T)
 					answer = "new answer"
 				}
 				created, err := st.AppendUserMessage(ctx, conversation.ID, testSession, "old-generation",
-					domain.ConversationMessage{ID: id + "-user", Text: prompt, Origin: domain.MessageOriginHuman, ClientMessageID: id}, id, at)
+					domain.ConversationMessage{ID: id + "-user", Text: prompt, Origin: domain.MessageOriginHuman, ClientMessageID: id}, id, at, domain.WorkflowMode(""))
 				if err != nil || !created {
 					t.Fatalf("append: created=%v err=%v", created, err)
 				}
