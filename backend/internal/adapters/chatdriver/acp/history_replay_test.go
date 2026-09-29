@@ -14,8 +14,8 @@ import (
 
 	acpsdk "github.com/coder/acp-go-sdk"
 
-	"github.com/aoagents/agent-orchestrator/backend/internal/domain"
-	"github.com/aoagents/agent-orchestrator/backend/internal/ports"
+	"github.com/sudo-adduser-jordan/open-agents/backend/internal/domain"
+	"github.com/sudo-adduser-jordan/open-agents/backend/internal/ports"
 )
 
 // replayConversation builds the smallest conversation that can run a history
