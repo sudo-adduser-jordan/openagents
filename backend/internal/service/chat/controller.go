@@ -2696,6 +2696,18 @@ func (c *Controller) apply(ctx context.Context, event ports.ChatEvent) error {
 		if event.ProviderTurnID == "" || event.Text == "" {
 			return nil
 		}
+		// A message replay can name a turn Open Agents never durably recorded. ACP
+		// agents are free to mint a fresh user-message id on every session/load
+		// (opencode does), so the turn.started that would have adopted the turn
+		// carries a different identity and may be deduped against a prior replay
+		// while the user message is not, leaving the message's turn with no row.
+		// Adopt the enclosing turn before importing so that identity churn aborts
+		// the restore's transcript instead of the whole native-history import.
+		// Idempotent: AdoptProviderTurn leaves an existing turn untouched.
+		if err := c.store.AdoptProviderTurn(ctx, c.conversation.ID, c.sessionID,
+			c.generation, c.newID(), event.ProviderTurnID, now); err != nil {
+			return fmt.Errorf("adopt turn for imported user message %s: %w", event.ProviderTurnID, err)
+		}
 		return c.store.AppendImportedUserMessage(ctx, c.conversation.ID, event.ProviderTurnID,
 			domain.ConversationMessage{
 				ID:              c.newID(),
