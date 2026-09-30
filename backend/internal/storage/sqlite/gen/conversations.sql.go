@@ -594,6 +594,53 @@ func (q *Queries) ConversationActivityExistsForProviderItem(ctx context.Context,
 	return exists, err
 }
 
+const countConversationActivitiesOtherTurns = `-- name: CountConversationActivitiesOtherTurns :one
+SELECT CAST(COUNT(*) AS INTEGER) AS other_activities
+FROM conversation_activities
+WHERE conversation_activities.conversation_id = ?1
+  AND conversation_activities.turn_id IS NOT NULL
+  AND conversation_activities.turn_id != ?2
+`
+
+type CountConversationActivitiesOtherTurnsParams struct {
+	ConversationID string
+	TurnID         sql.NullString
+}
+
+func (q *Queries) CountConversationActivitiesOtherTurns(ctx context.Context, arg CountConversationActivitiesOtherTurnsParams) (int64, error) {
+	row := q.db.QueryRowContext(ctx, countConversationActivitiesOtherTurns, arg.ConversationID, arg.TurnID)
+	var other_activities int64
+	err := row.Scan(&other_activities)
+	return other_activities, err
+}
+
+const countConversationMessagesOtherTurns = `-- name: CountConversationMessagesOtherTurns :one
+SELECT CAST(COUNT(*) AS INTEGER) AS other_messages
+FROM conversation_messages
+WHERE conversation_messages.conversation_id = ?1
+  AND conversation_messages.turn_id IS NOT NULL
+  AND conversation_messages.turn_id != ?2
+`
+
+type CountConversationMessagesOtherTurnsParams struct {
+	ConversationID string
+	TurnID         sql.NullString
+}
+
+// Rendered rows owned by another turn. A prefix delete leaves the anchor and
+// everything after it; only when these counts are both zero is the anchor the
+// sole remaining rendered history, in which case deleting "before" it must also
+// remove the anchor itself to allow delete-until-empty. Untethered rows
+// (turn_id IS NULL, e.g. clear-history/compaction boundaries) never block that
+// fallback; they are removed with the final turn so no single boundary row is
+// left undeletable.
+func (q *Queries) CountConversationMessagesOtherTurns(ctx context.Context, arg CountConversationMessagesOtherTurnsParams) (int64, error) {
+	row := q.db.QueryRowContext(ctx, countConversationMessagesOtherTurns, arg.ConversationID, arg.TurnID)
+	var other_messages int64
+	err := row.Scan(&other_messages)
+	return other_messages, err
+}
+
 const deleteConversationActivitiesBeforeSequence = `-- name: DeleteConversationActivitiesBeforeSequence :execrows
 DELETE FROM conversation_activities
 WHERE conversation_activities.conversation_id = ?1
@@ -607,6 +654,39 @@ type DeleteConversationActivitiesBeforeSequenceParams struct {
 
 func (q *Queries) DeleteConversationActivitiesBeforeSequence(ctx context.Context, arg DeleteConversationActivitiesBeforeSequenceParams) (int64, error) {
 	result, err := q.db.ExecContext(ctx, deleteConversationActivitiesBeforeSequence, arg.ConversationID, arg.BeforeSequence)
+	if err != nil {
+		return 0, err
+	}
+	return result.RowsAffected()
+}
+
+const deleteConversationActivitiesByTurn = `-- name: DeleteConversationActivitiesByTurn :execrows
+DELETE FROM conversation_activities
+WHERE conversation_activities.conversation_id = ?1
+  AND conversation_activities.turn_id = ?2
+`
+
+type DeleteConversationActivitiesByTurnParams struct {
+	ConversationID string
+	TurnID         sql.NullString
+}
+
+func (q *Queries) DeleteConversationActivitiesByTurn(ctx context.Context, arg DeleteConversationActivitiesByTurnParams) (int64, error) {
+	result, err := q.db.ExecContext(ctx, deleteConversationActivitiesByTurn, arg.ConversationID, arg.TurnID)
+	if err != nil {
+		return 0, err
+	}
+	return result.RowsAffected()
+}
+
+const deleteConversationActivitiesWithoutTurn = `-- name: DeleteConversationActivitiesWithoutTurn :execrows
+DELETE FROM conversation_activities
+WHERE conversation_activities.conversation_id = ?1
+  AND conversation_activities.turn_id IS NULL
+`
+
+func (q *Queries) DeleteConversationActivitiesWithoutTurn(ctx context.Context, conversationID string) (int64, error) {
+	result, err := q.db.ExecContext(ctx, deleteConversationActivitiesWithoutTurn, conversationID)
 	if err != nil {
 		return 0, err
 	}
@@ -629,6 +709,39 @@ type DeleteConversationMessagesBeforeSequenceParams struct {
 // lineage and repairability are preserved; only what the timeline renders goes.
 func (q *Queries) DeleteConversationMessagesBeforeSequence(ctx context.Context, arg DeleteConversationMessagesBeforeSequenceParams) (int64, error) {
 	result, err := q.db.ExecContext(ctx, deleteConversationMessagesBeforeSequence, arg.ConversationID, arg.BeforeSequence)
+	if err != nil {
+		return 0, err
+	}
+	return result.RowsAffected()
+}
+
+const deleteConversationMessagesByTurn = `-- name: DeleteConversationMessagesByTurn :execrows
+DELETE FROM conversation_messages
+WHERE conversation_messages.conversation_id = ?1
+  AND conversation_messages.turn_id = ?2
+`
+
+type DeleteConversationMessagesByTurnParams struct {
+	ConversationID string
+	TurnID         sql.NullString
+}
+
+func (q *Queries) DeleteConversationMessagesByTurn(ctx context.Context, arg DeleteConversationMessagesByTurnParams) (int64, error) {
+	result, err := q.db.ExecContext(ctx, deleteConversationMessagesByTurn, arg.ConversationID, arg.TurnID)
+	if err != nil {
+		return 0, err
+	}
+	return result.RowsAffected()
+}
+
+const deleteConversationMessagesWithoutTurn = `-- name: DeleteConversationMessagesWithoutTurn :execrows
+DELETE FROM conversation_messages
+WHERE conversation_messages.conversation_id = ?1
+  AND conversation_messages.turn_id IS NULL
+`
+
+func (q *Queries) DeleteConversationMessagesWithoutTurn(ctx context.Context, conversationID string) (int64, error) {
+	result, err := q.db.ExecContext(ctx, deleteConversationMessagesWithoutTurn, conversationID)
 	if err != nil {
 		return 0, err
 	}

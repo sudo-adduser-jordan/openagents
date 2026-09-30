@@ -1585,3 +1585,44 @@ WHERE conversation_messages.conversation_id = sqlc.arg(conversation_id)
 DELETE FROM conversation_activities
 WHERE conversation_activities.conversation_id = sqlc.arg(conversation_id)
   AND conversation_activities.sequence < sqlc.arg(before_sequence);
+
+-- Rendered rows owned by another turn. A prefix delete leaves the anchor and
+-- everything after it; only when these counts are both zero is the anchor the
+-- sole remaining rendered history, in which case deleting "before" it must also
+-- remove the anchor itself to allow delete-until-empty. Untethered rows
+-- (turn_id IS NULL, e.g. clear-history/compaction boundaries) never block that
+-- fallback; they are removed with the final turn so no single boundary row is
+-- left undeletable.
+-- name: CountConversationMessagesOtherTurns :one
+SELECT CAST(COUNT(*) AS INTEGER) AS other_messages
+FROM conversation_messages
+WHERE conversation_messages.conversation_id = sqlc.arg(conversation_id)
+  AND conversation_messages.turn_id IS NOT NULL
+  AND conversation_messages.turn_id != sqlc.arg(turn_id);
+
+-- name: CountConversationActivitiesOtherTurns :one
+SELECT CAST(COUNT(*) AS INTEGER) AS other_activities
+FROM conversation_activities
+WHERE conversation_activities.conversation_id = sqlc.arg(conversation_id)
+  AND conversation_activities.turn_id IS NOT NULL
+  AND conversation_activities.turn_id != sqlc.arg(turn_id);
+
+-- name: DeleteConversationMessagesByTurn :execrows
+DELETE FROM conversation_messages
+WHERE conversation_messages.conversation_id = sqlc.arg(conversation_id)
+  AND conversation_messages.turn_id = sqlc.arg(turn_id);
+
+-- name: DeleteConversationActivitiesByTurn :execrows
+DELETE FROM conversation_activities
+WHERE conversation_activities.conversation_id = sqlc.arg(conversation_id)
+  AND conversation_activities.turn_id = sqlc.arg(turn_id);
+
+-- name: DeleteConversationMessagesWithoutTurn :execrows
+DELETE FROM conversation_messages
+WHERE conversation_messages.conversation_id = sqlc.arg(conversation_id)
+  AND conversation_messages.turn_id IS NULL;
+
+-- name: DeleteConversationActivitiesWithoutTurn :execrows
+DELETE FROM conversation_activities
+WHERE conversation_activities.conversation_id = sqlc.arg(conversation_id)
+  AND conversation_activities.turn_id IS NULL;

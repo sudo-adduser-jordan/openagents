@@ -353,7 +353,9 @@ func (c *ConversationsController) rollback(w http.ResponseWriter, r *http.Reques
 }
 
 // deleteHistoryBefore permanently removes rendered manager history strictly
-// before the named turn. The anchor turn and everything after it survive, and
+// before the named turn. The anchor turn and everything after it survive,
+// except when the anchor is the sole remaining rendered history, in which case
+// the anchor and untethered boundary rows go too so the transcript can empty;
 // the provider thread is untouched: this reclaims transcript, not agent memory.
 func (c *ConversationsController) deleteHistoryBefore(w http.ResponseWriter, r *http.Request) {
 	if c.Svc == nil {

@@ -138,7 +138,10 @@ type DeleteHistoryBeforeResult struct {
 // Durable-only by design: the provider thread is untouched, because no driver
 // offers a prefix-forget primitive. What shrinks is Open Agents's transcript and
 // storage -- messages and activities before the anchor -- while turn rows, the
-// raw provider-event archive, and everything from the anchor on survive. The
+// raw provider-event archive, and everything from the anchor on survive, except
+// for the delete-until-empty edge: when the anchor is the sole remaining
+// rendered history, its own rows and untethered boundary rows go too so the
+// transcript can empty. The
 // agent keeps whatever context it still holds; the timeline simply starts later.
 //
 // Refused while a turn is running, before anything is deleted: removing history
