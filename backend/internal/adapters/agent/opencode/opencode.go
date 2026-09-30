@@ -79,6 +79,7 @@ func New() *Plugin {
 var _ adapters.Adapter = (*Plugin)(nil)
 var _ ports.Agent = (*Plugin)(nil)
 var _ ports.AgentAuthChecker = (*Plugin)(nil)
+var _ ports.AgentInterfaceHandoff = (*Plugin)(nil)
 
 // Manifest returns the adapter's static self-description.
 func (p *Plugin) Manifest() adapters.Manifest {
@@ -179,6 +180,27 @@ func (p *Plugin) GetRestoreCommand(ctx context.Context, cfg ports.RestoreConfig)
 		cmd = append(cmd, "--prompt", cfg.Prompt)
 	}
 	return cmd, true, nil
+}
+
+// NativeConversationID exposes the opencode native session id for interface
+// handoffs. Chat and TUI share the same opencode session identity: Chat tracks
+// it as the provider conversation id, TUI as the plugin-derived agent session
+// id. Returning it here enables the session-surface switch into the native
+// opencode terminal inside the same window.
+func (p *Plugin) NativeConversationID(ctx context.Context, session ports.SessionRef, currentMode domain.SessionMode, providerConversationID string) (string, bool, error) {
+	if err := ctx.Err(); err != nil {
+		return "", false, err
+	}
+	if id := strings.TrimSpace(providerConversationID); id != "" {
+		return id, true, nil
+	}
+	if id := strings.TrimSpace(session.Metadata[opencodeAgentSessionIDMetadataKey]); id != "" {
+		return id, true, nil
+	}
+	if id := strings.TrimSpace(session.Metadata[ports.MetadataKeyAgentSessionID]); id != "" {
+		return id, true, nil
+	}
+	return "", false, nil
 }
 
 // SessionInfo surfaces opencode plugin-derived metadata. Metadata is
