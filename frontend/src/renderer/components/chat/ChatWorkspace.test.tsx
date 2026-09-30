@@ -3,7 +3,7 @@ import userEvent from "@testing-library/user-event";
 import { Activity, Profiler, type ReactElement } from "react";
 import { typeInLexicalEditor } from "../../test/lexical";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
-import { ChatWorkspace, promptSpacerHeight, promptTopInset } from "./ChatWorkspace";
+import { ChatWorkspace, groupTickKind, promptSpacerHeight, promptTopInset } from "./ChatWorkspace";
 import { AssistantMessage, HumanMessage, OriginMessage } from "./ChatTimelineItems";
 import {
 	chatFixture,
@@ -1274,6 +1274,118 @@ describe("ChatWorkspace timeline", () => {
 
 		fireEvent.wheel(scrollbar, { deltaY: 200 });
 		expect(log.scrollTop).toBe(1000);
+	});
+
+	it("renders tick marks per turn group and jump-scrolls on click", () => {
+		useUiStore.setState({
+			inspectorSessions: { "open-agents-long": { isOpen: false, view: "summary" } },
+		});
+		const { rerender } = render(<ChatWorkspace snapshot={chatFixtureLongHistory(3)} />);
+		const log = screen.getByRole("log");
+		const scrollbar = screen.getByRole("scrollbar", { name: "Conversation scrollbar" });
+		stubGeometry(log, { scrollHeight: 4000, clientHeight: 800, scrollTop: 1000 });
+		stubGeometry(scrollbar, { scrollHeight: 800, clientHeight: 800, scrollTop: 0 });
+		fireEvent.scroll(log);
+		let markers = Array.from(
+			scrollbar.querySelectorAll<HTMLElement>("[data-chat-scroll-marker]"),
+		);
+		// One collapsed tick per turn group, classified from group content
+		// (long-history turns run tool calls, so every tick is a tool tick).
+		expect(markers).toHaveLength(3);
+		expect(markers.map((marker) => marker.dataset.scrollTarget).every(Boolean)).toBe(true);
+		for (const marker of markers) {
+			expect(marker.querySelector(".chat-scroll-marker")?.getAttribute("data-tick-kind")).toBe(
+				"tool",
+			);
+		}
+		// Click-to-scroll: pointer-down on a tick jumps the timeline viewport.
+		const target = Number(markers[2]!.dataset.scrollTarget);
+		expect(target).toBeGreaterThan(0);
+		log.scrollTop = 1000;
+		fireEvent.pointerDown(markers[2]!, { pointerId: 1, clientY: 100 });
+		expect(log.scrollTop).toBe(target);
+		// Ticks update live as the conversation grows.
+		rerender(<ChatWorkspace snapshot={chatFixtureLongHistory(4)} />);
+		fireEvent.scroll(log);
+		markers = Array.from(
+			scrollbar.querySelectorAll<HTMLElement>("[data-chat-scroll-marker]"),
+		);
+		expect(markers).toHaveLength(4);
+	});
+
+	it("classifies tick kinds with errors and approvals first", () => {
+		const failed = {
+			key: "g1",
+			anchor: 1,
+			outcome: { state: "failed" as const },
+			items: [
+				{
+					kind: "message",
+					id: "m1",
+					sequence: 1,
+					revision: 0,
+					role: "user",
+					origin: "human",
+					text: "hi",
+					streaming: false,
+					createdAt: "2026-01-01T00:00:00Z",
+				},
+			],
+		};
+		expect(groupTickKind(failed as never)).toBe("error");
+		const approval = {
+			key: "g2",
+			anchor: 2,
+			blocked: true,
+			items: [
+				{
+					kind: "activity",
+					id: "a1",
+					sequence: 2,
+					revision: 0,
+					activityKind: "approval",
+					status: "pending",
+					summary: "approve?",
+					createdAt: "2026-01-01T00:00:00Z",
+				},
+			],
+		};
+		expect(groupTickKind(approval as never)).toBe("approval");
+		const tool = {
+			key: "g3",
+			anchor: 3,
+			items: [
+				{
+					kind: "activity",
+					id: "a2",
+					sequence: 3,
+					revision: 0,
+					activityKind: "command",
+					status: "completed",
+					summary: "ls",
+					createdAt: "2026-01-01T00:00:00Z",
+				},
+			],
+		};
+		expect(groupTickKind(tool as never)).toBe("tool");
+		const user = {
+			key: "g4",
+			anchor: 4,
+			items: [
+				{
+					kind: "message",
+					id: "m2",
+					sequence: 4,
+					revision: 0,
+					role: "user",
+					origin: "human",
+					text: "hi",
+					streaming: false,
+					createdAt: "2026-01-01T00:00:00Z",
+				},
+			],
+		};
+		expect(groupTickKind(user as never)).toBe("user");
 	});
 
 	it("updates the minimap interaction boundary when the inspector toggles", async () => {

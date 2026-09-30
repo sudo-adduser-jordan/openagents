@@ -2333,6 +2333,8 @@ function Timeline({
 			visible: boolean;
 			/** The anchor group's recorded send-mode, driving the tick color. */
 			workflow?: WorkflowMode;
+			/** Notable-position kind for the tick mark (error/approval/tool/user). */
+			tickKind?: ScrollTickKind;
 		}>,
 	});
 	// Show turn ticks whenever the inspector is closed and there are human
@@ -2817,7 +2819,7 @@ function Timeline({
 
 	// Keep the full transcript mounted (selection/find still work), but measure
 	// prompt positions only when content geometry changes, not on every scroll.
-	const anchorGeometry = useRef<{ height: number; width: number; positions: number[]; workflows: (WorkflowMode | null)[] } | null>(null);
+	const anchorGeometry = useRef<{ height: number; width: number; positions: number[]; workflows: (WorkflowMode | null)[]; tickKinds: (ScrollTickKind | null)[] } | null>(null);
 	const contentMutations = useRef<MutationObserver | null>(null);
 
 	const updateScrollbar = useCallback(() => {
@@ -2852,6 +2854,11 @@ function Timeline({
 				workflows: anchors.map(
 					(anchor) => anchor.getAttribute("data-chat-workflow") as WorkflowMode | null,
 				),
+				// Notable-position kind travels with the anchor so each tick can
+				// signal user/tool/approval/error without extra DOM lookups.
+				tickKinds: anchors.map(
+					(anchor) => anchor.getAttribute("data-chat-tick-kind") as ScrollTickKind | null,
+				),
 			};
 			anchorGeometry.current = geometry;
 		}
@@ -2864,6 +2871,7 @@ function Timeline({
 			scrollTop: Math.min(maxScroll, Math.max(0, contentY - node.clientHeight / 2)),
 			visible: contentY >= node.scrollTop && contentY <= node.scrollTop + node.clientHeight,
 			workflow: geometry.workflows[index] ?? undefined,
+			tickKind: geometry.tickKinds[index] ?? "user",
 		}));
 		const next = {
 			visible,
@@ -2885,7 +2893,8 @@ function Timeline({
 					Math.abs(marker.top - candidate.top) < 0.5 &&
 					Math.abs(marker.scrollTop - candidate.scrollTop) < 0.5 &&
 					marker.visible === candidate.visible &&
-					marker.workflow === candidate.workflow
+					marker.workflow === candidate.workflow &&
+					marker.tickKind === candidate.tickKind
 				);
 			})
 				? current
@@ -3139,6 +3148,7 @@ function Timeline({
 								key={group.key}
 								data-chat-scroll-anchor={groupHasHumanPrompt(group) ? "" : undefined}
 								data-chat-workflow={group.workflow}
+								data-chat-tick-kind={groupHasHumanPrompt(group) ? groupTickKind(group) : undefined}
 							>
 								<TurnGroup
 									group={group}
@@ -3282,6 +3292,7 @@ function Timeline({
 										<span
 											aria-hidden="true"
 											data-workflow={marker.workflow}
+											data-tick-kind={marker.tickKind}
 											className={cn(
 												"chat-scroll-marker",
 												marker.visible && "chat-scroll-marker-visible",
@@ -3915,6 +3926,43 @@ function groupHasHumanPrompt(group: TimelineGroup): boolean {
 	return group.items.some(
 		(item) => item.kind === "message" && item.role === "user" && item.origin === "human",
 	);
+}
+
+/** Notable-position kind for a turn group's scrollbar tick, collapsed per group. */
+export type ScrollTickKind = "user" | "tool" | "approval" | "error";
+
+const TOOL_ACTIVITY_KINDS = new Set(["command", "file_change", "mcp_tool", "auto_review"]);
+
+export function groupTickKind(group: TimelineGroup): ScrollTickKind {
+	if (
+		group.outcome?.state === "failed" ||
+		group.items.some(
+			(item) =>
+				item.kind === "activity" &&
+				(item.activityKind === "error" || item.status === "failed"),
+		)
+	) {
+		return "error";
+	}
+	if (
+		group.blocked ||
+		group.items.some(
+			(item) =>
+				item.kind === "activity" &&
+				(item.activityKind === "approval" || item.activityKind === "user_input") &&
+				item.status === "pending",
+		)
+	) {
+		return "approval";
+	}
+	if (
+		group.items.some(
+			(item) => item.kind === "activity" && TOOL_ACTIVITY_KINDS.has(item.activityKind),
+		)
+	) {
+		return "tool";
+	}
+	return "user";
 }
 
 // Retry correlation is daemon-owned rather than inferred from repeated text.

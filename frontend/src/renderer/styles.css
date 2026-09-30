@@ -2987,6 +2987,20 @@ html.sidebar-reordering * {
 	background: var(--workflow-tone);
 }
 
+/* Notable-position tick kinds: error and approval override the workflow tone
+   so failed turns and pending approvals stand out; tool/user keep the
+   neutral or workflow-tinted treatment above. */
+.chat-scroll-marker[data-tick-kind="error"],
+.group\/scroll:hover .chat-scroll-marker[data-tick-kind="error"],
+.group\/scroll:focus-visible .chat-scroll-marker[data-tick-kind="error"] {
+	background: var(--color-destructive);
+}
+.chat-scroll-marker[data-tick-kind="approval"],
+.group\/scroll:hover .chat-scroll-marker[data-tick-kind="approval"],
+.group\/scroll:focus-visible .chat-scroll-marker[data-tick-kind="approval"] {
+	background: var(--color-warning);
+}
+
 .chat-scroll-preview {
 	transform: translate(-6px, -50%);
 }
