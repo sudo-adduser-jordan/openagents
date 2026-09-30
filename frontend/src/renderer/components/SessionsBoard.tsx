@@ -27,6 +27,7 @@ import {
 } from "../hooks/useSessionUsageSummaries";
 import { apiErrorMessage } from "../lib/api-client";
 import { useRetireSession } from "../hooks/useRetireSession";
+import { useRetireArchivedSessions } from "../hooks/useRetireArchivedSessions";
 import { useRestoreSession } from "../hooks/useRestoreSession";
 import { useTerminateSession } from "../hooks/useTerminateSession";
 import { useMergeSessionLocal } from "../hooks/useMergeSessionLocal";
@@ -47,6 +48,8 @@ import { openAgentsBridge } from "../lib/bridge";
 import { primaryPR } from "../types/workspace";
 import { useUiStore } from "../stores/ui-store";
 import { RestoreUnavailableDialog } from "./RestoreUnavailableDialog";
+import { ConfirmDialog } from "./ConfirmDialog";
+import { archiveRemoveWarning } from "./ArchiveRemoveButton";
 import { DaemonStartupLoader } from "./DaemonStartupLoader";
 import { useBoardPresentation } from "../hooks/useBoardPresentation";
 import { useProjectManagerAction } from "../hooks/useProjectManagerAction";
@@ -417,6 +420,9 @@ const BoardArchivePanel = memo(function BoardArchivePanel({
 	usageBySession: UsageBySession;
 }) {
 	const retireSession = useRetireSession();
+	const clearArchive = useRetireArchivedSessions();
+	const [clearArchiveOpen, setClearArchiveOpen] = useState(false);
+	const [clearArchiveSummary, setClearArchiveSummary] = useState<string | undefined>();
 	const navigate = useNavigate();
 	const queryClient = useQueryClient();
 	const restoreSessionById = useRestoreSession();
@@ -429,6 +435,8 @@ const BoardArchivePanel = memo(function BoardArchivePanel({
 		setRestoringSessionId(undefined);
 		setRestoreErrors({});
 		setRestoreUnavailableSession(undefined);
+		setClearArchiveOpen(false);
+		setClearArchiveSummary(undefined);
 		restoreGenerationRef.current += 1;
 	}, [projectId]);
 
@@ -479,9 +487,46 @@ const BoardArchivePanel = memo(function BoardArchivePanel({
 		}
 	};
 
+	const runClearArchive = async () => {
+		const targets = sessions.map((session) => session.id);
+		if (targets.length === 0) {
+			setClearArchiveOpen(false);
+			return;
+		}
+		const result = await clearArchive.mutateAsync(targets);
+		setClearArchiveOpen(false);
+		// The summary names the shortfall, not just the success count: a user who
+		// cleared 12 and sees "12 removed" when one failed would be misled.
+		setClearArchiveSummary(
+			result.failed.length === 0
+				? `Removed ${result.removed.length} archived ${pluralize(result.removed.length, "session")}`
+				: `Removed ${result.removed.length} · ${result.failed.length} failed: ${result.failed
+						.map((failure) => failure.sessionId)
+						.join(", ")}`,
+		);
+	};
+
 	return (
 		<>
 			<SessionsArchiveView
+				headerAction={
+					<span className="flex items-center gap-2">
+						{clearArchiveSummary ? (
+							<span className="text-2xs text-settings-muted" role="status">
+								{clearArchiveSummary}
+							</span>
+						) : null}
+						<button
+							aria-label="Clear archive"
+							className="rounded-sm border border-border/80 px-1.5 py-0.5 text-2xs font-medium text-foreground transition-colors hover:bg-error/10 hover:text-error focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring/60"
+							disabled={clearArchive.isPending}
+							onClick={() => setClearArchiveOpen(true)}
+							type="button"
+						>
+							Clear archive
+						</button>
+					</span>
+				}
 				labels={{
 					archive: "Archive",
 					archiveAria: (sessions.length === 1 ? `Archive, ${sessions.length} session` : `Archive, ${sessions.length} sessions`),
@@ -517,6 +562,34 @@ const BoardArchivePanel = memo(function BoardArchivePanel({
 					}}
 				/>
 			) : null}
+			<ConfirmDialog
+				busy={clearArchive.isPending}
+				confirmLabel="Clear archive"
+				description={
+					<>
+						<p>
+							{`Permanently remove ${sessions.length} archived ${pluralize(sessions.length, "session")} and their records.`}
+						</p>
+						<p className="mt-2">{archiveRemoveWarning}</p>
+					</>
+				}
+				destructive
+				// The dialog cannot close under a run in progress: the sweep
+				// owns the archive until it reports, and a close mid-run would
+				// leave the summary to arrive against a panel the user left.
+				onOpenChange={(open) => {
+					if (open) return;
+					if (clearArchive.isPending) return;
+					setClearArchiveOpen(false);
+				}}
+				onConfirm={() => void runClearArchive()}
+				open={clearArchiveOpen}
+				title="Clear the archive?"
+			/>
 		</>
 	);
 });
+
+function pluralize(count: number, noun: string): string {
+	return count === 1 ? noun : `${noun}s`;
+}

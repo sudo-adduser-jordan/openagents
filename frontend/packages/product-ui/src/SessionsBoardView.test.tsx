@@ -964,8 +964,52 @@ describe("SessionsBoardView", () => {
 		expect(screen.queryByRole("list", { name: "Archived sessions" })).not.toBeInTheDocument();
 	});
 
-	it("skips archive motion when the user prefers reduced motion", async () => {
-		useReducedMotionMock.mockReturnValue(true);
+	it("renders an optional header action above the grid only when the sheet is open", async () => {
+		render(
+			<SessionsArchiveView
+				headerAction={<button type="button">Clear archive</button>}
+				labels={{ archive: "Archive", archiveAria: "Archive, 1 session", archivedSessions: "Archived sessions" }}
+				renderSessionCard={(session) => <div role="listitem">{session.title}</div>}
+				sessions={[baseSession]}
+			/>,
+		);
+
+		// The action lives inside the deferred sheet, so it is absent until the
+		// first open. That keeps a destructive control out of the collapsed bar.
+		expect(screen.queryByRole("button", { name: "Clear archive" })).not.toBeInTheDocument();
+
+		fireEvent.click(screen.getByRole("button", { name: "Archive, 1 session" }));
+		const action = await screen.findByRole("button", { name: "Clear archive" });
+		const archive = screen.getByRole("list", { name: "Archived sessions" });
+		// Rendered above the grid, not after it.
+		expect(action.compareDocumentPosition(archive) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy();
+		expect(action.parentElement).not.toHaveAttribute("inert");
+
+		// The sheet stays mounted after first open, so collapse has to neutralize
+		// the action rather than unmount it -- otherwise it stays tabbable
+		// inside the height-0 container.
+		fireEvent.click(screen.getByRole("button", { name: "Archive, 1 session" }));
+		const collapsed = screen.getByRole("button", { name: "Clear archive" });
+		expect(collapsed.parentElement).toHaveAttribute("inert");
+		expect(collapsed.parentElement).toHaveClass("pointer-events-none");
+	});
+
+	it("omits the header action row when no action is supplied", async () => {
+		render(
+			<SessionsArchiveView
+				labels={{ archive: "Archive", archiveAria: "Archive, 1 session", archivedSessions: "Archived sessions" }}
+				renderSessionCard={(session) => <div role="listitem">{session.title}</div>}
+				sessions={[baseSession]}
+			/>,
+		);
+
+		fireEvent.click(screen.getByRole("button", { name: "Archive, 1 session" }));
+		const archive = await screen.findByRole("list", { name: "Archived sessions" });
+		// No empty spacer row above the grid when the slot is unused.
+		expect(archive.previousElementSibling).toBeNull();
+	});
+
+	it("skips archive motion when the user prefers reduced motion", async () => {		useReducedMotionMock.mockReturnValue(true);
 		render(
 			<SessionsArchiveView
 				labels={{ archive: "Archive", archiveAria: "Archive, 1 session", archivedSessions: "Archived sessions" }}

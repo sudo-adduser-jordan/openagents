@@ -1157,6 +1157,13 @@ func mapSessionError(err error) error {
 	case errors.Is(err, sessionmanager.ErrAgentExitInProgress):
 		return apierr.Conflict("AGENT_EXIT_IN_PROGRESS",
 			"The agent is already exiting", nil)
+	case errors.Is(err, sessionmanager.ErrExclusiveOperationInProgress):
+		// Kill, retire, restore and resume all take the session's exclusive
+		// operation slot. A second one is a conflict the caller can retry, not
+		// a server fault: without this arm it fell through to the 500 default
+		// and a double-submit looked like the daemon had failed.
+		return apierr.Conflict("SESSION_OPERATION_IN_PROGRESS",
+			"Another operation is already running on this session", nil)
 	case errors.Is(err, sessionmanager.ErrInterfaceTransitionInProgress):
 		return apierr.Conflict("INTERFACE_TRANSITION_IN_PROGRESS",
 			"This session is already switching interfaces", nil)

@@ -46,6 +46,9 @@ type fakeSessionService struct {
 	cleanupProjects            []domain.ProjectID
 	cleanupResult              []domain.SessionID
 	cleanupSkipped             []sessionsvc.CleanupSkipped
+	retired                    []domain.SessionID
+	retireFreed                bool
+	retireErr                  error
 	workspaceFiles             sessionsvc.WorkspaceFiles
 	workspaceFile              sessionsvc.WorkspaceFileDetail
 	workspaceFileSection       sessionsvc.WorkspaceFileSection
@@ -198,7 +201,20 @@ func newFakeSessionService() *fakeSessionService {
 	return &fakeSessionService{
 		sessions: map[domain.SessionID]domain.Session{s.ID: s},
 		nums:     map[domain.SessionID]int64{},
+		// Retire reports freed=true by default; a test that wants the
+		// already-gone case flips it to false.
+		retireFreed: true,
 	}
+}
+
+// Retire mirrors the daemon's contract: already-gone is a success with
+// freed=false, not an error. retireErr lets a test drive the failure arms.
+func (f *fakeSessionService) Retire(_ context.Context, id domain.SessionID) (bool, error) {
+	f.retired = append(f.retired, id)
+	if f.retireErr != nil {
+		return false, f.retireErr
+	}
+	return f.retireFreed, nil
 }
 
 func (f *fakeSessionService) List(_ context.Context, filter sessionsvc.ListFilter) ([]domain.Session, error) {
@@ -3113,6 +3129,66 @@ func TestSessionsAPI_CleanupWithoutProjectFilter(t *testing.T) {
 	}
 	if len(svc.cleanupProjects) != 1 || svc.cleanupProjects[0] != "" {
 		t.Fatalf("cleanupProjects = %#v, want empty project filter", svc.cleanupProjects)
+	}
+}
+
+// Retire is the only way an archived card leaves the board permanently, and the
+// wire contract has three cases worth pinning: a normal removal, a session that
+// is somehow still running, and a session that is already gone.
+func TestSessionsAPI_RetireRemovesAFinishedSession(t *testing.T) {
+	svc := newFakeSessionService()
+	srv := newSessionTestServer(t, svc)
+
+	body, status, _ := doRequest(t, srv, "DELETE", "/api/v1/sessions/open-agents-1", "")
+	if status != http.StatusOK {
+		t.Fatalf("retire = %d, want 200; body=%s", status, body)
+	}
+	var got struct {
+		OK        bool   `json:"ok"`
+		SessionID string `json:"sessionId"`
+		Freed     bool   `json:"freed"`
+	}
+	mustJSON(t, body, &got)
+	if !got.OK || got.SessionID != "open-agents-1" || !got.Freed {
+		t.Fatalf("retire response = %#v, want ok with freed=true", got)
+	}
+	if len(svc.retired) != 1 || svc.retired[0] != "open-agents-1" {
+		t.Fatalf("retired = %#v, want [open-agents-1]", svc.retired)
+	}
+}
+
+// A session that is still running is a state the caller has to change first, so
+// it is a 409 rather than a 400.
+func TestSessionsAPI_RetireRefusesALiveSession(t *testing.T) {
+	svc := newFakeSessionService()
+	svc.retireErr = fmt.Errorf("%w: open-agents-1 is still running", ports.ErrSessionNotTerminated)
+	srv := newSessionTestServer(t, svc)
+
+	body, status, _ := doRequest(t, srv, "DELETE", "/api/v1/sessions/open-agents-1", "")
+	assertErrorCode(t, body, status, http.StatusConflict, "SESSION_NOT_TERMINATED")
+}
+
+// Retiring something that is already gone must succeed. The retire path never
+// touches the workspace, so a session whose row is absent is a benign no-op
+// (freed=false), not a fault. This is what lets a client retry a bulk clear
+// after a partial failure without the retry reporting errors forever.
+func TestSessionsAPI_RetireSucceedsWhenTheSessionIsAlreadyGone(t *testing.T) {
+	svc := newFakeSessionService()
+	svc.retireFreed = false
+	srv := newSessionTestServer(t, svc)
+
+	body, status, _ := doRequest(t, srv, "DELETE", "/api/v1/sessions/already-removed", "")
+	if status != http.StatusOK {
+		t.Fatalf("retire of an absent session = %d, want 200; body=%s", status, body)
+	}
+	var got struct {
+		OK        bool   `json:"ok"`
+		SessionID string `json:"sessionId"`
+		Freed     bool   `json:"freed"`
+	}
+	mustJSON(t, body, &got)
+	if !got.OK || got.Freed {
+		t.Fatalf("retire response = %#v, want ok with freed=false", got)
 	}
 }
 

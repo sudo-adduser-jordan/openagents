@@ -18,6 +18,7 @@ const {
 	navigateMock,
 	notificationShowMock,
 	openExternalMock,
+	deleteMock,
 	getMock,
 	patchMock,
 	postMock,
@@ -28,6 +29,7 @@ const {
 	navigateMock: vi.fn(),
 	notificationShowMock: vi.fn(),
 	openExternalMock: vi.fn(),
+	deleteMock: vi.fn(),
 	getMock: vi.fn(),
 	patchMock: vi.fn(),
 	postMock: vi.fn(),
@@ -62,7 +64,9 @@ vi.mock("../lib/api-client", () => ({
 		GET: (...args: unknown[]) => getMock(...args),
 		PATCH: (...args: unknown[]) => patchMock(...args),
 		POST: (...args: unknown[]) => postMock(...args),
+		DELETE: (...args: unknown[]) => deleteMock(...args),
 	},
+	apiErrorCode: (error: unknown) => (error as { code?: string } | undefined)?.code,
 	apiErrorMessage: (_error: unknown, fallback: string) => fallback,
 }));
 
@@ -116,6 +120,16 @@ async function expandArchive() {
 	return screen.findByRole("list", { name: "Archived sessions" });
 }
 
+/**
+ * The archive header's button and the confirm dialog's button share a name, so
+ * the confirm is always clicked from inside the dialog.
+ */
+async function confirmClearArchive() {
+	await userEvent.click(await screen.findByRole("button", { name: "Clear archive" }));
+	const dialog = await screen.findByRole("dialog");
+	await userEvent.click(within(dialog).getByRole("button", { name: "Clear archive" }));
+}
+
 beforeEach(() => {
 	navigateMock.mockReset();
 	notificationShowMock.mockReset().mockResolvedValue(undefined);
@@ -123,6 +137,7 @@ beforeEach(() => {
 	getMock.mockReset().mockResolvedValue({ data: {} });
 	patchMock.mockReset().mockResolvedValue({ data: {} });
 	postMock.mockReset().mockResolvedValue({ data: {} });
+	deleteMock.mockReset().mockResolvedValue({ data: { ok: true, freed: true } });
 	workspaceQueryMock.mockReset().mockReturnValue({ data: [], isError: false });
 	usageQueryMock.mockReset().mockReturnValue({ data: new Map() });
 	window.localStorage.removeItem("open-agents.board.archive.layout");
@@ -1098,6 +1113,130 @@ describe("SessionsBoard", () => {
 
 		expect(await screen.findByText("Unable to restore session")).toBeInTheDocument();
 		expect(navigateMock).not.toHaveBeenCalled();
+	});
+
+	it("cancels the clear-archive confirm without retiring anything", async () => {
+		workspaceQueryMock.mockReturnValue({
+			data: [workspaceWithSessions([terminatedSession()])],
+			isError: false,
+			isSuccess: true,
+		});
+
+		renderBoard("p1");
+		await expandArchive();
+
+		await userEvent.click(screen.getByRole("button", { name: "Clear archive" }));
+		await userEvent.click(await screen.findByRole("button", { name: "Cancel" }));
+
+		await waitFor(() =>
+			expect(screen.queryByText("Clear the archive?")).not.toBeInTheDocument(),
+		);
+		expect(deleteMock).not.toHaveBeenCalled();
+	});
+
+	it("retires every archived session once the clear is confirmed", async () => {
+		workspaceQueryMock.mockReturnValue({
+			data: [
+				workspaceWithSessions([
+					terminatedSession(),
+					terminatedSession({ id: "s-old", title: "old task" }),
+				]),
+			],
+			isError: false,
+			isSuccess: true,
+		});
+
+		renderBoard("p1");
+		await expandArchive();
+
+		await confirmClearArchive();
+
+		await waitFor(() => expect(deleteMock).toHaveBeenCalledTimes(2));
+		expect(deleteMock).toHaveBeenCalledWith("/api/v1/sessions/{sessionId}", {
+			params: { path: { sessionId: "s-dead" } },
+		});
+		expect(deleteMock).toHaveBeenCalledWith("/api/v1/sessions/{sessionId}", {
+			params: { path: { sessionId: "s-old" } },
+		});
+		expect(await screen.findByRole("status")).toHaveTextContent("Removed 2 archived sessions");
+	});
+
+	it("keeps clearing after a failure and reports the shortfall", async () => {
+		// The middle session fails; the one after it must still be attempted.
+		deleteMock
+			.mockResolvedValueOnce({ data: { ok: true, freed: true } })
+			.mockResolvedValueOnce({ error: { code: "SESSION_NOT_TERMINATED", message: "still running" } })
+			.mockResolvedValueOnce({ data: { ok: true, freed: true } });
+		workspaceQueryMock.mockReturnValue({
+			data: [
+				workspaceWithSessions([
+					terminatedSession(),
+					terminatedSession({ id: "s-live", title: "live one" }),
+					terminatedSession({ id: "s-old", title: "old task" }),
+				]),
+			],
+			isError: false,
+			isSuccess: true,
+		});
+
+		renderBoard("p1");
+		await expandArchive();
+
+		await confirmClearArchive();
+
+		await waitFor(() => expect(deleteMock).toHaveBeenCalledTimes(3));
+		expect(deleteMock).toHaveBeenCalledWith("/api/v1/sessions/{sessionId}", {
+			params: { path: { sessionId: "s-old" } },
+		});
+		expect(await screen.findByRole("status")).toHaveTextContent("Removed 2 · 1 failed: s-live");
+	});
+
+	it("keeps clearing after a transport throw, not just an error envelope", async () => {
+		// A rejected request is a different failure shape than an envelope: it
+		// escapes the mutation unless it is caught per session.
+		deleteMock
+			.mockResolvedValueOnce({ data: { ok: true, freed: true } })
+			.mockRejectedValueOnce(new TypeError("fetch failed"))
+			.mockResolvedValueOnce({ data: { ok: true, freed: true } });
+		workspaceQueryMock.mockReturnValue({
+			data: [
+				workspaceWithSessions([
+					terminatedSession(),
+					terminatedSession({ id: "s-live", title: "live one" }),
+					terminatedSession({ id: "s-old", title: "old task" }),
+				]),
+			],
+			isError: false,
+			isSuccess: true,
+		});
+
+		renderBoard("p1");
+		await expandArchive();
+
+		await confirmClearArchive();
+
+		await waitFor(() => expect(deleteMock).toHaveBeenCalledTimes(3));
+		expect(await screen.findByRole("status")).toHaveTextContent("Removed 2 · 1 failed: s-live");
+	});
+
+	it("treats an already-gone session as removed rather than failed", async () => {
+		// The retire path never touches the workspace, so an absent row is a
+		// benign 200 with freed=false. Counting it as a failure would make a
+		// retried clear report errors for sessions that are simply gone.
+		deleteMock.mockResolvedValueOnce({ data: { ok: true, sessionId: "s-dead", freed: false } });
+		workspaceQueryMock.mockReturnValue({
+			data: [workspaceWithSessions([terminatedSession()])],
+			isError: false,
+			isSuccess: true,
+		});
+
+		renderBoard("p1");
+		await expandArchive();
+
+		await confirmClearArchive();
+
+		expect(await screen.findByRole("status")).toHaveTextContent("Removed 1 archived session");
+		expect(screen.getByRole("status")).not.toHaveTextContent("failed");
 	});
 
 	it("does not navigate when the static archive card is clicked", async () => {

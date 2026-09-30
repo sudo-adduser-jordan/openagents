@@ -5172,3 +5172,35 @@ func TestCompleteManagerReportsUnavailableLoop(t *testing.T) {
 		t.Fatal("expected REENGAGEMENT_UNAVAILABLE when the loop is not wired")
 	}
 }
+
+// Kill, retire, restore and resume all take the session's exclusive operation
+// slot. A second one is a conflict the caller can retry, not a server fault:
+// before the mapSessionError arm it fell through to the unclassified default and
+// surfaced as a 500 INTERNAL_ERROR, so a double-submit during a slow kill looked
+// like the daemon had failed.
+func TestRetireMapsAnExclusiveOperationToConflict(t *testing.T) {
+	svc := &Service{manager: &fakeCommander{retireErr: sessionmanager.ErrExclusiveOperationInProgress}}
+
+	_, err := svc.Retire(context.Background(), "open-agents-1")
+	var e *apierr.Error
+	if !errors.As(err, &e) {
+		t.Fatalf("err = %v, want *apierr.Error", err)
+	}
+	if e.Kind != apierr.KindConflict || e.Code != "SESSION_OPERATION_IN_PROGRESS" {
+		t.Fatalf("err = %+v, want conflict SESSION_OPERATION_IN_PROGRESS", e)
+	}
+}
+
+// The same arm covers kill, which shares the slot.
+func TestKillMapsAnExclusiveOperationToConflict(t *testing.T) {
+	svc := &Service{manager: &fakeCommander{killErr: sessionmanager.ErrExclusiveOperationInProgress}}
+
+	_, err := svc.Kill(context.Background(), "open-agents-1")
+	var e *apierr.Error
+	if !errors.As(err, &e) {
+		t.Fatalf("err = %v, want *apierr.Error", err)
+	}
+	if e.Kind != apierr.KindConflict || e.Code != "SESSION_OPERATION_IN_PROGRESS" {
+		t.Fatalf("err = %+v, want conflict SESSION_OPERATION_IN_PROGRESS", e)
+	}
+}

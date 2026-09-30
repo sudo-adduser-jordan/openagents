@@ -50,7 +50,3 @@ func (s *steerStub) DeleteHistoryBefore(context.Context, domain.SessionID, strin
 func (s *promoteQueuedStub) DeleteHistoryBefore(context.Context, domain.SessionID, string) (chatsvc.DeleteHistoryBeforeResult, error) {
 	return chatsvc.DeleteHistoryBeforeResult{}, nil
 }
-
-func (f *fakeSessionService) Retire(context.Context, domain.SessionID) (bool, error) {
-	return false, nil
-}

@@ -631,11 +631,14 @@ export const archiveToggleOffsetClassName = "pb-[58px]";
 export const SessionsArchiveView = memo(function SessionsArchiveView<
 	TSession extends BoardSessionPresentation,
 >({
+	headerAction,
 	labels,
 	renderSessionCard,
 	resetKey,
 	sessions,
 }: {
+	/** Optional control rendered above the card grid, inside the expanded sheet. */
+	headerAction?: ReactNode;
 	labels: {
 		archive: string;
 		archiveAria: string;
@@ -710,6 +713,18 @@ export const SessionsArchiveView = memo(function SessionsArchiveView<
 					}
 					style={{ overflow: "hidden" }}
 				>
+					{headerAction ? (
+						// The sheet stays mounted after first open, so a collapsed
+						// header action would still be tabbable inside the
+						// height-0 container. The grid guards itself with inert;
+						// this row sits outside that, so it guards itself.
+						<div
+							className={cn("flex justify-end pb-1 pt-1.5", !expanded && "pointer-events-none")}
+							inert={!expanded ? true : undefined}
+						>
+							{headerAction}
+						</div>
+					) : null}
 					<div
 						aria-hidden={!expanded}
 						aria-label={expanded ? labels.archivedSessions : undefined}
@@ -729,6 +744,7 @@ export const SessionsArchiveView = memo(function SessionsArchiveView<
 		</div>
 	);
 }) as <TSession extends BoardSessionPresentation>(props: {
+	headerAction?: ReactNode;
 	labels: {
 		archive: string;
 		archiveAria: string;
