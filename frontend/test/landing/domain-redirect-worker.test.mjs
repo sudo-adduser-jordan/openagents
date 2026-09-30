@@ -1,0 +1,33 @@
+// @vitest-environment node
+import { expect, test } from "vitest";
+import worker from "../../src/landing/cloudflare/domain-redirect-worker.mjs";
+
+test.each(["www.orchestrator.inc"])(
+  "%s redirects HTTP and HTTPS while preserving encoded paths and query parameters",
+  (host) => {
+    for (const protocol of ["http:", "https:"]) {
+      for (const method of ["GET", "POST"]) {
+        const response = worker.fetch(new Request(
+          `${protocol}//${host}/docs/a%20b/?a=1&a=2&to=%2Fpath`, { method },
+        ));
+        expect(response.status).toBe(308);
+        expect(response.headers.get("location")).toBe(
+          "https://orchestrator.inc/docs/a%20b/?a=1&a=2&to=%2Fpath",
+        );
+      }
+    }
+  },
+);
+
+test.each([
+  "orchestrator.inc",
+  "api.aoagents.dev",
+  "staging-api.aoagents.dev",
+  "status.aoagents.dev",
+  "orchestrator.inc.evil.test",
+])(
+  "%s is not redirected",
+  (host) => {
+    expect(worker.fetch(new Request(`https://${host}/`)).status).toBe(404);
+  },
+);

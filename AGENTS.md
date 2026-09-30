@@ -7,8 +7,8 @@ Operational guidance for coding agents working in this repository. Keep changes 
 - `backend/` — Go rewrite of Open Agents: Cobra `open-agents` CLI, loopback HTTP daemon, services, SQLite storage, lifecycle/reaper, runtime/workspace/agent/tracker adapters, terminal mux, and tests.
 - `frontend/` — Electron + React supervisor wired to the daemon via the generated typed client. Treat it as a thin supervisor/UI surface; do not move daemon logic into it.
 - `docs/` — current architecture/status notes. Start here before changing lifecycle, CLI, agents, storage, or daemon behavior.
-- `backend/test/` — backend test assets: CLI fresh-install container check (`cli/`) and daemon chat e2e suite (`e2e/`).
-- `frontend/test/` — frontend test assets: Playwright renderer e2e suite (`e2e/`) and packaged-app pod gate (`e2e-pod/`).
+- `backend/test/` — backend test assets: CLI fresh-install container check (`cli/`), CLI e2e suite (`cli/`), daemon chat e2e suite (`e2e/`), and integration tests (`integration/`). Go unit tests remain colocated in `backend/internal/` and `backend/pkg/`.
+- `frontend/test/` — all frontend tests: Vitest unit tests (`unit/`, `scripts/`, `product-ui/`, `landing/`), Playwright renderer e2e suite (`e2e/`), and packaged-app pod gate (`e2e-pod/`).
 - `.github/workflows/` — CI definitions. Mirror these commands locally when possible.
 
 ## Commands

@@ -1,0 +1,53 @@
+import { act, render, screen } from "@testing-library/react";
+import { afterEach, describe, expect, it, vi } from "vitest";
+import { openAgentsBridge } from "../../../../src/renderer/lib/bridge";
+import { DaemonStartupLoader } from "../../../../src/renderer/components/DaemonStartupLoader";
+
+vi.mock("../hooks/useSystemRequirementsGate", () => ({
+	useSystemRequirementsGate: () => ({
+		query: { isSuccess: true, refetch: vi.fn() },
+		requirements: [
+			{ id: "git", label: "git", satisfied: true, required: true, detail: "/usr/bin/git" },
+			{ id: "tmux", label: "tmux", satisfied: true, required: true, detail: "/usr/bin/tmux" },
+			{ id: "gh", label: "gh", satisfied: true, required: false, detail: "/usr/bin/gh" },
+		],
+		blocked: false,
+		requirementsBlocked: false,
+	}),
+}));
+
+describe("DaemonStartupLoader", () => {
+	afterEach(() => {
+		vi.useRealTimers();
+		vi.restoreAllMocks();
+	});
+
+	it("shows startup progress while the lightweight requirements preflight runs", () => {
+		vi.useFakeTimers();
+		render(<DaemonStartupLoader />);
+
+		expect(screen.getByRole("status", { name: "Open Agents is starting" })).toBeInTheDocument();
+		expect(screen.getByText("Starting local services")).not.toHaveClass("open-agents-startup-status");
+		act(() => vi.advanceTimersByTime(2_200));
+		expect(screen.getByText("Connecting to the daemon")).toHaveClass("open-agents-startup-status");
+	});
+
+	it("shows update-specific progress after a post-update relaunch", async () => {
+		vi.useFakeTimers();
+		vi.spyOn(openAgentsBridge.updates, "isPostUpdateRelaunch").mockResolvedValue(true);
+		render(<DaemonStartupLoader />);
+
+		await act(async () => Promise.resolve());
+		expect(screen.getByText("Updating Open Agents")).toBeInTheDocument();
+		act(() => vi.advanceTimersByTime(2_200));
+		expect(screen.getByText("Restarting Open Agents")).toHaveClass("open-agents-startup-status");
+	});
+
+	it("keeps showing normal startup progress when the relaunch check fails", async () => {
+		vi.spyOn(openAgentsBridge.updates, "isPostUpdateRelaunch").mockRejectedValue(new Error("IPC unavailable"));
+		render(<DaemonStartupLoader />);
+
+		await act(async () => Promise.resolve());
+		expect(screen.getByText("Starting local services")).toBeInTheDocument();
+	});
+});

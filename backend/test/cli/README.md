@@ -10,7 +10,7 @@ touch a developer's real Open Agents installation.
 
 | Tier                          | What                                                                                                                                                                                                                                                                  | Where                                                |
 | ----------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ---------------------------------------------------- |
-| **Comprehensive (primary)**   | A cross-platform Go suite that builds `open-agents` and exercises the full behaviour. Runs natively on **ubuntu + macOS + windows** — the only way to cover the OS-specific process-detach paths (`setsid` vs `CREATE_NEW_PROCESS_GROUP`) and `os.UserConfigDir()` resolution. | `backend/internal/cli/e2e_test.go` (build tag `e2e`) |
+| **Comprehensive (primary)**   | A cross-platform Go suite that builds `open-agents` and exercises the full behaviour. Runs natively on **ubuntu + macOS + windows** — the only way to cover the OS-specific process-detach paths (`setsid` vs `CREATE_NEW_PROCESS_GROUP`) and `os.UserConfigDir()` resolution. | `backend/test/cli/e2e_test.go` (build tag `e2e`) |
 | **Fresh-install (hardening)** | Proves a freshly installed binary works on a clean machine with no Go toolchain and no developer state.                                                                                                                                                               | `backend/test/cli/Dockerfile` + `backend/test/cli/install-check.sh`  |
 
 ## Run it
@@ -19,8 +19,8 @@ touch a developer's real Open Agents installation.
 
 ```bash
 cd backend
-go test -tags e2e ./internal/cli/...              # run it
-go test -tags e2e -v -run TestE2E ./internal/cli/...   # verbose: prints every command + output
+go test -tags e2e ./test/cli/...              # run it
+go test -tags e2e -v -run TestE2E ./test/cli/...   # verbose: prints every command + output
 ```
 
 It builds its own `open-agents` binary; `git` must be on PATH (required by `doctor`).
@@ -61,7 +61,7 @@ detach path and per-OS config-dir resolution. The container stays as a thin
 ## Extending
 
 - **Add a case:** a new `TestE2E_*` function (or a `t.Run` subtest) in
-  `e2e_test.go`. Use `newEnv(t)` for isolated state and the `env.run`/`httpGet`/
+  `backend/test/cli/e2e_test.go`. Use `newEnv(t)` for isolated state and the `env.run`/`httpGet`/
   `postShutdown` helpers.
 - **Add an OS:** extend the `matrix.os` list in `.github/workflows/cli-e2e.yml`.
 - Deeper per-OS path assertions (state resolves under the OS-native config dir

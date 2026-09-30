@@ -28,12 +28,19 @@
 	"include": [
 		"src/**/*.ts",
 		"src/**/*.tsx",
+		"test/unit/**/*.ts",
+		"test/unit/**/*.tsx",
+		"test/scripts/**/*.mjs",
+		"test/makers/**/*.ts",
+		"test/product-ui/**/*.ts",
+		"test/product-ui/**/*.tsx",
+		"test/landing/**/*.ts",
+		"test/landing/**/*.tsx",
 		"forge.config.ts",
-		"makers/**/*.ts",
 		"vite.main.config.ts",
 		"vite.preload.config.ts",
 		"vite.renderer.config.ts",
 		"playwright.config.ts"
 	],
-	"exclude": ["node_modules", "dist", "dist-electron", ".vite", "release", "out", "src/landing", "src/docs"]
+	"exclude": ["node_modules", "dist", "dist-electron", ".vite", "release", "out", "src/landing", "src/docs", "test/landing"]
 }

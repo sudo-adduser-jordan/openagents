@@ -137,7 +137,7 @@ tasks:
       - ./node_modules/.bin/tsc --noEmit -p tsconfig.e2e.json
 
   frontend:test:
-    desc: Vitest unit tests (extra filter args after --)
+    desc: Vitest unit tests (frontend/test/unit + product-ui + scripts + makers + landing)
     dir: frontend
     cmds:
       - ./node_modules/.bin/vitest run --config vite.renderer.config.ts {{.CLI_ARGS}}

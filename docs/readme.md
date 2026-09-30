@@ -32,7 +32,7 @@ Start with [overview.md](overview.md) for the mental model, then the track you n
 | `frontend/src/api/schema.ts` | Typed frontend client | `openapi.yaml` via `task api:ts` | `api-drift` CI job |
 | `backend/internal/storage/sqlite/gen/` | SQLite query/DTO code | `queries/*` + migrations via `task db:sqlc` | `sqlc-drift` CI job |
 | `AGENTS.md` | Agent operating contract | Hand-written | Hard rules enforced by tests |
-| `open-agents <command> --help` | Authoritative CLI flags | Cobra definitions in `backend/internal/cli/` | Table tests in `backend/internal/cli/*_test.go` |
+| `open-agents <command> --help` | Authoritative CLI flags | Cobra definitions in `backend/internal/cli/` | Table tests in `backend/internal/cli/*_test.go` + `backend/test/cli/dto_drift_e2e_test.go` |
 
 If prose disagrees with the contract layer, fix the prose. The CLI's hand-mirrored DTOs are a deliberate manual boundary covered by tests, not a generator.
 

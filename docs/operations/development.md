@@ -38,8 +38,13 @@ open-agents/
   frontend/             # Electron + React desktop app
     src/                # Renderer, main, preload
     packages/product-ui/  # @openagents/product-ui shared presentation package
-    test/e2e/           # Playwright end-to-end tests
-    test/e2e-pod/       # Packaged-app pod gate
+    test/
+      unit/             # Vitest unit tests (shared, renderer, main, preload, makers)
+      scripts/          # Vitest script tests
+      product-ui/       # Vitest product-ui package tests
+      landing/          # Vitest landing page tests
+      e2e/              # Playwright end-to-end tests
+      e2e-pod/          # Packaged-app pod gate
   docs/                 # Architecture, ADRs, CLI docs, status
   CONTRIBUTING.md       # Contribution guide
 ```

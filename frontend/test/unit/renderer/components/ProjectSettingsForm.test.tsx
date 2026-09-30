@@ -1,0 +1,1371 @@
+import { useState, type ReactElement } from "react";
+import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
+import { fireEvent, render as rtlRender, screen, waitFor } from "@testing-library/react";
+import userEvent from "@testing-library/user-event";
+import { beforeEach, describe, expect, it, vi } from "vitest";
+import { agentReadiness } from "../../../../src/renderer/test/agent-readiness-fixtures";
+import { TooltipProvider } from "../../../../src/renderer/components/ui/tooltip";
+
+function render(ui: ReactElement) {
+	return rtlRender(<TooltipProvider>{ui}</TooltipProvider>);
+}
+
+const { getMock, putMock, postMock, navigateMock, closeSettingsMock, setManagerReplacementErrorMock, ensureAgentReadinessMock } = vi.hoisted(() => ({
+	getMock: vi.fn(),
+	putMock: vi.fn(),
+	postMock: vi.fn(),
+	navigateMock: vi.fn(),
+	closeSettingsMock: vi.fn(),
+	setManagerReplacementErrorMock: vi.fn(),
+	ensureAgentReadinessMock: vi.fn(),
+}));
+
+vi.mock("../hooks/useAgentReadinessQuery", async (importOriginal) => {
+	const actual = await importOriginal<typeof import("../../../../src/renderer/hooks/useAgentReadinessQuery")>();
+	return { ...actual, useEnsureAgentReadiness: ensureAgentReadinessMock };
+});
+
+vi.mock("@tanstack/react-router", async (importOriginal) => {
+	const actual = await importOriginal<typeof import("@tanstack/react-router")>();
+	return {
+		...actual,
+		useNavigate: () => navigateMock,
+	};
+});
+
+vi.mock("../stores/ui-store", () => ({
+	useUiStore: (selector: (state: Record<string, unknown>) => unknown) =>
+		selector({
+			closeSettings: closeSettingsMock,
+			setManagerReplacementError: setManagerReplacementErrorMock,
+		}),
+}));
+
+vi.mock("../lib/api-client", () => ({
+	apiClient: {
+		GET: getMock,
+		PUT: putMock,
+		POST: postMock,
+	},
+	apiErrorCode: (error: unknown) =>
+		typeof error === "object" && error !== null && "code" in error
+			? String((error as { code: unknown }).code)
+			: undefined,
+	apiErrorRequestId: (error: unknown) =>
+		typeof error === "object" && error !== null && "requestId" in error
+			? String((error as { requestId: unknown }).requestId)
+			: undefined,
+	apiErrorMessage: (error: unknown) => {
+		if (error instanceof Error) return error.message;
+		if (typeof error === "object" && error !== null && "message" in error) {
+			return String((error as { message: unknown }).message);
+		}
+		return "Request failed";
+	},
+}));
+
+import { ProjectSettingsForm, type ProjectSettingsSaveState, type ProjectSettingsSection } from "../../../../src/renderer/components/ProjectSettingsForm";
+import { workspaceQueryKey } from "../../../../src/renderer/hooks/useWorkspaceQuery";
+import type { WorkspaceSummary } from "../../../../src/renderer/types/workspace";
+
+async function beginEdit(label: string) {
+	await userEvent.click(await screen.findByRole("button", { name: `Edit ${label}` }));
+	return screen.getByLabelText(label);
+}
+
+function TestProjectSettings({
+	projectId,
+	section,
+}: {
+	projectId: string;
+	section?: ProjectSettingsSection;
+}) {
+	const [saveState, setSaveState] = useState<ProjectSettingsSaveState>({
+		phase: "idle",
+	});
+	return (
+		<>
+			<ProjectSettingsForm projectId={projectId} section={section} onSaveState={setSaveState} />
+			{saveState.error && <span>{saveState.error}</span>}
+			{saveState.phase === "saved" && <span>{"Saved"}</span>}
+			{saveState.replacementError && <span>{`Manager restart failed: ${saveState.replacementError}`}</span>}
+		</>
+	);
+}
+
+function renderSettings(projectId = "proj-1", workspaces?: WorkspaceSummary[], section?: ProjectSettingsSection) {
+	const queryClient = new QueryClient({
+		defaultOptions: {
+			queries: { retry: false },
+			mutations: { retry: false },
+		},
+	});
+	if (workspaces) {
+		queryClient.setQueryData(workspaceQueryKey, workspaces);
+	}
+	render(
+		<QueryClientProvider client={queryClient}>
+			<TestProjectSettings projectId={projectId} section={section} />
+		</QueryClientProvider>,
+	);
+	return queryClient;
+}
+
+async function chooseOption(trigger: HTMLElement, optionName: string) {
+	await userEvent.click(trigger);
+	const escaped = optionName.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+	await userEvent.click(await screen.findByRole("menuitem", { name: new RegExp(`^${escaped}$`, "i") }));
+}
+
+async function chooseCustomModel(label: string, model: string) {
+	await userEvent.click(screen.getByRole("button", { name: label }));
+	await userEvent.type(screen.getByRole("searchbox", { name: `Search ${label.toLowerCase()}` }), model);
+	await userEvent.click(screen.getByRole("menuitem", { name: `Use “${model}” as a custom model` }));
+}
+
+function submitSettings() {
+	fireEvent.submit(document.getElementById("project-settings-form")!);
+}
+
+async function expectReplacementNavigation(sessionId = "proj-1-mgr-2") {
+	await waitFor(() =>
+		expect(navigateMock).toHaveBeenCalledWith({
+			to: "/projects/$projectId/sessions/$sessionId",
+			params: { projectId: "proj-1", sessionId },
+		}),
+	);
+	expect(closeSettingsMock).toHaveBeenCalledTimes(1);
+}
+
+const agentCatalogResponse = {
+	data: {
+		agents: [
+			agentReadiness("opencode", "OpenCode"),
+		],
+	},
+	error: undefined,
+};
+
+function mockProject(project: Record<string, unknown>) {
+	getMock.mockImplementation(async (path: string) => {
+		if (path === "/api/v1/agents/readiness") return agentCatalogResponse;
+		if (path === "/api/v1/agents/{agent}/models") {
+			return {
+				data: {
+					agentId: "test-agent",
+					selectionMode: "text",
+					models: [],
+					allowCustom: true,
+					source: "manual",
+					fetchedAt: "2026-07-31T00:00:00Z",
+					stale: false,
+				},
+				error: undefined,
+			};
+		}
+		return {
+			data: {
+				status: "ok",
+				project,
+			},
+			error: undefined,
+		};
+	});
+}
+
+beforeEach(() => {
+	getMock.mockReset();
+	putMock.mockReset();
+	postMock.mockReset();
+	navigateMock.mockReset();
+	closeSettingsMock.mockReset();
+	setManagerReplacementErrorMock.mockReset();
+	ensureAgentReadinessMock.mockReset();
+	putMock.mockResolvedValue({ data: { project: {} }, error: undefined });
+	postMock.mockResolvedValue({
+		data: { manager: { id: "proj-1-mgr-2" } },
+		error: undefined,
+		response: { status: 200 },
+	});
+});
+
+describe("ProjectSettingsForm", () => {
+	it("ensures agent readiness in the background without manual refresh buttons", async () => {
+		mockProject({
+			id: "proj-1",
+			name: "Project One",
+			kind: "single_repo",
+			path: "/repo/project-one",
+			repo: "",
+			defaultBranch: "main",
+			config: {
+				worker: { agent: "codex" },
+				manager: { agent: "opencode" },
+			},
+		});
+
+		renderSettings("proj-1", undefined, "agents");
+
+		await waitFor(() =>
+			expect(ensureAgentReadinessMock).toHaveBeenCalledWith(
+				expect.objectContaining({
+					agentIds: ["codex", "opencode", ""],
+					enabled: true,
+				}),
+			),
+		);
+		expect(ensureAgentReadinessMock).toHaveBeenCalledWith();
+		expect(screen.getByRole("button", { name: "Worker approval" })).toHaveTextContent("Auto (Project default)");
+		expect(screen.queryByRole("button", { name: "Refresh agents" })).not.toBeInTheDocument();
+		expect(screen.queryByRole("button", { name: "Refresh worker model list" })).not.toBeInTheDocument();
+		expect(screen.queryByRole("button", { name: "Refresh manager model list" })).not.toBeInTheDocument();
+	});
+
+	it("does not have its own close button (dialog handles closing)", async () => {
+		mockProject({
+			id: "proj-1",
+			name: "Project One",
+			kind: "single_repo",
+			path: "/repo/project-one",
+			repo: "",
+			defaultBranch: "main",
+			config: {
+				worker: { agent: "codex" },
+				manager: { agent: "codex" },
+			},
+		});
+
+		renderSettings();
+		await screen.findByRole("button", { name: "Edit Project name" });
+
+		// Close button is now in SettingsDialog, not in the form itself
+		expect(screen.queryByRole("button", { name: "Close settings" })).not.toBeInTheDocument();
+		expect(navigateMock).not.toHaveBeenCalled();
+	});
+
+	it("shows the project name as text with a pencil until edit is clicked", async () => {
+		mockProject({
+			id: "proj-1",
+			name: "Project One",
+			kind: "single_repo",
+			path: "/repo/project-one",
+			repo: "",
+			defaultBranch: "main",
+			config: {
+				worker: { agent: "codex" },
+				manager: { agent: "codex" },
+			},
+		});
+
+		renderSettings();
+
+		expect(await screen.findByRole("button", { name: "Edit Project name" })).toHaveTextContent("Project One");
+		expect(screen.queryByRole("textbox", { name: "Project name" })).not.toBeInTheDocument();
+
+		await userEvent.click(screen.getByRole("button", { name: "Edit Project name" }));
+		expect(screen.getByRole("textbox", { name: "Project name" })).toHaveValue("Project One");
+		expect(screen.queryByRole("button", { name: "Edit Project name" })).not.toBeInTheDocument();
+
+		await userEvent.keyboard("{Escape}");
+		expect(await screen.findByRole("button", { name: "Edit Project name" })).toBeInTheDocument();
+		expect(screen.queryByRole("textbox", { name: "Project name" })).not.toBeInTheDocument();
+	});
+
+	it("does not navigate on Escape (dialog handles closing)", async () => {
+		mockProject({
+			id: "proj-1",
+			name: "Project One",
+			kind: "single_repo",
+			path: "/repo/project-one",
+			repo: "",
+			defaultBranch: "main",
+			config: {
+				worker: { agent: "codex" },
+				manager: { agent: "codex" },
+			},
+		});
+
+		renderSettings();
+		await screen.findByRole("button", { name: "Edit Project name" });
+
+		await userEvent.keyboard("{Escape}");
+
+		// Escape is handled by the Radix Dialog in SettingsDialog, not the form
+		expect(navigateMock).not.toHaveBeenCalled();
+	});
+
+	it("atomically saves the project display name and config without changing its stable ID", async () => {
+		mockProject({
+			id: "tg_content_factory_5863f66be3",
+			name: "tg_content_factory_5863f66be3",
+			kind: "single_repo",
+			path: "/repo/project-one",
+			repo: "",
+			defaultBranch: "main",
+			config: {
+				worker: { agent: "codex" },
+				manager: { agent: "codex" },
+			},
+		});
+
+		renderSettings("tg_content_factory_5863f66be3");
+
+		const projectName = await beginEdit("Project name");
+		await userEvent.clear(projectName);
+		await userEvent.type(projectName, "TG Content Factory");
+		submitSettings();
+
+		await waitFor(() => expect(putMock).toHaveBeenCalledTimes(1));
+		expect(putMock).toHaveBeenCalledWith("/api/v1/projects/{id}", {
+			params: { path: { id: "tg_content_factory_5863f66be3" } },
+			body: expect.objectContaining({ displayName: "TG Content Factory" }),
+		});
+		expect(screen.getByText("tg_content_factory_5863f66be3")).toBeInTheDocument();
+	});
+
+	it("renders git scp-style remotes as clickable https links", async () => {
+		mockProject({
+			id: "proj-1",
+			name: "Project One",
+			kind: "single_repo",
+			path: "/repo/project-one",
+			repo: "git@github.com:acme/project-one.git",
+			defaultBranch: "main",
+			config: {
+				worker: { agent: "codex" },
+				manager: { agent: "codex" },
+			},
+		});
+
+		renderSettings();
+
+		const repoLink = await screen.findByRole("link", { name: "git@github.com:acme/project-one.git" });
+		expect(repoLink).toHaveAttribute("href", "https://github.com/acme/project-one");
+	});
+
+	it("renders self-managed GitLab nested-group remotes with host and full namespace", async () => {
+		mockProject({
+			id: "proj-1",
+			name: "Project One",
+			kind: "single_repo",
+			path: "/repo/project-one",
+			repo: "git@gitlab.company.com:eng/platform/agent-ops.git",
+			defaultBranch: "main",
+			config: {
+				worker: { agent: "codex" },
+				manager: { agent: "codex" },
+			},
+		});
+
+		renderSettings();
+
+		const repoLink = await screen.findByRole("link", {
+			name: "git@gitlab.company.com:eng/platform/agent-ops.git",
+		});
+		expect(repoLink).toHaveAttribute("href", "https://gitlab.company.com/eng/platform/agent-ops");
+	});
+
+	it("renders ssh remotes as clickable https links", async () => {
+		mockProject({
+			id: "proj-1",
+			name: "Project One",
+			kind: "single_repo",
+			path: "/repo/project-one",
+			repo: "ssh://git@github.com/acme/project-one.git",
+			defaultBranch: "main",
+			config: {
+				worker: { agent: "codex" },
+				manager: { agent: "codex" },
+			},
+		});
+
+		renderSettings();
+
+		const repoLink = await screen.findByRole("link", { name: "ssh://git@github.com/acme/project-one.git" });
+		expect(repoLink).toHaveAttribute("href", "https://github.com/acme/project-one");
+	});
+
+	it("loads agents fields and saves without dropping hidden workflow config", async () => {
+		mockProject({
+			id: "proj-1",
+			name: "Project One",
+			kind: "single_repo",
+			path: "/repo/project-one",
+			repo: "git@github.com:acme/project-one.git",
+			defaultBranch: "main",
+			config: {
+				canonicalRepoURL: "https://github.com/upstream/project-one",
+				defaultBranch: "develop",
+				sessionPrefix: "po",
+				env: { FOO: "bar" },
+				symlinks: [".env"],
+				postCreate: ["npm install"],
+				worker: {
+					agent: "opencode",
+					agentConfig: { model: "worker-model" },
+				},
+				manager: { agent: "opencode" },
+				agentConfig: {
+					model: "gpt-5.6",
+					permissions: "auto",
+				},
+				reviewers: [{ harness: "opencode" }],
+			},
+		});
+
+		renderSettings("proj-1", undefined, "agents");
+
+		expect(screen.queryByLabelText("Default branch")).not.toBeInTheDocument();
+		expect(await screen.findByRole("button", { name: "Worker model" })).toHaveTextContent("worker-model");
+		expect(screen.getByRole("button", { name: "Manager model" })).toHaveTextContent("gpt-5.6");
+
+		const workerAgent = screen.getByRole("button", { name: "Default worker agent" });
+		const managerAgent = screen.getByRole("button", { name: "Default manager agent" });
+		const permissionMode = screen.getByRole("button", { name: "Worker approval" });
+		// opencode is the only agent the daemon reports, so both triggers settle
+		// on the single option once the catalog resolves.
+		expect(workerAgent).toHaveTextContent(/^opencode$/i);
+		expect(managerAgent).toHaveTextContent(/^opencode$/i);
+		expect(permissionMode).toHaveTextContent("Auto");
+
+		await chooseOption(workerAgent, "OpenCode");
+		await chooseOption(managerAgent, "OpenCode");
+		await chooseCustomModel("Worker model", "openai/gpt-5.4");
+		await chooseCustomModel("Manager model", "openai/gpt-5.4");
+		await userEvent.click(permissionMode);
+		await userEvent.click(await screen.findByRole("menuitem", { name: "Bypass permissions" }));
+
+		submitSettings();
+
+		await waitFor(() => expect(putMock).toHaveBeenCalledTimes(1));
+		expect(putMock).toHaveBeenCalledWith("/api/v1/projects/{id}", {
+			params: { path: { id: "proj-1" } },
+			body: {
+				displayName: "Project One",
+				config: expect.objectContaining({
+					// Hidden workflow config is preserved
+					canonicalRepoURL: "https://github.com/upstream/project-one",
+					defaultBranch: "develop",
+					sessionPrefix: "po",
+					env: { FOO: "bar" },
+					reviewers: [{ harness: "opencode", agentConfig: { model: "gpt-5.6", permissions: "auto" } }],
+					// Agents changes applied
+					worker: {
+						agent: "opencode",
+						agentConfig: { model: "openai/gpt-5.4", permissions: "bypass-permissions" },
+					},
+					manager: {
+						agent: "opencode",
+						agentConfig: { model: "openai/gpt-5.4", permissions: "auto" },
+					},
+					agentConfig: undefined,
+				}),
+			},
+		});
+		// The manager agent is unchanged, so no replacement session is
+		// spawned on save.
+		expect(postMock).not.toHaveBeenCalled();
+		expect(await screen.findByText("Saved")).toBeInTheDocument();
+	}, 20_000);
+
+	it("loads workflow fields correctly", async () => {
+		mockProject({
+			id: "proj-1",
+			name: "Project One",
+			kind: "single_repo",
+			path: "/repo/project-one",
+			repo: "git@github.com:acme/project-one.git",
+			defaultBranch: "main",
+			config: {
+				defaultBranch: "develop",
+				sessionPrefix: "po",
+				worker: { agent: "codex" },
+				manager: { agent: "codex" },
+				reviewers: [{ harness: "codex" }],
+			},
+		});
+
+		renderSettings("proj-1", undefined, "workflow");
+
+		expect(await beginEdit("Default branch")).toHaveValue("develop");
+		await userEvent.keyboard("{Escape}");
+		expect(await beginEdit("Session prefix")).toHaveValue("po");
+	});
+
+	it("loads and saves the project auto review setting", async () => {
+		mockProject({
+			id: "proj-1",
+			name: "Project One",
+			kind: "single_repo",
+			path: "/repo/project-one",
+			repo: "git@github.com:acme/project-one.git",
+			defaultBranch: "main",
+			config: {
+				worker: { agent: "codex" },
+				manager: { agent: "codex" },
+				autoReview: true,
+			},
+		});
+
+		renderSettings("proj-1", undefined, "agents");
+
+		const toggle = await screen.findByRole("switch", { name: "Auto review PRs" });
+		expect(toggle).toBeChecked();
+
+		await userEvent.click(toggle);
+		expect(toggle).not.toBeChecked();
+
+		submitSettings();
+
+		await waitFor(() => expect(putMock).toHaveBeenCalledTimes(1));
+		const request = putMock.mock.calls[0]?.[1];
+		expect(request?.body.config.autoReview).toBe(false);
+	});
+
+	it("keeps the automatic default branch unpinned when saving other settings", async () => {
+		mockProject({
+			id: "proj-1",
+			name: "Project One",
+			kind: "single_repo",
+			path: "/repo/project-one",
+			repo: "git@github.com:acme/project-one.git",
+			defaultBranch: "trunk",
+			config: {
+				worker: { agent: "codex" },
+				manager: { agent: "codex" },
+			},
+		});
+
+		renderSettings("proj-1", undefined, "workflow");
+
+		expect(await beginEdit("Default branch")).toHaveValue("auto");
+		await userEvent.keyboard("{Escape}");
+		submitSettings();
+
+		await waitFor(() => expect(putMock).toHaveBeenCalledTimes(1));
+		const request = putMock.mock.calls[0]?.[1];
+		expect(request?.body.config.defaultBranch).toBeUndefined();
+	});
+
+	it("shows the full model catalog again after selecting a model", async () => {
+		getMock.mockImplementation(async (path: string) => {
+			if (path === "/api/v1/agents/readiness") return agentCatalogResponse;
+			if (path === "/api/v1/agents/{agent}/models") {
+				return {
+					data: {
+						agentId: "codex",
+						selectionMode: "catalog",
+						models: [
+							{ id: "gpt-5.6-sol", label: "GPT-5.6 Sol", isDefault: true, cost: "free" },
+							{ id: "gpt-5.5", label: "GPT-5.5", cost: "free" },
+							{ id: "gpt-5.4", label: "GPT-5.4", cost: "free" },
+						],
+						allowCustom: true,
+						source: "official-catalog",
+						fetchedAt: "2026-07-31T00:00:00Z",
+						stale: false,
+					},
+					error: undefined,
+				};
+			}
+			return {
+				data: {
+					status: "ok",
+					project: {
+						id: "proj-1",
+						name: "Project One",
+						kind: "single_repo",
+						path: "/repo/project-one",
+						repo: "",
+						defaultBranch: "main",
+						config: {
+							worker: { agent: "codex" },
+							manager: { agent: "codex" },
+						},
+					},
+				},
+				error: undefined,
+			};
+		});
+
+		renderSettings("proj-1", undefined, "agents");
+
+		const workerModel = await screen.findByRole("button", { name: "Worker model" });
+		await userEvent.click(workerModel);
+		expect(screen.getByRole("searchbox", { name: "Search worker model" })).toBeInTheDocument();
+		expect(screen.queryByRole("menuitem", { name: "Enter model ID…" })).not.toBeInTheDocument();
+		await userEvent.click(screen.getByRole("menuitem", { name: /GPT-5\.4/ }));
+		expect(workerModel).toHaveTextContent("GPT-5.4");
+
+		await userEvent.click(workerModel);
+		expect(await screen.findByRole("menuitem", { name: /GPT-5\.6 Sol/ })).toBeInTheDocument();
+		expect(screen.getByRole("menuitem", { name: /GPT-5\.5/ })).toBeInTheDocument();
+		expect(screen.getByRole("menuitem", { name: /GPT-5\.4/ })).toBeInTheDocument();
+		expect(screen.getByRole("searchbox", { name: "Search worker model" })).toBeInTheDocument();
+	});
+
+	it("does not allow arbitrary model text for configured-only agents", async () => {
+		getMock.mockImplementation(async (path: string) => {
+			if (path === "/api/v1/agents") return agentCatalogResponse;
+			if (path === "/api/v1/agents/{agent}/models") {
+				return {
+					data: {
+						agentId: "opencode",
+						selectionMode: "catalog",
+						models: [],
+						customModelEntry: "configured",
+						allowCustom: false,
+						source: "manual",
+						fetchedAt: "2026-08-29T00:00:00Z",
+						stale: false,
+					},
+					error: undefined,
+				};
+			}
+			return {
+				data: {
+					status: "ok",
+					project: {
+						id: "proj-1",
+						name: "Project One",
+						kind: "single_repo",
+						path: "/repo/project-one",
+						repo: "",
+						defaultBranch: "main",
+						config: { worker: { agent: "opencode" }, manager: { agent: "opencode" } },
+					},
+				},
+				error: undefined,
+			};
+		});
+
+		renderSettings("proj-1", undefined, "agents");
+
+		const workerModel = await screen.findByRole("button", { name: "Worker model" });
+		expect(screen.queryByRole("textbox", { name: "Worker model" })).not.toBeInTheDocument();
+		await userEvent.click(workerModel);
+		expect(screen.getByText("Configure the model in opencode, then refresh.")).toBeInTheDocument();
+	});
+
+
+	it("preserves existing reviewer-only config fields when saving project settings", async () => {
+		getMock.mockImplementation(async (path: string) => {
+			if (path === "/api/v1/agents/readiness") return agentCatalogResponse;
+			return {
+				data: {
+					status: "ok",
+					project: {
+						id: "proj-1",
+						name: "Project One",
+						kind: "single_repo",
+						path: "/repo/project-one",
+						repo: "",
+						defaultBranch: "main",
+						config: {
+							worker: { agent: "codex" },
+							manager: { agent: "codex" },
+							reviewers: [
+								{ harness: "codex", agentConfig: { model: "gpt-5", permissions: "bypass-permissions" } },
+							],
+						},
+					},
+				},
+				error: undefined,
+			};
+		});
+
+		renderSettings("proj-1");
+		await screen.findByRole("button", { name: "Edit Project name" });
+		submitSettings();
+
+		await waitFor(() => expect(putMock).toHaveBeenCalledTimes(1));
+		expect(putMock).toHaveBeenCalledWith("/api/v1/projects/{id}", {
+			params: { path: { id: "proj-1" } },
+			body: expect.objectContaining({
+				config: expect.objectContaining({
+					reviewers: [
+						expect.objectContaining({
+							harness: "codex",
+							agentConfig: expect.objectContaining({
+								model: "gpt-5",
+								permissions: "bypass-permissions",
+							}),
+						}),
+					],
+				}),
+			}),
+		});
+	});
+
+	it("clears the saved reviewer model and reviewer-only config when switching the project reviewer harness", async () => {
+		getMock.mockImplementation(async (path: string) => {
+			if (path === "/api/v1/agents/readiness") return agentCatalogResponse;
+			if (path === "/api/v1/agents/{agent}/models") {
+				return {
+					data: {
+						agentId: "opencode",
+						selectionMode: "text",
+						models: [],
+						allowCustom: true,
+						source: "manual",
+						fetchedAt: "2026-08-30T00:00:00Z",
+						stale: false,
+					},
+					error: undefined,
+				};
+			}
+			return {
+				data: {
+					status: "ok",
+					project: {
+						id: "proj-1",
+						name: "Project One",
+						kind: "single_repo",
+						path: "/repo/project-one",
+						repo: "",
+						defaultBranch: "main",
+						config: {
+							worker: { agent: "opencode" },
+							manager: { agent: "opencode" },
+							reviewers: [
+								{ harness: "codex", agentConfig: { permissions: "bypass-permissions" } },
+							],
+						},
+					},
+				},
+				error: undefined,
+			};
+		});
+
+		renderSettings("proj-1", undefined, "agents");
+
+		// A saved reviewer outside the opencode-only vocabulary carries stale
+		// reviewer-only config; choosing OpenCode replaces it and drops the
+		// model/permissions along with it.
+		const reviewer = await screen.findByRole("button", { name: "Default reviewer agent" });
+		await chooseOption(reviewer, "OpenCode");
+		expect(reviewer).toHaveTextContent(/OpenCode/);
+
+		submitSettings();
+
+		await waitFor(() => expect(putMock).toHaveBeenCalledTimes(1));
+		expect(putMock).toHaveBeenCalledWith("/api/v1/projects/{id}", {
+			params: { path: { id: "proj-1" } },
+			body: expect.objectContaining({
+				config: expect.objectContaining({
+					reviewers: [
+						expect.objectContaining({
+							harness: "opencode",
+							agentConfig: undefined,
+						}),
+					],
+				}),
+			}),
+		});
+	});
+
+	it("shows a warning when background model revalidation fails", async () => {
+		getMock.mockImplementation(async (path: string) => {
+			if (path === "/api/v1/agents/readiness") return agentCatalogResponse;
+			if (path === "/api/v1/agents/{agent}/models") {
+				return {
+					data: {
+						agentId: "codex",
+						selectionMode: "catalog",
+						models: [{ id: "gpt-5.6-sol", label: "GPT-5.6 Sol" }],
+						allowCustom: true,
+						source: "official-catalog",
+						fetchedAt: "2026-07-31T00:00:00Z",
+						validatedAt: "2026-07-31T00:00:00Z",
+						refreshRecommended: true,
+						stale: false,
+					},
+					error: undefined,
+				};
+			}
+			return {
+				data: {
+					status: "ok",
+					project: {
+						id: "proj-1",
+						name: "Project One",
+						kind: "single_repo",
+						path: "/repo/project-one",
+						repo: "",
+						defaultBranch: "main",
+						config: {
+							worker: { agent: "codex" },
+							manager: { agent: "codex" },
+						},
+					},
+				},
+				error: undefined,
+			};
+		});
+		postMock.mockResolvedValue({ data: undefined, error: { message: "model refresh unavailable" } });
+
+		renderSettings("proj-1", undefined, "agents");
+
+		expect(await screen.findAllByText("model refresh unavailable")).toHaveLength(2);
+		expect(screen.getByRole("button", { name: "Worker model" })).toHaveTextContent("Agent default");
+	});
+
+	it("shows cached models immediately and deduplicates background revalidation", async () => {
+		const cachedCatalog = {
+			agentId: "codex",
+			selectionMode: "catalog" as const,
+			models: [{ id: "gpt-5.6-sol", label: "GPT-5.6 Sol" }],
+			allowCustom: true,
+			source: "official-catalog",
+			fetchedAt: "2026-07-31T00:00:00Z",
+			validatedAt: "2026-07-31T00:00:00Z",
+			refreshRecommended: true,
+			stale: false,
+		};
+		getMock.mockImplementation(async (path: string) => {
+			if (path === "/api/v1/agents/readiness") return agentCatalogResponse;
+			if (path === "/api/v1/agents/{agent}/models") return { data: cachedCatalog, error: undefined };
+			return {
+				data: {
+					status: "ok",
+					project: {
+						id: "proj-1",
+						name: "Project One",
+						kind: "single_repo",
+						path: "/repo/project-one",
+						repo: "",
+						defaultBranch: "main",
+						config: {
+							worker: { agent: "codex" },
+							manager: { agent: "codex" },
+						},
+					},
+				},
+				error: undefined,
+			};
+		});
+		postMock.mockResolvedValue({
+			data: { ...cachedCatalog, refreshRecommended: false, validatedAt: "2026-08-03T00:00:00Z" },
+			error: undefined,
+		});
+
+		renderSettings("proj-1", undefined, "agents");
+
+		expect(await screen.findByRole("button", { name: "Worker model" })).toHaveTextContent("Agent default");
+		await waitFor(() => expect(postMock).toHaveBeenCalledTimes(1));
+		expect(postMock).toHaveBeenCalledWith("/api/v1/agents/{agent}/models/refresh", {
+			params: {
+				path: { agent: "codex" },
+				query: { projectId: "proj-1", revalidate: true },
+			},
+		});
+	});
+
+	it("shows the daemon validation message when the atomic settings save fails", async () => {
+		mockProject({
+			id: "proj-1",
+			name: "Project One",
+			kind: "single_repo",
+			path: "/repo/project-one",
+			repo: "",
+			defaultBranch: "main",
+			config: {
+				worker: { agent: "codex" },
+				manager: { agent: "codex" },
+			},
+		});
+		putMock.mockResolvedValue({
+			data: undefined,
+			error: { message: "invalid permissions" },
+		});
+
+		renderSettings();
+
+		const projectName = await beginEdit("Project name");
+		await userEvent.clear(projectName);
+		await userEvent.type(projectName, "Updated Project");
+		submitSettings();
+
+		expect(await screen.findByText("invalid permissions")).toBeInTheDocument();
+		expect(screen.queryByText("Saved")).not.toBeInTheDocument();
+		expect(postMock).not.toHaveBeenCalled();
+	});
+
+	it("rejects a blank project name before sending the settings update", async () => {
+		mockProject({
+			id: "proj-1",
+			name: "Project One",
+			kind: "single_repo",
+			path: "/repo/project-one",
+			repo: "",
+			defaultBranch: "main",
+			config: {
+				worker: { agent: "codex" },
+				manager: { agent: "codex" },
+			},
+		});
+
+		renderSettings();
+
+		const projectName = await beginEdit("Project name");
+		await userEvent.clear(projectName);
+		await userEvent.type(projectName, "   ");
+		submitSettings();
+
+		expect(await screen.findByText("Project name is required.")).toBeInTheDocument();
+		expect(putMock).not.toHaveBeenCalled();
+	});
+
+	it("requires worker and manager agents for existing projects missing role config", async () => {
+		mockProject({
+			id: "proj-1",
+			name: "Project One",
+			kind: "single_repo",
+			path: "/repo/project-one",
+			repo: "",
+			defaultBranch: "main",
+			config: {},
+		});
+
+		renderSettings("proj-1", undefined, "agents");
+
+		expect(await screen.findByText("Worker and manager agents are required.")).toBeInTheDocument();
+		expect(screen.getByRole("button", { name: "Default worker agent" })).toHaveTextContent("Select worker agent");
+		expect(screen.getByRole("button", { name: "Default manager agent" })).toHaveTextContent(
+			"Select manager agent",
+		);
+
+		submitSettings();
+
+		expect(await screen.findAllByText("Worker and manager agents are required.")).toHaveLength(2);
+		expect(putMock).not.toHaveBeenCalled();
+	});
+
+	it("uses the localized default label for the project reviewer picker", async () => {
+		mockProject({
+			id: "proj-1",
+			name: "Project One",
+			kind: "single_repo",
+			path: "/repo/project-one",
+			repo: "",
+			defaultBranch: "main",
+			config: {
+				worker: { agent: "codex" },
+				manager: { agent: "codex" },
+			},
+		});
+
+		renderSettings("proj-1", undefined, "agents");
+
+		const reviewerAgent = await screen.findByRole("button", { name: "Default reviewer agent" });
+		expect(reviewerAgent).toHaveTextContent("Project default");
+
+		await userEvent.click(reviewerAgent);
+		expect(await screen.findByRole("menuitem", { name: "Project default" })).toBeInTheDocument();
+	});
+
+	it("disables agent selectors while the initial agent catalog is loading", async () => {
+		getMock.mockImplementation(async (path: string) => {
+			if (path === "/api/v1/agents/readiness") {
+				return new Promise(() => {});
+			}
+			return {
+				data: {
+					status: "ok",
+					project: {
+						id: "proj-1",
+						name: "Project One",
+						kind: "single_repo",
+						path: "/repo/project-one",
+						repo: "",
+						defaultBranch: "main",
+						config: {
+							worker: { agent: "codex" },
+							manager: { agent: "codex" },
+						},
+					},
+				},
+				error: undefined,
+			};
+		});
+
+		renderSettings("proj-1", undefined, "agents");
+
+		expect(await screen.findByRole("button", { name: "Default worker agent" })).toBeDisabled();
+		expect(screen.getByRole("button", { name: "Default manager agent" })).toBeDisabled();
+	});
+
+	it("offers opencode as the only reviewer option", async () => {
+		mockProject({
+			id: "proj-1",
+			name: "Project One",
+			kind: "single_repo",
+			path: "/repo/project-one",
+			repo: "",
+			defaultBranch: "main",
+			config: {
+				worker: { agent: "opencode" },
+				manager: { agent: "opencode" },
+			},
+		});
+
+		renderSettings("proj-1", undefined, "agents");
+
+		await userEvent.click(await screen.findByRole("button", { name: "Default reviewer agent" }));
+		const reviewerLabels = (await screen.findAllByRole("menuitem"))
+			.map((option) => option.textContent)
+			.filter((label) => label !== "Project default" && label !== "Enter model ID…");
+
+		expect(reviewerLabels).toEqual(["OpenCode"]);
+	});
+
+	it("shows opencode as the only worker agent option", async () => {
+		mockProject({
+			id: "proj-1",
+			name: "Project One",
+			kind: "single_repo",
+			path: "/repo/project-one",
+			repo: "",
+			defaultBranch: "main",
+			config: {
+				worker: { agent: "opencode" },
+				manager: { agent: "opencode" },
+			},
+		});
+
+		renderSettings("proj-1", undefined, "agents");
+
+		const workerAgent = await screen.findByRole("button", { name: "Default worker agent" });
+		await userEvent.click(workerAgent);
+		const options = await screen.findAllByRole("menuitem");
+		expect(options.map((option) => option.textContent)).toEqual(["OpenCode"]);
+		expect(options[0]).not.toHaveAttribute("aria-disabled", "true");
+	});
+
+	it("shows OpenCode as a reviewer option and saves it in the reviewers payload", async () => {
+		mockProject({
+			id: "proj-1",
+			name: "Project One",
+			kind: "single_repo",
+			path: "/repo/project-one",
+			repo: "",
+			defaultBranch: "main",
+			config: {
+				worker: { agent: "opencode" },
+				manager: { agent: "opencode" },
+			},
+		});
+
+		renderSettings("proj-1", undefined, "agents");
+
+		const reviewer = await screen.findByRole("button", { name: "Default reviewer agent" });
+		await userEvent.click(reviewer);
+		const opencode = await screen.findByRole("menuitem", { name: "OpenCode" });
+		expect(opencode).not.toHaveAttribute("aria-disabled", "true");
+		await userEvent.click(opencode);
+		submitSettings();
+
+		await waitFor(() => expect(putMock).toHaveBeenCalledTimes(1));
+		expect(putMock).toHaveBeenCalledWith(
+			"/api/v1/projects/{id}",
+			expect.objectContaining({
+				body: expect.objectContaining({
+					config: expect.objectContaining({
+						reviewers: [
+							expect.objectContaining({
+								harness: "opencode",
+								agentConfig: undefined,
+							}),
+						],
+					}),
+				}),
+			}),
+		);
+	});
+
+	it("shows scratch identity and saves only scratch-supported settings", async () => {
+		mockProject({
+			id: "scratch",
+			name: "Scratch",
+			kind: "scratch",
+			path: "/home/me/.open-agents/scratch/default",
+			repo: "",
+			defaultBranch: "",
+			config: {
+				defaultBranch: "main",
+				sessionPrefix: "open-agents",
+				env: { FOO: "bar" },
+				symlinks: [".env"],
+				postCreate: ["npm install"],
+				agentRules: "keep work small",
+				worker: { agent: "codex" },
+				manager: { agent: "codex" },
+				agentConfig: {
+					model: "gpt-5-codex",
+					permissions: "auto",
+				},
+				reviewers: [{ harness: "codex" }],
+				autoReview: { enabled: true },
+				trackerIntake: { enabled: true, provider: "github", assignee: "octocat" },
+			},
+		});
+
+		renderSettings("scratch");
+
+		const kindRow = (await screen.findByText("Type")).closest(".settings-row-bar");
+		expect(kindRow).toHaveTextContent("Scratch project");
+		expect(screen.queryByLabelText("Default branch")).not.toBeInTheDocument();
+		expect(screen.queryByLabelText("Session prefix")).not.toBeInTheDocument();
+		expect(screen.queryByLabelText("Auto-review pull requests")).not.toBeInTheDocument();
+		expect(screen.queryByText("Reviewers")).not.toBeInTheDocument();
+		expect(screen.queryByText("Tracker intake")).not.toBeInTheDocument();
+
+		submitSettings();
+
+		await waitFor(() => expect(putMock).toHaveBeenCalledTimes(1));
+		expect(putMock).toHaveBeenCalledWith("/api/v1/projects/{id}", {
+			params: { path: { id: "scratch" } },
+			body: {
+				displayName: "Scratch",
+				config: {
+					env: { FOO: "bar" },
+					sessionPrefix: "open-agents",
+					symlinks: [".env"],
+					postCreate: ["npm install"],
+					agentRules: "keep work small",
+					worker: { agent: "codex", agentConfig: { model: "gpt-5-codex", permissions: "auto" } },
+					manager: { agent: "codex", agentConfig: { model: "gpt-5-codex", permissions: "auto" } },
+					agentConfig: undefined,
+				},
+			},
+		});
+		expect(postMock).not.toHaveBeenCalled();
+	});
+
+	it("saves GitHub tracker intake settings, deriving the repo from the project's git origin", async () => {
+		getMock.mockResolvedValue({
+			data: {
+				status: "ok",
+				project: {
+					id: "proj-1",
+					name: "Project One",
+					kind: "single_repo",
+					path: "/repo/project-one",
+					repo: "git@github.com:acme/project-one.git",
+					defaultBranch: "main",
+					config: {
+						worker: { agent: "codex" },
+						manager: { agent: "codex" },
+					},
+				},
+			},
+			error: undefined,
+		});
+
+		renderSettings("proj-1", undefined, "intake");
+
+		await userEvent.click(await screen.findByLabelText("Enable issue intake"));
+
+		// Repository is display-only, derived from the project's own git origin — no input to
+		// fill. Assignee is the only eligibility rule in v1.
+		expect(screen.getByRole("link", { name: "acme/project-one" })).toHaveAttribute(
+			"href",
+			"https://github.com/acme/project-one",
+		);
+		await userEvent.type(await beginEdit("Assignee"), "octocat");
+
+		submitSettings();
+
+		await waitFor(() => expect(putMock).toHaveBeenCalledTimes(1));
+		const body = putMock.mock.calls[0]?.[1]?.body;
+		expect(body.config.trackerIntake).toEqual({
+			enabled: true,
+			assignee: "octocat",
+		});
+	});
+
+	it("preserves explicit provider and unmodeled tracker intake fields on save", async () => {
+		getMock.mockResolvedValue({
+			data: {
+				status: "ok",
+				project: {
+					id: "proj-1",
+					name: "Project One",
+					kind: "single_repo",
+					path: "/repo/project-one",
+					repo: "git@gitlab.example.com:acme/project-one.git",
+					defaultBranch: "main",
+					config: {
+						worker: { agent: "codex" },
+						manager: { agent: "codex" },
+						trackerIntake: {
+							enabled: true,
+							provider: "gitlab",
+							repo: "acme/project-one",
+							assignee: "octocat",
+							labels: ["agent-ready"],
+						},
+					},
+				},
+			},
+			error: undefined,
+		});
+
+		renderSettings("proj-1", undefined, "general");
+		await screen.findByRole("button", { name: "Edit Project name" });
+		submitSettings();
+
+		await waitFor(() => expect(putMock).toHaveBeenCalledTimes(1));
+		const body = putMock.mock.calls[0]?.[1]?.body;
+		expect(body.config.trackerIntake).toEqual({
+			enabled: true,
+			provider: "gitlab",
+			repo: "acme/project-one",
+			assignee: "octocat",
+			labels: ["agent-ready"],
+		});
+	});
+
+	it("blocks save when intake is enabled with no assignee", async () => {
+		getMock.mockResolvedValue({
+			data: {
+				status: "ok",
+				project: {
+					id: "proj-1",
+					name: "Project One",
+					kind: "single_repo",
+					path: "/repo/project-one",
+					repo: "git@github.com:acme/project-one.git",
+					defaultBranch: "main",
+					config: {
+						worker: { agent: "codex" },
+						manager: { agent: "codex" },
+					},
+				},
+			},
+			error: undefined,
+		});
+
+		renderSettings("proj-1", undefined, "intake");
+
+		await userEvent.click(await screen.findByLabelText("Enable issue intake"));
+		submitSettings();
+
+		expect(await screen.findAllByText("Enabling intake requires an assignee.")).toHaveLength(2);
+		expect(putMock).not.toHaveBeenCalled();
+	});
+
+	function workspaceWithLegacyManager(): WorkspaceSummary {
+	return {
+		id: "proj-1",
+		name: "Project One",
+		path: "/repo/project-one",
+		// A pre-strip manager session may still be running under a
+		// different provider; saving the project replaces it. The provider
+		// vocabulary only admits opencode now, so the legacy value rides raw.
+		managerAgent: "codex" as unknown as WorkspaceSummary["managerAgent"],
+		sessions: [
+			{
+				id: "proj-1-manager",
+				workspaceId: "proj-1",
+				workspaceName: "Project One",
+				title: "Manager",
+				provider: "codex" as unknown as WorkspaceSummary["sessions"][number]["provider"],
+				kind: "manager",
+				branch: "open-agents/proj-1-manager",
+				status: "working",
+				createdAt: "2026-07-03T00:00:00Z",
+				updatedAt: "2026-07-03T00:00:00Z",
+				prs: [],
+			},
+		],
+	};
+}
+
+it("restarts the running manager when its provider differs from the saved agent", async () => {
+		getMock.mockResolvedValue({
+			data: {
+				status: "ok",
+				project: {
+					id: "proj-1",
+					name: "Project One",
+					kind: "single_repo",
+					path: "/repo/project-one",
+					repo: "",
+					defaultBranch: "main",
+					config: {
+						worker: { agent: "opencode" },
+						manager: { agent: "opencode" },
+					},
+				},
+			},
+			error: undefined,
+		});
+
+		renderSettings("proj-1", [workspaceWithLegacyManager()], "agents");
+
+		const managerAgent = await screen.findByRole("button", { name: "Default manager agent" });
+		expect(managerAgent).toHaveTextContent(/^opencode$/i);
+
+		submitSettings();
+
+		await waitFor(() => expect(putMock).toHaveBeenCalledTimes(1));
+		await waitFor(() => expect(postMock).toHaveBeenCalledTimes(1));
+		expect(postMock).toHaveBeenCalledWith("/api/v1/managers", {
+			body: { projectId: "proj-1", clean: true },
+		});
+		await expectReplacementNavigation();
+		expect(setManagerReplacementErrorMock).not.toHaveBeenCalled();
+	});
+
+	it("keeps the config save successful when manager replacement fails", async () => {
+		getMock.mockResolvedValue({
+			data: {
+				status: "ok",
+				project: {
+					id: "proj-1",
+					name: "Project One",
+					kind: "single_repo",
+					path: "/repo/project-one",
+					repo: "",
+					defaultBranch: "main",
+					config: {
+						worker: { agent: "opencode" },
+						manager: { agent: "opencode" },
+					},
+				},
+			},
+			error: undefined,
+		});
+		postMock.mockResolvedValue({
+			data: undefined,
+			error: {
+				code: "MANAGER_SPAWN_FAILED",
+				message: "missing codex binary",
+				requestId: "request-42",
+			},
+			response: { status: 500 },
+		});
+
+		const queryClient = renderSettings("proj-1", [workspaceWithLegacyManager()], "agents");
+		const invalidateSpy = vi.spyOn(queryClient, "invalidateQueries");
+
+		const managerAgent = await screen.findByRole("button", { name: "Default manager agent" });
+		expect(managerAgent).toHaveTextContent(/^opencode$/i);
+		submitSettings();
+
+		await waitFor(() => expect(putMock).toHaveBeenCalledTimes(1));
+		await waitFor(() => expect(postMock).toHaveBeenCalledTimes(1));
+		expect(await screen.findByText("Saved")).toBeInTheDocument();
+		expect(await screen.findByText("Manager restart failed: missing codex binary")).toBeInTheDocument();
+		expect(screen.queryByText("Save failed")).not.toBeInTheDocument();
+		expect(invalidateSpy).toHaveBeenCalledWith({ queryKey: ["project", "proj-1"] });
+		expect(invalidateSpy).toHaveBeenCalledWith({ queryKey: workspaceQueryKey });
+		expect(closeSettingsMock).toHaveBeenCalledTimes(1);
+		expect(setManagerReplacementErrorMock).toHaveBeenCalledWith("proj-1", {
+			message: "missing codex binary",
+			code: "MANAGER_SPAWN_FAILED",
+			requestId: "request-42",
+		});
+	});
+});
