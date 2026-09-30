@@ -1,5 +1,7 @@
 # Desktop project onboarding contract review
 
+> Archived point-in-time review for PR #5126. Not a durable contract — see [../backend/architecture.md](../backend/architecture.md) for the current model.
+
 Scope: local desktop project creation, cloning, existing-folder imports,
 workspace imports, Git preparation, registration, and first manager startup.
 This is a code-path review prompted by the `untrivial` empty-clone failure, not

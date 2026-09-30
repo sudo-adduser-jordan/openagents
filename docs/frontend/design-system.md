@@ -132,7 +132,7 @@ The sidebar is a compact directory, not a second dashboard.
 
 ## 5. Operational state and color
 
-Status is derived from durable runtime, PR, CI, and review facts. The renderer communicates it; it does not invent or store a separate display truth.
+Status is derived from durable runtime, PR, CI, and review facts. The renderer communicates it; it does not invent or store a separate display truth. Canonical contract: [overview.md](../overview.md).
 
 ### Semantic mapping
 

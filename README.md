@@ -90,5 +90,5 @@ SQLite tables, columns, and foreign keys. `schema.dbml` is generated from the mi
 
 Regenerate with `task db:dbml` after adding a migration.
 
-For the reasoning behind these boundaries, start with [docs/architecture.md](docs/architecture.md) and [docs/STATUS.md](docs/STATUS.md).
+For the reasoning behind these boundaries, start with [docs/overview.md](docs/overview.md) and [docs/operations/status.md](docs/operations/status.md).
 

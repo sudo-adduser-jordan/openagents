@@ -47,7 +47,7 @@ type schemaTable struct {
 
 // dbSchema is the migrated database's table surface: tables plus foreign
 // keys. Views (usage_session_integrity) and the goose_db_version ledger are
-// excluded; triggers are CDC plumbing documented in docs/architecture.md.
+// excluded; triggers are CDC plumbing documented in docs/backend/storage-cdc.md.
 type dbSchema struct {
 	tables []schemaTable
 	fks    []schemaFK

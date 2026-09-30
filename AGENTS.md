@@ -63,11 +63,13 @@ OPEN_AGENTS_DATA_DIR=/tmp/open-agents-lab-data ./frontend/node_modules/.bin/elec
 ## Where to look first
 
 - `README.md` — current run/config/test quickstart.
-- `docs/README.md` — docs index.
-- `docs/documentation-map.md` — which artifacts are the machine-readable contract layer (`openapi.yaml`, `AGENTS.md`, `skills/`, sqlc `gen/`), what each is source of truth for, and how CI keeps them from drifting.
-- `docs/architecture.md` — backend mental model, package layout, lifecycle/session/service boundaries, and load-bearing rules.
-- `docs/STATUS.md` — what is shipped on `main` today and what is still in flight.
-- `docs/cli/README.md` — intended CLI shape: thin Cobra client over daemon HTTP, never direct storage/runtime access.
+- `docs/readme.md` — docs index and router (tracks, contract layer, where to add new docs).
+- `docs/overview.md` — backend mental model, durable-vs-derived contract, and load-bearing rules.
+- `docs/backend/architecture.md` — backend system overview, lifecycle/session/service boundaries, data flows.
+- `docs/backend/packages.md` — package layout and ownership rules.
+- `docs/operations/status.md` — what is shipped on `main` today and what is still in flight.
+- `docs/interfaces/cli.md` — intended CLI shape: thin Cobra client over daemon HTTP, never direct storage/runtime access.
+- `docs/frontend/design-system.md` — renderer design system (skill: `open-agents-design-system`).
 
 For code entry points:
 

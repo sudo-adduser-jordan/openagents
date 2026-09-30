@@ -1,8 +1,8 @@
 # Open Agents technical stack
 
 This is the source of truth for library and runtime choices in the Open Agents rewrite.
-Keep this document about durable technology decisions; use `STATUS.md` for
-implementation progress and `architecture.md` for component behavior and
+Keep this document about durable technology decisions; use `operations/status.md` for
+implementation progress and `backend/architecture.md` for component behavior and
 invariants.
 
 ## Principles

@@ -1,6 +1,6 @@
 # Taskfile for Open Agents — replaces all npm scripts in the
 # daemon/supervisor workspace (root, frontend, frontend/packages/product-ui)
-# plus the load-bearing Go commands from AGENTS.md / docs/development.md.
+# plus the load-bearing Go commands from AGENTS.md / docs/operations/development.md.
 #
 # Run `task --list` (or `go-task --list` on distros where `task`
 # conflicts with taskwarrior) to see everything.
