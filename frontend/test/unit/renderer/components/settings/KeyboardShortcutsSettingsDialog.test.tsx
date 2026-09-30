@@ -9,10 +9,10 @@ import { KeyboardShortcutsSettingsDialog } from "../../../../../src/renderer/com
 const persistBindings = vi.fn(async (overrides: KeybindingOverrides) => overrides);
 const setRecording = vi.fn(async () => undefined);
 
-function renderDialog(isMac = false) {
+function renderDialog() {
 	return render(
 		<TooltipProvider>
-			<KeyboardShortcutsSettingsDialog open onOpenChange={vi.fn()} isMac={isMac} />
+			<KeyboardShortcutsSettingsDialog open onOpenChange={vi.fn()} />
 		</TooltipProvider>,
 	);
 }
@@ -118,17 +118,17 @@ describe("KeyboardShortcutsSettingsDialog", () => {
 		await waitFor(() => expect(useKeybindingsStore.getState().overrides).toEqual({}));
 	});
 
-	it("uses the platform prop for displayed and recorded bindings", async () => {
+	it("displays default bindings and records Ctrl-based chords", async () => {
 		const user = userEvent.setup();
-		renderDialog(true);
+		renderDialog();
 
-		expect(screen.getByText("⌘N")).toBeInTheDocument();
+		expect(screen.getByText("Ctrl+Shift+N")).toBeInTheDocument();
 		await user.click(screen.getByRole("button", { name: "Change Focus terminal" }));
-		fireEvent.keyDown(window, { key: "j", code: "KeyJ", metaKey: true });
+		fireEvent.keyDown(window, { key: "j", code: "KeyJ", ctrlKey: true });
 
 		await waitFor(() =>
-			expect(useKeybindingsStore.getState().overrides["focus-terminal"]?.[0]?.meta).toBe(true),
+			expect(useKeybindingsStore.getState().overrides["focus-terminal"]?.[0]?.ctrl).toBe(true),
 		);
-		expect(await screen.findByRole("status")).toHaveTextContent("⌘J");
+		expect(await screen.findByRole("status")).toHaveTextContent("Ctrl+J");
 	});
 });

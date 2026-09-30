@@ -134,7 +134,7 @@ const INSPECTOR_SPRING_EASING =
 const shellTopbarHiddenByPlatform = hidesShellTopbar();
 const isMac = isMacPlatform();
 const noDragStyle = isMac ? ({ WebkitAppRegion: "no-drag" } as CSSProperties) : undefined;
-const newTerminalShortcutLabel = shortcutBindingLabel(defaultShortcutBindings("new-shell-terminal", isMac)[0], isMac);
+const newTerminalShortcutLabel = shortcutBindingLabel(defaultShortcutBindings("new-shell-terminal")[0]);
 const sessionHeaderActions = (
 	<div
 		className="session-topbar-session-chrome flex shrink-0 items-center"

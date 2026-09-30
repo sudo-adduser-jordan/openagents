@@ -73,7 +73,8 @@ function openAdjust(element: Element): ShadowRoot {
 }
 
 function latestSession(): BrowserAnnotationSession {
-	const call = electronMocks.send.mock.calls.findLast(([channel]) => channel === "browser:annotation:state");
+	const calls = electronMocks.send.mock.calls as unknown[][];
+	const call = [...calls].reverse().find((entry) => entry[0] === "browser:annotation:state");
 	if (!call) throw new Error("annotation state was not emitted");
 	return call[1] as BrowserAnnotationSession;
 }

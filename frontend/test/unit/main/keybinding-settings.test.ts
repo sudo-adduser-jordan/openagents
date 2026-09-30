@@ -43,9 +43,8 @@ describe("coerceKeybindingOverrides", () => {
 		).toEqual({});
 	});
 
-	it("applies platform-aware reserved shortcut validation", () => {
-		expect(coerceKeybindingOverrides({ "focus-terminal": [{ key: "q", meta: true }] }, true)).toEqual({});
-		expect(coerceKeybindingOverrides({ "focus-terminal": [{ key: "q", meta: true }] }, false)).toEqual({
+	it("accepts meta-based bindings now that shortcuts are platform-neutral", () => {
+		expect(coerceKeybindingOverrides({ "focus-terminal": [{ key: "q", meta: true }] })).toEqual({
 			"focus-terminal": [{ key: "q", ctrl: false, meta: true, shift: false, alt: false }],
 		});
 	});

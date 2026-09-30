@@ -1,8 +1,6 @@
 // @vitest-environment node
 import { describe, expect, it } from "vitest";
 import {
-	dockBounceType,
-	shouldReplaceBounce,
 	shouldSignalAttention,
 	shouldToast,
 	type NotificationType,
@@ -38,33 +36,5 @@ describe("shouldSignalAttention", () => {
 	it("does not signal for unknown or missing types", () => {
 		expect(shouldSignalAttention("some_future_type")).toBe(false);
 		expect(shouldSignalAttention(undefined)).toBe(false);
-	});
-});
-
-describe("shouldReplaceBounce", () => {
-	it("replaces no bounce or a pending informational bounce", () => {
-		expect(shouldReplaceBounce(null)).toBe(true);
-		expect(shouldReplaceBounce({ critical: false })).toBe(true);
-	});
-
-	it("never replaces a pending critical bounce, so a blocked agent stays loud", () => {
-		expect(shouldReplaceBounce({ critical: true })).toBe(false);
-	});
-});
-
-describe("dockBounceType", () => {
-	it("bounces critically for a blocked agent waiting on the user", () => {
-		expect(dockBounceType("needs_input")).toBe("critical");
-	});
-
-	it("bounces once for the other backend types", () => {
-		for (const type of ALL_TYPES.filter((t) => t !== "needs_input")) {
-			expect(dockBounceType(type)).toBe("informational");
-		}
-	});
-
-	it("bounces once for unknown or missing types", () => {
-		expect(dockBounceType("some_future_type")).toBe("informational");
-		expect(dockBounceType(undefined)).toBe("informational");
 	});
 });

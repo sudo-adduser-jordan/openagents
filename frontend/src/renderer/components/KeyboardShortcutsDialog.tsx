@@ -24,21 +24,12 @@ type KeyboardShortcutsDialogProps = {
 	open: boolean;
 	onOpenChange: (open: boolean) => void;
 	onCustomize?: () => void;
-	isMac?: boolean;
 };
-
-function isMacPlatform(): boolean {
-	if (typeof navigator === "undefined") return false;
-	const platform =
-		(navigator as Navigator & { userAgentData?: { platform?: string } }).userAgentData?.platform ?? navigator.platform;
-	return platform.toLowerCase().includes("mac");
-}
 
 export function KeyboardShortcutsDialog({
 	open,
 	onOpenChange,
 	onCustomize,
-	isMac = isMacPlatform(),
 }: KeyboardShortcutsDialogProps) {
 	const isCommandPaletteEnabled = useCommandPaletteEnabled();
 	const overrides = useKeybindingsStore((state) => state.overrides);
@@ -70,8 +61,8 @@ export function KeyboardShortcutsDialog({
 										<div className="flex min-h-11 items-center justify-between gap-5 py-1.5" key={shortcut.id}>
 											<p className="min-w-0 text-control font-medium text-foreground">{shortcutLabel(shortcut.id)}</p>
 											<div className="flex shrink-0 flex-col items-end gap-1">
-												{effectiveShortcutBindings(shortcut.id, isMac, overrides).map((binding, bindingIndex) => {
-													const keys = shortcutBindingKeys(binding, isMac);
+												{effectiveShortcutBindings(shortcut.id, overrides).map((binding, bindingIndex) => {
+													const keys = shortcutBindingKeys(binding);
 													return (
 														<div
 															className="flex items-center gap-1"

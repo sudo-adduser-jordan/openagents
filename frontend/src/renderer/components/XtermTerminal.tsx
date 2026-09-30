@@ -183,7 +183,6 @@ function terminalFontSizeDelta(event: KeyboardEvent): -1 | 0 | 1 {
 			shift: event.shiftKey,
 			alt: event.altKey,
 		},
-		isMacPlatform(),
 	);
 }
 

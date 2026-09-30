@@ -41,11 +41,6 @@ import { readEditorSettings, writeEditorPreference } from "./main/editor-setting
 import { createEditorHandoff } from "./main/editor-handoff";
 import { launchCommand } from "./main/launch-command";
 import {
-	decideRelocation,
-	inspectInstalledBundle,
-	installedBundlePath,
-} from "./main/relocation";
-import {
 	coerceUiSettings,
 	DEFAULT_UI_SETTINGS,
 	readUiSettings,
@@ -602,14 +597,13 @@ async function createWindowInternal(): Promise<void> {
 	// browser-preview view (wired per-view in the browser host).
 	attachAppShortcuts(
 		shellWebContents,
-		false,
 		shellWebContents,
 		false,
 		() => keybindingOverrides,
 		() => keybindingRecordingActive,
 		(id, chord) =>
 			!browserViewHost?.isLastUsedBrowser() ||
-			shouldHandleAppShortcutInBrowserContext(id, chord, false),
+			shouldHandleAppShortcutInBrowserContext(id, chord),
 		(id) => {
 			if (id !== "toggle-browser-devtools") return;
 			void toggleAppDevTools(browserViewHost, getShellWebContents);

@@ -6,7 +6,7 @@ const buildForge = vi.fn<(forge: { dir: string }, options: any) => Promise<strin
 ]);
 vi.mock("app-builder-lib", () => ({ buildForge }));
 
-import MakerNSIS from "../../../../../makers/maker-nsis";
+import MakerNSIS from "../../../makers/maker-nsis";
 
 const makeOptions = {
 	dir: "/tmp/app/Open Agents-win32-x64",

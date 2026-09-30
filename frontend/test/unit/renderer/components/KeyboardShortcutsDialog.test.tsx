@@ -4,7 +4,7 @@ import { KeyboardShortcutsDialog } from "../../../../src/renderer/components/Key
 
 const ctx = vi.hoisted(() => ({ commandPaletteEnabled: true }));
 
-vi.mock("../hooks/useCommandPaletteEnabled", () => ({
+vi.mock("../../../../src/renderer/hooks/useCommandPaletteEnabled", () => ({
 	useCommandPaletteEnabled: () => ctx.commandPaletteEnabled,
 }));
 
@@ -14,7 +14,7 @@ describe("KeyboardShortcutsDialog", () => {
 	});
 
 	it("shows the application shortcut catalog with Windows/Linux keys", () => {
-		render(<KeyboardShortcutsDialog open onOpenChange={vi.fn()} isMac={false} />);
+		render(<KeyboardShortcutsDialog open onOpenChange={vi.fn()} />);
 
 		expect(screen.getByRole("dialog", { name: "Keyboard shortcuts" })).toBeInTheDocument();
 		expect(screen.getByText("New session")).toBeInTheDocument();
@@ -27,23 +27,23 @@ describe("KeyboardShortcutsDialog", () => {
 		expect(screen.getByLabelText("Ctrl+PageDown")).toBeInTheDocument();
 	});
 
-	it("uses macOS key labels when requested", () => {
-		render(<KeyboardShortcutsDialog open onOpenChange={vi.fn()} isMac />);
+	it("uses Ctrl key labels", () => {
+		render(<KeyboardShortcutsDialog open onOpenChange={vi.fn()} />);
 
-		expect(screen.getByLabelText("⌘+/")).toBeInTheDocument();
-		expect(screen.getByLabelText("⌘+Shift+B")).toBeInTheDocument();
+		expect(screen.getByLabelText("Ctrl+/")).toBeInTheDocument();
+		expect(screen.getByLabelText("Ctrl+Shift+B")).toBeInTheDocument();
 	});
 
 	it("hides the command palette shortcut when the feature is disabled", () => {
 		ctx.commandPaletteEnabled = false;
-		render(<KeyboardShortcutsDialog open onOpenChange={vi.fn()} isMac={false} />);
+		render(<KeyboardShortcutsDialog open onOpenChange={vi.fn()} />);
 
 		expect(screen.queryByText("Open command palette")).not.toBeInTheDocument();
 	});
 
 	it("offers a direct path to customize shortcuts", () => {
 		const onCustomize = vi.fn();
-		render(<KeyboardShortcutsDialog open onOpenChange={vi.fn()} onCustomize={onCustomize} isMac={false} />);
+		render(<KeyboardShortcutsDialog open onOpenChange={vi.fn()} onCustomize={onCustomize} />);
 
 		fireEvent.click(screen.getByRole("button", { name: "Customize" }));
 

@@ -2328,9 +2328,9 @@ function SidebarSearchButton({ onOpen }: { onOpen: () => void }) {
 	const { state } = useSidebar();
 	const isCollapsed = state === "collapsed";
 	const overrides = useKeybindingsStore((store) => store.overrides);
-	const paletteBinding = effectiveShortcutBindings("command-palette", isMac, overrides)[0];
+	const paletteBinding = effectiveShortcutBindings("command-palette", overrides)[0];
 	const commandPaletteShortcutLabel = paletteBinding
-		? shortcutBindingKeys(paletteBinding, isMac).join(isMac ? " " : "+")
+		? shortcutBindingKeys(paletteBinding).join("+")
 		: "Unassigned";
 	return (
 		<SidebarMenuItem className="group-data-[collapsible=icon]:mb-0">

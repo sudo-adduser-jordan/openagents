@@ -12,7 +12,6 @@ import {
 	type KeybindingOverrides,
 	type ShortcutBinding,
 } from "../../../shared/shortcuts";
-import { isMacPlatform } from "../../lib/platform";
 import { openAgentsBridge } from "../../lib/bridge";
 import { cn } from "../../lib/utils";
 import { useKeybindingsStore } from "../../stores/keybindings-store";
@@ -94,13 +93,11 @@ export function ShortcutBindingsEditor({
 	active,
 	open,
 	onOpenChange,
-	isMac = isMacPlatform(),
 }: {
 	mode: "content" | "dialog";
 	active?: boolean;
 	open?: boolean;
 	onOpenChange?: (open: boolean) => void;
-	isMac?: boolean;
 }) {
 	const overrides = useKeybindingsStore((state) => state.overrides);
 	const setOverrides = useKeybindingsStore((state) => state.setOverrides);
@@ -177,12 +174,12 @@ export function ShortcutBindingsEditor({
 		const needle = query.trim().toLowerCase();
 		if (!needle) return APP_SHORTCUTS;
 		return APP_SHORTCUTS.filter((shortcut) => {
-			const labels = effectiveShortcutBindings(shortcut.id, isMac, overrides)
-				.map((candidate) => shortcutBindingLabel(candidate, isMac))
+			const labels = effectiveShortcutBindings(shortcut.id, overrides)
+				.map((candidate) => shortcutBindingLabel(candidate))
 				.join(" ");
 			return `${shortcutLabel(shortcut.id)} ${shortcutCategoryLabel(shortcut.category)} ${labels}`.toLowerCase().includes(needle);
 		});
-	}, [isMac, overrides, query]);
+	}, [overrides, query]);
 
 	const applyBinding = async (
 		targetId: AppShortcutId,
@@ -192,10 +189,10 @@ export function ShortcutBindingsEditor({
 	) => {
 		const before = overrides;
 		const next: KeybindingOverrides = { ...overrides };
-		const currentTarget = effectiveShortcutBindings(targetId, isMac, overrides);
+		const currentTarget = effectiveShortcutBindings(targetId, overrides);
 		next[targetId] = mode === "add" ? [...currentTarget, candidate].slice(-2) : [candidate];
 		if (conflictingId) {
-			next[conflictingId] = effectiveShortcutBindings(conflictingId, isMac, overrides).filter(
+			next[conflictingId] = effectiveShortcutBindings(conflictingId, overrides).filter(
 				(existing) => !matchesShortcutBinding(candidate, existing),
 			);
 		}
@@ -205,8 +202,8 @@ export function ShortcutBindingsEditor({
 		showToast({
 			title: conflictingId ? "Shortcut reassigned" : "Shortcut updated",
 			body: conflictingId
-				? `${shortcutBindingLabel(candidate, isMac)} moved from ${conflictLabel ?? ""} to ${targetLabel}`
-				: `${targetLabel} → ${shortcutBindingLabel(candidate, isMac)}`,
+				? `${shortcutBindingLabel(candidate)} moved from ${conflictLabel ?? ""} to ${targetLabel}`
+				: `${targetLabel} → ${shortcutBindingLabel(candidate)}`,
 			undo: async () => {
 				await setOverrides(before);
 				showToast({ title: "Shortcut change undone" });
@@ -228,20 +225,20 @@ export function ShortcutBindingsEditor({
 			if (!candidate) {
 				return;
 			}
-			const validationError = shortcutBindingValidationError(candidate, isMac);
+			const validationError = shortcutBindingValidationError(candidate);
 			if (validationError) {
 				showToast({ title: "Shortcut is reserved", body: validationError });
 				return;
 			}
 			if (
 				recording.mode === "add" &&
-				effectiveShortcutBindings(recording.id, isMac, overrides).some((existing) =>
+				effectiveShortcutBindings(recording.id, overrides).some((existing) =>
 					matchesShortcutBinding(candidate, existing),
 				)
 			) {
 				showToast({
 					title: "Shortcut already assigned",
-					body: `${shortcutBindingLabel(candidate, isMac)} is already available for this command.`,
+					body: `${shortcutBindingLabel(candidate)} is already available for this command.`,
 				});
 				endRecording();
 				return;
@@ -249,7 +246,7 @@ export function ShortcutBindingsEditor({
 			const conflicting = APP_SHORTCUTS.find(
 				(shortcut) =>
 					shortcut.id !== recording.id &&
-					effectiveShortcutBindings(shortcut.id, isMac, overrides).some((existing) =>
+					effectiveShortcutBindings(shortcut.id, overrides).some((existing) =>
 						matchesShortcutBinding(candidate, existing),
 					),
 			);
@@ -257,7 +254,7 @@ export function ShortcutBindingsEditor({
 				if (conflicting.customizable === false) {
 					showToast({
 						title: "Shortcut is reserved",
-						body: `${shortcutBindingLabel(candidate, isMac)} is used by ${shortcutLabel(conflicting.id)}.`,
+						body: `${shortcutBindingLabel(candidate)} is used by ${shortcutLabel(conflicting.id)}.`,
 					});
 					return;
 				}
@@ -277,7 +274,7 @@ export function ShortcutBindingsEditor({
 		};
 		window.addEventListener("keydown", handleKeyDown, true);
 		return () => window.removeEventListener("keydown", handleKeyDown, true);
-	}, [isMac, surfaceActive, overrides, recording]);
+	}, [surfaceActive, overrides, recording]);
 
 	const handleResetBinding = async (id: AppShortcutId) => {
 		const before = overrides;
@@ -294,12 +291,12 @@ export function ShortcutBindingsEditor({
 
 	const handleRemoveBinding = async (id: AppShortcutId, index: number) => {
 		const before = overrides;
-		const current = effectiveShortcutBindings(id, isMac, overrides);
+		const current = effectiveShortcutBindings(id, overrides);
 		const removed = current[index];
 		await setOverrides({ ...overrides, [id]: current.filter((_, candidateIndex) => candidateIndex !== index) });
 		showToast({
 			title: "Shortcut removed",
-			body: removed ? `${definition(id)?.label ?? id} no longer uses ${shortcutBindingLabel(removed, isMac)}.` : undefined,
+			body: removed ? `${definition(id)?.label ?? id} no longer uses ${shortcutBindingLabel(removed)}.` : undefined,
 			undo: async () => {
 				await setOverrides(before);
 				showToast({ title: "Shortcut change undone" });
@@ -336,7 +333,7 @@ export function ShortcutBindingsEditor({
 	const rows = (
 		<div className="flex flex-col gap-2">
 			{filteredShortcuts.map((shortcut) => {
-				const bindings = effectiveShortcutBindings(shortcut.id, isMac, overrides);
+				const bindings = effectiveShortcutBindings(shortcut.id, overrides);
 				const modified = Object.hasOwn(overrides, shortcut.id);
 				const isRecording = recording?.id === shortcut.id;
 				return (
@@ -378,14 +375,14 @@ export function ShortcutBindingsEditor({
 												key={`${candidate.key}-${index}`}
 											>
 												<kbd className="px-2 py-1.5 font-mono text-caption text-settings-label">
-													{shortcutBindingLabel(candidate, isMac)}
+													{shortcutBindingLabel(candidate)}
 												</kbd>
 												<Tooltip>
 													<TooltipTrigger asChild>
 														<button
 															type="button"
 															className="mr-1 inline-flex size-5 items-center justify-center rounded text-settings-muted hover:bg-settings-menu-selected hover:text-settings-label"
-															aria-label={`Remove ${shortcutBindingLabel(candidate, isMac)} from ${shortcutLabel(shortcut.id)}`}
+															aria-label={`Remove ${shortcutBindingLabel(candidate)} from ${shortcutLabel(shortcut.id)}`}
 															onClick={() => void handleRemoveBinding(shortcut.id, index)}
 														>
 															<X className="size-3" aria-hidden="true" />
@@ -527,7 +524,7 @@ export function ShortcutBindingsEditor({
 			title="Shortcut already in use"
 			description={
 				conflict
-					? `${shortcutBindingLabel(conflict.binding, isMac)} is assigned to ${shortcutLabel(conflict.conflictingId)}. Reassign it to ${shortcutLabel(conflict.targetId)}?`
+					? `${shortcutBindingLabel(conflict.binding)} is assigned to ${shortcutLabel(conflict.conflictingId)}. Reassign it to ${shortcutLabel(conflict.targetId)}?`
 					: ""
 			}
 			confirmLabel="Reassign"

@@ -5,7 +5,7 @@ const buildForge = vi.fn<(forge: { dir: string }, options: any) => Promise<strin
 );
 vi.mock("app-builder-lib", () => ({ buildForge }));
 
-import MakerAppImage from "../../../../../makers/maker-appimage";
+import MakerAppImage from "../../../makers/maker-appimage";
 
 const makeOptions = {
 	dir: "/tmp/app/Open Agents-linux-x64",

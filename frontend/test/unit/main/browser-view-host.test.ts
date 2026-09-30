@@ -424,27 +424,27 @@ describe("browser screenshots", () => {
 });
 
 describe("browser shortcut matching", () => {
-	it("matches contextual browser shortcuts with platform-native primary modifiers", () => {
+	it("matches contextual browser shortcuts with the Ctrl primary modifier", () => {
 		const input = { control: true, meta: false, shift: false, alt: false, type: "keyDown" };
-		expect(browserShortcutAction({ ...input, key: "T" }, false)).toBe("new-tab");
-		expect(browserShortcutAction({ ...input, key: "w" }, false)).toBe("close-tab");
-		expect(browserShortcutAction({ ...input, key: "l" }, false)).toBe("focus-location");
-		expect(browserShortcutAction({ ...input, key: "r" }, false)).toBe("reload");
-		expect(browserShortcutAction({ ...input, key: "t", shift: true }, false)).toBe("reopen-tab");
-		expect(browserShortcutAction({ ...input, key: "t", control: false, meta: true }, true)).toBe("new-tab");
+		expect(browserShortcutAction({ ...input, key: "T" })).toBe("new-tab");
+		expect(browserShortcutAction({ ...input, key: "w" })).toBe("close-tab");
+		expect(browserShortcutAction({ ...input, key: "l" })).toBe("focus-location");
+		expect(browserShortcutAction({ ...input, key: "r" })).toBe("reload");
+		expect(browserShortcutAction({ ...input, key: "t", shift: true })).toBe("reopen-tab");
+		expect(browserShortcutAction({ ...input, key: "t", control: false, meta: true })).toBeNull();
 	});
 
 	it("leaves Space and Shift+Space to Chromium so browser form controls can accept spaces", () => {
 		const input = { key: " ", control: false, meta: false, shift: false, alt: false, type: "keyDown" };
-		expect(browserShortcutAction(input, false)).toBeNull();
-		expect(browserShortcutAction({ ...input, shift: true }, false)).toBeNull();
+		expect(browserShortcutAction(input)).toBeNull();
+		expect(browserShortcutAction({ ...input, shift: true })).toBeNull();
 	});
 
 	it("rejects extra and wrong-platform modifiers", () => {
 		const input = { key: "t", control: true, meta: false, shift: false, alt: false, type: "keyDown" };
-		expect(browserShortcutAction({ ...input, key: "r", shift: true }, false)).toBeNull();
-		expect(browserShortcutAction({ ...input, meta: true }, false)).toBeNull();
-		expect(browserShortcutAction(input, true)).toBeNull();
+		expect(browserShortcutAction({ ...input, key: "r", shift: true })).toBeNull();
+		expect(browserShortcutAction({ ...input, meta: true })).toBeNull();
+		expect(browserShortcutAction(input)).toBe("new-tab");
 	});
 });
 

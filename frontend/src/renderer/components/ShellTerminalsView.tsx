@@ -5,7 +5,6 @@ import { useOverflowScroll } from "../hooks/useOverflowScroll";
 import { useCloseShellTerminal, useRenameShellTerminal, useShellTerminals } from "../hooks/useShellTerminals";
 import { useShell } from "../lib/shell-context";
 import { openAgentsBridge } from "../lib/bridge";
-import { isMacPlatform } from "../lib/platform";
 import { cn } from "../lib/utils";
 import { handleTerminalTabListKeyDown } from "../lib/terminal-tabs";
 import { useResolvedTheme, useUiStore } from "../stores/ui-store";
@@ -20,8 +19,7 @@ import { Tooltip, TooltipContent, TooltipTrigger } from "./ui/tooltip";
 // is unreachable in a project with no sessions, which is exactly when a user
 // most wants a plain terminal. Inside a session, shells still appear as tabs
 // beside that session's pane; this screen is where they live otherwise.
-const isMac = isMacPlatform();
-const newTerminalShortcutLabel = shortcutBindingLabel(defaultShortcutBindings("new-shell-terminal", isMac)[0], isMac);
+const newTerminalShortcutLabel = shortcutBindingLabel(defaultShortcutBindings("new-shell-terminal")[0]);
 
 export function ShellTerminalsView() {
 	const { daemonStatus } = useShell();

@@ -8,7 +8,6 @@ import {
 	type ShortcutChord,
 } from "../../shared/shortcuts";
 import { openAgentsBridge } from "../lib/bridge";
-import { isMacPlatform } from "../lib/platform";
 
 type KeybindingsState = {
 	overrides: KeybindingOverrides;
@@ -64,9 +63,9 @@ export function keyboardEventChord(event: KeyboardEvent): ShortcutChord {
 }
 
 export function matchesRendererShortcut(id: AppShortcutId, event: KeyboardEvent): boolean {
-	return matchesAppShortcut(id, keyboardEventChord(event), isMacPlatform(), useKeybindingsStore.getState().overrides);
+	return matchesAppShortcut(id, keyboardEventChord(event), useKeybindingsStore.getState().overrides);
 }
 
 export function currentShortcutBindings(id: AppShortcutId): readonly ShortcutBinding[] {
-	return effectiveShortcutBindings(id, isMacPlatform(), useKeybindingsStore.getState().overrides);
+	return effectiveShortcutBindings(id, useKeybindingsStore.getState().overrides);
 }

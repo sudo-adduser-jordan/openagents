@@ -48,7 +48,7 @@ describe("attachAppShortcuts", () => {
 		const target = { ...fakeTarget(), toggleDevTools: vi.fn() };
 		const browserHost = { toggleDevToolsForLastFocused: vi.fn().mockResolvedValue(null) };
 		let toggle: Promise<void> | undefined;
-		attachAppShortcuts(source, false, target, false, () => ({}), () => false, () => true, (id) => {
+		attachAppShortcuts(source, target, false, () => ({}), () => false, () => true, (id) => {
 			if (id === "toggle-browser-devtools") toggle = toggleAppDevTools(browserHost, () => target);
 		});
 
@@ -64,7 +64,7 @@ describe("attachAppShortcuts", () => {
 	it("forwards and prevents default on the main-window chord", () => {
 		const source = fakeSource();
 		const target = fakeTarget();
-		attachAppShortcuts(source, false, target);
+		attachAppShortcuts(source, target);
 
 		const event = source.emit({ key: "N", control: true, shift: true });
 
@@ -88,7 +88,7 @@ describe("attachAppShortcuts", () => {
 	it("ignores non-matching chords and key-up events", () => {
 		const source = fakeSource();
 		const target = fakeTarget();
-		attachAppShortcuts(source, false, target);
+		attachAppShortcuts(source, target);
 
 		source.emit({ key: "n", control: true });
 		source.emit({ key: "N", control: true, shift: true, type: "keyUp" });
@@ -100,7 +100,7 @@ describe("attachAppShortcuts", () => {
 	it("ignores auto-repeat so holding the combo fires once", () => {
 		const source = fakeSource();
 		const target = fakeTarget();
-		attachAppShortcuts(source, false, target);
+		attachAppShortcuts(source, target);
 
 		source.emit({ key: "N", control: true, shift: true });
 		source.emit({ key: "N", control: true, shift: true, isAutoRepeat: true });
@@ -109,15 +109,12 @@ describe("attachAppShortcuts", () => {
 		expect(target.send).toHaveBeenCalledTimes(1);
 	});
 
-	it.each([
-		["macOS", true, { key: "t", meta: true }],
-		["Windows/Linux", false, { key: "t", control: true }],
-	])("forwards the new-shell-terminal chord on %s", (_name, isMac, input) => {
+	it("forwards the new-shell-terminal chord", () => {
 		const source = fakeSource();
 		const target = fakeTarget();
 		attachAppShortcuts(source, target);
 
-		source.emit(input);
+		source.emit({ key: "t", control: true });
 
 		expect(target.send).toHaveBeenCalledWith(NEW_SHELL_TERMINAL_SHORTCUT_CHANNEL);
 	});
@@ -136,7 +133,7 @@ describe("attachAppShortcuts", () => {
 	it("consumes auto-repeat chords without re-firing so held ⌘W cannot reach menu Close", () => {
 		const source = fakeSource();
 		const target = fakeTarget();
-		attachAppShortcuts(source, false, target);
+		attachAppShortcuts(source, target);
 
 		const handledRepeat = source.emit({ key: "w", control: true, isAutoRepeat: true });
 		expect(handledRepeat.preventDefault).toHaveBeenCalledOnce();
@@ -144,7 +141,7 @@ describe("attachAppShortcuts", () => {
 
 		const rejectedSource = fakeSource();
 		const rejectedTarget = fakeTarget();
-		attachAppShortcuts(rejectedSource, false, rejectedTarget, false, () => ({}), () => false, (id) => id !== "close-shell-terminal");
+		attachAppShortcuts(rejectedSource, rejectedTarget, false, () => ({}), () => false, (id) => id !== "close-shell-terminal");
 		const rejectedRepeat = rejectedSource.emit({ key: "w", control: true, isAutoRepeat: true });
 		expect(rejectedRepeat.preventDefault).toHaveBeenCalledOnce();
 		expect(rejectedTarget.send).not.toHaveBeenCalled();
@@ -153,7 +150,7 @@ describe("attachAppShortcuts", () => {
 	it("consumes terminal tab chords when a browser context rejects them", () => {
 		const source = fakeSource();
 		const target = fakeTarget();
-		attachAppShortcuts(source, false, target, false, () => ({}), () => false, (id) => id !== "close-shell-terminal");
+		attachAppShortcuts(source, target, false, () => ({}), () => false, (id) => id !== "close-shell-terminal");
 
 		const event = source.emit({ key: "w", control: true });
 
@@ -182,7 +179,7 @@ describe("attachAppShortcuts", () => {
 	] as const)("forwards the Windows/Linux %s shortcut", (_label, input, channel) => {
 		const source = fakeSource();
 		const target = fakeTarget();
-		attachAppShortcuts(source, false, target);
+		attachAppShortcuts(source, target);
 
 		const event = source.emit(input);
 
@@ -194,7 +191,7 @@ describe("attachAppShortcuts", () => {
 		const source = fakeSource();
 		const target = fakeTarget();
 		let overrides = {};
-		attachAppShortcuts(source, false, target, false, () => overrides);
+		attachAppShortcuts(source, target, false, () => overrides);
 
 		source.emit({ key: "T", control: true, shift: true });
 		overrides = {
@@ -213,7 +210,7 @@ describe("attachAppShortcuts", () => {
 		const source = fakeSource();
 		const target = fakeTarget();
 		let recording = true;
-		attachAppShortcuts(source, false, target, false, () => ({}), () => recording);
+		attachAppShortcuts(source, target, false, () => ({}), () => recording);
 
 		const recordingEvent = source.emit({ key: "/", control: true });
 		recording = false;
