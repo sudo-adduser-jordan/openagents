@@ -2653,8 +2653,10 @@ func (s *Store) RollbackTurns(
 
 // DeleteHistoryBefore permanently removes rendered history strictly before the
 // named turn: messages and activities with an earlier sequence. The anchor turn
-// itself and everything after it survive. It returns how many messages and
-// activities were removed.
+// itself and everything after it survive, except when the anchor is the sole
+// remaining rendered history: then the anchor's own rows and untethered
+// boundary rows go too, so repeated prefix deletes can empty the transcript.
+// It returns how many messages and activities were removed.
 //
 // Turn rows and the raw provider-event archive are left alone. Turns keep their
 // rows so retry lineage (retry_of_turn_id is ON DELETE RESTRICT) and the
@@ -2694,6 +2696,7 @@ func (s *Store) DeleteHistoryBefore(
 		if err != nil {
 			return fmt.Errorf("select anchor sequence for turn %s: %w", turnID, err)
 		}
+		anchored := anchor > 0
 		if anchor <= 0 {
 			// The anchor has no timeline items yet (a freshly dispatched head
 			// turn). Everything durable precedes it, so the cutoff is past the
@@ -2703,6 +2706,31 @@ func (s *Store) DeleteHistoryBefore(
 				return fmt.Errorf("select head sequence for conversation %s: %w", conversationID, err)
 			}
 			anchor = head + 1
+		}
+		// Sole-remaining check comes before the prefix delete: a first trim
+		// anchored at the last of several turns must keep the anchor, while a
+		// repeat trim once only that anchor remains must remove it so the
+		// transcript can empty. Untethered boundary rows never block this;
+		// they are removed with the final turn.
+		var soleRemaining bool
+		if anchored {
+			otherMessages, err := q.CountConversationMessagesOtherTurns(ctx,
+				gen.CountConversationMessagesOtherTurnsParams{
+					ConversationID: conversationID,
+					TurnID:         sql.NullString{String: turnID, Valid: true},
+				})
+			if err != nil {
+				return fmt.Errorf("count other-turn messages for %s: %w", turnID, err)
+			}
+			otherActivities, err := q.CountConversationActivitiesOtherTurns(ctx,
+				gen.CountConversationActivitiesOtherTurnsParams{
+					ConversationID: conversationID,
+					TurnID:         sql.NullString{String: turnID, Valid: true},
+				})
+			if err != nil {
+				return fmt.Errorf("count other-turn activities for %s: %w", turnID, err)
+			}
+			soleRemaining = otherMessages == 0 && otherActivities == 0
 		}
 		messages, err := q.DeleteConversationMessagesBeforeSequence(ctx,
 			gen.DeleteConversationMessagesBeforeSequenceParams{
@@ -2721,6 +2749,35 @@ func (s *Store) DeleteHistoryBefore(
 			return fmt.Errorf("delete activities before sequence %d: %w", anchor, err)
 		}
 		deletedMessages, deletedActivities = messages, activities
+		if !soleRemaining {
+			return nil
+		}
+		anchorMessages, err := q.DeleteConversationMessagesByTurn(ctx,
+			gen.DeleteConversationMessagesByTurnParams{
+				ConversationID: conversationID,
+				TurnID:         sql.NullString{String: turnID, Valid: true},
+			})
+		if err != nil {
+			return fmt.Errorf("delete sole remaining turn messages for %s: %w", turnID, err)
+		}
+		anchorActivities, err := q.DeleteConversationActivitiesByTurn(ctx,
+			gen.DeleteConversationActivitiesByTurnParams{
+				ConversationID: conversationID,
+				TurnID:         sql.NullString{String: turnID, Valid: true},
+			})
+		if err != nil {
+			return fmt.Errorf("delete sole remaining turn activities for %s: %w", turnID, err)
+		}
+		orphanMessages, err := q.DeleteConversationMessagesWithoutTurn(ctx, conversationID)
+		if err != nil {
+			return fmt.Errorf("delete untethered messages for %s: %w", conversationID, err)
+		}
+		orphanActivities, err := q.DeleteConversationActivitiesWithoutTurn(ctx, conversationID)
+		if err != nil {
+			return fmt.Errorf("delete untethered activities for %s: %w", conversationID, err)
+		}
+		deletedMessages += anchorMessages + orphanMessages
+		deletedActivities += anchorActivities + orphanActivities
 		return nil
 	})
 	if err != nil {

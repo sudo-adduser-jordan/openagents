@@ -131,3 +131,75 @@ func TestDeleteHistoryBeforeRefusesAnUnknownTurn(t *testing.T) {
 		t.Fatalf("err = %v, want ErrConversationTurnNotFound", err)
 	}
 }
+
+// Repeated prefix deletes must empty the transcript: once only the anchor
+// remains, deleting "before" it removes the anchor itself instead of reporting
+// 0 and leaving one undeletable last message. Turn rows survive; only rendered
+// prose and untethered boundary rows go.
+func TestDeleteHistoryBeforeSoleTurnEmptiesTheTranscript(t *testing.T) {
+	s, session, conversation := conversationFixture(t)
+	ctx := context.Background()
+
+	seedTurn(t, s, conversation, session, "turn-1", "first", histClock)
+	seedTurn(t, s, conversation, session, "turn-2", "second", histClock.Add(time.Minute))
+	seedTurn(t, s, conversation, session, "turn-3", "third", histClock.Add(2*time.Minute))
+
+	if _, _, err := s.DeleteHistoryBefore(ctx, conversation, "turn-3"); err != nil {
+		t.Fatalf("first DeleteHistoryBefore: %v", err)
+	}
+	snapshot, err := s.LoadConversationSnapshot(ctx, conversation)
+	if err != nil {
+		t.Fatalf("load snapshot: %v", err)
+	}
+	if got := texts(snapshot.Messages); len(got) != 1 || got[0] != "third" {
+		t.Fatalf("messages = %#v, want [third] before the final delete", got)
+	}
+
+	messages, activities, err := s.DeleteHistoryBefore(ctx, conversation, "turn-3")
+	if err != nil {
+		t.Fatalf("final DeleteHistoryBefore: %v", err)
+	}
+	if messages != 1 || activities != 1 {
+		t.Fatalf("deleted = %d messages / %d activities, want 1 and 1", messages, activities)
+	}
+
+	snapshot, err = s.LoadConversationSnapshot(ctx, conversation)
+	if err != nil {
+		t.Fatalf("load snapshot: %v", err)
+	}
+	if len(snapshot.Messages) != 0 {
+		t.Fatalf("messages = %#v, want empty transcript", texts(snapshot.Messages))
+	}
+	if len(snapshot.Activities) != 0 {
+		t.Fatalf("activities = %d, want empty transcript", len(snapshot.Activities))
+	}
+	if len(snapshot.Turns) != 3 {
+		t.Fatalf("turns = %d, want all 3 rows still durable", len(snapshot.Turns))
+	}
+}
+
+// A single-turn conversation is already the sole-remaining case: one call
+// empties it rather than leaving its only message stuck.
+func TestDeleteHistoryBeforeSingleTurnEmptiesImmediately(t *testing.T) {
+	s, session, conversation := conversationFixture(t)
+	ctx := context.Background()
+
+	seedTurn(t, s, conversation, session, "turn-1", "only", histClock)
+
+	messages, activities, err := s.DeleteHistoryBefore(ctx, conversation, "turn-1")
+	if err != nil {
+		t.Fatalf("DeleteHistoryBefore: %v", err)
+	}
+	if messages != 1 || activities != 1 {
+		t.Fatalf("deleted = %d messages / %d activities, want 1 and 1", messages, activities)
+	}
+
+	snapshot, err := s.LoadConversationSnapshot(ctx, conversation)
+	if err != nil {
+		t.Fatalf("load snapshot: %v", err)
+	}
+	if len(snapshot.Messages) != 0 || len(snapshot.Activities) != 0 {
+		t.Fatalf("transcript not empty: %d messages / %d activities",
+			len(snapshot.Messages), len(snapshot.Activities))
+	}
+}

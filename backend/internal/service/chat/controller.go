@@ -2366,7 +2366,9 @@ func (c *Controller) Rollback(ctx context.Context, turnID string) (int, error) {
 // DeleteHistoryBefore permanently removes rendered history strictly before the
 // named turn. Unlike Rollback it never touches the provider: there is no ACP
 // primitive for forgetting a prefix, so the agent keeps whatever context it
-// holds and only Open Agents's transcript shrinks.
+// holds and only Open Agents's transcript shrinks. When the anchor is the sole
+// remaining rendered history, its own rows go too so repeated trims can empty
+// the transcript.
 //
 // The busy check is inside sendMu for the same reason Rollback holds it: a
 // turn starting or streaming between the check and the delete would write new
