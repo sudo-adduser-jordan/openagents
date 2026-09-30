@@ -482,7 +482,14 @@ function UsageAgentAttribution({ harness }: { harness: SessionUsage["harnesses"]
 	const modelSummaryTitle = harness.models.length === 1 ? harness.models[0].modelId : modelSummary;
 	const attribution = (
 		<>
-			<AgentAvatar className="size-4" decorative provider={harness.harness} />
+			<AgentAvatar
+				className="size-4"
+				decorative
+				// Only the single-model case names a model to brand. With several,
+				// the avatar stays the harness's rather than implying one of them.
+				model={harness.models.length === 1 ? harness.models[0].modelId : undefined}
+				provider={harness.harness}
+			/>
 			<span className="shrink-0 text-sm-md text-settings-label">{harnessName}</span>
 			{modelSummary ? (
 				<>
@@ -617,10 +624,11 @@ function ProviderUsageDetails({ harness }: { harness: SessionUsage["harnesses"][
 		<div>
 			{harness.models.length > 0 ? (
 				harness.models.map((model, index) => (
-					<UsageModelRow
-						key={`${model.modelId}:${index}`}
-						model={model}
-					/>
+				<UsageModelRow
+					harness={harness}
+					key={`${model.modelId}:${index}`}
+					model={model}
+				/>
 				))
 			) : (
 				<p className="px-1 py-1 text-2xs text-settings-muted">{"No model telemetry available."}</p>
@@ -689,8 +697,10 @@ function updateSessionAutoInjectCI(
 }
 
 function UsageModelRow({
+	harness,
 	model,
 }: {
+	harness: SessionUsage["harnesses"][number];
 	model: SessionUsage["harnesses"][number]["models"][number];
 }) {
 	const modelName = formatModelName(model.modelId);
@@ -698,6 +708,7 @@ function UsageModelRow({
 	return (
 		<UsageDisclosureRow
 			detailsLabel={`${modelName} usage details`}
+			icon={<AgentAvatar className="size-4" decorative model={model.modelId} provider={harness.harness} />}
 			name={modelName}
 			nameClassName="text-2xs"
 			nameTitle={model.modelId}

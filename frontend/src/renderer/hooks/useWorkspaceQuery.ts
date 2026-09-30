@@ -67,6 +67,7 @@ function toWorkspaceSession(
 		num: session.num || undefined,
 		issueId: session.issueId,
 		provider: toAgentProvider(session.harness),
+		model: session.model || undefined,
 		reviewerHarness: toReviewerHarnessId(session.reviewerHarness),
 		reviewerConfig: session.reviewerConfig
 			? {
@@ -126,6 +127,7 @@ function toLocalWorkspaceSession(
 		num: session.num || undefined,
 		issueId: session.issueId,
 		provider: toAgentProvider(session.harness),
+		model: session.model || undefined,
 		reviewerHarness: toReviewerHarnessId(session.reviewerHarness),
 		reviewerConfig: session.reviewerConfig ? {
 			model: session.reviewerConfig.model ?? undefined,

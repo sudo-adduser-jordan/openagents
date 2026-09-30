@@ -70,6 +70,13 @@ export type WorkspaceSession = {
 	/** Raw issue/task identifier from the daemon. Intake ids are provider-prefixed. */
 	issueId?: string;
 	provider: AgentProvider;
+	/**
+	 * Model this session resolved to at spawn time, or undefined when it runs on
+	 * the harness default. Enough to brand the board card; surfaces that need
+	 * reroute awareness read the live conversation snapshot instead, because this
+	 * only moves when the session respawns.
+	 */
+	model?: string;
 	/** Reviewer selected for this session; absent means use the project default. */
 	reviewerHarness?: ReviewerHarnessId;
 	/** Per-session reviewer override, including hidden fields preserved across saves. */

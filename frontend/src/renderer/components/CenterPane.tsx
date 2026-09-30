@@ -580,6 +580,12 @@ type SessionPaneTabProps = {
 	onSelect?: () => void;
 	onRenamed?: () => void | Promise<void>;
 	session?: WorkspaceSession;
+	/**
+	 * Live model for this tab's mark, when the caller holds a conversation
+	 * snapshot. Reroute-aware, so it wins over the spawn-time `session.model`;
+	 * callers without a snapshot (the terminal tab strip) fall back to that.
+	 */
+	model?: string;
 	icon?: ReactNode;
 	title?: string;
 	/** Session-scoped controls (interface switch, handoff) beside the tab label. */
@@ -599,6 +605,7 @@ export function SessionPaneTab({
 	onSelect,
 	onRenamed,
 	session,
+	model,
 	icon,
 	title,
 	tabAction,
@@ -607,7 +614,7 @@ export function SessionPaneTab({
 	const { ref, isTruncated } = useTruncatedText<HTMLButtonElement>(label);
 	const activityLabel = session ? getAgentActivityView(session.activity).label : undefined;
 	const providerLabel = session ? agentLabel(session.provider) : undefined;
-	const tabIcon = session ? <AgentAvatar className="size-terminal-agent-icon" decorative provider={session.provider} /> : icon;
+	const tabIcon = session ? <AgentAvatar className="size-terminal-agent-icon" decorative model={model ?? session.model} provider={session.provider} /> : icon;
 	const connected = appearance === "connected";
 	// A session object supplies the tab presentation; refresh wiring explicitly
 	// opts the owning surface into rename so shared preview/cloud tabs cannot

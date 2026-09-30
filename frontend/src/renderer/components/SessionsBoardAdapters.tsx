@@ -346,7 +346,7 @@ function DesktopSessionCard({
 				state: pr.state,
 				url: prBrowserUrl(pr),
 			}))}
-			renderAvatar={(provider) => <AgentAvatar provider={provider} />}
+			renderAvatar={(provider) => <AgentAvatar provider={provider} model={session.model} />}
 			session={toBoardSessionPresentation(session)}
 			statusAction={statusAction}
 			renderUsage={(usage) => (

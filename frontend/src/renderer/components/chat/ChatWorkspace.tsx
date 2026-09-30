@@ -74,7 +74,7 @@ import {
 import { isLinuxPlatform, isMacPlatform } from "../../lib/platform";
 import { handleTerminalTabListKeyDown } from "../../lib/terminal-tabs";
 import { agentLabel } from "../../lib/agent-options";
-import type { ApprovalMode } from "../../types/conversation";
+import { answeringModel, type ApprovalMode } from "../../types/conversation";
 import type { ConversationLocalEcho } from "../../hooks/useConversation";
 import type { ShellTerminal } from "../../hooks/useShellTerminals";
 import { sidebarOccupiesLayout, useUiStore } from "../../stores/ui-store";
@@ -1926,6 +1926,7 @@ function ChatHeader({
 							<SessionPaneTab
 								isActive={timelineActive}
 								label={label}
+								model={answeringModel(snapshot)}
 								onSelect={timelineActive ? undefined : onSelectChat}
 								onRenamed={onSessionRenamed}
 								session={session}
@@ -1950,7 +1951,7 @@ function ChatHeader({
 								title={label}
 								type="button"
 							>
-								<AgentAvatar className="size-icon-base" decorative provider={snapshot.harness} />
+								<AgentAvatar className="size-icon-base" decorative model={answeringModel(snapshot)} provider={snapshot.harness} />
 								<span className="truncate">{label}</span>
 							</button>
 						)}
