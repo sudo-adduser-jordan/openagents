@@ -422,7 +422,7 @@ const BoardArchivePanel = memo(function BoardArchivePanel({
 	const retireSession = useRetireSession();
 	const clearArchive = useRetireArchivedSessions();
 	const [clearArchiveOpen, setClearArchiveOpen] = useState(false);
-	const [clearArchiveSummary, setClearArchiveSummary] = useState<string | undefined>();
+	const showGlobalToast = useUiStore((state) => state.showGlobalToast);
 	const navigate = useNavigate();
 	const queryClient = useQueryClient();
 	const restoreSessionById = useRestoreSession();
@@ -436,7 +436,6 @@ const BoardArchivePanel = memo(function BoardArchivePanel({
 		setRestoreErrors({});
 		setRestoreUnavailableSession(undefined);
 		setClearArchiveOpen(false);
-		setClearArchiveSummary(undefined);
 		restoreGenerationRef.current += 1;
 	}, [projectId]);
 
@@ -495,14 +494,26 @@ const BoardArchivePanel = memo(function BoardArchivePanel({
 		}
 		const result = await clearArchive.mutateAsync(targets);
 		setClearArchiveOpen(false);
-		// The summary names the shortfall, not just the success count: a user who
-		// cleared 12 and sees "12 removed" when one failed would be misled.
-		setClearArchiveSummary(
-			result.failed.length === 0
-				? `Removed ${result.removed.length} archived ${pluralize(result.removed.length, "session")}`
-				: `Removed ${result.removed.length} · ${result.failed.length} failed: ${result.failed
-						.map((failure) => failure.sessionId)
-						.join(", ")}`,
+		// The summary goes to a global toast rather than the archive bar. This
+		// panel is gated on hasArchive, so clearing the last session unmounts
+		// it -- an inline summary would be destroyed by the success it reports,
+		// which is exactly the case worth reporting. A partial failure names
+		// the sessions that need a retry, so a transient toast is enough.
+		if (result.failed.length === 0) {
+			showGlobalToast(
+				"Archive cleared",
+				`Removed ${result.removed.length} archived ${pluralize(result.removed.length, "session")}.`,
+			);
+			return;
+		}
+		// A user who cleared 12 and sees only "12 removed" when one failed
+		// would be misled, so name the shortfall.
+		showGlobalToast(
+			"Archive partly cleared",
+			`Removed ${result.removed.length} · ${result.failed.length} failed: ${result.failed
+				.map((failure) => failure.sessionId)
+				.join(", ")}`,
+			"error",
 		);
 	};
 
@@ -510,22 +521,15 @@ const BoardArchivePanel = memo(function BoardArchivePanel({
 		<>
 			<SessionsArchiveView
 				headerAction={
-					<span className="flex items-center gap-2">
-						{clearArchiveSummary ? (
-							<span className="text-2xs text-settings-muted" role="status">
-								{clearArchiveSummary}
-							</span>
-						) : null}
-						<button
-							aria-label="Clear archive"
-							className="rounded-sm border border-border/80 px-1.5 py-0.5 text-2xs font-medium text-foreground transition-colors hover:bg-error/10 hover:text-error focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring/60"
-							disabled={clearArchive.isPending}
-							onClick={() => setClearArchiveOpen(true)}
-							type="button"
-						>
-							Clear archive
-						</button>
-					</span>
+					<button
+						aria-label="Clear archive"
+						className="rounded-sm border border-border/80 px-1.5 py-0.5 text-2xs font-medium text-foreground transition-colors hover:bg-error/10 hover:text-error focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring/60"
+						disabled={clearArchive.isPending}
+						onClick={() => setClearArchiveOpen(true)}
+						type="button"
+					>
+						Clear archive
+					</button>
 				}
 				labels={{
 					archive: "Archive",

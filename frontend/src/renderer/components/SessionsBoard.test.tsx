@@ -1,8 +1,9 @@
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { act, render, screen, waitFor, within } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
-import { beforeEach, describe, expect, it, vi } from "vitest";
+import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import type { WorkspaceSession, WorkspaceSummary } from "../types/workspace";
+import { useUiStore } from "../stores/ui-store";
 import { toKanbanColumn } from "@openagents/product-ui";
 
 // Instant motion updates so height tweens do not leave tests waiting on timers.
@@ -95,6 +96,7 @@ vi.mock("../lib/platform", async (importOriginal) => {
 
 import { archiveToggleHeightClassName, archiveToggleOffsetClassName } from "@openagents/product-ui";
 import { SessionsBoard } from "./SessionsBoard";
+import { GlobalToast } from "./GlobalToast";
 import { toBoardSessionPresentation } from "./SessionsBoardAdapters";
 import { TooltipProvider } from "./ui/tooltip";
 
@@ -104,14 +106,21 @@ function renderBoard(projectId?: string) {
 	return queryClient;
 }
 
-function renderBoardWithClient(queryClient: QueryClient, projectId?: string) {
-	return render(
+function boardTree(queryClient: QueryClient, projectId?: string) {
+	return (
 		<QueryClientProvider client={queryClient}>
 			<TooltipProvider>
 				<SessionsBoard projectId={projectId} />
+				{/* The app shell mounts this; the clear-archive summary lands in
+				    the global toast store, so it is here to be asserted. */}
+				<GlobalToast />
 			</TooltipProvider>
-		</QueryClientProvider>,
+		</QueryClientProvider>
 	);
+}
+
+function renderBoardWithClient(queryClient: QueryClient, projectId?: string) {
+	return render(boardTree(queryClient, projectId));
 }
 
 /** Archive cards mount on the next frame via startTransition — wait for the list. */
@@ -129,6 +138,10 @@ async function confirmClearArchive() {
 	const dialog = await screen.findByRole("dialog");
 	await userEvent.click(within(dialog).getByRole("button", { name: "Clear archive" }));
 }
+
+// The toast store is a module singleton, so a clear-archive summary would
+// otherwise survive into the next test and make role=status/alert ambiguous.
+afterEach(() => useUiStore.getState().clearGlobalToast());
 
 beforeEach(() => {
 	navigateMock.mockReset();
@@ -1188,7 +1201,7 @@ describe("SessionsBoard", () => {
 		expect(deleteMock).toHaveBeenCalledWith("/api/v1/sessions/{sessionId}", {
 			params: { path: { sessionId: "s-old" } },
 		});
-		expect(await screen.findByRole("status")).toHaveTextContent("Removed 2 · 1 failed: s-live");
+		expect(await screen.findByRole("alert")).toHaveTextContent("Removed 2 · 1 failed: s-live");
 	});
 
 	it("keeps clearing after a transport throw, not just an error envelope", async () => {
@@ -1216,7 +1229,38 @@ describe("SessionsBoard", () => {
 		await confirmClearArchive();
 
 		await waitFor(() => expect(deleteMock).toHaveBeenCalledTimes(3));
-		expect(await screen.findByRole("status")).toHaveTextContent("Removed 2 · 1 failed: s-live");
+		expect(await screen.findByRole("alert")).toHaveTextContent("Removed 2 · 1 failed: s-live");
+	});
+
+	it("keeps the summary visible after the last archived session is gone", async () => {
+		// The archive bar, and the panel that owns it, are both gated on
+		// hasArchive. Clearing the last session therefore unmounts them -- so a
+		// summary rendered inside that bar is destroyed by the very success it
+		// reports. This asserts the bar is really gone and the summary is not.
+		let cleared = false;
+		workspaceQueryMock.mockImplementation(() => ({
+			data: [workspaceWithSessions(cleared ? [] : [terminatedSession()])],
+			isError: false,
+			isSuccess: true,
+		}));
+		deleteMock.mockImplementation(async () => {
+			cleared = true;
+			return { data: { ok: true, sessionId: "s-dead", freed: true } };
+		});
+
+		const queryClient = new QueryClient({ defaultOptions: { queries: { retry: false } } });
+		const view = renderBoardWithClient(queryClient, "p1");
+		await expandArchive();
+		await confirmClearArchive();
+
+		// useWorkspaceQuery is mocked here, so the hook's invalidateQueries is
+		// a no-op. Re-render to stand in for the refetch landing.
+		view.rerender(boardTree(queryClient, "p1"));
+
+		await waitFor(() =>
+			expect(screen.queryByRole("button", { name: /archive/i })).not.toBeInTheDocument(),
+		);
+		expect(await screen.findByRole("status")).toHaveTextContent("Removed 1 archived session");
 	});
 
 	it("treats an already-gone session as removed rather than failed", async () => {
