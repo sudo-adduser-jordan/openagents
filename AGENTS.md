@@ -161,6 +161,8 @@ Commit `openapi.yaml` and `frontend/src/api/schema.ts` together with the Go chan
 - Manager sessions coordinate only: they must not create, edit, or delete files, run write-shaped shell commands, or commit code.
 - All implementation goes through spawned workers (`open-agents spawn --name "<label>" --prompt "<task>"`); workers start in planning mode, and the manager advances them with `open-agents build <worker-session-id>`.
 - Plan-mode constraints apply to manager mode: reads, searches, delegation, and review only.
+- The operator may explicitly instruct the manager to act directly. Treat that instruction as a one-off exception scoped to the action named, and nothing beyond it.
+- Direct action is not delegation: the manager must report what it did and what it changed, and must not carry the exception into adjacent work.
 
 ## Domain glossary
 
