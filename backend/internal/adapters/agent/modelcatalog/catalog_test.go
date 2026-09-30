@@ -94,10 +94,55 @@ func TestClassifyModelIDIsCaseInsensitive(t *testing.T) {
 	}
 }
 
-func TestOpenCodeDiscoveryUsesPureMode(t *testing.T) {
+func TestOpenCodeDiscoveryUsesDocumentedModelCommand(t *testing.T) {
 	spec := commandSpecs["opencode"]
-	if len(spec.args) != 2 || spec.args[0] != "--pure" || spec.args[1] != "models" {
-		t.Fatalf("opencode discovery args = %q, want [--pure models]", spec.args)
+	if len(spec.args) != 1 || spec.args[0] != "models" {
+		t.Fatalf("opencode discovery args = %q, want [models]", spec.args)
+	}
+	if spec.parser == nil {
+		t.Fatal("opencode discovery parser is nil")
+	}
+}
+
+// The shipped opencode CLI rejects the old --pure flag with exit 1 and a
+// usage dump, which made every discovery attempt fail and left the Settings
+// picker with an empty catalog. This guards the documented command output.
+func TestParseOpenCodeModelsListsProviderQualifiedIDs(t *testing.T) {
+	output := []byte(strings.Join([]string{
+		"opencode/big-pickle",
+		"opencode/ling-3.0-flash-fin-free",
+		"opencode/longcat-2.5-preview-free",
+		"opencode/mimo-v2.6-flash-free",
+		"opencode/muse-spark-1.3-contributor-free",
+		"opencode/nemotron-3-ultra-free",
+		"opencode/nemotron-3.5-lightning-free",
+		"opencode/space-bunny-free",
+	}, "\n"))
+	models, err := parseIDLines(output)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if len(models) != 8 {
+		t.Fatalf("models = %#v, want 8 provider-qualified IDs", models)
+	}
+	got := map[string]ports.AgentModelCost{}
+	for _, m := range models {
+		got[m.ID] = m.Cost
+		if m.Label != m.ID {
+			t.Fatalf("model %q label = %q, want the ID itself", m.ID, m.Label)
+		}
+	}
+	if got["opencode/big-pickle"] != ports.AgentModelCostPaid {
+		t.Fatalf("opencode/big-pickle cost = %q, want paid", got["opencode/big-pickle"])
+	}
+	for _, want := range []string{
+		"opencode/ling-3.0-flash-fin-free",
+		"opencode/muse-spark-1.3-contributor-free",
+		"opencode/space-bunny-free",
+	} {
+		if got[want] != ports.AgentModelCostFree {
+			t.Fatalf("%s cost = %q, want free", want, got[want])
+		}
 	}
 }
 
