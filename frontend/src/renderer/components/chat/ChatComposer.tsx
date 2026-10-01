@@ -170,6 +170,7 @@ export const ChatComposer = memo(function ChatComposer({
 	commandError,
 	attachedTop = false,
 	queuedDock,
+	onStagedChange,
 	onCompact,
 	onClearHistory,
 	clearingHistory,
@@ -242,6 +243,11 @@ export const ChatComposer = memo(function ChatComposer({
 	savingQueuedEditPending?: boolean;
 	/** Keep the exact queued edit immutable until its saved delivery ID is reconciled. */
 	queuedEditRecovery?: boolean;
+	/**
+	 * Reports whether the composer currently holds staged attachments. The chat
+	 * surface hides its empty-state brand mark while attachments are staged.
+	 */
+	onStagedChange?: (staged: boolean) => void;
 	/** A failed send, approval, interrupt, or settings mutation. */
 	commandError?: string;
 	/** A queued-message dock owns the shared rounded top edge. */
@@ -491,6 +497,9 @@ export const ChatComposer = memo(function ChatComposer({
 	const activeIndex = Math.min(highlighted, suggestions.length - 1);
 
 	const staged = fileAttachments.attachments.length > 0 || visibleRetainedAttachments.length > 0;
+	useEffect(() => {
+		onStagedChange?.(staged);
+	}, [onStagedChange, staged]);
 	const controlsDisabled = Boolean(disabled || submitting);
 	const hasDraft = hasText || staged;
 	const savingQueuedEdit = Boolean(editingQueuedTurnId);

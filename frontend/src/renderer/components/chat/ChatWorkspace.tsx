@@ -86,6 +86,7 @@ import {
 	type WorkspaceSession,
 } from "../../types/workspace";
 import { AgentAvatar } from "../AgentAvatar";
+import openAgentsLogo from "../../../../assets/open-agents-logo.svg";
 import { SessionPaneTab } from "../CenterPane";
 import { Button } from "../ui/button";
 import { ConfirmDialog } from "../ConfirmDialog";
@@ -761,6 +762,13 @@ function ChatWorkspaceContent({
 		});
 	}, [auxiliaryTabOrder, availableTabKeys, onAuxiliaryTabOrderChange, snapshot.sessionId]);
 	const queuedMessages = useQueuedMessages(snapshot);
+	const [composerHasAttachments, setComposerHasAttachments] = useState(false);
+	const handleComposerStagedChange = useCallback((staged: boolean) => {
+		setComposerHasAttachments(staged);
+	}, []);
+	useEffect(() => {
+		setComposerHasAttachments(false);
+	}, [snapshot.sessionId]);
 	const stablePromoteQueuedTurn = useStableCallback(onPromoteQueuedTurn);
 	const stableCancelQueuedTurn = useStableCallback(onCancelQueuedTurn);
 	const [queueEdit, setQueueEdit] = useState<ChatDraftQueuedEdit | undefined>(
@@ -1355,6 +1363,38 @@ function ChatWorkspaceContent({
 	// Empty chats center the prompt; once a turn or item exists the composer docks
 	// at the bottom and stays there for the rest of the session.
 	const conversationEmpty = snapshot.items.length === 0 && !turn && (localEchos?.length ?? 0) === 0;
+	// The manager empty-state brand mark shows only above a truly empty manager
+	// composer: no history, no turn in flight, no queued message or attachment,
+	// and no status banner competing for the centered space. Workers never see
+	// it; their conversation is scoped to one task.
+	const controllerBannerVisible =
+		snapshot.controller.state !== "ready" &&
+		snapshot.controller.state !== "busy" &&
+		!(controllerTransitioning && snapshot.controller.state === "stopped");
+	const hasStatusBanner =
+		Boolean(snapshot.account) ||
+		Boolean(snapshot.threadState) ||
+		brokenServers.length > 0 ||
+		controllerBannerVisible;
+	const hasQueuedAttachment =
+		composerHasAttachments ||
+		(queueEdit?.attachments?.length ?? 0) > 0 ||
+		(queueEdit?.stagedAttachments?.length ?? 0) > 0 ||
+		queuedMessages.some(
+			(entry) =>
+				(entry.message.content?.length ?? 0) > 0 ||
+				stagedAttachmentParts(entry.message.text).attachments.length > 0,
+		);
+	const showManagerEmptyBrand =
+		effectiveSessionRole === "manager" &&
+		conversationEmpty &&
+		queuedMessages.length === 0 &&
+		!queueEdit &&
+		!stablePendingApproval &&
+		!sendPending &&
+		!steerPending &&
+		!hasQueuedAttachment &&
+		!hasStatusBanner;
 	const composerDockRef = useRef<HTMLDivElement>(null);
 	const composerCenteredTopRef = useRef<number | null>(null);
 	const composerFlipDyRef = useRef<number | null>(null);
@@ -1584,6 +1624,20 @@ function ChatWorkspaceContent({
 								className="mx-auto flex w-full max-w-3xl flex-col gap-2 transition-[max-width] duration-500 ease-out data-[empty]:max-w-2xl"
 							>
 								{discarded > 0 ? <RolledBackNotice count={discarded} /> : null}
+								{showManagerEmptyBrand ? (
+									<div
+										aria-hidden="true"
+										className="flex flex-col items-center pb-6"
+										data-testid="manager-empty-brand"
+									>
+										<img
+											alt=""
+											className="h-12 w-auto object-contain"
+											draggable={false}
+											src={openAgentsLogo}
+										/>
+									</div>
+								) : null}
 								<ChatComposer
 									key={`${draftScopeKey}:${queueEdit ? `${queueEdit.turnId}:${queueEdit.ownerId ?? queueEdit.expectedRevision ?? "legacy"}` : "composer"}`}
 									queuedDock={composerQueuedDock}
@@ -1601,6 +1655,7 @@ function ChatWorkspaceContent({
 									queuedDraftScope={queueEdit ? draftScope : undefined}
 									onQueuedAttachmentsChange={changeQueuedStagedAttachments}
 									onQueuedRetainedAttachmentsChange={changeQueuedRetainedAttachments}
+									onStagedChange={handleComposerStagedChange}
 									onInterrupt={turn && !newWorkDisabled ? stableInterrupt : undefined}
 									commandError={queueDraftError ?? (queueEdit && !queueEdit.clientMessageId && !queuedMessages.some((entry) => entry.turnId === queueEdit.turnId) ? "chat.draft.queueMissing" : commandError)}
 									settings={composerSettings}
