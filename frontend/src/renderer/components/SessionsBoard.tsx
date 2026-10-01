@@ -30,6 +30,7 @@ import { useRetireSession } from "../hooks/useRetireSession";
 import { useRetireArchivedSessions } from "../hooks/useRetireArchivedSessions";
 import { useRestoreSession } from "../hooks/useRestoreSession";
 import { useTerminateSession } from "../hooks/useTerminateSession";
+import { useDiscardReadySession } from "../hooks/useDiscardReadySession";
 import { useMergeSessionLocal } from "../hooks/useMergeSessionLocal";
 import { useCreateSessionPR } from "../hooks/useCreateSessionPR";
 import { useWorkspaceQuery, workspaceQueryKey } from "../hooks/useWorkspaceQuery";
@@ -169,6 +170,7 @@ export function SessionsBoard({ projectId }: SessionsBoardProps) {
 	});
 	const hasArchive = archived.length > 0;
 	const terminateSession = useTerminateSession();
+	const discardReadySession = useDiscardReadySession();
 	const activeProjectIdRef = useRef(projectId);
 	activeProjectIdRef.current = projectId;
 
@@ -258,6 +260,13 @@ export function SessionsBoard({ projectId }: SessionsBoardProps) {
 	const requestMergeLocal = useCallback(
 		(session: WorkspaceSession) => mergeSessionLocal.mutate(session),
 		[mergeSessionLocal],
+	);
+	// Ready-lane discard: terminate the session when it is still alive, then
+	// retire its record so the finished card leaves the board. Failures
+	// surface on the card via mutation state; nothing is optimistic.
+	const requestDiscardReady = useCallback(
+		(session: WorkspaceSession) => discardReadySession.mutate(session),
+		[discardReadySession],
 	);
 	// Open PR leaves the session alive for review: ensure exactly one PR
 	// exists, then hand its URL to the browser. Failures surface on the card.
@@ -377,6 +386,7 @@ export function SessionsBoard({ projectId }: SessionsBoardProps) {
 								<BoardSessionCardAdapter
 								onOpen={() => openSession(session)}
 									onTerminate={() => terminateSession.mutate(session)}
+								onDiscardReady={() => requestDiscardReady(session)}
 									onWorkflowModeChange={(_session, workflowMode) => changeWorkflowMode(session, workflowMode)}
 									onReviewToCommit={() => void reviewToCommit(session)}
 									onMergeLocal={() => requestMergeLocal(session)}
