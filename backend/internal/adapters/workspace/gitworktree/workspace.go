@@ -1713,6 +1713,40 @@ func (w *Workspace) refExists(ctx context.Context, repo, ref string) (bool, erro
 	return false, fmt.Errorf("gitworktree: verify ref %q: %w", ref, err)
 }
 
+// CommitUncommitted stages all working-tree changes (tracked edits plus
+// non-ignored untracked files) and creates an approve auto-commit. It
+// returns committed=false when the worktree is already clean. A conflicted
+// merge state or any other commit failure is returned as an error (callers
+// fall back to dirty-preserve, never force-delete); a dirty-checkout
+// refusal surfaces as ports.ErrWorkspaceDirty.
+func (w *Workspace) CommitUncommitted(ctx context.Context, info ports.WorkspaceInfo) (bool, error) {
+	if info.Path == "" {
+		return false, fmt.Errorf("%w: empty path", ErrUnsafePath)
+	}
+	path, err := w.validateManagedPath(info.Path)
+	if err != nil {
+		return false, err
+	}
+	dirty, err := w.isDirty(ctx, path)
+	if err != nil {
+		return false, fmt.Errorf("gitworktree: CommitUncommitted dirty check: %w", err)
+	}
+	if !dirty {
+		return false, nil
+	}
+	if out, err := w.run(ctx, w.binary, "-C", path, "diff", "--name-only", "--diff-filter=U"); err == nil && strings.TrimSpace(string(out)) != "" {
+		return false, fmt.Errorf("gitworktree: refusing to auto-commit %q with unresolved conflicts: %w", path, ports.ErrWorkspaceDirty)
+	}
+	if _, err := w.run(ctx, w.binary, approveAddUntrackedArgs(path)...); err != nil {
+		return false, fmt.Errorf("gitworktree: approve stage %q: %w", path, err)
+	}
+	msg := "open-agents approve " + string(info.SessionID)
+	if _, err := w.run(ctx, w.binary, approveCommitArgs(path, msg)...); err != nil {
+		return false, fmt.Errorf("gitworktree: approve commit %q: %w", path, err)
+	}
+	return true, nil
+}
+
 // isDirty reports whether the worktree at path has uncommitted changes or
 // untracked files — the same check `git worktree remove` performs before
 // refusing without --force.

@@ -178,6 +178,20 @@ func conflictedFilesArgs(repo string) []string {
 	return []string{"-C", repo, "diff", "--name-only", "--diff-filter=U"}
 }
 
+// approveCommitArgs creates the approve auto-commit. Untracked files are staged
+// beforehand via approveAddUntrackedArgs; identity is passed via -c so the
+// commit never depends on ambient git config.
+func approveCommitArgs(worktree, message string) []string {
+	return []string{"-C", worktree,
+		"-c", "user.name=Open Agents",
+		"-c", "user.email=open-agents@example.com",
+		"commit", "-a", "-m", message}
+}
+
+func approveAddUntrackedArgs(worktree string) []string {
+	return []string{"-C", worktree, "add", "-A"}
+}
+
 // revParseArgs prints the SHA a ref resolves to.
 func revParseArgs(repo, ref string) []string {
 	return []string{"-C", repo, "rev-parse", ref}

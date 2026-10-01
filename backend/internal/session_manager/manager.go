@@ -1763,8 +1763,12 @@ func workspacePreserved(err error) bool {
 const killTeardownBudget = 90 * time.Second
 
 // Kill tears down the runtime and workspace, then records terminal intent with
-// the LCM. A workspace teardown refused by the worktree-remove safety
-// (uncommitted work) is never forced: Kill succeeds with freed=false,
+// the LCM. Before teardown it best-effort commits working-tree changes (the
+// approve path terminates here), so unstaged work lands in a commit instead
+// of forcing a dirty-preserve. A commit refusal (conflicts, dirty checkout)
+// falls back to the existing preserve behavior below. A workspace teardown
+// refused by the worktree-remove safety (uncommitted work) is never forced:
+// Kill succeeds with freed=false,
 // signalling the workspace was preserved for later inspection/cleanup while
 // the session itself is still marked terminated.
 //
@@ -1794,6 +1798,21 @@ func (m *Manager) RetireSession(ctx context.Context, id domain.SessionID) (bool,
 	}
 	defer m.endAgentOperation(id, agentOperationRetireSession)
 	return m.store.RetireSession(ctx, id, m.clock())
+}
+
+// commitUncommittedBestEffort turns working-tree changes into an approve
+// auto-commit so Kill (the approve termination path) captures unstaged work
+// instead of leaving the worktree dirty-preserved. Any failure — including a
+// conflict refusal — is non-fatal: the caller falls through to the existing
+// Destroy/preserve path, which never force-deletes.
+func (m *Manager) commitUncommittedBestEffort(ctx context.Context, id domain.SessionID, info ports.WorkspaceInfo) {
+	committer, ok := m.workspace.(ports.WorkspaceCommitter)
+	if !ok || info.Path == "" {
+		return
+	}
+	if _, err := committer.CommitUncommitted(ctx, info); err != nil {
+		m.logger.Warn("kill: approve auto-commit skipped, preserving workspace", "sessionID", id, "path", info.Path, "error", err)
+	}
 }
 
 func (m *Manager) Kill(ctx context.Context, id domain.SessionID) (bool, error) {
@@ -1895,6 +1914,9 @@ func (m *Manager) Kill(ctx context.Context, id domain.SessionID) (bool, error) {
 	}
 	freed := false
 	if workspaceProject {
+		for _, row := range workspaceProjectRows {
+			m.commitUncommittedBestEffort(ctx, id, workspaceInfoFromRepoInfo(row))
+		}
 		reclaim, err := m.destroyWorkspaceProjectRows(ctx, workspaceProjectRows)
 		if err != nil {
 			if workspacePreserved(err) {
@@ -1911,6 +1933,7 @@ func (m *Manager) Kill(ctx context.Context, id domain.SessionID) (bool, error) {
 			m.cleanupAgentWorkspace(ctx, rec, ws.Path)
 		}
 	} else if ws.Path != "" {
+		m.commitUncommittedBestEffort(ctx, id, ws)
 		if err := m.workspace.Destroy(ctx, ws); err != nil {
 			if workspacePreserved(err) {
 				if err := m.store.DeleteSessionWorktrees(ctx, id); err != nil {
