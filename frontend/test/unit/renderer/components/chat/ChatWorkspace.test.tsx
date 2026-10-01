@@ -720,6 +720,58 @@ describe("ChatWorkspace timeline", () => {
 		expect(onInterrupt).not.toHaveBeenCalled();
 	});
 
+	it("renders a pending question as an ask menu wired to the inputs resolve", async () => {
+		const user = userEvent.setup();
+		const onResolveInput = vi.fn().mockResolvedValue(undefined);
+		const snapshot = structuredClone(chatFixture);
+		snapshot.items = snapshot.items.filter(
+			(item) =>
+				!(
+					item.kind === "activity" &&
+					item.activityKind === "approval" &&
+					item.status === "pending"
+				),
+		);
+		snapshot.items.push({
+			kind: "activity",
+			id: "input-ask-1",
+			sequence: 100,
+			revision: 1,
+			activityKind: "user_input",
+			status: "pending",
+			summary: "Choose a direction",
+			requestId: "input-ask-1",
+			detail: {
+				inputMode: "form",
+				message: "Which approach should we take?",
+				schema: {
+					type: "object",
+					required: ["question_0"],
+					properties: {
+						question_0: {
+							type: "string",
+							title: "Approach",
+							oneOf: [
+								{ const: "Native", title: "Native", description: "Use ACP directly" },
+								{ const: "Bridge", title: "Bridge" },
+							],
+						},
+					},
+				},
+			},
+			createdAt: "2026-08-24T00:00:00Z",
+		});
+		render(<ChatWorkspace snapshot={snapshot} onResolveInput={onResolveInput} />);
+
+		expect(screen.getByText("Which approach should we take?")).toBeInTheDocument();
+		expect(screen.getByRole("radiogroup", { name: "Approach" })).toBeInTheDocument();
+		await user.click(screen.getByRole("radio", { name: /Native/ }));
+		await user.click(screen.getByRole("button", { name: "Continue" }));
+		expect(onResolveInput).toHaveBeenCalledWith("input-ask-1", "accept", {
+			question_0: "Native",
+		});
+	});
+
 	it("does not interrupt while a menu is open", () => {
 		const onInterrupt = vi.fn();
 		const snapshot = structuredClone(chatFixture);

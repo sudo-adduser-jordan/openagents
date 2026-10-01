@@ -4,6 +4,7 @@ import { openAgentsBridge } from "../../lib/bridge";
 import { cn } from "../../lib/utils";
 import type { ConversationActivity } from "../../types/conversation";
 import { Button } from "../ui/button";
+import { AskMenu } from "./AskMenu";
 
 type InputAction = "accept" | "decline" | "cancel";
 type InputValue = string | number | boolean | string[];
@@ -181,6 +182,11 @@ function FormRequest({
 				<p className="mb-3 text-xs leading-relaxed text-muted-foreground">{schema.description}</p>
 			) : null}
 			<div className="flex flex-col gap-3">
+				{visibleProperties.length === 0 ? (
+					<p className="rounded-lg border border-border bg-background/50 px-3 py-2.5 text-xs text-muted-foreground">
+						No questions were offered for this request.
+					</p>
+				) : null}
 				{visibleProperties.map(([name, property]) => (
 					<FormField
 						key={name}
@@ -276,28 +282,19 @@ function FormField({
 			>
 				<legend className="text-xs font-medium text-foreground">{label}{required ? " *" : ""}</legend>
 				{description ? <p className="mt-0.5 text-[11px] leading-relaxed text-muted-foreground">{description}</p> : null}
-				<div className="mt-2 grid gap-1.5">
-					{options.map((option) => {
-						const checked = multi
-							? Array.isArray(value) && value.includes(option.value)
-							: value === option.value;
-						return (
-							<label key={option.value} className={cn("flex cursor-pointer gap-2 rounded-lg border px-3 py-2 transition-colors", checked ? "border-logo-accent/45 bg-logo-accent/[0.06]" : "border-border bg-background/50 hover:bg-interactive-hover") }>
-								<input
-									type={multi ? "checkbox" : "radio"}
-									name={name}
-									value={option.value}
-									checked={checked}
-									onChange={() => onChange(multi ? toggleValue(Array.isArray(value) ? value : [], option.value) : option.value)}
-									className="mt-0.5 accent-[var(--logo-accent)]"
-								/>
-								<span className="min-w-0">
-									<span className="block text-xs text-foreground">{option.label}</span>
-									{option.description ? <span className="mt-0.5 block text-[11px] leading-relaxed text-muted-foreground">{option.description}</span> : null}
-								</span>
-							</label>
-						);
-					})}
+				<div className="mt-2">
+					<AskMenu
+						name={name}
+						label={label}
+						options={options}
+						value={multi ? (Array.isArray(value) ? value : []) : typeof value === "string" ? value : undefined}
+						multi={multi}
+						disabled={disabled}
+						invalid={invalid}
+						onSelect={(optionValue) =>
+							onChange(multi ? toggleValue(Array.isArray(value) ? value : [], optionValue) : optionValue)
+						}
+					/>
 				</div>
 				{invalid ? <p id={errorId} className="mt-1 text-[11px] text-destructive">Choose an answer.</p> : null}
 			</fieldset>
@@ -354,11 +351,13 @@ function FormField({
 function enumOptions(property: Record<string, unknown>): Array<{ value: string; label: string; description?: string }> {
 	const source = Array.isArray(property.oneOf)
 		? property.oneOf
-		: property.type === "array" && isRecord(property.items) && Array.isArray(property.items.anyOf)
-			? property.items.anyOf
-			: Array.isArray(property.enum)
-				? property.enum.map((value) => ({ const: value, title: String(value) }))
-				: [];
+		: Array.isArray(property.anyOf)
+			? property.anyOf
+			: property.type === "array" && isRecord(property.items) && Array.isArray(property.items.anyOf)
+				? property.items.anyOf
+				: Array.isArray(property.enum)
+					? property.enum.map((value) => ({ const: value, title: String(value) }))
+					: [];
 	return source.flatMap((entry) => {
 		if (!isRecord(entry) || typeof entry.const !== "string") return [];
 		return [{
