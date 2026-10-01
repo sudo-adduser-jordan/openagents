@@ -160,6 +160,7 @@ export const ChatComposer = memo(function ChatComposer({
 	steerRefusal,
 	draftSeed,
 	editingQueuedTurnId,
+	sentHistory = [],
 	onCancelQueuedEdit,
 	onQueuedDraftChange,
 	queuedDraftScope,
@@ -232,6 +233,12 @@ export const ChatComposer = memo(function ChatComposer({
 	steerRefusal?: string;
 	/** A selected history message to load into the composer as a new draft. */
 	draftSeed?: { id: string; text: string; attachments?: StoredComposerAttachment[]; stagedAttachments?: ChatDraftAttachment[] };
+	/**
+	 * Previously sent human prompts for this session, oldest first. ArrowUp
+	 * recalls them bash-style while the composer is empty; sourced from the
+	 * owning chat surface's conversation state, never fetched here.
+	 */
+	sentHistory?: string[];
 	/** A queued turn being edited in the composer instead of the dock. */
 	editingQueuedTurnId?: string;
 	onCancelQueuedEdit?: () => void;
@@ -318,6 +325,15 @@ export const ChatComposer = memo(function ChatComposer({
 	const dismissedKeyRef = useRef<string | null>(null);
 	const [highlighted, setHighlighted] = useState(0);
 	const highlightedRef = useRef(0);
+	/**
+	 * Bash-style sent-message recall. Null while the user owns the box; an index
+	 * into sentHistory while navigating. The stashed draft is whatever the box
+	 * held when recall started (always empty today, since recall only fires from
+	 * empty) and is restored when navigation walks past the newest entry or is
+	 * escaped. Refs only: the editor is updated imperatively and needs no render.
+	 */
+	const historyIndexRef = useRef<number | null>(null);
+	const stashedDraftRef = useRef<string | null>(null);
 	const [isComposing, setIsComposing] = useState(false);
 	const [dragging, setDragging] = useState(false);
 	const [sendError, setSendError] = useState<string | null>(null);
@@ -650,8 +666,40 @@ export const ChatComposer = memo(function ChatComposer({
 		setDismissedKey(null);
 		highlightedRef.current = 0;
 		setHighlighted(0);
+		historyIndexRef.current = null;
+		stashedDraftRef.current = null;
 		editor.current?.clear();
 	}, []);
+
+	/**
+	 * Show a recalled (or restored) text without disturbing suggestion state.
+	 * Programmatic editor updates bypass onEditorChange, so the draft record and
+	 * the text refs are synced here to keep Enter-after-recall exact.
+	 */
+	const applyHistoryText = useCallback((text: string) => {
+		textRef.current = text;
+		hasTextRef.current = text.trim().length > 0;
+		setHasText(hasTextRef.current);
+		setTrigger(undefined);
+		triggerRef.current = undefined;
+		previousTrigger.current = undefined;
+		dismissedKeyRef.current = null;
+		setDismissedKey(null);
+		highlightedRef.current = 0;
+		setHighlighted(0);
+		editor.current?.setText(text);
+		if (draftScope) {
+			const result = writeChatComposerText(draftScope, text);
+			composerRevision.current = result.draft.composer.revision;
+			if (!result.draft.composer.delivery) {
+				setTextDraftPersistenceError(
+					result.ok
+						? null
+						: "chat.draft.saveFailed",
+				);
+			}
+		}
+	}, [draftScope]);
 
 	const applyAcceptedDraftResult = useCallback(
 		(result: DraftClearResult) => {
@@ -872,8 +920,33 @@ export const ChatComposer = memo(function ChatComposer({
 		}
 	}, [clearEditorView, editingQueuedTurnId]);
 
+	// A snapshot refresh (e.g. the just-sent message arriving) can shorten or
+	// replace the history while navigating. Clamp rather than restore: the user
+	// is mid-recall and the box must keep showing a real entry.
+	useEffect(() => {
+		const index = historyIndexRef.current;
+		if (index === null) return;
+		if (sentHistory.length === 0) {
+			historyIndexRef.current = null;
+			stashedDraftRef.current = null;
+			applyHistoryText("");
+			return;
+		}
+		if (index >= sentHistory.length) {
+			const clamped = sentHistory.length - 1;
+			historyIndexRef.current = clamped;
+			applyHistoryText(sentHistory[clamped] ?? "");
+		}
+	}, [applyHistoryText, sentHistory]);
+
 	const onEditorChange = useCallback((snapshot: ComposerEditorSnapshot) => {
 		textRef.current = snapshot.text;
+		// Typing fresh text while recalling leaves history navigation: the typed
+		// content stays in the box and normal draft behavior resumes from there.
+		if (historyIndexRef.current !== null) {
+			historyIndexRef.current = null;
+			stashedDraftRef.current = null;
+		}
 		onQueuedDraftChange?.(snapshot.text);
 		if (draftScope) {
 			const result = writeChatComposerText(draftScope, snapshot.text);
@@ -974,6 +1047,11 @@ export const ChatComposer = memo(function ChatComposer({
 
 	function submit(event?: FormEvent, forceSteer?: boolean): Promise<void> {
 		event?.preventDefault();
+		// Sending a recalled entry ends history navigation. The submitted text
+		// stays in flight; a successful send clears the box and the entry
+		// reappears as the newest item once the snapshot refreshes.
+		historyIndexRef.current = null;
+		stashedDraftRef.current = null;
 		// React cannot publish the next busy prop until after this event returns. A
 		// second Enter in that gap joins the accepted submission instead of opening a
 		// second transport whose local admission rejection would look like a real
@@ -1372,6 +1450,56 @@ export const ChatComposer = memo(function ChatComposer({
 		if (event.key === "Escape" && editingQueuedTurnId && onCancelQueuedEdit && !queuedEditRecovery && !submitInFlight.current) {
 			event.preventDefault();
 			onCancelQueuedEdit();
+			return;
+		}
+
+		// Bash-style sent-message recall. Suggestion navigation above keeps
+		// priority while a completion menu is open; recall only fires from an
+		// empty composer with nothing staged. IME composition already returned.
+		if (event.key === "ArrowUp" || event.key === "ArrowDown") {
+			// A queued edit owns the composer; history must not clobber it.
+			if (editingQueuedTurnId || queuedEditRecovery || savingQueuedEdit) return;
+			if (sentHistory.length === 0) return;
+			if (controlsDisabled || draftMutationPending || submitInFlight.current) return;
+			if (staged || fileAttachments.preparing || fileAttachments.hasPendingReads()) return;
+			const navigating = historyIndexRef.current !== null;
+			if (!navigating && textRef.current.trim() !== "") return;
+			event.preventDefault();
+			if (event.key === "ArrowUp") {
+				if (!navigating) {
+					stashedDraftRef.current = textRef.current;
+					const index = sentHistory.length - 1;
+					historyIndexRef.current = index;
+					applyHistoryText(sentHistory[index] ?? "");
+				} else {
+					// Clamped at the oldest entry: further Up keeps showing it.
+					const next = Math.max(0, (historyIndexRef.current ?? 0) - 1);
+					historyIndexRef.current = next;
+					applyHistoryText(sentHistory[next] ?? "");
+				}
+			} else {
+				if (!navigating) return;
+				const next = (historyIndexRef.current ?? 0) + 1;
+				if (next >= sentHistory.length) {
+					const stash = stashedDraftRef.current ?? "";
+					historyIndexRef.current = null;
+					stashedDraftRef.current = null;
+					applyHistoryText(stash);
+				} else {
+					historyIndexRef.current = next;
+					applyHistoryText(sentHistory[next] ?? "");
+				}
+			}
+			return;
+		}
+
+		// Escaping a recall restores the stashed draft and resumes normal entry.
+		if (event.key === "Escape" && historyIndexRef.current !== null && !editingQueuedTurnId) {
+			event.preventDefault();
+			const stash = stashedDraftRef.current ?? "";
+			historyIndexRef.current = null;
+			stashedDraftRef.current = null;
+			applyHistoryText(stash);
 		}
 	}
 

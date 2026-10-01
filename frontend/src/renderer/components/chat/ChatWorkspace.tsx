@@ -265,6 +265,42 @@ function useQueuedMessages(snapshot: ConversationSnapshot): QueuedMessage[] {
 	}, [snapshot.items, snapshot.turns]);
 }
 
+/**
+ * Previously sent human prompts for bash-style composer recall, oldest first.
+ *
+ * Durable rows only: steer guidance lives on steer activities, and
+ * `/compact`/`clear-history` never enter the transcript, so none of them can
+ * leak into recall. Renderer-only local echos are appended until their exact
+ * durable counterpart arrives, mirroring the timeline merge. Queued-but-held
+ * prompts are included once submitted: they were sent, even while waiting.
+ */
+export function sentHistoryForSnapshot(
+	snapshot: ConversationSnapshot,
+	localEchos?: ConversationLocalEcho[],
+): string[] {
+	const durable = snapshot.items.flatMap((item) =>
+		item.kind === "message" && item.role === "user" && item.origin === "human"
+			? [item.text]
+			: [],
+	);
+	const pending = (localEchos ?? [])
+		.filter(
+			(echo) =>
+				!snapshot.items.some(
+					(item) =>
+						item.kind === "message" &&
+						item.role === "user" &&
+						item.origin === "human" &&
+						((echo.turnId !== undefined && item.turnId === echo.turnId) ||
+							(echo.turnId === undefined &&
+								item.text === echo.text &&
+								item.createdAt >= echo.createdAt)),
+				),
+		)
+		.map((echo) => echo.text);
+	return [...durable, ...pending];
+}
+
 export interface ChatWorkspaceProps {
 	snapshot: ConversationSnapshot;
 	/** The session title from the sidebar (matches what users see in the left sidebar) */
@@ -942,6 +978,12 @@ function ChatWorkspaceContent({
 				}),
 			),
 		[snapshot.items],
+	);
+	// One derivation serves manager and worker alike: both render through this
+	// shared composer wiring, so recall parity falls out of the structure.
+	const sentHistory = useMemo(
+		() => sentHistoryForSnapshot(snapshot, localEchos),
+		[snapshot, localEchos],
 	);
 	// The turn a confirmation is open for. Undo is not reversible and it changes what
 	// the agent knows, so it is never one click.
@@ -1693,6 +1735,7 @@ function ChatWorkspaceContent({
 									draftSessionId={queueEdit ? undefined : snapshot.sessionId}
 									draftSessionIncarnation={draftScope.incarnation}
 									acceptedClientMessageIds={acceptedClientMessageIds}
+									sentHistory={sentHistory}
 									sessionRole={effectiveSessionRole}
 									workflowMode={session?.workflowMode}
 									stageBar={stageBar}
