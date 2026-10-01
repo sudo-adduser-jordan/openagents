@@ -19,6 +19,7 @@ import { formatTokenCount } from "../lib/format-token-count";
 import { prBrowserUrl, sessionPRDisplaySummaries } from "../lib/pr-display";
 import { toBoardLane } from "../lib/session-presentation";
 import { useMergeSessionLocalState, clearMergeSessionLocalState } from "../hooks/useMergeSessionLocal";
+import { clearCreateSessionPRState, useCreateSessionPRState } from "../hooks/useCreateSessionPR";
 import {
 	clearDiscardReadySessionState,
 	useDiscardReadySessionState,
@@ -71,6 +72,7 @@ export function BoardSessionCardAdapter({
 	onWorkflowModeChange,
 	onApprove,
 	onMergeLocal,
+	onCreatePR,
 	isApproved,
 	session,
 	usage,
@@ -81,6 +83,7 @@ export function BoardSessionCardAdapter({
 	onWorkflowModeChange?: (session: WorkspaceSession, workflowMode: WorkflowMode) => void;
 	onApprove?: (session: WorkspaceSession) => void;
 	onMergeLocal?: (session: WorkspaceSession) => void;
+	onCreatePR?: (session: WorkspaceSession) => void;
 	isApproved?: boolean;
 	session: WorkspaceSession;
 	usage?: SessionUsageSummary;
@@ -93,6 +96,7 @@ export function BoardSessionCardAdapter({
 			onWorkflowModeChange={onWorkflowModeChange}
 			onApprove={onApprove}
 			onMergeLocal={onMergeLocal}
+			onCreatePR={onCreatePR}
 			isApproved={isApproved}
 			session={session}
 			usage={usage}
@@ -159,6 +163,7 @@ function DesktopSessionCard({
 	onWorkflowModeChange,
 	onApprove,
 	onMergeLocal,
+	onCreatePR,
 	isApproved,
 	session,
 	usage,
@@ -173,6 +178,7 @@ function DesktopSessionCard({
 	onWorkflowModeChange?: (session: WorkspaceSession, workflowMode: WorkflowMode) => void;
 	onApprove?: (session: WorkspaceSession) => void;
 	onMergeLocal?: (session: WorkspaceSession) => void;
+	onCreatePR?: (session: WorkspaceSession) => void;
 	/** Client-side approval: the worker was killed via Approve and the card is
 	 * presented in the ready lane awaiting its local merge. */
 	isApproved?: boolean;
