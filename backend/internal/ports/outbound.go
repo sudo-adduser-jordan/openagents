@@ -343,6 +343,17 @@ type Workspace interface {
 	AddExclude(ctx context.Context, info WorkspaceInfo, patterns ...string) error
 }
 
+// WorkspaceCommitter is an optional capability for workspaces that can turn
+// working-tree changes into a real commit. Kill uses it best-effort before
+// teardown so an approve (which terminates through the kill path) captures
+// unstaged changes instead of leaving the worktree dirty-preserved. A failed
+// commit is non-fatal: callers fall through to the existing dirty-preserve
+// path and must never force-delete. Returns committed=false when the
+// worktree was already clean (nothing to commit).
+type WorkspaceCommitter interface {
+	CommitUncommitted(ctx context.Context, info WorkspaceInfo) (committed bool, err error)
+}
+
 // WorkspaceDefaultBranchRefresher is an optional capability for Git-backed
 // workspaces. Resolution is local-only so callers can retain the canonical ref
 // even when the subsequent best-effort network refresh fails.

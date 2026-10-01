@@ -914,6 +914,11 @@ type fakeWorkspace struct {
 	addExcludeErr   error
 	// calls records the sequence of workspace method calls for ordering assertions.
 	calls []string
+	// commitCommitted is returned by CommitUncommitted; commitErr simulates a
+	// conflict/dirty-checkout refusal; commitCalls counts invocations.
+	commitCommitted bool
+	commitErr       error
+	commitCalls     int
 	// sharedLog, when non-nil, receives entries alongside calls so ordering
 	// tests can compare workspace calls against store calls in one sequence.
 	sharedLog *[]string
@@ -1110,6 +1115,12 @@ func (w *fakeWorkspace) AddExclude(_ context.Context, info ports.WorkspaceInfo, 
 	w.calls = append(w.calls, "AddExclude:"+string(info.SessionID))
 	w.excludePatterns = append(w.excludePatterns, patterns...)
 	return w.addExcludeErr
+}
+
+func (w *fakeWorkspace) CommitUncommitted(_ context.Context, info ports.WorkspaceInfo) (bool, error) {
+	w.commitCalls++
+	w.calls = append(w.calls, "CommitUncommitted:"+string(info.SessionID))
+	return w.commitCommitted, w.commitErr
 }
 
 type loggingDestroyWorkspace struct {
@@ -3264,6 +3275,53 @@ func TestKill_DirtyWorkspacePreservesAndTerminates(t *testing.T) {
 	}
 }
 
+// TestKill_ApproveCommitsUnstagedChanges: when the approve auto-commit
+// captures working-tree changes, the follow-up Destroy sees a clean tree and
+// the session terminates with freed=true.
+func TestKill_ApproveCommitsUnstagedChanges(t *testing.T) {
+	t.Parallel()
+	m, st, _, ws := newManager()
+	st.sessions["mer-1"] = mkLive("mer-1")
+	ws.commitCommitted = true
+	freed, err := m.Kill(ctx, "mer-1")
+	if err != nil {
+		t.Fatalf("kill err = %v, want nil", err)
+	}
+	if ws.commitCalls != 1 {
+		t.Fatalf("commit calls = %d, want 1", ws.commitCalls)
+	}
+	if !freed {
+		t.Fatal("freed = false, want true after the approve commit cleaned the tree")
+	}
+	if !st.sessions["mer-1"].IsTerminated {
+		t.Fatal("session should be terminated")
+	}
+}
+
+// TestKill_ApproveCommitConflictPreserves: a refused approve auto-commit
+// (unresolved conflicts) must fall back to the dirty-preserve path — Kill
+// still terminates the session with freed=false and never force-deletes.
+func TestKill_ApproveCommitConflictPreserves(t *testing.T) {
+	t.Parallel()
+	m, st, _, ws := newManager()
+	st.sessions["mer-1"] = mkLive("mer-1")
+	ws.commitErr = fmt.Errorf("gitworktree: refusing to auto-commit: %w", ports.ErrWorkspaceDirty)
+	ws.destroyErr = fmt.Errorf("gitworktree: refusing to remove: %w", ports.ErrWorkspaceDirty)
+	freed, err := m.Kill(ctx, "mer-1")
+	if err != nil {
+		t.Fatalf("kill err = %v, want nil", err)
+	}
+	if ws.commitCalls != 1 {
+		t.Fatalf("commit calls = %d, want 1", ws.commitCalls)
+	}
+	if freed {
+		t.Fatal("freed = true, want false for preserved workspace")
+	}
+	if !st.sessions["mer-1"].IsTerminated {
+		t.Fatal("session must be marked terminated so it leaves the sidebar")
+	}
+}
+
 // A project directory the user deleted leaves git unable to reclaim the
 // session's worktree, and failing the kill for that stranded the session in
 // the sidebar permanently: every retry answered 500 and the row never left.
@@ -3365,7 +3423,7 @@ func TestKill_WorkspaceProjectDestroysChildrenBeforeRoot(t *testing.T) {
 	if rt.destroyed != 1 {
 		t.Fatalf("runtime destroy calls = %d, want 1", rt.destroyed)
 	}
-	want := []string{"Destroy:api", "Destroy:__root__"}
+	want := []string{"CommitUncommitted:mer-1", "CommitUncommitted:mer-1", "Destroy:api", "Destroy:__root__"}
 	if got := ws.calls; strings.Join(got, ",") != strings.Join(want, ",") {
 		t.Fatalf("destroy order = %v, want %v", got, want)
 	}
@@ -3456,7 +3514,7 @@ func TestKill_WorkspaceProjectDirtyRowRefusesRemoval(t *testing.T) {
 	if err != nil || freed {
 		t.Fatalf("freed=%v err=%v, want dirty row to preserve workspace", freed, err)
 	}
-	want := []string{"Destroy:api"}
+	want := []string{"CommitUncommitted:mer-1", "CommitUncommitted:mer-1", "Destroy:api"}
 	if got := ws.calls; strings.Join(got, ",") != strings.Join(want, ",") {
 		t.Fatalf("calls = %v, want %v", got, want)
 	}
@@ -3495,7 +3553,7 @@ func TestKill_WorkspaceProjectDeferredRowDefersRemoval(t *testing.T) {
 	if !st.sessions["mer-1"].IsTerminated {
 		t.Fatal("session should be terminated even when workspace removal is deferred")
 	}
-	want := []string{"Destroy:api", "Destroy:__root__"}
+	want := []string{"CommitUncommitted:mer-1", "CommitUncommitted:mer-1", "Destroy:api", "Destroy:__root__"}
 	if got := ws.calls; strings.Join(got, ",") != strings.Join(want, ",") {
 		t.Fatalf("calls = %v, want %v", got, want)
 	}
