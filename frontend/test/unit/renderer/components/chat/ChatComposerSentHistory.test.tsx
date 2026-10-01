@@ -2,14 +2,14 @@ import { render as rtlRender, screen, fireEvent, waitFor } from "@testing-librar
 import type { ReactElement } from "react";
 import userEvent from "@testing-library/user-event";
 import { describe, expect, it, vi } from "vitest";
-import { ChatComposer } from "./ChatComposer";
-import { sentHistoryForSnapshot } from "./ChatWorkspace";
-import { TooltipProvider } from "../ui/tooltip";
-import type { ChatSkill, ConversationSnapshot } from "../../types/conversation";
+import { ChatComposer } from "../../../../../src/renderer/components/chat/ChatComposer";
+import { sentHistoryForSnapshot } from "../../../../../src/renderer/components/chat/ChatWorkspace";
+import { TooltipProvider } from "../../../../../src/renderer/components/ui/tooltip";
+import type { ChatSkill, ConversationSnapshot } from "../../../../../src/renderer/types/conversation";
 import {
 	lexicalEditorText,
 	typeInLexicalEditor,
-} from "../../test/lexical";
+} from "../../../../../src/renderer/test/lexical";
 
 // Same TooltipProvider wrapper as the composer suite: every send control relies
 // on the shared styled Tooltip.
