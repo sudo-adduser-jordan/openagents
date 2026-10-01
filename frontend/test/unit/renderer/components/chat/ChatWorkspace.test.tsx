@@ -1386,6 +1386,41 @@ describe("ChatWorkspace timeline", () => {
 			],
 		};
 		expect(groupTickKind(user as never)).toBe("user");
+		const automated = {
+			key: "g5",
+			anchor: 5,
+			items: [
+				{
+					kind: "activity",
+					id: "a3",
+					sequence: 5,
+					revision: 0,
+					activityKind: "system",
+					status: "completed",
+					summary: "Automatic compaction completed",
+					createdAt: "2026-01-01T00:00:00Z",
+				},
+			],
+		};
+		expect(groupTickKind(automated as never)).toBe("auto");
+		const automatedError = {
+			key: "g6",
+			anchor: 6,
+			outcome: { state: "failed" as const },
+			items: [
+				{
+					kind: "activity",
+					id: "a4",
+					sequence: 6,
+					revision: 0,
+					activityKind: "system",
+					status: "completed",
+					summary: "Compaction failed",
+					createdAt: "2026-01-01T00:00:00Z",
+				},
+			],
+		};
+		expect(groupTickKind(automatedError as never)).toBe("error");
 	});
 
 	it("updates the minimap interaction boundary when the inspector toggles", async () => {
@@ -1546,7 +1581,7 @@ describe("ChatWorkspace timeline", () => {
 		expect(screen.queryByRole("tooltip")).not.toBeInTheDocument();
 	});
 
-	it("limits conversation minimap navigation to human prompts", () => {
+	it("includes automated messages in the conversation minimap", () => {
 		const snapshot = structuredClone(chatFixtureLongHistory(2));
 		snapshot.items.splice(1, 0, {
 			kind: "activity",
@@ -1583,9 +1618,14 @@ describe("ChatWorkspace timeline", () => {
 		const markers = Array.from(
 			scrollbar.querySelectorAll<HTMLElement>("[data-chat-scroll-marker]"),
 		);
-		expect(markers).toHaveLength(2);
+		expect(markers).toHaveLength(3);
+		const kinds = markers.map(
+			(marker) => marker.querySelector(".chat-scroll-marker")?.getAttribute("data-tick-kind"),
+		);
+		expect(kinds).toContain("auto");
+		expect(kinds.filter((kind) => kind === "tool")).toHaveLength(2);
 		fireEvent.pointerEnter(markers[1]!);
-		expect(screen.getByRole("tooltip")).not.toHaveTextContent("Automatic compaction completed");
+		expect(screen.getByRole("tooltip")).toHaveTextContent("Automatic compaction completed");
 	});
 
 	it("centers the composer on an empty conversation instead of a starter blurb", () => {

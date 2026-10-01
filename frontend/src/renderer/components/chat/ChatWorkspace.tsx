@@ -2333,12 +2333,12 @@ function Timeline({
 			visible: boolean;
 			/** The anchor group's recorded send-mode, driving the tick color. */
 			workflow?: WorkflowMode;
-			/** Notable-position kind for the tick mark (error/approval/tool/user). */
+			/** Notable-position kind for the tick mark (error/approval/tool/user/auto). */
 			tickKind?: ScrollTickKind;
 		}>,
 	});
-	// Show turn ticks whenever the inspector is closed and there are human
-	// prompts — not only when the transcript overflows. Closing the rail
+	// Show turn ticks whenever the inspector is closed and there are recorded
+	// groups — not only when the transcript overflows. Closing the rail
 	// widens chat; shorter histories (common on non-opencode harnesses) often
 	// stop overflowing and used to lose the minimap exactly then.
 	const minimapEnabled = scrollbar.markers.length > 0;
@@ -2814,8 +2814,7 @@ function Timeline({
 		);
 	}, [snapshot, timelineItems]);
 	const groups = useStableList(grouped, groupKey, sameGroup);
-	const navigableGroups = useMemo(() => groups.filter(groupHasHumanPrompt), [groups]);
-	const previews = useMemo(() => navigableGroups.map(groupPreview), [navigableGroups]);
+	const previews = useMemo(() => groups.map(groupPreview), [groups]);
 
 	// Keep the full transcript mounted (selection/find still work), but measure
 	// prompt positions only when content geometry changes, not on every scroll.
@@ -2855,7 +2854,7 @@ function Timeline({
 					(anchor) => anchor.getAttribute("data-chat-workflow") as WorkflowMode | null,
 				),
 				// Notable-position kind travels with the anchor so each tick can
-				// signal user/tool/approval/error without extra DOM lookups.
+				// signal user/tool/approval/error/auto without extra DOM lookups.
 				tickKinds: anchors.map(
 					(anchor) => anchor.getAttribute("data-chat-tick-kind") as ScrollTickKind | null,
 				),
@@ -3146,9 +3145,9 @@ function Timeline({
 						return (
 							<div
 								key={group.key}
-								data-chat-scroll-anchor={groupHasHumanPrompt(group) ? "" : undefined}
-								data-chat-workflow={group.workflow}
-								data-chat-tick-kind={groupHasHumanPrompt(group) ? groupTickKind(group) : undefined}
+								data-chat-scroll-anchor=""
+								data-chat-workflow={groupHasHumanPrompt(group) ? group.workflow : undefined}
+								data-chat-tick-kind={groupTickKind(group)}
 							>
 								<TurnGroup
 									group={group}
@@ -3929,7 +3928,7 @@ function groupHasHumanPrompt(group: TimelineGroup): boolean {
 }
 
 /** Notable-position kind for a turn group's scrollbar tick, collapsed per group. */
-export type ScrollTickKind = "user" | "tool" | "approval" | "error";
+export type ScrollTickKind = "user" | "tool" | "approval" | "error" | "auto";
 
 const TOOL_ACTIVITY_KINDS = new Set(["command", "file_change", "mcp_tool", "auto_review"]);
 
@@ -3961,6 +3960,12 @@ export function groupTickKind(group: TimelineGroup): ScrollTickKind {
 		)
 	) {
 		return "tool";
+	}
+	// Automated groups (provider activity, system notices, compaction records,
+	// turns with no human prompt) get a neutral tick rather than a user tick so
+	// recorded history stays navigable without implying a human sent it.
+	if (!groupHasHumanPrompt(group)) {
+		return "auto";
 	}
 	return "user";
 }
