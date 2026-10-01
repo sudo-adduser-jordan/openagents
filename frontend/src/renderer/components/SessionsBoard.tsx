@@ -392,8 +392,8 @@ export function SessionsBoard({ projectId }: SessionsBoardProps) {
 								onDiscardReady={() => requestDiscardReady(session)}
 									onWorkflowModeChange={(_session, workflowMode) => changeWorkflowMode(session, workflowMode)}
 									onApprove={() => approveReview(session)}
-									onMergeLocal={() => requestMergeLocal(session)}
-									// onCreatePR={() => requestCreatePR(session)}
+								onMergeLocal={() => requestMergeLocal(session)}
+								onCreatePR={() => requestCreatePR(session)}
 									isApproved={approvedIds.has(session.id)}
 									session={session}
 								usage={usageBySession.get(session.id)}
