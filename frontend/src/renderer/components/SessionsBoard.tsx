@@ -31,11 +31,8 @@ import { useRetireArchivedSessions } from "../hooks/useRetireArchivedSessions";
 import { useRestoreSession } from "../hooks/useRestoreSession";
 import { useTerminateSession } from "../hooks/useTerminateSession";
 import { useMergeSessionLocal } from "../hooks/useMergeSessionLocal";
-import { useCreateSessionPR } from "../hooks/useCreateSessionPR";
 import { useWorkspaceQuery, workspaceQueryKey } from "../hooks/useWorkspaceQuery";
 import { useSetWorkflowMode } from "../hooks/useSetWorkflowMode";
-import { apiClient } from "../lib/api-client";
-import type { components } from "../../api/schema";
 import { NotificationCenter } from "./NotificationCenter";
 import { BoardWelcome, ProjectBoardEmpty } from "./BoardEmptyStates";
 import { TopbarButton, topbarProjectLabelClass } from "./TopbarButton";
@@ -44,8 +41,6 @@ import { usesPreviewWorkspaceData } from "../lib/preview-mode";
 import { demoBoardSessions } from "../lib/demo-board-sessions";
 import { isLinuxPlatform, isMacPlatform, usesBoardActionsInPanel } from "../lib/platform";
 import { cn } from "../lib/utils";
-import { openAgentsBridge } from "../lib/bridge";
-import { primaryPR } from "../types/workspace";
 import { useUiStore } from "../stores/ui-store";
 import { RestoreUnavailableDialog } from "./RestoreUnavailableDialog";
 import { ConfirmDialog } from "./ConfirmDialog";
@@ -68,6 +63,34 @@ type SessionsBoardProps = {
 type UsageBySession = ReadonlyMap<string, SessionUsageSummary>;
 const emptyUsageBySession: UsageBySession = new Map();
 
+// Client-side approvals: session ids the user approved on this board. Approve
+// kills the worker (the daemon preserves its worktree and branch instead of
+// force-deleting them) and presents the card in the ready lane for its later
+// local merge. The daemon still reports the session as terminated, so the
+// approval is kept here — persisted across reloads — until the merge settles
+// the card into archive.
+const approvedStorageKey = "open-agents.board.approved";
+
+function readApprovedIds(): ReadonlySet<string> {
+	try {
+		const raw = window.localStorage.getItem(approvedStorageKey);
+		if (!raw) return new Set();
+		const parsed: unknown = JSON.parse(raw);
+		if (!Array.isArray(parsed)) return new Set();
+		return new Set(parsed.filter((id): id is string => typeof id === "string"));
+	} catch {
+		return new Set();
+	}
+}
+
+function persistApprovedIds(ids: ReadonlySet<string>) {
+	try {
+		window.localStorage.setItem(approvedStorageKey, JSON.stringify([...ids]));
+	} catch {
+		// Persistence is best-effort; the in-memory set still drives the board.
+	}
+}
+
 // Live merged sessions remain in-flow. A terminated runtime is archived even
 // when its SCM outcome remains `merged`, which is exactly what the daemon's
 // `archive` column means.
@@ -77,33 +100,6 @@ function isArchivedSession(session: WorkspaceSession): boolean {
 		session.isTerminated === true ||
 		session.status === "terminated"
 	);
-}
-
-type WireConversationActivity = components["schemas"]["ConversationActivityResponse"];
-type WireConversationSnapshot = components["schemas"]["ConversationSnapshotResponse"];
-
-/** The wire-format pending approval, for the card's one-shot review action. */
-function pendingWireApproval(snapshot: WireConversationSnapshot): WireConversationActivity | undefined {
-	return (snapshot.activities ?? []).find(
-		(activity) => activity.activityKind === "approval" && activity.status === "pending",
-	);
-}
-
-/**
- * The wire-format accept decision for "Commit", mirroring the
- * composer's allow-once preference and the ApprovalCard fallbacks.
- */
-function wireAllowOnceDecision(detail: Record<string, unknown> | undefined): { id: string } | undefined {
-	const raw = detail?.decisions;
-	if (!Array.isArray(raw)) return undefined;
-	const options = raw.filter(
-		(entry): entry is Record<string, unknown> => Boolean(entry) && typeof entry === "object",
-	);
-	const picked =
-		options.find((entry) => entry.kind === "allow_once") ??
-		options.find((entry) => typeof entry.id === "string" && /(allow|approve|accept)/i.test(entry.id)) ??
-		options[0];
-	return picked && typeof picked.id === "string" && picked.id !== "" ? { id: picked.id } : undefined;
 }
 
 const isMac = isMacPlatform();
@@ -155,10 +151,25 @@ export function SessionsBoard({ projectId }: SessionsBoardProps) {
 	const setManagerReplacementError = useUiStore((state) => state.setManagerReplacementError);
 	const health = workspace ? managerHealth(workspace, isProjectRestarting) : { state: "ok" as const };
 
+	const [approvedIds, setApprovedIds] = useState<ReadonlySet<string>>(readApprovedIds);
+	const updateApprovedIds = useCallback((next: ReadonlySet<string>) => {
+		setApprovedIds(next);
+		persistApprovedIds(next);
+	}, []);
+	// An approved session stays on the board even though the daemon reports it
+	// as terminated: its branch is preserved for the later local merge.
 	const archived = sessions
-		.filter(isArchivedSession)
+		.filter((session) => !approvedIds.has(session.id) && isArchivedSession(session))
 		.sort((left, right) => right.updatedAt.localeCompare(left.updatedAt));
-	const activeSessions = sessions.filter((candidate) => !isArchivedSession(candidate));
+	const activeSessions = sessions.filter((candidate) => approvedIds.has(candidate.id) || !isArchivedSession(candidate));
+	// Approved cards are presented as ready with an Approved phrase so the
+	// grid groups them into the ready lane; the daemon truth underneath still
+	// says terminated until the merge settles the card into archive.
+	const displaySessions = activeSessions.map((session) =>
+		approvedIds.has(session.id)
+			? { ...session, kanbanColumn: "ready" as const, displayStatus: "Approved" }
+			: session,
+	);
 	const boardLabels = sessionsBoardLabels();
 	const { showStartup, showWelcome, showProjectEmpty, workspaceStartupState } = useBoardPresentation({
 		projectId,
@@ -194,84 +205,42 @@ export function SessionsBoard({ projectId }: SessionsBoardProps) {
 		[setWorkflowMode],
 	);
 	const mergeSessionLocal = useMergeSessionLocal();
-	const createSessionPR = useCreateSessionPR();
-	// Push the branch if needed and open exactly one pull request against
-	// dev, then hand its URL to the browser. Shared by the Ready Open-PR
-	// action and the Review Commit fallback below: the daemon de-duplicates
-	// (durable facts, then the provider listing, then the creation race), so
-	// either entry point is safe to retry. Failures surface on the card via
-	// mutation state; nothing is optimistic and the session stays alive.
-	const ensureSessionPR = useCallback(
-		async (session: WorkspaceSession) => {
-			try {
-				const result = await createSessionPR.mutateAsync(session);
-				if (result.prUrl) await openAgentsBridge.app.openExternal(result.prUrl);
-			} catch {
-				// The card footer reports the failure via mutation state.
-			}
-		},
-		[createSessionPR],
-	);
-	const reviewToCommit = useCallback(
-		async (session: WorkspaceSession) => {
-			// Two-link Commit chain toward Ready. With a pending edit, approve
-			// it so the agent commits and return: the push must wait for that
-			// commit to land, so the next Commit click (now with nothing
-			// pending) pulls the delivery link. With nothing pending the work
-			// is already committed — push the branch and ensure exactly one
-			// pull request against dev, then let the daemon's observed PR
-			// facts move the card. Only an approval-resolution failure hands
-			// the session to the composer; a PR-leg failure stays on the card
-			// footer so the lane never advances without real facts.
+	// Approve terminates the worker through the shared kill path — the daemon
+	// preserves a dirty worktree and its branch rather than force-deleting
+	// them — and presents the card in the ready lane for its later local
+	// merge. A kill failure stays on the card footer via mutation state; the
+	// approval itself is kept so the branch is never stranded without a Merge
+	// action (merging a live session still terminates it on success).
+	const approveReview = useCallback(
+		(session: WorkspaceSession) => {
 			if (usesPreviewWorkspaceData) {
 				openSession(session);
 				return;
 			}
-			const { data, error } = await apiClient.GET("/api/v1/sessions/{sessionId}/conversation", {
-				params: { path: { sessionId: session.id } },
-			});
-			const approval = error || !data ? undefined : pendingWireApproval(data);
-			const decision = approval?.requestId ? wireAllowOnceDecision(approval.detail) : undefined;
-			if (approval?.requestId && decision) {
-				const { error: resolveError } = await apiClient.POST(
-					"/api/v1/sessions/{sessionId}/conversation/approvals/{requestId}/resolve",
-					{
-						params: { path: { sessionId: session.id, requestId: approval.requestId } },
-						body: { decisionId: decision.id },
-					},
-				);
-				if (!resolveError) {
-					void queryClient.invalidateQueries({ queryKey: workspaceQueryKey });
-					return;
-				}
-				openSession(session);
-				return;
-			}
-			await ensureSessionPR(session);
+			updateApprovedIds(new Set([...approvedIds, session.id]));
+			terminateSession.mutate(session);
 		},
-		[ensureSessionPR, openSession, queryClient],
+		[approvedIds, openSession, terminateSession, updateApprovedIds],
 	);
 
 	// Merge local is end-of-life: the daemon merges, verifies, removes the
 	// branch, and terminates, so the card settles into archive on the
-	// invalidation. Failures surface on the card; nothing is optimistic.
+	// invalidation. An approved session arrives already terminated and skips
+	// the second teardown. Failures surface on the card; nothing is optimistic.
 	const requestMergeLocal = useCallback(
 		(session: WorkspaceSession) => mergeSessionLocal.mutate(session),
 		[mergeSessionLocal],
 	);
-	// Open PR leaves the session alive for review: ensure exactly one PR
-	// exists, then hand its URL to the browser. Failures surface on the card.
-	const requestCreatePR = useCallback(
-		(session: WorkspaceSession) => {
-			if (usesPreviewWorkspaceData) {
-				const url = primaryPR(session)?.url;
-				if (url) void openAgentsBridge.app.openExternal(url);
-				return;
-			}
-			void ensureSessionPR(session);
-		},
-		[ensureSessionPR],
-	);
+	// Drop the approval once its merge settles the card: without this the
+	// ready presentation would linger over an archived card whose branch is
+	// already gone.
+	const lastMergeData = mergeSessionLocal.data;
+	const lastMergeVars = mergeSessionLocal.variables;
+	useEffect(() => {
+		if (lastMergeData && lastMergeVars && approvedIds.has(lastMergeVars.id)) {
+			updateApprovedIds(new Set([...approvedIds].filter((id) => id !== lastMergeVars.id)));
+		}
+	}, [approvedIds, lastMergeData, lastMergeVars, updateApprovedIds]);
 
 	const restartManager = async () => {
 		if (!projectId) return;
@@ -378,14 +347,14 @@ export function SessionsBoard({ projectId }: SessionsBoardProps) {
 								onOpen={() => openSession(session)}
 									onTerminate={() => terminateSession.mutate(session)}
 									onWorkflowModeChange={(_session, workflowMode) => changeWorkflowMode(session, workflowMode)}
-									onReviewToCommit={() => void reviewToCommit(session)}
+									onApprove={() => approveReview(session)}
 									onMergeLocal={() => requestMergeLocal(session)}
-									onCreatePR={() => requestCreatePR(session)}
+									isApproved={approvedIds.has(session.id)}
 									session={session}
 								usage={usageBySession.get(session.id)}
 							/>
 						)}
-						sessions={activeSessions}
+						sessions={displaySessions}
 					/>
 				)}
 			</div>

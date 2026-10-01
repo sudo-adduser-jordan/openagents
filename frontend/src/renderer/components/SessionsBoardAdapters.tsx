@@ -18,10 +18,9 @@ import { formatTimeCompact } from "../lib/format-time";
 import { formatTokenCount } from "../lib/format-token-count";
 import { prBrowserUrl, sessionPRDisplaySummaries } from "../lib/pr-display";
 import { toBoardLane } from "../lib/session-presentation";
-import { useCreateSessionPRState, clearCreateSessionPRState } from "../hooks/useCreateSessionPR";
 import { useMergeSessionLocalState, clearMergeSessionLocalState } from "../hooks/useMergeSessionLocal";
 import type { WorkflowMode, WorkspaceSession } from "../types/workspace";
-import { canonicalTrackerIssueId, primaryPR, sessionNeedsAttention } from "../types/workspace";
+import { canonicalTrackerIssueId, sessionNeedsAttention } from "../types/workspace";
 import { useSessionScmSummary } from "../hooks/useSessionScmSummary";
 import type { SessionUsageSummary } from "../hooks/useSessionUsageSummaries";
 import {
@@ -65,18 +64,18 @@ export function BoardSessionCardAdapter({
 	onOpen,
 	onTerminate,
 	onWorkflowModeChange,
-	onReviewToCommit,
+	onApprove,
 	onMergeLocal,
-	onCreatePR,
+	isApproved,
 	session,
 	usage,
 }: {
 	onOpen: () => void;
 	onTerminate: () => void;
 	onWorkflowModeChange?: (session: WorkspaceSession, workflowMode: WorkflowMode) => void;
-	onReviewToCommit?: (session: WorkspaceSession) => void;
+	onApprove?: (session: WorkspaceSession) => void;
 	onMergeLocal?: (session: WorkspaceSession) => void;
-	onCreatePR?: (session: WorkspaceSession) => void;
+	isApproved?: boolean;
 	session: WorkspaceSession;
 	usage?: SessionUsageSummary;
 }) {
@@ -85,9 +84,9 @@ export function BoardSessionCardAdapter({
 			onOpen={onOpen}
 			onTerminate={onTerminate}
 			onWorkflowModeChange={onWorkflowModeChange}
-			onReviewToCommit={onReviewToCommit}
+			onApprove={onApprove}
 			onMergeLocal={onMergeLocal}
-			onCreatePR={onCreatePR}
+			isApproved={isApproved}
 			session={session}
 			usage={usage}
 		/>
@@ -150,9 +149,9 @@ function DesktopSessionCard({
 	onOpen,
 	onTerminate,
 	onWorkflowModeChange,
-	onReviewToCommit,
+	onApprove,
 	onMergeLocal,
-	onCreatePR,
+	isApproved,
 	session,
 	usage,
 }: {
@@ -163,9 +162,11 @@ function DesktopSessionCard({
 	onOpen?: () => void;
 	onTerminate?: () => void;
 	onWorkflowModeChange?: (session: WorkspaceSession, workflowMode: WorkflowMode) => void;
-	onReviewToCommit?: (session: WorkspaceSession) => void;
+	onApprove?: (session: WorkspaceSession) => void;
 	onMergeLocal?: (session: WorkspaceSession) => void;
-	onCreatePR?: (session: WorkspaceSession) => void;
+	/** Client-side approval: the worker was killed via Approve and the card is
+	 * presented in the ready lane awaiting its local merge. */
+	isApproved?: boolean;
 	session: WorkspaceSession;
 	usage?: SessionUsageSummary;
 }) {
@@ -175,16 +176,19 @@ function DesktopSessionCard({
 	const summaries = sessionPRDisplaySummaries(session, useSessionScmSummary(session.id).data);
 	const termination = useTerminateSessionState(session.id);
 	const mergeLocal = useMergeSessionLocalState(session.id);
-	const createPR = useCreateSessionPRState(session.id);
 	const showTerminate = interactive && session.isTerminated !== true && onTerminate;
 	const keepTerminateVisible = session.status === "merged";
 	const usagePresentation = toUsagePresentation(usage);
 	// Lanes are daemon-derived; the card groups by the same derivation the
 	// board uses for placement, so actions never appear on a card whose lane
-	// does not own them.
+	// does not own them. An approved card is the one exception: the worker is
+	// terminated (the daemon reads that as archive) but the branch is preserved
+	// for its local merge, so the board presents it in the ready lane.
 	const boardLane = interactive && session.isTerminated !== true
 		? toBoardLane(session.kanbanColumn, session.status, session.workflowMode, session.displayStatus)
-		: undefined;
+		: isApproved && onMergeLocal
+			? "ready"
+			: undefined;
 	// The daemon reports a finished pre-PR session as "Awaiting PR". That text
 	// is replaced here with the delivery-stage actions: confirm a finished plan,
 	// or review the pending edit so the agent commits and waits on PR approval.
@@ -199,28 +203,25 @@ function DesktopSessionCard({
 					title="Approve this plan and let the worker start building"
 				/>
 			</div>
-		) : boardLane === "review" && onReviewToCommit ? (
-			// Review-lane Commit: with a pending edit, resolve the approval so
-			// the agent commits; with nothing pending, push the branch and
-			// ensure exactly one pull request against dev. Either way the lane
-			// itself follows only once the daemon observes the resulting PR
-			// facts. Exactly one button per review card, never terminating.
-			// The daemon's status phrase stays visible beside it (it names the
-			// loop that is turning). The button disables while the PR leg is
-			// in flight; a race that still reaches the daemon resolves to the
-			// same PR via its duplicate protection.
+		) : boardLane === "review" && onApprove ? (
+			// Review-lane Approve: terminate the worker (the daemon preserves
+			// a dirty worktree rather than force-deleting it) and present the
+			// card in the ready lane for its local merge. Exactly one button
+			// per review card. The daemon's status phrase stays visible beside
+			// it (it names the loop that is turning). The button disables
+			// while the kill is in flight.
 			<div className="flex min-w-0 items-center gap-1.5">
 				<DeliveryStatusLabel session={session} lane={boardLane} />
 				<WorkflowStageActionButton
-					label={createPR.isPending ? "Opening…" : "Commit"}
-					disabled={createPR.isPending || mergeLocal.isPending}
-					onClick={() => onReviewToCommit(session)}
-					title="Approve the pending edit so the agent commits, or push and open a pull request when already committed"
+					label={termination.isPending ? "Approving…" : "Approve"}
+					disabled={termination.isPending || mergeLocal.isPending}
+					onClick={() => onApprove(session)}
+					title="Approve this work, stop the worker, and move the card to Ready to merge"
 				/>
 			</div>
 		) : boardLane === "ready" ? (
 			// Ready-lane delivery: the daemon's status phrase stays visible
-			// next to the two actions, so "Approved"/"Mergeable"/"Merged" keeps
+			// next to the one action, so "Approved"/"Mergeable"/"Merged" keeps
 			// explaining why the card is ready.
 			<div className="flex min-w-0 items-center gap-1.5">
 				<DeliveryStatusLabel session={session} lane={boardLane} />
@@ -241,22 +242,11 @@ function DesktopSessionCard({
 						confirmLabel="Yes, merge into dev"
 						trigger={
 							<WorkflowStageActionButton
-								label={mergeLocal.isPending ? "Merging…" : "Merge local"}
-								disabled={mergeLocal.isPending || createPR.isPending}
+								label={mergeLocal.isPending ? "Merging…" : "Merge"}
+								disabled={mergeLocal.isPending}
 								title="Merge this branch into local dev, remove it, and archive the session"
 							/>
 						}
-					/>
-				) : null}
-				{onCreatePR && primaryPR(session)?.url ? (
-					<WorkflowStageActionButton
-						label={createPR.isPending ? "Opening…" : "Open PR"}
-						onClick={() => {
-							clearCreateSessionPRState(queryClient, session.id);
-							onCreatePR(session);
-						}}
-						disabled={mergeLocal.isPending || createPR.isPending}
-						title="Push the branch if needed and open its pull request against dev"
 					/>
 				) : null}
 			</div>
@@ -321,7 +311,7 @@ function DesktopSessionCard({
 				branchIcon={<GitBranch aria-hidden="true" className="size-icon-2xs shrink-0" />}
 				error={termination.error ?? undefined}
 				externalLink={ProductExternalLink}
-				footer={footer ?? <CardFooterError message={mergeLocal.error ?? createPR.error ?? undefined} />}
+				footer={footer ?? <CardFooterError message={mergeLocal.error ?? undefined} />}
 				interactive={interactive}
 			labels={{
 				formatTime: formatTimeCompact,

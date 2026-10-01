@@ -45,6 +45,10 @@ type CreatePROutcome struct {
 // verification live in the delivery adapter; termination is the manager Kill
 // every other destructive card action uses, so the card lands in archive the
 // same way.
+//
+// An already-terminated session may still merge: Approve kills the worker
+// first but preserves its worktree and branch for this later step, so the
+// merge is verified the same way and teardown is simply skipped.
 func (s *Service) MergeSessionLocal(ctx context.Context, id domain.SessionID) (MergeLocalOutcome, error) {
 	rec, ok, err := s.store.GetSession(ctx, id)
 	if err != nil {
@@ -52,9 +56,6 @@ func (s *Service) MergeSessionLocal(ctx context.Context, id domain.SessionID) (M
 	}
 	if !ok {
 		return MergeLocalOutcome{}, apierr.NotFound("SESSION_NOT_FOUND", "Unknown session")
-	}
-	if rec.IsTerminated {
-		return MergeLocalOutcome{}, apierr.Conflict("SESSION_TERMINATED", "Terminated sessions cannot be merged", nil)
 	}
 	branch := strings.TrimSpace(rec.Metadata.Branch)
 	if branch == "" {
@@ -66,6 +67,19 @@ func (s *Service) MergeSessionLocal(ctx context.Context, id domain.SessionID) (M
 	res, err := s.delivery.MergeSessionBranchLocal(ctx, rec.ProjectID, branch, deliveryTargetBranch)
 	if err != nil {
 		return MergeLocalOutcome{}, mapDeliveryError(branch, err)
+	}
+	if rec.IsTerminated {
+		sess, err := s.Get(ctx, id)
+		if err != nil {
+			return MergeLocalOutcome{}, fmt.Errorf("read merged session %s: %w", id, err)
+		}
+		return MergeLocalOutcome{
+			Session:       sess,
+			TargetBranch:  res.TargetBranch,
+			TargetHeadSHA: res.TargetHeadSHA,
+			AlreadyMerged: res.AlreadyMerged,
+			BranchRemoved: res.BranchRemoved,
+		}, nil
 	}
 	if s.manager == nil {
 		return MergeLocalOutcome{}, apierr.Internal("TERMINATE_UNAVAILABLE", "Session termination is not configured")

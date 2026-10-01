@@ -116,6 +116,45 @@ func TestMergeSessionLocal_SuccessTerminates(t *testing.T) {
 	}
 }
 
+func TestMergeSessionLocal_TerminatedSessionMergesWithoutRekill(t *testing.T) {
+	st := newFakeStore()
+	rec := deliverySession()
+	rec.IsTerminated = true
+	st.sessions["sess-1"] = rec
+	fc := &fakeCommander{}
+	delivery := &fakeDelivery{mergeResult: ports.LocalMergeResult{TargetBranch: "dev", TargetHeadSHA: "abc123", BranchRemoved: true}}
+	svc := newDeliveryService(st, fc, delivery, &fakePRCreator{})
+
+	out, err := svc.MergeSessionLocal(context.Background(), "sess-1")
+	if err != nil {
+		t.Fatalf("merge: %v", err)
+	}
+	if len(delivery.mergeCalls) != 1 || delivery.mergeCalls[0].branch != "open-agents/sess-1" || delivery.mergeCalls[0].target != "dev" {
+		t.Fatalf("merge calls = %+v, want one merge of the session branch into dev", delivery.mergeCalls)
+	}
+	if len(fc.killed) != 0 {
+		t.Fatalf("killed = %v, want none: an approved session is already terminated", fc.killed)
+	}
+	if out.TargetBranch != "dev" || out.TargetHeadSHA != "abc123" || !out.BranchRemoved {
+		t.Errorf("outcome = %+v, want dev/abc123/removed", out)
+	}
+}
+
+func TestMergeSessionLocal_TerminatedConflictNeverMerges(t *testing.T) {
+	st := newFakeStore()
+	rec := deliverySession()
+	rec.IsTerminated = true
+	st.sessions["sess-1"] = rec
+	fc := &fakeCommander{}
+	delivery := &fakeDelivery{mergeErr: ports.ErrDeliveryMergeConflict}
+	svc := newDeliveryService(st, fc, delivery, &fakePRCreator{})
+
+	_, err := svc.MergeSessionLocal(context.Background(), "sess-1")
+	if code := apierrCode(t, err); code != "LOCAL_MERGE_CONFLICT" {
+		t.Fatalf("code = %q, want LOCAL_MERGE_CONFLICT", code)
+	}
+}
+
 func TestMergeSessionLocal_DirtyNeverTerminates(t *testing.T) {
 	st := newFakeStore()
 	st.sessions["sess-1"] = deliverySession()
