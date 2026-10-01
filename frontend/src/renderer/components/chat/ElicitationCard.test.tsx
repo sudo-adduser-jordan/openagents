@@ -1,18 +1,21 @@
-import { render, screen } from "@testing-library/react";
+import { fireEvent, render, screen } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { describe, expect, it, vi } from "vitest";
 import { openAgentsBridge } from "../../lib/bridge";
 import type { ConversationActivity } from "../../types/conversation";
 import { ElicitationCard } from "./ElicitationCard";
 
-function activity(detail: ConversationActivity["detail"]): ConversationActivity {
+function activity(
+	detail: ConversationActivity["detail"],
+	status: ConversationActivity["status"] = "pending",
+): ConversationActivity {
 	return {
 		kind: "activity",
 		id: "question-1",
 		sequence: 1,
 		revision: 0,
 		activityKind: "user_input",
-		status: "pending",
+		status,
 		summary: "Choose a direction",
 		requestId: "request-1",
 		detail,
@@ -192,5 +195,107 @@ describe("ElicitationCard", () => {
 		);
 		expect(screen.getByRole("alert")).toHaveTextContent(/unsafe or invalid URL/i);
 		expect(screen.getByRole("button", { name: "Open link" })).toBeDisabled();
+	});
+});
+
+describe("ElicitationCard ask menu", () => {
+	const singleQuestion = {
+		type: "object" as const,
+		required: ["question_0"],
+		properties: {
+			question_0: {
+				type: "string",
+				title: "Approach",
+				oneOf: [
+					{ const: "Native", title: "Native", description: "Use ACP directly" },
+					{ const: "Bridge", title: "Bridge" },
+				],
+			},
+		},
+	};
+
+	it("renders options as menu entries with their descriptions", () => {
+		render(
+			<ElicitationCard
+				activity={activity({ inputMode: "form", schema: singleQuestion })}
+				onResolve={vi.fn()}
+			/>,
+		);
+
+		expect(screen.getByRole("radiogroup", { name: "Approach" })).toBeInTheDocument();
+		expect(screen.getByRole("radio", { name: /Native/ })).toBeInTheDocument();
+		expect(screen.getByText("Use ACP directly")).toBeInTheDocument();
+	});
+
+	it("picks a menu entry with the keyboard and resolves on Continue", async () => {
+		const user = userEvent.setup();
+		const onResolve = vi.fn().mockResolvedValue(undefined);
+		render(
+			<ElicitationCard
+				activity={activity({ inputMode: "form", schema: singleQuestion })}
+				onResolve={onResolve}
+			/>,
+		);
+
+		const native = screen.getByRole("radio", { name: /Native/ });
+		native.focus();
+		fireEvent.keyDown(native, { key: "ArrowDown" });
+		expect(document.activeElement).toBe(screen.getByRole("radio", { name: "Bridge" }));
+		fireEvent.keyDown(screen.getByRole("radio", { name: "Bridge" }), { key: "1" });
+		expect(screen.getByRole("radio", { name: /Native/ })).toHaveAttribute("aria-checked", "true");
+
+		await user.click(screen.getByRole("button", { name: "Continue" }));
+		expect(onResolve).toHaveBeenCalledWith("request-1", "accept", { question_0: "Native" });
+	});
+
+	it("shows the answered state without menu entries", () => {
+		render(
+			<ElicitationCard
+				activity={activity({ inputMode: "form", schema: singleQuestion }, "resolved")}
+				onResolve={vi.fn()}
+			/>,
+		);
+
+		expect(screen.getByText("Answered")).toBeInTheDocument();
+		expect(screen.queryByRole("radiogroup")).not.toBeInTheDocument();
+		expect(screen.queryByRole("button", { name: "Continue" })).not.toBeInTheDocument();
+	});
+
+	it("shows the expired state without menu entries", () => {
+		render(
+			<ElicitationCard
+				activity={activity({ inputMode: "form", schema: singleQuestion }, "failed")}
+				onResolve={vi.fn()}
+			/>,
+		);
+
+		expect(screen.getByText("Expired")).toBeInTheDocument();
+		expect(screen.queryByRole("radiogroup")).not.toBeInTheDocument();
+	});
+
+	it("says so when the request carries no questions", () => {
+		render(
+			<ElicitationCard
+				activity={activity({ inputMode: "form", message: "Nothing to ask" })}
+				onResolve={vi.fn()}
+			/>,
+		);
+
+		expect(screen.getByText("No questions were offered for this request.")).toBeInTheDocument();
+	});
+
+	it("surfaces a resolve failure in place", async () => {
+		const user = userEvent.setup();
+		const onResolve = vi.fn().mockRejectedValue(new Error("The agent went away."));
+		render(
+			<ElicitationCard
+				activity={activity({ inputMode: "form", schema: singleQuestion })}
+				onResolve={onResolve}
+			/>,
+		);
+
+		await user.click(screen.getByRole("radio", { name: /Native/ }));
+		await user.click(screen.getByRole("button", { name: "Continue" }));
+		expect(await screen.findByRole("alert")).toHaveTextContent("The agent went away.");
 	});
 });
