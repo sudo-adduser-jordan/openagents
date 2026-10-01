@@ -2989,7 +2989,8 @@ html.sidebar-reordering * {
 
 /* Notable-position tick kinds: error and approval override the workflow tone
    so failed turns and pending approvals stand out; tool/user keep the
-   neutral or workflow-tinted treatment above. */
+   neutral or workflow-tinted treatment above. Automated ticks stay neutral:
+   they mark recorded history without implying a human sent it. */
 .chat-scroll-marker[data-tick-kind="error"],
 .group\/scroll:hover .chat-scroll-marker[data-tick-kind="error"],
 .group\/scroll:focus-visible .chat-scroll-marker[data-tick-kind="error"] {
@@ -2999,6 +3000,11 @@ html.sidebar-reordering * {
 .group\/scroll:hover .chat-scroll-marker[data-tick-kind="approval"],
 .group\/scroll:focus-visible .chat-scroll-marker[data-tick-kind="approval"] {
 	background: var(--color-warning);
+}
+.chat-scroll-marker[data-tick-kind="auto"],
+.group\/scroll:hover .chat-scroll-marker[data-tick-kind="auto"],
+.group\/scroll:focus-visible .chat-scroll-marker[data-tick-kind="auto"] {
+	background: color-mix(in srgb, var(--color-text-muted) 54%, transparent);
 }
 
 .chat-scroll-preview {
