@@ -1,7 +1,7 @@
 import { fireEvent, render, screen } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { describe, expect, it, vi } from "vitest";
-import { AskMenu } from "./AskMenu";
+import { AskMenu } from "../../../../../src/renderer/components/chat/AskMenu";
 
 const options = [
 	{ value: "native", label: "Native", description: "Use ACP directly" },
