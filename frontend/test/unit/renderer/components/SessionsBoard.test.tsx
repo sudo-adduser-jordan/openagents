@@ -1818,34 +1818,163 @@ describe("SessionsBoard", () => {
 		expect(within(card).getByRole("button", { name: "Merge" })).toBeEnabled();
 	});
 
-	it("reports an already-merged session as a settled merge without stranding the card", async () => {
+	it("shows Delete on ready cards instead of Terminate, and keeps Terminate elsewhere", () => {
+		workspaceQueryMock.mockReturnValue({
+			data: [
+				workspaceWithSessions([
+					readySession(),
+					boardSession({ id: "s-building", title: "building worker", status: "working", kanbanColumn: "building" }),
+					reviewLaneSession({ id: "s-review", title: "review worker" }),
+				]),
+			],
+			isError: false,
+			isSuccess: true,
+		});
+
+		renderBoard("p1");
+
+		const readyCard = screen.getByText("ready worker").closest('[data-testid="board-session-card"]') as HTMLElement;
+		expect(within(readyCard).getByRole("button", { name: "Delete ready worker" })).toBeInTheDocument();
+		expect(within(readyCard).queryByRole("button", { name: "Terminate ready worker" })).not.toBeInTheDocument();
+		// Merge local stays the single primary.
+		expect(within(readyCard).getByRole("button", { name: "Merge local" })).toBeInTheDocument();
+
+		const buildingCard = screen.getByText("building worker").closest('[data-testid="board-session-card"]') as HTMLElement;
+		expect(within(buildingCard).getByRole("button", { name: "Terminate building worker" })).toBeInTheDocument();
+		expect(within(buildingCard).queryByRole("button", { name: /Delete / })).not.toBeInTheDocument();
+	});
+
+	it("discards a ready card by terminating then retiring after confirmation", async () => {
 		workspaceQueryMock.mockReturnValue({
 			data: [workspaceWithSessions([readySession()])],
 			isError: false,
 			isSuccess: true,
 		});
-		postMock.mockResolvedValue({
-			data: { ok: true, targetBranch: "dev", targetHeadSha: "abc123", alreadyMerged: true, branchRemoved: true },
-		});
+		postMock.mockResolvedValue({ data: { ok: true, sessionId: "s-ready", freed: true } });
 
 		renderBoard("p1");
-		const card = screen.getByText("ready worker").closest('[data-testid="board-session-card"]') as HTMLElement;
-		await userEvent.click(within(card).getByRole("button", { name: "Merge" }));
-		const dialog = screen.getByRole("dialog", { name: "Merge ready worker into dev?" });
-		await userEvent.click(within(dialog).getByRole("button", { name: "Yes, merge into dev" }));
+		await userEvent.click(screen.getByRole("button", { name: "Delete ready worker" }));
 
-		// An already-merged branch is success, not an error: the merge settles
-		// the card into archive on the invalidation with nothing on the footer.
+		// No request until the destructive chain is confirmed.
+		expect(postMock).not.toHaveBeenCalled();
+		expect(deleteMock).not.toHaveBeenCalled();
+		const dialog = screen.getByRole("dialog", { name: "Delete ready worker?" });
+		// The confirm names what goes, what stays, and the unmerged work.
+		expect(dialog).toHaveTextContent(/worktree folder is left on disk/);
+		expect(dialog).toHaveTextContent(/#144/);
+		await userEvent.click(within(dialog).getByRole("button", { name: "Yes, delete session" }));
+
 		await waitFor(() =>
-			expect(postMock).toHaveBeenCalledWith("/api/v1/sessions/{sessionId}/merge-local", {
+			expect(postMock).toHaveBeenCalledWith("/api/v1/sessions/{sessionId}/kill", {
 				params: { path: { sessionId: "s-ready" } },
 			}),
 		);
-		await waitFor(() => expect(within(card).queryByRole("alert")).not.toBeInTheDocument());
+		await waitFor(() =>
+			expect(deleteMock).toHaveBeenCalledWith("/api/v1/sessions/{sessionId}", {
+				params: { path: { sessionId: "s-ready" } },
+			}),
+		);
 		expect(navigateMock).not.toHaveBeenCalled();
 	});
 
-	it("disables Merge while its request is in flight", async () => {
+	it("still retires a ready card when kill preserves its dirty worktree", async () => {
+		// freed=false is Kill's dirty-worktree answer: the session terminates
+		// but the worktree is left for inspection. Retire never touches the
+		// disk, so the discard proceeds -- nothing is force-deleted.
+		workspaceQueryMock.mockReturnValue({
+			data: [workspaceWithSessions([readySession()])],
+			isError: false,
+			isSuccess: true,
+		});
+		postMock.mockResolvedValue({ data: { ok: true, sessionId: "s-ready", freed: false } });
+
+		renderBoard("p1");
+		await userEvent.click(screen.getByRole("button", { name: "Delete ready worker" }));
+		await userEvent.click(
+			within(screen.getByRole("dialog", { name: "Delete ready worker?" })).getByRole("button", { name: "Yes, delete session" }),
+		);
+
+		await waitFor(() => expect(deleteMock).toHaveBeenCalledTimes(1));
+		expect(deleteMock).toHaveBeenCalledWith("/api/v1/sessions/{sessionId}", {
+			params: { path: { sessionId: "s-ready" } },
+		});
+	});
+
+	it("stops a ready discard before retire when kill fails and surfaces the error", async () => {
+		postMock.mockResolvedValueOnce({ error: { message: "runtime failed" }, response: { status: 500 } });
+		workspaceQueryMock.mockReturnValue({
+			data: [workspaceWithSessions([readySession()])],
+			isError: false,
+			isSuccess: true,
+		});
+		renderBoard("p1");
+
+		await userEvent.click(screen.getByRole("button", { name: "Delete ready worker" }));
+		await userEvent.click(
+			within(screen.getByRole("dialog", { name: "Delete ready worker?" })).getByRole("button", { name: "Yes, delete session" }),
+		);
+
+		await waitFor(() => expect(postMock).toHaveBeenCalledTimes(1));
+		expect(deleteMock).not.toHaveBeenCalled();
+		expect(screen.queryByRole("dialog")).not.toBeInTheDocument();
+		const card = screen.getByText("ready worker").closest('[data-testid="board-session-card"]') as HTMLElement;
+		// The suite mocks apiErrorMessage to its fallback, so the card shows
+		// the title-qualified fallback; production surfaces the daemon text.
+		expect(await within(card).findByRole("alert")).toHaveTextContent("Failed to terminate ready worker (500)");
+		expect(screen.getByRole("button", { name: "Delete ready worker" })).toBeEnabled();
+	});
+
+	it("surfaces still-running when retire refuses a ready discard", async () => {
+		postMock.mockResolvedValue({ data: { ok: true, sessionId: "s-ready", freed: true } });
+		deleteMock.mockResolvedValueOnce({ error: { code: "SESSION_NOT_TERMINATED", message: "still running" } });
+		workspaceQueryMock.mockReturnValue({
+			data: [workspaceWithSessions([readySession()])],
+			isError: false,
+			isSuccess: true,
+		});
+		renderBoard("p1");
+
+		await userEvent.click(screen.getByRole("button", { name: "Delete ready worker" }));
+		await userEvent.click(
+			within(screen.getByRole("dialog", { name: "Delete ready worker?" })).getByRole("button", { name: "Yes, delete session" }),
+		);
+
+		await waitFor(() => expect(deleteMock).toHaveBeenCalledTimes(1));
+		const card = screen.getByText("ready worker").closest('[data-testid="board-session-card"]') as HTMLElement;
+		expect(await within(card).findByRole("alert")).toHaveTextContent("is still running");
+	});
+
+	it("opens the pull request url after ensuring exactly one PR", async () => {
+		workspaceQueryMock.mockReturnValue({
+			data: [
+				workspaceWithSessions([
+					readySession(),
+					boardSession({ id: "s-building", title: "building worker", status: "working", kanbanColumn: "building" }),
+					reviewLaneSession({ id: "s-review", title: "review worker" }),
+				]),
+			],
+			isError: false,
+			isSuccess: true,
+		});
+		postMock.mockResolvedValue({
+			data: { ok: true, prUrl: "https://github.com/example/radic/pull/144", prNumber: 144, created: false },
+		});
+		postMock.mockResolvedValue({ data: { ok: true, sessionId: "s-ready", freed: true } });
+
+		renderBoard("p1");
+		await userEvent.click(screen.getByRole("button", { name: "Open PR" }));
+
+		await waitFor(() =>
+			expect(postMock).toHaveBeenCalledWith("/api/v1/sessions/{sessionId}/pr", {
+				params: { path: { sessionId: "s-ready" } },
+			}),
+		);
+		await waitFor(() =>
+			expect(openExternalMock).toHaveBeenCalledWith("https://github.com/example/radic/pull/144"),
+		);
+	});
+
+	it("fires a single pull request creation on double-click", async () => {
 		workspaceQueryMock.mockReturnValue({
 			data: [workspaceWithSessions([readySession()])],
 			isError: false,
@@ -2048,24 +2177,30 @@ describe("SessionsBoard", () => {
 		expect(screen.getByRole("dialog", { name: "Terminate idle worker?" })).toBeInTheDocument();
 	});
 
-	it("terminates a live merged session from its card without opening the session", async () => {
+	it("discards a live merged session from its card without opening the session", async () => {
 		workspaceQueryMock.mockReturnValue({
 			data: [workspaceWithSessions([boardSession({ id: "s-merged", title: "merged worker", status: "merged" })])],
 			isError: false,
 			isSuccess: true,
 		});
+		postMock.mockResolvedValue({ data: { ok: true, sessionId: "s-merged", freed: true } });
 		renderBoard("p1");
 
-		const terminateButton = screen.getByRole("button", { name: "Terminate merged worker" });
-		expect(terminateButton).toHaveClass("opacity-100");
-		expect(terminateButton).not.toHaveClass("opacity-0");
-		await userEvent.click(terminateButton);
+		// A live merged card sits in the ready lane, so its secondary is
+		// Delete (kill then retire), not Terminate.
+		expect(screen.queryByRole("button", { name: "Terminate merged worker" })).not.toBeInTheDocument();
+		await userEvent.click(screen.getByRole("button", { name: "Delete merged worker" }));
 		expect(navigateMock).not.toHaveBeenCalled();
-		const dialog = screen.getByRole("dialog", { name: "Terminate merged worker?" });
-		await userEvent.click(within(dialog).getByRole("button", { name: "Yes, terminate session" }));
+		const dialog = screen.getByRole("dialog", { name: "Delete merged worker?" });
+		await userEvent.click(within(dialog).getByRole("button", { name: "Yes, delete session" }));
 
 		await waitFor(() =>
 			expect(postMock).toHaveBeenCalledWith("/api/v1/sessions/{sessionId}/kill", {
+				params: { path: { sessionId: "s-merged" } },
+			}),
+		);
+		await waitFor(() =>
+			expect(deleteMock).toHaveBeenCalledWith("/api/v1/sessions/{sessionId}", {
 				params: { path: { sessionId: "s-merged" } },
 			}),
 		);
@@ -2084,7 +2219,7 @@ describe("SessionsBoard", () => {
 			data: [
 				workspaceWithSessions([
 					boardSession({ id: "s-one", title: "worker one", status: "working" }),
-					boardSession({ id: "s-two", title: "worker two", status: "merged" }),
+					boardSession({ id: "s-two", title: "worker two", status: "idle" }),
 				]),
 			],
 			isError: false,
@@ -2106,7 +2241,7 @@ describe("SessionsBoard", () => {
 		await waitFor(() => expect(screen.getByRole("button", { name: "Terminate worker one" })).toBeEnabled());
 	});
 
-	it("keeps the merged-card confirmation dismissed and surfaces termination failures", async () => {
+	it("keeps the merged-card delete dismissed and surfaces discard failures", async () => {
 		postMock.mockResolvedValueOnce({ error: { message: "runtime failed" }, response: { status: 500 } });
 		workspaceQueryMock.mockReturnValue({
 			data: [workspaceWithSessions([boardSession({ id: "s-merged", title: "merged worker", status: "merged" })])],
@@ -2115,15 +2250,16 @@ describe("SessionsBoard", () => {
 		});
 		renderBoard("p1");
 
-		await userEvent.click(screen.getByRole("button", { name: "Terminate merged worker" }));
+		await userEvent.click(screen.getByRole("button", { name: "Delete merged worker" }));
 		await userEvent.click(
-			within(screen.getByRole("dialog")).getByRole("button", { name: "Yes, terminate session" }),
+			within(screen.getByRole("dialog")).getByRole("button", { name: "Yes, delete session" }),
 		);
 
 		await waitFor(() => expect(postMock).toHaveBeenCalledTimes(1));
+		expect(deleteMock).not.toHaveBeenCalled();
 		expect(screen.queryByRole("dialog")).not.toBeInTheDocument();
-		expect(await screen.findByRole("alert")).toHaveTextContent("Failed to terminate session (500)");
-		expect(screen.getByRole("button", { name: "Terminate merged worker" })).toBeEnabled();
+		expect(await screen.findByRole("alert")).toHaveTextContent("Failed to terminate merged worker (500)");
+		expect(screen.getByRole("button", { name: "Delete merged worker" })).toBeEnabled();
 	});
 
 	it("shows a folder-missing banner when the project root no longer exists on disk", () => {

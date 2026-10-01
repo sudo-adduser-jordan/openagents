@@ -10,6 +10,7 @@ import {
 import { AlertTriangle, LayoutDashboard, RotateCw } from "lucide-react";
 import {
 	isManagerSession,
+	primaryPR,
 	type WorkflowMode,
 	type WorkspaceSession,
 	newestActiveManager,
@@ -26,10 +27,13 @@ import {
 	type SessionUsageSummary,
 } from "../hooks/useSessionUsageSummaries";
 import { apiErrorMessage } from "../lib/api-client";
+import { openAgentsBridge } from "../lib/bridge";
 import { useRetireSession } from "../hooks/useRetireSession";
 import { useRetireArchivedSessions } from "../hooks/useRetireArchivedSessions";
 import { useRestoreSession } from "../hooks/useRestoreSession";
 import { useTerminateSession } from "../hooks/useTerminateSession";
+import { useDiscardReadySession } from "../hooks/useDiscardReadySession";
+import { useCreateSessionPR } from "../hooks/useCreateSessionPR";
 import { useMergeSessionLocal } from "../hooks/useMergeSessionLocal";
 import { useWorkspaceQuery, workspaceQueryKey } from "../hooks/useWorkspaceQuery";
 import { useSetWorkflowMode } from "../hooks/useSetWorkflowMode";
@@ -180,6 +184,7 @@ export function SessionsBoard({ projectId }: SessionsBoardProps) {
 	});
 	const hasArchive = archived.length > 0;
 	const terminateSession = useTerminateSession();
+	const discardReadySession = useDiscardReadySession();
 	const activeProjectIdRef = useRef(projectId);
 	activeProjectIdRef.current = projectId;
 
@@ -205,6 +210,24 @@ export function SessionsBoard({ projectId }: SessionsBoardProps) {
 		[setWorkflowMode],
 	);
 	const mergeSessionLocal = useMergeSessionLocal();
+	const createSessionPR = useCreateSessionPR();
+	// Push the branch if needed and open exactly one pull request against
+	// dev, then hand its URL to the browser. Shared by the Ready Open-PR
+	// action: the daemon de-duplicates (durable facts, then the provider
+	// listing, then the creation race), so the entry point is safe to
+	// retry. Failures surface on the card via mutation state; nothing is
+	// optimistic and the session stays alive.
+	const ensureSessionPR = useCallback(
+		async (session: WorkspaceSession) => {
+			try {
+				const result = await createSessionPR.mutateAsync(session);
+				if (result.prUrl) await openAgentsBridge.app.openExternal(result.prUrl);
+			} catch {
+				// The card footer reports the failure via mutation state.
+			}
+		},
+		[createSessionPR],
+	);
 	// Approve terminates the worker through the shared kill path — the daemon
 	// preserves a dirty worktree and its branch rather than force-deleting
 	// them — and presents the card in the ready lane for its later local
@@ -231,7 +254,7 @@ export function SessionsBoard({ projectId }: SessionsBoardProps) {
 		(session: WorkspaceSession) => mergeSessionLocal.mutate(session),
 		[mergeSessionLocal],
 	);
-	// Drop the approval once its merge settles the card: without this the
+<	// Drop the approval once its merge settles the card: without this the
 	// ready presentation would linger over an archived card whose branch is
 	// already gone.
 	const lastMergeData = mergeSessionLocal.data;
@@ -241,6 +264,26 @@ export function SessionsBoard({ projectId }: SessionsBoardProps) {
 			updateApprovedIds(new Set([...approvedIds].filter((id) => id !== lastMergeVars.id)));
 		}
 	}, [approvedIds, lastMergeData, lastMergeVars, updateApprovedIds]);
+	// Ready-lane discard: terminate the session when it is still alive, then
+	// retire its record so the finished card leaves the board. Failures
+	// surface on the card via mutation state; nothing is optimistic.
+	const requestDiscardReady = useCallback(
+		(session: WorkspaceSession) => discardReadySession.mutate(session),
+		[discardReadySession],
+	);
+	// Open PR leaves the session alive for review: ensure exactly one PR
+	// exists, then hand its URL to the browser. Failures surface on the card.
+	const requestCreatePR = useCallback(
+		(session: WorkspaceSession) => {
+			if (usesPreviewWorkspaceData) {
+				const url = primaryPR(session)?.url;
+				if (url) void openAgentsBridge.app.openExternal(url);
+				return;
+			}
+			void ensureSessionPR(session);
+		},
+		[ensureSessionPR],
+	);
 
 	const restartManager = async () => {
 		if (!projectId) return;
@@ -346,9 +389,11 @@ export function SessionsBoard({ projectId }: SessionsBoardProps) {
 								<BoardSessionCardAdapter
 								onOpen={() => openSession(session)}
 									onTerminate={() => terminateSession.mutate(session)}
+								onDiscardReady={() => requestDiscardReady(session)}
 									onWorkflowModeChange={(_session, workflowMode) => changeWorkflowMode(session, workflowMode)}
 									onApprove={() => approveReview(session)}
 									onMergeLocal={() => requestMergeLocal(session)}
+									onCreatePR={() => requestCreatePR(session)}
 									isApproved={approvedIds.has(session.id)}
 									session={session}
 								usage={usageBySession.get(session.id)}

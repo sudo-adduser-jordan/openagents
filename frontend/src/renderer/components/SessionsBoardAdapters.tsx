@@ -19,8 +19,12 @@ import { formatTokenCount } from "../lib/format-token-count";
 import { prBrowserUrl, sessionPRDisplaySummaries } from "../lib/pr-display";
 import { toBoardLane } from "../lib/session-presentation";
 import { useMergeSessionLocalState, clearMergeSessionLocalState } from "../hooks/useMergeSessionLocal";
+import {
+	clearDiscardReadySessionState,
+	useDiscardReadySessionState,
+} from "../hooks/useDiscardReadySession";
 import type { WorkflowMode, WorkspaceSession } from "../types/workspace";
-import { canonicalTrackerIssueId, sessionNeedsAttention } from "../types/workspace";
+import { canonicalTrackerIssueId, openPRs, primaryPR, sessionNeedsAttention } from "../types/workspace";
 import { useSessionScmSummary } from "../hooks/useSessionScmSummary";
 import type { SessionUsageSummary } from "../hooks/useSessionUsageSummaries";
 import {
@@ -63,6 +67,7 @@ export function sessionsBoardLabels(): BoardColumnLabels {
 export function BoardSessionCardAdapter({
 	onOpen,
 	onTerminate,
+	onDiscardReady,
 	onWorkflowModeChange,
 	onApprove,
 	onMergeLocal,
@@ -72,6 +77,7 @@ export function BoardSessionCardAdapter({
 }: {
 	onOpen: () => void;
 	onTerminate: () => void;
+	onDiscardReady?: (session: WorkspaceSession) => void;
 	onWorkflowModeChange?: (session: WorkspaceSession, workflowMode: WorkflowMode) => void;
 	onApprove?: (session: WorkspaceSession) => void;
 	onMergeLocal?: (session: WorkspaceSession) => void;
@@ -83,6 +89,7 @@ export function BoardSessionCardAdapter({
 		<DesktopSessionCard
 			onOpen={onOpen}
 			onTerminate={onTerminate}
+			onDiscardReady={onDiscardReady}
 			onWorkflowModeChange={onWorkflowModeChange}
 			onApprove={onApprove}
 			onMergeLocal={onMergeLocal}
@@ -148,6 +155,7 @@ function DesktopSessionCard({
 	interactive = true,
 	onOpen,
 	onTerminate,
+	onDiscardReady,
 	onWorkflowModeChange,
 	onApprove,
 	onMergeLocal,
@@ -161,6 +169,7 @@ function DesktopSessionCard({
 	interactive?: boolean;
 	onOpen?: () => void;
 	onTerminate?: () => void;
+	onDiscardReady?: (session: WorkspaceSession) => void;
 	onWorkflowModeChange?: (session: WorkspaceSession, workflowMode: WorkflowMode) => void;
 	onApprove?: (session: WorkspaceSession) => void;
 	onMergeLocal?: (session: WorkspaceSession) => void;
@@ -172,13 +181,13 @@ function DesktopSessionCard({
 }) {
 	const queryClient = useQueryClient();
 	const [confirmOpen, setConfirmOpen] = useState(false);
+	const [discardConfirmOpen, setDiscardConfirmOpen] = useState(false);
 	const [mergeConfirmOpen, setMergeConfirmOpen] = useState(false);
 	const summaries = sessionPRDisplaySummaries(session, useSessionScmSummary(session.id).data);
 	const termination = useTerminateSessionState(session.id);
+	const discard = useDiscardReadySessionState(session.id);
 	const mergeLocal = useMergeSessionLocalState(session.id);
-	const showTerminate = interactive && session.isTerminated !== true && onTerminate;
-	const keepTerminateVisible = session.status === "merged";
-	const usagePresentation = toUsagePresentation(usage);
+	const createPR = useCreateSessionPRState(session.id);
 	// Lanes are daemon-derived; the card groups by the same derivation the
 	// board uses for placement, so actions never appear on a card whose lane
 	// does not own them. An approved card is the one exception: the worker is
@@ -186,9 +195,15 @@ function DesktopSessionCard({
 	// for its local merge, so the board presents it in the ready lane.
 	const boardLane = interactive && session.isTerminated !== true
 		? toBoardLane(session.kanbanColumn, session.status, session.workflowMode, session.displayStatus)
-		: isApproved && onMergeLocal
-			? "ready"
-			: undefined;
+		: undefined;
+	// Ready cards discard instead of terminating: Delete kills the session when
+	// it is still alive and then retires its record, so merged sessions never
+	// pile up waiting on out-of-band `session rm`. Everywhere else the overlay
+	// stays a plain terminate.
+	const showDiscardReady = interactive && boardLane === "ready" && session.isTerminated !== true && onDiscardReady;
+	const showTerminate = interactive && session.isTerminated !== true && onTerminate && !showDiscardReady;
+	const keepTerminateVisible = session.status === "merged";
+	const usagePresentation = toUsagePresentation(usage);
 	// The daemon reports a finished pre-PR session as "Awaiting PR". That text
 	// is replaced here with the delivery-stage actions: confirm a finished plan,
 	// or review the pending edit so the agent commits and waits on PR approval.
@@ -221,8 +236,10 @@ function DesktopSessionCard({
 			</div>
 		) : boardLane === "ready" ? (
 			// Ready-lane delivery: the daemon's status phrase stays visible
-			// next to the one action, so "Approved"/"Mergeable"/"Merged" keeps
-			// explaining why the card is ready.
+			// next to the actions, so "Approved"/"Mergeable"/"Merged" keeps
+			// explaining why the card is ready. Merge local is the single
+			// primary; the overlay trash (Delete) is the clearly secondary
+			// discard.
 			<div className="flex min-w-0 items-center gap-1.5">
 				<DeliveryStatusLabel session={session} lane={boardLane} />
 				{onMergeLocal ? (
@@ -242,15 +259,83 @@ function DesktopSessionCard({
 						confirmLabel="Yes, merge into dev"
 						trigger={
 							<WorkflowStageActionButton
-								label={mergeLocal.isPending ? "Merging…" : "Merge"}
-								disabled={mergeLocal.isPending}
+								label={mergeLocal.isPending ? "Merging…" : "Merge local"}
+								disabled={mergeLocal.isPending || createPR.isPending || discard.isPending}
 								title="Merge this branch into local dev, remove it, and archive the session"
 							/>
 						}
 					/>
 				) : null}
+				{onCreatePR && primaryPR(session)?.url ? (
+					<WorkflowStageActionButton
+						label={createPR.isPending ? "Opening…" : "Open PR"}
+						onClick={() => {
+							clearCreateSessionPRState(queryClient, session.id);
+							onCreatePR(session);
+						}}
+						disabled={mergeLocal.isPending || createPR.isPending || discard.isPending}
+						title="Push the branch if needed and open its pull request against dev"
+					/>
+				) : null}
 			</div>
 		) : undefined;
+
+	const discardOverlay = showDiscardReady && onDiscardReady ? (
+		<Tooltip>
+			<TooltipTrigger asChild>
+				<span className="inline-flex">
+					<SessionTerminationPopover
+						onConfirm={() => {
+							setDiscardConfirmOpen(false);
+							onDiscardReady(session);
+						}}
+						onOpenChange={(open) => {
+							if (open) clearDiscardReadySessionState(queryClient, session.id);
+							setDiscardConfirmOpen(open);
+						}}
+						open={discardConfirmOpen}
+						session={session}
+						title={`Delete ${session.title}?`}
+						body={readyDiscardBody(session)}
+						confirmLabel="Yes, delete session"
+						trigger={
+							<button
+								aria-label={
+									discard.isPending
+										? `Deleting ${session.title}`
+										: `Delete ${session.title}`
+								}
+								className={cn(
+									"inline-flex size-control-md items-center justify-center rounded-sm text-passive transition-[color,background-color,opacity] hover:bg-error/10 hover:text-error focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring/60",
+									discard.isPending
+										? "opacity-100"
+										: "pointer-events-none opacity-0 group-hover:pointer-events-auto group-hover:opacity-100 group-focus-within:pointer-events-auto group-focus-within:opacity-100",
+								)}
+								onClick={(event) => {
+									event.stopPropagation();
+									clearDiscardReadySessionState(queryClient, session.id);
+									// Force the confirm open instead of toggling it, so repeated
+									// trash taps keep the dialog up rather than dismissing it.
+									setDiscardConfirmOpen(true);
+								}}
+								disabled={discard.isPending || mergeLocal.isPending || createPR.isPending}
+								type="button"
+							>
+								{discard.isPending ? (
+									<LoaderCircle className="size-icon-sm animate-spin" aria-hidden="true" />
+								) : (
+									<Trash2 className="size-icon-sm" aria-hidden="true" />
+								)}
+							</button>
+						}
+					/>
+				</span>
+			</TooltipTrigger>
+			<TooltipContent side="bottom">
+				{discard.isPending ? "Deleting session" : "Delete session"}
+			</TooltipContent>
+		</Tooltip>
+	) : undefined;
 
 	const terminationOverlay = showTerminate ? (
 		<Tooltip>
@@ -311,7 +396,7 @@ function DesktopSessionCard({
 				branchIcon={<GitBranch aria-hidden="true" className="size-icon-2xs shrink-0" />}
 				error={termination.error ?? undefined}
 				externalLink={ProductExternalLink}
-				footer={footer ?? <CardFooterError message={mergeLocal.error ?? undefined} />}
+				footer={footer ?? <CardFooterError message={discard.error ?? mergeLocal.error ?? createPR.error ?? undefined} />}
 				interactive={interactive}
 			labels={{
 				formatTime: formatTimeCompact,
@@ -321,7 +406,7 @@ function DesktopSessionCard({
 					`Last message ${formatTimeCompact(timestamp)}`,
 			}}
 			onOpen={onOpen}
-			overlay={terminationOverlay}
+			overlay={discardOverlay ?? terminationOverlay}
 			prs={summaries.map((pr) => ({
 				commentCount: pr.review.unresolvedBy.reduce((count, reviewer) => count + reviewer.count, 0),
 				number: pr.number,
@@ -351,6 +436,19 @@ function DesktopSessionCard({
 			/>
 		</>
 	);
+}
+
+/** Delete-confirm copy for a ready card. Names what goes (the session
+ * record) and what stays (the worktree folder), and calls out unmerged work
+ * so it is never discarded silently: open PRs by number, otherwise the
+ * unmerged branch. */
+function readyDiscardBody(session: WorkspaceSession): string {
+	const open = openPRs(session);
+	const openNote =
+		open.length > 0
+			? ` It still has ${open.length === 1 ? "an open pull request" : "open pull requests"} (${open.map((pr) => `#${pr.number}`).join(", ")}).`
+			: " Its branch is not merged.";
+	return `Removes the session, its pull request history, and its conversation history. The worktree folder is left on disk.${openNote}`;
 }
 
 /** Daemon status phrase shown beside delivery actions, mirroring the card
