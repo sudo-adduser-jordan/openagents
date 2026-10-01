@@ -254,7 +254,7 @@ export function SessionsBoard({ projectId }: SessionsBoardProps) {
 		(session: WorkspaceSession) => mergeSessionLocal.mutate(session),
 		[mergeSessionLocal],
 	);
-<	// Drop the approval once its merge settles the card: without this the
+	// Drop the approval once its merge settles the card: without this the
 	// ready presentation would linger over an archived card whose branch is
 	// already gone.
 	const lastMergeData = mergeSessionLocal.data;
@@ -393,7 +393,7 @@ export function SessionsBoard({ projectId }: SessionsBoardProps) {
 									onWorkflowModeChange={(_session, workflowMode) => changeWorkflowMode(session, workflowMode)}
 									onApprove={() => approveReview(session)}
 									onMergeLocal={() => requestMergeLocal(session)}
-									onCreatePR={() => requestCreatePR(session)}
+									// onCreatePR={() => requestCreatePR(session)}
 									isApproved={approvedIds.has(session.id)}
 									session={session}
 								usage={usageBySession.get(session.id)}
